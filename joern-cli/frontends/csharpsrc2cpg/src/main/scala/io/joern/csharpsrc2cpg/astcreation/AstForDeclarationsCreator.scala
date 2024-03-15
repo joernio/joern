@@ -519,4 +519,67 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val methodRef = methodRefNode(lambdaExpression, code(lambdaExpression), fullName, lambdaReturnType)
     Ast(methodRef) :: Nil
   }
+
+  def astForAnonymousObjectCreationExpression(anonObjExpr: DotNetNodeInfo): Seq[Ast] = {
+    val typeDeclName     = nextAnonymousTypeName()
+    val typeDeclFullName = s"${scope.surroundingScopeFullName.getOrElse(Defines.Any)}.${typeDeclName}"
+
+    val _typeDeclNode = typeDeclNode(
+      anonObjExpr,
+      typeDeclName,
+      typeDeclFullName,
+      relativeFileName,
+      code(anonObjExpr),
+      astParentType = NodeTypes.METHOD,
+      astParentFullName = scope.surroundingScopeFullName.getOrElse(Defines.Any)
+    )
+
+    scope.pushNewScope(TypeScope(typeDeclFullName))
+
+    val memberAsts = anonObjExpr
+      .json(ParserKeys.Initializers)
+      .arr
+      .map(createDotNetNodeInfo)
+      .map(astForAnonymousObjectMemberDeclarator)
+      .toSeq
+
+    scope.popScope()
+    Ast.storeInDiffGraph(Ast(_typeDeclNode).withChildren(memberAsts), diffGraph)
+
+    val _typeRefNode = typeRefNode(anonObjExpr, code(anonObjExpr), typeDeclFullName)
+    Ast(_typeRefNode) :: Nil
+  }
+
+  private def astForAnonymousObjectMemberDeclarator(memberDeclarator: DotNetNodeInfo): Ast = {
+    val rhsNode         = createDotNetNodeInfo(memberDeclarator.json(ParserKeys.Expression))
+    val rhsAst          = astForNode(rhsNode)
+    val rhsTypeFullName = getTypeFullNameFromAstNode(rhsAst)
+
+    val lhsNode = Try(
+      createDotNetNodeInfo(memberDeclarator.json(ParserKeys.NameEquals)(ParserKeys.Name))
+    ).toOption match {
+      case Some(lhs) => Option(lhs)
+      case None      => None
+    }
+
+    val lhsAst = lhsNode match {
+      case Some(node) => astForNode(node)
+      case _          => Seq.empty[Ast]
+    }
+
+    val name = lhsNode match {
+      case Some(node) => nameFromNode(node)
+      case _          => nameFromNode(rhsNode)
+    }
+
+    val memberType = rhsTypeFullName match {
+      case Defines.Any => getTypeFullNameFromAstNode(lhsAst)
+      case otherType   => otherType
+    }
+
+    val _memberNode = memberNode(memberDeclarator, name, code(memberDeclarator), memberType)
+
+    Ast(_memberNode)
+  }
+
 }

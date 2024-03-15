@@ -1,0 +1,1774 @@
+{
+  "Microsoft.AspNetCore.TestHost": [
+    {
+      "name": "Microsoft.AspNetCore.TestHost.ApplicationWrapper",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.TestHost.ApplicationWrapper`1",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.TestHost.AsyncStreamWrapper",
+      "methods": [
+        {
+          "name": "get_CanRead",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_CanSeek",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_CanWrite",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Length",
+          "returnType": "System.Int64",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Position",
+          "returnType": "System.Int64",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Position",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Int64"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Flush",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "FlushAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Read",
+          "returnType": "System.Int32",
+          "parameterTypes": [
+            [
+              "buffer",
+              "System.Byte[]"
+            ],
+            [
+              "offset",
+              "System.Int32"
+            ],
+            [
+              "count",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ReadAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Int32>",
+          "parameterTypes": [
+            [
+              "buffer",
+              "System.Byte[]"
+            ],
+            [
+              "offset",
+              "System.Int32"
+            ],
+            [
+              "count",
+              "System.Int32"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ReadAsync",
+          "returnType": "System.Threading.Tasks.ValueTask`1<System.Int32>",
+          "parameterTypes": [
+            [
+              "buffer",
+              "System.Memory`1<System.Byte>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "BeginRead",
+          "returnType": "System.IAsyncResult",
+          "parameterTypes": [
+            [
+              "buffer",
+              "System.Byte[]"
+            ],
+            [
+              "offset",
+              "System.Int32"
+            ],
+            [
+              "count",
+              "System.Int32"
+            ],
+            [
+              "callback",
+              "System.AsyncCallback"
+            ],
+            [
+              "state",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "EndRead",
+          "returnType": "System.Int32",
+          "parameterTypes": [
+            [
+              "asyncResult",
+              "System.IAsyncResult"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Seek",
+          "returnType": "System.Int64",
+          "parameterTypes": [
+            [
+              "offset",
+              "System.Int64"
+            ],
+            [
+              "origin",
+              "System.IO.SeekOrigin"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "SetLength",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Int64"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Write",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "buffer",
+              "System.Byte[]"
+            ],
+            [
+              "offset",
+              "System.Int32"
+            ],
+            [
+              "count",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "BeginWrite",
+          "returnType": "System.IAsyncResult",
+          "parameterTypes": [
+            [
+              "buffer",
+              "System.Byte[]"
+            ],
+            [
+              "offset",
+              "System.Int32"
+            ],
+            [
+              "count",
+              "System.Int32"
+            ],
+            [
+              "callback",
+              "System.AsyncCallback"
+            ],
+            [
+              "state",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "EndWrite",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "asyncResult",
+              "System.IAsyncResult"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "WriteAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "buffer",
+              "System.Byte[]"
+            ],
+            [
+              "offset",
+              "System.Int32"
+            ],
+            [
+              "count",
+              "System.Int32"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "WriteAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "buffer",
+              "System.ReadOnlyMemory`1<System.Byte>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Close",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "DisposeAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.TestHost.ClientHandler",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.TestHost.HostBuilderTestServerExtensions",
+      "methods": [
+        {
+          "name": "GetTestServer",
+          "returnType": "Microsoft.AspNetCore.TestHost.TestServer",
+          "parameterTypes": [
+            [
+              "host",
+              "Microsoft.Extensions.Hosting.IHost"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetTestClient",
+          "returnType": "System.Net.Http.HttpClient",
+          "parameterTypes": [
+            [
+              "host",
+              "Microsoft.Extensions.Hosting.IHost"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.TestHost.HttpContextBuilder",
+      "methods": [
+        {
+          "name": "get_AllowSynchronousIO",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_AllowSynchronousIO",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.TestHost.HttpResetTestException",
+      "methods": [
+        {
+          "name": "get_ErrorCode",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.TestHost.NoopHostLifetime",
+      "methods": [
+        {
+          "name": "StopAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "WaitForStartAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.TestHost.RequestBodyDetectionFeature",
+      "methods": [
+        {
+          "name": "get_CanHaveBody",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.TestHost.RequestBuilder",
+      "methods": [
+        {
+          "name": "get_TestServer",
+          "returnType": "Microsoft.AspNetCore.TestHost.TestServer",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "And",
+          "returnType": "Microsoft.AspNetCore.TestHost.RequestBuilder",
+          "parameterTypes": [
+            [
+              "configure",
+              "System.Action`1<System.Net.Http.HttpRequestMessage>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AddHeader",
+          "returnType": "Microsoft.AspNetCore.TestHost.RequestBuilder",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "SendAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Net.Http.HttpResponseMessage>",
+          "parameterTypes": [
+            [
+              "method",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Net.Http.HttpResponseMessage>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "PostAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Net.Http.HttpResponseMessage>",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.TestHost.RequestLifetimeFeature",
+      "methods": [
+        {
+          "name": "get_RequestAborted",
+          "returnType": "System.Threading.CancellationToken",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_RequestAborted",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.TestHost.ResponseBodyPipeWriter",
+      "methods": [
+        {
+          "name": "FlushAsync",
+          "returnType": "System.Threading.Tasks.ValueTask`1<System.IO.Pipelines.FlushResult>",
+          "parameterTypes": [
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Complete",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "exception",
+              "System.Exception"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CancelPendingFlush",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Advance",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "bytes",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetMemory",
+          "returnType": "System.Memory`1<System.Byte>",
+          "parameterTypes": [
+            [
+              "sizeHint",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetSpan",
+          "returnType": "System.Span`1<System.Byte>",
+          "parameterTypes": [
+            [
+              "sizeHint",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.TestHost.ResponseBodyReaderStream",
+      "methods": [
+        {
+          "name": "get_CanRead",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_CanSeek",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_CanWrite",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Length",
+          "returnType": "System.Int64",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Position",
+          "returnType": "System.Int64",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Position",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Int64"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Seek",
+          "returnType": "System.Int64",
+          "parameterTypes": [
+            [
+              "offset",
+              "System.Int64"
+            ],
+            [
+              "origin",
+              "System.IO.SeekOrigin"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "SetLength",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Int64"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Flush",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "FlushAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Write",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "buffer",
+              "System.Byte[]"
+            ],
+            [
+              "offset",
+              "System.Int32"
+            ],
+            [
+              "count",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "WriteAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "buffer",
+              "System.Byte[]"
+            ],
+            [
+              "offset",
+              "System.Int32"
+            ],
+            [
+              "count",
+              "System.Int32"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "WriteAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "buffer",
+              "System.ReadOnlyMemory`1<System.Byte>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Read",
+          "returnType": "System.Int32",
+          "parameterTypes": [
+            [
+              "buffer",
+              "System.Byte[]"
+            ],
+            [
+              "offset",
+              "System.Int32"
+            ],
+            [
+              "count",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ReadAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Int32>",
+          "parameterTypes": [
+            [
+              "buffer",
+              "System.Byte[]"
+            ],
+            [
+              "offset",
+              "System.Int32"
+            ],
+            [
+              "count",
+              "System.Int32"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ReadAsync",
+          "returnType": "System.Threading.Tasks.ValueTask`1<System.Int32>",
+          "parameterTypes": [
+            [
+              "buffer",
+              "System.Memory`1<System.Byte>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.TestHost.ResponseBodyWriterStream",
+      "methods": [
+        {
+          "name": "get_CanRead",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_CanSeek",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_CanWrite",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Length",
+          "returnType": "System.Int64",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Position",
+          "returnType": "System.Int64",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Position",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Int64"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Read",
+          "returnType": "System.Int32",
+          "parameterTypes": [
+            [
+              "buffer",
+              "System.Byte[]"
+            ],
+            [
+              "offset",
+              "System.Int32"
+            ],
+            [
+              "count",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Seek",
+          "returnType": "System.Int64",
+          "parameterTypes": [
+            [
+              "offset",
+              "System.Int64"
+            ],
+            [
+              "origin",
+              "System.IO.SeekOrigin"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "SetLength",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Int64"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Flush",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "FlushAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Write",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "buffer",
+              "System.Byte[]"
+            ],
+            [
+              "offset",
+              "System.Int32"
+            ],
+            [
+              "count",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "WriteAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "buffer",
+              "System.Byte[]"
+            ],
+            [
+              "offset",
+              "System.Int32"
+            ],
+            [
+              "count",
+              "System.Int32"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "WriteAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "buffer",
+              "System.ReadOnlyMemory`1<System.Byte>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.TestHost.ResponseFeature",
+      "methods": [
+        {
+          "name": "get_StatusCode",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_StatusCode",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ReasonPhrase",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ReasonPhrase",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Headers",
+          "returnType": "Microsoft.AspNetCore.Http.IHeaderDictionary",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Headers",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.AspNetCore.Http.IHeaderDictionary"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Body",
+          "returnType": "System.IO.Stream",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Body",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.IO.Stream"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Stream",
+          "returnType": "System.IO.Stream",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Writer",
+          "returnType": "System.IO.Pipelines.PipeWriter",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_HasStarted",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_HasStarted",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "OnStarting",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "callback",
+              "System.Func`2<System.Object,System.Threading.Tasks.Task>"
+            ],
+            [
+              "state",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "OnCompleted",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "callback",
+              "System.Func`2<System.Object,System.Threading.Tasks.Task>"
+            ],
+            [
+              "state",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "FireOnSendingHeadersAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "FireOnResponseCompletedAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "StartAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "token",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "DisableBuffering",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "SendFileAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "path",
+              "System.String"
+            ],
+            [
+              "offset",
+              "System.Int64"
+            ],
+            [
+              "count",
+              "System.Nullable`1<System.Int64>"
+            ],
+            [
+              "cancellation",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CompleteAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.TestHost.ResponseTrailersFeature",
+      "methods": [
+        {
+          "name": "get_Trailers",
+          "returnType": "Microsoft.AspNetCore.Http.IHeaderDictionary",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Trailers",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.AspNetCore.Http.IHeaderDictionary"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.TestHost.TestServer",
+      "methods": [
+        {
+          "name": "get_BaseAddress",
+          "returnType": "System.Uri",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_BaseAddress",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Uri"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Host",
+          "returnType": "Microsoft.AspNetCore.Hosting.IWebHost",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Services",
+          "returnType": "System.IServiceProvider",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Features",
+          "returnType": "Microsoft.AspNetCore.Http.Features.IFeatureCollection",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_AllowSynchronousIO",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_AllowSynchronousIO",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_PreserveExecutionContext",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_PreserveExecutionContext",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateHandler",
+          "returnType": "System.Net.Http.HttpMessageHandler",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "CreateHandler",
+          "returnType": "System.Net.Http.HttpMessageHandler",
+          "parameterTypes": [
+            [
+              "additionalContextConfiguration",
+              "System.Action`1<Microsoft.AspNetCore.Http.HttpContext>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateClient",
+          "returnType": "System.Net.Http.HttpClient",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "CreateWebSocketClient",
+          "returnType": "Microsoft.AspNetCore.TestHost.WebSocketClient",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "CreateRequest",
+          "returnType": "Microsoft.AspNetCore.TestHost.RequestBuilder",
+          "parameterTypes": [
+            [
+              "path",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "SendAsync",
+          "returnType": "System.Threading.Tasks.Task`1<Microsoft.AspNetCore.Http.HttpContext>",
+          "parameterTypes": [
+            [
+              "configureContext",
+              "System.Action`1<Microsoft.AspNetCore.Http.HttpContext>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Dispose",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.TestHost.TestServerOptions",
+      "methods": [
+        {
+          "name": "get_AllowSynchronousIO",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_AllowSynchronousIO",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_PreserveExecutionContext",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_PreserveExecutionContext",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_BaseAddress",
+          "returnType": "System.Uri",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_BaseAddress",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Uri"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.TestHost.TestWebSocket",
+      "methods": [
+        {
+          "name": "CreatePair",
+          "returnType": "System.Tuple`2<Microsoft.AspNetCore.TestHost.TestWebSocket,Microsoft.AspNetCore.TestHost.TestWebSocket>",
+          "parameterTypes": [
+            [
+              "subProtocol",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "get_CloseStatus",
+          "returnType": "System.Nullable`1<System.Net.WebSockets.WebSocketCloseStatus>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_CloseStatusDescription",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_State",
+          "returnType": "System.Net.WebSockets.WebSocketState",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_SubProtocol",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "CloseAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "closeStatus",
+              "System.Net.WebSockets.WebSocketCloseStatus"
+            ],
+            [
+              "statusDescription",
+              "System.String"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CloseOutputAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "closeStatus",
+              "System.Net.WebSockets.WebSocketCloseStatus"
+            ],
+            [
+              "statusDescription",
+              "System.String"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Abort",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Dispose",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "ReceiveAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Net.WebSockets.WebSocketReceiveResult>",
+          "parameterTypes": [
+            [
+              "buffer",
+              "System.ArraySegment`1<System.Byte>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "SendAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "buffer",
+              "System.ArraySegment`1<System.Byte>"
+            ],
+            [
+              "messageType",
+              "System.Net.WebSockets.WebSocketMessageType"
+            ],
+            [
+              "endOfMessage",
+              "System.Boolean"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.TestHost.UpgradeFeature",
+      "methods": [
+        {
+          "name": "get_IsUpgradableRequest",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "UpgradeAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.IO.Stream>",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.TestHost.WebHostBuilderExtensions",
+      "methods": [
+        {
+          "name": "UseTestServer",
+          "returnType": "Microsoft.AspNetCore.Hosting.IWebHostBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.AspNetCore.Hosting.IWebHostBuilder"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "UseTestServer",
+          "returnType": "Microsoft.AspNetCore.Hosting.IWebHostBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.AspNetCore.Hosting.IWebHostBuilder"
+            ],
+            [
+              "configureOptions",
+              "System.Action`1<Microsoft.AspNetCore.TestHost.TestServerOptions>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetTestServer",
+          "returnType": "Microsoft.AspNetCore.TestHost.TestServer",
+          "parameterTypes": [
+            [
+              "host",
+              "Microsoft.AspNetCore.Hosting.IWebHost"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetTestClient",
+          "returnType": "System.Net.Http.HttpClient",
+          "parameterTypes": [
+            [
+              "host",
+              "Microsoft.AspNetCore.Hosting.IWebHost"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ConfigureTestServices",
+          "returnType": "Microsoft.AspNetCore.Hosting.IWebHostBuilder",
+          "parameterTypes": [
+            [
+              "webHostBuilder",
+              "Microsoft.AspNetCore.Hosting.IWebHostBuilder"
+            ],
+            [
+              "servicesConfiguration",
+              "System.Action`1<Microsoft.Extensions.DependencyInjection.IServiceCollection>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ConfigureTestContainer",
+          "returnType": "Microsoft.AspNetCore.Hosting.IWebHostBuilder",
+          "parameterTypes": [
+            [
+              "webHostBuilder",
+              "Microsoft.AspNetCore.Hosting.IWebHostBuilder"
+            ],
+            [
+              "servicesConfiguration",
+              "System.Action`1<TContainer>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "UseSolutionRelativeContentRoot",
+          "returnType": "Microsoft.AspNetCore.Hosting.IWebHostBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.AspNetCore.Hosting.IWebHostBuilder"
+            ],
+            [
+              "solutionRelativePath",
+              "System.String"
+            ],
+            [
+              "solutionName",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "UseSolutionRelativeContentRoot",
+          "returnType": "Microsoft.AspNetCore.Hosting.IWebHostBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.AspNetCore.Hosting.IWebHostBuilder"
+            ],
+            [
+              "solutionRelativePath",
+              "System.String"
+            ],
+            [
+              "applicationBasePath",
+              "System.String"
+            ],
+            [
+              "solutionName",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.TestHost.WebHostBuilderFactory",
+      "methods": [
+        {
+          "name": "CreateFromAssemblyEntryPoint",
+          "returnType": "Microsoft.AspNetCore.Hosting.IWebHostBuilder",
+          "parameterTypes": [
+            [
+              "assembly",
+              "System.Reflection.Assembly"
+            ],
+            [
+              "args",
+              "System.String[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "CreateFromTypesAssemblyEntryPoint",
+          "returnType": "Microsoft.AspNetCore.Hosting.IWebHostBuilder",
+          "parameterTypes": [
+            [
+              "args",
+              "System.String[]"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.TestHost.WebSocketClient",
+      "methods": [
+        {
+          "name": "get_SubProtocols",
+          "returnType": "System.Collections.Generic.IList`1<System.String>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ConfigureRequest",
+          "returnType": "System.Action`1<Microsoft.AspNetCore.Http.HttpRequest>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ConfigureRequest",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Action`1<Microsoft.AspNetCore.Http.HttpRequest>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ConnectAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Net.WebSockets.WebSocket>",
+          "parameterTypes": [
+            [
+              "uri",
+              "System.Uri"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.Hosting": [
+    {
+      "name": "Microsoft.Extensions.Hosting.HostFactoryResolver",
+      "methods": [
+        {
+          "name": "ResolveWebHostFactory",
+          "returnType": "System.Func`2<System.String[],TWebHost>",
+          "parameterTypes": [
+            [
+              "assembly",
+              "System.Reflection.Assembly"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ResolveWebHostBuilderFactory",
+          "returnType": "System.Func`2<System.String[],TWebHostBuilder>",
+          "parameterTypes": [
+            [
+              "assembly",
+              "System.Reflection.Assembly"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ResolveHostBuilderFactory",
+          "returnType": "System.Func`2<System.String[],THostBuilder>",
+          "parameterTypes": [
+            [
+              "assembly",
+              "System.Reflection.Assembly"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ResolveHostFactory",
+          "returnType": "System.Func`2<System.String[],System.Object>",
+          "parameterTypes": [
+            [
+              "assembly",
+              "System.Reflection.Assembly"
+            ],
+            [
+              "waitTimeout",
+              "System.Nullable`1<System.TimeSpan>"
+            ],
+            [
+              "stopApplication",
+              "System.Boolean"
+            ],
+            [
+              "configureHostBuilder",
+              "System.Action`1<System.Object>"
+            ],
+            [
+              "entrypointCompleted",
+              "System.Action`1<System.Exception>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ResolveServiceProviderFactory",
+          "returnType": "System.Func`2<System.String[],System.IServiceProvider>",
+          "parameterTypes": [
+            [
+              "assembly",
+              "System.Reflection.Assembly"
+            ],
+            [
+              "waitTimeout",
+              "System.Nullable`1<System.TimeSpan>"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

@@ -1,0 +1,1618 @@
+{
+  "Microsoft.CodeAnalysis": [
+    {
+      "name": "Microsoft.CodeAnalysis.EmbeddedAttribute",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System.Runtime.CompilerServices": [
+    {
+      "name": "System.Runtime.CompilerServices.NullableAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.NullableContextAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.NullablePublicOnlyAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.RefSafetyRulesAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.CallerArgumentExpressionAttribute",
+      "methods": [
+        {
+          "name": "get_ParameterName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "FxResources.Microsoft.Extensions.Hosting": [
+    {
+      "name": "FxResources.Microsoft.Extensions.Hosting.SR",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System": [
+    {
+      "name": "System.ThrowHelper",
+      "methods": [
+        {
+          "name": "IfNullOrWhitespace",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "argument",
+              "System.String"
+            ],
+            [
+              "paramName",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.SR",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System.Diagnostics.CodeAnalysis": [
+    {
+      "name": "System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute",
+      "methods": [
+        {
+          "name": "get_Category",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_CheckId",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Scope",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Scope",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Target",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Target",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_MessageId",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_MessageId",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Justification",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Justification",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute",
+      "methods": [
+        {
+          "name": "get_MemberTypes",
+          "returnType": "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.AllowNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DisallowNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MaybeNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.NotNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute",
+      "methods": [
+        {
+          "name": "get_ReturnValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.NotNullWhenAttribute",
+      "methods": [
+        {
+          "name": "get_ReturnValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute",
+      "methods": [
+        {
+          "name": "get_ParameterName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute",
+      "methods": [
+        {
+          "name": "get_ParameterValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MemberNotNullAttribute",
+      "methods": [
+        {
+          "name": "get_Members",
+          "returnType": "System.String[]",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute",
+      "methods": [
+        {
+          "name": "get_ReturnValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Members",
+          "returnType": "System.String[]",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "System.Runtime.Versioning": [
+    {
+      "name": "System.Runtime.Versioning.OSPlatformAttribute",
+      "methods": [
+        {
+          "name": "get_PlatformName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.Versioning.TargetPlatformAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.Versioning.SupportedOSPlatformAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.Versioning.UnsupportedOSPlatformAttribute",
+      "methods": [
+        {
+          "name": "get_Message",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.Versioning.ObsoletedOSPlatformAttribute",
+      "methods": [
+        {
+          "name": "get_Message",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Url",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Url",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.Versioning.SupportedOSPlatformGuardAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System.Runtime.InteropServices": [
+    {
+      "name": "System.Runtime.InteropServices.LibraryImportAttribute",
+      "methods": [
+        {
+          "name": "get_LibraryName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_EntryPoint",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_EntryPoint",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_StringMarshalling",
+          "returnType": "System.Runtime.InteropServices.StringMarshalling",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_StringMarshalling",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Runtime.InteropServices.StringMarshalling"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_StringMarshallingCustomType",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_StringMarshallingCustomType",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Type"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_SetLastError",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_SetLastError",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.InteropServices.StringMarshalling",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.Hosting": [
+    {
+      "name": "Microsoft.Extensions.Hosting.BackgroundServiceExceptionBehavior",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Hosting.ConsoleLifetimeOptions",
+      "methods": [
+        {
+          "name": "get_SuppressStatusMessages",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_SuppressStatusMessages",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Hosting.Host",
+      "methods": [
+        {
+          "name": "CreateDefaultBuilder",
+          "returnType": "Microsoft.Extensions.Hosting.IHostBuilder",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "CreateDefaultBuilder",
+          "returnType": "Microsoft.Extensions.Hosting.IHostBuilder",
+          "parameterTypes": [
+            [
+              "args",
+              "System.String[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "CreateApplicationBuilder",
+          "returnType": "Microsoft.Extensions.Hosting.HostApplicationBuilder",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "CreateApplicationBuilder",
+          "returnType": "Microsoft.Extensions.Hosting.HostApplicationBuilder",
+          "parameterTypes": [
+            [
+              "args",
+              "System.String[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "CreateApplicationBuilder",
+          "returnType": "Microsoft.Extensions.Hosting.HostApplicationBuilder",
+          "parameterTypes": [
+            [
+              "settings",
+              "Microsoft.Extensions.Hosting.HostApplicationBuilderSettings"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "CreateEmptyApplicationBuilder",
+          "returnType": "Microsoft.Extensions.Hosting.HostApplicationBuilder",
+          "parameterTypes": [
+            [
+              "settings",
+              "Microsoft.Extensions.Hosting.HostApplicationBuilderSettings"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Hosting.HostApplicationBuilder",
+      "methods": [
+        {
+          "name": "get_Environment",
+          "returnType": "Microsoft.Extensions.Hosting.IHostEnvironment",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Configuration",
+          "returnType": "Microsoft.Extensions.Configuration.ConfigurationManager",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Services",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Logging",
+          "returnType": "Microsoft.Extensions.Logging.ILoggingBuilder",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Metrics",
+          "returnType": "Microsoft.Extensions.Diagnostics.Metrics.IMetricsBuilder",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "ConfigureContainer",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "factory",
+              "Microsoft.Extensions.DependencyInjection.IServiceProviderFactory`1<TContainerBuilder>"
+            ],
+            [
+              "configure",
+              "System.Action`1<TContainerBuilder>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Build",
+          "returnType": "Microsoft.Extensions.Hosting.IHost",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Hosting.HostApplicationBuilderSettings",
+      "methods": [
+        {
+          "name": "get_DisableDefaults",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_DisableDefaults",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Args",
+          "returnType": "System.String[]",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Args",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String[]"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Configuration",
+          "returnType": "Microsoft.Extensions.Configuration.ConfigurationManager",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Configuration",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.Extensions.Configuration.ConfigurationManager"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_EnvironmentName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_EnvironmentName",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ApplicationName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ApplicationName",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ContentRootPath",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ContentRootPath",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Hosting.HostBuilder",
+      "methods": [
+        {
+          "name": "get_Properties",
+          "returnType": "System.Collections.Generic.IDictionary`2<System.Object,System.Object>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "ConfigureHostConfiguration",
+          "returnType": "Microsoft.Extensions.Hosting.IHostBuilder",
+          "parameterTypes": [
+            [
+              "configureDelegate",
+              "System.Action`1<Microsoft.Extensions.Configuration.IConfigurationBuilder>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ConfigureAppConfiguration",
+          "returnType": "Microsoft.Extensions.Hosting.IHostBuilder",
+          "parameterTypes": [
+            [
+              "configureDelegate",
+              "System.Action`2<Microsoft.Extensions.Hosting.HostBuilderContext,Microsoft.Extensions.Configuration.IConfigurationBuilder>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ConfigureServices",
+          "returnType": "Microsoft.Extensions.Hosting.IHostBuilder",
+          "parameterTypes": [
+            [
+              "configureDelegate",
+              "System.Action`2<Microsoft.Extensions.Hosting.HostBuilderContext,Microsoft.Extensions.DependencyInjection.IServiceCollection>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "UseServiceProviderFactory",
+          "returnType": "Microsoft.Extensions.Hosting.IHostBuilder",
+          "parameterTypes": [
+            [
+              "factory",
+              "Microsoft.Extensions.DependencyInjection.IServiceProviderFactory`1<TContainerBuilder>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "UseServiceProviderFactory",
+          "returnType": "Microsoft.Extensions.Hosting.IHostBuilder",
+          "parameterTypes": [
+            [
+              "factory",
+              "System.Func`2<Microsoft.Extensions.Hosting.HostBuilderContext,Microsoft.Extensions.DependencyInjection.IServiceProviderFactory`1<TContainerBuilder>>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ConfigureContainer",
+          "returnType": "Microsoft.Extensions.Hosting.IHostBuilder",
+          "parameterTypes": [
+            [
+              "configureDelegate",
+              "System.Action`2<Microsoft.Extensions.Hosting.HostBuilderContext,TContainerBuilder>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Build",
+          "returnType": "Microsoft.Extensions.Hosting.IHost",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Hosting.HostingHostBuilderExtensions",
+      "methods": [
+        {
+          "name": "UseEnvironment",
+          "returnType": "Microsoft.Extensions.Hosting.IHostBuilder",
+          "parameterTypes": [
+            [
+              "hostBuilder",
+              "Microsoft.Extensions.Hosting.IHostBuilder"
+            ],
+            [
+              "environment",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "UseContentRoot",
+          "returnType": "Microsoft.Extensions.Hosting.IHostBuilder",
+          "parameterTypes": [
+            [
+              "hostBuilder",
+              "Microsoft.Extensions.Hosting.IHostBuilder"
+            ],
+            [
+              "contentRoot",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "UseDefaultServiceProvider",
+          "returnType": "Microsoft.Extensions.Hosting.IHostBuilder",
+          "parameterTypes": [
+            [
+              "hostBuilder",
+              "Microsoft.Extensions.Hosting.IHostBuilder"
+            ],
+            [
+              "configure",
+              "System.Action`1<Microsoft.Extensions.DependencyInjection.ServiceProviderOptions>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "UseDefaultServiceProvider",
+          "returnType": "Microsoft.Extensions.Hosting.IHostBuilder",
+          "parameterTypes": [
+            [
+              "hostBuilder",
+              "Microsoft.Extensions.Hosting.IHostBuilder"
+            ],
+            [
+              "configure",
+              "System.Action`2<Microsoft.Extensions.Hosting.HostBuilderContext,Microsoft.Extensions.DependencyInjection.ServiceProviderOptions>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ConfigureLogging",
+          "returnType": "Microsoft.Extensions.Hosting.IHostBuilder",
+          "parameterTypes": [
+            [
+              "hostBuilder",
+              "Microsoft.Extensions.Hosting.IHostBuilder"
+            ],
+            [
+              "configureLogging",
+              "System.Action`2<Microsoft.Extensions.Hosting.HostBuilderContext,Microsoft.Extensions.Logging.ILoggingBuilder>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ConfigureLogging",
+          "returnType": "Microsoft.Extensions.Hosting.IHostBuilder",
+          "parameterTypes": [
+            [
+              "hostBuilder",
+              "Microsoft.Extensions.Hosting.IHostBuilder"
+            ],
+            [
+              "configureLogging",
+              "System.Action`1<Microsoft.Extensions.Logging.ILoggingBuilder>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ConfigureHostOptions",
+          "returnType": "Microsoft.Extensions.Hosting.IHostBuilder",
+          "parameterTypes": [
+            [
+              "hostBuilder",
+              "Microsoft.Extensions.Hosting.IHostBuilder"
+            ],
+            [
+              "configureOptions",
+              "System.Action`2<Microsoft.Extensions.Hosting.HostBuilderContext,Microsoft.Extensions.Hosting.HostOptions>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ConfigureHostOptions",
+          "returnType": "Microsoft.Extensions.Hosting.IHostBuilder",
+          "parameterTypes": [
+            [
+              "hostBuilder",
+              "Microsoft.Extensions.Hosting.IHostBuilder"
+            ],
+            [
+              "configureOptions",
+              "System.Action`1<Microsoft.Extensions.Hosting.HostOptions>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ConfigureAppConfiguration",
+          "returnType": "Microsoft.Extensions.Hosting.IHostBuilder",
+          "parameterTypes": [
+            [
+              "hostBuilder",
+              "Microsoft.Extensions.Hosting.IHostBuilder"
+            ],
+            [
+              "configureDelegate",
+              "System.Action`1<Microsoft.Extensions.Configuration.IConfigurationBuilder>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ConfigureServices",
+          "returnType": "Microsoft.Extensions.Hosting.IHostBuilder",
+          "parameterTypes": [
+            [
+              "hostBuilder",
+              "Microsoft.Extensions.Hosting.IHostBuilder"
+            ],
+            [
+              "configureDelegate",
+              "System.Action`1<Microsoft.Extensions.DependencyInjection.IServiceCollection>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ConfigureContainer",
+          "returnType": "Microsoft.Extensions.Hosting.IHostBuilder",
+          "parameterTypes": [
+            [
+              "hostBuilder",
+              "Microsoft.Extensions.Hosting.IHostBuilder"
+            ],
+            [
+              "configureDelegate",
+              "System.Action`1<TContainerBuilder>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ConfigureDefaults",
+          "returnType": "Microsoft.Extensions.Hosting.IHostBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.Hosting.IHostBuilder"
+            ],
+            [
+              "args",
+              "System.String[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "UseConsoleLifetime",
+          "returnType": "Microsoft.Extensions.Hosting.IHostBuilder",
+          "parameterTypes": [
+            [
+              "hostBuilder",
+              "Microsoft.Extensions.Hosting.IHostBuilder"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "UseConsoleLifetime",
+          "returnType": "Microsoft.Extensions.Hosting.IHostBuilder",
+          "parameterTypes": [
+            [
+              "hostBuilder",
+              "Microsoft.Extensions.Hosting.IHostBuilder"
+            ],
+            [
+              "configureOptions",
+              "System.Action`1<Microsoft.Extensions.Hosting.ConsoleLifetimeOptions>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "RunConsoleAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "hostBuilder",
+              "Microsoft.Extensions.Hosting.IHostBuilder"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "RunConsoleAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "hostBuilder",
+              "Microsoft.Extensions.Hosting.IHostBuilder"
+            ],
+            [
+              "configureOptions",
+              "System.Action`1<Microsoft.Extensions.Hosting.ConsoleLifetimeOptions>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ConfigureMetrics",
+          "returnType": "Microsoft.Extensions.Hosting.IHostBuilder",
+          "parameterTypes": [
+            [
+              "hostBuilder",
+              "Microsoft.Extensions.Hosting.IHostBuilder"
+            ],
+            [
+              "configureMetrics",
+              "System.Action`1<Microsoft.Extensions.Diagnostics.Metrics.IMetricsBuilder>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ConfigureMetrics",
+          "returnType": "Microsoft.Extensions.Hosting.IHostBuilder",
+          "parameterTypes": [
+            [
+              "hostBuilder",
+              "Microsoft.Extensions.Hosting.IHostBuilder"
+            ],
+            [
+              "configureMetrics",
+              "System.Action`2<Microsoft.Extensions.Hosting.HostBuilderContext,Microsoft.Extensions.Diagnostics.Metrics.IMetricsBuilder>"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Hosting.HostOptions",
+      "methods": [
+        {
+          "name": "get_ShutdownTimeout",
+          "returnType": "System.TimeSpan",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ShutdownTimeout",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.TimeSpan"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_StartupTimeout",
+          "returnType": "System.TimeSpan",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_StartupTimeout",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.TimeSpan"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ServicesStartConcurrently",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ServicesStartConcurrently",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ServicesStopConcurrently",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ServicesStopConcurrently",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_BackgroundServiceExceptionBehavior",
+          "returnType": "Microsoft.Extensions.Hosting.BackgroundServiceExceptionBehavior",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_BackgroundServiceExceptionBehavior",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.Extensions.Hosting.BackgroundServiceExceptionBehavior"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.Hosting.Internal": [
+    {
+      "name": "Microsoft.Extensions.Hosting.Internal.ApplicationLifetime",
+      "methods": [
+        {
+          "name": "get_ApplicationStarted",
+          "returnType": "System.Threading.CancellationToken",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ApplicationStopping",
+          "returnType": "System.Threading.CancellationToken",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ApplicationStopped",
+          "returnType": "System.Threading.CancellationToken",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "StopApplication",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "NotifyStarted",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "NotifyStopped",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Hosting.Internal.ConfigureContainerAdapter`1",
+      "methods": [
+        {
+          "name": "ConfigureContainer",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "hostContext",
+              "Microsoft.Extensions.Hosting.HostBuilderContext"
+            ],
+            [
+              "containerBuilder",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Hosting.Internal.ConsoleLifetime",
+      "methods": [
+        {
+          "name": "WaitForStartAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "StopAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Dispose",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Hosting.Internal.Host",
+      "methods": [
+        {
+          "name": "get_Services",
+          "returnType": "System.IServiceProvider",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "StartAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "StopAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Dispose",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "DisposeAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Hosting.Internal.HostingEnvironment",
+      "methods": [
+        {
+          "name": "get_EnvironmentName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_EnvironmentName",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ApplicationName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ApplicationName",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ContentRootPath",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ContentRootPath",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ContentRootFileProvider",
+          "returnType": "Microsoft.Extensions.FileProviders.IFileProvider",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ContentRootFileProvider",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.Extensions.FileProviders.IFileProvider"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Hosting.Internal.HostingLoggerExtensions",
+      "methods": [
+        {
+          "name": "ApplicationError",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "eventId",
+              "Microsoft.Extensions.Logging.EventId"
+            ],
+            [
+              "message",
+              "System.String"
+            ],
+            [
+              "exception",
+              "System.Exception"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Starting",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Started",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Stopping",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Stopped",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "StoppedWithException",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "ex",
+              "System.Exception"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "BackgroundServiceFaulted",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "ex",
+              "System.Exception"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "BackgroundServiceStoppingHost",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "ex",
+              "System.Exception"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "HostedServiceStartupFaulted",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "ex",
+              "System.Exception"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Hosting.Internal.IConfigureContainerAdapter",
+      "methods": [
+        {
+          "name": "ConfigureContainer",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "hostContext",
+              "Microsoft.Extensions.Hosting.HostBuilderContext"
+            ],
+            [
+              "containerBuilder",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Hosting.Internal.IServiceFactoryAdapter",
+      "methods": [
+        {
+          "name": "CreateBuilder",
+          "returnType": "System.Object",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateServiceProvider",
+          "returnType": "System.IServiceProvider",
+          "parameterTypes": [
+            [
+              "containerBuilder",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Hosting.Internal.LoggerEventIds",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Hosting.Internal.NullLifetime",
+      "methods": [
+        {
+          "name": "WaitForStartAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "StopAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Hosting.Internal.ServiceFactoryAdapter`1",
+      "methods": [
+        {
+          "name": "CreateBuilder",
+          "returnType": "System.Object",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateServiceProvider",
+          "returnType": "System.IServiceProvider",
+          "parameterTypes": [
+            [
+              "containerBuilder",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

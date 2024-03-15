@@ -132,7 +132,6 @@ class DependencyDownloader(cpg: Cpg, config: Config, internalProgramSummary: CSh
                 s"Exception occurred while downloading $fileName (${dependency.name}:${dependency.version})",
                 exception
               )
-              None
             case Success(_) =>
               logger.info(s"Successfully downloaded dependency ${dependency.name}:${dependency.version}")
           }

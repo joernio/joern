@@ -337,7 +337,7 @@ class MemberTests extends CSharpCode2CpgFixture {
 
     "link to it's reference, and propagate type" in {
       inside(cpg.identifier.nameExact("_logger").l) { case logger :: Nil =>
-        logger.typeFullName shouldBe "ILogger" // TODO: Get the fullyQualifiedName.
+        logger.typeFullName shouldBe "Microsoft.Extensions.Logging.ILogger"
       }
     }
   }

@@ -279,4 +279,126 @@ class TypeDeclTests extends CSharpCode2CpgFixture {
       }
     }
   }
+
+  "an anonymous type with primitive type members" should {
+    val cpg = code(basicBoilerplate("""
+        |var Foo = new { Bar = 10, Baz = "Hello, World" };
+        |""".stripMargin))
+
+    "create a TypeDecl node" in {
+      inside(cpg.method("Main").astChildren.isTypeDecl.l) {
+        case anonType :: Nil =>
+          anonType.fullName shouldBe "HelloWorld.Program.Main:void(System.String[]).<anon>0"
+          anonType.astParentType shouldBe "METHOD"
+          anonType.astParentFullName shouldBe "HelloWorld.Program.Main:void(System.String[])"
+        case _ => fail("No TypeDecl node for anonymous object found")
+      }
+    }
+
+    "propagate type to the LHS" in {
+      inside(cpg.method("Main").astChildren.isBlock.astChildren.isLocal.nameExact("Foo").l) { case loc :: Nil =>
+        loc.typeFullName shouldBe "HelloWorld.Program.Main:void(System.String[]).<anon>0"
+      }
+    }
+
+    "have correct members" in {
+      inside(cpg.method("Main").astChildren.isTypeDecl.l) {
+        case anonType :: Nil =>
+          inside(anonType.astChildren.isMember.l) {
+            case bar :: baz :: Nil =>
+              bar.code shouldBe "Bar = 10"
+              baz.code shouldBe "Baz = \"Hello, World\""
+
+              bar.typeFullName shouldBe "System.Int32"
+              baz.typeFullName shouldBe "System.String"
+
+              bar.astParent shouldBe anonType
+              baz.astParent shouldBe anonType
+            case _ => fail("There should be exactly 2 members inside the anonymous object")
+          }
+        case _ => fail("No TypeDecl node for anonymous object found")
+      }
+    }
+  }
+
+  "an anonymous type with custom type members" should {
+    val cpg = code("""
+        |namespace Foo {
+        | public class Qux {}
+        | public class Bar {
+        |   public static void Main() {
+        |     var q = new Qux();
+        |     var Fred = new { MBar = 10, q };
+        |   }
+        | }
+        |
+        |}
+        |""".stripMargin)
+
+    "create a TypeDecl node" in {
+      inside(cpg.method("Main").astChildren.isTypeDecl.l) {
+        case anonType :: Nil =>
+          anonType.fullName shouldBe "Foo.Bar.Main:void().<anon>0"
+          anonType.astParentType shouldBe "METHOD"
+          anonType.astParentFullName shouldBe "Foo.Bar.Main:void()"
+        case _ => fail("No TypeDecl node for anonymous object found")
+      }
+    }
+
+    "propagate type to the LHS" in {
+      inside(cpg.method("Main").astChildren.isBlock.astChildren.isLocal.nameExact("Fred").l) { case loc :: Nil =>
+        loc.typeFullName shouldBe "Foo.Bar.Main:void().<anon>0"
+      }
+    }
+
+    "have correct members" in {
+      inside(cpg.method("Main").astChildren.isTypeDecl.l) {
+        case anonType :: Nil =>
+          inside(anonType.astChildren.isMember.l) {
+            case bar :: q :: Nil =>
+              bar.code shouldBe "MBar = 10"
+              q.code shouldBe "q"
+
+              bar.typeFullName shouldBe "System.Int32"
+              q.typeFullName shouldBe "Foo.Qux"
+
+              bar.astParent shouldBe anonType
+              q.astParent shouldBe anonType
+            case _ => fail("There should be exactly 2 members inside the anonymous object")
+          }
+        case _ => fail("No TypeDecl node for anonymous object found")
+      }
+    }
+  }
+
+  "multiple anonymous types" should {
+    val cpg = code(basicBoilerplate("""
+          |var Foo = new { Bar = 10, Baz = "Hello, World" };
+          |var Qux = new { Fred = 5 };
+          |""".stripMargin))
+
+    "have correct attributes" in {
+      inside(cpg.method("Main").astChildren.isTypeDecl.l) {
+        case anonType :: anonType2 :: Nil =>
+          anonType.fullName shouldBe "HelloWorld.Program.Main:void(System.String[]).<anon>0"
+          anonType.astParentType shouldBe "METHOD"
+          anonType.astParentFullName shouldBe "HelloWorld.Program.Main:void(System.String[])"
+
+          anonType2.fullName shouldBe "HelloWorld.Program.Main:void(System.String[]).<anon>1"
+          anonType2.astParentType shouldBe "METHOD"
+          anonType2.astParentFullName shouldBe "HelloWorld.Program.Main:void(System.String[])"
+        case _ => fail("There should be exactly 2 anonymous types present")
+      }
+    }
+
+    "propagate type to the LHS" in {
+      inside(cpg.method("Main").astChildren.isBlock.astChildren.isLocal.l) {
+        case loc :: loc2 :: Nil =>
+          loc.typeFullName shouldBe "HelloWorld.Program.Main:void(System.String[]).<anon>0"
+          loc2.typeFullName shouldBe "HelloWorld.Program.Main:void(System.String[]).<anon>1"
+        case _ => fail("Exactly two locals should be present")
+      }
+    }
+  }
+
 }

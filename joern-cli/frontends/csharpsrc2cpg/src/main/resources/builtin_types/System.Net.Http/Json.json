@@ -1,0 +1,2405 @@
+{
+  "Microsoft.CodeAnalysis": [
+    {
+      "name": "Microsoft.CodeAnalysis.EmbeddedAttribute",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System.Runtime.CompilerServices": [
+    {
+      "name": "System.Runtime.CompilerServices.NullableAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.NullableContextAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.NullablePublicOnlyAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.RefSafetyRulesAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.CallerArgumentExpressionAttribute",
+      "methods": [
+        {
+          "name": "get_ParameterName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "FxResources.System.Net.Http.Json": [
+    {
+      "name": "FxResources.System.Net.Http.Json.SR",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System": [
+    {
+      "name": "System.ThrowHelper",
+      "methods": [
+        {
+          "name": "IfNullOrWhitespace",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "argument",
+              "System.String"
+            ],
+            [
+              "paramName",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.ArraySegmentExtensions",
+      "methods": [
+        {
+          "name": "Slice",
+          "returnType": "System.ArraySegment`1<T>",
+          "parameterTypes": [
+            [
+              "arraySegment",
+              "System.ArraySegment`1<T>"
+            ],
+            [
+              "index",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Slice",
+          "returnType": "System.ArraySegment`1<T>",
+          "parameterTypes": [
+            [
+              "arraySegment",
+              "System.ArraySegment`1<T>"
+            ],
+            [
+              "index",
+              "System.Int32"
+            ],
+            [
+              "count",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "CopyTo",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "source",
+              "System.ArraySegment`1<T>"
+            ],
+            [
+              "destination",
+              "System.ArraySegment`1<T>"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.SR",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System.Diagnostics.CodeAnalysis": [
+    {
+      "name": "System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute",
+      "methods": [
+        {
+          "name": "get_Message",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Url",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Url",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute",
+      "methods": [
+        {
+          "name": "get_MemberTypes",
+          "returnType": "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute",
+      "methods": [
+        {
+          "name": "get_Message",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Url",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Url",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute",
+      "methods": [
+        {
+          "name": "get_Category",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_CheckId",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Scope",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Scope",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Target",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Target",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_MessageId",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_MessageId",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Justification",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Justification",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.StringSyntaxAttribute",
+      "methods": [
+        {
+          "name": "get_Syntax",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Arguments",
+          "returnType": "System.Object[]",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.AllowNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DisallowNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MaybeNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.NotNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute",
+      "methods": [
+        {
+          "name": "get_ReturnValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.NotNullWhenAttribute",
+      "methods": [
+        {
+          "name": "get_ReturnValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute",
+      "methods": [
+        {
+          "name": "get_ParameterName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute",
+      "methods": [
+        {
+          "name": "get_ParameterValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MemberNotNullAttribute",
+      "methods": [
+        {
+          "name": "get_Members",
+          "returnType": "System.String[]",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute",
+      "methods": [
+        {
+          "name": "get_ReturnValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Members",
+          "returnType": "System.String[]",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "System.Net.Http.Json": [
+    {
+      "name": "System.Net.Http.Json.HttpClientJsonExtensions",
+      "methods": [
+        {
+          "name": "GetFromJsonAsAsyncEnumerable",
+          "returnType": "System.Collections.Generic.IAsyncEnumerable`1<TValue>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.String"
+            ],
+            [
+              "options",
+              "System.Text.Json.JsonSerializerOptions"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetFromJsonAsAsyncEnumerable",
+          "returnType": "System.Collections.Generic.IAsyncEnumerable`1<TValue>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.Uri"
+            ],
+            [
+              "options",
+              "System.Text.Json.JsonSerializerOptions"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetFromJsonAsAsyncEnumerable",
+          "returnType": "System.Collections.Generic.IAsyncEnumerable`1<TValue>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.String"
+            ],
+            [
+              "jsonTypeInfo",
+              "System.Text.Json.Serialization.Metadata.JsonTypeInfo`1<TValue>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetFromJsonAsAsyncEnumerable",
+          "returnType": "System.Collections.Generic.IAsyncEnumerable`1<TValue>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.Uri"
+            ],
+            [
+              "jsonTypeInfo",
+              "System.Text.Json.Serialization.Metadata.JsonTypeInfo`1<TValue>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetFromJsonAsAsyncEnumerable",
+          "returnType": "System.Collections.Generic.IAsyncEnumerable`1<TValue>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.String"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetFromJsonAsAsyncEnumerable",
+          "returnType": "System.Collections.Generic.IAsyncEnumerable`1<TValue>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.Uri"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "DeleteFromJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Object>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.String"
+            ],
+            [
+              "type",
+              "System.Type"
+            ],
+            [
+              "options",
+              "System.Text.Json.JsonSerializerOptions"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "DeleteFromJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Object>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.Uri"
+            ],
+            [
+              "type",
+              "System.Type"
+            ],
+            [
+              "options",
+              "System.Text.Json.JsonSerializerOptions"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "DeleteFromJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<TValue>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.String"
+            ],
+            [
+              "options",
+              "System.Text.Json.JsonSerializerOptions"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "DeleteFromJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<TValue>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.Uri"
+            ],
+            [
+              "options",
+              "System.Text.Json.JsonSerializerOptions"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "DeleteFromJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Object>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.String"
+            ],
+            [
+              "type",
+              "System.Type"
+            ],
+            [
+              "context",
+              "System.Text.Json.Serialization.JsonSerializerContext"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "DeleteFromJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Object>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.Uri"
+            ],
+            [
+              "type",
+              "System.Type"
+            ],
+            [
+              "context",
+              "System.Text.Json.Serialization.JsonSerializerContext"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "DeleteFromJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<TValue>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.String"
+            ],
+            [
+              "jsonTypeInfo",
+              "System.Text.Json.Serialization.Metadata.JsonTypeInfo`1<TValue>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "DeleteFromJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<TValue>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.Uri"
+            ],
+            [
+              "jsonTypeInfo",
+              "System.Text.Json.Serialization.Metadata.JsonTypeInfo`1<TValue>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "DeleteFromJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Object>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.String"
+            ],
+            [
+              "type",
+              "System.Type"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "DeleteFromJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Object>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.Uri"
+            ],
+            [
+              "type",
+              "System.Type"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "DeleteFromJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<TValue>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.String"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "DeleteFromJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<TValue>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.Uri"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetFromJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Object>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.String"
+            ],
+            [
+              "type",
+              "System.Type"
+            ],
+            [
+              "options",
+              "System.Text.Json.JsonSerializerOptions"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetFromJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Object>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.Uri"
+            ],
+            [
+              "type",
+              "System.Type"
+            ],
+            [
+              "options",
+              "System.Text.Json.JsonSerializerOptions"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetFromJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<TValue>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.String"
+            ],
+            [
+              "options",
+              "System.Text.Json.JsonSerializerOptions"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetFromJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<TValue>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.Uri"
+            ],
+            [
+              "options",
+              "System.Text.Json.JsonSerializerOptions"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetFromJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Object>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.String"
+            ],
+            [
+              "type",
+              "System.Type"
+            ],
+            [
+              "context",
+              "System.Text.Json.Serialization.JsonSerializerContext"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetFromJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Object>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.Uri"
+            ],
+            [
+              "type",
+              "System.Type"
+            ],
+            [
+              "context",
+              "System.Text.Json.Serialization.JsonSerializerContext"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetFromJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<TValue>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.String"
+            ],
+            [
+              "jsonTypeInfo",
+              "System.Text.Json.Serialization.Metadata.JsonTypeInfo`1<TValue>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetFromJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<TValue>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.Uri"
+            ],
+            [
+              "jsonTypeInfo",
+              "System.Text.Json.Serialization.Metadata.JsonTypeInfo`1<TValue>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetFromJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Object>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.String"
+            ],
+            [
+              "type",
+              "System.Type"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetFromJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Object>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.Uri"
+            ],
+            [
+              "type",
+              "System.Type"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetFromJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<TValue>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.String"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetFromJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<TValue>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.Uri"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "PostAsJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Net.Http.HttpResponseMessage>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.String"
+            ],
+            [
+              "value",
+              "TValue"
+            ],
+            [
+              "options",
+              "System.Text.Json.JsonSerializerOptions"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "PostAsJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Net.Http.HttpResponseMessage>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.Uri"
+            ],
+            [
+              "value",
+              "TValue"
+            ],
+            [
+              "options",
+              "System.Text.Json.JsonSerializerOptions"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "PostAsJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Net.Http.HttpResponseMessage>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.String"
+            ],
+            [
+              "value",
+              "TValue"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "PostAsJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Net.Http.HttpResponseMessage>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.Uri"
+            ],
+            [
+              "value",
+              "TValue"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "PostAsJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Net.Http.HttpResponseMessage>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.String"
+            ],
+            [
+              "value",
+              "TValue"
+            ],
+            [
+              "jsonTypeInfo",
+              "System.Text.Json.Serialization.Metadata.JsonTypeInfo`1<TValue>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "PostAsJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Net.Http.HttpResponseMessage>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.Uri"
+            ],
+            [
+              "value",
+              "TValue"
+            ],
+            [
+              "jsonTypeInfo",
+              "System.Text.Json.Serialization.Metadata.JsonTypeInfo`1<TValue>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "PutAsJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Net.Http.HttpResponseMessage>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.String"
+            ],
+            [
+              "value",
+              "TValue"
+            ],
+            [
+              "options",
+              "System.Text.Json.JsonSerializerOptions"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "PutAsJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Net.Http.HttpResponseMessage>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.Uri"
+            ],
+            [
+              "value",
+              "TValue"
+            ],
+            [
+              "options",
+              "System.Text.Json.JsonSerializerOptions"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "PutAsJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Net.Http.HttpResponseMessage>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.String"
+            ],
+            [
+              "value",
+              "TValue"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "PutAsJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Net.Http.HttpResponseMessage>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.Uri"
+            ],
+            [
+              "value",
+              "TValue"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "PutAsJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Net.Http.HttpResponseMessage>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.String"
+            ],
+            [
+              "value",
+              "TValue"
+            ],
+            [
+              "jsonTypeInfo",
+              "System.Text.Json.Serialization.Metadata.JsonTypeInfo`1<TValue>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "PutAsJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Net.Http.HttpResponseMessage>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.Uri"
+            ],
+            [
+              "value",
+              "TValue"
+            ],
+            [
+              "jsonTypeInfo",
+              "System.Text.Json.Serialization.Metadata.JsonTypeInfo`1<TValue>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "PatchAsJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Net.Http.HttpResponseMessage>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.String"
+            ],
+            [
+              "value",
+              "TValue"
+            ],
+            [
+              "options",
+              "System.Text.Json.JsonSerializerOptions"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "PatchAsJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Net.Http.HttpResponseMessage>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.Uri"
+            ],
+            [
+              "value",
+              "TValue"
+            ],
+            [
+              "options",
+              "System.Text.Json.JsonSerializerOptions"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "PatchAsJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Net.Http.HttpResponseMessage>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.String"
+            ],
+            [
+              "value",
+              "TValue"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "PatchAsJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Net.Http.HttpResponseMessage>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.Uri"
+            ],
+            [
+              "value",
+              "TValue"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "PatchAsJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Net.Http.HttpResponseMessage>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.String"
+            ],
+            [
+              "value",
+              "TValue"
+            ],
+            [
+              "jsonTypeInfo",
+              "System.Text.Json.Serialization.Metadata.JsonTypeInfo`1<TValue>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "PatchAsJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Net.Http.HttpResponseMessage>",
+          "parameterTypes": [
+            [
+              "client",
+              "System.Net.Http.HttpClient"
+            ],
+            [
+              "requestUri",
+              "System.Uri"
+            ],
+            [
+              "value",
+              "TValue"
+            ],
+            [
+              "jsonTypeInfo",
+              "System.Text.Json.Serialization.Metadata.JsonTypeInfo`1<TValue>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Net.Http.Json.HttpContentJsonExtensions",
+      "methods": [
+        {
+          "name": "ReadFromJsonAsAsyncEnumerable",
+          "returnType": "System.Collections.Generic.IAsyncEnumerable`1<TValue>",
+          "parameterTypes": [
+            [
+              "content",
+              "System.Net.Http.HttpContent"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ReadFromJsonAsAsyncEnumerable",
+          "returnType": "System.Collections.Generic.IAsyncEnumerable`1<TValue>",
+          "parameterTypes": [
+            [
+              "content",
+              "System.Net.Http.HttpContent"
+            ],
+            [
+              "options",
+              "System.Text.Json.JsonSerializerOptions"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ReadFromJsonAsAsyncEnumerable",
+          "returnType": "System.Collections.Generic.IAsyncEnumerable`1<TValue>",
+          "parameterTypes": [
+            [
+              "content",
+              "System.Net.Http.HttpContent"
+            ],
+            [
+              "jsonTypeInfo",
+              "System.Text.Json.Serialization.Metadata.JsonTypeInfo`1<TValue>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ReadFromJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Object>",
+          "parameterTypes": [
+            [
+              "content",
+              "System.Net.Http.HttpContent"
+            ],
+            [
+              "type",
+              "System.Type"
+            ],
+            [
+              "options",
+              "System.Text.Json.JsonSerializerOptions"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ReadFromJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Object>",
+          "parameterTypes": [
+            [
+              "content",
+              "System.Net.Http.HttpContent"
+            ],
+            [
+              "type",
+              "System.Type"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ReadFromJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<T>",
+          "parameterTypes": [
+            [
+              "content",
+              "System.Net.Http.HttpContent"
+            ],
+            [
+              "options",
+              "System.Text.Json.JsonSerializerOptions"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ReadFromJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<T>",
+          "parameterTypes": [
+            [
+              "content",
+              "System.Net.Http.HttpContent"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ReadFromJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Object>",
+          "parameterTypes": [
+            [
+              "content",
+              "System.Net.Http.HttpContent"
+            ],
+            [
+              "type",
+              "System.Type"
+            ],
+            [
+              "context",
+              "System.Text.Json.Serialization.JsonSerializerContext"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ReadFromJsonAsync",
+          "returnType": "System.Threading.Tasks.Task`1<T>",
+          "parameterTypes": [
+            [
+              "content",
+              "System.Net.Http.HttpContent"
+            ],
+            [
+              "jsonTypeInfo",
+              "System.Text.Json.Serialization.Metadata.JsonTypeInfo`1<T>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Net.Http.Json.JsonHelpers",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Net.Http.Json.JsonContent",
+      "methods": [
+        {
+          "name": "get_ObjectType",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Value",
+          "returnType": "System.Object",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Create",
+          "returnType": "System.Net.Http.Json.JsonContent",
+          "parameterTypes": [
+            [
+              "inputValue",
+              "T"
+            ],
+            [
+              "mediaType",
+              "System.Net.Http.Headers.MediaTypeHeaderValue"
+            ],
+            [
+              "options",
+              "System.Text.Json.JsonSerializerOptions"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Create",
+          "returnType": "System.Net.Http.Json.JsonContent",
+          "parameterTypes": [
+            [
+              "inputValue",
+              "System.Object"
+            ],
+            [
+              "inputType",
+              "System.Type"
+            ],
+            [
+              "mediaType",
+              "System.Net.Http.Headers.MediaTypeHeaderValue"
+            ],
+            [
+              "options",
+              "System.Text.Json.JsonSerializerOptions"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Create",
+          "returnType": "System.Net.Http.Json.JsonContent",
+          "parameterTypes": [
+            [
+              "inputValue",
+              "T"
+            ],
+            [
+              "jsonTypeInfo",
+              "System.Text.Json.Serialization.Metadata.JsonTypeInfo`1<T>"
+            ],
+            [
+              "mediaType",
+              "System.Net.Http.Headers.MediaTypeHeaderValue"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Create",
+          "returnType": "System.Net.Http.Json.JsonContent",
+          "parameterTypes": [
+            [
+              "inputValue",
+              "System.Object"
+            ],
+            [
+              "jsonTypeInfo",
+              "System.Text.Json.Serialization.Metadata.JsonTypeInfo"
+            ],
+            [
+              "mediaType",
+              "System.Net.Http.Headers.MediaTypeHeaderValue"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Net.Http.Json.LengthLimitReadStream",
+      "methods": [
+        {
+          "name": "get_CanRead",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_CanSeek",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_CanWrite",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "ReadAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Int32>",
+          "parameterTypes": [
+            [
+              "buffer",
+              "System.Byte[]"
+            ],
+            [
+              "offset",
+              "System.Int32"
+            ],
+            [
+              "count",
+              "System.Int32"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Read",
+          "returnType": "System.Int32",
+          "parameterTypes": [
+            [
+              "buffer",
+              "System.Byte[]"
+            ],
+            [
+              "offset",
+              "System.Int32"
+            ],
+            [
+              "count",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Flush",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "FlushAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Seek",
+          "returnType": "System.Int64",
+          "parameterTypes": [
+            [
+              "offset",
+              "System.Int64"
+            ],
+            [
+              "origin",
+              "System.IO.SeekOrigin"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "SetLength",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Int64"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Length",
+          "returnType": "System.Int64",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Position",
+          "returnType": "System.Int64",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Position",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Int64"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Write",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "buffer",
+              "System.Byte[]"
+            ],
+            [
+              "offset",
+              "System.Int32"
+            ],
+            [
+              "count",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Net.Http.Json.TranscodingReadStream",
+      "methods": [
+        {
+          "name": "get_CanRead",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_CanSeek",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_CanWrite",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Length",
+          "returnType": "System.Int64",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Position",
+          "returnType": "System.Int64",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Position",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Int64"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Read",
+          "returnType": "System.Int32",
+          "parameterTypes": [
+            [
+              "buffer",
+              "System.Byte[]"
+            ],
+            [
+              "offset",
+              "System.Int32"
+            ],
+            [
+              "count",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ReadAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Int32>",
+          "parameterTypes": [
+            [
+              "buffer",
+              "System.Byte[]"
+            ],
+            [
+              "offset",
+              "System.Int32"
+            ],
+            [
+              "count",
+              "System.Int32"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Flush",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Seek",
+          "returnType": "System.Int64",
+          "parameterTypes": [
+            [
+              "offset",
+              "System.Int64"
+            ],
+            [
+              "origin",
+              "System.IO.SeekOrigin"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "SetLength",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Int64"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Write",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "buffer",
+              "System.Byte[]"
+            ],
+            [
+              "offset",
+              "System.Int32"
+            ],
+            [
+              "count",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Net.Http.Json.TranscodingWriteStream",
+      "methods": [
+        {
+          "name": "get_CanRead",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_CanSeek",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_CanWrite",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Length",
+          "returnType": "System.Int64",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Position",
+          "returnType": "System.Int64",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Position",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Int64"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Flush",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "FlushAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Read",
+          "returnType": "System.Int32",
+          "parameterTypes": [
+            [
+              "buffer",
+              "System.Byte[]"
+            ],
+            [
+              "offset",
+              "System.Int32"
+            ],
+            [
+              "count",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Seek",
+          "returnType": "System.Int64",
+          "parameterTypes": [
+            [
+              "offset",
+              "System.Int64"
+            ],
+            [
+              "origin",
+              "System.IO.SeekOrigin"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "SetLength",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Int64"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Write",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "buffer",
+              "System.Byte[]"
+            ],
+            [
+              "offset",
+              "System.Int32"
+            ],
+            [
+              "count",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "WriteAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "buffer",
+              "System.Byte[]"
+            ],
+            [
+              "offset",
+              "System.Int32"
+            ],
+            [
+              "count",
+              "System.Int32"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "FinalWriteAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "System.Runtime.InteropServices": [
+    {
+      "name": "System.Runtime.InteropServices.LibraryImportAttribute",
+      "methods": [
+        {
+          "name": "get_LibraryName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_EntryPoint",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_EntryPoint",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_StringMarshalling",
+          "returnType": "System.Runtime.InteropServices.StringMarshalling",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_StringMarshalling",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Runtime.InteropServices.StringMarshalling"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_StringMarshallingCustomType",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_StringMarshallingCustomType",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Type"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_SetLastError",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_SetLastError",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.InteropServices.StringMarshalling",
+      "methods": [],
+      "fields": []
+    }
+  ]
+}

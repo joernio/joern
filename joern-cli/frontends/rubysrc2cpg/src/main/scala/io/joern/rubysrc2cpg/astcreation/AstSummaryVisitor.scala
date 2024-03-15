@@ -11,6 +11,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Local, Member, Method, Ty
 import io.shiftleft.semanticcpg.language.*
 import overflowdb.{BatchedUpdate, Config}
 
+import java.io.File as JavaFile
+import java.util.regex.Matcher
 import scala.util.Using
 
 trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -67,7 +69,9 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
 
     val mappings =
       cpg.namespaceBlock.flatMap { namespace =>
-        val path = namespace.filename.stripSuffix(".rb")
+        val path = namespace.filename
+          .replaceAll(Matcher.quoteReplacement(JavaFile.separator), "/") // handle Windows paths
+          .stripSuffix(".rb")
         // Map module functions/variables
         val moduleEntry = (path, namespace.fullName) -> namespace.method.map { module =>
           val moduleTypeMap =

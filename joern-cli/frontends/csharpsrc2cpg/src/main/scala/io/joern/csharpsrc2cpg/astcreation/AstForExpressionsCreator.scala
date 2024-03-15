@@ -21,18 +21,21 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   def astForExpression(expr: DotNetNodeInfo): Seq[Ast] = {
     expr.node match
-      case _: UnaryExpr                 => astForUnaryExpression(expr)
-      case _: BinaryExpr                => astForBinaryExpression(expr)
-      case _: LiteralExpr               => astForLiteralExpression(expr)
-      case InvocationExpression         => astForInvocationExpression(expr)
-      case AwaitExpression              => astForAwaitExpression(expr)
-      case ObjectCreationExpression     => astForObjectCreationExpression(expr)
-      case SimpleMemberAccessExpression => astForSimpleMemberAccessExpression(expr)
-      case _: IdentifierNode            => astForIdentifier(expr) :: Nil
-      case ThisExpression               => astForThisReceiver(expr) :: Nil
-      case CastExpression               => astForCastExpression(expr)
-      case _: BaseLambdaExpression      => astForSimpleLambdaExpression(expr)
-      case _                            => notHandledYet(expr)
+      case _: UnaryExpr                    => astForUnaryExpression(expr)
+      case _: BinaryExpr                   => astForBinaryExpression(expr)
+      case _: LiteralExpr                  => astForLiteralExpression(expr)
+      case InvocationExpression            => astForInvocationExpression(expr)
+      case AwaitExpression                 => astForAwaitExpression(expr)
+      case ObjectCreationExpression        => astForObjectCreationExpression(expr)
+      case SimpleMemberAccessExpression    => astForSimpleMemberAccessExpression(expr)
+      case ImplicitArrayCreationExpression => astForImplicitArrayCreationExpression(expr)
+      case ConditionalExpression           => astForConditionalExpression(expr)
+      case _: IdentifierNode               => astForIdentifier(expr) :: Nil
+      case ThisExpression                  => astForThisReceiver(expr) :: Nil
+      case CastExpression                  => astForCastExpression(expr)
+      case InterpolatedStringExpression    => astForInterpolatedStringExpression(expr)
+      case _: BaseLambdaExpression         => astForSimpleLambdaExpression(expr)
+      case _                               => notHandledYet(expr)
   }
 
   private def astForAwaitExpression(awaitExpr: DotNetNodeInfo): Seq[Ast] = {
@@ -359,6 +362,21 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .toSeq
   }
 
+  private def astForConditionalExpression(condExpr: DotNetNodeInfo): Seq[Ast] = {
+    val conditionAst = astForNode(condExpr.json(ParserKeys.Condition))
+    val whenTrue     = astForNode(condExpr.json(ParserKeys.WhenTrue))
+    val whenFalse    = astForNode(condExpr.json(ParserKeys.WhenFalse))
+
+    val typeFullName =
+      Option(getTypeFullNameFromAstNode(whenTrue))
+        .orElse(Option(getTypeFullNameFromAstNode(whenFalse)))
+        .orElse(Option(Defines.Any))
+    val callNode =
+      newOperatorCallNode(Operators.conditional, code(condExpr), typeFullName, line(condExpr), column(condExpr))
+
+    Seq(callAst(callNode, conditionAst ++ whenTrue ++ whenFalse))
+  }
+
   private def astForCastExpression(castExpr: DotNetNodeInfo): Seq[Ast] = {
     val typeFullName = nodeTypeFullName(createDotNetNodeInfo(castExpr.json(ParserKeys.Type)))
 
@@ -380,6 +398,60 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     // We can guarantee that there is an expression on the RHS
     val exprAst = astForExpression(createDotNetNodeInfo(castExpr.json(ParserKeys.Expression)))
     Seq(callAst(callNode, Seq(typeAst) ++ exprAst))
+  }
+
+  private def astForImplicitArrayCreationExpression(implArrExpr: DotNetNodeInfo): Seq[Ast] = {
+    astForArrayInitializerExpression(createDotNetNodeInfo(implArrExpr.json(ParserKeys.Initializer)))
+  }
+
+  private def astForInterpolatedStringExpression(strExpr: DotNetNodeInfo): Seq[Ast] = {
+    val contentAsts = strExpr
+      .json(ParserKeys.Contents)
+      .arr
+      .map(createDotNetNodeInfo)
+      .flatMap { expr =>
+        expr.node match
+          case InterpolatedStringText => astForInterpolatedStringText(expr)
+          case Interpolation          => astForInterpolation(expr)
+      }
+      .toSeq
+
+    // Collect all the parts of the interpolated string, and concatenate them to form the full code
+    val code = strExpr
+      .json(ParserKeys.Contents)
+      .arr
+      .map(createDotNetNodeInfo)
+      .map { node =>
+        node.node match
+          case InterpolatedStringText =>
+            node
+              .json(ParserKeys.TextToken)(ParserKeys.Value)
+              .str // Accessing node.json directly because DotNetNodeInfo contains stripped code, and does not contain braces
+          case Interpolation => node.json(ParserKeys.MetaData)(ParserKeys.Code).str
+      }
+      .mkString("")
+
+    val _callNode = newOperatorCallNode(
+      Operators.formatString,
+      s"$$\"$code\"",
+      Option(BuiltinTypes.DotNetTypeMap(BuiltinTypes.String)),
+      line(strExpr),
+      column(strExpr)
+    )
+
+    Seq(callAst(_callNode, contentAsts))
+  }
+
+  private def astForInterpolation(interpolationExpr: DotNetNodeInfo): Seq[Ast] = {
+    astForNode(interpolationExpr.json(ParserKeys.Expression))
+  }
+
+  private def astForInterpolatedStringText(interpolatedTextExpr: DotNetNodeInfo): Seq[Ast] = {
+    Seq(
+      Ast(
+        literalNode(interpolatedTextExpr, code(interpolatedTextExpr), BuiltinTypes.DotNetTypeMap(BuiltinTypes.String))
+      )
+    )
   }
 
 }

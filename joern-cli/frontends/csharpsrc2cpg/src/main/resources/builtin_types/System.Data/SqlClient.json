@@ -1,0 +1,16 @@
+{
+  "FxResources.System.Data.SqlClient": [
+    {
+      "name": "FxResources.System.Data.SqlClient.SR",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System": [
+    {
+      "name": "System.SR",
+      "methods": [],
+      "fields": []
+    }
+  ]
+}

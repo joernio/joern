@@ -1,0 +1,16 @@
+{
+  "FxResources.System.ComponentModel.Annotations": [
+    {
+      "name": "FxResources.System.ComponentModel.Annotations.SR",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System": [
+    {
+      "name": "System.SR",
+      "methods": [],
+      "fields": []
+    }
+  ]
+}

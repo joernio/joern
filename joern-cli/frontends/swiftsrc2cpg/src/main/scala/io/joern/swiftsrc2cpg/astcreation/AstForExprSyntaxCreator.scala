@@ -486,7 +486,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     Ast(identifierNode(node, "super"))
   }
 
-  private def astsForSwitchCase(switchCase: SwitchCaseSyntax | IfConfigDeclSyntax): List[Ast] = {
+  protected def astsForSwitchCase(switchCase: SwitchCaseSyntax | IfConfigDeclSyntax): List[Ast] = {
     val labelAst = Ast(createJumpTarget(switchCase))
     val (testAsts, consequentAsts) = switchCase match {
       case s: SwitchCaseSyntax =>

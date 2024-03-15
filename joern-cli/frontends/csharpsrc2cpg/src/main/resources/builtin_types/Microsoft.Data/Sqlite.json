@@ -1,0 +1,5063 @@
+{
+  "Microsoft.CodeAnalysis": [
+    {
+      "name": "Microsoft.CodeAnalysis.EmbeddedAttribute",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System.Runtime.CompilerServices": [
+    {
+      "name": "System.Runtime.CompilerServices.NullableAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.NullableContextAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.NullablePublicOnlyAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.RefSafetyRulesAttribute",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System": [
+    {
+      "name": "System.TypeExtensions",
+      "methods": [
+        {
+          "name": "UnwrapEnumType",
+          "returnType": "System.Type",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "UnwrapNullableType",
+          "returnType": "System.Type",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "SQLitePCL": [
+    {
+      "name": "SQLitePCL.SQLitePCLExtensions",
+      "methods": [
+        {
+          "name": "EncryptionSupported",
+          "returnType": "System.Nullable`1<System.Boolean>",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "EncryptionSupported",
+          "returnType": "System.Nullable`1<System.Boolean>",
+          "parameterTypes": [
+            [
+              "libraryName",
+              "System.String&"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.Data.Sqlite": [
+    {
+      "name": "Microsoft.Data.Sqlite.SqliteConnectionExtensions",
+      "methods": [
+        {
+          "name": "ExecuteNonQuery",
+          "returnType": "System.Int32",
+          "parameterTypes": [
+            [
+              "connection",
+              "Microsoft.Data.Sqlite.SqliteConnection"
+            ],
+            [
+              "commandText",
+              "System.String"
+            ],
+            [
+              "parameters",
+              "Microsoft.Data.Sqlite.SqliteParameter[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ExecuteScalar",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "connection",
+              "Microsoft.Data.Sqlite.SqliteConnection"
+            ],
+            [
+              "commandText",
+              "System.String"
+            ],
+            [
+              "parameters",
+              "Microsoft.Data.Sqlite.SqliteParameter[]"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Data.Sqlite.SqliteBlob",
+      "methods": [
+        {
+          "name": "get_CanRead",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_CanWrite",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_CanSeek",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Length",
+          "returnType": "System.Int64",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Position",
+          "returnType": "System.Int64",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Position",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Int64"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Read",
+          "returnType": "System.Int32",
+          "parameterTypes": [
+            [
+              "buffer",
+              "System.Byte[]"
+            ],
+            [
+              "offset",
+              "System.Int32"
+            ],
+            [
+              "count",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Read",
+          "returnType": "System.Int32",
+          "parameterTypes": [
+            [
+              "buffer",
+              "System.Span`1<System.Byte>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Write",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "buffer",
+              "System.Byte[]"
+            ],
+            [
+              "offset",
+              "System.Int32"
+            ],
+            [
+              "count",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Write",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "buffer",
+              "System.ReadOnlySpan`1<System.Byte>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Seek",
+          "returnType": "System.Int64",
+          "parameterTypes": [
+            [
+              "offset",
+              "System.Int64"
+            ],
+            [
+              "origin",
+              "System.IO.SeekOrigin"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Flush",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "SetLength",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Int64"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Data.Sqlite.SqliteCacheMode",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Data.Sqlite.SqliteCommand",
+      "methods": [
+        {
+          "name": "get_CommandType",
+          "returnType": "System.Data.CommandType",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_CommandType",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Data.CommandType"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_CommandText",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_CommandText",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Connection",
+          "returnType": "Microsoft.Data.Sqlite.SqliteConnection",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Connection",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.Data.Sqlite.SqliteConnection"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Transaction",
+          "returnType": "Microsoft.Data.Sqlite.SqliteTransaction",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Transaction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.Data.Sqlite.SqliteTransaction"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Parameters",
+          "returnType": "Microsoft.Data.Sqlite.SqliteParameterCollection",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_CommandTimeout",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_CommandTimeout",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_DesignTimeVisible",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_DesignTimeVisible",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_UpdatedRowSource",
+          "returnType": "System.Data.UpdateRowSource",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_UpdatedRowSource",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Data.UpdateRowSource"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateParameter",
+          "returnType": "Microsoft.Data.Sqlite.SqliteParameter",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Prepare",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "ExecuteReader",
+          "returnType": "Microsoft.Data.Sqlite.SqliteDataReader",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "ExecuteReader",
+          "returnType": "Microsoft.Data.Sqlite.SqliteDataReader",
+          "parameterTypes": [
+            [
+              "behavior",
+              "System.Data.CommandBehavior"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ExecuteReaderAsync",
+          "returnType": "System.Threading.Tasks.Task`1<Microsoft.Data.Sqlite.SqliteDataReader>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "ExecuteReaderAsync",
+          "returnType": "System.Threading.Tasks.Task`1<Microsoft.Data.Sqlite.SqliteDataReader>",
+          "parameterTypes": [
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ExecuteReaderAsync",
+          "returnType": "System.Threading.Tasks.Task`1<Microsoft.Data.Sqlite.SqliteDataReader>",
+          "parameterTypes": [
+            [
+              "behavior",
+              "System.Data.CommandBehavior"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ExecuteReaderAsync",
+          "returnType": "System.Threading.Tasks.Task`1<Microsoft.Data.Sqlite.SqliteDataReader>",
+          "parameterTypes": [
+            [
+              "behavior",
+              "System.Data.CommandBehavior"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ExecuteNonQuery",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "ExecuteScalar",
+          "returnType": "System.Object",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Cancel",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Data.Sqlite.SqliteConnection",
+      "methods": [
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "func",
+              "System.Func`2<TAccumulate,TAccumulate>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "func",
+              "System.Func`3<TAccumulate,T1,TAccumulate>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "func",
+              "System.Func`4<TAccumulate,T1,T2,TAccumulate>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "func",
+              "System.Func`5<TAccumulate,T1,T2,T3,TAccumulate>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "func",
+              "System.Func`6<TAccumulate,T1,T2,T3,T4,TAccumulate>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "func",
+              "System.Func`7<TAccumulate,T1,T2,T3,T4,T5,TAccumulate>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "func",
+              "System.Func`8<TAccumulate,T1,T2,T3,T4,T5,T6,TAccumulate>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "func",
+              "System.Func`9<TAccumulate,T1,T2,T3,T4,T5,T6,T7,TAccumulate>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "func",
+              "System.Func`10<TAccumulate,T1,T2,T3,T4,T5,T6,T7,T8,TAccumulate>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "func",
+              "System.Func`11<TAccumulate,T1,T2,T3,T4,T5,T6,T7,T8,T9,TAccumulate>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "func",
+              "System.Func`12<TAccumulate,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,TAccumulate>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "func",
+              "System.Func`13<TAccumulate,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,TAccumulate>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "func",
+              "System.Func`14<TAccumulate,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,TAccumulate>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "func",
+              "System.Func`15<TAccumulate,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,TAccumulate>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "func",
+              "System.Func`16<TAccumulate,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,TAccumulate>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "func",
+              "System.Func`17<TAccumulate,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,TAccumulate>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "func",
+              "System.Func`3<TAccumulate,System.Object[],TAccumulate>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "seed",
+              "TAccumulate"
+            ],
+            [
+              "func",
+              "System.Func`2<TAccumulate,TAccumulate>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "seed",
+              "TAccumulate"
+            ],
+            [
+              "func",
+              "System.Func`3<TAccumulate,T1,TAccumulate>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "seed",
+              "TAccumulate"
+            ],
+            [
+              "func",
+              "System.Func`4<TAccumulate,T1,T2,TAccumulate>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "seed",
+              "TAccumulate"
+            ],
+            [
+              "func",
+              "System.Func`5<TAccumulate,T1,T2,T3,TAccumulate>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "seed",
+              "TAccumulate"
+            ],
+            [
+              "func",
+              "System.Func`6<TAccumulate,T1,T2,T3,T4,TAccumulate>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "seed",
+              "TAccumulate"
+            ],
+            [
+              "func",
+              "System.Func`7<TAccumulate,T1,T2,T3,T4,T5,TAccumulate>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "seed",
+              "TAccumulate"
+            ],
+            [
+              "func",
+              "System.Func`8<TAccumulate,T1,T2,T3,T4,T5,T6,TAccumulate>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "seed",
+              "TAccumulate"
+            ],
+            [
+              "func",
+              "System.Func`9<TAccumulate,T1,T2,T3,T4,T5,T6,T7,TAccumulate>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "seed",
+              "TAccumulate"
+            ],
+            [
+              "func",
+              "System.Func`10<TAccumulate,T1,T2,T3,T4,T5,T6,T7,T8,TAccumulate>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "seed",
+              "TAccumulate"
+            ],
+            [
+              "func",
+              "System.Func`11<TAccumulate,T1,T2,T3,T4,T5,T6,T7,T8,T9,TAccumulate>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "seed",
+              "TAccumulate"
+            ],
+            [
+              "func",
+              "System.Func`12<TAccumulate,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,TAccumulate>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "seed",
+              "TAccumulate"
+            ],
+            [
+              "func",
+              "System.Func`13<TAccumulate,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,TAccumulate>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "seed",
+              "TAccumulate"
+            ],
+            [
+              "func",
+              "System.Func`14<TAccumulate,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,TAccumulate>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "seed",
+              "TAccumulate"
+            ],
+            [
+              "func",
+              "System.Func`15<TAccumulate,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,TAccumulate>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "seed",
+              "TAccumulate"
+            ],
+            [
+              "func",
+              "System.Func`16<TAccumulate,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,TAccumulate>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "seed",
+              "TAccumulate"
+            ],
+            [
+              "func",
+              "System.Func`17<TAccumulate,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,TAccumulate>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "seed",
+              "TAccumulate"
+            ],
+            [
+              "func",
+              "System.Func`3<TAccumulate,System.Object[],TAccumulate>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "seed",
+              "TAccumulate"
+            ],
+            [
+              "func",
+              "System.Func`2<TAccumulate,TAccumulate>"
+            ],
+            [
+              "resultSelector",
+              "System.Func`2<TAccumulate,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "seed",
+              "TAccumulate"
+            ],
+            [
+              "func",
+              "System.Func`3<TAccumulate,T1,TAccumulate>"
+            ],
+            [
+              "resultSelector",
+              "System.Func`2<TAccumulate,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "seed",
+              "TAccumulate"
+            ],
+            [
+              "func",
+              "System.Func`4<TAccumulate,T1,T2,TAccumulate>"
+            ],
+            [
+              "resultSelector",
+              "System.Func`2<TAccumulate,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "seed",
+              "TAccumulate"
+            ],
+            [
+              "func",
+              "System.Func`5<TAccumulate,T1,T2,T3,TAccumulate>"
+            ],
+            [
+              "resultSelector",
+              "System.Func`2<TAccumulate,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "seed",
+              "TAccumulate"
+            ],
+            [
+              "func",
+              "System.Func`6<TAccumulate,T1,T2,T3,T4,TAccumulate>"
+            ],
+            [
+              "resultSelector",
+              "System.Func`2<TAccumulate,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "seed",
+              "TAccumulate"
+            ],
+            [
+              "func",
+              "System.Func`7<TAccumulate,T1,T2,T3,T4,T5,TAccumulate>"
+            ],
+            [
+              "resultSelector",
+              "System.Func`2<TAccumulate,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "seed",
+              "TAccumulate"
+            ],
+            [
+              "func",
+              "System.Func`8<TAccumulate,T1,T2,T3,T4,T5,T6,TAccumulate>"
+            ],
+            [
+              "resultSelector",
+              "System.Func`2<TAccumulate,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "seed",
+              "TAccumulate"
+            ],
+            [
+              "func",
+              "System.Func`9<TAccumulate,T1,T2,T3,T4,T5,T6,T7,TAccumulate>"
+            ],
+            [
+              "resultSelector",
+              "System.Func`2<TAccumulate,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "seed",
+              "TAccumulate"
+            ],
+            [
+              "func",
+              "System.Func`10<TAccumulate,T1,T2,T3,T4,T5,T6,T7,T8,TAccumulate>"
+            ],
+            [
+              "resultSelector",
+              "System.Func`2<TAccumulate,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "seed",
+              "TAccumulate"
+            ],
+            [
+              "func",
+              "System.Func`11<TAccumulate,T1,T2,T3,T4,T5,T6,T7,T8,T9,TAccumulate>"
+            ],
+            [
+              "resultSelector",
+              "System.Func`2<TAccumulate,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "seed",
+              "TAccumulate"
+            ],
+            [
+              "func",
+              "System.Func`12<TAccumulate,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,TAccumulate>"
+            ],
+            [
+              "resultSelector",
+              "System.Func`2<TAccumulate,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "seed",
+              "TAccumulate"
+            ],
+            [
+              "func",
+              "System.Func`13<TAccumulate,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,TAccumulate>"
+            ],
+            [
+              "resultSelector",
+              "System.Func`2<TAccumulate,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "seed",
+              "TAccumulate"
+            ],
+            [
+              "func",
+              "System.Func`14<TAccumulate,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,TAccumulate>"
+            ],
+            [
+              "resultSelector",
+              "System.Func`2<TAccumulate,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "seed",
+              "TAccumulate"
+            ],
+            [
+              "func",
+              "System.Func`15<TAccumulate,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,TAccumulate>"
+            ],
+            [
+              "resultSelector",
+              "System.Func`2<TAccumulate,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "seed",
+              "TAccumulate"
+            ],
+            [
+              "func",
+              "System.Func`16<TAccumulate,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,TAccumulate>"
+            ],
+            [
+              "resultSelector",
+              "System.Func`2<TAccumulate,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "seed",
+              "TAccumulate"
+            ],
+            [
+              "func",
+              "System.Func`17<TAccumulate,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,TAccumulate>"
+            ],
+            [
+              "resultSelector",
+              "System.Func`2<TAccumulate,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAggregate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "seed",
+              "TAccumulate"
+            ],
+            [
+              "func",
+              "System.Func`3<TAccumulate,System.Object[],TAccumulate>"
+            ],
+            [
+              "resultSelector",
+              "System.Func`2<TAccumulate,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateFunction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "function",
+              "System.Func`1<TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateFunction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "function",
+              "System.Func`2<T1,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateFunction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "function",
+              "System.Func`3<T1,T2,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateFunction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "function",
+              "System.Func`4<T1,T2,T3,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateFunction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "function",
+              "System.Func`5<T1,T2,T3,T4,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateFunction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "function",
+              "System.Func`6<T1,T2,T3,T4,T5,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateFunction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "function",
+              "System.Func`7<T1,T2,T3,T4,T5,T6,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateFunction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "function",
+              "System.Func`8<T1,T2,T3,T4,T5,T6,T7,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateFunction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "function",
+              "System.Func`9<T1,T2,T3,T4,T5,T6,T7,T8,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateFunction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "function",
+              "System.Func`10<T1,T2,T3,T4,T5,T6,T7,T8,T9,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateFunction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "function",
+              "System.Func`11<T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateFunction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "function",
+              "System.Func`12<T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateFunction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "function",
+              "System.Func`13<T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateFunction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "function",
+              "System.Func`14<T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateFunction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "function",
+              "System.Func`15<T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateFunction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "function",
+              "System.Func`16<T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateFunction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "function",
+              "System.Func`17<T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateFunction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "function",
+              "System.Func`2<System.Object[],TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateFunction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "state",
+              "TState"
+            ],
+            [
+              "function",
+              "System.Func`2<TState,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateFunction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "state",
+              "TState"
+            ],
+            [
+              "function",
+              "System.Func`3<TState,T1,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateFunction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "state",
+              "TState"
+            ],
+            [
+              "function",
+              "System.Func`4<TState,T1,T2,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateFunction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "state",
+              "TState"
+            ],
+            [
+              "function",
+              "System.Func`5<TState,T1,T2,T3,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateFunction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "state",
+              "TState"
+            ],
+            [
+              "function",
+              "System.Func`6<TState,T1,T2,T3,T4,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateFunction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "state",
+              "TState"
+            ],
+            [
+              "function",
+              "System.Func`7<TState,T1,T2,T3,T4,T5,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateFunction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "state",
+              "TState"
+            ],
+            [
+              "function",
+              "System.Func`8<TState,T1,T2,T3,T4,T5,T6,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateFunction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "state",
+              "TState"
+            ],
+            [
+              "function",
+              "System.Func`9<TState,T1,T2,T3,T4,T5,T6,T7,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateFunction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "state",
+              "TState"
+            ],
+            [
+              "function",
+              "System.Func`10<TState,T1,T2,T3,T4,T5,T6,T7,T8,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateFunction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "state",
+              "TState"
+            ],
+            [
+              "function",
+              "System.Func`11<TState,T1,T2,T3,T4,T5,T6,T7,T8,T9,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateFunction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "state",
+              "TState"
+            ],
+            [
+              "function",
+              "System.Func`12<TState,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateFunction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "state",
+              "TState"
+            ],
+            [
+              "function",
+              "System.Func`13<TState,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateFunction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "state",
+              "TState"
+            ],
+            [
+              "function",
+              "System.Func`14<TState,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateFunction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "state",
+              "TState"
+            ],
+            [
+              "function",
+              "System.Func`15<TState,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateFunction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "state",
+              "TState"
+            ],
+            [
+              "function",
+              "System.Func`16<TState,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateFunction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "state",
+              "TState"
+            ],
+            [
+              "function",
+              "System.Func`17<TState,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateFunction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "state",
+              "TState"
+            ],
+            [
+              "function",
+              "System.Func`3<TState,System.Object[],TResult>"
+            ],
+            [
+              "isDeterministic",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Handle",
+          "returnType": "SQLitePCL.sqlite3",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ConnectionString",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ConnectionString",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Database",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_DataSource",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_DefaultTimeout",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_DefaultTimeout",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ServerVersion",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_State",
+          "returnType": "System.Data.ConnectionState",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "ClearAllPools",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "ClearPool",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "connection",
+              "Microsoft.Data.Sqlite.SqliteConnection"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Open",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Close",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "CreateCommand",
+          "returnType": "Microsoft.Data.Sqlite.SqliteCommand",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "CreateCollation",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "comparison",
+              "System.Comparison`1<System.String>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateCollation",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "state",
+              "T"
+            ],
+            [
+              "comparison",
+              "System.Func`4<T,System.String,System.String,System.Int32>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "BeginTransaction",
+          "returnType": "Microsoft.Data.Sqlite.SqliteTransaction",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "BeginTransaction",
+          "returnType": "Microsoft.Data.Sqlite.SqliteTransaction",
+          "parameterTypes": [
+            [
+              "deferred",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "BeginTransaction",
+          "returnType": "Microsoft.Data.Sqlite.SqliteTransaction",
+          "parameterTypes": [
+            [
+              "isolationLevel",
+              "System.Data.IsolationLevel"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "BeginTransaction",
+          "returnType": "Microsoft.Data.Sqlite.SqliteTransaction",
+          "parameterTypes": [
+            [
+              "isolationLevel",
+              "System.Data.IsolationLevel"
+            ],
+            [
+              "deferred",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ChangeDatabase",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "databaseName",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "EnableExtensions",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "enable",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "LoadExtension",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "file",
+              "System.String"
+            ],
+            [
+              "proc",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "BackupDatabase",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "destination",
+              "Microsoft.Data.Sqlite.SqliteConnection"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "BackupDatabase",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "destination",
+              "Microsoft.Data.Sqlite.SqliteConnection"
+            ],
+            [
+              "destinationName",
+              "System.String"
+            ],
+            [
+              "sourceName",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetSchema",
+          "returnType": "System.Data.DataTable",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "GetSchema",
+          "returnType": "System.Data.DataTable",
+          "parameterTypes": [
+            [
+              "collectionName",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetSchema",
+          "returnType": "System.Data.DataTable",
+          "parameterTypes": [
+            [
+              "collectionName",
+              "System.String"
+            ],
+            [
+              "restrictionValues",
+              "System.String[]"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Data.Sqlite.SqliteConnectionFactory",
+      "methods": [
+        {
+          "name": "GetConnection",
+          "returnType": "Microsoft.Data.Sqlite.SqliteConnectionInternal",
+          "parameterTypes": [
+            [
+              "outerConnection",
+              "Microsoft.Data.Sqlite.SqliteConnection"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetPoolGroup",
+          "returnType": "Microsoft.Data.Sqlite.SqliteConnectionPoolGroup",
+          "parameterTypes": [
+            [
+              "connectionString",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ReleasePool",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "pool",
+              "Microsoft.Data.Sqlite.SqliteConnectionPool"
+            ],
+            [
+              "clearing",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ClearPools",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Data.Sqlite.SqliteConnectionInternal",
+      "methods": [
+        {
+          "name": "get_Leaked",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_CanBePooled",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Handle",
+          "returnType": "SQLitePCL.sqlite3",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "DoNotPool",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Activate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "outerConnection",
+              "Microsoft.Data.Sqlite.SqliteConnection"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Close",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Deactivate",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Dispose",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Data.Sqlite.SqliteConnectionPool",
+      "methods": [
+        {
+          "name": "get_Count",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Shutdown",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "GetConnection",
+          "returnType": "Microsoft.Data.Sqlite.SqliteConnectionInternal",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Return",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "connection",
+              "Microsoft.Data.Sqlite.SqliteConnectionInternal"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Clear",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Data.Sqlite.SqliteConnectionPoolGroup",
+      "methods": [
+        {
+          "name": "get_ConnectionOptions",
+          "returnType": "Microsoft.Data.Sqlite.SqliteConnectionStringBuilder",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ConnectionString",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_IsNonPooled",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_IsDisabled",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "GetPool",
+          "returnType": "Microsoft.Data.Sqlite.SqliteConnectionPool",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Clear",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Prune",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Data.Sqlite.SqliteConnectionStringBuilder",
+      "methods": [
+        {
+          "name": "get_DataSource",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_DataSource",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Mode",
+          "returnType": "Microsoft.Data.Sqlite.SqliteOpenMode",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Mode",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.Data.Sqlite.SqliteOpenMode"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Keys",
+          "returnType": "System.Collections.ICollection",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Values",
+          "returnType": "System.Collections.ICollection",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Cache",
+          "returnType": "Microsoft.Data.Sqlite.SqliteCacheMode",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Cache",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.Data.Sqlite.SqliteCacheMode"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Password",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Password",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ForeignKeys",
+          "returnType": "System.Nullable`1<System.Boolean>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ForeignKeys",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<System.Boolean>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_RecursiveTriggers",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_RecursiveTriggers",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_DefaultTimeout",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_DefaultTimeout",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Pooling",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Pooling",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Item",
+          "returnType": "System.Object",
+          "parameterTypes": [
+            [
+              "keyword",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "set_Item",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "keyword",
+              "System.String"
+            ],
+            [
+              "value",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Clear",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "ContainsKey",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "keyword",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Remove",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "keyword",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ShouldSerialize",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "keyword",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "TryGetValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "keyword",
+              "System.String"
+            ],
+            [
+              "value",
+              "System.Object&"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Data.Sqlite.SqliteDataReader",
+      "methods": [
+        {
+          "name": "get_Depth",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_FieldCount",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Handle",
+          "returnType": "SQLitePCL.sqlite3_stmt",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_HasRows",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_IsClosed",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_RecordsAffected",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Item",
+          "returnType": "System.Object",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Item",
+          "returnType": "System.Object",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetEnumerator",
+          "returnType": "System.Collections.IEnumerator",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Read",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "NextResult",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Close",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "GetName",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetOrdinal",
+          "returnType": "System.Int32",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetDataTypeName",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetFieldType",
+          "returnType": "System.Type",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "IsDBNull",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetBoolean",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetByte",
+          "returnType": "System.Byte",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetChar",
+          "returnType": "System.Char",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetDateTime",
+          "returnType": "System.DateTime",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetDateTimeOffset",
+          "returnType": "System.DateTimeOffset",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetTimeSpan",
+          "returnType": "System.TimeSpan",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetDecimal",
+          "returnType": "System.Decimal",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetDouble",
+          "returnType": "System.Double",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetFloat",
+          "returnType": "System.Single",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetGuid",
+          "returnType": "System.Guid",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetInt16",
+          "returnType": "System.Int16",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetInt32",
+          "returnType": "System.Int32",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetInt64",
+          "returnType": "System.Int64",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetString",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetBytes",
+          "returnType": "System.Int64",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ],
+            [
+              "dataOffset",
+              "System.Int64"
+            ],
+            [
+              "buffer",
+              "System.Byte[]"
+            ],
+            [
+              "bufferOffset",
+              "System.Int32"
+            ],
+            [
+              "length",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetChars",
+          "returnType": "System.Int64",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ],
+            [
+              "dataOffset",
+              "System.Int64"
+            ],
+            [
+              "buffer",
+              "System.Char[]"
+            ],
+            [
+              "bufferOffset",
+              "System.Int32"
+            ],
+            [
+              "length",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetStream",
+          "returnType": "System.IO.Stream",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetTextReader",
+          "returnType": "System.IO.TextReader",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetFieldValue",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetValue",
+          "returnType": "System.Object",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetValues",
+          "returnType": "System.Int32",
+          "parameterTypes": [
+            [
+              "values",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetSchemaTable",
+          "returnType": "System.Data.DataTable",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Data.Sqlite.SqliteDataRecord",
+      "methods": [
+        {
+          "name": "get_Item",
+          "returnType": "System.Object",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Item",
+          "returnType": "System.Object",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_FieldCount",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Handle",
+          "returnType": "SQLitePCL.sqlite3_stmt",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_HasRows",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "IsDBNull",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetValue",
+          "returnType": "System.Object",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetFieldValue",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetName",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetOrdinal",
+          "returnType": "System.Int32",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetDataTypeName",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetFieldType",
+          "returnType": "System.Type",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetFieldType",
+          "returnType": "System.Type",
+          "parameterTypes": [
+            [
+              "type",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetBytes",
+          "returnType": "System.Int64",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ],
+            [
+              "dataOffset",
+              "System.Int64"
+            ],
+            [
+              "buffer",
+              "System.Byte[]"
+            ],
+            [
+              "bufferOffset",
+              "System.Int32"
+            ],
+            [
+              "length",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetChars",
+          "returnType": "System.Int64",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ],
+            [
+              "dataOffset",
+              "System.Int64"
+            ],
+            [
+              "buffer",
+              "System.Char[]"
+            ],
+            [
+              "bufferOffset",
+              "System.Int32"
+            ],
+            [
+              "length",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetStream",
+          "returnType": "System.IO.Stream",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetTextReader",
+          "returnType": "System.IO.TextReader",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Read",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Dispose",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Data.Sqlite.SqliteException",
+      "methods": [
+        {
+          "name": "get_SqliteErrorCode",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_SqliteExtendedErrorCode",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "ThrowExceptionForRC",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "rc",
+              "System.Int32"
+            ],
+            [
+              "db",
+              "SQLitePCL.sqlite3"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Data.Sqlite.SqliteFactory",
+      "methods": [
+        {
+          "name": "CreateCommand",
+          "returnType": "System.Data.Common.DbCommand",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "CreateConnection",
+          "returnType": "System.Data.Common.DbConnection",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "CreateConnectionStringBuilder",
+          "returnType": "System.Data.Common.DbConnectionStringBuilder",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "CreateParameter",
+          "returnType": "System.Data.Common.DbParameter",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Data.Sqlite.SqliteOpenMode",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Data.Sqlite.SqliteParameter",
+      "methods": [
+        {
+          "name": "get_DbType",
+          "returnType": "System.Data.DbType",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_DbType",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Data.DbType"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_SqliteType",
+          "returnType": "Microsoft.Data.Sqlite.SqliteType",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_SqliteType",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.Data.Sqlite.SqliteType"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Direction",
+          "returnType": "System.Data.ParameterDirection",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Direction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Data.ParameterDirection"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_IsNullable",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_IsNullable",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ParameterName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ParameterName",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Size",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Size",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_SourceColumn",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_SourceColumn",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_SourceColumnNullMapping",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_SourceColumnNullMapping",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Value",
+          "returnType": "System.Object",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Value",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ResetDbType",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "ResetSqliteType",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Data.Sqlite.SqliteParameterBinder",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Data.Sqlite.SqliteParameterCollection",
+      "methods": [
+        {
+          "name": "get_Count",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_SyncRoot",
+          "returnType": "System.Object",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Item",
+          "returnType": "Microsoft.Data.Sqlite.SqliteParameter",
+          "parameterTypes": [
+            [
+              "index",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "set_Item",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "index",
+              "System.Int32"
+            ],
+            [
+              "value",
+              "Microsoft.Data.Sqlite.SqliteParameter"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Item",
+          "returnType": "Microsoft.Data.Sqlite.SqliteParameter",
+          "parameterTypes": [
+            [
+              "parameterName",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "set_Item",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "parameterName",
+              "System.String"
+            ],
+            [
+              "value",
+              "Microsoft.Data.Sqlite.SqliteParameter"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Add",
+          "returnType": "System.Int32",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Add",
+          "returnType": "Microsoft.Data.Sqlite.SqliteParameter",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.Data.Sqlite.SqliteParameter"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Add",
+          "returnType": "Microsoft.Data.Sqlite.SqliteParameter",
+          "parameterTypes": [
+            [
+              "parameterName",
+              "System.String"
+            ],
+            [
+              "type",
+              "Microsoft.Data.Sqlite.SqliteType"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Add",
+          "returnType": "Microsoft.Data.Sqlite.SqliteParameter",
+          "parameterTypes": [
+            [
+              "parameterName",
+              "System.String"
+            ],
+            [
+              "type",
+              "Microsoft.Data.Sqlite.SqliteType"
+            ],
+            [
+              "size",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Add",
+          "returnType": "Microsoft.Data.Sqlite.SqliteParameter",
+          "parameterTypes": [
+            [
+              "parameterName",
+              "System.String"
+            ],
+            [
+              "type",
+              "Microsoft.Data.Sqlite.SqliteType"
+            ],
+            [
+              "size",
+              "System.Int32"
+            ],
+            [
+              "sourceColumn",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AddRange",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "values",
+              "System.Array"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AddRange",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "values",
+              "System.Collections.Generic.IEnumerable`1<Microsoft.Data.Sqlite.SqliteParameter>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AddWithValue",
+          "returnType": "Microsoft.Data.Sqlite.SqliteParameter",
+          "parameterTypes": [
+            [
+              "parameterName",
+              "System.String"
+            ],
+            [
+              "value",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Clear",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Contains",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Contains",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.Data.Sqlite.SqliteParameter"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Contains",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CopyTo",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "array",
+              "System.Array"
+            ],
+            [
+              "index",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CopyTo",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "array",
+              "Microsoft.Data.Sqlite.SqliteParameter[]"
+            ],
+            [
+              "index",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetEnumerator",
+          "returnType": "System.Collections.IEnumerator",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "IndexOf",
+          "returnType": "System.Int32",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "IndexOf",
+          "returnType": "System.Int32",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.Data.Sqlite.SqliteParameter"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "IndexOf",
+          "returnType": "System.Int32",
+          "parameterTypes": [
+            [
+              "parameterName",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Insert",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "index",
+              "System.Int32"
+            ],
+            [
+              "value",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Insert",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "index",
+              "System.Int32"
+            ],
+            [
+              "value",
+              "Microsoft.Data.Sqlite.SqliteParameter"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Remove",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Remove",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.Data.Sqlite.SqliteParameter"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "RemoveAt",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "index",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "RemoveAt",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "parameterName",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Data.Sqlite.SqliteParameterReader",
+      "methods": [
+        {
+          "name": "get_FieldCount",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Data.Sqlite.SqliteResultBinder",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Data.Sqlite.SqliteTransaction",
+      "methods": [
+        {
+          "name": "get_Connection",
+          "returnType": "Microsoft.Data.Sqlite.SqliteConnection",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_IsolationLevel",
+          "returnType": "System.Data.IsolationLevel",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Commit",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Rollback",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_SupportsSavepoints",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Save",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "savepointName",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Rollback",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "savepointName",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Release",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "savepointName",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Data.Sqlite.SqliteType",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Data.Sqlite.SqliteValueBinder",
+      "methods": [
+        {
+          "name": "Bind",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Data.Sqlite.SqliteValueReader",
+      "methods": [
+        {
+          "name": "get_FieldCount",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "IsDBNull",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetBoolean",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetByte",
+          "returnType": "System.Byte",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetChar",
+          "returnType": "System.Char",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetDateTime",
+          "returnType": "System.DateTime",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetDateTimeOffset",
+          "returnType": "System.DateTimeOffset",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetDateOnly",
+          "returnType": "System.DateOnly",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetTimeOnly",
+          "returnType": "System.TimeOnly",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetDecimal",
+          "returnType": "System.Decimal",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetDouble",
+          "returnType": "System.Double",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetFloat",
+          "returnType": "System.Single",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetGuid",
+          "returnType": "System.Guid",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetTimeSpan",
+          "returnType": "System.TimeSpan",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetInt16",
+          "returnType": "System.Int16",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetInt32",
+          "returnType": "System.Int32",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetInt64",
+          "returnType": "System.Int64",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetString",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetFieldValue",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetValue",
+          "returnType": "System.Object",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetValues",
+          "returnType": "System.Int32",
+          "parameterTypes": [
+            [
+              "values",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.Data.Sqlite.Utilities": [
+    {
+      "name": "Microsoft.Data.Sqlite.Utilities.SharedStopwatch",
+      "methods": [
+        {
+          "name": "get_Elapsed",
+          "returnType": "System.TimeSpan",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "StartNew",
+          "returnType": "Microsoft.Data.Sqlite.Utilities.SharedStopwatch",
+          "parameterTypes": [],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.Data.Sqlite.Properties": [
+    {
+      "name": "Microsoft.Data.Sqlite.Properties.Resources",
+      "methods": [
+        {
+          "name": "AmbiguousColumnName",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "name",
+              "System.Object"
+            ],
+            [
+              "column1",
+              "System.Object"
+            ],
+            [
+              "column2",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AmbiguousParameterName",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "parameterName",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "CalledOnNullValue",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "ordinal",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "CallRequiresOpenConnection",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "methodName",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "get_CannotStoreNaN",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_ConnectionStringRequiresClosedConnection",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "ConvertFailed",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "sourceType",
+              "System.Object"
+            ],
+            [
+              "targetType",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "DataReaderClosed",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "operation",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "get_DataReaderOpen",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_DefaultNativeError",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "EncryptionNotSupported",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "libraryName",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "InvalidCommandType",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "commandType",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "InvalidEnumValue",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "enumType",
+              "System.Object"
+            ],
+            [
+              "value",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "InvalidIsolationLevel",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "isolationLevel",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "get_InvalidOffsetAndCount",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "InvalidParameterDirection",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "direction",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "KeywordNotSupported",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "keyword",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "MissingParameters",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "parameters",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "get_NoData",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_ParallelTransactionsNotSupported",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "ParameterNotFound",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "parameterName",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "RequiresSet",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "propertyName",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "get_ResizeNotSupported",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_SeekBeforeBegin",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "SetRequiresNoOpenReader",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "propertyName",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "get_SqlBlobRequiresOpenConnection",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "SqliteNativeError",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "errorCode",
+              "System.Object"
+            ],
+            [
+              "message",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TooManyRestrictions",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "collectionName",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "get_TransactionCompleted",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_TransactionConnectionMismatch",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_TransactionRequired",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "UDFCalledWithNull",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "function",
+              "System.Object"
+            ],
+            [
+              "ordinal",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "UnknownCollection",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "collectionName",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "UnknownDataType",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "typeName",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "get_WriteNotSupported",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ]
+}
