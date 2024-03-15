@@ -1,0 +1,2443 @@
+{
+  "Microsoft.CodeAnalysis": [
+    {
+      "name": "Microsoft.CodeAnalysis.EmbeddedAttribute",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System.Runtime.CompilerServices": [
+    {
+      "name": "System.Runtime.CompilerServices.IsReadOnlyAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.IsByRefLikeAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.NullableAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.NullableContextAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.NullablePublicOnlyAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.RefSafetyRulesAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.CallerArgumentExpressionAttribute",
+      "methods": [
+        {
+          "name": "get_ParameterName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "FxResources.Microsoft.Extensions.Logging.Abstractions": [
+    {
+      "name": "FxResources.Microsoft.Extensions.Logging.Abstractions.SR",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System": [
+    {
+      "name": "System.ThrowHelper",
+      "methods": [
+        {
+          "name": "IfNullOrWhitespace",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "argument",
+              "System.String"
+            ],
+            [
+              "paramName",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.SR",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System.Diagnostics.CodeAnalysis": [
+    {
+      "name": "System.Diagnostics.CodeAnalysis.AllowNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DisallowNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MaybeNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.NotNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute",
+      "methods": [
+        {
+          "name": "get_ReturnValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.NotNullWhenAttribute",
+      "methods": [
+        {
+          "name": "get_ReturnValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute",
+      "methods": [
+        {
+          "name": "get_ParameterName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute",
+      "methods": [
+        {
+          "name": "get_ParameterValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MemberNotNullAttribute",
+      "methods": [
+        {
+          "name": "get_Members",
+          "returnType": "System.String[]",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute",
+      "methods": [
+        {
+          "name": "get_ReturnValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Members",
+          "returnType": "System.String[]",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "System.Runtime.InteropServices": [
+    {
+      "name": "System.Runtime.InteropServices.LibraryImportAttribute",
+      "methods": [
+        {
+          "name": "get_LibraryName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_EntryPoint",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_EntryPoint",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_StringMarshalling",
+          "returnType": "System.Runtime.InteropServices.StringMarshalling",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_StringMarshalling",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Runtime.InteropServices.StringMarshalling"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_StringMarshallingCustomType",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_StringMarshallingCustomType",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Type"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_SetLastError",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_SetLastError",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.InteropServices.StringMarshalling",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System.Text": [
+    {
+      "name": "System.Text.ValueStringBuilder",
+      "methods": [
+        {
+          "name": "get_Length",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Length",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Capacity",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "EnsureCapacity",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "capacity",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetPinnableReference",
+          "returnType": "System.Char&",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "GetPinnableReference",
+          "returnType": "System.Char&",
+          "parameterTypes": [
+            [
+              "terminate",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Item",
+          "returnType": "System.Char&",
+          "parameterTypes": [
+            [
+              "index",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ToString",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_RawChars",
+          "returnType": "System.Span`1<System.Char>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "AsSpan",
+          "returnType": "System.ReadOnlySpan`1<System.Char>",
+          "parameterTypes": [
+            [
+              "terminate",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AsSpan",
+          "returnType": "System.ReadOnlySpan`1<System.Char>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "AsSpan",
+          "returnType": "System.ReadOnlySpan`1<System.Char>",
+          "parameterTypes": [
+            [
+              "start",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AsSpan",
+          "returnType": "System.ReadOnlySpan`1<System.Char>",
+          "parameterTypes": [
+            [
+              "start",
+              "System.Int32"
+            ],
+            [
+              "length",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "TryCopyTo",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "destination",
+              "System.Span`1<System.Char>"
+            ],
+            [
+              "charsWritten",
+              "System.Int32&"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Insert",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "index",
+              "System.Int32"
+            ],
+            [
+              "value",
+              "System.Char"
+            ],
+            [
+              "count",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Insert",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "index",
+              "System.Int32"
+            ],
+            [
+              "s",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Append",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "c",
+              "System.Char"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Append",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "s",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Append",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "c",
+              "System.Char"
+            ],
+            [
+              "count",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Append",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Char*"
+            ],
+            [
+              "length",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Append",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.ReadOnlySpan`1<System.Char>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AppendSpan",
+          "returnType": "System.Span`1<System.Char>",
+          "parameterTypes": [
+            [
+              "length",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Dispose",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.Internal": [
+    {
+      "name": "Microsoft.Extensions.Internal.TypeNameHelper",
+      "methods": [
+        {
+          "name": "GetTypeDisplayName",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "item",
+              "System.Object"
+            ],
+            [
+              "fullName",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetTypeDisplayName",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ],
+            [
+              "fullName",
+              "System.Boolean"
+            ],
+            [
+              "includeGenericParameterNames",
+              "System.Boolean"
+            ],
+            [
+              "includeGenericParameters",
+              "System.Boolean"
+            ],
+            [
+              "nestedTypeDelimiter",
+              "System.Char"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.Logging": [
+    {
+      "name": "Microsoft.Extensions.Logging.EventId",
+      "methods": [
+        {
+          "name": "op_Implicit",
+          "returnType": "Microsoft.Extensions.Logging.EventId",
+          "parameterTypes": [
+            [
+              "i",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "op_Equality",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "left",
+              "Microsoft.Extensions.Logging.EventId"
+            ],
+            [
+              "right",
+              "Microsoft.Extensions.Logging.EventId"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "op_Inequality",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "left",
+              "Microsoft.Extensions.Logging.EventId"
+            ],
+            [
+              "right",
+              "Microsoft.Extensions.Logging.EventId"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "get_Id",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "ToString",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Equals",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "other",
+              "Microsoft.Extensions.Logging.EventId"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Equals",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "obj",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetHashCode",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.FormattedLogValues",
+      "methods": [
+        {
+          "name": "get_Item",
+          "returnType": "System.Collections.Generic.KeyValuePair`2<System.String,System.Object>",
+          "parameterTypes": [
+            [
+              "index",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Count",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "GetEnumerator",
+          "returnType": "System.Collections.Generic.IEnumerator`1<System.Collections.Generic.KeyValuePair`2<System.String,System.Object>>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "ToString",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.IExternalScopeProvider",
+      "methods": [
+        {
+          "name": "ForEachScope",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "callback",
+              "System.Action`2<System.Object,TState>"
+            ],
+            [
+              "state",
+              "TState"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Push",
+          "returnType": "System.IDisposable",
+          "parameterTypes": [
+            [
+              "state",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.ILogger",
+      "methods": [
+        {
+          "name": "Log",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logLevel",
+              "Microsoft.Extensions.Logging.LogLevel"
+            ],
+            [
+              "eventId",
+              "Microsoft.Extensions.Logging.EventId"
+            ],
+            [
+              "state",
+              "TState"
+            ],
+            [
+              "exception",
+              "System.Exception"
+            ],
+            [
+              "formatter",
+              "System.Func`3<TState,System.Exception,System.String>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "IsEnabled",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "logLevel",
+              "Microsoft.Extensions.Logging.LogLevel"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "BeginScope",
+          "returnType": "System.IDisposable",
+          "parameterTypes": [
+            [
+              "state",
+              "TState"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.ILoggerFactory",
+      "methods": [
+        {
+          "name": "CreateLogger",
+          "returnType": "Microsoft.Extensions.Logging.ILogger",
+          "parameterTypes": [
+            [
+              "categoryName",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AddProvider",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "provider",
+              "Microsoft.Extensions.Logging.ILoggerProvider"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.ILoggerProvider",
+      "methods": [
+        {
+          "name": "CreateLogger",
+          "returnType": "Microsoft.Extensions.Logging.ILogger",
+          "parameterTypes": [
+            [
+              "categoryName",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.ILogger`1",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.ILoggingBuilder",
+      "methods": [
+        {
+          "name": "get_Services",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.ISupportExternalScope",
+      "methods": [
+        {
+          "name": "SetScopeProvider",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "scopeProvider",
+              "Microsoft.Extensions.Logging.IExternalScopeProvider"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.LogDefineOptions",
+      "methods": [
+        {
+          "name": "get_SkipEnabledCheck",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_SkipEnabledCheck",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.LoggerExtensions",
+      "methods": [
+        {
+          "name": "LogDebug",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "eventId",
+              "Microsoft.Extensions.Logging.EventId"
+            ],
+            [
+              "exception",
+              "System.Exception"
+            ],
+            [
+              "message",
+              "System.String"
+            ],
+            [
+              "args",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LogDebug",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "eventId",
+              "Microsoft.Extensions.Logging.EventId"
+            ],
+            [
+              "message",
+              "System.String"
+            ],
+            [
+              "args",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LogDebug",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "exception",
+              "System.Exception"
+            ],
+            [
+              "message",
+              "System.String"
+            ],
+            [
+              "args",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LogDebug",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "message",
+              "System.String"
+            ],
+            [
+              "args",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LogTrace",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "eventId",
+              "Microsoft.Extensions.Logging.EventId"
+            ],
+            [
+              "exception",
+              "System.Exception"
+            ],
+            [
+              "message",
+              "System.String"
+            ],
+            [
+              "args",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LogTrace",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "eventId",
+              "Microsoft.Extensions.Logging.EventId"
+            ],
+            [
+              "message",
+              "System.String"
+            ],
+            [
+              "args",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LogTrace",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "exception",
+              "System.Exception"
+            ],
+            [
+              "message",
+              "System.String"
+            ],
+            [
+              "args",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LogTrace",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "message",
+              "System.String"
+            ],
+            [
+              "args",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LogInformation",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "eventId",
+              "Microsoft.Extensions.Logging.EventId"
+            ],
+            [
+              "exception",
+              "System.Exception"
+            ],
+            [
+              "message",
+              "System.String"
+            ],
+            [
+              "args",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LogInformation",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "eventId",
+              "Microsoft.Extensions.Logging.EventId"
+            ],
+            [
+              "message",
+              "System.String"
+            ],
+            [
+              "args",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LogInformation",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "exception",
+              "System.Exception"
+            ],
+            [
+              "message",
+              "System.String"
+            ],
+            [
+              "args",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LogInformation",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "message",
+              "System.String"
+            ],
+            [
+              "args",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LogWarning",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "eventId",
+              "Microsoft.Extensions.Logging.EventId"
+            ],
+            [
+              "exception",
+              "System.Exception"
+            ],
+            [
+              "message",
+              "System.String"
+            ],
+            [
+              "args",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LogWarning",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "eventId",
+              "Microsoft.Extensions.Logging.EventId"
+            ],
+            [
+              "message",
+              "System.String"
+            ],
+            [
+              "args",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LogWarning",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "exception",
+              "System.Exception"
+            ],
+            [
+              "message",
+              "System.String"
+            ],
+            [
+              "args",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LogWarning",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "message",
+              "System.String"
+            ],
+            [
+              "args",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LogError",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "eventId",
+              "Microsoft.Extensions.Logging.EventId"
+            ],
+            [
+              "exception",
+              "System.Exception"
+            ],
+            [
+              "message",
+              "System.String"
+            ],
+            [
+              "args",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LogError",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "eventId",
+              "Microsoft.Extensions.Logging.EventId"
+            ],
+            [
+              "message",
+              "System.String"
+            ],
+            [
+              "args",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LogError",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "exception",
+              "System.Exception"
+            ],
+            [
+              "message",
+              "System.String"
+            ],
+            [
+              "args",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LogError",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "message",
+              "System.String"
+            ],
+            [
+              "args",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LogCritical",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "eventId",
+              "Microsoft.Extensions.Logging.EventId"
+            ],
+            [
+              "exception",
+              "System.Exception"
+            ],
+            [
+              "message",
+              "System.String"
+            ],
+            [
+              "args",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LogCritical",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "eventId",
+              "Microsoft.Extensions.Logging.EventId"
+            ],
+            [
+              "message",
+              "System.String"
+            ],
+            [
+              "args",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LogCritical",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "exception",
+              "System.Exception"
+            ],
+            [
+              "message",
+              "System.String"
+            ],
+            [
+              "args",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LogCritical",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "message",
+              "System.String"
+            ],
+            [
+              "args",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Log",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "logLevel",
+              "Microsoft.Extensions.Logging.LogLevel"
+            ],
+            [
+              "message",
+              "System.String"
+            ],
+            [
+              "args",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Log",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "logLevel",
+              "Microsoft.Extensions.Logging.LogLevel"
+            ],
+            [
+              "eventId",
+              "Microsoft.Extensions.Logging.EventId"
+            ],
+            [
+              "message",
+              "System.String"
+            ],
+            [
+              "args",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Log",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "logLevel",
+              "Microsoft.Extensions.Logging.LogLevel"
+            ],
+            [
+              "exception",
+              "System.Exception"
+            ],
+            [
+              "message",
+              "System.String"
+            ],
+            [
+              "args",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Log",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "logLevel",
+              "Microsoft.Extensions.Logging.LogLevel"
+            ],
+            [
+              "eventId",
+              "Microsoft.Extensions.Logging.EventId"
+            ],
+            [
+              "exception",
+              "System.Exception"
+            ],
+            [
+              "message",
+              "System.String"
+            ],
+            [
+              "args",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "BeginScope",
+          "returnType": "System.IDisposable",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "messageFormat",
+              "System.String"
+            ],
+            [
+              "args",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.LoggerExternalScopeProvider",
+      "methods": [
+        {
+          "name": "ForEachScope",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "callback",
+              "System.Action`2<System.Object,TState>"
+            ],
+            [
+              "state",
+              "TState"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Push",
+          "returnType": "System.IDisposable",
+          "parameterTypes": [
+            [
+              "state",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.LoggerFactoryExtensions",
+      "methods": [
+        {
+          "name": "CreateLogger",
+          "returnType": "Microsoft.Extensions.Logging.ILogger`1<T>",
+          "parameterTypes": [
+            [
+              "factory",
+              "Microsoft.Extensions.Logging.ILoggerFactory"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "CreateLogger",
+          "returnType": "Microsoft.Extensions.Logging.ILogger",
+          "parameterTypes": [
+            [
+              "factory",
+              "Microsoft.Extensions.Logging.ILoggerFactory"
+            ],
+            [
+              "type",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.LoggerMessage",
+      "methods": [
+        {
+          "name": "DefineScope",
+          "returnType": "System.Func`2<Microsoft.Extensions.Logging.ILogger,System.IDisposable>",
+          "parameterTypes": [
+            [
+              "formatString",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "DefineScope",
+          "returnType": "System.Func`3<Microsoft.Extensions.Logging.ILogger,T1,System.IDisposable>",
+          "parameterTypes": [
+            [
+              "formatString",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "DefineScope",
+          "returnType": "System.Func`4<Microsoft.Extensions.Logging.ILogger,T1,T2,System.IDisposable>",
+          "parameterTypes": [
+            [
+              "formatString",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "DefineScope",
+          "returnType": "System.Func`5<Microsoft.Extensions.Logging.ILogger,T1,T2,T3,System.IDisposable>",
+          "parameterTypes": [
+            [
+              "formatString",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "DefineScope",
+          "returnType": "System.Func`6<Microsoft.Extensions.Logging.ILogger,T1,T2,T3,T4,System.IDisposable>",
+          "parameterTypes": [
+            [
+              "formatString",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "DefineScope",
+          "returnType": "System.Func`7<Microsoft.Extensions.Logging.ILogger,T1,T2,T3,T4,T5,System.IDisposable>",
+          "parameterTypes": [
+            [
+              "formatString",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "DefineScope",
+          "returnType": "System.Func`8<Microsoft.Extensions.Logging.ILogger,T1,T2,T3,T4,T5,T6,System.IDisposable>",
+          "parameterTypes": [
+            [
+              "formatString",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Define",
+          "returnType": "System.Action`2<Microsoft.Extensions.Logging.ILogger,System.Exception>",
+          "parameterTypes": [
+            [
+              "logLevel",
+              "Microsoft.Extensions.Logging.LogLevel"
+            ],
+            [
+              "eventId",
+              "Microsoft.Extensions.Logging.EventId"
+            ],
+            [
+              "formatString",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Define",
+          "returnType": "System.Action`2<Microsoft.Extensions.Logging.ILogger,System.Exception>",
+          "parameterTypes": [
+            [
+              "logLevel",
+              "Microsoft.Extensions.Logging.LogLevel"
+            ],
+            [
+              "eventId",
+              "Microsoft.Extensions.Logging.EventId"
+            ],
+            [
+              "formatString",
+              "System.String"
+            ],
+            [
+              "options",
+              "Microsoft.Extensions.Logging.LogDefineOptions"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Define",
+          "returnType": "System.Action`3<Microsoft.Extensions.Logging.ILogger,T1,System.Exception>",
+          "parameterTypes": [
+            [
+              "logLevel",
+              "Microsoft.Extensions.Logging.LogLevel"
+            ],
+            [
+              "eventId",
+              "Microsoft.Extensions.Logging.EventId"
+            ],
+            [
+              "formatString",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Define",
+          "returnType": "System.Action`3<Microsoft.Extensions.Logging.ILogger,T1,System.Exception>",
+          "parameterTypes": [
+            [
+              "logLevel",
+              "Microsoft.Extensions.Logging.LogLevel"
+            ],
+            [
+              "eventId",
+              "Microsoft.Extensions.Logging.EventId"
+            ],
+            [
+              "formatString",
+              "System.String"
+            ],
+            [
+              "options",
+              "Microsoft.Extensions.Logging.LogDefineOptions"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Define",
+          "returnType": "System.Action`4<Microsoft.Extensions.Logging.ILogger,T1,T2,System.Exception>",
+          "parameterTypes": [
+            [
+              "logLevel",
+              "Microsoft.Extensions.Logging.LogLevel"
+            ],
+            [
+              "eventId",
+              "Microsoft.Extensions.Logging.EventId"
+            ],
+            [
+              "formatString",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Define",
+          "returnType": "System.Action`4<Microsoft.Extensions.Logging.ILogger,T1,T2,System.Exception>",
+          "parameterTypes": [
+            [
+              "logLevel",
+              "Microsoft.Extensions.Logging.LogLevel"
+            ],
+            [
+              "eventId",
+              "Microsoft.Extensions.Logging.EventId"
+            ],
+            [
+              "formatString",
+              "System.String"
+            ],
+            [
+              "options",
+              "Microsoft.Extensions.Logging.LogDefineOptions"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Define",
+          "returnType": "System.Action`5<Microsoft.Extensions.Logging.ILogger,T1,T2,T3,System.Exception>",
+          "parameterTypes": [
+            [
+              "logLevel",
+              "Microsoft.Extensions.Logging.LogLevel"
+            ],
+            [
+              "eventId",
+              "Microsoft.Extensions.Logging.EventId"
+            ],
+            [
+              "formatString",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Define",
+          "returnType": "System.Action`5<Microsoft.Extensions.Logging.ILogger,T1,T2,T3,System.Exception>",
+          "parameterTypes": [
+            [
+              "logLevel",
+              "Microsoft.Extensions.Logging.LogLevel"
+            ],
+            [
+              "eventId",
+              "Microsoft.Extensions.Logging.EventId"
+            ],
+            [
+              "formatString",
+              "System.String"
+            ],
+            [
+              "options",
+              "Microsoft.Extensions.Logging.LogDefineOptions"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Define",
+          "returnType": "System.Action`6<Microsoft.Extensions.Logging.ILogger,T1,T2,T3,T4,System.Exception>",
+          "parameterTypes": [
+            [
+              "logLevel",
+              "Microsoft.Extensions.Logging.LogLevel"
+            ],
+            [
+              "eventId",
+              "Microsoft.Extensions.Logging.EventId"
+            ],
+            [
+              "formatString",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Define",
+          "returnType": "System.Action`6<Microsoft.Extensions.Logging.ILogger,T1,T2,T3,T4,System.Exception>",
+          "parameterTypes": [
+            [
+              "logLevel",
+              "Microsoft.Extensions.Logging.LogLevel"
+            ],
+            [
+              "eventId",
+              "Microsoft.Extensions.Logging.EventId"
+            ],
+            [
+              "formatString",
+              "System.String"
+            ],
+            [
+              "options",
+              "Microsoft.Extensions.Logging.LogDefineOptions"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Define",
+          "returnType": "System.Action`7<Microsoft.Extensions.Logging.ILogger,T1,T2,T3,T4,T5,System.Exception>",
+          "parameterTypes": [
+            [
+              "logLevel",
+              "Microsoft.Extensions.Logging.LogLevel"
+            ],
+            [
+              "eventId",
+              "Microsoft.Extensions.Logging.EventId"
+            ],
+            [
+              "formatString",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Define",
+          "returnType": "System.Action`7<Microsoft.Extensions.Logging.ILogger,T1,T2,T3,T4,T5,System.Exception>",
+          "parameterTypes": [
+            [
+              "logLevel",
+              "Microsoft.Extensions.Logging.LogLevel"
+            ],
+            [
+              "eventId",
+              "Microsoft.Extensions.Logging.EventId"
+            ],
+            [
+              "formatString",
+              "System.String"
+            ],
+            [
+              "options",
+              "Microsoft.Extensions.Logging.LogDefineOptions"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Define",
+          "returnType": "System.Action`8<Microsoft.Extensions.Logging.ILogger,T1,T2,T3,T4,T5,T6,System.Exception>",
+          "parameterTypes": [
+            [
+              "logLevel",
+              "Microsoft.Extensions.Logging.LogLevel"
+            ],
+            [
+              "eventId",
+              "Microsoft.Extensions.Logging.EventId"
+            ],
+            [
+              "formatString",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Define",
+          "returnType": "System.Action`8<Microsoft.Extensions.Logging.ILogger,T1,T2,T3,T4,T5,T6,System.Exception>",
+          "parameterTypes": [
+            [
+              "logLevel",
+              "Microsoft.Extensions.Logging.LogLevel"
+            ],
+            [
+              "eventId",
+              "Microsoft.Extensions.Logging.EventId"
+            ],
+            [
+              "formatString",
+              "System.String"
+            ],
+            [
+              "options",
+              "Microsoft.Extensions.Logging.LogDefineOptions"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.LoggerMessageAttribute",
+      "methods": [
+        {
+          "name": "get_EventId",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_EventId",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_EventName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_EventName",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Level",
+          "returnType": "Microsoft.Extensions.Logging.LogLevel",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Level",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.Extensions.Logging.LogLevel"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Message",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Message",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_SkipEnabledCheck",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_SkipEnabledCheck",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.Logger`1",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.LogLevel",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.LogValuesFormatter",
+      "methods": [
+        {
+          "name": "get_OriginalFormat",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ValueNames",
+          "returnType": "System.Collections.Generic.List`1<System.String>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Format",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "values",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetValue",
+          "returnType": "System.Collections.Generic.KeyValuePair`2<System.String,System.Object>",
+          "parameterTypes": [
+            [
+              "values",
+              "System.Object[]"
+            ],
+            [
+              "index",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetValues",
+          "returnType": "System.Collections.Generic.IEnumerable`1<System.Collections.Generic.KeyValuePair`2<System.String,System.Object>>",
+          "parameterTypes": [
+            [
+              "values",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.NullExternalScopeProvider",
+      "methods": [
+        {
+          "name": "get_Instance",
+          "returnType": "Microsoft.Extensions.Logging.IExternalScopeProvider",
+          "parameterTypes": [],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.NullScope",
+      "methods": [
+        {
+          "name": "get_Instance",
+          "returnType": "Microsoft.Extensions.Logging.NullScope",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "Dispose",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.DebuggerDisplayFormatting",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.Logging.Abstractions": [
+    {
+      "name": "Microsoft.Extensions.Logging.Abstractions.LogEntry`1",
+      "methods": [
+        {
+          "name": "get_LogLevel",
+          "returnType": "Microsoft.Extensions.Logging.LogLevel",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Category",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_EventId",
+          "returnType": "Microsoft.Extensions.Logging.EventId",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_State",
+          "returnType": "TState",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Exception",
+          "returnType": "System.Exception",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Formatter",
+          "returnType": "System.Func`3<TState,System.Exception,System.String>",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.Abstractions.NullLogger",
+      "methods": [
+        {
+          "name": "get_Instance",
+          "returnType": "Microsoft.Extensions.Logging.Abstractions.NullLogger",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "BeginScope",
+          "returnType": "System.IDisposable",
+          "parameterTypes": [
+            [
+              "state",
+              "TState"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "IsEnabled",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "logLevel",
+              "Microsoft.Extensions.Logging.LogLevel"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Log",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logLevel",
+              "Microsoft.Extensions.Logging.LogLevel"
+            ],
+            [
+              "eventId",
+              "Microsoft.Extensions.Logging.EventId"
+            ],
+            [
+              "state",
+              "TState"
+            ],
+            [
+              "exception",
+              "System.Exception"
+            ],
+            [
+              "formatter",
+              "System.Func`3<TState,System.Exception,System.String>"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.Abstractions.NullLoggerFactory",
+      "methods": [
+        {
+          "name": "CreateLogger",
+          "returnType": "Microsoft.Extensions.Logging.ILogger",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AddProvider",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "provider",
+              "Microsoft.Extensions.Logging.ILoggerProvider"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Dispose",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.Abstractions.NullLoggerProvider",
+      "methods": [
+        {
+          "name": "get_Instance",
+          "returnType": "Microsoft.Extensions.Logging.Abstractions.NullLoggerProvider",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "CreateLogger",
+          "returnType": "Microsoft.Extensions.Logging.ILogger",
+          "parameterTypes": [
+            [
+              "categoryName",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Dispose",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.Abstractions.NullLogger`1",
+      "methods": [
+        {
+          "name": "BeginScope",
+          "returnType": "System.IDisposable",
+          "parameterTypes": [
+            [
+              "state",
+              "TState"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Log",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logLevel",
+              "Microsoft.Extensions.Logging.LogLevel"
+            ],
+            [
+              "eventId",
+              "Microsoft.Extensions.Logging.EventId"
+            ],
+            [
+              "state",
+              "TState"
+            ],
+            [
+              "exception",
+              "System.Exception"
+            ],
+            [
+              "formatter",
+              "System.Func`3<TState,System.Exception,System.String>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "IsEnabled",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "logLevel",
+              "Microsoft.Extensions.Logging.LogLevel"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

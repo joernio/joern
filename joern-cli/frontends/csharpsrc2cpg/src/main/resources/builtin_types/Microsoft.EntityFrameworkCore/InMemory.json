@@ -1,0 +1,4497 @@
+{
+  "System": [
+    {
+      "name": "System.SharedTypeExtensions",
+      "methods": [
+        {
+          "name": "UnwrapNullableType",
+          "returnType": "System.Type",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "IsNullableValueType",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "IsNullableType",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "IsValidEntityType",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "IsValidComplexType",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "IsScalarType",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "IsPropertyBagType",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "MakeNullable",
+          "returnType": "System.Type",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ],
+            [
+              "nullable",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "IsNumeric",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "IsInteger",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "IsSignedInteger",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "IsAnonymousType",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetAnyProperty",
+          "returnType": "System.Reflection.PropertyInfo",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ],
+            [
+              "name",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "IsInstantiable",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "UnwrapEnumType",
+          "returnType": "System.Type",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetSequenceType",
+          "returnType": "System.Type",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryGetSequenceType",
+          "returnType": "System.Type",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryGetElementType",
+          "returnType": "System.Type",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ],
+            [
+              "interfaceOrBaseType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "IsCompatibleWith",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "propertyType",
+              "System.Type"
+            ],
+            [
+              "fieldType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetGenericTypeImplementations",
+          "returnType": "System.Collections.Generic.IEnumerable`1<System.Type>",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ],
+            [
+              "interfaceOrBaseType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetBaseTypes",
+          "returnType": "System.Collections.Generic.IEnumerable`1<System.Type>",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetBaseTypesAndInterfacesInclusive",
+          "returnType": "System.Collections.Generic.List`1<System.Type>",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetTypesInHierarchy",
+          "returnType": "System.Collections.Generic.IEnumerable`1<System.Type>",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetDeclaredInterfaces",
+          "returnType": "System.Collections.Generic.IEnumerable`1<System.Type>",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetDeclaredConstructor",
+          "returnType": "System.Reflection.ConstructorInfo",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ],
+            [
+              "types",
+              "System.Type[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetPropertiesInHierarchy",
+          "returnType": "System.Collections.Generic.IEnumerable`1<System.Reflection.PropertyInfo>",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ],
+            [
+              "name",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetMembersInHierarchy",
+          "returnType": "System.Collections.Generic.IEnumerable`1<System.Reflection.MemberInfo>",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetMembersInHierarchy",
+          "returnType": "System.Collections.Generic.IEnumerable`1<System.Reflection.MemberInfo>",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ],
+            [
+              "name",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetDefaultValue",
+          "returnType": "System.Object",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetConstructibleTypes",
+          "returnType": "System.Collections.Generic.IEnumerable`1<System.Reflection.TypeInfo>",
+          "parameterTypes": [
+            [
+              "assembly",
+              "System.Reflection.Assembly"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetLoadableDefinedTypes",
+          "returnType": "System.Collections.Generic.IEnumerable`1<System.Reflection.TypeInfo>",
+          "parameterTypes": [
+            [
+              "assembly",
+              "System.Reflection.Assembly"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "DisplayName",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ],
+            [
+              "fullName",
+              "System.Boolean"
+            ],
+            [
+              "compilable",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetNamespaces",
+          "returnType": "System.Collections.Generic.IEnumerable`1<System.String>",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetDefaultValueConstant",
+          "returnType": "System.Linq.Expressions.ConstantExpression",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "System.Text": [
+    {
+      "name": "System.Text.StringBuilderExtensions",
+      "methods": [
+        {
+          "name": "AppendJoin",
+          "returnType": "System.Text.StringBuilder",
+          "parameterTypes": [
+            [
+              "stringBuilder",
+              "System.Text.StringBuilder"
+            ],
+            [
+              "values",
+              "System.Collections.Generic.IEnumerable`1<System.String>"
+            ],
+            [
+              "separator",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AppendJoin",
+          "returnType": "System.Text.StringBuilder",
+          "parameterTypes": [
+            [
+              "stringBuilder",
+              "System.Text.StringBuilder"
+            ],
+            [
+              "separator",
+              "System.String"
+            ],
+            [
+              "values",
+              "System.String[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AppendJoin",
+          "returnType": "System.Text.StringBuilder",
+          "parameterTypes": [
+            [
+              "stringBuilder",
+              "System.Text.StringBuilder"
+            ],
+            [
+              "values",
+              "System.Collections.Generic.IEnumerable`1<T>"
+            ],
+            [
+              "joinAction",
+              "System.Action`2<System.Text.StringBuilder,T>"
+            ],
+            [
+              "separator",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AppendJoin",
+          "returnType": "System.Text.StringBuilder",
+          "parameterTypes": [
+            [
+              "stringBuilder",
+              "System.Text.StringBuilder"
+            ],
+            [
+              "values",
+              "System.Collections.Generic.IEnumerable`1<T>"
+            ],
+            [
+              "joinFunc",
+              "System.Func`3<System.Text.StringBuilder,T,System.Boolean>"
+            ],
+            [
+              "separator",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AppendJoin",
+          "returnType": "System.Text.StringBuilder",
+          "parameterTypes": [
+            [
+              "stringBuilder",
+              "System.Text.StringBuilder"
+            ],
+            [
+              "values",
+              "System.Collections.Generic.IEnumerable`1<T>"
+            ],
+            [
+              "param",
+              "TParam"
+            ],
+            [
+              "joinAction",
+              "System.Action`3<System.Text.StringBuilder,T,TParam>"
+            ],
+            [
+              "separator",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AppendBytes",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "builder",
+              "System.Text.StringBuilder"
+            ],
+            [
+              "bytes",
+              "System.Byte[]"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "System.Reflection": [
+    {
+      "name": "System.Reflection.EntityFrameworkMemberInfoExtensions",
+      "methods": [
+        {
+          "name": "GetMemberType",
+          "returnType": "System.Type",
+          "parameterTypes": [
+            [
+              "memberInfo",
+              "System.Reflection.MemberInfo"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "IsSameAs",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "propertyInfo",
+              "System.Reflection.MemberInfo"
+            ],
+            [
+              "otherPropertyInfo",
+              "System.Reflection.MemberInfo"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "IsOverriddenBy",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "propertyInfo",
+              "System.Reflection.MemberInfo"
+            ],
+            [
+              "otherPropertyInfo",
+              "System.Reflection.MemberInfo"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetSimpleMemberName",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "member",
+              "System.Reflection.MemberInfo"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "IsReallyVirtual",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "method",
+              "System.Reflection.MethodInfo"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Reflection.MethodInfoExtensions",
+      "methods": [
+        {
+          "name": "IsContainsMethod",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "method",
+              "System.Reflection.MethodInfo"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Reflection.PropertyInfoExtensions",
+      "methods": [
+        {
+          "name": "IsStatic",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "property",
+              "System.Reflection.PropertyInfo"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "IsCandidateProperty",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "memberInfo",
+              "System.Reflection.MemberInfo"
+            ],
+            [
+              "needsWrite",
+              "System.Boolean"
+            ],
+            [
+              "publicOnly",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "IsIndexerProperty",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "propertyInfo",
+              "System.Reflection.PropertyInfo"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "FindGetterProperty",
+          "returnType": "System.Reflection.PropertyInfo",
+          "parameterTypes": [
+            [
+              "propertyInfo",
+              "System.Reflection.PropertyInfo"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "FindSetterProperty",
+          "returnType": "System.Reflection.PropertyInfo",
+          "parameterTypes": [
+            [
+              "propertyInfo",
+              "System.Reflection.PropertyInfo"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "System.Linq.Expressions": [
+    {
+      "name": "System.Linq.Expressions.ExpressionExtensions",
+      "methods": [
+        {
+          "name": "IsNullConstantExpression",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "expression",
+              "System.Linq.Expressions.Expression"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "UnwrapLambdaFromQuote",
+          "returnType": "System.Linq.Expressions.LambdaExpression",
+          "parameterTypes": [
+            [
+              "expression",
+              "System.Linq.Expressions.Expression"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "UnwrapTypeConversion",
+          "returnType": "System.Linq.Expressions.Expression",
+          "parameterTypes": [
+            [
+              "expression",
+              "System.Linq.Expressions.Expression"
+            ],
+            [
+              "convertedType",
+              "System.Type&"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetConstantValue",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "expression",
+              "System.Linq.Expressions.Expression"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Linq.Expressions.ExpressionVisitorExtensions",
+      "methods": [
+        {
+          "name": "Visit",
+          "returnType": "System.Collections.Generic.IReadOnlyList`1<System.Linq.Expressions.Expression>",
+          "parameterTypes": [
+            [
+              "visitor",
+              "System.Linq.Expressions.ExpressionVisitor"
+            ],
+            [
+              "nodes",
+              "System.Collections.Generic.IReadOnlyList`1<System.Linq.Expressions.Expression>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "VisitAndConvert",
+          "returnType": "System.Collections.Generic.IReadOnlyList`1<T>",
+          "parameterTypes": [
+            [
+              "visitor",
+              "System.Linq.Expressions.ExpressionVisitor"
+            ],
+            [
+              "nodes",
+              "System.Collections.Generic.IReadOnlyList`1<T>"
+            ],
+            [
+              "callerName",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Visit",
+          "returnType": "System.Collections.Generic.IReadOnlyList`1<T>",
+          "parameterTypes": [
+            [
+              "visitor",
+              "System.Linq.Expressions.ExpressionVisitor"
+            ],
+            [
+              "nodes",
+              "System.Collections.Generic.IReadOnlyList`1<T>"
+            ],
+            [
+              "elementVisitor",
+              "System.Func`2<T,T>"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "JetBrains.Annotations": [
+    {
+      "name": "JetBrains.Annotations.InvokerParameterNameAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "JetBrains.Annotations.NoEnumerationAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "JetBrains.Annotations.ContractAnnotationAttribute",
+      "methods": [
+        {
+          "name": "get_Contract",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ForceFullStates",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "JetBrains.Annotations.UsedImplicitlyAttribute",
+      "methods": [
+        {
+          "name": "get_UseKindFlags",
+          "returnType": "JetBrains.Annotations.ImplicitUseKindFlags",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_TargetFlags",
+          "returnType": "JetBrains.Annotations.ImplicitUseTargetFlags",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "JetBrains.Annotations.StringFormatMethodAttribute",
+      "methods": [
+        {
+          "name": "get_FormatParameterName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "JetBrains.Annotations.ImplicitUseKindFlags",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "JetBrains.Annotations.ImplicitUseTargetFlags",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.DependencyInjection": [
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.InMemoryServiceCollectionExtensions",
+      "methods": [
+        {
+          "name": "AddEntityFrameworkInMemoryDatabase",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "serviceCollection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.EntityFrameworkCore": [
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemoryDatabaseFacadeExtensions",
+      "methods": [
+        {
+          "name": "IsInMemory",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "database",
+              "Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemoryDbContextOptionsExtensions",
+      "methods": [
+        {
+          "name": "UseInMemoryDatabase",
+          "returnType": "Microsoft.EntityFrameworkCore.DbContextOptionsBuilder`1<TContext>",
+          "parameterTypes": [
+            [
+              "optionsBuilder",
+              "Microsoft.EntityFrameworkCore.DbContextOptionsBuilder`1<TContext>"
+            ],
+            [
+              "databaseName",
+              "System.String"
+            ],
+            [
+              "inMemoryOptionsAction",
+              "System.Action`1<Microsoft.EntityFrameworkCore.Infrastructure.InMemoryDbContextOptionsBuilder>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "UseInMemoryDatabase",
+          "returnType": "Microsoft.EntityFrameworkCore.DbContextOptionsBuilder",
+          "parameterTypes": [
+            [
+              "optionsBuilder",
+              "Microsoft.EntityFrameworkCore.DbContextOptionsBuilder"
+            ],
+            [
+              "databaseName",
+              "System.String"
+            ],
+            [
+              "inMemoryOptionsAction",
+              "System.Action`1<Microsoft.EntityFrameworkCore.Infrastructure.InMemoryDbContextOptionsBuilder>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "UseInMemoryDatabase",
+          "returnType": "Microsoft.EntityFrameworkCore.DbContextOptionsBuilder`1<TContext>",
+          "parameterTypes": [
+            [
+              "optionsBuilder",
+              "Microsoft.EntityFrameworkCore.DbContextOptionsBuilder`1<TContext>"
+            ],
+            [
+              "databaseName",
+              "System.String"
+            ],
+            [
+              "databaseRoot",
+              "Microsoft.EntityFrameworkCore.Storage.InMemoryDatabaseRoot"
+            ],
+            [
+              "inMemoryOptionsAction",
+              "System.Action`1<Microsoft.EntityFrameworkCore.Infrastructure.InMemoryDbContextOptionsBuilder>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "UseInMemoryDatabase",
+          "returnType": "Microsoft.EntityFrameworkCore.DbContextOptionsBuilder",
+          "parameterTypes": [
+            [
+              "optionsBuilder",
+              "Microsoft.EntityFrameworkCore.DbContextOptionsBuilder"
+            ],
+            [
+              "databaseName",
+              "System.String"
+            ],
+            [
+              "databaseRoot",
+              "Microsoft.EntityFrameworkCore.Storage.InMemoryDatabaseRoot"
+            ],
+            [
+              "inMemoryOptionsAction",
+              "System.Action`1<Microsoft.EntityFrameworkCore.Infrastructure.InMemoryDbContextOptionsBuilder>"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemoryEntityTypeBuilderExtensions",
+      "methods": [
+        {
+          "name": "ToInMemoryQuery",
+          "returnType": "Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder",
+          "parameterTypes": [
+            [
+              "entityTypeBuilder",
+              "Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder"
+            ],
+            [
+              "query",
+              "System.Linq.Expressions.LambdaExpression"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ToInMemoryQuery",
+          "returnType": "Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder`1<TEntity>",
+          "parameterTypes": [
+            [
+              "entityTypeBuilder",
+              "Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder`1<TEntity>"
+            ],
+            [
+              "query",
+              "System.Linq.Expressions.Expression`1<System.Func`1<System.Linq.IQueryable`1<TEntity>>>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ToInMemoryQuery",
+          "returnType": "Microsoft.EntityFrameworkCore.Metadata.Builders.IConventionEntityTypeBuilder",
+          "parameterTypes": [
+            [
+              "entityTypeBuilder",
+              "Microsoft.EntityFrameworkCore.Metadata.Builders.IConventionEntityTypeBuilder"
+            ],
+            [
+              "query",
+              "System.Linq.Expressions.LambdaExpression"
+            ],
+            [
+              "fromDataAnnotation",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "CanSetInMemoryQuery",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "entityTypeBuilder",
+              "Microsoft.EntityFrameworkCore.Metadata.Builders.IConventionEntityTypeBuilder"
+            ],
+            [
+              "query",
+              "System.Linq.Expressions.LambdaExpression"
+            ],
+            [
+              "fromDataAnnotation",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemoryEntityTypeExtensions",
+      "methods": [
+        {
+          "name": "GetInMemoryQuery",
+          "returnType": "System.Linq.Expressions.LambdaExpression",
+          "parameterTypes": [
+            [
+              "entityType",
+              "Microsoft.EntityFrameworkCore.Metadata.IReadOnlyEntityType"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "SetInMemoryQuery",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "entityType",
+              "Microsoft.EntityFrameworkCore.Metadata.IMutableEntityType"
+            ],
+            [
+              "inMemoryQuery",
+              "System.Linq.Expressions.LambdaExpression"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "SetInMemoryQuery",
+          "returnType": "System.Linq.Expressions.LambdaExpression",
+          "parameterTypes": [
+            [
+              "entityType",
+              "Microsoft.EntityFrameworkCore.Metadata.IConventionEntityType"
+            ],
+            [
+              "inMemoryQuery",
+              "System.Linq.Expressions.LambdaExpression"
+            ],
+            [
+              "fromDataAnnotation",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetDefiningQueryConfigurationSource",
+          "returnType": "System.Nullable`1<Microsoft.EntityFrameworkCore.Metadata.ConfigurationSource>",
+          "parameterTypes": [
+            [
+              "entityType",
+              "Microsoft.EntityFrameworkCore.Metadata.IConventionEntityType"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.EnumerableMethods",
+      "methods": [
+        {
+          "name": "get_AggregateWithSeedSelector",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_All",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_AnyWithoutPredicate",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_AnyWithPredicate",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_AsEnumerable",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_Cast",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_Concat",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_Contains",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_CountWithoutPredicate",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_CountWithPredicate",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_DefaultIfEmptyWithoutArgument",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_DefaultIfEmptyWithArgument",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_Distinct",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_ElementAt",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_ElementAtOrDefault",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_Except",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_FirstWithoutPredicate",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_FirstWithPredicate",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_FirstOrDefaultWithoutPredicate",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_FirstOrDefaultWithPredicate",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_GroupByWithKeySelector",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_GroupByWithKeyElementSelector",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_GroupByWithKeyElementResultSelector",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_GroupByWithKeyResultSelector",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_GroupJoin",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_Intersect",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_Join",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_JoinWithComparer",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_LastWithoutPredicate",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_LastWithPredicate",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_LastOrDefaultWithoutPredicate",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_LastOrDefaultWithPredicate",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_LongCountWithoutPredicate",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_LongCountWithPredicate",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_MaxWithoutSelector",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_MaxWithSelector",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_MinWithoutSelector",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_MinWithSelector",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_OfType",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_OrderBy",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_OrderByDescending",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_Reverse",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_Select",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_SelectWithOrdinal",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_SelectManyWithoutCollectionSelector",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_SelectManyWithCollectionSelector",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_SequenceEqual",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_SingleWithoutPredicate",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_SingleWithPredicate",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_SingleOrDefaultWithoutPredicate",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_SingleOrDefaultWithPredicate",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_Skip",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_SkipWhile",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_Take",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_TakeWhile",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_ThenBy",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_ThenByDescending",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_ToArray",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_ToList",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_Union",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_Where",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_ZipWithSelector",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "GetSumWithSelector",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetAverageWithSelector",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetMaxWithoutSelector",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetMaxWithSelector",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetMinWithoutSelector",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetMinWithSelector",
+          "returnType": "System.Reflection.MethodInfo",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.EntityFrameworkCore.Internal": [
+    {
+      "name": "Microsoft.EntityFrameworkCore.Internal.NonCapturingLazyInitializer",
+      "methods": [
+        {
+          "name": "EnsureInitialized",
+          "returnType": "TValue",
+          "parameterTypes": [
+            [
+              "target",
+              "TValue&"
+            ],
+            [
+              "param",
+              "TParam"
+            ],
+            [
+              "valueFactory",
+              "System.Func`2<TParam,TValue>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "EnsureInitialized",
+          "returnType": "TValue",
+          "parameterTypes": [
+            [
+              "target",
+              "TValue&"
+            ],
+            [
+              "param1",
+              "TParam1"
+            ],
+            [
+              "param2",
+              "TParam2"
+            ],
+            [
+              "valueFactory",
+              "System.Func`3<TParam1,TParam2,TValue>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "EnsureInitialized",
+          "returnType": "TValue",
+          "parameterTypes": [
+            [
+              "target",
+              "TValue&"
+            ],
+            [
+              "param1",
+              "TParam1"
+            ],
+            [
+              "param2",
+              "TParam2"
+            ],
+            [
+              "param3",
+              "TParam3"
+            ],
+            [
+              "valueFactory",
+              "System.Func`4<TParam1,TParam2,TParam3,TValue>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "EnsureInitialized",
+          "returnType": "TValue",
+          "parameterTypes": [
+            [
+              "target",
+              "TValue&"
+            ],
+            [
+              "initialized",
+              "System.Boolean&"
+            ],
+            [
+              "param",
+              "TParam"
+            ],
+            [
+              "valueFactory",
+              "System.Func`2<TParam,TValue>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "EnsureInitialized",
+          "returnType": "TValue",
+          "parameterTypes": [
+            [
+              "target",
+              "TValue&"
+            ],
+            [
+              "value",
+              "TValue"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "EnsureInitialized",
+          "returnType": "TValue",
+          "parameterTypes": [
+            [
+              "target",
+              "TValue&"
+            ],
+            [
+              "param",
+              "TParam"
+            ],
+            [
+              "valueFactory",
+              "System.Action`1<TParam>"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.EntityFrameworkCore.Utilities": [
+    {
+      "name": "Microsoft.EntityFrameworkCore.Utilities.Check",
+      "methods": [
+        {
+          "name": "NotNull",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "value",
+              "T"
+            ],
+            [
+              "parameterName",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "NotEmpty",
+          "returnType": "System.Collections.Generic.IReadOnlyList`1<T>",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Collections.Generic.IReadOnlyList`1<T>"
+            ],
+            [
+              "parameterName",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "NotEmpty",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ],
+            [
+              "parameterName",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "NullButNotEmpty",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ],
+            [
+              "parameterName",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "HasNoNulls",
+          "returnType": "System.Collections.Generic.IReadOnlyList`1<T>",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Collections.Generic.IReadOnlyList`1<T>"
+            ],
+            [
+              "parameterName",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "HasNoEmptyElements",
+          "returnType": "System.Collections.Generic.IReadOnlyList`1<System.String>",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Collections.Generic.IReadOnlyList`1<System.String>"
+            ],
+            [
+              "parameterName",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "DebugAssert",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "condition",
+              "System.Boolean"
+            ],
+            [
+              "message",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "DebugFail",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "message",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.Utilities.DictionaryExtensions",
+      "methods": [
+        {
+          "name": "GetOrAddNew",
+          "returnType": "TValue",
+          "parameterTypes": [
+            [
+              "source",
+              "System.Collections.Generic.IDictionary`2<TKey,TValue>"
+            ],
+            [
+              "key",
+              "TKey"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Find",
+          "returnType": "TValue",
+          "parameterTypes": [
+            [
+              "source",
+              "System.Collections.Generic.IReadOnlyDictionary`2<TKey,TValue>"
+            ],
+            [
+              "key",
+              "TKey"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryGetAndRemove",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "source",
+              "System.Collections.Generic.IDictionary`2<TKey,TValue>"
+            ],
+            [
+              "key",
+              "TKey"
+            ],
+            [
+              "value",
+              "TReturn&"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Remove",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "source",
+              "System.Collections.Generic.IDictionary`2<TKey,TValue>"
+            ],
+            [
+              "predicate",
+              "System.Func`3<TKey,TValue,System.Boolean>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Remove",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "source",
+              "System.Collections.Generic.IDictionary`2<TKey,TValue>"
+            ],
+            [
+              "predicate",
+              "System.Func`4<TKey,TValue,TState,System.Boolean>"
+            ],
+            [
+              "state",
+              "TState"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.Utilities.DisposableExtensions",
+      "methods": [
+        {
+          "name": "DisposeAsyncIfAvailable",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "disposable",
+              "System.IDisposable"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.Utilities.EnumerableExtensions",
+      "methods": [
+        {
+          "name": "OrderByOrdinal",
+          "returnType": "System.Linq.IOrderedEnumerable`1<TSource>",
+          "parameterTypes": [
+            [
+              "source",
+              "System.Collections.Generic.IEnumerable`1<TSource>"
+            ],
+            [
+              "keySelector",
+              "System.Func`2<TSource,System.String>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Distinct",
+          "returnType": "System.Collections.Generic.IEnumerable`1<T>",
+          "parameterTypes": [
+            [
+              "source",
+              "System.Collections.Generic.IEnumerable`1<T>"
+            ],
+            [
+              "comparer",
+              "System.Func`3<T,T,System.Boolean>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Join",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "source",
+              "System.Collections.Generic.IEnumerable`1<System.Object>"
+            ],
+            [
+              "separator",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "StructuralSequenceEqual",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "first",
+              "System.Collections.Generic.IEnumerable`1<TSource>"
+            ],
+            [
+              "second",
+              "System.Collections.Generic.IEnumerable`1<TSource>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "StartsWith",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "first",
+              "System.Collections.Generic.IEnumerable`1<TSource>"
+            ],
+            [
+              "second",
+              "System.Collections.Generic.IEnumerable`1<TSource>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "IndexOf",
+          "returnType": "System.Int32",
+          "parameterTypes": [
+            [
+              "source",
+              "System.Collections.Generic.IEnumerable`1<T>"
+            ],
+            [
+              "item",
+              "T"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "IndexOf",
+          "returnType": "System.Int32",
+          "parameterTypes": [
+            [
+              "source",
+              "System.Collections.Generic.IEnumerable`1<T>"
+            ],
+            [
+              "item",
+              "T"
+            ],
+            [
+              "comparer",
+              "System.Collections.Generic.IEqualityComparer`1<T>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "FirstOr",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "source",
+              "System.Collections.Generic.IEnumerable`1<T>"
+            ],
+            [
+              "alternate",
+              "T"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "FirstOr",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "source",
+              "System.Collections.Generic.IEnumerable`1<T>"
+            ],
+            [
+              "predicate",
+              "System.Func`2<T,System.Boolean>"
+            ],
+            [
+              "alternate",
+              "T"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Any",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "source",
+              "System.Collections.IEnumerable"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ToListAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Collections.Generic.List`1<TSource>>",
+          "parameterTypes": [
+            [
+              "source",
+              "System.Collections.Generic.IAsyncEnumerable`1<TSource>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ToList",
+          "returnType": "System.Collections.Generic.List`1<TSource>",
+          "parameterTypes": [
+            [
+              "source",
+              "System.Collections.IEnumerable"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Format",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "strings",
+              "System.Collections.Generic.IEnumerable`1<System.String>"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.Utilities.Graph`1",
+      "methods": [
+        {
+          "name": "get_Vertices",
+          "returnType": "System.Collections.Generic.IEnumerable`1<TVertex>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Clear",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "GetOutgoingNeighbors",
+          "returnType": "System.Collections.Generic.IEnumerable`1<TVertex>",
+          "parameterTypes": [
+            [
+              "from",
+              "TVertex"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetIncomingNeighbors",
+          "returnType": "System.Collections.Generic.IEnumerable`1<TVertex>",
+          "parameterTypes": [
+            [
+              "to",
+              "TVertex"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetUnreachableVertices",
+          "returnType": "System.Collections.Generic.ISet`1<TVertex>",
+          "parameterTypes": [
+            [
+              "roots",
+              "System.Collections.Generic.IReadOnlyList`1<TVertex>"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.Utilities.HashHelpers",
+      "methods": [
+        {
+          "name": "IsPrime",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "candidate",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetPrime",
+          "returnType": "System.Int32",
+          "parameterTypes": [
+            [
+              "min",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ExpandPrime",
+          "returnType": "System.Int32",
+          "parameterTypes": [
+            [
+              "oldSize",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.Utilities.Multigraph`2",
+      "methods": [
+        {
+          "name": "GetEdges",
+          "returnType": "System.Collections.Generic.IEnumerable`1<TEdge>",
+          "parameterTypes": [
+            [
+              "from",
+              "TVertex"
+            ],
+            [
+              "to",
+              "TVertex"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AddVertex",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "vertex",
+              "TVertex"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AddVertices",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "vertices",
+              "System.Collections.Generic.IEnumerable`1<TVertex>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AddEdge",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "from",
+              "TVertex"
+            ],
+            [
+              "to",
+              "TVertex"
+            ],
+            [
+              "payload",
+              "TEdge"
+            ],
+            [
+              "requiresBatchingBoundary",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Clear",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "TopologicalSort",
+          "returnType": "System.Collections.Generic.IReadOnlyList`1<TVertex>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "TopologicalSort",
+          "returnType": "System.Collections.Generic.IReadOnlyList`1<TVertex>",
+          "parameterTypes": [
+            [
+              "tryBreakEdge",
+              "System.Func`4<TVertex,TVertex,System.Collections.Generic.IEnumerable`1<TEdge>,System.Boolean>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "TopologicalSort",
+          "returnType": "System.Collections.Generic.IReadOnlyList`1<TVertex>",
+          "parameterTypes": [
+            [
+              "formatCycle",
+              "System.Func`2<System.Collections.Generic.IEnumerable`1<System.Tuple`3<TVertex,TVertex,System.Collections.Generic.IEnumerable`1<TEdge>>>,System.String>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "TopologicalSort",
+          "returnType": "System.Collections.Generic.IReadOnlyList`1<TVertex>",
+          "parameterTypes": [
+            [
+              "tryBreakEdge",
+              "System.Func`4<TVertex,TVertex,System.Collections.Generic.IEnumerable`1<TEdge>,System.Boolean>"
+            ],
+            [
+              "formatCycle",
+              "System.Func`2<System.Collections.Generic.IReadOnlyList`1<System.Tuple`3<TVertex,TVertex,System.Collections.Generic.IEnumerable`1<TEdge>>>,System.String>"
+            ],
+            [
+              "formatException",
+              "System.Func`2<System.String,System.String>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "BatchingTopologicalSort",
+          "returnType": "System.Collections.Generic.IReadOnlyList`1<System.Collections.Generic.List`1<TVertex>>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "BatchingTopologicalSort",
+          "returnType": "System.Collections.Generic.IReadOnlyList`1<System.Collections.Generic.List`1<TVertex>>",
+          "parameterTypes": [
+            [
+              "canBreakEdges",
+              "System.Func`4<TVertex,TVertex,System.Collections.Generic.IEnumerable`1<TEdge>,System.Boolean>"
+            ],
+            [
+              "formatCycle",
+              "System.Func`2<System.Collections.Generic.IReadOnlyList`1<System.Tuple`3<TVertex,TVertex,System.Collections.Generic.IEnumerable`1<TEdge>>>,System.String>"
+            ],
+            [
+              "formatException",
+              "System.Func`2<System.String,System.String>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Vertices",
+          "returnType": "System.Collections.Generic.IEnumerable`1<TVertex>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "GetOutgoingNeighbors",
+          "returnType": "System.Collections.Generic.IEnumerable`1<TVertex>",
+          "parameterTypes": [
+            [
+              "from",
+              "TVertex"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetIncomingNeighbors",
+          "returnType": "System.Collections.Generic.IEnumerable`1<TVertex>",
+          "parameterTypes": [
+            [
+              "to",
+              "TVertex"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.Utilities.SharedStopwatch",
+      "methods": [
+        {
+          "name": "get_Elapsed",
+          "returnType": "System.TimeSpan",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "StartNew",
+          "returnType": "Microsoft.EntityFrameworkCore.Utilities.SharedStopwatch",
+          "parameterTypes": [],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.EntityFrameworkCore.Storage": [
+    {
+      "name": "Microsoft.EntityFrameworkCore.Storage.InMemoryDatabaseRoot",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "Microsoft.EntityFrameworkCore.Metadata.Conventions": [
+    {
+      "name": "Microsoft.EntityFrameworkCore.Metadata.Conventions.DefiningQueryRewritingConvention",
+      "methods": [
+        {
+          "name": "ProcessModelFinalizing",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "modelBuilder",
+              "Microsoft.EntityFrameworkCore.Metadata.Builders.IConventionModelBuilder"
+            ],
+            [
+              "context",
+              "Microsoft.EntityFrameworkCore.Metadata.Conventions.IConventionContext`1<Microsoft.EntityFrameworkCore.Metadata.Builders.IConventionModelBuilder>"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.EntityFrameworkCore.Infrastructure": [
+    {
+      "name": "Microsoft.EntityFrameworkCore.Infrastructure.IInMemoryDbContextOptionsBuilderInfrastructure",
+      "methods": [
+        {
+          "name": "get_OptionsBuilder",
+          "returnType": "Microsoft.EntityFrameworkCore.DbContextOptionsBuilder",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.Infrastructure.InMemoryDbContextOptionsBuilder",
+      "methods": [
+        {
+          "name": "EnableNullChecks",
+          "returnType": "Microsoft.EntityFrameworkCore.Infrastructure.InMemoryDbContextOptionsBuilder",
+          "parameterTypes": [
+            [
+              "nullChecksEnabled",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ToString",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Equals",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "obj",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetHashCode",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.EntityFrameworkCore.Diagnostics": [
+    {
+      "name": "Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "Microsoft.EntityFrameworkCore.InMemory.ValueGeneration.Internal": [
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.ValueGeneration.Internal.IInMemoryIntegerValueGenerator",
+      "methods": [
+        {
+          "name": "Bump",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "row",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.ValueGeneration.Internal.InMemoryIntegerValueGenerator`1",
+      "methods": [
+        {
+          "name": "Bump",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "row",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Next",
+          "returnType": "TValue",
+          "parameterTypes": [
+            [
+              "entry",
+              "Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_GeneratesTemporaryValues",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.ValueGeneration.Internal.InMemoryValueGeneratorSelector",
+      "methods": [
+        {
+          "name": "Select",
+          "returnType": "Microsoft.EntityFrameworkCore.ValueGeneration.ValueGenerator",
+          "parameterTypes": [
+            [
+              "property",
+              "Microsoft.EntityFrameworkCore.Metadata.IProperty"
+            ],
+            [
+              "typeBase",
+              "Microsoft.EntityFrameworkCore.Metadata.ITypeBase"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.EntityFrameworkCore.InMemory.Storage.Internal": [
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Storage.Internal.IInMemoryDatabase",
+      "methods": [
+        {
+          "name": "get_Store",
+          "returnType": "Microsoft.EntityFrameworkCore.InMemory.Storage.Internal.IInMemoryStore",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "EnsureDatabaseCreated",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Storage.Internal.IInMemoryStore",
+      "methods": [
+        {
+          "name": "EnsureCreated",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "updateAdapterFactory",
+              "Microsoft.EntityFrameworkCore.Update.IUpdateAdapterFactory"
+            ],
+            [
+              "designModel",
+              "Microsoft.EntityFrameworkCore.Metadata.IModel"
+            ],
+            [
+              "updateLogger",
+              "Microsoft.EntityFrameworkCore.Diagnostics.IDiagnosticsLogger`1<Microsoft.EntityFrameworkCore.DbLoggerCategory/Update>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Clear",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "GetTables",
+          "returnType": "System.Collections.Generic.IReadOnlyList`1<Microsoft.EntityFrameworkCore.InMemory.Storage.Internal.InMemoryTableSnapshot>",
+          "parameterTypes": [
+            [
+              "entityType",
+              "Microsoft.EntityFrameworkCore.Metadata.IEntityType"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetIntegerValueGenerator",
+          "returnType": "Microsoft.EntityFrameworkCore.InMemory.ValueGeneration.Internal.InMemoryIntegerValueGenerator`1<TProperty>",
+          "parameterTypes": [
+            [
+              "property",
+              "Microsoft.EntityFrameworkCore.Metadata.IProperty"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ExecuteTransaction",
+          "returnType": "System.Int32",
+          "parameterTypes": [
+            [
+              "entries",
+              "System.Collections.Generic.IList`1<Microsoft.EntityFrameworkCore.Update.IUpdateEntry>"
+            ],
+            [
+              "updateLogger",
+              "Microsoft.EntityFrameworkCore.Diagnostics.IDiagnosticsLogger`1<Microsoft.EntityFrameworkCore.DbLoggerCategory/Update>"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Storage.Internal.IInMemoryStoreCache",
+      "methods": [
+        {
+          "name": "GetStore",
+          "returnType": "Microsoft.EntityFrameworkCore.InMemory.Storage.Internal.IInMemoryStore",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Storage.Internal.IInMemoryTable",
+      "methods": [
+        {
+          "name": "SnapshotRows",
+          "returnType": "System.Collections.Generic.IReadOnlyList`1<System.Object[]>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Rows",
+          "returnType": "System.Collections.Generic.IEnumerable`1<System.Object[]>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Create",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "entry",
+              "Microsoft.EntityFrameworkCore.Update.IUpdateEntry"
+            ],
+            [
+              "updateLogger",
+              "Microsoft.EntityFrameworkCore.Diagnostics.IDiagnosticsLogger`1<Microsoft.EntityFrameworkCore.DbLoggerCategory/Update>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Delete",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "entry",
+              "Microsoft.EntityFrameworkCore.Update.IUpdateEntry"
+            ],
+            [
+              "updateLogger",
+              "Microsoft.EntityFrameworkCore.Diagnostics.IDiagnosticsLogger`1<Microsoft.EntityFrameworkCore.DbLoggerCategory/Update>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Update",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "entry",
+              "Microsoft.EntityFrameworkCore.Update.IUpdateEntry"
+            ],
+            [
+              "updateLogger",
+              "Microsoft.EntityFrameworkCore.Diagnostics.IDiagnosticsLogger`1<Microsoft.EntityFrameworkCore.DbLoggerCategory/Update>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetIntegerValueGenerator",
+          "returnType": "Microsoft.EntityFrameworkCore.InMemory.ValueGeneration.Internal.InMemoryIntegerValueGenerator`1<TProperty>",
+          "parameterTypes": [
+            [
+              "property",
+              "Microsoft.EntityFrameworkCore.Metadata.IProperty"
+            ],
+            [
+              "tables",
+              "System.Collections.Generic.IReadOnlyList`1<Microsoft.EntityFrameworkCore.InMemory.Storage.Internal.IInMemoryTable>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "BumpValueGenerators",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "row",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_BaseTable",
+          "returnType": "Microsoft.EntityFrameworkCore.InMemory.Storage.Internal.IInMemoryTable",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Storage.Internal.IInMemoryTableFactory",
+      "methods": [
+        {
+          "name": "Create",
+          "returnType": "Microsoft.EntityFrameworkCore.InMemory.Storage.Internal.IInMemoryTable",
+          "parameterTypes": [
+            [
+              "entityType",
+              "Microsoft.EntityFrameworkCore.Metadata.IEntityType"
+            ],
+            [
+              "baseTable",
+              "Microsoft.EntityFrameworkCore.InMemory.Storage.Internal.IInMemoryTable"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Storage.Internal.InMemoryDatabase",
+      "methods": [
+        {
+          "name": "get_Store",
+          "returnType": "Microsoft.EntityFrameworkCore.InMemory.Storage.Internal.IInMemoryStore",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "SaveChanges",
+          "returnType": "System.Int32",
+          "parameterTypes": [
+            [
+              "entries",
+              "System.Collections.Generic.IList`1<Microsoft.EntityFrameworkCore.Update.IUpdateEntry>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "SaveChangesAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Int32>",
+          "parameterTypes": [
+            [
+              "entries",
+              "System.Collections.Generic.IList`1<Microsoft.EntityFrameworkCore.Update.IUpdateEntry>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "EnsureDatabaseCreated",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Storage.Internal.InMemoryDatabaseCreator",
+      "methods": [
+        {
+          "name": "EnsureDeleted",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "EnsureDeletedAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Boolean>",
+          "parameterTypes": [
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "EnsureCreated",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "EnsureCreatedAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Boolean>",
+          "parameterTypes": [
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CanConnect",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "CanConnectAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Boolean>",
+          "parameterTypes": [
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Storage.Internal.InMemoryStore",
+      "methods": [
+        {
+          "name": "GetIntegerValueGenerator",
+          "returnType": "Microsoft.EntityFrameworkCore.InMemory.ValueGeneration.Internal.InMemoryIntegerValueGenerator`1<TProperty>",
+          "parameterTypes": [
+            [
+              "property",
+              "Microsoft.EntityFrameworkCore.Metadata.IProperty"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "EnsureCreated",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "updateAdapterFactory",
+              "Microsoft.EntityFrameworkCore.Update.IUpdateAdapterFactory"
+            ],
+            [
+              "designModel",
+              "Microsoft.EntityFrameworkCore.Metadata.IModel"
+            ],
+            [
+              "updateLogger",
+              "Microsoft.EntityFrameworkCore.Diagnostics.IDiagnosticsLogger`1<Microsoft.EntityFrameworkCore.DbLoggerCategory/Update>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Clear",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "GetTables",
+          "returnType": "System.Collections.Generic.IReadOnlyList`1<Microsoft.EntityFrameworkCore.InMemory.Storage.Internal.InMemoryTableSnapshot>",
+          "parameterTypes": [
+            [
+              "entityType",
+              "Microsoft.EntityFrameworkCore.Metadata.IEntityType"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ExecuteTransaction",
+          "returnType": "System.Int32",
+          "parameterTypes": [
+            [
+              "entries",
+              "System.Collections.Generic.IList`1<Microsoft.EntityFrameworkCore.Update.IUpdateEntry>"
+            ],
+            [
+              "updateLogger",
+              "Microsoft.EntityFrameworkCore.Diagnostics.IDiagnosticsLogger`1<Microsoft.EntityFrameworkCore.DbLoggerCategory/Update>"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Storage.Internal.InMemoryStoreCache",
+      "methods": [
+        {
+          "name": "GetStore",
+          "returnType": "Microsoft.EntityFrameworkCore.InMemory.Storage.Internal.IInMemoryStore",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Storage.Internal.InMemoryStoreCacheExtensions",
+      "methods": [
+        {
+          "name": "GetStore",
+          "returnType": "Microsoft.EntityFrameworkCore.InMemory.Storage.Internal.IInMemoryStore",
+          "parameterTypes": [
+            [
+              "storeCache",
+              "Microsoft.EntityFrameworkCore.InMemory.Storage.Internal.IInMemoryStoreCache"
+            ],
+            [
+              "options",
+              "Microsoft.EntityFrameworkCore.Infrastructure.IDbContextOptions"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Storage.Internal.InMemoryTable`1",
+      "methods": [
+        {
+          "name": "get_BaseTable",
+          "returnType": "Microsoft.EntityFrameworkCore.InMemory.Storage.Internal.IInMemoryTable",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "GetIntegerValueGenerator",
+          "returnType": "Microsoft.EntityFrameworkCore.InMemory.ValueGeneration.Internal.InMemoryIntegerValueGenerator`1<TProperty>",
+          "parameterTypes": [
+            [
+              "property",
+              "Microsoft.EntityFrameworkCore.Metadata.IProperty"
+            ],
+            [
+              "tables",
+              "System.Collections.Generic.IReadOnlyList`1<Microsoft.EntityFrameworkCore.InMemory.Storage.Internal.IInMemoryTable>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Rows",
+          "returnType": "System.Collections.Generic.IEnumerable`1<System.Object[]>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "SnapshotRows",
+          "returnType": "System.Collections.Generic.IReadOnlyList`1<System.Object[]>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Create",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "entry",
+              "Microsoft.EntityFrameworkCore.Update.IUpdateEntry"
+            ],
+            [
+              "updateLogger",
+              "Microsoft.EntityFrameworkCore.Diagnostics.IDiagnosticsLogger`1<Microsoft.EntityFrameworkCore.DbLoggerCategory/Update>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Delete",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "entry",
+              "Microsoft.EntityFrameworkCore.Update.IUpdateEntry"
+            ],
+            [
+              "updateLogger",
+              "Microsoft.EntityFrameworkCore.Diagnostics.IDiagnosticsLogger`1<Microsoft.EntityFrameworkCore.DbLoggerCategory/Update>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Update",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "entry",
+              "Microsoft.EntityFrameworkCore.Update.IUpdateEntry"
+            ],
+            [
+              "updateLogger",
+              "Microsoft.EntityFrameworkCore.Diagnostics.IDiagnosticsLogger`1<Microsoft.EntityFrameworkCore.DbLoggerCategory/Update>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "BumpValueGenerators",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "row",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Storage.Internal.InMemoryTableFactory",
+      "methods": [
+        {
+          "name": "Create",
+          "returnType": "Microsoft.EntityFrameworkCore.InMemory.Storage.Internal.IInMemoryTable",
+          "parameterTypes": [
+            [
+              "entityType",
+              "Microsoft.EntityFrameworkCore.Metadata.IEntityType"
+            ],
+            [
+              "baseTable",
+              "Microsoft.EntityFrameworkCore.InMemory.Storage.Internal.IInMemoryTable"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Storage.Internal.InMemoryTableSnapshot",
+      "methods": [
+        {
+          "name": "get_EntityType",
+          "returnType": "Microsoft.EntityFrameworkCore.Metadata.IEntityType",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Rows",
+          "returnType": "System.Collections.Generic.IReadOnlyList`1<System.Object[]>",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Storage.Internal.InMemoryTransaction",
+      "methods": [
+        {
+          "name": "get_TransactionId",
+          "returnType": "System.Guid",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Commit",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "CommitAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Rollback",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "RollbackAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Dispose",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "DisposeAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Storage.Internal.InMemoryTransactionManager",
+      "methods": [
+        {
+          "name": "BeginTransaction",
+          "returnType": "Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "BeginTransactionAsync",
+          "returnType": "System.Threading.Tasks.Task`1<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction>",
+          "parameterTypes": [
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CommitTransaction",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "CommitTransactionAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "RollbackTransaction",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "RollbackTransactionAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_CurrentTransaction",
+          "returnType": "Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_EnlistedTransaction",
+          "returnType": "System.Transactions.Transaction",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "EnlistTransaction",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "transaction",
+              "System.Transactions.Transaction"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ResetState",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "ResetStateAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Storage.Internal.InMemoryTypeMapping",
+      "methods": [
+        {
+          "name": "get_Default",
+          "returnType": "Microsoft.EntityFrameworkCore.InMemory.Storage.Internal.InMemoryTypeMapping",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "WithComposedConverter",
+          "returnType": "Microsoft.EntityFrameworkCore.Storage.CoreTypeMapping",
+          "parameterTypes": [
+            [
+              "converter",
+              "Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter"
+            ],
+            [
+              "comparer",
+              "Microsoft.EntityFrameworkCore.ChangeTracking.ValueComparer"
+            ],
+            [
+              "keyComparer",
+              "Microsoft.EntityFrameworkCore.ChangeTracking.ValueComparer"
+            ],
+            [
+              "elementMapping",
+              "Microsoft.EntityFrameworkCore.Storage.CoreTypeMapping"
+            ],
+            [
+              "jsonValueReaderWriter",
+              "Microsoft.EntityFrameworkCore.Storage.Json.JsonValueReaderWriter"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Storage.Internal.InMemoryTypeMappingSource",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "Microsoft.EntityFrameworkCore.InMemory.Query.Internal": [
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Query.Internal.AnonymousObject",
+      "methods": [
+        {
+          "name": "op_Equality",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "x",
+              "Microsoft.EntityFrameworkCore.InMemory.Query.Internal.AnonymousObject"
+            ],
+            [
+              "y",
+              "Microsoft.EntityFrameworkCore.InMemory.Query.Internal.AnonymousObject"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "op_Inequality",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "x",
+              "Microsoft.EntityFrameworkCore.InMemory.Query.Internal.AnonymousObject"
+            ],
+            [
+              "y",
+              "Microsoft.EntityFrameworkCore.InMemory.Query.Internal.AnonymousObject"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Equals",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "obj",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetHashCode",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Query.Internal.CollectionResultShaperExpression",
+      "methods": [
+        {
+          "name": "get_Projection",
+          "returnType": "System.Linq.Expressions.Expression",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_InnerShaper",
+          "returnType": "System.Linq.Expressions.Expression",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Navigation",
+          "returnType": "Microsoft.EntityFrameworkCore.Metadata.INavigationBase",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ElementType",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_NodeType",
+          "returnType": "System.Linq.Expressions.ExpressionType",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Type",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Update",
+          "returnType": "Microsoft.EntityFrameworkCore.InMemory.Query.Internal.CollectionResultShaperExpression",
+          "parameterTypes": [
+            [
+              "projection",
+              "System.Linq.Expressions.Expression"
+            ],
+            [
+              "innerShaper",
+              "System.Linq.Expressions.Expression"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Query.Internal.EntityProjectionExpression",
+      "methods": [
+        {
+          "name": "get_EntityType",
+          "returnType": "Microsoft.EntityFrameworkCore.Metadata.IEntityType",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Type",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_NodeType",
+          "returnType": "System.Linq.Expressions.ExpressionType",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "UpdateEntityType",
+          "returnType": "Microsoft.EntityFrameworkCore.InMemory.Query.Internal.EntityProjectionExpression",
+          "parameterTypes": [
+            [
+              "derivedType",
+              "Microsoft.EntityFrameworkCore.Metadata.IEntityType"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "BindProperty",
+          "returnType": "System.Linq.Expressions.MethodCallExpression",
+          "parameterTypes": [
+            [
+              "property",
+              "Microsoft.EntityFrameworkCore.Metadata.IProperty"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AddNavigationBinding",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "navigation",
+              "Microsoft.EntityFrameworkCore.Metadata.INavigation"
+            ],
+            [
+              "shaper",
+              "Microsoft.EntityFrameworkCore.Query.StructuralTypeShaperExpression"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "BindNavigation",
+          "returnType": "Microsoft.EntityFrameworkCore.Query.StructuralTypeShaperExpression",
+          "parameterTypes": [
+            [
+              "navigation",
+              "Microsoft.EntityFrameworkCore.Metadata.INavigation"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Clone",
+          "returnType": "Microsoft.EntityFrameworkCore.InMemory.Query.Internal.EntityProjectionExpression",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Query.Internal.InMemoryExpressionTranslatingExpressionVisitor",
+      "methods": [
+        {
+          "name": "get_TranslationErrorDetails",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Translate",
+          "returnType": "System.Linq.Expressions.Expression",
+          "parameterTypes": [
+            [
+              "expression",
+              "System.Linq.Expressions.Expression"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Query.Internal.InMemoryProjectionBindingExpressionVisitor",
+      "methods": [
+        {
+          "name": "Translate",
+          "returnType": "System.Linq.Expressions.Expression",
+          "parameterTypes": [
+            [
+              "queryExpression",
+              "Microsoft.EntityFrameworkCore.InMemory.Query.Internal.InMemoryQueryExpression"
+            ],
+            [
+              "expression",
+              "System.Linq.Expressions.Expression"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Visit",
+          "returnType": "System.Linq.Expressions.Expression",
+          "parameterTypes": [
+            [
+              "expression",
+              "System.Linq.Expressions.Expression"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Query.Internal.InMemoryQueryableMethodTranslatingExpressionVisitor",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Query.Internal.InMemoryQueryableMethodTranslatingExpressionVisitorFactory",
+      "methods": [
+        {
+          "name": "Create",
+          "returnType": "Microsoft.EntityFrameworkCore.Query.QueryableMethodTranslatingExpressionVisitor",
+          "parameterTypes": [
+            [
+              "queryCompilationContext",
+              "Microsoft.EntityFrameworkCore.Query.QueryCompilationContext"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Query.Internal.InMemoryQueryContext",
+      "methods": [
+        {
+          "name": "GetValueBuffers",
+          "returnType": "System.Collections.Generic.IEnumerable`1<Microsoft.EntityFrameworkCore.Storage.ValueBuffer>",
+          "parameterTypes": [
+            [
+              "entityType",
+              "Microsoft.EntityFrameworkCore.Metadata.IEntityType"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Store",
+          "returnType": "Microsoft.EntityFrameworkCore.InMemory.Storage.Internal.IInMemoryStore",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Query.Internal.InMemoryQueryContextFactory",
+      "methods": [
+        {
+          "name": "Create",
+          "returnType": "Microsoft.EntityFrameworkCore.Query.QueryContext",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Query.Internal.InMemoryQueryExpression",
+      "methods": [
+        {
+          "name": "get_ServerQueryExpression",
+          "returnType": "System.Linq.Expressions.Expression",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_CurrentParameter",
+          "returnType": "System.Linq.Expressions.ParameterExpression",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "ReplaceProjection",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "clientProjections",
+              "System.Collections.Generic.IReadOnlyList`1<System.Linq.Expressions.Expression>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ReplaceProjection",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "projectionMapping",
+              "System.Collections.Generic.IReadOnlyDictionary`2<Microsoft.EntityFrameworkCore.Query.ProjectionMember,System.Linq.Expressions.Expression>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetProjection",
+          "returnType": "System.Linq.Expressions.Expression",
+          "parameterTypes": [
+            [
+              "projectionBindingExpression",
+              "Microsoft.EntityFrameworkCore.Query.ProjectionBindingExpression"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ApplyProjection",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "UpdateServerQueryExpression",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "serverQueryExpression",
+              "System.Linq.Expressions.Expression"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ApplySetOperation",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "setOperationMethodInfo",
+              "System.Reflection.MethodInfo"
+            ],
+            [
+              "source2",
+              "Microsoft.EntityFrameworkCore.InMemory.Query.Internal.InMemoryQueryExpression"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ApplyDefaultIfEmpty",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "ApplyDistinct",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "ApplyGrouping",
+          "returnType": "Microsoft.EntityFrameworkCore.Query.GroupByShaperExpression",
+          "parameterTypes": [
+            [
+              "groupingKey",
+              "System.Linq.Expressions.Expression"
+            ],
+            [
+              "shaperExpression",
+              "System.Linq.Expressions.Expression"
+            ],
+            [
+              "defaultElementSelector",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AddInnerJoin",
+          "returnType": "System.Linq.Expressions.Expression",
+          "parameterTypes": [
+            [
+              "innerQueryExpression",
+              "Microsoft.EntityFrameworkCore.InMemory.Query.Internal.InMemoryQueryExpression"
+            ],
+            [
+              "outerKeySelector",
+              "System.Linq.Expressions.LambdaExpression"
+            ],
+            [
+              "innerKeySelector",
+              "System.Linq.Expressions.LambdaExpression"
+            ],
+            [
+              "outerShaperExpression",
+              "System.Linq.Expressions.Expression"
+            ],
+            [
+              "innerShaperExpression",
+              "System.Linq.Expressions.Expression"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AddLeftJoin",
+          "returnType": "System.Linq.Expressions.Expression",
+          "parameterTypes": [
+            [
+              "innerQueryExpression",
+              "Microsoft.EntityFrameworkCore.InMemory.Query.Internal.InMemoryQueryExpression"
+            ],
+            [
+              "outerKeySelector",
+              "System.Linq.Expressions.LambdaExpression"
+            ],
+            [
+              "innerKeySelector",
+              "System.Linq.Expressions.LambdaExpression"
+            ],
+            [
+              "outerShaperExpression",
+              "System.Linq.Expressions.Expression"
+            ],
+            [
+              "innerShaperExpression",
+              "System.Linq.Expressions.Expression"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AddSelectMany",
+          "returnType": "System.Linq.Expressions.Expression",
+          "parameterTypes": [
+            [
+              "innerQueryExpression",
+              "Microsoft.EntityFrameworkCore.InMemory.Query.Internal.InMemoryQueryExpression"
+            ],
+            [
+              "outerShaperExpression",
+              "System.Linq.Expressions.Expression"
+            ],
+            [
+              "innerShaperExpression",
+              "System.Linq.Expressions.Expression"
+            ],
+            [
+              "innerNullable",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AddNavigationToWeakEntityType",
+          "returnType": "Microsoft.EntityFrameworkCore.Query.StructuralTypeShaperExpression",
+          "parameterTypes": [
+            [
+              "entityProjectionExpression",
+              "Microsoft.EntityFrameworkCore.InMemory.Query.Internal.EntityProjectionExpression"
+            ],
+            [
+              "navigation",
+              "Microsoft.EntityFrameworkCore.Metadata.INavigation"
+            ],
+            [
+              "innerQueryExpression",
+              "Microsoft.EntityFrameworkCore.InMemory.Query.Internal.InMemoryQueryExpression"
+            ],
+            [
+              "outerKeySelector",
+              "System.Linq.Expressions.LambdaExpression"
+            ],
+            [
+              "innerKeySelector",
+              "System.Linq.Expressions.LambdaExpression"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Clone",
+          "returnType": "Microsoft.EntityFrameworkCore.Query.ShapedQueryExpression",
+          "parameterTypes": [
+            [
+              "shaperExpression",
+              "System.Linq.Expressions.Expression"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetSingleScalarProjection",
+          "returnType": "System.Linq.Expressions.Expression",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "ConvertToSingleResult",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "methodInfo",
+              "System.Reflection.MethodInfo"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Type",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_NodeType",
+          "returnType": "System.Linq.Expressions.ExpressionType",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Query.Internal.InMemoryQueryTranslationPreprocessor",
+      "methods": [
+        {
+          "name": "Process",
+          "returnType": "System.Linq.Expressions.Expression",
+          "parameterTypes": [
+            [
+              "query",
+              "System.Linq.Expressions.Expression"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Query.Internal.InMemoryQueryTranslationPreprocessorFactory",
+      "methods": [
+        {
+          "name": "Create",
+          "returnType": "Microsoft.EntityFrameworkCore.Query.QueryTranslationPreprocessor",
+          "parameterTypes": [
+            [
+              "queryCompilationContext",
+              "Microsoft.EntityFrameworkCore.Query.QueryCompilationContext"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Query.Internal.InMemoryShapedQueryCompilingExpressionVisitor",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Query.Internal.InMemoryShapedQueryCompilingExpressionVisitorFactory",
+      "methods": [
+        {
+          "name": "Create",
+          "returnType": "Microsoft.EntityFrameworkCore.Query.ShapedQueryCompilingExpressionVisitor",
+          "parameterTypes": [
+            [
+              "queryCompilationContext",
+              "Microsoft.EntityFrameworkCore.Query.QueryCompilationContext"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Query.Internal.InMemoryTableExpression",
+      "methods": [
+        {
+          "name": "get_Type",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_EntityType",
+          "returnType": "Microsoft.EntityFrameworkCore.Metadata.IEntityType",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_NodeType",
+          "returnType": "System.Linq.Expressions.ExpressionType",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Query.Internal.SingleResultShaperExpression",
+      "methods": [
+        {
+          "name": "Update",
+          "returnType": "Microsoft.EntityFrameworkCore.InMemory.Query.Internal.SingleResultShaperExpression",
+          "parameterTypes": [
+            [
+              "projection",
+              "System.Linq.Expressions.Expression"
+            ],
+            [
+              "innerShaper",
+              "System.Linq.Expressions.Expression"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_NodeType",
+          "returnType": "System.Linq.Expressions.ExpressionType",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Type",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Projection",
+          "returnType": "System.Linq.Expressions.Expression",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_InnerShaper",
+          "returnType": "System.Linq.Expressions.Expression",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.EntityFrameworkCore.InMemory.Metadata.Conventions": [
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Metadata.Conventions.InMemoryConventionSetBuilder",
+      "methods": [
+        {
+          "name": "CreateConventionSet",
+          "returnType": "Microsoft.EntityFrameworkCore.Metadata.Conventions.ConventionSet",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Build",
+          "returnType": "Microsoft.EntityFrameworkCore.Metadata.Conventions.ConventionSet",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "CreateModelBuilder",
+          "returnType": "Microsoft.EntityFrameworkCore.ModelBuilder",
+          "parameterTypes": [],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.EntityFrameworkCore.InMemory.Infrastructure.Internal": [
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Infrastructure.Internal.IInMemorySingletonOptions",
+      "methods": [
+        {
+          "name": "get_DatabaseRoot",
+          "returnType": "Microsoft.EntityFrameworkCore.Storage.InMemoryDatabaseRoot",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_IsNullabilityCheckEnabled",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Infrastructure.Internal.InMemoryModelValidator",
+      "methods": [
+        {
+          "name": "Validate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "model",
+              "Microsoft.EntityFrameworkCore.Metadata.IModel"
+            ],
+            [
+              "logger",
+              "Microsoft.EntityFrameworkCore.Diagnostics.IDiagnosticsLogger`1<Microsoft.EntityFrameworkCore.DbLoggerCategory/Model/Validation>"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Infrastructure.Internal.InMemoryOptionsExtension",
+      "methods": [
+        {
+          "name": "get_Info",
+          "returnType": "Microsoft.EntityFrameworkCore.Infrastructure.DbContextOptionsExtensionInfo",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_StoreName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_IsNullabilityCheckEnabled",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "WithStoreName",
+          "returnType": "Microsoft.EntityFrameworkCore.InMemory.Infrastructure.Internal.InMemoryOptionsExtension",
+          "parameterTypes": [
+            [
+              "storeName",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "WithNullabilityCheckEnabled",
+          "returnType": "Microsoft.EntityFrameworkCore.InMemory.Infrastructure.Internal.InMemoryOptionsExtension",
+          "parameterTypes": [
+            [
+              "nullabilityCheckEnabled",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_DatabaseRoot",
+          "returnType": "Microsoft.EntityFrameworkCore.Storage.InMemoryDatabaseRoot",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "WithDatabaseRoot",
+          "returnType": "Microsoft.EntityFrameworkCore.InMemory.Infrastructure.Internal.InMemoryOptionsExtension",
+          "parameterTypes": [
+            [
+              "databaseRoot",
+              "Microsoft.EntityFrameworkCore.Storage.InMemoryDatabaseRoot"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ApplyServices",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Validate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "options",
+              "Microsoft.EntityFrameworkCore.Infrastructure.IDbContextOptions"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Infrastructure.Internal.InMemorySingletonOptions",
+      "methods": [
+        {
+          "name": "Initialize",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "options",
+              "Microsoft.EntityFrameworkCore.Infrastructure.IDbContextOptions"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Validate",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "options",
+              "Microsoft.EntityFrameworkCore.Infrastructure.IDbContextOptions"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_DatabaseRoot",
+          "returnType": "Microsoft.EntityFrameworkCore.Storage.InMemoryDatabaseRoot",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_IsNullabilityCheckEnabled",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.EntityFrameworkCore.InMemory.Diagnostics.Internal": [
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Diagnostics.Internal.InMemoryLoggingDefinitions",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "Microsoft.EntityFrameworkCore.InMemory.Internal": [
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Internal.InMemoryLoggerExtensions",
+      "methods": [
+        {
+          "name": "TransactionIgnoredWarning",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "diagnostics",
+              "Microsoft.EntityFrameworkCore.Diagnostics.IDiagnosticsLogger`1<Microsoft.EntityFrameworkCore.DbLoggerCategory/Database/Transaction>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ChangesSaved",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "diagnostics",
+              "Microsoft.EntityFrameworkCore.Diagnostics.IDiagnosticsLogger`1<Microsoft.EntityFrameworkCore.DbLoggerCategory/Update>"
+            ],
+            [
+              "entries",
+              "System.Collections.Generic.IEnumerable`1<Microsoft.EntityFrameworkCore.Update.IUpdateEntry>"
+            ],
+            [
+              "rowsAffected",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Internal.InMemoryStrings",
+      "methods": [
+        {
+          "name": "get_DefaultIfEmptyAppliedAfterProjection",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_DistinctOnSubqueryNotSupported",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "InvalidDerivedTypeInEntityProjection",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "derivedType",
+              "System.Object"
+            ],
+            [
+              "entityType",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "get_NonComposedGroupByNotSupported",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_NoQueryStrings",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "NullabilityErrorException",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "requiredProperties",
+              "System.Object"
+            ],
+            [
+              "entityType",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "NullabilityErrorExceptionSensitive",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "requiredProperties",
+              "System.Object"
+            ],
+            [
+              "entityType",
+              "System.Object"
+            ],
+            [
+              "keyValue",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "get_SetOperationsNotAllowedAfterClientEvaluation",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "UnableToBindMemberToEntityProjection",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "memberType",
+              "System.Object"
+            ],
+            [
+              "member",
+              "System.Object"
+            ],
+            [
+              "entityType",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "get_UpdateConcurrencyException",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "UpdateConcurrencyTokenException",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "entityType",
+              "System.Object"
+            ],
+            [
+              "properties",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "UpdateConcurrencyTokenExceptionSensitive",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "entityType",
+              "System.Object"
+            ],
+            [
+              "keyValue",
+              "System.Object"
+            ],
+            [
+              "conflictingValues",
+              "System.Object"
+            ],
+            [
+              "databaseValues",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Internal.InMemoryResources",
+      "methods": [
+        {
+          "name": "LogSavedChanges",
+          "returnType": "Microsoft.EntityFrameworkCore.Diagnostics.EventDefinition`1<System.Int32>",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.EntityFrameworkCore.Diagnostics.IDiagnosticsLogger"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LogTransactionsNotSupported",
+          "returnType": "Microsoft.EntityFrameworkCore.Diagnostics.EventDefinition",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.EntityFrameworkCore.Diagnostics.IDiagnosticsLogger"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.EntityFrameworkCore.InMemory.Design.Internal": [
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Design.Internal.InMemoryCSharpRuntimeAnnotationCodeGenerator",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.EntityFrameworkCore.InMemory.Design.Internal.InMemoryDesignTimeServices",
+      "methods": [
+        {
+          "name": "ConfigureDesignTimeServices",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "serviceCollection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

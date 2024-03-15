@@ -1,0 +1,83 @@
+{
+  "Microsoft.Extensions.DependencyInjection": [
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.EntityFrameworkCoreHealthChecksBuilderExtensions",
+      "methods": [
+        {
+          "name": "AddDbContextCheck",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHealthChecksBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.DependencyInjection.IHealthChecksBuilder"
+            ],
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "failureStatus",
+              "System.Nullable`1<Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus>"
+            ],
+            [
+              "tags",
+              "System.Collections.Generic.IEnumerable`1<System.String>"
+            ],
+            [
+              "customTestQuery",
+              "System.Func`3<TContext,System.Threading.CancellationToken,System.Threading.Tasks.Task`1<System.Boolean>>"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.Diagnostics.HealthChecks": [
+    {
+      "name": "Microsoft.Extensions.Diagnostics.HealthChecks.DbContextHealthCheck`1",
+      "methods": [
+        {
+          "name": "CheckHealthAsync",
+          "returnType": "System.Threading.Tasks.Task`1<Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult>",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckContext"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Diagnostics.HealthChecks.DbContextHealthCheckOptions`1",
+      "methods": [
+        {
+          "name": "get_CustomTestQuery",
+          "returnType": "System.Func`3<TContext,System.Threading.CancellationToken,System.Threading.Tasks.Task`1<System.Boolean>>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_CustomTestQuery",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Func`3<TContext,System.Threading.CancellationToken,System.Threading.Tasks.Task`1<System.Boolean>>"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

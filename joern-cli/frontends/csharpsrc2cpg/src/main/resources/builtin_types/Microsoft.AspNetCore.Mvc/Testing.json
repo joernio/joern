@@ -1,0 +1,435 @@
+{
+  "Microsoft.AspNetCore.Mvc.Testing": [
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Testing.DeferredHostBuilder",
+      "methods": [
+        {
+          "name": "get_Properties",
+          "returnType": "System.Collections.Generic.IDictionary`2<System.Object,System.Object>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Build",
+          "returnType": "Microsoft.Extensions.Hosting.IHost",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "ConfigureAppConfiguration",
+          "returnType": "Microsoft.Extensions.Hosting.IHostBuilder",
+          "parameterTypes": [
+            [
+              "configureDelegate",
+              "System.Action`2<Microsoft.Extensions.Hosting.HostBuilderContext,Microsoft.Extensions.Configuration.IConfigurationBuilder>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ConfigureContainer",
+          "returnType": "Microsoft.Extensions.Hosting.IHostBuilder",
+          "parameterTypes": [
+            [
+              "configureDelegate",
+              "System.Action`2<Microsoft.Extensions.Hosting.HostBuilderContext,TContainerBuilder>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ConfigureHostConfiguration",
+          "returnType": "Microsoft.Extensions.Hosting.IHostBuilder",
+          "parameterTypes": [
+            [
+              "configureDelegate",
+              "System.Action`1<Microsoft.Extensions.Configuration.IConfigurationBuilder>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ConfigureServices",
+          "returnType": "Microsoft.Extensions.Hosting.IHostBuilder",
+          "parameterTypes": [
+            [
+              "configureDelegate",
+              "System.Action`2<Microsoft.Extensions.Hosting.HostBuilderContext,Microsoft.Extensions.DependencyInjection.IServiceCollection>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "UseServiceProviderFactory",
+          "returnType": "Microsoft.Extensions.Hosting.IHostBuilder",
+          "parameterTypes": [
+            [
+              "factory",
+              "Microsoft.Extensions.DependencyInjection.IServiceProviderFactory`1<TContainerBuilder>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "UseServiceProviderFactory",
+          "returnType": "Microsoft.Extensions.Hosting.IHostBuilder",
+          "parameterTypes": [
+            [
+              "factory",
+              "System.Func`2<Microsoft.Extensions.Hosting.HostBuilderContext,Microsoft.Extensions.DependencyInjection.IServiceProviderFactory`1<TContainerBuilder>>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ConfigureHostBuilder",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "hostBuilder",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "EntryPointCompleted",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "exception",
+              "System.Exception"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "SetHostFactory",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "hostFactory",
+              "System.Func`2<System.String[],System.Object>"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1",
+      "methods": [
+        {
+          "name": "get_Server",
+          "returnType": "Microsoft.AspNetCore.TestHost.TestServer",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Services",
+          "returnType": "System.IServiceProvider",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Factories",
+          "returnType": "System.Collections.Generic.IReadOnlyList`1<Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1<TEntryPoint>>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ClientOptions",
+          "returnType": "Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "WithWebHostBuilder",
+          "returnType": "Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory`1<TEntryPoint>",
+          "parameterTypes": [
+            [
+              "configuration",
+              "System.Action`1<Microsoft.AspNetCore.Hosting.IWebHostBuilder>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateClient",
+          "returnType": "System.Net.Http.HttpClient",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "CreateClient",
+          "returnType": "System.Net.Http.HttpClient",
+          "parameterTypes": [
+            [
+              "options",
+              "Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateDefaultClient",
+          "returnType": "System.Net.Http.HttpClient",
+          "parameterTypes": [
+            [
+              "handlers",
+              "System.Net.Http.DelegatingHandler[]"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateDefaultClient",
+          "returnType": "System.Net.Http.HttpClient",
+          "parameterTypes": [
+            [
+              "baseAddress",
+              "System.Uri"
+            ],
+            [
+              "handlers",
+              "System.Net.Http.DelegatingHandler[]"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Dispose",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "DisposeAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions",
+      "methods": [
+        {
+          "name": "get_BaseAddress",
+          "returnType": "System.Uri",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_BaseAddress",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Uri"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_AllowAutoRedirect",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_AllowAutoRedirect",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_MaxAutomaticRedirections",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_MaxAutomaticRedirections",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_HandleCookies",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_HandleCookies",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryContentRootAttribute",
+      "methods": [
+        {
+          "name": "get_Key",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ContentRootPath",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ContentRootTest",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Priority",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Testing.Resources",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "Microsoft.AspNetCore.Mvc.Testing.Handlers": [
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Testing.Handlers.CookieContainerHandler",
+      "methods": [
+        {
+          "name": "get_Container",
+          "returnType": "System.Net.CookieContainer",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Testing.Handlers.RedirectHandler",
+      "methods": [
+        {
+          "name": "get_MaxRedirects",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.Hosting": [
+    {
+      "name": "Microsoft.Extensions.Hosting.HostFactoryResolver",
+      "methods": [
+        {
+          "name": "ResolveWebHostFactory",
+          "returnType": "System.Func`2<System.String[],TWebHost>",
+          "parameterTypes": [
+            [
+              "assembly",
+              "System.Reflection.Assembly"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ResolveWebHostBuilderFactory",
+          "returnType": "System.Func`2<System.String[],TWebHostBuilder>",
+          "parameterTypes": [
+            [
+              "assembly",
+              "System.Reflection.Assembly"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ResolveHostBuilderFactory",
+          "returnType": "System.Func`2<System.String[],THostBuilder>",
+          "parameterTypes": [
+            [
+              "assembly",
+              "System.Reflection.Assembly"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ResolveHostFactory",
+          "returnType": "System.Func`2<System.String[],System.Object>",
+          "parameterTypes": [
+            [
+              "assembly",
+              "System.Reflection.Assembly"
+            ],
+            [
+              "waitTimeout",
+              "System.Nullable`1<System.TimeSpan>"
+            ],
+            [
+              "stopApplication",
+              "System.Boolean"
+            ],
+            [
+              "configureHostBuilder",
+              "System.Action`1<System.Object>"
+            ],
+            [
+              "entrypointCompleted",
+              "System.Action`1<System.Exception>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ResolveServiceProviderFactory",
+          "returnType": "System.Func`2<System.String[],System.IServiceProvider>",
+          "parameterTypes": [
+            [
+              "assembly",
+              "System.Reflection.Assembly"
+            ],
+            [
+              "waitTimeout",
+              "System.Nullable`1<System.TimeSpan>"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

@@ -1,18 +1,12 @@
 package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{Unknown, *}
-import io.joern.rubysrc2cpg.datastructures.BlockScope
-import io.joern.rubysrc2cpg.passes.Defines
+import io.joern.rubysrc2cpg.datastructures.{BlockScope, FieldDecl}
 import io.joern.rubysrc2cpg.passes.Defines.{RubyOperators, getBuiltInType}
-import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
+import io.joern.x2cpg.{Ast, Defines as XDefines, ValidationMode}
+import io.joern.rubysrc2cpg.passes.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{
-  ControlStructureTypes,
-  DiffGraphBuilder,
-  DispatchTypes,
-  Operators,
-  PropertyNames
-}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators, PropertyNames}
 
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -28,7 +22,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case node: IndexAccess              => astForIndexAccess(node)
     case node: SingleAssignment         => astForSingleAssignment(node)
     case node: AttributeAssignment      => astForAttributeAssignment(node)
-    case node: SimpleIdentifier         => astForSimpleIdentifier(node)
+    case node: RubyIdentifier           => astForSimpleIdentifier(node)
     case node: SimpleCall               => astForSimpleCall(node)
     case node: RequireCall              => astForRequireCall(node)
     case node: IncludeCall              => astForIncludeCall(node)
@@ -312,12 +306,12 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     astForMemberCallWithoutBlock(call, memberAccess)
   }
 
-  protected def astForSimpleIdentifier(node: SimpleIdentifier): Ast = {
+  protected def astForSimpleIdentifier(node: RubyNode with RubyIdentifier): Ast = {
     val name = code(node)
 
-    if (name.startsWith("@")) {
+    if (name.startsWith("@@")) {
       logger.warn(
-        s"Class (@@) and instance (@) variables are not handled as members yet, but are instead handled as simple identifier declarations. Found: $name"
+        s"Class (@@) are not handled as members yet, but are instead handled as simple identifier declarations. Found: $name"
       )
     }
 

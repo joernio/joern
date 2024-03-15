@@ -1,0 +1,224 @@
+{
+  "Microsoft.CodeAnalysis": [
+    {
+      "name": "Microsoft.CodeAnalysis.EmbeddedAttribute",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System.Runtime.CompilerServices": [
+    {
+      "name": "System.Runtime.CompilerServices.NullableAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.NullableContextAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.RefSafetyRulesAttribute",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "Microsoft.Identity.Web.UI": [
+    {
+      "name": "Microsoft.Identity.Web.UI.MicrosoftIdentityAccountControllerFeatureProvider",
+      "methods": [
+        {
+          "name": "PopulateFeature",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "parts",
+              "System.Collections.Generic.IEnumerable`1<Microsoft.AspNetCore.Mvc.ApplicationParts.ApplicationPart>"
+            ],
+            [
+              "feature",
+              "Microsoft.AspNetCore.Mvc.Controllers.ControllerFeature"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Identity.Web.UI.ServiceCollectionExtensions",
+      "methods": [
+        {
+          "name": "AddMicrosoftIdentityUI",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IMvcBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.DependencyInjection.IMvcBuilder"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.Identity.Web.UI.Areas.MicrosoftIdentity.Pages.Account": [
+    {
+      "name": "Microsoft.Identity.Web.UI.Areas.MicrosoftIdentity.Pages.Account.AccessDeniedModel",
+      "methods": [
+        {
+          "name": "OnGet",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Identity.Web.UI.Areas.MicrosoftIdentity.Pages.Account.ErrorModel",
+      "methods": [
+        {
+          "name": "get_RequestId",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_RequestId",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ShowRequestId",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Error",
+          "returnType": "Microsoft.Identity.Web.ILoginErrorAccessor",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "OnGet",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Identity.Web.UI.Areas.MicrosoftIdentity.Pages.Account.SignedOutModel",
+      "methods": [
+        {
+          "name": "OnGet",
+          "returnType": "Microsoft.AspNetCore.Mvc.IActionResult",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.Identity.Web.UI.Areas.MicrosoftIdentity.Controllers": [
+    {
+      "name": "Microsoft.Identity.Web.UI.Areas.MicrosoftIdentity.Controllers.AccountController",
+      "methods": [
+        {
+          "name": "SignIn",
+          "returnType": "Microsoft.AspNetCore.Mvc.IActionResult",
+          "parameterTypes": [
+            [
+              "scheme",
+              "System.String"
+            ],
+            [
+              "redirectUri",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Challenge",
+          "returnType": "Microsoft.AspNetCore.Mvc.IActionResult",
+          "parameterTypes": [
+            [
+              "redirectUri",
+              "System.String"
+            ],
+            [
+              "scope",
+              "System.String"
+            ],
+            [
+              "loginHint",
+              "System.String"
+            ],
+            [
+              "domainHint",
+              "System.String"
+            ],
+            [
+              "claims",
+              "System.String"
+            ],
+            [
+              "policy",
+              "System.String"
+            ],
+            [
+              "scheme",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "SignOut",
+          "returnType": "Microsoft.AspNetCore.Mvc.IActionResult",
+          "parameterTypes": [
+            [
+              "scheme",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ResetPassword",
+          "returnType": "Microsoft.AspNetCore.Mvc.IActionResult",
+          "parameterTypes": [
+            [
+              "scheme",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "EditProfile",
+          "returnType": "System.Threading.Tasks.Task`1<Microsoft.AspNetCore.Mvc.IActionResult>",
+          "parameterTypes": [
+            [
+              "scheme",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

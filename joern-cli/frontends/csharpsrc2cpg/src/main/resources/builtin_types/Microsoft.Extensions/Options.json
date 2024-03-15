@@ -1,0 +1,2601 @@
+{
+  "Microsoft.CodeAnalysis": [
+    {
+      "name": "Microsoft.CodeAnalysis.EmbeddedAttribute",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System.Runtime.CompilerServices": [
+    {
+      "name": "System.Runtime.CompilerServices.NullableAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.NullableContextAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.NullablePublicOnlyAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.RefSafetyRulesAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.CallerArgumentExpressionAttribute",
+      "methods": [
+        {
+          "name": "get_ParameterName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "FxResources.Microsoft.Extensions.Options": [
+    {
+      "name": "FxResources.Microsoft.Extensions.Options.SR",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System": [
+    {
+      "name": "System.ThrowHelper",
+      "methods": [
+        {
+          "name": "IfNullOrWhitespace",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "argument",
+              "System.String"
+            ],
+            [
+              "paramName",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.SR",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System.Diagnostics.CodeAnalysis": [
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute",
+      "methods": [
+        {
+          "name": "get_MemberTypes",
+          "returnType": "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute",
+      "methods": [
+        {
+          "name": "get_Category",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_CheckId",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Scope",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Scope",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Target",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Target",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_MessageId",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_MessageId",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Justification",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Justification",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.AllowNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DisallowNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MaybeNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.NotNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute",
+      "methods": [
+        {
+          "name": "get_ReturnValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.NotNullWhenAttribute",
+      "methods": [
+        {
+          "name": "get_ReturnValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute",
+      "methods": [
+        {
+          "name": "get_ParameterName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute",
+      "methods": [
+        {
+          "name": "get_ParameterValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MemberNotNullAttribute",
+      "methods": [
+        {
+          "name": "get_Members",
+          "returnType": "System.String[]",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute",
+      "methods": [
+        {
+          "name": "get_ReturnValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Members",
+          "returnType": "System.String[]",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "System.Runtime.InteropServices": [
+    {
+      "name": "System.Runtime.InteropServices.LibraryImportAttribute",
+      "methods": [
+        {
+          "name": "get_LibraryName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_EntryPoint",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_EntryPoint",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_StringMarshalling",
+          "returnType": "System.Runtime.InteropServices.StringMarshalling",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_StringMarshalling",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Runtime.InteropServices.StringMarshalling"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_StringMarshallingCustomType",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_StringMarshallingCustomType",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Type"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_SetLastError",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_SetLastError",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.InteropServices.StringMarshalling",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.DependencyInjection": [
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.OptionsBuilderExtensions",
+      "methods": [
+        {
+          "name": "ValidateOnStart",
+          "returnType": "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>",
+          "parameterTypes": [
+            [
+              "optionsBuilder",
+              "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.OptionsServiceCollectionExtensions",
+      "methods": [
+        {
+          "name": "AddOptions",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddOptionsWithValidateOnStart",
+          "returnType": "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "name",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddOptionsWithValidateOnStart",
+          "returnType": "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "name",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Configure",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "configureOptions",
+              "System.Action`1<TOptions>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Configure",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "configureOptions",
+              "System.Action`1<TOptions>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ConfigureAll",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "configureOptions",
+              "System.Action`1<TOptions>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "PostConfigure",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "configureOptions",
+              "System.Action`1<TOptions>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "PostConfigure",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "configureOptions",
+              "System.Action`1<TOptions>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "PostConfigureAll",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "configureOptions",
+              "System.Action`1<TOptions>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ConfigureOptions",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ConfigureOptions",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "configureType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ConfigureOptions",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "configureInstance",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddOptions",
+          "returnType": "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddOptions",
+          "returnType": "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "name",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.Options": [
+    {
+      "name": "Microsoft.Extensions.Options.ConfigureNamedOptions`1",
+      "methods": [
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Action",
+          "returnType": "System.Action`1<TOptions>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Configure",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Configure",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.ConfigureNamedOptions`2",
+      "methods": [
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Action",
+          "returnType": "System.Action`2<TOptions,TDep>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency",
+          "returnType": "TDep",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Configure",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Configure",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.ConfigureNamedOptions`3",
+      "methods": [
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Action",
+          "returnType": "System.Action`3<TOptions,TDep1,TDep2>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency1",
+          "returnType": "TDep1",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency2",
+          "returnType": "TDep2",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Configure",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Configure",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.ConfigureNamedOptions`4",
+      "methods": [
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Action",
+          "returnType": "System.Action`4<TOptions,TDep1,TDep2,TDep3>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency1",
+          "returnType": "TDep1",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency2",
+          "returnType": "TDep2",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency3",
+          "returnType": "TDep3",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Configure",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Configure",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.ConfigureNamedOptions`5",
+      "methods": [
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Action",
+          "returnType": "System.Action`5<TOptions,TDep1,TDep2,TDep3,TDep4>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency1",
+          "returnType": "TDep1",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency2",
+          "returnType": "TDep2",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency3",
+          "returnType": "TDep3",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency4",
+          "returnType": "TDep4",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Configure",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Configure",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.ConfigureNamedOptions`6",
+      "methods": [
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Action",
+          "returnType": "System.Action`6<TOptions,TDep1,TDep2,TDep3,TDep4,TDep5>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency1",
+          "returnType": "TDep1",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency2",
+          "returnType": "TDep2",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency3",
+          "returnType": "TDep3",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency4",
+          "returnType": "TDep4",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency5",
+          "returnType": "TDep5",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Configure",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Configure",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.ConfigureOptions`1",
+      "methods": [
+        {
+          "name": "get_Action",
+          "returnType": "System.Action`1<TOptions>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Configure",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.IConfigureNamedOptions`1",
+      "methods": [
+        {
+          "name": "Configure",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.IConfigureOptions`1",
+      "methods": [
+        {
+          "name": "Configure",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.IOptions`1",
+      "methods": [
+        {
+          "name": "get_Value",
+          "returnType": "TOptions",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.IOptionsChangeTokenSource`1",
+      "methods": [
+        {
+          "name": "GetChangeToken",
+          "returnType": "Microsoft.Extensions.Primitives.IChangeToken",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.IOptionsFactory`1",
+      "methods": [
+        {
+          "name": "Create",
+          "returnType": "TOptions",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.IOptionsMonitor`1",
+      "methods": [
+        {
+          "name": "get_CurrentValue",
+          "returnType": "TOptions",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Get",
+          "returnType": "TOptions",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "OnChange",
+          "returnType": "System.IDisposable",
+          "parameterTypes": [
+            [
+              "listener",
+              "System.Action`2<TOptions,System.String>"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.IOptionsMonitorCache`1",
+      "methods": [
+        {
+          "name": "GetOrAdd",
+          "returnType": "TOptions",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "createOptions",
+              "System.Func`1<TOptions>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "TryAdd",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "TryRemove",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Clear",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.IOptionsSnapshot`1",
+      "methods": [
+        {
+          "name": "Get",
+          "returnType": "TOptions",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.IPostConfigureOptions`1",
+      "methods": [
+        {
+          "name": "PostConfigure",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.IStartupValidator",
+      "methods": [
+        {
+          "name": "Validate",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.IValidateOptions`1",
+      "methods": [
+        {
+          "name": "Validate",
+          "returnType": "Microsoft.Extensions.Options.ValidateOptionsResult",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.Options",
+      "methods": [
+        {
+          "name": "Create",
+          "returnType": "Microsoft.Extensions.Options.IOptions`1<TOptions>",
+          "parameterTypes": [
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.OptionsBuilder`1",
+      "methods": [
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Services",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Configure",
+          "returnType": "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>",
+          "parameterTypes": [
+            [
+              "configureOptions",
+              "System.Action`1<TOptions>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Configure",
+          "returnType": "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>",
+          "parameterTypes": [
+            [
+              "configureOptions",
+              "System.Action`2<TOptions,TDep>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Configure",
+          "returnType": "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>",
+          "parameterTypes": [
+            [
+              "configureOptions",
+              "System.Action`3<TOptions,TDep1,TDep2>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Configure",
+          "returnType": "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>",
+          "parameterTypes": [
+            [
+              "configureOptions",
+              "System.Action`4<TOptions,TDep1,TDep2,TDep3>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Configure",
+          "returnType": "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>",
+          "parameterTypes": [
+            [
+              "configureOptions",
+              "System.Action`5<TOptions,TDep1,TDep2,TDep3,TDep4>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Configure",
+          "returnType": "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>",
+          "parameterTypes": [
+            [
+              "configureOptions",
+              "System.Action`6<TOptions,TDep1,TDep2,TDep3,TDep4,TDep5>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "PostConfigure",
+          "returnType": "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>",
+          "parameterTypes": [
+            [
+              "configureOptions",
+              "System.Action`1<TOptions>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "PostConfigure",
+          "returnType": "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>",
+          "parameterTypes": [
+            [
+              "configureOptions",
+              "System.Action`2<TOptions,TDep>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "PostConfigure",
+          "returnType": "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>",
+          "parameterTypes": [
+            [
+              "configureOptions",
+              "System.Action`3<TOptions,TDep1,TDep2>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "PostConfigure",
+          "returnType": "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>",
+          "parameterTypes": [
+            [
+              "configureOptions",
+              "System.Action`4<TOptions,TDep1,TDep2,TDep3>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "PostConfigure",
+          "returnType": "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>",
+          "parameterTypes": [
+            [
+              "configureOptions",
+              "System.Action`5<TOptions,TDep1,TDep2,TDep3,TDep4>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "PostConfigure",
+          "returnType": "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>",
+          "parameterTypes": [
+            [
+              "configureOptions",
+              "System.Action`6<TOptions,TDep1,TDep2,TDep3,TDep4,TDep5>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Validate",
+          "returnType": "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>",
+          "parameterTypes": [
+            [
+              "validation",
+              "System.Func`2<TOptions,System.Boolean>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Validate",
+          "returnType": "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>",
+          "parameterTypes": [
+            [
+              "validation",
+              "System.Func`2<TOptions,System.Boolean>"
+            ],
+            [
+              "failureMessage",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Validate",
+          "returnType": "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>",
+          "parameterTypes": [
+            [
+              "validation",
+              "System.Func`3<TOptions,TDep,System.Boolean>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Validate",
+          "returnType": "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>",
+          "parameterTypes": [
+            [
+              "validation",
+              "System.Func`3<TOptions,TDep,System.Boolean>"
+            ],
+            [
+              "failureMessage",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Validate",
+          "returnType": "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>",
+          "parameterTypes": [
+            [
+              "validation",
+              "System.Func`4<TOptions,TDep1,TDep2,System.Boolean>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Validate",
+          "returnType": "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>",
+          "parameterTypes": [
+            [
+              "validation",
+              "System.Func`4<TOptions,TDep1,TDep2,System.Boolean>"
+            ],
+            [
+              "failureMessage",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Validate",
+          "returnType": "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>",
+          "parameterTypes": [
+            [
+              "validation",
+              "System.Func`5<TOptions,TDep1,TDep2,TDep3,System.Boolean>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Validate",
+          "returnType": "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>",
+          "parameterTypes": [
+            [
+              "validation",
+              "System.Func`5<TOptions,TDep1,TDep2,TDep3,System.Boolean>"
+            ],
+            [
+              "failureMessage",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Validate",
+          "returnType": "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>",
+          "parameterTypes": [
+            [
+              "validation",
+              "System.Func`6<TOptions,TDep1,TDep2,TDep3,TDep4,System.Boolean>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Validate",
+          "returnType": "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>",
+          "parameterTypes": [
+            [
+              "validation",
+              "System.Func`6<TOptions,TDep1,TDep2,TDep3,TDep4,System.Boolean>"
+            ],
+            [
+              "failureMessage",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Validate",
+          "returnType": "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>",
+          "parameterTypes": [
+            [
+              "validation",
+              "System.Func`7<TOptions,TDep1,TDep2,TDep3,TDep4,TDep5,System.Boolean>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Validate",
+          "returnType": "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>",
+          "parameterTypes": [
+            [
+              "validation",
+              "System.Func`7<TOptions,TDep1,TDep2,TDep3,TDep4,TDep5,System.Boolean>"
+            ],
+            [
+              "failureMessage",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.OptionsCache`1",
+      "methods": [
+        {
+          "name": "Clear",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "GetOrAdd",
+          "returnType": "TOptions",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "createOptions",
+              "System.Func`1<TOptions>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "TryAdd",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "TryRemove",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.OptionsFactory`1",
+      "methods": [
+        {
+          "name": "Create",
+          "returnType": "TOptions",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.OptionsManager`1",
+      "methods": [
+        {
+          "name": "get_Value",
+          "returnType": "TOptions",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Get",
+          "returnType": "TOptions",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.OptionsMonitor`1",
+      "methods": [
+        {
+          "name": "get_CurrentValue",
+          "returnType": "TOptions",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Get",
+          "returnType": "TOptions",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "OnChange",
+          "returnType": "System.IDisposable",
+          "parameterTypes": [
+            [
+              "listener",
+              "System.Action`2<TOptions,System.String>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Dispose",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.OptionsMonitorExtensions",
+      "methods": [
+        {
+          "name": "OnChange",
+          "returnType": "System.IDisposable",
+          "parameterTypes": [
+            [
+              "monitor",
+              "Microsoft.Extensions.Options.IOptionsMonitor`1<TOptions>"
+            ],
+            [
+              "listener",
+              "System.Action`1<TOptions>"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.OptionsValidationException",
+      "methods": [
+        {
+          "name": "get_OptionsName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_OptionsType",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Failures",
+          "returnType": "System.Collections.Generic.IEnumerable`1<System.String>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Message",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.OptionsValidatorAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.OptionsWrapper`1",
+      "methods": [
+        {
+          "name": "get_Value",
+          "returnType": "TOptions",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.PostConfigureOptions`1",
+      "methods": [
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Action",
+          "returnType": "System.Action`1<TOptions>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "PostConfigure",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.PostConfigureOptions`2",
+      "methods": [
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Action",
+          "returnType": "System.Action`2<TOptions,TDep>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency",
+          "returnType": "TDep",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "PostConfigure",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "PostConfigure",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.PostConfigureOptions`3",
+      "methods": [
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Action",
+          "returnType": "System.Action`3<TOptions,TDep1,TDep2>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency1",
+          "returnType": "TDep1",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency2",
+          "returnType": "TDep2",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "PostConfigure",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "PostConfigure",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.PostConfigureOptions`4",
+      "methods": [
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Action",
+          "returnType": "System.Action`4<TOptions,TDep1,TDep2,TDep3>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency1",
+          "returnType": "TDep1",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency2",
+          "returnType": "TDep2",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency3",
+          "returnType": "TDep3",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "PostConfigure",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "PostConfigure",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.PostConfigureOptions`5",
+      "methods": [
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Action",
+          "returnType": "System.Action`5<TOptions,TDep1,TDep2,TDep3,TDep4>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency1",
+          "returnType": "TDep1",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency2",
+          "returnType": "TDep2",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency3",
+          "returnType": "TDep3",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency4",
+          "returnType": "TDep4",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "PostConfigure",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "PostConfigure",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.PostConfigureOptions`6",
+      "methods": [
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Action",
+          "returnType": "System.Action`6<TOptions,TDep1,TDep2,TDep3,TDep4,TDep5>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency1",
+          "returnType": "TDep1",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency2",
+          "returnType": "TDep2",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency3",
+          "returnType": "TDep3",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency4",
+          "returnType": "TDep4",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency5",
+          "returnType": "TDep5",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "PostConfigure",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "PostConfigure",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.StartupValidatorOptions",
+      "methods": [
+        {
+          "name": "get__validators",
+          "returnType": "System.Collections.Generic.Dictionary`2<System.ValueTuple`2<System.Type,System.String>,System.Action>",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.UnnamedOptionsManager`1",
+      "methods": [
+        {
+          "name": "get_Value",
+          "returnType": "TOptions",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.ValidateEnumeratedItemsAttribute",
+      "methods": [
+        {
+          "name": "get_Validator",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.ValidateObjectMembersAttribute",
+      "methods": [
+        {
+          "name": "get_Validator",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.StartupValidator",
+      "methods": [
+        {
+          "name": "Validate",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.ValidateOptions`1",
+      "methods": [
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Validation",
+          "returnType": "System.Func`2<TOptions,System.Boolean>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_FailureMessage",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Validate",
+          "returnType": "Microsoft.Extensions.Options.ValidateOptionsResult",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.ValidateOptions`2",
+      "methods": [
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Validation",
+          "returnType": "System.Func`3<TOptions,TDep,System.Boolean>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_FailureMessage",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency",
+          "returnType": "TDep",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Validate",
+          "returnType": "Microsoft.Extensions.Options.ValidateOptionsResult",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.ValidateOptions`3",
+      "methods": [
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Validation",
+          "returnType": "System.Func`4<TOptions,TDep1,TDep2,System.Boolean>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_FailureMessage",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency1",
+          "returnType": "TDep1",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency2",
+          "returnType": "TDep2",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Validate",
+          "returnType": "Microsoft.Extensions.Options.ValidateOptionsResult",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.ValidateOptions`4",
+      "methods": [
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Validation",
+          "returnType": "System.Func`5<TOptions,TDep1,TDep2,TDep3,System.Boolean>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_FailureMessage",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency1",
+          "returnType": "TDep1",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency2",
+          "returnType": "TDep2",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency3",
+          "returnType": "TDep3",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Validate",
+          "returnType": "Microsoft.Extensions.Options.ValidateOptionsResult",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.ValidateOptions`5",
+      "methods": [
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Validation",
+          "returnType": "System.Func`6<TOptions,TDep1,TDep2,TDep3,TDep4,System.Boolean>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_FailureMessage",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency1",
+          "returnType": "TDep1",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency2",
+          "returnType": "TDep2",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency3",
+          "returnType": "TDep3",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency4",
+          "returnType": "TDep4",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Validate",
+          "returnType": "Microsoft.Extensions.Options.ValidateOptionsResult",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.ValidateOptions`6",
+      "methods": [
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Validation",
+          "returnType": "System.Func`7<TOptions,TDep1,TDep2,TDep3,TDep4,TDep5,System.Boolean>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_FailureMessage",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency1",
+          "returnType": "TDep1",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency2",
+          "returnType": "TDep2",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency3",
+          "returnType": "TDep3",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency4",
+          "returnType": "TDep4",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Dependency5",
+          "returnType": "TDep5",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Validate",
+          "returnType": "Microsoft.Extensions.Options.ValidateOptionsResult",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "options",
+              "TOptions"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.ValidateOptionsResult",
+      "methods": [
+        {
+          "name": "get_Succeeded",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Skipped",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Failed",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_FailureMessage",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Failures",
+          "returnType": "System.Collections.Generic.IEnumerable`1<System.String>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Fail",
+          "returnType": "Microsoft.Extensions.Options.ValidateOptionsResult",
+          "parameterTypes": [
+            [
+              "failureMessage",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Fail",
+          "returnType": "Microsoft.Extensions.Options.ValidateOptionsResult",
+          "parameterTypes": [
+            [
+              "failures",
+              "System.Collections.Generic.IEnumerable`1<System.String>"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.ValidateOptionsResultBuilder",
+      "methods": [
+        {
+          "name": "AddError",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "error",
+              "System.String"
+            ],
+            [
+              "propertyName",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AddResult",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "result",
+              "System.ComponentModel.DataAnnotations.ValidationResult"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AddResults",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "results",
+              "System.Collections.Generic.IEnumerable`1<System.ComponentModel.DataAnnotations.ValidationResult>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AddResult",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "result",
+              "Microsoft.Extensions.Options.ValidateOptionsResult"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Build",
+          "returnType": "Microsoft.Extensions.Options.ValidateOptionsResult",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Clear",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

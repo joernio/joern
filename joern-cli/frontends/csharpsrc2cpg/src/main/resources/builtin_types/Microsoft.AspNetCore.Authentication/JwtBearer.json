@@ -1,0 +1,904 @@
+{
+  "System": [
+    {
+      "name": "System.StringHelpers",
+      "methods": [
+        {
+          "name": "ParseValueOrDefault",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "stringValue",
+              "System.String"
+            ],
+            [
+              "parser",
+              "System.Func`2<System.String,T>"
+            ],
+            [
+              "defaultValue",
+              "T"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.Logging": [
+    {
+      "name": "Microsoft.Extensions.Logging.LoggingExtensions",
+      "methods": [
+        {
+          "name": "TokenValidationFailed",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "ex",
+              "System.Exception"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TokenValidationSucceeded",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ErrorProcessingMessage",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "ex",
+              "System.Exception"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ForbiddenResponseHasStarted",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.DependencyInjection": [
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.JwtBearerExtensions",
+      "methods": [
+        {
+          "name": "AddJwtBearer",
+          "returnType": "Microsoft.AspNetCore.Authentication.AuthenticationBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.AspNetCore.Authentication.AuthenticationBuilder"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddJwtBearer",
+          "returnType": "Microsoft.AspNetCore.Authentication.AuthenticationBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.AspNetCore.Authentication.AuthenticationBuilder"
+            ],
+            [
+              "authenticationScheme",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddJwtBearer",
+          "returnType": "Microsoft.AspNetCore.Authentication.AuthenticationBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.AspNetCore.Authentication.AuthenticationBuilder"
+            ],
+            [
+              "configureOptions",
+              "System.Action`1<Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerOptions>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddJwtBearer",
+          "returnType": "Microsoft.AspNetCore.Authentication.AuthenticationBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.AspNetCore.Authentication.AuthenticationBuilder"
+            ],
+            [
+              "authenticationScheme",
+              "System.String"
+            ],
+            [
+              "configureOptions",
+              "System.Action`1<Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerOptions>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddJwtBearer",
+          "returnType": "Microsoft.AspNetCore.Authentication.AuthenticationBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.AspNetCore.Authentication.AuthenticationBuilder"
+            ],
+            [
+              "authenticationScheme",
+              "System.String"
+            ],
+            [
+              "displayName",
+              "System.String"
+            ],
+            [
+              "configureOptions",
+              "System.Action`1<Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerOptions>"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.AspNetCore.Authentication": [
+    {
+      "name": "Microsoft.AspNetCore.Authentication.JwtBearerConfigureOptions",
+      "methods": [
+        {
+          "name": "Configure",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "options",
+              "Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerOptions"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Configure",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "options",
+              "Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerOptions"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.AspNetCore.Authentication.JwtBearer": [
+    {
+      "name": "Microsoft.AspNetCore.Authentication.JwtBearer.AuthenticateResults",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Authentication.JwtBearer.AuthenticationFailedContext",
+      "methods": [
+        {
+          "name": "get_Exception",
+          "returnType": "System.Exception",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Exception",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Exception"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Authentication.JwtBearer.ForbiddenContext",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerChallengeContext",
+      "methods": [
+        {
+          "name": "get_AuthenticateFailure",
+          "returnType": "System.Exception",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_AuthenticateFailure",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Exception"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Error",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Error",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ErrorDescription",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ErrorDescription",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ErrorUri",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ErrorUri",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Handled",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "HandleResponse",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents",
+      "methods": [
+        {
+          "name": "get_OnAuthenticationFailed",
+          "returnType": "System.Func`2<Microsoft.AspNetCore.Authentication.JwtBearer.AuthenticationFailedContext,System.Threading.Tasks.Task>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_OnAuthenticationFailed",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Func`2<Microsoft.AspNetCore.Authentication.JwtBearer.AuthenticationFailedContext,System.Threading.Tasks.Task>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_OnForbidden",
+          "returnType": "System.Func`2<Microsoft.AspNetCore.Authentication.JwtBearer.ForbiddenContext,System.Threading.Tasks.Task>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_OnForbidden",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Func`2<Microsoft.AspNetCore.Authentication.JwtBearer.ForbiddenContext,System.Threading.Tasks.Task>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_OnMessageReceived",
+          "returnType": "System.Func`2<Microsoft.AspNetCore.Authentication.JwtBearer.MessageReceivedContext,System.Threading.Tasks.Task>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_OnMessageReceived",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Func`2<Microsoft.AspNetCore.Authentication.JwtBearer.MessageReceivedContext,System.Threading.Tasks.Task>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_OnTokenValidated",
+          "returnType": "System.Func`2<Microsoft.AspNetCore.Authentication.JwtBearer.TokenValidatedContext,System.Threading.Tasks.Task>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_OnTokenValidated",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Func`2<Microsoft.AspNetCore.Authentication.JwtBearer.TokenValidatedContext,System.Threading.Tasks.Task>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_OnChallenge",
+          "returnType": "System.Func`2<Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerChallengeContext,System.Threading.Tasks.Task>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_OnChallenge",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Func`2<Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerChallengeContext,System.Threading.Tasks.Task>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AuthenticationFailed",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Authentication.JwtBearer.AuthenticationFailedContext"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Forbidden",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Authentication.JwtBearer.ForbiddenContext"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "MessageReceived",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Authentication.JwtBearer.MessageReceivedContext"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "TokenValidated",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Authentication.JwtBearer.TokenValidatedContext"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Challenge",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerChallengeContext"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerHandler",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerOptions",
+      "methods": [
+        {
+          "name": "get_RequireHttpsMetadata",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_RequireHttpsMetadata",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_MetadataAddress",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_MetadataAddress",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Authority",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Authority",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Audience",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Audience",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Challenge",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Challenge",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Events",
+          "returnType": "Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Events",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_BackchannelHttpHandler",
+          "returnType": "System.Net.Http.HttpMessageHandler",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_BackchannelHttpHandler",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Net.Http.HttpMessageHandler"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Backchannel",
+          "returnType": "System.Net.Http.HttpClient",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Backchannel",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Net.Http.HttpClient"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_BackchannelTimeout",
+          "returnType": "System.TimeSpan",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_BackchannelTimeout",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.TimeSpan"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Configuration",
+          "returnType": "Microsoft.IdentityModel.Protocols.OpenIdConnect.OpenIdConnectConfiguration",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Configuration",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.IdentityModel.Protocols.OpenIdConnect.OpenIdConnectConfiguration"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ConfigurationManager",
+          "returnType": "Microsoft.IdentityModel.Protocols.IConfigurationManager`1<Microsoft.IdentityModel.Protocols.OpenIdConnect.OpenIdConnectConfiguration>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ConfigurationManager",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.IdentityModel.Protocols.IConfigurationManager`1<Microsoft.IdentityModel.Protocols.OpenIdConnect.OpenIdConnectConfiguration>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_RefreshOnIssuerKeyNotFound",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_RefreshOnIssuerKeyNotFound",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_SecurityTokenValidators",
+          "returnType": "System.Collections.Generic.IList`1<Microsoft.IdentityModel.Tokens.ISecurityTokenValidator>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_TokenHandlers",
+          "returnType": "System.Collections.Generic.IList`1<Microsoft.IdentityModel.Tokens.TokenHandler>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_TokenValidationParameters",
+          "returnType": "Microsoft.IdentityModel.Tokens.TokenValidationParameters",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_TokenValidationParameters",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.IdentityModel.Tokens.TokenValidationParameters"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_SaveToken",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_SaveToken",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_IncludeErrorDetails",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_IncludeErrorDetails",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_MapInboundClaims",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_MapInboundClaims",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_AutomaticRefreshInterval",
+          "returnType": "System.TimeSpan",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_AutomaticRefreshInterval",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.TimeSpan"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_RefreshInterval",
+          "returnType": "System.TimeSpan",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_RefreshInterval",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.TimeSpan"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_UseSecurityTokenValidators",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_UseSecurityTokenValidators",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerPostConfigureOptions",
+      "methods": [
+        {
+          "name": "PostConfigure",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "options",
+              "Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerOptions"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Authentication.JwtBearer.MessageReceivedContext",
+      "methods": [
+        {
+          "name": "get_Token",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Token",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Authentication.JwtBearer.TokenValidatedContext",
+      "methods": [
+        {
+          "name": "get_SecurityToken",
+          "returnType": "Microsoft.IdentityModel.Tokens.SecurityToken",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_SecurityToken",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.IdentityModel.Tokens.SecurityToken"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Authentication.JwtBearer.Resources",
+      "methods": [],
+      "fields": []
+    }
+  ]
+}

@@ -32,6 +32,23 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
     */
   def newProgramScope: Option[ProgramScope] = surroundingScopeFullName.map(ProgramScope.apply)
 
+  def pushField(field: FieldDecl): Unit = {
+    popScope().foreach {
+      case TypeScope(fullName, fields) =>
+        pushNewScope(TypeScope(fullName, fields :+ field))
+      case x =>
+        pushField(field)
+        pushNewScope(x)
+    }
+  }
+
+  def getFieldsInScope: List[FieldDecl] =
+    stack.collect { case ScopeElement(TypeScope(_, fields), _) => fields }.flatten
+
+  def findFieldInScope(fieldName: String): Option[FieldDecl] = {
+    getFieldsInScope.find(_.name == fieldName)
+  }
+
   override def pushNewScope(scopeNode: TypedScopeElement): Unit = {
     // Use the summary to determine if there is a constructor present
     val mappedScopeNode = scopeNode match {
@@ -41,6 +58,9 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
       case n: ProgramScope =>
         typesInScope.addAll(summary.typesUnderNamespace(n.fullName))
         n
+      case TypeScope(name, _) =>
+        typesInScope.addAll(summary.matchingTypes(name))
+        scopeNode
       case _ => scopeNode
     }
 
