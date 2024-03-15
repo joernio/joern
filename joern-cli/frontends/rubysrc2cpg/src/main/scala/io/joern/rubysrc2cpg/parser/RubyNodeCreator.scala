@@ -714,6 +714,11 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   ): (RubyNode, List[RubyNode with RubyFieldIdentifier]) = {
     val loweredClassDecls = lowerSingletonClassDeclarations(ctxBodyStatement)
 
+    /** Generates SingleAssignment RubyNodes for list of fields and fields found in method decls
+      * @param fields
+      * @param fieldsInMethodDecls
+      * @return
+      */
     def genSingleAssignmentStmtList(
       fields: List[RubyNode],
       fieldsInMethodDecls: List[RubyNode]
@@ -769,7 +774,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
               //   <instanceField> = nil; <instanceField> = ...;
               case stmtList: StatementList =>
                 val initializers = initStmtListStatements :+ clinitMethod
-                StatementList(initializers ++ stmtList.statements)(stmtList.span)
+                StatementList(initializers ++ rest)(stmtList.span)
               case x => x
             }
           case None =>
@@ -778,7 +783,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
                 stmtList.span
               )
             val initializers = newInitMethod :: clinitMethod :: Nil
-            StatementList(newInitMethod +: stmtList.statements)(stmtList.span)
+            StatementList(initializers ++ rest)(stmtList.span)
         }
 
         val combinedFields = rubyFieldIdentifiers ++ instanceFieldsInMethodDecls ++ classFieldsInMethodDecls

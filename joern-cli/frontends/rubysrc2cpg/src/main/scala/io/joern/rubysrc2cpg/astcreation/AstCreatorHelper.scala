@@ -33,7 +33,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   private def astForFieldInstance(name: String, node: RubyNode with RubyFieldIdentifier): Ast = {
     val identName = node match {
       case _: InstanceFieldIdentifier => Defines.This
-      case _: ClassFieldIdentifier    => scope.surroundingTypeFullName.getOrElse(Defines.Any)
+      case _: ClassFieldIdentifier    => scope.surroundingTypeFullName.map(_.split("[.]").last).getOrElse(Defines.Any)
     }
 
     astForFieldAccess(
@@ -51,7 +51,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     val typeRef    = scope.tryResolveTypeReference(name)
 
     node match {
-      case fieldVariable: InstanceFieldIdentifier =>
+      case fieldVariable: RubyFieldIdentifier =>
         scope.findFieldInScope(name) match {
           case None =>
             scope.pushField(FieldDecl(name, Defines.Any, false, false, fieldVariable))
