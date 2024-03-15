@@ -6,6 +6,7 @@ import io.joern.rubysrc2cpg.parser.RubyParser.RangeOperatorContext
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import org.antlr.v4.runtime.tree.{ParseTree, RuleNode}
+import io.joern.x2cpg.Defines as XDefines;
 
 import scala.jdk.CollectionConverters.*
 
@@ -531,7 +532,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitClassIdentifierVariable(ctx: RubyParser.ClassIdentifierVariableContext): RubyNode = {
-    SimpleIdentifier()(ctx.toTextSpan)
+    ClassFieldIdentifier()(ctx.toTextSpan)
   }
 
   override def visitInstanceIdentifierVariable(ctx: RubyParser.InstanceIdentifierVariableContext): RubyNode = {
@@ -693,7 +694,9 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     )(ctx.toTextSpan)
   }
 
-  private def findInstanceFieldsInMethodDecls(methodDecls: List[MethodDeclaration]): List[InstanceFieldIdentifier] = {
+  private def findInstanceFieldsInMethodDecls(
+    methodDecls: List[MethodDeclaration]
+  ): List[RubyNode with RubyFieldIdentifier] = {
     // TODO: Handle case where body of method is not a StatementList
     methodDecls
       .flatMap {
@@ -701,19 +704,36 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
           x.lhs
         }
       }
-      .collect { case x: InstanceFieldIdentifier =>
+      .collect { case x: RubyNode with RubyFieldIdentifier =>
         x
       }
   }
 
   private def genInitFieldStmts(
     ctxBodyStatement: RubyParser.BodyStatementContext
-  ): (RubyNode, List[InstanceFieldIdentifier]) = {
+  ): (RubyNode, List[RubyNode with RubyFieldIdentifier]) = {
     val loweredClassDecls = lowerSingletonClassDeclarations(ctxBodyStatement)
+
+    def genSingleAssignmentStmtList(
+      fields: List[RubyNode],
+      fieldsInMethodDecls: List[RubyNode]
+    ): List[SingleAssignment] = {
+      (fields ++ fieldsInMethodDecls).map { x =>
+        SingleAssignment(x, "=", StaticLiteral(getBuiltInType(Defines.NilClass))(x.span.spanStart("nil")))(
+          x.span.spanStart(s"${x.span.text} = nil")
+        )
+      }
+    }
+
     loweredClassDecls match {
       case stmtList: StatementList =>
-        val (instanceFields, rest) = stmtList.statements.partition {
-          case x: InstanceFieldIdentifier => true
+        val (rubyFieldIdentifiers, rest) = stmtList.statements.partition {
+          case x: RubyNode with RubyFieldIdentifier => true
+          case _                                    => false
+        }
+
+        val (instanceFields, classFields) = rubyFieldIdentifiers.partition {
+          case _: InstanceFieldIdentifier => true
           case _                          => false
         }
 
@@ -721,20 +741,24 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
           x
         }
 
-        val fieldsInMethodDecls = findInstanceFieldsInMethodDecls(methodDecls)
+        val (instanceFieldsInMethodDecls, classFieldsInMethodDecls) =
+          findInstanceFieldsInMethodDecls(methodDecls).partition {
+            case _: InstanceFieldIdentifier => true
+            case _                          => false
+          }
 
         val initializeMethod = methodDecls.collectFirst { x =>
           x.methodName match
             case "initialize" => x
         }
 
-        val combinedInstanceFields = instanceFields ++ fieldsInMethodDecls
+        val initStmtListStatements = genSingleAssignmentStmtList(instanceFields, instanceFieldsInMethodDecls)
+        val clinitStmtList         = genSingleAssignmentStmtList(classFields, classFieldsInMethodDecls)
 
-        val initStmtListStatements = combinedInstanceFields.map { x =>
-          SingleAssignment(x, "=", StaticLiteral(getBuiltInType(Defines.NilClass))(x.span.spanStart("nil")))(
-            x.span.spanStart(s"${x.span.text} = nil")
+        val clinitMethod =
+          MethodDeclaration(XDefines.StaticInitMethodName, List.empty, StatementList(clinitStmtList)(stmtList.span))(
+            stmtList.span
           )
-        }
 
         val updatedStmtList = initializeMethod match {
           case Some(initMethod) =>
@@ -744,7 +768,8 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
               //   where you end up having
               //   <instanceField> = nil; <instanceField> = ...;
               case stmtList: StatementList =>
-                StatementList(initStmtListStatements ++ stmtList.statements)(stmtList.span)
+                val initializers = initStmtListStatements :+ clinitMethod
+                StatementList(initializers ++ stmtList.statements)(stmtList.span)
               case x => x
             }
           case None =>
@@ -752,10 +777,13 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
               MethodDeclaration("initialize", List.empty, StatementList(initStmtListStatements)(stmtList.span))(
                 stmtList.span
               )
+            val initializers = newInitMethod :: clinitMethod :: Nil
             StatementList(newInitMethod +: stmtList.statements)(stmtList.span)
         }
 
-        (updatedStmtList, combinedInstanceFields.asInstanceOf[List[InstanceFieldIdentifier]])
+        val combinedFields = rubyFieldIdentifiers ++ instanceFieldsInMethodDecls ++ classFieldsInMethodDecls
+
+        (updatedStmtList, combinedFields.asInstanceOf[List[RubyNode with RubyFieldIdentifier]])
       case decls => (decls, List.empty)
     }
   }
