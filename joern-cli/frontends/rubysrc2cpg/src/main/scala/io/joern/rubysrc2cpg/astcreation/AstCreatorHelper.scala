@@ -5,18 +5,11 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   InstanceFieldIdentifier,
   MemberAccess,
   RubyNode,
-  SimpleIdentifier
 }
 import io.joern.rubysrc2cpg.datastructures.{
   BlockScope,
   FieldDecl,
-  MethodLikeScope,
-  RubyProgramSummary,
-  RubyScope,
-  TypeLikeScope
 }
-import io.joern.x2cpg.datastructures.NamespaceLikeScope
-import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
