@@ -2,9 +2,10 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.astcreation.GlobalTypes.{builtinFunctions, builtinPrefix}
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{DummyNode, InstanceFieldIdentifier, MemberAccess, RubyNode}
 import io.joern.rubysrc2cpg.datastructures.{BlockScope, FieldDecl}
-import io.joern.x2cpg.{Ast, Defines, ValidationMode}
+import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -31,12 +32,11 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case instanceField: InstanceFieldIdentifier =>
         scope.findFieldInScope(name) match {
           case None =>
-            val fullName = s"${scope.surroundingTypeFullName.getOrElse(Defines.UnresolvedNamespace)}.$name"
             scope.pushField(FieldDecl(name, Defines.Any, false, false, node))
             astForFieldAccess(
               MemberAccess(
-                DummyNode(identifierNode(instanceField, "this", "this", Defines.Any))(
-                  instanceField.span.spanStart("this")
+                DummyNode(identifierNode(instanceField, Defines.This, Defines.This, Defines.Any))(
+                  instanceField.span.spanStart(Defines.This)
                 ),
                 ".",
                 name
@@ -46,7 +46,9 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
             val fieldNode = field.node
             astForFieldAccess(
               MemberAccess(
-                DummyNode(identifierNode(fieldNode, "this", "this", Defines.Any))(instanceField.span.spanStart("this")),
+                DummyNode(identifierNode(fieldNode, Defines.This, Defines.This, Defines.Any))(
+                  instanceField.span.spanStart(Defines.This)
+                ),
                 ".",
                 name
               )(fieldNode.span)

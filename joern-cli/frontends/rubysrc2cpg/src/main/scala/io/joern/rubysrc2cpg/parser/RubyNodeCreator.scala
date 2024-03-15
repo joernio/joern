@@ -706,10 +706,11 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
       }
   }
 
-  override def visitClassDefinition(ctx: RubyParser.ClassDefinitionContext): RubyNode = {
-    val loweredClassDecls = lowerSingletonClassDeclarations(ctx.bodyStatement())
-
-    val (stmts, fields) = loweredClassDecls match {
+  private def genInitFieldStmts(
+    ctxBodyStatement: RubyParser.BodyStatementContext
+  ): (RubyNode, List[InstanceFieldIdentifier]) = {
+    val loweredClassDecls = lowerSingletonClassDeclarations(ctxBodyStatement)
+    loweredClassDecls match {
       case stmtList: StatementList =>
         val (instanceFields, rest) = stmtList.statements.partition {
           case x: InstanceFieldIdentifier => true
@@ -754,16 +755,17 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
             StatementList(newInitMethod +: stmtList.statements)(stmtList.span)
         }
 
-        (updatedStmtList, combinedInstanceFields)
+        (updatedStmtList, combinedInstanceFields.asInstanceOf[List[InstanceFieldIdentifier]])
       case decls => (decls, List.empty)
     }
+  }
 
-    ClassDeclaration(
-      visit(ctx.classPath()),
-      Option(ctx.commandOrPrimaryValue()).map(visit),
-      stmts,
-      fields.asInstanceOf[List[InstanceFieldIdentifier]]
-    )(ctx.toTextSpan)
+  override def visitClassDefinition(ctx: RubyParser.ClassDefinitionContext): RubyNode = {
+    val (stmts, fields) = genInitFieldStmts(ctx.bodyStatement())
+
+    ClassDeclaration(visit(ctx.classPath()), Option(ctx.commandOrPrimaryValue()).map(visit), stmts, fields)(
+      ctx.toTextSpan
+    )
   }
 
   /** Lowers all MethodDeclaration found in SingletonClassDeclaration to SingletonMethodDeclaration.

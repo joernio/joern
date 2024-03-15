@@ -5,6 +5,7 @@ import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, FieldIdentifier, Identifier, Literal, Return}
 import io.shiftleft.semanticcpg.language.*
+import io.joern.rubysrc2cpg.passes.Defines as RubyDefines
 
 class ClassTests extends RubyCode2CpgFixture {
 
@@ -391,7 +392,7 @@ class ClassTests extends RubyCode2CpgFixture {
     }
   }
 
-  "Instance variable in class" should {
+  "Instance variables in a class and method defs" should {
     val cpg = code("""
         |class Foo
         | @a
@@ -413,7 +414,7 @@ class ClassTests extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
-    "be correct" in {
+    "create respective member nodes" in {
       inside(cpg.typeDecl.name("Foo").l) {
         case fooType :: Nil =>
           inside(fooType.member.l) {
@@ -426,7 +427,13 @@ class ClassTests extends RubyCode2CpgFixture {
               oMember.code shouldBe "@o"
             case _ => fail("Expected 5 members")
           }
+        case xs => fail(s"Expected TypeDecl for Foo, instead got ${xs.name.mkString(", ")}")
+      }
+    }
 
+    "create nil assignments under the class initializer" in {
+      inside(cpg.typeDecl.name("Foo").l) {
+        case fooType :: Nil =>
           inside(fooType.method.name(Defines.ConstructorMethodName).l) {
             case clinitMethod :: Nil =>
               inside(clinitMethod.block.astChildren.isCall.name(Operators.assignment).l) {
@@ -445,7 +452,7 @@ class ClassTests extends RubyCode2CpgFixture {
 
                       inside(lhs.argument.l) {
                         case (identifier: Identifier) :: (fieldIdentifier: FieldIdentifier) :: Nil =>
-                          identifier.code shouldBe "this"
+                          identifier.code shouldBe RubyDefines.This
                           fieldIdentifier.code shouldBe "@a"
                         case _ => fail("Expected identifier and fieldIdentifier for fieldAccess")
                       }

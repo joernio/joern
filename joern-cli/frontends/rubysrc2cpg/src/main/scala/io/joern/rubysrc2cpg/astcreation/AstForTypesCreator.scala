@@ -82,8 +82,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val fieldMemberNodes = node match {
       case classDecl: ClassDeclaration =>
         classDecl.fields.map { x =>
-          val name     = code(x)
-          val fullName = s"${scope.surroundingTypeFullName.getOrElse(XDefines.UnresolvedNamespace)}.$name"
+          val name = code(x)
           Ast(memberNode(x, name, name, Defines.Any))
         }
       case _ => Seq.empty
