@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.querying
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal, Return}
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, FieldIdentifier, Identifier, Literal, Return}
 import io.shiftleft.semanticcpg.language.*
 
 class ClassTests extends RubyCode2CpgFixture {
@@ -427,7 +427,7 @@ class ClassTests extends RubyCode2CpgFixture {
             case _ => fail("Expected 5 members")
           }
 
-          inside(fooType.method.name(Defines.StaticInitMethodName).l) {
+          inside(fooType.method.name(Defines.ConstructorMethodName).l) {
             case clinitMethod :: Nil =>
               inside(clinitMethod.block.astChildren.isCall.name(Operators.assignment).l) {
                 case aAssignment :: bAssignment :: cAssignment :: dAssignment :: oAssignment :: Nil =>
@@ -442,6 +442,13 @@ class ClassTests extends RubyCode2CpgFixture {
                     case (lhs: Call) :: (rhs: Literal) :: Nil =>
                       lhs.code shouldBe "this.@a"
                       lhs.methodFullName shouldBe Operators.fieldAccess
+
+                      inside(lhs.argument.l) {
+                        case (identifier: Identifier) :: (fieldIdentifier: FieldIdentifier) :: Nil =>
+                          identifier.code shouldBe "this"
+                          fieldIdentifier.code shouldBe "@a"
+                        case _ => fail("Expected identifier and fieldIdentifier for fieldAccess")
+                      }
 
                       rhs.code shouldBe "nil"
                     case _ => fail("Expected only LHS and RHS for assignment call")

@@ -1,15 +1,7 @@
 package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.astcreation.GlobalTypes.{builtinFunctions, builtinPrefix}
-import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
-  DummyNode,
-  InstanceFieldIdentifier,
-  MemberAccess,
-  RubyNode,
-}
-import io.joern.rubysrc2cpg.datastructures.{
-  BlockScope,
-  FieldDecl,
-}
+import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{DummyNode, InstanceFieldIdentifier, MemberAccess, RubyNode}
+import io.joern.rubysrc2cpg.datastructures.{BlockScope, FieldDecl}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*

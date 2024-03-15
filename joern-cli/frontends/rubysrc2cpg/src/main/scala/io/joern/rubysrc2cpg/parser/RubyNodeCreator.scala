@@ -693,11 +693,9 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     )(ctx.toTextSpan)
   }
 
-  private def findInstanceFieldsInMethodDecls(classStmtList: List[RubyNode]): List[InstanceFieldIdentifier] = {
-    classStmtList
-      .collect { case x: MethodDeclaration =>
-        x
-      }
+  private def findInstanceFieldsInMethodDecls(methodDecls: List[MethodDeclaration]): List[InstanceFieldIdentifier] = {
+    // TODO: Handle case where body of method is not a StatementList
+    methodDecls
       .flatMap {
         _.body.asInstanceOf[StatementList].statements.collect { case x: SingleAssignment =>
           x.lhs
@@ -718,19 +716,45 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
           case _                          => false
         }
 
-        val fieldsInMethodDecls = findInstanceFieldsInMethodDecls(rest)
+        val methodDecls = rest.collect { case x: MethodDeclaration =>
+          x
+        }
 
-        val clinitStmtListStatements = (instanceFields ++ fieldsInMethodDecls).map { x =>
+        val fieldsInMethodDecls = findInstanceFieldsInMethodDecls(methodDecls)
+
+        val initializeMethod = methodDecls.collectFirst { x =>
+          x.methodName match
+            case "initialize" => x
+        }
+
+        val combinedInstanceFields = instanceFields ++ fieldsInMethodDecls
+
+        val initStmtListStatements = combinedInstanceFields.map { x =>
           SingleAssignment(x, "=", StaticLiteral(getBuiltInType(Defines.NilClass))(x.span.spanStart("nil")))(
             x.span.spanStart(s"${x.span.text} = nil")
           )
         }
 
-        val clinitMethod =
-          MethodDeclaration("<clinit>", List.empty, StatementList(clinitStmtListStatements)(stmtList.span))(
-            stmtList.span
-          )
-        (StatementList(clinitMethod +: stmtList.statements)(stmtList.span), instanceFields ++ fieldsInMethodDecls)
+        val updatedStmtList = initializeMethod match {
+          case Some(initMethod) =>
+            initMethod.body match {
+              // TODO: Filter out instance fields that are assigned an initial value in the constructor method. Current
+              //  implementation leads to "double" assignment happening when the instance field is assigned a value
+              //   where you end up having
+              //   <instanceField> = nil; <instanceField> = ...;
+              case stmtList: StatementList =>
+                StatementList(initStmtListStatements ++ stmtList.statements)(stmtList.span)
+              case x => x
+            }
+          case None =>
+            val newInitMethod =
+              MethodDeclaration("initialize", List.empty, StatementList(initStmtListStatements)(stmtList.span))(
+                stmtList.span
+              )
+            StatementList(newInitMethod +: stmtList.statements)(stmtList.span)
+        }
+
+        (updatedStmtList, combinedInstanceFields)
       case decls => (decls, List.empty)
     }
 
