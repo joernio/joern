@@ -8,6 +8,8 @@ import io.shiftleft.semanticcpg.language.*
 
 class DownloadDependencyTest extends GoCodeToCpgSuite {
   "Simple use case of third-party dependency download" should {
+    // TODO: Add test file patter to skip so it reduces the time in test to process dependencies.
+    // Refer this commit - https://github.com/Privado-Inc/privado/commit/102307a2cc83d2282f72e2e9ff909d608b37b46a
     val config = Config().withFetchDependencies(true)
     val cpg = code(
       """
