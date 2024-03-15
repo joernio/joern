@@ -2,61 +2,88 @@
 
 package io.joern.swiftsrc2cpg.passes.ast
 
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
+
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 
-class EnumTests extends AbstractPassTest {
+class EnumTests extends AstSwiftSrc2CpgSuite {
 
   "EnumTests" should {
 
-    "testEnum3" ignore AstFixture("enum Empty {}") { cpg => ??? }
+    "testEnum3" ignore {
+      val cpg = code("enum Empty {}")
+      ???
+    }
 
-    "testEnum4" ignore AstFixture("""
+    "testEnum4" ignore {
+      val cpg = code("""
         |enum Boolish {
         |  case falsy
         |  case truthy
         |  init() { self = .falsy }
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testEnum6" ignore AstFixture("""
+    "testEnum6" ignore {
+      val cpg = code("""
         |enum Optionable<T> {
         |  case Nought
         |  case Mere(T)
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testEnum8" ignore AstFixture("enum Color { case Red, Green, Grayscale(Int), Blue }") { cpg => ??? }
+    "testEnum8" ignore {
+      val cpg = code("enum Color { case Red, Green, Grayscale(Int), Blue }")
+      ???
+    }
 
-    "testEnum12" ignore AstFixture("""
+    "testEnum12" ignore {
+      val cpg = code("""
         |struct SomeStruct {
         |  case StructCase
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testEnum13" ignore AstFixture("""
+    "testEnum13" ignore {
+      val cpg = code("""
         |class SomeClass {
         |  case ClassCase
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testEnum14" ignore AstFixture("""
+    "testEnum14" ignore {
+      val cpg = code("""
         |enum EnumWithExtension1 {
         |  case A1
         |}
         |extension EnumWithExtension1 {
         |  case A2
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testEnum16" ignore AstFixture("""
+    "testEnum16" ignore {
+      val cpg = code("""
         |enum EnumCaseAttributes {
         |  @xyz case EmptyAttributes
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testEnum18" ignore AstFixture("""
+    "testEnum18" ignore {
+      val cpg = code("""
         |enum HasMethodsPropertiesAndCtors {
         |  case TweedleDee
         |  case TweedleDum
@@ -70,129 +97,194 @@ class EnumTests extends AbstractPassTest {
         |    return 0
         |  }
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testEnum19" ignore AstFixture("""
+    "testEnum19" ignore {
+      val cpg = code("""
         |enum ImproperlyHasIVars {
         |  case Flopsy
         |  case Mopsy
         |  var ivar : Int
-        |}""".stripMargin) { cpg => ??? }
+        |}""".stripMargin)
+      ???
+    }
 
-    "testEnum21d" ignore AstFixture("""
+    "testEnum21d" ignore {
+      val cpg = code("""
         |enum Recovery4 {
         |  case `Self` Self
-        |}""".stripMargin) { cpg => ??? }
+        |}""".stripMargin)
+      ???
+    }
 
-    "testEnum22" ignore AstFixture("enum RawTypeEmpty : Int {}") { cpg => ??? }
+    "testEnum22" ignore {
+      val cpg = code("enum RawTypeEmpty : Int {}")
+      ???
+    }
 
-    "testEnum23" ignore AstFixture("""
+    "testEnum23" ignore {
+      val cpg = code("""
         |enum Raw : Int {
         |  case Ankeny, Burnside
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testEnum24" ignore AstFixture("""
+    "testEnum24" ignore {
+      val cpg = code("""
         |enum MultiRawType : Int64, Int32 {
         |  case Couch, Davis
-        |}""".stripMargin) { cpg => ??? }
+        |}""".stripMargin)
+      ???
+    }
 
-    "testEnum26" ignore AstFixture("""
+    "testEnum26" ignore {
+      val cpg = code("""
         |enum ExpressibleByRawTypeNotLiteral : Array<Int> {
         |  case Ladd, Elliott, Sixteenth, Harrison
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testEnum30" ignore AstFixture("""
+    "testEnum30" ignore {
+      val cpg = code("""
         |enum RawTypeWithIntValues : Int {
         |  case Glisan = 17, Hoyt = 219, Irving, Johnson = 97209
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testEnum31" ignore AstFixture("""
+    "testEnum31" ignore {
+      val cpg = code("""
         |enum RawTypeWithNegativeValues : Int {
         |  case Glisan = -17, Hoyt = -219, Irving, Johnson = -97209
         |  case AutoIncAcrossZero = -1, Zero, One
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testEnum37" ignore AstFixture("""
+    "testEnum37" ignore {
+      val cpg = code("""
         |enum RawTypeWithStringValues : String {
         |  case Primrose // okay
         |  case Quimby = "Lucky Lab"
         |  case Raleigh // okay
         |  case Savier = "McMenamin's", Thurman = "Kenny and Zuke's"
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testEnum38" ignore AstFixture("""
+    "testEnum38" ignore {
+      val cpg = code("""
         |enum RawValuesWithoutRawType {
         |  case Upshur = 22
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testEnum41" ignore AstFixture("""
+    "testEnum41" ignore {
+      val cpg = code("""
         |enum RawTypeWithRepeatValues3 : Double {
         |  // 2^63-1
         |  case Vaughn = 9223372036854775807
         |  case Wilson = 9223372036854775807.0
-        |}""".stripMargin) { cpg => ??? }
+        |}""".stripMargin)
+      ???
+    }
 
-    "testEnum42" ignore AstFixture("""
+    "testEnum42" ignore {
+      val cpg = code("""
         |enum RawTypeWithRepeatValues4 : Double {
         |  // 2^64-1
         |  case Vaughn = 18446744073709551615
         |  case Wilson = 18446744073709551615.0
-        |}""".stripMargin) { cpg => ??? }
+        |}""".stripMargin)
+      ???
+    }
 
-    "testEnum54" ignore AstFixture("""
+    "testEnum54" ignore {
+      val cpg = code("""
         |enum NonliteralRawValue : Int {
         |  case Yeon = 100 + 20 + 3
-        |}""".stripMargin) { cpg => ??? }
+        |}""".stripMargin)
+      ???
+    }
 
-    "testEnum55" ignore AstFixture("""
+    "testEnum55" ignore {
+      val cpg = code("""
         |enum RawTypeWithPayload : Int {
         |  case Powell(Int)
         |  case Terwilliger(Int) = 17
-        |}""".stripMargin) { cpg => ??? }
+        |}""".stripMargin)
+      ???
+    }
 
-    "testEnum72" ignore AstFixture("""
+    "testEnum72" ignore {
+      val cpg = code("""
         |public protocol RawValueB {
         |  var rawValue: Double { get }
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testEnum73" ignore AstFixture("""
+    "testEnum73" ignore {
+      val cpg = code("""
         |enum RawValueBTest: Double, RawValueB {
         |  case A, B
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testEnum74" ignore AstFixture("""
+    "testEnum74" ignore {
+      val cpg = code("""
        |enum foo : String {
        |  case bar = nil
-       |}""".stripMargin) { cpg => ??? }
+       |}""".stripMargin)
+      ???
+    }
 
-    "testEnum77" ignore AstFixture("""
+    "testEnum77" ignore {
+      val cpg = code("""
         |enum EnumWithStaticMember {
         |  static let staticVar = EmptyStruct()
         |  func foo() {
         |    let _ = staticVar
         |  }
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testEnum81b" ignore AstFixture("""
+    "testEnum81b" ignore {
+      val cpg = code("""
         |switch self {
         |  case A(_): break
-        |}""".stripMargin) { cpg => ??? }
+        |}""".stripMargin)
+      ???
+    }
 
-    "testEnum82" ignore AstFixture("enum `switch` {}") { cpg => ??? }
+    "testEnum82" ignore {
+      val cpg = code("enum `switch` {}")
+      ???
+    }
 
-    "testEnum83" ignore AstFixture("""
+    "testEnum83" ignore {
+      val cpg = code("""
         |enum SE0155 {
         |  case emptyArgs()
-        |}""".stripMargin) { cpg => ??? }
+        |}""".stripMargin)
+      ???
+    }
 
   }
 

@@ -2,30 +2,34 @@
 
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
 
-class BorrowExprTests extends AbstractPassTest {
+class BorrowExprTests extends AstSwiftSrc2CpgSuite {
 
   "BorrowExprTests" should {
 
-    "testBorrowExpr1" ignore AstFixture("""
+    "testBorrowExpr1" ignore {
+      val cpg = code("""
         |func useString(_ str: String) {}
         |var global: String = "123"
         |func testGlobal() {
         |  useString(_borrow global)
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testBorrowExpr2" ignore AstFixture("""
+    "testBorrowExpr2" ignore {
+      val cpg = code("""
         |func useString(_ str: String) {}
         |func testVar() {
         |  var t = String()
         |  t = String()
         |  useString(_borrow t)
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
   }
 
 }

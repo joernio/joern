@@ -2,27 +2,37 @@
 
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
 
-class OptionalTests extends AbstractPassTest {
+class OptionalTests extends AstSwiftSrc2CpgSuite {
 
   "OptionalTests" should {
 
-    "testOptional3a" ignore AstFixture("var c = a?") { cpg => ??? }
+    "testOptional3a" ignore {
+      val cpg = code("var c = a?")
+      ???
+    }
 
-    "testOptional3b" ignore AstFixture("var d : ()? = a?.foo()") { cpg => ??? }
+    "testOptional3b" ignore {
+      val cpg = code("var d : ()? = a?.foo()")
+      ???
+    }
 
-    "testOptional4" ignore AstFixture("""
+    "testOptional4" ignore {
+      val cpg = code("""
         |var e : (() -> A)?
         |var f = e?()
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testOptional5" ignore AstFixture("""
+    "testOptional5" ignore {
+      val cpg = code("""
         |struct B<T> {}
         |var g = B<A?>()
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
   }
 
 }

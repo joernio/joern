@@ -99,6 +99,10 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
     astForListSyntaxChildren(node, node.children)
   }
 
+  private def astForLifetimeSpecifierArgumentListSyntax(node: LifetimeSpecifierArgumentListSyntax): Ast = {
+    astForListSyntaxChildren(node, node.children)
+  }
+
   private def astForMemberBlockItemListSyntax(node: MemberBlockItemListSyntax): Ast = notHandledYet(node)
 
   private def astForMultipleTrailingClosureElementListSyntax(node: MultipleTrailingClosureElementListSyntax): Ast = {
@@ -143,6 +147,7 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
 
   private def astForTuplePatternElementListSyntax(node: TuplePatternElementListSyntax): Ast = notHandledYet(node)
   private def astForTupleTypeElementListSyntax(node: TupleTypeElementListSyntax): Ast       = notHandledYet(node)
+  private def astForTypeSpecifierListSyntax(node: TypeSpecifierListSyntax): Ast             = notHandledYet(node)
   private def astForUnexpectedNodesSyntax(node: UnexpectedNodesSyntax): Ast                 = notHandledYet(node)
   private def astForVersionComponentListSyntax(node: VersionComponentListSyntax): Ast       = notHandledYet(node)
   private def astForYieldedExpressionListSyntax(node: YieldedExpressionListSyntax): Ast     = notHandledYet(node)
@@ -179,6 +184,7 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
     case node: InheritedTypeListSyntax                  => astForInheritedTypeListSyntax(node)
     case node: KeyPathComponentListSyntax               => astForKeyPathComponentListSyntax(node)
     case node: LabeledExprListSyntax                    => astForLabeledExprListSyntax(node)
+    case node: LifetimeSpecifierArgumentListSyntax      => astForLifetimeSpecifierArgumentListSyntax(node)
     case node: MemberBlockItemListSyntax                => astForMemberBlockItemListSyntax(node)
     case node: MultipleTrailingClosureElementListSyntax => astForMultipleTrailingClosureElementListSyntax(node)
     case node: ObjCSelectorPieceListSyntax              => astForObjCSelectorPieceListSyntax(node)
@@ -194,6 +200,7 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
     case node: SwitchCaseListSyntax                     => astForSwitchCaseListSyntax(node)
     case node: TuplePatternElementListSyntax            => astForTuplePatternElementListSyntax(node)
     case node: TupleTypeElementListSyntax               => astForTupleTypeElementListSyntax(node)
+    case node: TypeSpecifierListSyntax                  => astForTypeSpecifierListSyntax(node)
     case node: UnexpectedNodesSyntax                    => astForUnexpectedNodesSyntax(node)
     case node: VersionComponentListSyntax               => astForVersionComponentListSyntax(node)
     case node: YieldedExpressionListSyntax              => astForYieldedExpressionListSyntax(node)

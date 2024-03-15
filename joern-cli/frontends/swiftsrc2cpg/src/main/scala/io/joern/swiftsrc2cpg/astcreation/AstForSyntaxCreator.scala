@@ -379,7 +379,6 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
 
   private def astForSwitchDefaultLabelSyntax(node: SwitchDefaultLabelSyntax): Ast = Ast()
 
-  private def astForThrownTypeClauseSyntax(node: ThrownTypeClauseSyntax): Ast           = notHandledYet(node)
   private def astForTuplePatternElementSyntax(node: TuplePatternElementSyntax): Ast     = notHandledYet(node)
   private def astForTupleTypeElementSyntax(node: TupleTypeElementSyntax): Ast           = notHandledYet(node)
   private def astForTypeAnnotationSyntax(node: TypeAnnotationSyntax): Ast               = notHandledYet(node)
@@ -503,7 +502,6 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     case node: SwitchCaseLabelSyntax                        => astForSwitchCaseLabelSyntax(node)
     case node: SwitchCaseSyntax                             => astForSwitchCaseSyntax(node)
     case node: SwitchDefaultLabelSyntax                     => astForSwitchDefaultLabelSyntax(node)
-    case node: ThrownTypeClauseSyntax                       => astForThrownTypeClauseSyntax(node)
     case node: TuplePatternElementSyntax                    => astForTuplePatternElementSyntax(node)
     case node: TupleTypeElementSyntax                       => astForTupleTypeElementSyntax(node)
     case node: TypeAnnotationSyntax                         => astForTypeAnnotationSyntax(node)

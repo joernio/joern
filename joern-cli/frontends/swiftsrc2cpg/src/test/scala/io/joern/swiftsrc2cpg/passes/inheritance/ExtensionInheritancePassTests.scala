@@ -40,19 +40,19 @@ class ExtensionInheritancePassTests extends SwiftSrc2CpgSuite {
       |  }
       |}""".stripMargin
 
-  private val cpg =
-    code(classFooCode, "projectA/Source/Foo.swift")
-      .moreCode(classBarCode, "main/Bar.swift")
-      .moreCode(extensionBarCode, "extensions/Bar+Ext.swift")
-      .moreCode(classFooCode, "projectB/Source/Foo.swift")
-      .moreCode(extension1FooCode, "projectA/Source/Foo+Ext1.swift")
-      .moreCode(extension2FooCode, "projectA/Source/Foo+Ext2.swift")
-      .moreCode(extension1FooCode, "projectB/Source/Foo+Ext1.swift")
-      .moreCode(extensionStringCode, "String+Ext.swift")
-
   "ExtensionInheritancePass" should {
 
     "generate inheritance for extensions correctly" in {
+      val cpg =
+        code(classFooCode, "projectA/Source/Foo.swift")
+          .moreCode(classBarCode, "main/Bar.swift")
+          .moreCode(extensionBarCode, "extensions/Bar+Ext.swift")
+          .moreCode(classFooCode, "projectB/Source/Foo.swift")
+          .moreCode(extension1FooCode, "projectA/Source/Foo+Ext1.swift")
+          .moreCode(extension2FooCode, "projectA/Source/Foo+Ext2.swift")
+          .moreCode(extension1FooCode, "projectB/Source/Foo+Ext1.swift")
+          .moreCode(extensionStringCode, "String+Ext.swift")
+
       val List(fooTypeDeclInProjectA) = cpg.typeDecl.fullNameExact("projectA/Source/Foo.swift:<global>:Foo").l
       fooTypeDeclInProjectA.inheritsFromTypeFullName.sorted.l shouldBe List(
         "Bar",

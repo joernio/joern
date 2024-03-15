@@ -2,21 +2,25 @@
 
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
 
-class ActorTests extends AbstractPassTest {
+class ActorTests extends AstSwiftSrc2CpgSuite {
 
   "ActorTests" should {
 
-    "testActor1" ignore AstFixture("actor MyActor1 {}") { cpg => ??? }
+    "testActor1" ignore {
+      val cpg = code("actor MyActor1 {}")
+      ???
+    }
 
-    "testActor2" ignore AstFixture("""
+    "testActor2" ignore {
+      val cpg = code("""
         |actor MyActor2 {
         |  init() {}
         |  func hello() {}
-        |}""".stripMargin) { cpg => ??? }
+        |}""".stripMargin)
+      ???
+    }
   }
 
 }
