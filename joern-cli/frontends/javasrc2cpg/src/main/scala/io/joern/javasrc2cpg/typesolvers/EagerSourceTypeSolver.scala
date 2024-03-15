@@ -14,9 +14,9 @@ import scala.jdk.OptionConverters.RichOptional
 import scala.util.Try
 
 class EagerSourceTypeSolver(
-                             sourceParser: SourceParser,
-                             combinedTypeSolver: SimpleCombinedTypeSolver,
-                             symbolSolver: JavaSymbolSolver
+  sourceParser: SourceParser,
+  combinedTypeSolver: SimpleCombinedTypeSolver,
+  symbolSolver: JavaSymbolSolver
 ) extends TypeSolver {
 
   private val logger             = LoggerFactory.getLogger(this.getClass)
@@ -74,9 +74,9 @@ class EagerSourceTypeSolver(
 
 object EagerSourceTypeSolver {
   def apply(
-             sourceParser: SourceParser,
-             combinedTypeSolver: SimpleCombinedTypeSolver,
-             symbolSolver: JavaSymbolSolver
+    sourceParser: SourceParser,
+    combinedTypeSolver: SimpleCombinedTypeSolver,
+    symbolSolver: JavaSymbolSolver
   ): EagerSourceTypeSolver = {
     new EagerSourceTypeSolver(sourceParser, combinedTypeSolver, symbolSolver)
   }
