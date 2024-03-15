@@ -57,8 +57,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
             scope.pushField(FieldDecl(name, Defines.Any, false, false, fieldVariable))
             astForFieldInstance(name, fieldVariable)
           case Some(field) =>
-            val fieldNode = field.node
-            astForFieldInstance(name, fieldNode)
+            astForFieldInstance(name, field.node)
         }
       case _ =>
         scope.lookupVariable(name) match {

@@ -694,9 +694,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     )(ctx.toTextSpan)
   }
 
-  private def findInstanceFieldsInMethodDecls(
-    methodDecls: List[MethodDeclaration]
-  ): List[RubyNode with RubyFieldIdentifier] = {
+  private def findFieldsInmethodDecls(methodDecls: List[MethodDeclaration]): List[RubyNode with RubyFieldIdentifier] = {
     // TODO: Handle case where body of method is not a StatementList
     methodDecls
       .flatMap {
@@ -730,6 +728,17 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
       }
     }
 
+    /** Partition RubyFields into InstanceFieldIdentifiers and ClassFieldIdentifiers
+      * @param fields
+      * @return
+      */
+    def partitionRubyFields(fields: List[RubyNode]): (List[RubyNode], List[RubyNode]) = {
+      fields.partition {
+        case _: InstanceFieldIdentifier => true
+        case _                          => false
+      }
+    }
+
     loweredClassDecls match {
       case stmtList: StatementList =>
         val (rubyFieldIdentifiers, rest) = stmtList.statements.partition {
@@ -737,20 +746,15 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
           case _                                    => false
         }
 
-        val (instanceFields, classFields) = rubyFieldIdentifiers.partition {
-          case _: InstanceFieldIdentifier => true
-          case _                          => false
-        }
+        val (instanceFields, classFields) = partitionRubyFields(rubyFieldIdentifiers)
 
         val methodDecls = rest.collect { case x: MethodDeclaration =>
           x
         }
 
-        val (instanceFieldsInMethodDecls, classFieldsInMethodDecls) =
-          findInstanceFieldsInMethodDecls(methodDecls).partition {
-            case _: InstanceFieldIdentifier => true
-            case _                          => false
-          }
+        val fieldsInMethodDecls = findFieldsInmethodDecls(methodDecls)
+
+        val (instanceFieldsInMethodDecls, classFieldsInMethodDecls) = partitionRubyFields(fieldsInMethodDecls)
 
         val initializeMethod = methodDecls.collectFirst { x =>
           x.methodName match
@@ -785,8 +789,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
             val initializers = newInitMethod :: clinitMethod :: Nil
             StatementList(initializers ++ rest)(stmtList.span)
         }
-
-        val combinedFields = rubyFieldIdentifiers ++ instanceFieldsInMethodDecls ++ classFieldsInMethodDecls
+        val combinedFields = rubyFieldIdentifiers ++ fieldsInMethodDecls
 
         (updatedStmtList, combinedFields.asInstanceOf[List[RubyNode with RubyFieldIdentifier]])
       case decls => (decls, List.empty)
