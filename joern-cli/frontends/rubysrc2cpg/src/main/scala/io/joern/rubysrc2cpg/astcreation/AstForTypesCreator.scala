@@ -62,11 +62,12 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     node match {
       case _: ModuleDeclaration => scope.pushNewScope(ModuleScope(classFullName))
-      case _: TypeDeclaration   => scope.pushNewScope(TypeScope(classFullName))
+      case _: TypeDeclaration   => scope.pushNewScope(TypeScope(classFullName, List.empty))
     }
 
     val classBody =
       node.body.asInstanceOf[StatementList] // for now (bodyStatement is a superset of stmtList)
+
     val classBodyAsts = classBody.statements.flatMap(astsForStatement) match {
       case bodyAsts if scope.shouldGenerateDefaultConstructor && this.parseLevel == AstParseLevel.FULL_AST =>
         val bodyStart = classBody.span.spanStart()
@@ -77,9 +78,19 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         methodDecl ++ bodyAsts
       case bodyAsts => bodyAsts
     }
+
+    val fieldMemberNodes = node match {
+      case classDecl: ClassDeclaration =>
+        classDecl.fields.map { x =>
+          val name = code(x)
+          Ast(memberNode(x, name, name, Defines.Any))
+        }
+      case _ => Seq.empty
+    }
+
     scope.popScope()
 
-    Ast(typeDecl).withChildren(classBodyAsts)
+    Ast(typeDecl).withChildren(fieldMemberNodes).withChildren(classBodyAsts)
   }
 
   protected def astsForFieldDeclarations(node: FieldsDeclaration): Seq[Ast] = {
