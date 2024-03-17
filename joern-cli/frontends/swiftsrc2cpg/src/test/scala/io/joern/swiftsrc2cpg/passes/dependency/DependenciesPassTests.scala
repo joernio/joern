@@ -29,11 +29,11 @@ class DependenciesPassTests extends SwiftSrc2CpgSuite {
      |)
      |}""".stripMargin
 
-  private val cpg = code(codeString, "Package.swift")
-
   "DependenciesPass" should {
 
     "generate dependency nodes correctly" in {
+      val cpg = code(codeString, "Package.swift")
+
       inside(cpg.dependency.l) { case List(debPackageDesc, depA, depB, depC, depD, depE, depF, depG, depH) =>
         debPackageDesc.name shouldBe "PackageDescription"
         debPackageDesc.version shouldBe "import"

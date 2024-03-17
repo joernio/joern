@@ -2,15 +2,14 @@
 
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
 
-class MatchingPatternsTests extends AbstractPassTest {
+class MatchingPatternsTests extends AstSwiftSrc2CpgSuite {
 
   "MatchingPatternsTests" should {
 
-    "testMatchingPatterns6" ignore AstFixture("""
+    "testMatchingPatterns6" ignore {
+      val cpg = code("""
       |switch x {
       |  // Expressions as patterns.
       |  case 0:
@@ -39,18 +38,24 @@ class MatchingPatternsTests extends AbstractPassTest {
       |  case 1 + (_):
       |  ()
       |}
-      |""".stripMargin) { cpg => }
+      |""".stripMargin)
+      ???
+    }
 
-    "testMatchingPatterns7" ignore AstFixture("""
+    "testMatchingPatterns7" ignore {
+      val cpg = code("""
       |switch (x,x) {
       |  case (var a, var a):
       |  fallthrough
       |  case _:
       |  ()
       |  }
-      |  """.stripMargin) { cpg => }
+      |  """.stripMargin)
+      ???
+    }
 
-    "testMatchingPatterns9" ignore AstFixture("""
+    "testMatchingPatterns9" ignore {
+      val cpg = code("""
       |switch e {
       |  // 'is' pattern.
       |  case is Int,
@@ -60,11 +65,17 @@ class MatchingPatternsTests extends AbstractPassTest {
       |   is (a: Int, b: Int):
       |   ()
       |}
-      |""".stripMargin) { cpg => }
+      |""".stripMargin)
+      ???
+    }
 
-    "testMatchingPatterns10" ignore AstFixture("enum Foo { case A, B, C }") { cpg => }
+    "testMatchingPatterns10" ignore {
+      val cpg = code("enum Foo { case A, B, C }")
+      ???
+    }
 
-    "testMatchingPatterns12" ignore AstFixture("""
+    "testMatchingPatterns12" ignore {
+      val cpg = code("""
       |enum Voluntary<T> : Equatable {
       |  case Naught
       |  case Mere(T)
@@ -97,9 +108,12 @@ class MatchingPatternsTests extends AbstractPassTest {
       |  }
       |  }
       |}
-      |""".stripMargin) { cpg => }
+      |""".stripMargin)
+      ???
+    }
 
-    "testMatchingPatterns13" ignore AstFixture("""
+    "testMatchingPatterns13" ignore {
+      val cpg = code("""
       |var n : Voluntary<Int> = .Naught
       |if case let .Naught(value) = n {}
       |if case let .Naught(value1, value2, value3) = n {}
@@ -107,9 +121,12 @@ class MatchingPatternsTests extends AbstractPassTest {
       |if case _mutating .Naught(value) = n {}
       |if case _borrowing .Naught(value) = n {}
       |if case _consuming .Naught(value) = n {}
-      |""".stripMargin) { cpg => }
+      |""".stripMargin)
+      ???
+    }
 
-    "testMatchingPatterns14" ignore AstFixture("""
+    "testMatchingPatterns14" ignore {
+      val cpg = code("""
       |switch n {
       |  case Foo.A:
       |  ()
@@ -133,26 +150,35 @@ class MatchingPatternsTests extends AbstractPassTest {
       |   .Twain(_, _, _):
       |  ()
       |  }
-      |  """.stripMargin) { cpg => }
+      |  """.stripMargin)
+      ???
+    }
 
-    "testMatchingPatterns16" ignore AstFixture("""
+    "testMatchingPatterns16" ignore {
+      val cpg = code("""
       |switch notAnEnum {
       |  case .Foo:
       |  ()
       |}
-      |""".stripMargin) { cpg => }
+      |""".stripMargin)
+      ???
+    }
 
-    "testMatchingPatterns19" ignore AstFixture("var m : ImportedEnum = .Simple") { cpg => }
+    "testMatchingPatterns19" ignore { val cpg = code("var m : ImportedEnum = .Simple") }
 
-    "testMatchingPatterns22" ignore AstFixture("""
+    "testMatchingPatterns22" ignore {
+      val cpg = code("""
       |enum LabeledScalarPayload {
       |  case Payload(name: Int)
       |}
-      |""".stripMargin) { cpg => }
+      |""".stripMargin)
+      ???
+    }
 
-    "testMatchingPatterns28" ignore AstFixture("var t = (1, 2, 3)") { cpg => }
+    "testMatchingPatterns28" ignore { val cpg = code("var t = (1, 2, 3)") }
 
-    "testMatchingPatterns32" ignore AstFixture("""
+    "testMatchingPatterns32" ignore {
+      val cpg = code("""
       |switch [Derived(), Derived(), Base()] {
       |  case let ds as [Derived]:
       |  ()
@@ -161,30 +187,41 @@ class MatchingPatternsTests extends AbstractPassTest {
       |  default:
       |  ()
       |}
-      |""".stripMargin) { cpg => }
+      |""".stripMargin)
+      ???
+    }
 
-    "testMatchingPatterns33" ignore AstFixture("""
+    "testMatchingPatterns33" ignore {
+      val cpg = code("""
       |// Optional patterns.
       |let op1 : Int?
       |let op2 : Int??
-      |""".stripMargin) { cpg => }
+      |""".stripMargin)
+      ???
+    }
 
-    "testMatchingPatterns34" ignore AstFixture("""
+    "testMatchingPatterns34" ignore {
+      val cpg = code("""
       |switch op1 {
       |  case nil: break
       |  case 1?: break
       |  case _?: break
       |}
-      |""".stripMargin) { cpg => }
+      |""".stripMargin)
+      ???
+    }
 
-    "testMatchingPatterns35" ignore AstFixture("""
+    "testMatchingPatterns35" ignore {
+      val cpg = code("""
       |switch op2 {
       |  case nil: break
       |  case _?: break
       |  case (1?)?: break
       |  case (_?)?: break
       |}
-      |""".stripMargin) { cpg => }
+      |""".stripMargin)
+      ???
+    }
 
   }
 

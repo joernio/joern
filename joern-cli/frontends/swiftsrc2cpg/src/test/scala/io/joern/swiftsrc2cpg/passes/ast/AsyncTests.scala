@@ -2,58 +2,101 @@
 
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
 
-class AsyncTests extends AbstractPassTest {
+class AsyncTests extends AstSwiftSrc2CpgSuite {
 
   "AsyncTests" should {
 
-    "testAsync1" ignore AstFixture("""
+    "testAsync1" ignore {
+      val cpg = code("""
        |func asyncGlobal1() async { }
        |func asyncGlobal2() async throws { }
-       |""".stripMargin) { cpg => ??? }
+       |""".stripMargin)
+      ???
+    }
 
-    "testAsync2" ignore AstFixture("func asyncGlobal3() async throws { }") { cpg => ??? }
+    "testAsync2" ignore {
+      val cpg = code("func asyncGlobal3() async throws { }")
+      ???
+    }
 
-    "testAsync3" ignore AstFixture("func asyncGlobal3(fn: () throws -> Int) async rethrows { }") { cpg => ??? }
+    "testAsync3" ignore {
+      val cpg = code("func asyncGlobal3(fn: () throws -> Int) async rethrows { }")
+      ???
+    }
 
-    "testAsync4" ignore AstFixture("func asyncGlobal4() async -> Int { }") { cpg => ??? }
+    "testAsync4" ignore {
+      val cpg = code("func asyncGlobal4() async -> Int { }")
+      ???
+    }
 
-    "testAsync6" ignore AstFixture("func asyncGlobal6() async throws -> Int { }") { cpg => ??? }
+    "testAsync6" ignore {
+      val cpg = code("func asyncGlobal6() async throws -> Int { }")
+      ???
+    }
 
-    "testAsync10a" ignore AstFixture("typealias AsyncFunc1 = () async -> ()") { cpg => ??? }
+    "testAsync10a" ignore {
+      val cpg = code("typealias AsyncFunc1 = () async -> ()")
+      ???
+    }
 
-    "testAsync10b" ignore AstFixture("typealias AsyncFunc2 = () async throws -> ()") { cpg => ??? }
+    "testAsync10b" ignore {
+      val cpg = code("typealias AsyncFunc2 = () async throws -> ()")
+      ???
+    }
 
-    "testAsync11a" ignore AstFixture("let _ = [() async -> ()]()") { cpg => ??? }
+    "testAsync11a" ignore {
+      val cpg = code("let _ = [() async -> ()]()")
+      ???
+    }
 
-    "testAsync11b" ignore AstFixture("let _ = [() async throws -> ()]()") { cpg => ??? }
+    "testAsync11b" ignore {
+      val cpg = code("let _ = [() async throws -> ()]()")
+      ???
+    }
 
-    "testAsync11d" ignore AstFixture("let _ = [() async -> ()]()") { cpg => ??? }
+    "testAsync11d" ignore {
+      val cpg = code("let _ = [() async -> ()]()")
+      ???
+    }
 
-    "testAsync12" ignore AstFixture("""
+    "testAsync12" ignore {
+      val cpg = code("""
       |struct MyFuture {
       |  func await() -> Int { 0 }
-      |}""".stripMargin) { cpg => ??? }
+      |}""".stripMargin)
+      ???
+    }
 
-    "testAsync13" ignore AstFixture("""
+    "testAsync13" ignore {
+      val cpg = code("""
       |func testAwaitExpr() async {
       |  let _ = await asyncGlobal1()
       |  let myFuture = MyFuture()
       |  let _ = myFuture.await()
-      |}""".stripMargin) { cpg => ??? }
+      |}""".stripMargin)
+      ???
+    }
 
-    "testAsync14" ignore AstFixture("func getIntSomeday() async -> Int { 5 }") { cpg => ??? }
+    "testAsync14" ignore {
+      val cpg = code("func getIntSomeday() async -> Int { 5 }")
+      ???
+    }
 
-    "testAsync15" ignore AstFixture("""
+    "testAsync15" ignore {
+      val cpg = code("""
       |func testAsyncLet() async {
       |  async let x = await getIntSomeday()
       |  _ = await x
-      |}""".stripMargin) { cpg => ??? }
+      |}""".stripMargin)
+      ???
+    }
 
-    "testAsync16" ignore AstFixture("async func asyncIncorrectly() { }") { cpg => ??? }
+    "testAsync16" ignore {
+      val cpg = code("async func asyncIncorrectly() { }")
+      ???
+    }
 
   }
 

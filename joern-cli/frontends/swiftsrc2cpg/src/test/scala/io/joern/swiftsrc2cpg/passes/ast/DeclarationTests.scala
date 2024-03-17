@@ -1,23 +1,32 @@
 package io.joern.swiftsrc2cpg.passes.ast
 
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
+
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 
-class DeclarationTests extends AbstractPassTest {
+class DeclarationTests extends AstSwiftSrc2CpgSuite {
 
   "DeclarationTests" should {
 
-    "testImports" ignore AstFixture("""
+    "testImports" ignore {
+      val cpg = code("""
       |import Foundation
       |@_spi(Private) import SwiftUI
       |@_exported import class Foundation.Thread
       |@_private(sourceFile: "YetAnotherFile.swift") import Foundation
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testStructParsing" ignore AstFixture("struct Foo {}") { cpg => ??? }
+    "testStructParsing" ignore {
+      val cpg = code("struct Foo {}")
+      ???
+    }
 
-    "testFuncParsing" ignore AstFixture("""
+    "testFuncParsing" ignore {
+      val cpg = code("""
       |func foo1() {}
       |func foo2() -> Slice<MinimalMutableCollection<T>> {}
       |func onEscapingAutoclosure(_ fn: @Sendable @autoclosure @escaping () -> Int) {}
@@ -34,9 +43,12 @@ class DeclarationTests extends AbstractPassTest {
       |  func foo1()
       |  func foo2<Int>()
       |}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testClassParsing" ignore AstFixture("""
+    "testClassParsing" ignore {
+      val cpg = code("""
       |class Foo {}
       |@dynamicMemberLookup @available(swift 4.0)
       |public class MyClass {
@@ -46,9 +58,12 @@ class DeclarationTests extends AbstractPassTest {
       |struct A<@NSApplicationMain T: AnyObject> {}
       |class T where t {}
       |class B<where g> {}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testActorParsing" ignore AstFixture("""
+    "testActorParsing" ignore {
+      val cpg = code("""
       |actor Foo1 {}
       |actor Foo2 {
       |  nonisolated init?() {
@@ -60,18 +75,24 @@ class DeclarationTests extends AbstractPassTest {
       |    return 42
       |  }
       |}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testNonisolatedUnsafeParsing" ignore AstFixture("""
+    "testNonisolatedUnsafeParsing" ignore {
+      val cpg = code("""
       |nonisolated(unsafe) let a = 0
       |struct A {
       |  nonisolated(unsafe) let b = 0
       |  nonisolated(unsafe) var c: Int { 0 }
       |  nonisolated(unsafe) let d = 0
       |}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testProtocolParsing" ignore AstFixture("""
+    "testProtocolParsing" ignore {
+      val cpg = code("""
       |protocol Foo {}
       |protocol P { init() }
       |protocol P {
@@ -80,9 +101,12 @@ class DeclarationTests extends AbstractPassTest {
       |  var foo: Bool { get set }
       |  subscript<R>(index: Int) -> R
       |}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testVariableDeclarations" ignore AstFixture("""
+    "testVariableDeclarations" ignore {
+      val cpg = code("""
       |z
       |var x: Double = z
       |async let a = fetch("1.jpg")
@@ -118,15 +142,21 @@ class DeclarationTests extends AbstractPassTest {
       |    test += 1
       |  }
       |}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testTypealias" ignore AstFixture("""
+    "testTypealias" ignore {
+      val cpg = code("""
       |typealias Foo = Int
       |typealias MyAlias = (_ a: Int, _ b: Double, _ c: Bool, _ d: String) -> Bool
       |typealias A = @attr1 @attr2(hello) (Int) -> Void
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testPrecedenceGroup" ignore AstFixture("""
+    "testPrecedenceGroup" ignore {
+      val cpg = code("""
       |precedencegroup FooGroup {
       |  higherThan: Group1, Group2
       |  lowerThan: Group3, Group4
@@ -137,33 +167,51 @@ class DeclarationTests extends AbstractPassTest {
       |  associativity: left
       |  higherThan: MultiplicationPrecedence
       |}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testOperators" ignore AstFixture("""
+    "testOperators" ignore {
+      val cpg = code("""
       |infix operator *-* : FunnyPrecedence
       |infix operator  <*<<< : MediumPrecedence, &
       |prefix operator ^^ : PrefixMagicOperatorProtocol
       |infix operator  <*< : MediumPrecedence, InfixMagicOperatorProtocol
       |postfix operator ^^ : PostfixMagicOperatorProtocol
       |infix operator ^^ : PostfixMagicOperatorProtocol, Class, Struct
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testObjCAttribute" ignore AstFixture("""
+    "testObjCAttribute" ignore {
+      val cpg = code("""
       |@objc(
       |  thisMethodHasAVeryLongName:
       |  foo:
       |  bar:
       |)
       |func f() {}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testParsePoundError" ignore AstFixture("""#error("Unsupported platform")""") { cpg => ??? }
+    "testParsePoundError" ignore {
+      val cpg = code("""#error("Unsupported platform")""")
+      ???
+    }
 
-    "testParsePoundWarning" ignore AstFixture("""#warning("Unsupported platform")""") { cpg => ??? }
+    "testParsePoundWarning" ignore {
+      val cpg = code("""#warning("Unsupported platform")""")
+      ???
+    }
 
-    "testParseRetroactiveExtension" ignore AstFixture("extension Int: @retroactive Identifiable {}") { cpg => ??? }
+    "testParseRetroactiveExtension" ignore {
+      val cpg = code("extension Int: @retroactive Identifiable {}")
+      ???
+    }
 
-    "testEnumParsing" ignore AstFixture("""
+    "testEnumParsing" ignore {
+      val cpg = code("""
       |enum Foo {
       |  @preconcurrency case custom(@Sendable () throws -> Void)
       |}
@@ -172,27 +220,39 @@ class DeclarationTests extends AbstractPassTest {
       |  case keyPath(KeyPath<FocusedValues, Binding<Value>?>)
       |  case value(Value?)
       |}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testMissingColonInFunctionSignature" ignore AstFixture("func test(first second: Int)") { cpg => ??? }
+    "testMissingColonInFunctionSignature" ignore {
+      val cpg = code("func test(first second: Int)")
+      ???
+    }
 
-    "testNoParamsForFunction" ignore AstFixture("""
+    "testNoParamsForFunction" ignore {
+      val cpg = code("""
       |class MyClass {
       |  func withoutParameters()
       |  func withParameters() {}
       |}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testAccessors" ignore AstFixture("""
+    "testAccessors" ignore {
+      val cpg = code("""
       |var foo1 : Int {
       |  _read async { 0 }
       |}
       |var foo2 : Int {
       |  get async { 0 }
       |}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testInitAccessor" ignore AstFixture("""
+    "testInitAccessor" ignore {
+      val cpg = code("""
       |struct S1 {
       |  var value: Int {
       |    init {}
@@ -218,9 +278,12 @@ class DeclarationTests extends AbstractPassTest {
       |    set(newValue) {}
       |  }
       |}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testInitializers" ignore AstFixture("""
+    "testInitializers" ignore {
+      val cpg = code("""
       |struct S {
       |  init!(int: Int) { }
       |  init! (uint: UInt) { }
@@ -230,27 +293,42 @@ class DeclarationTests extends AbstractPassTest {
       |  init ?(double: Double) { }
       |  init ? (char: Character) { }
       |}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testDeinitializers" ignore AstFixture("""
+    "testDeinitializers" ignore {
+      val cpg = code("""
       |struct S {
       |  deinit {}
       |  deinit
       |}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testAttributedMember" ignore AstFixture("""
+    "testAttributedMember" ignore {
+      val cpg = code("""
       |struct Foo {
       |  @Argument(help: "xxx")
       |  var generatedPath: String
       |}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testAnyAsParameterLabel" ignore AstFixture("func at(any kinds: [RawTokenKind]) {}") { cpg => ??? }
+    "testAnyAsParameterLabel" ignore {
+      val cpg = code("func at(any kinds: [RawTokenKind]) {}")
+      ???
+    }
 
-    "testPublicClass" ignore AstFixture("public class Foo: Superclass {}") { cpg => ??? }
+    "testPublicClass" ignore {
+      val cpg = code("public class Foo: Superclass {}")
+      ???
+    }
 
-    "testReasyncFunctions" ignore AstFixture("""
+    "testReasyncFunctions" ignore {
+      val cpg = code("""
       |class MyType {
       |  init(_ f: () async -> Void) reasync {
       |    await f()
@@ -259,65 +337,92 @@ class DeclarationTests extends AbstractPassTest {
       |    await f()
       |  }
       |}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testNestedStructs" ignore AstFixture("""
+    "testNestedStructs" ignore {
+      val cpg = code("""
       |struct Foo {
       |  struct Bar {}
       |}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testMacroExpansionDeclarationWithKeywordName" ignore AstFixture("""
+    "testMacroExpansionDeclarationWithKeywordName" ignore {
+      val cpg = code("""
       |struct X {
       |  #case
-      |}""".stripMargin) { cpg => ??? }
+      |}""".stripMargin)
+      ???
+    }
 
-    "testVariableFollowedByReferenceToSet" ignore AstFixture("""
+    "testVariableFollowedByReferenceToSet" ignore {
+      val cpg = code("""
       |func bar() {
       |  let a = b
       |  set.c
       |}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testMacroDecl" ignore AstFixture("""
+    "testMacroDecl" ignore {
+      val cpg = code("""
       |macro m1(): Int = A.M1
       |macro m2(_: Int) = A.M2
       |macro m3(a b: Int) -> Int = A.M3
       |macro m4<T>(): T = A.M4 where T.Assoc: P
       |macro m5<T: P>(_: T)
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testClassWithPrivateSet" ignore AstFixture("""
+    "testClassWithPrivateSet" ignore {
+      val cpg = code("""
       |struct Properties {
       |  class private(set) var privateSetterCustomNames: Bool
       |}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testOpenVarInCodeBlockItemList" ignore AstFixture("""
+    "testOpenVarInCodeBlockItemList" ignore {
+      val cpg = code("""
       |func test() {
       |  open var foo = 2
       |}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testAsyncLetInLocalContext" ignore AstFixture("""
+    "testAsyncLetInLocalContext" ignore {
+      val cpg = code("""
       |func foo() async {
       |  async let x: String = "x"
       |}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testBorrowingConsumingParameterSpecifiers1" ignore AstFixture("""
+    "testBorrowingConsumingParameterSpecifiers1" ignore {
+      val cpg = code("""
       |struct borrowing {}
       |struct consuming {}
       |struct Foo {}
       |func foo(x: borrowing Foo) {}
       |func bar(x: consuming Foo) {}
       |func baz(x: (borrowing Foo, consuming Foo) -> ()) {}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testBorrowingConsumingParameterSpecifiers2" ignore AstFixture(
-      // `borrowing` and `consuming` are contextual keywords, so they should also
-      // continue working as type and/or parameter names
-      """
+    "testBorrowingConsumingParameterSpecifiers2" ignore {
+      val cpg = code(
+        // `borrowing` and `consuming` are contextual keywords, so they should also
+        // continue working as type and/or parameter names
+        """
       |func zim(x: borrowing) {}
       |func zang(x: consuming) {}
       |func zung(x: borrowing consuming) {}
@@ -325,9 +430,12 @@ class DeclarationTests extends AbstractPassTest {
       |func zap(x: (borrowing, consuming) -> ()) {}
       |func zoop(x: (borrowing consuming, consuming borrowing) -> ()) {}
       |""".stripMargin
-    ) { cpg => ??? }
+      )
+      ???
+    }
 
-    "testSuppressedImplicitConformance" ignore AstFixture("""
+    "testSuppressedImplicitConformance" ignore {
+      val cpg = code("""
       |struct Hello: ~Copyable {}
       |let foo: any ~Copyable = 0
       |typealias X = ~Copyable.Type
@@ -337,9 +445,12 @@ class DeclarationTests extends AbstractPassTest {
       |struct Hello<T: ~Copyable> {}
       |func bar<T: ~Copyable>(_ t: T) {}
       |enum Whatever: Int, ~ Hashable, Equatable {}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testArrayDeclaration" in AstFixture("let foo: [Int] = []") { cpg =>
+    "testArrayDeclaration" in {
+      val cpg               = code("let foo: [Int] = []")
       val List(method)      = cpg.method.nameExact("<global>").l
       val List(methodBlock) = method.astChildren.isBlock.l
 
@@ -356,7 +467,8 @@ class DeclarationTests extends AbstractPassTest {
       fooIdent.typeFullName shouldBe "[Int]"
     }
 
-    "testSetDeclaration" in AstFixture("var foo: Set<Int> = [1, 2, 3]") { cpg =>
+    "testSetDeclaration" in {
+      val cpg               = code("var foo: Set<Int> = [1, 2, 3]")
       val List(method)      = cpg.method.nameExact("<global>").l
       val List(methodBlock) = method.astChildren.isBlock.l
 
@@ -374,7 +486,8 @@ class DeclarationTests extends AbstractPassTest {
       fooIdent.typeFullName shouldBe "Set<Int>"
     }
 
-    "testDictionaryDeclaration" in AstFixture("var numbers = [1: \"One\", 2: \"Two\", 3: \"Three\"]") { cpg =>
+    "testDictionaryDeclaration" in {
+      val cpg               = code("var numbers = [1: \"One\", 2: \"Two\", 3: \"Three\"]")
       val List(method)      = cpg.method.nameExact("<global>").l
       val List(methodBlock) = method.astChildren.isBlock.l
 
@@ -388,11 +501,12 @@ class DeclarationTests extends AbstractPassTest {
       arrayCall.argument.isCall.code.l shouldBe List("1: \"One\",", "2: \"Two\",", "3: \"Three\"")
     }
 
-    "testAddDictionaryElements" in AstFixture("""
+    "testAddDictionaryElements" in {
+      val cpg = code("""
         |var elements = ["A": "1", "B": "2"]
         |elements["A"] = "3"
         |print(elements["A"])
-        |""".stripMargin) { cpg =>
+        |""".stripMargin)
       val List(elementsAccess1, elementsAccess2) = cpg.call(Operators.indexAccess).l
       elementsAccess1.code shouldBe "elements[\"A\"]"
       val List(arg11) = elementsAccess1.argument(1).start.isIdentifier.l
@@ -407,7 +521,8 @@ class DeclarationTests extends AbstractPassTest {
       arg22.code shouldBe "\"A\""
     }
 
-    "testTupleDeclaration" in AstFixture("var product = (\"MacBook\", 1099.99)") { cpg =>
+    "testTupleDeclaration" in {
+      val cpg               = code("var product = (\"MacBook\", 1099.99)")
       val List(method)      = cpg.method.nameExact("<global>").l
       val List(methodBlock) = method.astChildren.isBlock.l
 
@@ -421,11 +536,12 @@ class DeclarationTests extends AbstractPassTest {
       arrayCall.argument.isLiteral.code.l shouldBe List("\"MacBook\"", "1099.99")
     }
 
-    "testTupleAccess" in AstFixture("""
+    "testTupleAccess" in {
+      val cpg = code("""
         |var product = ("MacBook", 1099.99)
         |print("Name:", product.0)
         |print("Price:", product.1)
-        |""".stripMargin) { cpg =>
+        |""".stripMargin)
       val List(elementsAccess1, elementsAccess2) = cpg.call(Operators.indexAccess).l
       elementsAccess1.code shouldBe "product[0]"
       val List(arg11) = elementsAccess1.argument(1).start.isIdentifier.l
@@ -440,7 +556,8 @@ class DeclarationTests extends AbstractPassTest {
       arg22.code shouldBe "1"
     }
 
-    "testInitAccessorsWithDefaultValues" ignore AstFixture("""
+    "testInitAccessorsWithDefaultValues" ignore {
+      val cpg = code("""
       |struct Test {
       |  var pair: (Int, Int) = (42, 0) {
       |    init(initialValue) {}
@@ -448,17 +565,25 @@ class DeclarationTests extends AbstractPassTest {
       |     set { }
       |  }
       |}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testBorrowingGetAccessor" ignore AstFixture("""
+    "testBorrowingGetAccessor" ignore {
+      val cpg = code("""
       |struct Foo {
       |  var x: Int {
       |    borrowing get {}
       |  }
       |}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testLiteralInitializerWithTrailingClosure" ignore AstFixture("let foo = 1 { return 1 }") { cpg => ??? }
+    "testLiteralInitializerWithTrailingClosure" ignore {
+      val cpg = code("let foo = 1 { return 1 }")
+      ???
+    }
 
   }
 }

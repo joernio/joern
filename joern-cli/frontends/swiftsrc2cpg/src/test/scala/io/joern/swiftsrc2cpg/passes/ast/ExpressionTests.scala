@@ -1,13 +1,17 @@
 package io.joern.swiftsrc2cpg.passes.ast
 
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
+
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 
-class ExpressionTests extends AbstractPassTest {
+class ExpressionTests extends AstSwiftSrc2CpgSuite {
 
   "ExpressionTests" should {
-    "testTernary" in AstFixture("a ? b : c") { cpg =>
+
+    "testTernary" in {
+      val cpg = code("a ? b : c")
       inside(cpg.method.name("<global>").ast.isCall.l) { case List(call: Call) =>
         call.code shouldBe "a ? b : c"
         call.name shouldBe Operators.conditional
@@ -21,7 +25,8 @@ class ExpressionTests extends AbstractPassTest {
       }
     }
 
-    "testSequence1" in AstFixture("a ? b : c ? d : e") { cpg =>
+    "testSequence1" in {
+      val cpg = code("a ? b : c ? d : e")
       inside(cpg.method.name("<global>").ast.isCall.l) { case List(call: Call, nestedCall: Call) =>
         call.code shouldBe "a ? b : c ? d : e"
         call.name shouldBe Operators.conditional
@@ -39,28 +44,41 @@ class ExpressionTests extends AbstractPassTest {
       }
     }
 
-    "testSequence2" ignore AstFixture("A as? B + C -> D is E as! F ? G = 42 : H") { cpg => ??? }
+    "testSequence2" ignore {
+      val cpg = code("A as? B + C -> D is E as! F ? G = 42 : H")
+      ???
+    }
 
-    "testClosureLiterals" ignore AstFixture("""
+    "testClosureLiterals" ignore {
+      val cpg = code("""
       |@MainActor (a: Int) async -> Int in print("hi")
       |{ @MainActor (a: Int) async -> Int in print("hi") }
       |{ [weak self, weak weakB = b] foo in
       |  return 0
       |}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testTrailingClosures" ignore AstFixture("""
+    "testTrailingClosures" ignore {
+      val cpg = code("""
       |var button =  View.Button[5, 4, 3] {
       |  // comment #0
       |  Text("ABC")
       |}
       |
       |compactMap { (parserDiag) in }
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testNestedTypeSpecialization" ignore AstFixture("Swift.Array<Array<Foo>>()") { cpg => ??? }
+    "testNestedTypeSpecialization" ignore {
+      val cpg = code("Swift.Array<Array<Foo>>()")
+      ???
+    }
 
-    "testObjectLiterals" ignore AstFixture("""
+    "testObjectLiterals" ignore {
+      val cpg = code("""
       |#colorLiteral1()
       |#colorLiteral2(red: 1.0)
       |#colorLiteral3(red: 1.0, green: 1.0)
@@ -69,9 +87,12 @@ class ExpressionTests extends AbstractPassTest {
       |#imageLiteral2(resourceName: "foo.png")
       |#imageLiteral3(resourceName: "foo/bar/baz/qux.png")
       |#imageLiteral4(resourceName: "foo/bar/baz/quux.png")
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testKeypathExpression" ignore AstFixture("""
+    "testKeypathExpression" ignore {
+      val cpg = code("""
       |\a.b.c
       |\.?.foo
       |\ABCProtocol[100]
@@ -88,11 +109,17 @@ class ExpressionTests extends AbstractPassTest {
       |\(UnsafeRawPointer?, String).1
       |_ = distinctUntilChanged(\ .?.status)
       |_ = distinctUntilChanged(\.?.status)
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testInitializerExpression" ignore AstFixture("Lexer.Cursor(input: input, previous: 0)") { cpg => ??? }
+    "testInitializerExpression" ignore {
+      val cpg = code("Lexer.Cursor(input: input, previous: 0)")
+      ???
+    }
 
-    "testCollectionLiterals" ignore AstFixture("""
+    "testCollectionLiterals" ignore {
+      val cpg = code("""
       |[Dictionary<String, Int>: Int]()
       |[(Int, Double) -> Bool]()
       |[(Int, Double) -> Bool]()
@@ -106,58 +133,83 @@ class ExpressionTests extends AbstractPassTest {
       |  bar(),
       |]
       |#fancyMacro<Arg1, Arg2>(hello: "me")
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testInterpolatedStringLiterals" ignore AstFixture("""
+    "testInterpolatedStringLiterals" ignore {
+      val cpg = code("""
       |return "Fixit: \(range.debugDescription) Text: \"\(text)\""
       |"text \(array.map({ "\($0)" }).joined(separator: ",")) text"
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testStringLiterals" ignore AstFixture(""""\(x)"""") { cpg => ??? }
+    "testStringLiterals" ignore {
+      val cpg = code(""""\(x)"""")
+      ???
+    }
 
-    "testMoveExpression" ignore AstFixture("""
+    "testMoveExpression" ignore {
+      val cpg = code("""
       |_move msg
       |use(_move msg)
       |_move msg
       |let b = (_move self).buffer
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testBorrowExpression" ignore AstFixture("""
+    "testBorrowExpression" ignore {
+      val cpg = code("""
       |_borrow msg
       |use(_borrow msg)
       |_borrow msg
       |let b = (_borrow self).buffer
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testKeywordApplyExpression" ignore AstFixture("""
+    "testKeywordApplyExpression" ignore {
+      val cpg = code("""
       |optional(x: .some(23))
       |optional(x: .none)
       |var pair : (Int, Double) = makePair(a: 1, b: 2.5)
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testMacroExpansionExpression" ignore AstFixture("""
+    "testMacroExpansionExpression" ignore {
+      val cpg = code("""
       |#file == $0.path
       |let a = #embed("filename.txt")
       |#Test {
       |  print("This is a test")
       |}
-      |""".stripMargin) { cpg => ??? }
-
-    "testIfExprInCoercion" ignore AstFixture("""
-      |func foo() {
-      |  if .random() { 0 } else { 1 } as Int
-      |}
-      |""".stripMargin) { cpg => ??? }
-
-    "testSwitchExprInCoercion" ignore AstFixture("switch Bool.random() { case true: 0 case false: 1 } as Int") { cpg =>
+      |""".stripMargin)
       ???
     }
 
-    "testIfExprInReturn" in AstFixture("""
+    "testIfExprInCoercion" ignore {
+      val cpg = code("""
       |func foo() {
-      |  return if .random() { 0 } else { 1 }
+      |  if .random() { 0 } else { 1 } as Int
       |}
-      |""".stripMargin) { cpg =>
+      |""".stripMargin)
+      ???
+    }
+
+    "testSwitchExprInCoercion" ignore {
+      val cpg = code("switch Bool.random() { case true: 0 case false: 1 } as Int")
+      ???
+    }
+
+    "testIfExprInReturn" in {
+      val cpg = code("""
+        |func foo() {
+        |  return if .random() { 0 } else { 1 }
+        |}
+        |""".stripMargin)
       inside(cpg.method.name("foo").ast.isReturn.astChildren.isControlStructure.l) {
         case List(controlStruct: ControlStructure) =>
           controlStruct.code should startWith("if .random() {")
@@ -172,93 +224,141 @@ class ExpressionTests extends AbstractPassTest {
       }
     }
 
-    "testSwitchExprInReturn" ignore AstFixture("""
+    "testSwitchExprInReturn" ignore {
+      val cpg = code("""
       |func foo() {
       |  return switch Bool.random() { case true: 0 case false: 1 }
       |}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testTryIf1" ignore AstFixture("""
+    "testTryIf1" ignore {
+      val cpg = code("""
       |func foo() -> Int {
       |  try if .random() { 0 } else { 1 }
       |}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testTryIf2" ignore AstFixture("""
+    "testTryIf2" ignore {
+      val cpg = code("""
       |func foo() -> Int {
       |  return try if .random() { 0 } else { 1 }
       |}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testTryIf3" ignore AstFixture("""
+    "testTryIf3" ignore {
+      val cpg = code("""
       |func foo() -> Int {
       |  let x = try if .random() { 0 } else { 1 }
       |  return x
       |}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testAwaitIf1" ignore AstFixture("""
+    "testAwaitIf1" ignore {
+      val cpg = code("""
       |func foo() async -> Int {
       |  await if .random() { 0 } else { 1 }
       |}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testAwaitIf2" ignore AstFixture("""
+    "testAwaitIf2" ignore {
+      val cpg = code("""
       |func foo() async -> Int {
       |  return await if .random() { 0 } else { 1 }
       |}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testAwaitIf3" ignore AstFixture("""
+    "testAwaitIf3" ignore {
+      val cpg = code("""
       |func foo() async -> Int {
       |  let x = await if .random() { 0 } else { 1 }
       |  return x
       |}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testTrySwitch1" ignore AstFixture("try switch Bool.random() { case true: 0 case false: 1 }") { cpg => ??? }
+    "testTrySwitch1" ignore {
+      val cpg = code("try switch Bool.random() { case true: 0 case false: 1 }")
+      ???
+    }
 
-    "testTrySwitch2" ignore AstFixture("""
+    "testTrySwitch2" ignore {
+      val cpg = code("""
       |func foo() -> Int {
       |  return try switch Bool.random() { case true: 0 case false: 1 }
       |}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testTrySwitch3" ignore AstFixture("""
+    "testTrySwitch3" ignore {
+      val cpg = code("""
       |func foo() -> Int {
       |  let x = try switch Bool.random() { case true: 0 case false: 1 }
       |  return x
       |}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testAwaitSwitch1" ignore AstFixture("await switch Bool.random() { case true: 0 case false: 1 }") { cpg => ??? }
+    "testAwaitSwitch1" ignore {
+      val cpg = code("await switch Bool.random() { case true: 0 case false: 1 }")
+      ???
+    }
 
-    "testAwaitSwitch2" ignore AstFixture("""
+    "testAwaitSwitch2" ignore {
+      val cpg = code("""
       |func foo() async -> Int {
       |  return await switch Bool.random() { case true: 0 case false: 1 }
       |}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testAwaitSwitch3" ignore AstFixture("""
+    "testAwaitSwitch3" ignore {
+      val cpg = code("""
       |func foo() async -> Int {
       |  let x = await switch Bool.random() { case true: 0 case false: 1 }
       |  return x
       |}
-      |""".stripMargin) { cpg => ??? }
-
-    "testIfExprCondCast" ignore AstFixture("if .random() { 0 } else { 1 } as? Int") { cpg => ??? }
-
-    "testIfExprForceCast" ignore AstFixture("if .random() { 0 } else { 1 } as! Int") { cpg => ??? }
-
-    "testSwitchExprCondCast" ignore AstFixture("switch Bool.random() { case true: 0 case false: 1 } as? Int") { cpg =>
+      |""".stripMargin)
       ???
     }
 
-    "testSwitchExprForceCast" ignore AstFixture("switch Bool.random() { case true: 0 case false: 1 } as! Int") { cpg =>
+    "testIfExprCondCast" ignore {
+      val cpg = code("if .random() { 0 } else { 1 } as? Int")
       ???
     }
 
-    "testInitCallInPoundIf" ignore AstFixture("""
+    "testIfExprForceCast" ignore {
+      val cpg = code("if .random() { 0 } else { 1 } as! Int")
+      ???
+    }
+
+    "testSwitchExprCondCast" ignore {
+      val cpg = code("switch Bool.random() { case true: 0 case false: 1 } as? Int")
+      ???
+    }
+
+    "testSwitchExprForceCast" ignore {
+      val cpg = code("switch Bool.random() { case true: 0 case false: 1 } as! Int")
+      ???
+    }
+
+    "testInitCallInPoundIf" ignore {
+      val cpg = code("""
       |class C {
       |  init() {
       |  #if true
@@ -266,32 +366,52 @@ class ExpressionTests extends AbstractPassTest {
       |  #endif
       |  }
       |}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testClosureParameterWithModifier" ignore AstFixture("_ = { (_const x: Int) in }") { cpg => ??? }
+    "testClosureParameterWithModifier" ignore {
+      val cpg = code("_ = { (_const x: Int) in }")
+      ???
+    }
 
-    "testClosureWithExternalParameterName" ignore AstFixture("""
+    "testClosureWithExternalParameterName" ignore {
+      val cpg = code("""
       |_ = { (_ x: MyType) in }
       |_ = { (x y: MyType) in }
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testClosureParameterWithAttribute" ignore AstFixture("""
+    "testClosureParameterWithAttribute" ignore {
+      val cpg = code("""
       |_ = { (@_noImplicitCopy _ x: Int) -> () in }
       |_ = { (@Wrapper x) in }
       |withInvalidOrderings { (comparisonPredicate: @escaping (Int, Int) -> Bool) in }
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testClosureWithDollarIdentifier" ignore AstFixture("""
+    "testClosureWithDollarIdentifier" ignore {
+      val cpg = code("""
       |let (ids, (actions, tracking)) = state.withCriticalRegion { ($0.valueObservers(for: keyPath), $0.didSet(keyPath: keyPath)) }
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testArrayExprWithNoCommas" ignore AstFixture("[() ()]") { cpg => ??? }
+    "testArrayExprWithNoCommas" ignore {
+      val cpg = code("[() ()]")
+      ???
+    }
 
-    "testDictionaryExprWithNoCommas" ignore AstFixture("""
+    "testDictionaryExprWithNoCommas" ignore {
+      val cpg = code("""
       |[1: (), 2: ()]
       |["foo": 1, "bar": 2]
       |[1: "hello", 2: "world"]
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
   }
 

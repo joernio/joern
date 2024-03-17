@@ -2,15 +2,14 @@
 
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
 
-class EnumElementPatternSwift4Tests extends AbstractPassTest {
+class EnumElementPatternSwift4Tests extends AstSwiftSrc2CpgSuite {
 
   "EnumElementPatternSwift4Tests" should {
 
-    "testEnumElementPatternSwift42" ignore AstFixture("""
+    "testEnumElementPatternSwift42" ignore {
+      val cpg = code("""
         |enum E {
         |  case A, B, C, D
         |  static func testE(e: E) {
@@ -24,9 +23,12 @@ class EnumElementPatternSwift4Tests extends AbstractPassTest {
         |    }
         |  }
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testEnumElementPatternSwift43" ignore AstFixture("""
+    "testEnumElementPatternSwift43" ignore {
+      val cpg = code("""
         |func testE(e: E) {
         |  switch e {
         |  case E.A<UndefinedTy>():
@@ -46,16 +48,22 @@ class EnumElementPatternSwift4Tests extends AbstractPassTest {
         |    case .D(let payload) = e
         |  else { return }
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testEnumElementPatternSwift44" ignore AstFixture("""
+    "testEnumElementPatternSwift44" ignore {
+      val cpg = code("""
         |extension E : Error {}
         |      func canThrow() throws {
         |  throw E.A
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testEnumElementPatternSwift45" ignore AstFixture("""
+    "testEnumElementPatternSwift45" ignore {
+      val cpg = code("""
         |do {
         |  try canThrow()
         |      } catch E.A() {
@@ -63,7 +71,9 @@ class EnumElementPatternSwift4Tests extends AbstractPassTest {
         |      } catch E.B(let payload) {
         |  let _: () = payload
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
   }
 
