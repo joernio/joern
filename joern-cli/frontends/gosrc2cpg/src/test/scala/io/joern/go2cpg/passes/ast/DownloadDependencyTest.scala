@@ -196,9 +196,12 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
     cpg.method.l
 
     "not be downloaded " in {
-      goGlobal.skippedDependencies.size() shouldBe 1
-      val Array(skippedone) = goGlobal.skippedDependencies.toArray
-      skippedone shouldBe "github.com/rs/zerolog"
+      val goModHelper  = cpg.getModHelper()
+      val dependencies = goModHelper.getModMetaData().get.dependencies
+      dependencies.size shouldBe 1
+      val List(dep) = dependencies
+      dep.module shouldBe "github.com/rs/zerolog"
+      dep.beingUsed shouldBe false
     }
 
     "not create any entry in package to namespace mapping" in {
@@ -258,9 +261,15 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
     cpg.method.l
 
     "download the dependency" in {
-      goGlobal.skippedDependencies.size() shouldBe 1
-      val Array(skippedone) = goGlobal.skippedDependencies.toArray
-      skippedone shouldBe "github.com/google/uuid"
+      val goModHelper  = cpg.getModHelper()
+      val dependencies = goModHelper.getModMetaData().get.dependencies
+      dependencies.size shouldBe 2
+      val List(depone, deptwo) = dependencies
+      depone.module shouldBe "github.com/rs/zerolog"
+      depone.beingUsed shouldBe true
+
+      deptwo.module shouldBe "github.com/google/uuid"
+      deptwo.beingUsed shouldBe false
     }
 
     "not create any entry in package to namespace mapping" in {
@@ -332,9 +341,15 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
     }
 
     "download the dependency" in {
-      goGlobal.skippedDependencies.size() shouldBe 1
-      val Array(skippedone) = goGlobal.skippedDependencies.toArray
-      skippedone shouldBe "github.com/google/uuid"
+      val goModHelper  = cpg.getModHelper()
+      val dependencies = goModHelper.getModMetaData().get.dependencies
+      dependencies.size shouldBe 2
+      val List(depone, deptwo) = dependencies
+      depone.module shouldBe "github.com/rs/zerolog"
+      depone.beingUsed shouldBe true
+
+      deptwo.module shouldBe "github.com/google/uuid"
+      deptwo.beingUsed shouldBe false
     }
 
     "not create any entry in package to namespace mapping" in {
@@ -370,6 +385,5 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
       // 3. A method of Struct Type being used.
       goGlobal.structTypeMemberTypeMapping.size() shouldBe 0
     }
-
   }
 }

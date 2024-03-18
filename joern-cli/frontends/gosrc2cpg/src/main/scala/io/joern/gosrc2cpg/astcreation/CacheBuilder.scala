@@ -88,7 +88,7 @@ trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCre
             ParserKeys.NodeReferenceId
           )
         ) {
-          processImports(obj)
+          processImports(obj, true)
         } else if (
           json.obj
             .contains(ParserKeys.NodeType) && obj(ParserKeys.NodeType).str == "ast.TypeSpec" && !json.obj.contains(
@@ -141,14 +141,25 @@ trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCre
       ("", "", Seq.empty)
   }
 
-  protected def processImports(importDecl: Value): (String, String) = {
+  protected def processImports(importDecl: Value, recordFindings: Boolean = false): (String, String) = {
     val importedEntity = importDecl(ParserKeys.Path).obj(ParserKeys.Value).str.replaceAll("\"", "")
-    val importedAs =
+    if (recordFindings) {
+      goMod.recordUsedDependencies(importedEntity)
+    }
+    val importedAsOption =
       Try(importDecl(ParserKeys.Name).obj(ParserKeys.Name).str).toOption
-        .getOrElse(importedEntity.split("/").last)
-
-    aliasToNameSpaceMapping.put(importedAs, importedEntity)
-    (importedEntity, importedAs)
+    importedAsOption match {
+      case Some(importedAs) =>
+        if (recordFindings)
+          goGlobal.recordAliasToNamespaceMapping(importedAs, importedEntity)
+        (importedEntity, importedAs)
+      case _ =>
+        // As these alias could be different for each file. Hence we maintain the cache at file level.
+        val derivedImportedAs = importedEntity.split("/").last
+        if (recordFindings)
+          aliasToNameSpaceMapping.put(derivedImportedAs, importedEntity)
+        (importedEntity, derivedImportedAs)
+    }
   }
 
   protected def processFuncDecl(funcDeclVal: Value): MethodMetadata = {

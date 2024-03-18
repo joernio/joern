@@ -25,23 +25,26 @@ import scala.util.Try
 class GoSrc2Cpg(goGlobalOption: Option[GoGlobal] = Some(GoGlobal())) extends X2CpgFrontend[Config] {
   private val report: Report = new Report()
 
+  private var goMod: Option[GoModHelper] = None
   def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
       File.usingTemporaryDirectory("gosrc2cpgOut") { tmpDir =>
         val goGlobal = goGlobalOption.getOrElse(GoGlobal())
         new MetaDataPass(cpg, Languages.GOLANG, config.inputPath).createAndApply()
         val astGenResult = new AstGenRunner(config).execute(tmpDir).asInstanceOf[GoAstGenRunnerResult]
-        val goMod = new GoModHelper(
-          Some(config),
-          astGenResult.parsedModFile.flatMap(modFile => GoAstJsonParser.readModFile(Paths.get(modFile)).map(x => x))
+        goMod = Some(
+          new GoModHelper(
+            Some(config),
+            astGenResult.parsedModFile.flatMap(modFile => GoAstJsonParser.readModFile(Paths.get(modFile)).map(x => x))
+          )
         )
         if (config.fetchDependencies) {
           goGlobal.processingDependencies = true
-          new DownloadDependenciesPass(goMod, goGlobal, config).process()
+          new DownloadDependenciesPass(goMod.get, goGlobal, config).process()
           goGlobal.processingDependencies = false
         }
         val astCreators =
-          new MethodAndTypeCacheBuilderPass(Some(cpg), astGenResult.parsedFiles, config, goMod, goGlobal).process()
+          new MethodAndTypeCacheBuilderPass(Some(cpg), astGenResult.parsedFiles, config, goMod.get, goGlobal).process()
         new AstCreationPass(cpg, astCreators, report).createAndApply()
         if goGlobal.pkgLevelVarAndConstantAstMap.size() > 0 then
           new PackageCtorCreationPass(cpg, config, goGlobal).createAndApply()
@@ -49,4 +52,6 @@ class GoSrc2Cpg(goGlobalOption: Option[GoGlobal] = Some(GoGlobal())) extends X2C
       }
     }
   }
+
+  def getGoModHelper: GoModHelper = goMod.get
 }

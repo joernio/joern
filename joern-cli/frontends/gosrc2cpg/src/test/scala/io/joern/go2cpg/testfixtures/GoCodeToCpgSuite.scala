@@ -4,6 +4,7 @@ import better.files.File
 import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
 import io.joern.dataflowengineoss.testfixtures.{SemanticCpgTestFixture, SemanticTestCpg}
 import io.joern.gosrc2cpg.datastructures.GoGlobal
+import io.joern.gosrc2cpg.model.GoModHelper
 import io.joern.gosrc2cpg.{Config, GoSrc2Cpg}
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, DefaultTestCpg}
 import io.shiftleft.codepropertygraph.Cpg
@@ -11,7 +12,8 @@ import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
 import org.scalatest.Inside
 class DefaultTestCpgWithGo(val fileSuffix: String) extends DefaultTestCpg with SemanticTestCpg {
 
-  private var goGlobal: Option[GoGlobal] = None
+  private var goGlobal: Option[GoGlobal]   = None
+  private var goSrc2Cpg: Option[GoSrc2Cpg] = None
   override protected def applyPasses(): Unit = {
     super.applyPasses()
     applyOssDataFlow()
@@ -32,14 +34,16 @@ class DefaultTestCpgWithGo(val fileSuffix: String) extends DefaultTestCpg with S
   def execute(sourceCodePath: java.io.File): Cpg = {
     val cpgOutFile = File.newTemporaryFile("go2cpg.bin")
     cpgOutFile.deleteOnExit()
-    val go2cpg = new GoSrc2Cpg(this.goGlobal)
+    goSrc2Cpg = Some(new GoSrc2Cpg(this.goGlobal))
     val config = getConfig()
       .collectFirst { case x: Config => x }
       .getOrElse(Config())
       .withInputPath(sourceCodePath.getAbsolutePath)
       .withOutputPath(cpgOutFile.pathAsString)
-    go2cpg.createCpg(config).get
+    goSrc2Cpg.get.createCpg(config).get
   }
+
+  def getModHelper(): GoModHelper = goSrc2Cpg.get.getGoModHelper
 }
 
 class GoCodeToCpgSuite(

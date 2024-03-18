@@ -2,13 +2,11 @@ package io.joern.gosrc2cpg.datastructures
 
 import io.joern.x2cpg.Ast
 
-import java.util.concurrent.{ConcurrentHashMap, CopyOnWriteArrayList}
+import java.util.concurrent.ConcurrentHashMap
 
 class GoGlobal {
 
   var processingDependencies = false
-
-  val skippedDependencies: CopyOnWriteArrayList[String] = new CopyOnWriteArrayList[String]()
 
   /** This map will only contain the mapping for those packages whose package name is different from the enclosing
     * folder name
@@ -89,7 +87,4 @@ class GoGlobal {
       case None => lambdaSignatureToLambdaTypeMap.put(signature, Set((lambdaStructTypeFullName, returnTypeFullname)))
     }
   }
-
-  def addToSkippedDependencyList(dependency: String): Unit = skippedDependencies.add(dependency)
-
 }
