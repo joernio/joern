@@ -2,29 +2,39 @@
 
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
 
-class PoundAssertTests extends AbstractPassTest {
+class PoundAssertTests extends AstSwiftSrc2CpgSuite {
 
   "PoundAssertTests" should {
 
-    "testPoundAssert1" ignore AstFixture("#assert(true, 123)") { cpg => ??? }
+    "testPoundAssert1" ignore {
+      val cpg = code("#assert(true, 123)")
+      ???
+    }
 
-    "testPoundAssert2" ignore AstFixture(""" #assert(true, "error \(1) message")""") { cpg => ??? }
+    "testPoundAssert2" ignore {
+      val cpg = code(""" #assert(true, "error \(1) message")""")
+      ???
+    }
 
-    "testPoundAssert5" ignore AstFixture("""
+    "testPoundAssert5" ignore {
+      val cpg = code("""
         |func unbalanced1() {
         |  #assert(true)
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testPoundAssert6" ignore AstFixture("""
+    "testPoundAssert6" ignore {
+      val cpg = code("""
         |func unbalanced2() {
         |  #assert(true, "hello world")
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
   }
 

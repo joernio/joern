@@ -2,29 +2,46 @@
 
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
 
-class ObjectLiteralsTests extends AbstractPassTest {
+class ObjectLiteralsTests extends AstSwiftSrc2CpgSuite {
 
   "ObjectLiteralsTests" should {
 
-    "testObjectLiterals2a" ignore AstFixture(
-      "let _ = #Color(colorLiteralRed: red, green: green, blue: blue, alpha: alpha)"
-    ) { cpg => }
+    "testObjectLiterals2a" ignore {
+      val cpg = code("let _ = #Color(colorLiteralRed: red, green: green, blue: blue, alpha: alpha)")
+      ???
+    }
 
-    "testObjectLiterals2b" ignore AstFixture("let _ = #Image(imageLiteral: localResourceNameAsString)") { cpg => }
+    "testObjectLiterals2b" ignore {
+      val cpg = code("let _ = #Image(imageLiteral: localResourceNameAsString)")
+      ???
+    }
 
-    "testObjectLiterals3a" ignore AstFixture("let _ = #notAPound") { cpg => }
+    "testObjectLiterals3a" ignore {
+      val cpg = code("let _ = #notAPound")
+      ???
+    }
 
-    "testObjectLiterals3b" ignore AstFixture("let _ = #notAPound(1, 2)") { cpg => }
+    "testObjectLiterals3b" ignore {
+      val cpg = code("let _ = #notAPound(1, 2)")
+      ???
+    }
 
-    "testObjectLiterals3c" ignore AstFixture("let _ = #Color") { cpg => }
+    "testObjectLiterals3c" ignore {
+      val cpg = code("let _ = #Color")
+      ???
+    }
 
-    "testObjectLiterals5" ignore AstFixture(" let _ = [#Color(_: 1, green: 1, 2)]") { cpg => }
+    "testObjectLiterals5" ignore {
+      val cpg = code(" let _ = [#Color(_: 1, green: 1, 2)]")
+      ???
+    }
 
-    "testObjectLiterals8" ignore AstFixture(" let _ = #Color(_: 1, green: 1)") { cpg => }
+    "testObjectLiterals8" ignore {
+      val cpg = code(" let _ = #Color(_: 1, green: 1)")
+      ???
+    }
 
   }
 

@@ -2,24 +2,26 @@
 
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
 
-class ForeachAsyncTests extends AbstractPassTest {
+class ForeachAsyncTests extends AstSwiftSrc2CpgSuite {
 
   "ForeachAsyncTests" should {
 
-    "testForeachAsync4" ignore AstFixture("""
+    "testForeachAsync4" ignore {
+      val cpg = code("""
         |func for_each(r: AsyncRange<Int>, iir: AsyncIntRange<Int>) async {
         |  var sum = 0
         |  // Simple foreach loop, using the variable in the body
         |  for await i in r {
         |    sum = sum + i
         |  }
-        |}""".stripMargin) { cpg => ??? }
+        |}""".stripMargin)
+      ???
+    }
 
-    "testForeachAsync5" ignore AstFixture("""
+    "testForeachAsync5" ignore {
+      val cpg = code("""
         |func for_each1(r: AsyncRange<Int>, iir: AsyncIntRange<Int>) async {
         |  var sum = 0
         |  for await (i, j) in iir {
@@ -32,7 +34,9 @@ class ForeachAsyncTests extends AbstractPassTest {
         |    sum = sum + i + j
         |  }
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
   }
 

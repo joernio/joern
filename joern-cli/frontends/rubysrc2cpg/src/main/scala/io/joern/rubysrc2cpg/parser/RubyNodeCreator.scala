@@ -6,6 +6,7 @@ import io.joern.rubysrc2cpg.parser.RubyParser.RangeOperatorContext
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import org.antlr.v4.runtime.tree.{ParseTree, RuleNode}
+import io.joern.x2cpg.Defines as XDefines;
 
 import scala.jdk.CollectionConverters.*
 
@@ -531,11 +532,11 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitClassIdentifierVariable(ctx: RubyParser.ClassIdentifierVariableContext): RubyNode = {
-    SimpleIdentifier()(ctx.toTextSpan)
+    ClassFieldIdentifier()(ctx.toTextSpan)
   }
 
   override def visitInstanceIdentifierVariable(ctx: RubyParser.InstanceIdentifierVariableContext): RubyNode = {
-    SimpleIdentifier()(ctx.toTextSpan)
+    InstanceFieldIdentifier()(ctx.toTextSpan)
   }
 
   override def visitLocalIdentifierVariable(ctx: RubyParser.LocalIdentifierVariableContext): RubyNode = {
@@ -693,12 +694,114 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     )(ctx.toTextSpan)
   }
 
+  private def findFieldsInmethodDecls(methodDecls: List[MethodDeclaration]): List[RubyNode with RubyFieldIdentifier] = {
+    // TODO: Handle case where body of method is not a StatementList
+    methodDecls
+      .flatMap {
+        _.body.asInstanceOf[StatementList].statements.collect { case x: SingleAssignment =>
+          x.lhs
+        }
+      }
+      .collect { case x: RubyNode with RubyFieldIdentifier =>
+        x
+      }
+  }
+
+  private def genInitFieldStmts(
+    ctxBodyStatement: RubyParser.BodyStatementContext
+  ): (RubyNode, List[RubyNode with RubyFieldIdentifier]) = {
+    val loweredClassDecls = lowerSingletonClassDeclarations(ctxBodyStatement)
+
+    /** Generates SingleAssignment RubyNodes for list of fields and fields found in method decls
+      * @param fields
+      * @param fieldsInMethodDecls
+      * @return
+      */
+    def genSingleAssignmentStmtList(
+      fields: List[RubyNode],
+      fieldsInMethodDecls: List[RubyNode]
+    ): List[SingleAssignment] = {
+      (fields ++ fieldsInMethodDecls).map { x =>
+        SingleAssignment(x, "=", StaticLiteral(getBuiltInType(Defines.NilClass))(x.span.spanStart("nil")))(
+          x.span.spanStart(s"${x.span.text} = nil")
+        )
+      }
+    }
+
+    /** Partition RubyFields into InstanceFieldIdentifiers and ClassFieldIdentifiers
+      * @param fields
+      * @return
+      */
+    def partitionRubyFields(fields: List[RubyNode]): (List[RubyNode], List[RubyNode]) = {
+      fields.partition {
+        case _: InstanceFieldIdentifier => true
+        case _                          => false
+      }
+    }
+
+    loweredClassDecls match {
+      case stmtList: StatementList =>
+        val (rubyFieldIdentifiers, rest) = stmtList.statements.partition {
+          case x: RubyNode with RubyFieldIdentifier => true
+          case _                                    => false
+        }
+
+        val (instanceFields, classFields) = partitionRubyFields(rubyFieldIdentifiers)
+
+        val methodDecls = rest.collect { case x: MethodDeclaration =>
+          x
+        }
+
+        val fieldsInMethodDecls = findFieldsInmethodDecls(methodDecls)
+
+        val (instanceFieldsInMethodDecls, classFieldsInMethodDecls) = partitionRubyFields(fieldsInMethodDecls)
+
+        val initializeMethod = methodDecls.collectFirst { x =>
+          x.methodName match
+            case "initialize" => x
+        }
+
+        val initStmtListStatements = genSingleAssignmentStmtList(instanceFields, instanceFieldsInMethodDecls)
+        val clinitStmtList         = genSingleAssignmentStmtList(classFields, classFieldsInMethodDecls)
+
+        val clinitMethod =
+          MethodDeclaration(XDefines.StaticInitMethodName, List.empty, StatementList(clinitStmtList)(stmtList.span))(
+            stmtList.span
+          )
+
+        val updatedStmtList = initializeMethod match {
+          case Some(initMethod) =>
+            initMethod.body match {
+              // TODO: Filter out instance fields that are assigned an initial value in the constructor method. Current
+              //  implementation leads to "double" assignment happening when the instance field is assigned a value
+              //   where you end up having
+              //   <instanceField> = nil; <instanceField> = ...;
+              case stmtList: StatementList =>
+                val initializers = initStmtListStatements :+ clinitMethod
+                StatementList(initializers ++ rest)(stmtList.span)
+              case x => x
+            }
+          case None =>
+            val newInitMethod =
+              MethodDeclaration("initialize", List.empty, StatementList(initStmtListStatements)(stmtList.span))(
+                stmtList.span
+              )
+            val initializers = newInitMethod :: clinitMethod :: Nil
+            StatementList(initializers ++ rest)(stmtList.span)
+        }
+        val combinedFields = rubyFieldIdentifiers ++ fieldsInMethodDecls
+
+        (updatedStmtList, combinedFields.asInstanceOf[List[RubyNode with RubyFieldIdentifier]])
+      case decls => (decls, List.empty)
+    }
+  }
+
   override def visitClassDefinition(ctx: RubyParser.ClassDefinitionContext): RubyNode = {
-    ClassDeclaration(
-      visit(ctx.classPath()),
-      Option(ctx.commandOrPrimaryValue()).map(visit),
-      lowerSingletonClassDeclarations(ctx.bodyStatement())
-    )(ctx.toTextSpan)
+    val (stmts, fields) = genInitFieldStmts(ctx.bodyStatement())
+
+    ClassDeclaration(visit(ctx.classPath()), Option(ctx.commandOrPrimaryValue()).map(visit), stmts, fields)(
+      ctx.toTextSpan
+    )
   }
 
   /** Lowers all MethodDeclaration found in SingletonClassDeclaration to SingletonMethodDeclaration.

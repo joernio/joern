@@ -2,85 +2,128 @@
 
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
 
-class RawStringTests extends AbstractPassTest {
+class RawStringTests extends AstSwiftSrc2CpgSuite {
 
   "RawStringTests" should {
 
-    "testRawString2" ignore AstFixture("""
+    "testRawString2" ignore {
+      val cpg = code("""
       |_ = #\"\"\"
       |      ###################################################################
       |      ## This source file is part of the Swift.org open source project ##
       |      ###################################################################
       |      \"\"\"#
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testRawString3" ignore AstFixture("""
+    "testRawString3" ignore {
+      val cpg = code("""
       |_ = #\"\"\"
       |      # H1 #
       |      ## H2 ##
       |      ### H3 ###
       |      \"\"\"#
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testRawString5" ignore AstFixture("""
+    "testRawString5" ignore {
+      val cpg = code("""
       |_ = ##\"\"\"
       |          One
       |          ""Alpha""
       |          \"\"\"##
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testRawString6" ignore AstFixture("""
+    "testRawString6" ignore {
+      val cpg = code("""
       |_ = ##\"\"\"
       |          Two
       |        Beta
       |        \"\"\"##
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testRawString7" ignore AstFixture("""
+    "testRawString7" ignore {
+      val cpg = code("""
       |_ = #\"\"\"
       |          Three\r
       |          Gamma\
       |        \"\"\"#
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testRawString8" ignore AstFixture("""
+    "testRawString8" ignore {
+      val cpg = code("""
       |_ = ###\"\"\"
       |          Four \(foo)
       |          Delta
       |      \"\"\"###
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testRawString9" ignore AstFixture("""
+    "testRawString9" ignore {
+      val cpg = code("""
       |_ = ##\"\"\"
       |        print(\"\"\"
       |          Five\##n\##n\##nEpsilon
       |          \"\"\")
       |        \"\"\"##
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testRawString11" ignore AstFixture("""_ = #""Zeta""#""") { cpg => ??? }
+    "testRawString11" ignore {
+      val cpg = code("""_ = #""Zeta""#""")
+      ???
+    }
 
-    "testRawString12" ignore AstFixture("""_ = #""Eta"\#n\#n\#n\#""#""") { cpg => ??? }
+    "testRawString12" ignore {
+      val cpg = code("""_ = #""Eta"\#n\#n\#n\#""#""")
+      ???
+    }
 
-    "testRawString13" ignore AstFixture("""_ = #""Iota"\n\n\n\""#""") { cpg => ??? }
+    "testRawString13" ignore {
+      val cpg = code("""_ = #""Iota"\n\n\n\""#""")
+      ???
+    }
 
-    "testRawString14" ignore AstFixture("""_ = #"a raw string with \" in it"#""") { cpg => ??? }
+    "testRawString14" ignore {
+      val cpg = code("""_ = #"a raw string with \" in it"#""")
+      ???
+    }
 
-    "testRawString15" ignore AstFixture("""
+    "testRawString15" ignore {
+      val cpg = code("""
       |_ = ##\"\"\"
       |            a raw string with \"\"\" in it
       |            \"\"\"##
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testRawString17" ignore AstFixture("""_ = #"​"​"#""") { cpg => ??? }
+    "testRawString17" ignore {
+      val cpg = code("""_ = #"​"​"#""")
+      ???
+    }
 
-    "testRawString32" ignore AstFixture("""_ = #"This is a string"#""") { cpg => ??? }
+    "testRawString32" ignore {
+      val cpg = code("""_ = #"This is a string"#""")
+      ???
+    }
 
-    "testRawString33" ignore AstFixture("""_ = #####"This is a string"#####""") { cpg => ??? }
+    "testRawString33" ignore {
+      val cpg = code("""_ = #####"This is a string"#####""")
+      ???
+    }
 
   }
 }

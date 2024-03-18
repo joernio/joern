@@ -1,12 +1,18 @@
 package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.astcreation.GlobalTypes.{builtinFunctions, builtinPrefix}
-import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.RubyNode
-import io.joern.rubysrc2cpg.datastructures.{BlockScope, MethodLikeScope, RubyProgramSummary, RubyScope, TypeLikeScope}
-import io.joern.x2cpg.datastructures.NamespaceLikeScope
-import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.x2cpg.{Ast, Defines, ValidationMode}
+import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
+  ClassFieldIdentifier,
+  DummyNode,
+  InstanceFieldIdentifier,
+  MemberAccess,
+  RubyFieldIdentifier,
+  RubyNode
+}
+import io.joern.rubysrc2cpg.datastructures.{BlockScope, FieldDecl}
+import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -24,27 +30,55 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def prefixAsBuiltin(x: String): String = s"$builtinPrefix$pathSep$x"
   protected def pathSep                            = "."
 
+  private def astForFieldInstance(name: String, node: RubyNode with RubyFieldIdentifier): Ast = {
+    val identName = node match {
+      case _: InstanceFieldIdentifier => Defines.This
+      case _: ClassFieldIdentifier    => scope.surroundingTypeFullName.map(_.split("[.]").last).getOrElse(Defines.Any)
+    }
+
+    astForFieldAccess(
+      MemberAccess(
+        DummyNode(identifierNode(node, identName, identName, Defines.Any))(node.span.spanStart(identName)),
+        ".",
+        name
+      )(node.span)
+    )
+  }
+
   protected def handleVariableOccurrence(node: RubyNode): Ast = {
     val name       = code(node)
     val identifier = identifierNode(node, name, name, Defines.Any)
     val typeRef    = scope.tryResolveTypeReference(name)
-    scope.lookupVariable(name) match {
-      case None if typeRef.isDefined =>
-        Ast(identifier.typeFullName(typeRef.get.name))
-      case None =>
-        val local = localNode(node, name, name, Defines.Any)
-        scope.addToScope(name, local) match {
-          case BlockScope(block) => diffGraph.addEdge(block, local, EdgeTypes.AST)
-          case _                 =>
+
+    node match {
+      case fieldVariable: RubyFieldIdentifier =>
+        scope.findFieldInScope(name) match {
+          case None =>
+            scope.pushField(FieldDecl(name, Defines.Any, false, false, fieldVariable))
+            astForFieldInstance(name, fieldVariable)
+          case Some(field) =>
+            astForFieldInstance(name, field.node)
         }
-        Ast(identifier).withRefEdge(identifier, local)
-      case Some(local) =>
-        local match {
-          case x: NewLocal             => identifier.dynamicTypeHintFullName(x.dynamicTypeHintFullName)
-          case x: NewMethodParameterIn => identifier.dynamicTypeHintFullName(x.dynamicTypeHintFullName)
+      case _ =>
+        scope.lookupVariable(name) match {
+          case None if typeRef.isDefined =>
+            Ast(identifier.typeFullName(typeRef.get.name))
+          case None =>
+            val local = localNode(node, name, name, Defines.Any)
+            scope.addToScope(name, local) match {
+              case BlockScope(block) => diffGraph.addEdge(block, local, EdgeTypes.AST)
+              case _                 =>
+            }
+            Ast(identifier).withRefEdge(identifier, local)
+          case Some(local) =>
+            local match {
+              case x: NewLocal             => identifier.dynamicTypeHintFullName(x.dynamicTypeHintFullName)
+              case x: NewMethodParameterIn => identifier.dynamicTypeHintFullName(x.dynamicTypeHintFullName)
+            }
+            Ast(identifier).withRefEdge(identifier, local)
         }
-        Ast(identifier).withRefEdge(identifier, local)
     }
+
   }
 
   protected val UnaryOperatorNames: Map[String, String] = Map(

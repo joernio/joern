@@ -2,18 +2,19 @@
 
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
 
-class HashbangLibraryTests extends AbstractPassTest {
+class HashbangLibraryTests extends AstSwiftSrc2CpgSuite {
 
   "HashbangLibraryTests" should {
 
-    "testHashbangLibrary1" ignore AstFixture("""
+    "testHashbangLibrary1" ignore {
+      val cpg = code("""
         |#!/usr/bin/swift
         |class Foo {}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
   }
 

@@ -1,5 +1,6 @@
 package io.joern.rubysrc2cpg.datastructures
 
+import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{RubyFieldIdentifier, RubyNode}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.datastructures.{NamespaceLikeScope, TypedScopeElement}
 import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
@@ -9,6 +10,14 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
   *   the namespace path.
   */
 case class NamespaceScope(fullName: String) extends NamespaceLikeScope
+
+case class FieldDecl(
+  name: String,
+  typeFullName: String,
+  isStatic: Boolean,
+  isInitialized: Boolean,
+  node: RubyNode with RubyFieldIdentifier
+) extends TypedScopeElement
 
 /** A type-like scope with a full name.
   */
@@ -40,7 +49,7 @@ case class ModuleScope(fullName: String) extends TypeLikeScope
   * @param fullName
   *   the type full name.
   */
-case class TypeScope(fullName: String) extends TypeLikeScope
+case class TypeScope(fullName: String, fields: List[FieldDecl]) extends TypeLikeScope
 
 /** Represents scope objects that map to a method node.
   */

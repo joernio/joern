@@ -1,14 +1,15 @@
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
 
-class RegexLiteralTests extends AbstractPassTest {
+class RegexLiteralTests extends AstSwiftSrc2CpgSuite {
 
   "RegexLiteralTests" should {
 
-    "testRegexLiteral" ignore AstFixture("##/abc/#def/##") { cpg => ??? }
+    "testRegexLiteral" ignore {
+      val cpg = code("##/abc/#def/##")
+      ???
+    }
 
   }
 }

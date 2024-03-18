@@ -524,5 +524,4 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val _identifierNode = createDotNetNodeInfo(suppressNullableExpr.json(ParserKeys.Operand))
     Seq(astForIdentifier(_identifierNode))
   }
-
 }

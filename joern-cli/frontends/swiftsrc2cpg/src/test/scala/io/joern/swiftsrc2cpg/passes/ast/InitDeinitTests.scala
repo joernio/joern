@@ -2,146 +2,204 @@
 
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
 
-class InitDeinitTests extends AbstractPassTest {
+class InitDeinitTests extends AstSwiftSrc2CpgSuite {
 
   "InitDeinitTests" should {
 
-    "testInitDeinit1" ignore AstFixture("""
+    "testInitDeinit1" ignore {
+      val cpg = code("""
         |struct FooStructConstructorA {
         |  init()
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testInitDeinit2" ignore AstFixture("""
+    "testInitDeinit2" ignore {
+      val cpg = code("""
         |struct FooStructConstructorA {
         |  init() {}
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testInitDeinit3" ignore AstFixture("""
+    "testInitDeinit3" ignore {
+      val cpg = code("""
         |struct FooStructConstructorA {
         |  init<T>() {}
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testInitDeinit4" ignore AstFixture("""
+    "testInitDeinit4" ignore {
+      val cpg = code("""
         |struct FooStructConstructorA {
         |  init?() { self.init() }
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testInitDeinit5" ignore AstFixture("""
+    "testInitDeinit5" ignore {
+      val cpg = code("""
         |struct FooStructDeinitializerA {
         |  deinit
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testInitDeinit6" ignore AstFixture("""
+    "testInitDeinit6" ignore {
+      val cpg = code("""
         |struct FooStructDeinitializerA {
         |  deinit {}
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testInitDeinit7" ignore AstFixture("""
+    "testInitDeinit7" ignore {
+      val cpg = code("""
         |class FooStructDeinitializerA {
         |  deinit {}
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testInitDeinit12" ignore AstFixture("""
+    "testInitDeinit12" ignore {
+      val cpg = code("""
         |deinit {}
         |deinit
         |deinit {}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testInitDeinit13" ignore AstFixture("""
+    "testInitDeinit13" ignore {
+      val cpg = code("""
         |struct BarStruct {
         |  init() {}
         |  deinit {}
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testInitDeinit14" ignore AstFixture("""
+    "testInitDeinit14" ignore {
+      val cpg = code("""
         |extension BarStruct {
         |  init(x : Int) {}
         |  deinit {}
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testInitDeinit15" ignore AstFixture("""
+    "testInitDeinit15" ignore {
+      val cpg = code("""
         |enum BarUnion {
         |  init() {}
         |  deinit {}
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testInitDeinit16" ignore AstFixture("""
+    "testInitDeinit16" ignore {
+      val cpg = code("""
         |extension BarUnion {
         |  init(x : Int) {}
         |  deinit {}
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testInitDeinit17" ignore AstFixture("""
+    "testInitDeinit17" ignore {
+      val cpg = code("""
         |class BarClass {
         |  init() {}
         |  deinit {}
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testInitDeinit19" ignore AstFixture("""
+    "testInitDeinit19" ignore {
+      val cpg = code("""
         |protocol BarProtocol {
         |  init() {}
         |  deinit {}
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testInitDeinit20" ignore AstFixture("""
+    "testInitDeinit20" ignore {
+      val cpg = code("""
         |extension BarProtocol {
         |  init(x : Int) {}
         |  deinit {}
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testInitDeinit21" ignore AstFixture("""
+    "testInitDeinit21" ignore {
+      val cpg = code("""
         |func fooFunc() {
         |  init() {}
         |  deinit {}
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testInitDeinit24" ignore AstFixture("""
+    "testInitDeinit24" ignore {
+      val cpg = code("""
         |class Aaron {
         |  convenience init() { init(x: 1) }
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testDeinitInSwiftinterfaceIsFollowedByFinalFunc" ignore AstFixture("""
+    "testDeinitInSwiftinterfaceIsFollowedByFinalFunc" ignore {
+      val cpg = code("""
         |class Foo {
         |  deinit
         |  final func foo()
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testDeinitAsync" ignore AstFixture("""
+    "testDeinitAsync" ignore {
+      val cpg = code("""
         |class FooClassDeinitializerA {
         |  deinit async {}
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testAsyncDeinit" ignore AstFixture(
-      // This is expected for now.
-      // `async` is parsed as a modifier like `public` because you can have an `async var x: Int`.
-      """
+    "testAsyncDeinit" ignore {
+      val cpg = code(
+        // This is expected for now.
+        // `async` is parsed as a modifier like `public` because you can have an `async var x: Int`.
+        """
         |class FooClassDeinitializerA {
         |  async deinit {}
         |}
         |""".stripMargin
-    ) { cpg => ??? }
+      )
+      ???
+    }
 
   }
 

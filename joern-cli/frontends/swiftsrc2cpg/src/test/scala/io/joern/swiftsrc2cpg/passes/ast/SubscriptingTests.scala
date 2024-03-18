@@ -2,15 +2,14 @@
 
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
 
-class SubscriptingTests extends AbstractPassTest {
+class SubscriptingTests extends AstSwiftSrc2CpgSuite {
 
   "SubscriptingTests" should {
 
-    "testSubscripting2" ignore AstFixture("""
+    "testSubscripting2" ignore {
+      val cpg = code("""
         |struct X1 {
         |  var stored: Int
         |  subscript(i: Int) -> Int {
@@ -23,9 +22,12 @@ class SubscriptingTests extends AbstractPassTest {
         |    }
         |  }
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testSubscripting3" ignore AstFixture("""
+    "testSubscripting3" ignore {
+      val cpg = code("""
         |struct X2 {
         |  var stored: Int
         |  subscript(i: Int) -> Int {
@@ -36,30 +38,42 @@ class SubscriptingTests extends AbstractPassTest {
         |      stored = v - i
         |    }
         |  }
-        |}""".stripMargin) { cpg => ??? }
+        |}""".stripMargin)
+      ???
+    }
 
-    "testSubscripting10" ignore AstFixture("""
+    "testSubscripting10" ignore {
+      val cpg = code("""
         |struct Y2 {
         |  subscript(_: Int) -> Int {
         |    mutating get { return 0 }
         |  }
-        |}""".stripMargin) { cpg => ??? }
+        |}""".stripMargin)
+      ???
+    }
 
-    "testSubscripting17" ignore AstFixture("""
+    "testSubscripting17" ignore {
+      val cpg = code("""
         |struct A5 {
         |  subscript(i : Int) -> Int
-        |}""".stripMargin) { cpg => ??? }
+        |}""".stripMargin)
+      ???
+    }
 
-    "testSubscripting19" ignore AstFixture("""
+    "testSubscripting19" ignore {
+      val cpg = code("""
         |struct A7 {
         |  class subscript(a: Float) -> Int {
         |    get {
         |      return 42
         |    }
         |  }
-        |}""".stripMargin) { cpg => ??? }
+        |}""".stripMargin)
+      ???
+    }
 
-    "testSubscripting20" ignore AstFixture("""
+    "testSubscripting20" ignore {
+      val cpg = code("""
         |class A7b {
         |  class static subscript(a: Float) -> Int {
         |    get {
@@ -67,7 +81,9 @@ class SubscriptingTests extends AbstractPassTest {
         |    }
         |  }
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
   }
 

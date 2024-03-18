@@ -2,26 +2,33 @@
 
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
 
-class ToplevelLibraryTests extends AbstractPassTest {
+class ToplevelLibraryTests extends AstSwiftSrc2CpgSuite {
 
   "ToplevelLibraryTests" should {
 
-    "testToplevelLibrary1" ignore AstFixture("var x = 4;") { cpg => ??? }
+    "testToplevelLibrary1" ignore {
+      val cpg = code("var x = 4;")
+      ???
+    }
 
-    "testToplevelLibraryInvalid1" ignore AstFixture("""
+    "testToplevelLibraryInvalid1" ignore {
+      val cpg = code("""
       |let x = 42
       |x + x;
       |x + x;
       |// Make sure we don't crash on closures at the top level
       |{ })
       |({ 5 }())
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testToplevelLibraryInvalid2" ignore AstFixture("for i in foo() {}") { cpg => ??? }
+    "testToplevelLibraryInvalid2" ignore {
+      val cpg = code("for i in foo() {}")
+      ???
+    }
 
   }
 

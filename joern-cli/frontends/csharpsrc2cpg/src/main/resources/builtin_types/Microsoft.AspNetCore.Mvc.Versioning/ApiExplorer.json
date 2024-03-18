@@ -1,0 +1,657 @@
+{
+  "Microsoft.CodeAnalysis": [
+    {
+      "name": "Microsoft.CodeAnalysis.EmbeddedAttribute",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System.Runtime.CompilerServices": [
+    {
+      "name": "System.Runtime.CompilerServices.NullableAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.NullableContextAttribute",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "Microsoft": [
+    {
+      "name": "Microsoft.StringExtensions",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.TypeExtensions",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.DependencyInjection": [
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.IServiceCollectionExtensions",
+      "methods": [
+        {
+          "name": "AddVersionedApiExplorer",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddVersionedApiExplorer",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "setupAction",
+              "System.Action`1<Microsoft.AspNetCore.Mvc.ApiExplorer.ApiExplorerOptions>"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.AspNetCore.Mvc.ApiExplorer": [
+    {
+      "name": "Microsoft.AspNetCore.Mvc.ApiExplorer.ApiDescriptionExtensions",
+      "methods": [
+        {
+          "name": "GetApiVersion",
+          "returnType": "Microsoft.AspNetCore.Mvc.ApiVersion",
+          "parameterTypes": [
+            [
+              "apiDescription",
+              "Microsoft.AspNetCore.Mvc.ApiExplorer.ApiDescription"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "IsDeprecated",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "apiDescription",
+              "Microsoft.AspNetCore.Mvc.ApiExplorer.ApiDescription"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "SetApiVersion",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "apiDescription",
+              "Microsoft.AspNetCore.Mvc.ApiExplorer.ApiDescription"
+            ],
+            [
+              "apiVersion",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryUpdateRelativePathAndRemoveApiVersionParameter",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "apiDescription",
+              "Microsoft.AspNetCore.Mvc.ApiExplorer.ApiDescription"
+            ],
+            [
+              "options",
+              "Microsoft.AspNetCore.Mvc.ApiExplorer.ApiExplorerOptions"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Clone",
+          "returnType": "Microsoft.AspNetCore.Mvc.ApiExplorer.ApiDescription",
+          "parameterTypes": [
+            [
+              "apiDescription",
+              "Microsoft.AspNetCore.Mvc.ApiExplorer.ApiDescription"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.ApiExplorer.ApiExplorerOptions",
+      "methods": [
+        {
+          "name": "get_DefaultApiVersion",
+          "returnType": "Microsoft.AspNetCore.Mvc.ApiVersion",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_DefaultApiVersion",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_AssumeDefaultVersionWhenUnspecified",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_AssumeDefaultVersionWhenUnspecified",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ApiVersionParameterSource",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.IApiVersionParameterSource",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ApiVersionParameterSource",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.AspNetCore.Mvc.Versioning.IApiVersionParameterSource"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_GroupNameFormat",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_GroupNameFormat",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_SubstitutionFormat",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_SubstitutionFormat",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_SubstituteApiVersionInUrl",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_SubstituteApiVersionInUrl",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_DefaultApiVersionParameterDescription",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_DefaultApiVersionParameterDescription",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_AddApiVersionParametersWhenVersionNeutral",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_AddApiVersionParametersWhenVersionNeutral",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.ApiExplorer.ApiExplorerOptionsFactory`1",
+      "methods": [
+        {
+          "name": "Create",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.ApiExplorer.ApiVersionDescription",
+      "methods": [
+        {
+          "name": "get_ApiVersion",
+          "returnType": "Microsoft.AspNetCore.Mvc.ApiVersion",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_GroupName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_IsDeprecated",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.ApiExplorer.ApiVersionModelMetadata",
+      "methods": [
+        {
+          "name": "get_AdditionalValues",
+          "returnType": "System.Collections.Generic.IReadOnlyDictionary`2<System.Object,System.Object>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Properties",
+          "returnType": "Microsoft.AspNetCore.Mvc.ModelBinding.ModelPropertyCollection",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_BinderModelName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_BinderType",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_BindingSource",
+          "returnType": "Microsoft.AspNetCore.Mvc.ModelBinding.BindingSource",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ConvertEmptyStringToNull",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_DataTypeName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Description",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_DisplayFormatString",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_DisplayName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_EditFormatString",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ElementMetadata",
+          "returnType": "Microsoft.AspNetCore.Mvc.ModelBinding.ModelMetadata",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_EnumGroupedDisplayNamesAndValues",
+          "returnType": "System.Collections.Generic.IEnumerable`1<System.Collections.Generic.KeyValuePair`2<Microsoft.AspNetCore.Mvc.ModelBinding.EnumGroupAndName,System.String>>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_EnumNamesAndValues",
+          "returnType": "System.Collections.Generic.IReadOnlyDictionary`2<System.String,System.String>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_HasNonDefaultEditFormat",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_HtmlEncode",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_HideSurroundingHtml",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_IsBindingAllowed",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_IsBindingRequired",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_IsEnum",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_IsFlagsEnum",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_IsReadOnly",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_IsRequired",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ModelBindingMessageProvider",
+          "returnType": "Microsoft.AspNetCore.Mvc.ModelBinding.Metadata.ModelBindingMessageProvider",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Order",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Placeholder",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_NullDisplayText",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_PropertyFilterProvider",
+          "returnType": "Microsoft.AspNetCore.Mvc.ModelBinding.IPropertyFilterProvider",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ShowForDisplay",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ShowForEdit",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_SimpleDisplayProperty",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_TemplateHint",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ValidateChildren",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ValidatorMetadata",
+          "returnType": "System.Collections.Generic.IReadOnlyList`1<System.Object>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_PropertyGetter",
+          "returnType": "System.Func`2<System.Object,System.Object>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_PropertySetter",
+          "returnType": "System.Action`2<System.Object,System.Object>",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.ApiExplorer.ApiVersionParameterDescriptionContext",
+      "methods": [
+        {
+          "name": "AddParameter",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "location",
+              "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionParameterLocation"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.ApiExplorer.DefaultApiVersionDescriptionProvider",
+      "methods": [
+        {
+          "name": "get_ApiVersionDescriptions",
+          "returnType": "System.Collections.Generic.IReadOnlyList`1<Microsoft.AspNetCore.Mvc.ApiExplorer.ApiVersionDescription>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "IsDeprecated",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "actionDescriptor",
+              "Microsoft.AspNetCore.Mvc.Abstractions.ActionDescriptor"
+            ],
+            [
+              "apiVersion",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.ApiExplorer.IApiVersionDescriptionProvider",
+      "methods": [
+        {
+          "name": "get_ApiVersionDescriptions",
+          "returnType": "System.Collections.Generic.IReadOnlyList`1<Microsoft.AspNetCore.Mvc.ApiExplorer.ApiVersionDescription>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "IsDeprecated",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "actionDescriptor",
+              "Microsoft.AspNetCore.Mvc.Abstractions.ActionDescriptor"
+            ],
+            [
+              "apiVersion",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.ApiExplorer.SR",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.ApiExplorer.VersionedApiDescriptionProvider",
+      "methods": [
+        {
+          "name": "get_Order",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "OnProvidersExecuted",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Mvc.ApiExplorer.ApiDescriptionProviderContext"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "OnProvidersExecuting",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Mvc.ApiExplorer.ApiDescriptionProviderContext"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

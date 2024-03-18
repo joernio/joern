@@ -10,6 +10,8 @@ import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 
+import scala.annotation.tailrec
+
 trait AstForPatternSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
 
@@ -37,43 +39,43 @@ trait AstForPatternSyntaxCreator(implicit withSchemaValidation: ValidationMode) 
   private def astForMissingPatternSyntax(node: MissingPatternSyntax): Ast = notHandledYet(node)
   private def astForTuplePatternSyntax(node: TuplePatternSyntax): Ast     = notHandledYet(node)
 
-  private def astForValueBindingPatternSyntax(node: ValueBindingPatternSyntax): Ast = {
+  private def localForValueBindingPatternSyntax(
+    node: ValueBindingPatternSyntax,
+    name: String,
+    typeFullName: String
+  ): Ast = {
     val kind = code(node.bindingSpecifier)
     val scopeType = if (kind == "let") {
       BlockScope
     } else {
       MethodScope
     }
-
-    val (name, typeFullName) = node.pattern match {
-      case expr: ExpressionPatternSyntax if expr.expression.isInstanceOf[AsExprSyntax] =>
-        val asExpr = expr.expression.asInstanceOf[AsExprSyntax]
-        (code(asExpr.expression), code(asExpr.`type`))
-      case expr: ExpressionPatternSyntax =>
-        notHandledYet(expr)
-        (code(expr), Defines.Any)
-      case ident: IdentifierPatternSyntax =>
-        (code(ident.identifier), Defines.Any)
-      case isType: IsTypePatternSyntax =>
-        notHandledYet(isType)
-        (code(isType), Defines.Any)
-      case missing: MissingPatternSyntax =>
-        (code(missing.placeholder), Defines.Any)
-      case tuple: TuplePatternSyntax =>
-        notHandledYet(tuple)
-        (code(tuple), Defines.Any)
-      case valueBinding: ValueBindingPatternSyntax =>
-        notHandledYet(valueBinding)
-        (code(valueBinding), Defines.Any)
-      case wildcard: WildcardPatternSyntax =>
-        notHandledYet(wildcard)
-        (generateUnusedVariableName(usedVariableNames, "wildcard"), Defines.Any)
-    }
     val nLocalNode = localNode(node, name, name, typeFullName).order(0)
     registerType(typeFullName)
     scope.addVariable(name, nLocalNode, scopeType)
     diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)
     Ast()
+  }
+
+  @tailrec
+  private def astForValueBindingPatternSyntax(node: ValueBindingPatternSyntax): Ast = {
+    node.pattern match {
+      case expr: ExpressionPatternSyntax if expr.expression.isInstanceOf[AsExprSyntax] =>
+        val asExpr = expr.expression.asInstanceOf[AsExprSyntax]
+        localForValueBindingPatternSyntax(node, code(asExpr.expression), code(asExpr.`type`))
+      case expr: ExpressionPatternSyntax =>
+        astForNode(expr)
+      case ident: IdentifierPatternSyntax =>
+        localForValueBindingPatternSyntax(node, code(ident.identifier), Defines.Any)
+      case isType: IsTypePatternSyntax =>
+        astForNode(isType)
+      case _: MissingPatternSyntax => Ast()
+      case tuple: TuplePatternSyntax =>
+        astForNode(tuple)
+      case valueBinding: ValueBindingPatternSyntax =>
+        astForValueBindingPatternSyntax(valueBinding)
+      case _: WildcardPatternSyntax => Ast()
+    }
   }
 
   private def astForWildcardPatternSyntax(node: WildcardPatternSyntax): Ast = notHandledYet(node)
