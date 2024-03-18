@@ -119,31 +119,39 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
   }
 
   /** Locates a position in the stack matching a partial function, modifies it and emits a result
-   *  @param pf
-   *    Tests ScopeElements of the stack. If they match, return the new value and the result to emi
-   *  @return 
-   *    the emitted result if the position was found and modifies
-   */
-  def updateSurrounding[T](pf: PartialFunction[ScopeElement[String, DeclarationNew, TypedScopeElement], (ScopeElement[String, DeclarationNew, TypedScopeElement], T)]): Option[T] = {
-    stack.zipWithIndex.collectFirst {
-      case (pf(elem, res), i) => (elem, res, i)
-    }.map { case (elem, res, i) =>
-      stack = stack.updated(i, elem)
-      res
-    }
+    * @param pf
+    *   Tests ScopeElements of the stack. If they match, return the new value and the result to emi
+    * @return
+    *   the emitted result if the position was found and modifies
+    */
+  def updateSurrounding[T](
+    pf: PartialFunction[
+      ScopeElement[String, DeclarationNew, TypedScopeElement],
+      (ScopeElement[String, DeclarationNew, TypedScopeElement], T)
+    ]
+  ): Option[T] = {
+    stack.zipWithIndex
+      .collectFirst { case (pf(elem, res), i) =>
+        (elem, res, i)
+      }
+      .map { case (elem, res, i) =>
+        stack = stack.updated(i, elem)
+        res
+      }
   }
-
 
   def useProcParam: Option[String] = updateSurrounding {
-    case scope @ ScopeElement(MethodScope(fullName, param, _), variables) => (ScopeElement(MethodScope(fullName, param, true), variables), param.fold(x => x, x => x))
+    case scope @ ScopeElement(MethodScope(fullName, param, _), variables) =>
+      (ScopeElement(MethodScope(fullName, param, true), variables), param.fold(x => x, x => x))
   }
 
-  def anonProcParam: Option[String] = stack.collectFirst {
-    case ScopeElement(MethodScope(_, Left(param), true), _) => param
+  def anonProcParam: Option[String] = stack.collectFirst { case ScopeElement(MethodScope(_, Left(param), true), _) =>
+    param
   }
 
   def setProcParam(param: String): Unit = updateSurrounding {
-    case scope @ ScopeElement(MethodScope(fullName, _, _), variables) => (ScopeElement(MethodScope(fullName, Right(param)), variables), ())
+    case scope @ ScopeElement(MethodScope(fullName, _, _), variables) =>
+      (ScopeElement(MethodScope(fullName, Right(param)), variables), ())
   }
 
   // def annonymousYieldProc: Option[NewMethodParameterIn] = stack.collectFirst {
@@ -151,9 +159,9 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
   // }.flatten
   //
   // def getOrCreateYieldProc(anonParam: => NewMethodParameterIn): Option[NewMethodParameterIn] = updateSurrounding[NewMethodParameterIn] {
-  //   case scope@ScopeElement(MethodScope(_, false), variables) => 
+  //   case scope@ScopeElement(MethodScope(_, false), variables) =>
   //     variables.collectFirst {
-  //       case (_, param: NewMethodParameterIn) if param.code.startsWith("&") => 
+  //       case (_, param: NewMethodParameterIn) if param.code.startsWith("&") =>
   //         (scope, param)
   //     }.getOrElse {
   //       val p = anonParam

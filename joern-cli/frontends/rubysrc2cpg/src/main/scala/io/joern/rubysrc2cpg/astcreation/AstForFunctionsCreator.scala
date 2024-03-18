@@ -77,9 +77,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     }
 
     val anonProcParam = scope.anonProcParam.map { param =>
-        val paramNode = ProcParameter(param)(node.span.spanStart(param))
-        val index = parameterAsts.lastOption.flatMap(_.root).map { case m: NewMethodParameterIn => m.index }.getOrElse(0)
-        astForParameter(paramNode, index)
+      val paramNode = ProcParameter(param)(node.span.spanStart(param))
+      val index = parameterAsts.lastOption.flatMap(_.root).map { case m: NewMethodParameterIn => m.index }.getOrElse(0)
+      astForParameter(paramNode, index)
     }
 
     scope.popScope()

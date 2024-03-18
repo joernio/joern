@@ -527,7 +527,9 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     YieldExpr(arguments)(ctx.toTextSpan)
   }
 
-  override def visitYieldMethodInvocationWithoutParentheses(ctx: RubyParser.YieldMethodInvocationWithoutParenthesesContext): RubyNode = {
+  override def visitYieldMethodInvocationWithoutParentheses(
+    ctx: RubyParser.YieldMethodInvocationWithoutParenthesesContext
+  ): RubyNode = {
     val arguments = ctx.primaryValueList().primaryValue().asScala.map(visit).toList
     YieldExpr(arguments)(ctx.toTextSpan)
   }
@@ -879,7 +881,9 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitProcParameter(ctx: RubyParser.ProcParameterContext): RubyNode = {
-    ProcParameter(Option(ctx.procParameterName).map(_.LOCAL_VARIABLE_IDENTIFIER()).map(_.getText()).getOrElse(ctx.getText()))(ctx.toTextSpan)
+    ProcParameter(
+      Option(ctx.procParameterName).map(_.LOCAL_VARIABLE_IDENTIFIER()).map(_.getText()).getOrElse(ctx.getText())
+    )(ctx.toTextSpan)
   }
 
   override def visitHashParameter(ctx: RubyParser.HashParameterContext): RubyNode = {
