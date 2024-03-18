@@ -60,7 +60,7 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
 
   private def initParserAndUtils(config: Config): (SourceParser, JavaSymbolSolver) = {
     val dependencies = getDependencyList(config.inputPath)
-    val sourceParser = SourceParser(config, dependencies.exists(_.contains("lombok")), sourcesOverride)
+    val sourceParser = SourceParser(config, sourcesOverride)
     val symbolSolver = createSymbolSolver(config, dependencies, sourceParser)
     (sourceParser, symbolSolver)
   }
