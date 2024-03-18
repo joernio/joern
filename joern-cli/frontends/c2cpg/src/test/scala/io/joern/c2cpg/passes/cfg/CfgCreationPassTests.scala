@@ -1,13 +1,13 @@
 package io.joern.c2cpg.passes.cfg
 
+import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.testfixtures.C2CpgFrontend
-import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg._
+import io.joern.c2cpg.testfixtures.CCfgTestCpg
+import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg.*
 import io.joern.x2cpg.testfixtures.{CfgTestCpg, CfgTestFixture}
 import io.shiftleft.codepropertygraph.Cpg
 
-class CCfgTestCpg(override val fileSuffix: String) extends CfgTestCpg with C2CpgFrontend
-
-class CfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg(".c")) {
+class CfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg) {
   override def code(code: String): CCfgTestCpg = {
     super.code(s"RET func() { $code }")
   }
@@ -508,7 +508,7 @@ class CfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg(".c")) {
   }
 }
 
-class CppCfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg(".cpp")) {
+class CppCfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg(FileDefaults.CPP_EXT)) {
   override def code(code: String): CCfgTestCpg = {
     super.code(s"RET func() { $code }")
   }

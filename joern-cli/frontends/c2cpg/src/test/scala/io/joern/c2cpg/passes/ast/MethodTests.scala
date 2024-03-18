@@ -1,12 +1,12 @@
 package io.joern.c2cpg.passes.ast
 
-import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
+import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
-class MethodTests extends CCodeToCpgSuite {
+class MethodTests extends C2CpgSuite {
 
   "MethodTest1" should {
     val cpg = code("""

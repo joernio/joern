@@ -1,7 +1,7 @@
 package io.joern.c2cpg.passes.types
 
 import io.joern.c2cpg.parser.FileDefaults
-import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
+import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.codepropertygraph.generated.nodes.FieldIdentifier
@@ -9,7 +9,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
-class EnumTypeTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
+class EnumTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
 
   "Enums" should {
 
@@ -34,8 +34,8 @@ class EnumTypeTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
         inside(color.astChildren.isMethod.l) { case List(clinit) =>
           clinit.name shouldBe io.joern.x2cpg.Defines.StaticInitMethodName
           clinit.fullName shouldBe s"color:${io.joern.x2cpg.Defines.StaticInitMethodName}"
-          clinit.lineNumber shouldBe Some(2)
-          clinit.columnNumber shouldBe Some(1)
+          clinit.lineNumber shouldBe Option(2)
+          clinit.columnNumber shouldBe Option(1)
           clinit.filename shouldBe "Test0.cpp"
           inside(clinit.ast.isCall.l) { case List(greenInit) =>
             greenInit.code shouldBe "green = 20"
@@ -57,9 +57,9 @@ class EnumTypeTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
         case List(color, c) =>
           color.name shouldBe "color"
           color.code should startWith("typedef enum color")
-          color.aliasTypeFullName shouldBe Some("C")
+          color.aliasTypeFullName shouldBe Option("C")
           c.name shouldBe "C"
-          c.aliasTypeFullName shouldBe Some("color")
+          c.aliasTypeFullName shouldBe Option("color")
           inside(color.astChildren.isMember.l) { case List(red, yellow, green, blue) =>
             red.name shouldBe "red"
             yellow.name shouldBe "yellow"
@@ -114,13 +114,13 @@ class EnumTypeTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
       inside(cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).internal.l) { case List(smallenum) =>
         smallenum.name shouldBe "smallenum"
         smallenum.code should startWith("enum smallenum")
-        inside(smallenum.member.l) { case List(a, b, c) =>
-          a.name shouldBe "a"
-          a.typeFullName shouldBe "int"
-          b.name shouldBe "b"
-          b.typeFullName shouldBe "int"
-          c.name shouldBe "c"
-          c.typeFullName shouldBe "int"
+        inside(smallenum.member.l) { case List(memberA, memberB, memberC) =>
+          memberA.name shouldBe "a"
+          memberA.typeFullName shouldBe "int"
+          memberB.name shouldBe "b"
+          memberB.typeFullName shouldBe "int"
+          memberC.name shouldBe "c"
+          memberC.typeFullName shouldBe "int"
         }
         smallenum.astChildren.isMethod shouldBe empty
       }
@@ -175,20 +175,20 @@ class EnumTypeTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
       inside(cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).internal.l) { case List(x) =>
         x.name shouldBe "X"
         x.code should startWith("enum X")
-        inside(x.member.l) { case List(a, b) =>
-          a.name shouldBe "a"
-          a.typeFullName shouldBe "int"
-          b.name shouldBe "b"
-          b.typeFullName shouldBe "int"
+        inside(x.member.l) { case List(memberA, memberB) =>
+          memberA.name shouldBe "a"
+          memberA.typeFullName shouldBe "int"
+          memberB.name shouldBe "b"
+          memberB.typeFullName shouldBe "int"
         }
         x.astChildren.isMethod shouldBe empty
         inside(cpg.call.l) { case List(assign, ma) =>
           assign.code shouldBe "x = X::a"
           ma.code shouldBe "X::a"
-          inside(ma.ast.l) { case List(call: Call, x: Identifier, a: FieldIdentifier) =>
+          inside(ma.ast.l) { case List(call: Call, idX: Identifier, fieldIdA: FieldIdentifier) =>
             call.name shouldBe Operators.fieldAccess
-            x.order shouldBe 1
-            a.order shouldBe 2
+            idX.order shouldBe 1
+            fieldIdA.order shouldBe 2
           }
         }
       }

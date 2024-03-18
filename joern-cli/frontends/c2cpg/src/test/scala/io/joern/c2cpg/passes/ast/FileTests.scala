@@ -1,11 +1,11 @@
 package io.joern.c2cpg.passes.ast
 
-import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
+import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
-class FileTests extends CCodeToCpgSuite {
+class FileTests extends C2CpgSuite {
 
   private val cpg = code("""
       | int foo() {}

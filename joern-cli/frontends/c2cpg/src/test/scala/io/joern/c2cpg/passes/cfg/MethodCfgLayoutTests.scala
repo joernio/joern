@@ -1,11 +1,11 @@
 package io.joern.c2cpg.passes.cfg
 
-import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
+import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language._
 
-class MethodCfgLayoutTests extends CCodeToCpgSuite {
+class MethodCfgLayoutTests extends C2CpgSuite {
 
   "CFG layout" should {
     val cpg = code("""

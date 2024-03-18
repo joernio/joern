@@ -1,11 +1,11 @@
 package io.joern.c2cpg.querying
 
-import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
+import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.shiftleft.semanticcpg.language._
 
 /** Language primitives for navigating local variables
   */
-class LocalQueryTests extends CCodeToCpgSuite {
+class LocalQueryTests extends C2CpgSuite {
 
   private val cpg = code("""
     | struct node {
