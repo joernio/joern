@@ -335,13 +335,16 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
       .withConfig(config)
       .withGoGlobal(goGlobal)
 
+    // Dummy cpg query which will initiate CPG creation.
+    cpg.method.l
+
     "Be correct for CALL Node typeFullNames" in {
       val List(a, b, c, d, e) = cpg.call.nameNot(Operators.fieldAccess).l
-      a.typeFullName shouldBe "github.com/rs/zerolog.SetGlobalLevel.<ReturnType>.<unknown>"
-      b.typeFullName shouldBe "github.com/rs/zerolog/log.Error.<ReturnType>.<unknown>.Msg.<ReturnType>.<unknown>"
-      c.typeFullName shouldBe "github.com/rs/zerolog/log.Error.<ReturnType>.<unknown>"
-      d.typeFullName shouldBe "github.com/rs/zerolog/log.Warn.<ReturnType>.<unknown>.Msg.<ReturnType>.<unknown>"
-      e.typeFullName shouldBe "github.com/rs/zerolog/log.Warn.<ReturnType>.<unknown>"
+      a.typeFullName shouldBe "void"
+      b.typeFullName shouldBe "void"
+      c.typeFullName shouldBe "*github.com/rs/zerolog.Event"
+      d.typeFullName shouldBe "void"
+      e.typeFullName shouldBe "*github.com/rs/zerolog.Event"
     }
 
     "download the dependency" in {
@@ -358,7 +361,11 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
 
     "not create any entry in package to namespace mapping" in {
       // it should not add `main` in the mapping as well as it should not contain any dependency mapping unless the folder name and package name is different.
-      goGlobal.aliasToNameSpaceMapping.size() shouldBe 0
+      goGlobal.aliasToNameSpaceMapping.size() shouldBe 2
+      goGlobal.aliasToNameSpaceMapping.values().toArray shouldBe Array(
+        "github.com/rs/zerolog",
+        "github.com/rs/zerolog/log"
+      )
     }
 
     "not create any entry in lambda signature to return type mapping" in {
