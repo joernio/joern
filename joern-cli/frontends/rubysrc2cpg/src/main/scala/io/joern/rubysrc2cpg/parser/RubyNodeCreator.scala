@@ -694,12 +694,16 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     )(ctx.toTextSpan)
   }
 
-  private def findFieldsInmethodDecls(methodDecls: List[MethodDeclaration]): List[RubyNode with RubyFieldIdentifier] = {
+  private def findFieldsInMethodDecls(methodDecls: List[MethodDeclaration]): List[RubyNode with RubyFieldIdentifier] = {
     // TODO: Handle case where body of method is not a StatementList
     methodDecls
-      .flatMap {
-        _.body.asInstanceOf[StatementList].statements.collect { case x: SingleAssignment =>
-          x.lhs
+      .flatMap { x =>
+        x.body match {
+          case stmtList: StatementList =>
+            stmtList.statements.collect { case x: SingleAssignment =>
+              x.lhs
+            }
+          case _ => List.empty
         }
       }
       .collect { case x: RubyNode with RubyFieldIdentifier =>
@@ -752,7 +756,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
           x
         }
 
-        val fieldsInMethodDecls = findFieldsInmethodDecls(methodDecls)
+        val fieldsInMethodDecls = findFieldsInMethodDecls(methodDecls)
 
         val (instanceFieldsInMethodDecls, classFieldsInMethodDecls) = partitionRubyFields(fieldsInMethodDecls)
 
