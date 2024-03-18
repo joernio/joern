@@ -1,9 +1,9 @@
 package io.joern.c2cpg.io.dotgenerator
 
-import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
+import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.shiftleft.semanticcpg.language._
 
-class DotAstGeneratorTests extends CCodeToCpgSuite {
+class DotAstGeneratorTests extends C2CpgSuite {
 
   private val cpg = code("""| // A comment
        |int my_func(int x)

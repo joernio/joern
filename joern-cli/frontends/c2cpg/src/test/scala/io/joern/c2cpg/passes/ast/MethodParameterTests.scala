@@ -1,9 +1,9 @@
 package io.joern.c2cpg.passes.ast
 
-import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
+import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.shiftleft.semanticcpg.language._
 
-class MethodParameterTests extends CCodeToCpgSuite {
+class MethodParameterTests extends C2CpgSuite {
 
   private val cpg = code("""
       |  int main(int argc, char **argv) {

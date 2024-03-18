@@ -2,14 +2,12 @@ package io.joern.jssrc2cpg.slicing
 
 import io.joern.dataflowengineoss.slicing.*
 import io.joern.jssrc2cpg.testfixtures.DataFlowCodeToCpgSuite
-import io.shiftleft.codepropertygraph.generated.Operators
 
 class TsUsageSliceTests extends DataFlowCodeToCpgSuite {
 
   private val config = UsagesConfig().withParallelism(1)
 
   "extracting a usage slice from a TypeScript module from the wild" should {
-
     val cpg = code(
       """import Loader from './loader'; // Used to load files from the web server
         |import Input from './input'; // Used to manage the user input
@@ -108,7 +106,7 @@ class TsUsageSliceTests extends DataFlowCodeToCpgSuite {
 
     "extract 'loader' object slice from the main program" in {
       val slice = programSlice.objectSlices.find(x => x.fullName == "main.ts::program").flatMap(_.slices.headOption).get
-      slice.definedBy shouldBe Some(CallDef("new Loader", "Loader", Option("Loader"), Some(24), Some(21)))
+      slice.definedBy shouldBe Option(CallDef("new Loader", "Loader", Option("Loader"), Option(24), Option(21)))
       slice.targetObj shouldBe LocalDef("loader", "loader:Loader")
 
       val inv1 = slice.invokedCalls.find(_.callName == "Loader").get
@@ -122,8 +120,8 @@ class TsUsageSliceTests extends DataFlowCodeToCpgSuite {
           .find(x => x.fullName == "main.ts::program:Game:loop:<lambda>1")
           .flatMap(_.slices.headOption)
           .get
-      slice.definedBy shouldBe Some(ParamDef("time", "ANY", 1, Some(68), Some(31)))
-      slice.targetObj shouldBe ParamDef("time", "ANY", 1, Some(68), Some(31))
+      slice.definedBy shouldBe Option(ParamDef("time", "ANY", 1, Option(68), Option(31)))
+      slice.targetObj shouldBe ParamDef("time", "ANY", 1, Option(68), Option(31))
 
       val arg1 = slice.argToCalls.find(_.callName == "loop").get
 

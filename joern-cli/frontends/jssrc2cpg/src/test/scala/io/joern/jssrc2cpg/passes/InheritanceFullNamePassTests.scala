@@ -44,11 +44,11 @@ class InheritanceFullNamePassTests extends DataFlowCodeToCpgSuite {
     "resolve the type being inherited fully" in {
       val List(tgtType) = cpg.typeDecl.nameExact("MusicWithLyrics").l
       tgtType.fullName shouldBe "inheritance.js::program:MusicWithLyrics"
-      cpg.typeDecl("Musician").fullName.headOption shouldBe Some(
+      cpg.typeDecl("Musician").fullName.headOption shouldBe Option(
         Seq("domain", "music.js::program:Musician").mkString(File.separator)
       )
 
-      tgtType.inheritsFromTypeFullName.headOption shouldBe Some(
+      tgtType.inheritsFromTypeFullName.headOption shouldBe Option(
         Seq("domain", "music.js::program:Musician").mkString(File.separator)
       )
     }
@@ -79,7 +79,7 @@ class InheritanceFullNamePassTests extends DataFlowCodeToCpgSuite {
     "resolve the type to a type stub from an external module" in {
       val List(tgtType) = cpg.typeDecl.nameExact("MusicWithLyrics").l
       tgtType.fullName shouldBe "inheritance.js::program:MusicWithLyrics"
-      tgtType.inheritsFromTypeFullName.headOption shouldBe Some("music.js::program:Musician")
+      tgtType.inheritsFromTypeFullName.headOption shouldBe Option("music.js::program:Musician")
     }
 
   }

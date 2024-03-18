@@ -53,8 +53,8 @@ class JsUsageSliceTests extends DataFlowCodeToCpgSuite {
 
     "extract 'express.js' slice" in {
       val slice = programSlice.objectSlices.find(x => x.fullName == "main.js::program").flatMap(_.slices.headOption).get
-      slice.definedBy shouldBe Some(CallDef("express", "ANY", Option("express"), Option(2), Option(12)))
-      slice.targetObj shouldBe LocalDef("app", "express:<returnValue>", Some(2), Some(6))
+      slice.definedBy shouldBe Option(CallDef("express", "ANY", Option("express"), Option(2), Option(12)))
+      slice.targetObj shouldBe LocalDef("app", "express:<returnValue>", Option(2), Option(6))
 
       val inv1 = slice.invokedCalls.find(_.callName == "get").get
       val inv2 = slice.invokedCalls.find(_.callName == "listen").get
@@ -90,10 +90,10 @@ class JsUsageSliceTests extends DataFlowCodeToCpgSuite {
     "extract 'Car' object instantiation" in {
       val slice =
         programSlice.objectSlices.find(x => x.fullName == "main.js::program:carTest").flatMap(_.slices.headOption).get
-      slice.definedBy shouldBe Some(
-        CallDef("new Car", "main.js::program:Car", Option("main.js::program:Car"), Some(32), Some(14))
+      slice.definedBy shouldBe Option(
+        CallDef("new Car", "main.js::program:Car", Option("main.js::program:Car"), Option(32), Option(14))
       )
-      slice.targetObj shouldBe LocalDef("c", "main.js::program:Car", Some(32), Some(10))
+      slice.targetObj shouldBe LocalDef("c", "main.js::program:Car", Option(32), Option(10))
 
       val inv1 = slice.invokedCalls.find(_.callName == "Car").get
       val inv2 = slice.invokedCalls.find(_.callName == "rev").get
@@ -138,27 +138,27 @@ class JsUsageSliceTests extends DataFlowCodeToCpgSuite {
     "extract 'y' local variable" in {
       val slice =
         programSlice.objectSlices.find(x => x.fullName == "main.js::program:bar").flatMap(_.slices.headOption).get
-      slice.targetObj shouldBe ParamDef("y", "ANY", 1, Some(14), Some(13))
-      slice.definedBy shouldBe Option(ParamDef("y", "ANY", 1, Some(14), Some(13)))
+      slice.targetObj shouldBe ParamDef("y", "ANY", 1, Option(14), Option(13))
+      slice.definedBy shouldBe Option(ParamDef("y", "ANY", 1, Option(14), Option(13)))
 
       val inv1 = slice.invokedCalls.find(_.callName == "getA").get
 
-      inv1.resolvedMethod shouldBe Some("main.js::program:Foo:getA")
+      inv1.resolvedMethod shouldBe Option("main.js::program:Foo:getA")
       inv1.paramTypes shouldBe List.empty
       inv1.returnType shouldBe "ANY"
     }
 
     "extract 'x' local variable" in {
       val slice = programSlice.objectSlices.find(x => x.fullName == "main.js::program").flatMap(_.slices.headOption).get
-      slice.targetObj shouldBe LocalDef("x", "main.js::program:Foo", Some(17), Some(6))
+      slice.targetObj shouldBe LocalDef("x", "main.js::program:Foo", Option(17), Option(6))
       slice.definedBy shouldBe Option(
-        CallDef("new Foo", "main.js::program:Foo", Some("main.js::program:Foo"), Some(17), Some(10))
+        CallDef("new Foo", "main.js::program:Foo", Option("main.js::program:Foo"), Option(17), Option(10))
       )
 
       val inv1 = slice.invokedCalls.find(_.callName == "Foo").get
 
       inv1.callName shouldBe "Foo"
-      inv1.resolvedMethod shouldBe Some("main.js::program:Foo")
+      inv1.resolvedMethod shouldBe Option("main.js::program:Foo")
       inv1.paramTypes shouldBe List("__ecma.Number", "__ecma.Number")
       inv1.returnType shouldBe "main.js::program:Foo"
 
@@ -166,12 +166,12 @@ class JsUsageSliceTests extends DataFlowCodeToCpgSuite {
 
       arg1 shouldBe ObservedCallWithArgPos(
         "bar",
-        Some("main.js::program:bar"),
+        Option("main.js::program:bar"),
         List("main.js::program:Foo"),
         "ANY",
         Right(1),
-        Some(19),
-        Some(0)
+        Option(19),
+        Option(0)
       )
     }
   }

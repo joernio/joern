@@ -1,9 +1,9 @@
 package io.joern.c2cpg.querying
 
-import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
+import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.shiftleft.semanticcpg.language._
 
-class CfgQueryTests extends CCodeToCpgSuite {
+class CfgQueryTests extends C2CpgSuite {
 
   private val cpg = code("""
       | int foo(int x, int y) {

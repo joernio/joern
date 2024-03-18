@@ -1,9 +1,9 @@
 package io.joern.c2cpg.io.dotgenerator
 
-import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
+import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.shiftleft.semanticcpg.language._
 
-class DotCfgGeneratorTests extends CCodeToCpgSuite {
+class DotCfgGeneratorTests extends C2CpgSuite {
 
   "DotCfgGeneratorTest1" should {
     val cpg = code("""
