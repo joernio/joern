@@ -182,10 +182,12 @@ trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCre
       val genericTypeMethodMap = processTypeParams(funcDeclVal(ParserKeys.Type))
       val (returnTypeStr, _) =
         getReturnType(funcDeclVal(ParserKeys.Type), genericTypeMethodMap).headOption
-          .getOrElse(("", null))
+          .getOrElse((Defines.voidTypeName, null))
       val params = funcDeclVal(ParserKeys.Type)(ParserKeys.Params)(ParserKeys.List)
       val signature =
-        s"$methodFullname(${parameterSignature(params, genericTypeMethodMap)})$returnTypeStr"
+        s"$methodFullname(${parameterSignature(params, genericTypeMethodMap)})${
+            if returnTypeStr == Defines.voidTypeName then "" else returnTypeStr
+          }"
 
       goGlobal.recordFullNameToReturnType(methodFullname, returnTypeStr, signature)
       MethodMetadata(name, methodFullname, signature, params, receiverInfo, genericTypeMethodMap)

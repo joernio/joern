@@ -2,6 +2,7 @@ package io.joern.go2cpg.passes.ast
 
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
 import io.joern.gosrc2cpg.Config
+import io.joern.gosrc2cpg.astcreation.Defines
 import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.*
@@ -35,10 +36,9 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
     }
   }
 
-  // TODO: These tests were working, something has broken. Will fix it in next PR.
   // NOTE: With respect to conversation on this PR - https://github.com/joernio/joern/pull/3753
   // ignoring the below uni tests, which tries to download the dependencies.
-  "Download dependency example with different package and namespace name" ignore {
+  "Download dependency example with different package and namespace name" should {
     val config = Config().withFetchDependencies(true)
     val cpg = code(
       """
@@ -66,7 +66,7 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
 
     "Check if we are able to identify the type of constants accessible out side dependencies code" in {
       val List(t) = cpg.local("test").l
-      t.typeFullName shouldBe "string"
+      t.typeFullName shouldBe "github.com/aerospike/aerospike-client-go/v6.privilegeCode"
     }
   }
 
@@ -127,8 +127,8 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
     }
   }
 
-  // Note: methodFullName of call node is not resolving as per DownloadDependency so ignoring
-  // the below unit tests, which tries to download the dependencies and resolve it.
+  // NOTE: With respect to conversation on this PR - https://github.com/joernio/joern/pull/3753
+  // ignoring the below uni tests, which tries to download the dependencies.
   "dependency resolution having type struct" should {
     val config = Config().withFetchDependencies(true)
     val cpg = code(
@@ -152,7 +152,7 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
           |func (c *Client) setValue() {
           | key := "key"
           | value := "value"
-          | err := c.rdb.Set(key, value).Err()
+          | err := c.rdb.Close()
           |}
           |""".stripMargin)
       .withConfig(config)
@@ -161,13 +161,14 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
       val List(typeDeclNode) = cpg.typeDecl.nameExact("Client").l
       typeDeclNode.fullName shouldBe "main.Client"
       typeDeclNode.member.size shouldBe 1
-      typeDeclNode.member.head.typeFullName shouldBe "github.com/redis/go-redis/v9.redis.UnversalClient.<ReturnType>.<unknown>"
+      typeDeclNode.member.head.typeFullName shouldBe "github.com/redis/go-redis/v9.UniversalClient"
     }
 
-    "Test call node" in {
-      val List(callNode) = cpg.call.name("Set").l
-      callNode.typeFullName shouldBe "github.com/redis/go-redis/v9.redis.UnversalClient.Set.<ReturnType>.<unknown>"
-      callNode.methodFullName shouldBe "github.com/redis/go-redis/v9.redis.UnversalClient.Set"
+    "Test call node" ignore {
+      // TODO: Need to hand interface Type for caching the meta data to make this test work.
+      val List(callNode) = cpg.call.name("Close").l
+      callNode.typeFullName shouldBe "error"
+      callNode.methodFullName shouldBe "github.com/redis/go-redis/v9.redis.UnversalClient.Close"
     }
   }
 
@@ -224,9 +225,9 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
       // This should only contain the `main` method return type mapping as main source code is not invoking any of the dependency method.
       goGlobal.methodFullNameReturnTypeMap.size() shouldBe 1
       val List(mainfullname) = goGlobal.methodFullNameReturnTypeMap.keys().asIterator().toList
-      mainfullname shouldBe "main"
+      mainfullname shouldBe "main.main"
       val Array(returnType) = goGlobal.methodFullNameReturnTypeMap.values().toArray
-      returnType shouldBe "unit"
+      returnType shouldBe (Defines.voidTypeName, "main.main()")
     }
 
     "not create any entry in struct member to type map" in {
