@@ -17,25 +17,31 @@ trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCre
   def buildCache(cpgOpt: Option[Cpg]): DiffGraphBuilder = {
     val diffGraph = new DiffGraphBuilder
     try {
-
-      cpgOpt.map { _ =>
-        // We don't want to process this part when third party dependencies are being processed.
-        if (goGlobal.sourcePackageSet.add(fullyQualifiedPackage)) {
-          // java.util.Set.Add method will return true when set already doesn't contain the same value.
-          val rootNode = createParserNodeInfo(parserResult.json)
-          val ast      = astForPackage(rootNode)
-          Ast.storeInDiffGraph(ast, diffGraph)
+      if (checkIfGivenDependencyPackageCanBeProcessed()) {
+        cpgOpt.map { _ =>
+          // We don't want to process this part when third party dependencies are being processed.
+          if (goGlobal.sourcePackageSet.add(fullyQualifiedPackage)) {
+            // java.util.Set.Add method will return true when set already doesn't contain the same value.
+            val rootNode = createParserNodeInfo(parserResult.json)
+            val ast      = astForPackage(rootNode)
+            Ast.storeInDiffGraph(ast, diffGraph)
+          }
         }
+        identifyAndRecordPackagesWithDifferentName()
+        findAndProcess(parserResult.json)
+        // NOTE: For dependencies we are just caching the global variables Types.
+        processPackageLevelGolbalVaraiblesAndConstants(parserResult.json)
       }
-      identifyAndRecordPackagesWithDifferentName()
-      findAndProcess(parserResult.json)
-      processPackageLevelGolbalVaraiblesAndConstants(parserResult.json)
     } catch {
       case ex: Exception =>
         logger.warn(s"Error: While processing - ${parserResult.fullPath}", ex)
     }
     diffGraph
   }
+
+  private def checkIfGivenDependencyPackageCanBeProcessed(): Boolean =
+    !goGlobal.processingDependencies || goGlobal.processingDependencies && goGlobal.aliasToNameSpaceMapping
+      .containsValue(fullyQualifiedPackage)
 
   private def identifyAndRecordPackagesWithDifferentName(): Unit = {
     // record the package to full namespace mapping only when declared package name is not matching with containing folder name
@@ -90,8 +96,9 @@ trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCre
           json.obj
             .contains(ParserKeys.NodeType) && obj(ParserKeys.NodeType).str == "ast.ImportSpec" && !json.obj.contains(
             ParserKeys.NodeReferenceId
-          )
+          ) && !goGlobal.processingDependencies
         ) {
+
           processImports(obj, true)
         } else if (
           json.obj
@@ -112,7 +119,7 @@ trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCre
           json.obj
             .contains(ParserKeys.NodeType) && obj(ParserKeys.NodeType).str == "ast.ValueSpec" && !json.obj.contains(
             ParserKeys.NodeReferenceId
-          )
+          ) && !goGlobal.processingDependencies
         ) {
           createParserNodeInfo(obj)
         }
@@ -154,14 +161,14 @@ trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCre
       Try(importDecl(ParserKeys.Name).obj(ParserKeys.Name).str).toOption
     importedAsOption match {
       case Some(importedAs) =>
+        // As these alias could be different for each file. Hence we maintain the cache at file level.
         if (recordFindings)
-          goGlobal.recordAliasToNamespaceMapping(importedAs, importedEntity)
+          aliasToNameSpaceMapping.put(importedAs, importedEntity)
         (importedEntity, importedAs)
       case _ =>
-        // As these alias could be different for each file. Hence we maintain the cache at file level.
         val derivedImportedAs = importedEntity.split("/").last
         if (recordFindings)
-          aliasToNameSpaceMapping.put(derivedImportedAs, importedEntity)
+          goGlobal.recordAliasToNamespaceMapping(derivedImportedAs, importedEntity)
         (importedEntity, derivedImportedAs)
     }
   }

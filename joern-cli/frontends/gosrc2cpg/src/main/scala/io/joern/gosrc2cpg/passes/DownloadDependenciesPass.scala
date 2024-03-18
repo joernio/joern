@@ -56,13 +56,16 @@ class DownloadDependenciesPass(parentGoMod: GoModHelper, goGlobal: GoGlobal, con
     val gopath             = Try(sys.env("GOPATH")).getOrElse(Seq(os.home, "go").mkString(JFile.separator))
     val dependencyLocation = (Seq(gopath, "pkg", "mod") ++ dependencyStr.split("/")).mkString(JFile.separator)
     File.usingTemporaryDirectory("godep") { astLocation =>
-      val config       = Config().withInputPath(dependencyLocation)
-      val astGenResult = new AstGenRunner(config).execute(astLocation).asInstanceOf[GoAstGenRunnerResult]
+      val depConfig = Config()
+        .withInputPath(dependencyLocation)
+        .withIgnoredFilesRegex(config.ignoredFilesRegex.toString())
+        .withIgnoredFiles(config.ignoredFiles.toList)
+      val astGenResult = new AstGenRunner(depConfig).execute(astLocation).asInstanceOf[GoAstGenRunnerResult]
       val goMod = new GoModHelper(
-        Some(config),
+        Some(depConfig),
         astGenResult.parsedModFile.flatMap(modFile => GoAstJsonParser.readModFile(Paths.get(modFile)).map(x => x))
       )
-      new MethodAndTypeCacheBuilderPass(None, astGenResult.parsedFiles, config, goMod, goGlobal).process()
+      new MethodAndTypeCacheBuilderPass(None, astGenResult.parsedFiles, depConfig, goMod, goGlobal).process()
     }
   }
 }

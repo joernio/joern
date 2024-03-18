@@ -8,10 +8,11 @@ import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.*
 
 class DownloadDependencyTest extends GoCodeToCpgSuite {
+  val IGNORE_TEST_FILE_REGEX = ".*_test(s)?.*"
   "Simple use case of third-party dependency download" should {
     // TODO: Add test file patter to skip so it reduces the time in test to process dependencies.
     // Refer this commit - https://github.com/Privado-Inc/privado/commit/102307a2cc83d2282f72e2e9ff909d608b37b46a
-    val config = Config().withFetchDependencies(true)
+    val config = Config().withFetchDependencies(true).withIgnoredFilesRegex(IGNORE_TEST_FILE_REGEX)
     val cpg = code(
       """
         |module joern.io/sample
@@ -39,7 +40,7 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
   // NOTE: With respect to conversation on this PR - https://github.com/joernio/joern/pull/3753
   // ignoring the below uni tests, which tries to download the dependencies.
   "Download dependency example with different package and namespace name" should {
-    val config = Config().withFetchDependencies(true)
+    val config = Config().withFetchDependencies(true).withIgnoredFilesRegex(IGNORE_TEST_FILE_REGEX)
     val cpg = code(
       """
         |module joern.io/sample
@@ -130,7 +131,7 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
   // NOTE: With respect to conversation on this PR - https://github.com/joernio/joern/pull/3753
   // ignoring the below uni tests, which tries to download the dependencies.
   "dependency resolution having type struct" should {
-    val config = Config().withFetchDependencies(true)
+    val config = Config().withFetchDependencies(true).withIgnoredFilesRegex(IGNORE_TEST_FILE_REGEX)
     val cpg = code(
       """
         |module joern.io/sample
@@ -174,7 +175,7 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
 
   "If the dependency is not getting used then it " should {
     val goGlobal = GoGlobal()
-    val config   = Config().withFetchDependencies(true)
+    val config   = Config().withFetchDependencies(true).withIgnoredFilesRegex(IGNORE_TEST_FILE_REGEX)
     val cpg = code(
       """
         |module joern.io/sample
@@ -238,7 +239,7 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
 
   "The dependency is getting imported somewhere but not getting used then it" should {
     val goGlobal = GoGlobal()
-    val config   = Config().withFetchDependencies(true)
+    val config   = Config().withFetchDependencies(true).withIgnoredFilesRegex(IGNORE_TEST_FILE_REGEX)
     val cpg = code(
       """
         |module joern.io/sample
@@ -276,7 +277,8 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
 
     "not create any entry in package to namespace mapping" in {
       // it should not add `main` in the mapping as well as it should not contain any dependency mapping
-      goGlobal.aliasToNameSpaceMapping.size() shouldBe 0
+      goGlobal.aliasToNameSpaceMapping.size() shouldBe 1
+      goGlobal.aliasToNameSpaceMapping.values().toArray shouldBe Array("github.com/rs/zerolog")
     }
 
     "not create any entry in lambda signature to return type mapping" in {
@@ -306,7 +308,7 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
 
   "The dependency is getting imported and used in the code then it" should {
     val goGlobal = GoGlobal()
-    val config   = Config().withFetchDependencies(true)
+    val config   = Config().withFetchDependencies(true).withIgnoredFilesRegex(IGNORE_TEST_FILE_REGEX)
     val cpg = code(
       """
         |module joern.io/sample
