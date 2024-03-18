@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.language._
 import io.joern.javasrc2cpg.Config
 
 class LombokTests extends JavaSrcCode2CpgFixture {
-  val config = Config().withDelombokMode("run-delombok")
+  private val config = Config().withDelombokMode("default")
 
   "source in a mixed directory structure" should {
     val cpg = code(

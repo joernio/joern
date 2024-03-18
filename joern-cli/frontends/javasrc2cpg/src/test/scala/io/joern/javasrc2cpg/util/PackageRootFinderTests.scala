@@ -14,15 +14,17 @@ class PackageRootFinderTests extends SourceCodeFixture {
       .foldLeft(emptyWriter) { case (writer, (code, fileName)) => writer.moreCode(code, fileName) }
       .writeCode(".java")
 
-    files.permutations.foreach { filePermutation =>
-      val inputFilePaths = filePermutation.map(input => Path.of(input._2))
-      val foundRoots     = PackageRootFinder.packageRootsFromFiles(testDir, inputFilePaths).toSet
+    val absoluteFilenames = files.map { case (_, filename) => testDir.resolve(filename) }
+
+    absoluteFilenames.permutations.foreach { filePermutation =>
+      val inputs     = filePermutation.flatMap(input => SourceParser.FileInfo.getFileInfo(testDir, input.toString))
+      val foundRoots = PackageRootFinder.packageRootsFromFiles(testDir, inputs).toSet
 
       if (foundRoots != expectedRoots.map(Path.of(_))) {
         fail(s"""Found package roots did not match expected package roots:
                 |Found roots   : ${foundRoots.toList.sorted.mkString(",")}
                 |Expected roots: ${expectedRoots.toList.sorted.mkString(",")}
-                |for input path permutation ${inputFilePaths.mkString(",")}""".stripMargin)
+                |for input path permutation ${inputs.map(_.relativePath).mkString(",")}""".stripMargin)
       }
     }
   }

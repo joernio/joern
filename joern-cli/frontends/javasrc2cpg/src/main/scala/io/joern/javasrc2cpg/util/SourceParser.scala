@@ -17,6 +17,7 @@ import java.nio.file.Path
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
 import scala.util.Try
+import scala.util.matching.Regex
 
 class SourceParser(
   val relativeFilenames: List[String],
@@ -97,6 +98,26 @@ class SourceParser(
 }
 
 object SourceParser {
+  case class FileInfo(relativePath: Path, packageName: Option[String], usesLombok: Boolean)
+
+  object FileInfo {
+
+    private val PackageNameRegex: Regex = raw"package\s+([a-zA-Z$$_.]+)\s*;".r
+
+    def getFileInfo(inputDir: Path, filename: String): Option[FileInfo] = {
+      fileIfExists(filename).map { file =>
+        val relativePath = inputDir.relativize(Path.of(filename))
+        val content      = file.contentAsString
+
+        val packageName = PackageNameRegex.findFirstMatchIn(content).map(_.group(1))
+
+        val usesLombok = content.contains("lombok")
+
+        new FileInfo(relativePath, packageName, usesLombok)
+      }
+    }
+  }
+
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   private def checkExists(file: File): Option[File] = {
@@ -117,11 +138,10 @@ object SourceParser {
     checkExists(file)
   }
 
-  /** TODO: figure out delombok dependency here
-    */
-  def apply(config: Config, hasLombokDependency: Boolean, filenamesOverride: Option[List[String]]): SourceParser = {
+  def apply(config: Config, filenamesOverride: Option[List[String]]): SourceParser = {
     val inputPath = Path.of(config.inputPath)
-    val relativeFilenames = filenamesOverride
+
+    val fileInfo = filenamesOverride
       .getOrElse(
         SourceFiles.determine(
           config.inputPath,
@@ -131,17 +151,19 @@ object SourceParser {
           ignoredFilesPath = Option(config.ignoredFiles)
         )
       )
-      .map(filename => inputPath.relativize(Path.of(filename)))
+      .flatMap(FileInfo.getFileInfo(inputPath, _))
+
+    val usesLombok = fileInfo.exists(_.usesLombok)
 
     var dirToDelete: Option[Path] = None
-    lazy val delombokResult       = Delombok.run(inputPath, relativeFilenames, config.delombokJavaHome)
+    lazy val delombokResult       = Delombok.run(inputPath, fileInfo, config.delombokJavaHome)
     lazy val delombokDir = {
       dirToDelete = Option.when(delombokResult.isDelombokedPath)(delombokResult.path)
       delombokResult.path
     }
 
     val (analysisRoot, typesRoot) = Delombok.parseDelombokModeOption(config.delombokMode) match {
-      case DelombokMode.Default if hasLombokDependency =>
+      case DelombokMode.Default if usesLombok =>
         logger.info(s"Analysing delomboked code as lombok dependency was found.")
         (delombokDir, delombokDir)
 
@@ -154,6 +176,6 @@ object SourceParser {
       case DelombokMode.RunDelombok => (delombokDir, delombokDir)
     }
 
-    new SourceParser(relativeFilenames.map(_.toString), analysisRoot, typesRoot, dirToDelete)
+    new SourceParser(fileInfo.map(_.relativePath.toString), analysisRoot, typesRoot, dirToDelete)
   }
 }

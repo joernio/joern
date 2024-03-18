@@ -76,7 +76,11 @@ object Delombok {
     }
   }
 
-  def run(inputPath: Path, relativeFilenames: List[Path], analysisJavaHome: Option[String]): DelombokRunResult = {
+  def run(
+    inputPath: Path,
+    fileInfo: List[SourceParser.FileInfo],
+    analysisJavaHome: Option[String]
+  ): DelombokRunResult = {
     Try(File.newTemporaryDirectory(prefix = "delombok").deleteOnExit()) match {
       case Failure(_) =>
         logger.warn(s"Could not create temporary directory for delombok output. Scanning original sources instead")
@@ -84,7 +88,7 @@ object Delombok {
 
       case Success(tempDir) =>
         PackageRootFinder
-          .packageRootsFromFiles(inputPath, relativeFilenames)
+          .packageRootsFromFiles(inputPath, fileInfo)
           .foreach(delombokPackageRoot(inputPath, _, tempDir, analysisJavaHome))
         DelombokRunResult(tempDir.path, true)
     }
