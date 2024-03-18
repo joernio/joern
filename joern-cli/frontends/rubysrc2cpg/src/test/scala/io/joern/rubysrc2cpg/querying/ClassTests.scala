@@ -549,22 +549,7 @@ class ClassTests extends RubyCode2CpgFixture {
 
   "Bodies that aren't StatementList" should {
     val cpg = code("""
-        |require 'base64'
-        |require 'digest'
-        |require 'openssl'
-        |
-        |module SendGrid
-        |  # This class allows you to use the Event Webhook feature. Read the docs for
-        |  # more details: https://sendgrid.com/docs/for-developers/tracking-events/event
         |  class EventWebhook
-        |    # * *Args* :
-        |    #   - +public_key+ -> verification key under Mail Settings
-        |    #
-        |    def convert_public_key_to_ecdsa(public_key)
-        |      verify_engine
-        |      OpenSSL::PKey::EC.new(Base64.decode64(public_key))
-        |    end
-        |
         |    # * *Args* :
         |    #   - +public_key+ -> elliptic curve public key
         |    #   - +payload+ -> event payload in the request body
@@ -579,26 +564,7 @@ class ClassTests extends RubyCode2CpgFixture {
         |    rescue StandardError
         |      false
         |    end
-        |
-        |    def verify_engine
-        |      # JRuby does not fully support ECDSA: https://github.com/jruby/jruby-openssl/issues/193
-        |      raise NotSupportedError, "Event Webhook verification is not supported by JRuby" if RUBY_PLATFORM == "java"
-        |    end
-        |
-        |    class Error < ::RuntimeError
-        |    end
-        |
-        |    class NotSupportedError < Error
-        |    end
         |  end
-        |
-        |  # This class lists headers that get posted to the webhook. Read the docs for
-        |  # more details: https://sendgrid.com/docs/for-developers/tracking-events/event
-        |  class EventWebhookHeader
-        |    SIGNATURE = "HTTP_X_TWILIO_EMAIL_EVENT_WEBHOOK_SIGNATURE".freeze
-        |    TIMESTAMP = "HTTP_X_TWILIO_EMAIL_EVENT_WEBHOOK_TIMESTAMP".freeze
-        |  end
-        |end
         |""".stripMargin)
     "not throw an execption" in {
       inside(cpg.method.name("verify_signature").l) {
