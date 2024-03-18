@@ -248,6 +248,8 @@ object DotNetJsonAst {
 
   object MemberBindingExpression extends BaseExpr
 
+  object SuppressNullableWarningExpression extends BaseExpr
+
   object Unknown extends DotNetParserNode
 
 }

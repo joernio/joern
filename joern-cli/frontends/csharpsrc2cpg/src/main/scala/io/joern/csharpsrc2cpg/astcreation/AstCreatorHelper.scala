@@ -183,7 +183,7 @@ object AstCreatorHelper {
       case IdentifierName | Parameter | _: DeclarationExpr | GenericName =>
         nameFromIdentifier(node)
       case QualifiedName => nameFromQualifiedName(node)
-      case SimpleMemberAccessExpression | MemberBindingExpression =>
+      case SimpleMemberAccessExpression | MemberBindingExpression | SuppressNullableWarningExpression =>
         nameFromIdentifier(createDotNetNodeInfo(node.json(ParserKeys.Name)))
       case ObjectCreationExpression | CastExpression => nameFromNode(createDotNetNodeInfo(node.json(ParserKeys.Type)))
       case ThisExpression                            => "this"
