@@ -1,11 +1,13 @@
 package io.joern.jssrc2cpg.testfixtures
 
-import io.joern.dataflowengineoss.language._
-import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
+import io.joern.dataflowengineoss.language.*
+import io.joern.dataflowengineoss.layers.dataflows.OssDataFlow
+import io.joern.dataflowengineoss.layers.dataflows.OssDataFlowOptions
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.jssrc2cpg.JsSrc2Cpg
 import io.joern.x2cpg.X2Cpg
-import io.joern.x2cpg.testfixtures.{Code2CpgFixture, TestCpg}
+import io.joern.x2cpg.testfixtures.Code2CpgFixture
+import io.joern.x2cpg.testfixtures.TestCpg
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 class DataFlowTestCpg extends TestCpg with JsSrc2CpgFrontend {
@@ -24,10 +26,10 @@ class DataFlowTestCpg extends TestCpg with JsSrc2CpgFrontend {
 
 class DataFlowCodeToCpgSuite extends Code2CpgFixture(() => new DataFlowTestCpg()) {
 
-  implicit var context: EngineContext = EngineContext()
+  protected implicit val context: EngineContext = EngineContext()
 
   protected def flowToResultPairs(path: Path): List[(String, Integer)] =
     path.resultPairs().collect { case (firstElement: String, secondElement: Option[Integer]) =>
-      (firstElement, secondElement.get)
+      (firstElement, secondElement.getOrElse(-1))
     }
 }

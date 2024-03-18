@@ -1,13 +1,13 @@
 package io.joern.c2cpg.passes.ast
 
-import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
+import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.codepropertygraph.generated.nodes.Literal
 import io.shiftleft.semanticcpg.language.NoResolve
 import io.shiftleft.semanticcpg.language._
 
-class CallTests extends CCodeToCpgSuite {
+class CallTests extends C2CpgSuite {
 
   implicit val resolver: NoResolve.type = NoResolve
 

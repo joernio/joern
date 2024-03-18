@@ -1,11 +1,11 @@
 package io.joern.c2cpg.passes.ast
 
-import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
+import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
-class NamespaceBlockTests extends CCodeToCpgSuite {
+class NamespaceBlockTests extends C2CpgSuite {
 
   // We place symbols that can't be associated in a file into the namespace "<global>", and
   // those which can in `filename:<global>`

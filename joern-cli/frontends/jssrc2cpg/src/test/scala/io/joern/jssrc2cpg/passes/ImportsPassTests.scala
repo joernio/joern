@@ -11,12 +11,11 @@ class ImportsPassTests extends Code2CpgFixture(() => new TestCpgWithoutDataFlow(
   "ImportsPass" should {
     "create IMPORT node for declaration" in {
       val cpg = code("""
-          |var barOrBaz = require('./bar.js');
-          |""".stripMargin)
-
+        |var barOrBaz = require('./bar.js');
+        |""".stripMargin)
       val List(x) = cpg.imports.l
-      x.importedEntity shouldBe Some("./bar.js")
-      x.importedAs shouldBe Some("barOrBaz")
+      x.importedEntity shouldBe Option("./bar.js")
+      x.importedAs shouldBe Option("barOrBaz")
       val List(call) = x.call.l
       call.code shouldBe "require('./bar.js')"
       val List(assignment) = call.inAssignment.l
@@ -28,11 +27,11 @@ class ImportsPassTests extends Code2CpgFixture(() => new TestCpgWithoutDataFlow(
 
     "create IMPORT node for assignment from require" in {
       val cpg = code("""
-          |barOrBaz = require('./bar.js');
-          |""".stripMargin)
+        |barOrBaz = require('./bar.js');
+        |""".stripMargin)
       val List(x) = cpg.imports.l
-      x.importedEntity shouldBe Some("./bar.js")
-      x.importedAs shouldBe Some("barOrBaz")
+      x.importedEntity shouldBe Option("./bar.js")
+      x.importedAs shouldBe Option("barOrBaz")
       val List(call) = x.call.l
       call.code shouldBe "require('./bar.js')"
       val List(assignment) = call.inAssignment.l
