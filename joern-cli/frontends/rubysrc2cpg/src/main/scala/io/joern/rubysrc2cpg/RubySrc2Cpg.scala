@@ -6,7 +6,14 @@ import io.joern.rubysrc2cpg.datastructures.RubyProgramSummary
 import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser
 import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser.*
 import io.joern.rubysrc2cpg.parser.RubyParser
-import io.joern.rubysrc2cpg.passes.{AstCreationPass, ConfigFileCreationPass, DependencyPass, ImportsPass}
+import io.joern.rubysrc2cpg.passes.{
+  AstCreationPass,
+  ConfigFileCreationPass,
+  DependencyPass,
+  ImportsPass,
+  RubyTypeHintCallLinker,
+  RubyTypeRecoveryPassGenerator
+}
 import io.joern.rubysrc2cpg.utils.DependencyDownloader
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.passes.base.AstLinkerPass
@@ -145,19 +152,15 @@ object RubySrc2Cpg {
   private val RubySourceFileExtensions: Set[String] = Set(".rb")
 
   def postProcessingPasses(cpg: Cpg, config: Config): List[CpgPassBase] = {
-    if (config.useDeprecatedFrontend) {
-      List(new deprecated.passes.RubyImportResolverPass(cpg, packageTableInfo))
-        ++ new deprecated.passes.RubyTypeRecoveryPassGenerator(cpg).generate() ++ List(
-          new deprecated.passes.RubyTypeHintCallLinker(cpg),
-          new NaiveCallLinker(cpg),
-
-          // Some of passes above create new methods, so, we
-          // need to run the ASTLinkerPass one more time
-          new AstLinkerPass(cpg)
-        )
-    } else {
-      List()
-    }
+    (if (config.useDeprecatedFrontend) {
+       List(new deprecated.passes.RubyImportResolverPass(cpg, packageTableInfo))
+         ++ new deprecated.passes.RubyTypeRecoveryPassGenerator(cpg)
+           .generate() :+ new deprecated.passes.RubyTypeHintCallLinker(cpg)
+     } else {
+       new RubyTypeRecoveryPassGenerator(cpg).generate() :+ new RubyTypeHintCallLinker(cpg)
+     }) ++ List(new NaiveCallLinker(cpg), new AstLinkerPass(cpg))
+    // Some of passes above create new methods, so, we
+    // need to run the ASTLinkerPass one more time
   }
 
   def generateParserTasks(

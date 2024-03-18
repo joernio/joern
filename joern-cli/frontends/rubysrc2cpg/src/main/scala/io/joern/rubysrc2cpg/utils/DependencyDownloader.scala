@@ -33,13 +33,18 @@ class DependencyDownloader(cpg: Cpg, internalProgramSummary: RubyProgramSummary)
     *   the dependencies' summary combined with the given internal program summary.
     */
   def download(): RubyProgramSummary = {
-    File.temporaryDirectory("joern-rubysrc2cpg").apply { dir =>
-      cpg.dependency.filterNot(_.name == Defines.Resolver).foreach { dependency =>
-        Try(Thread.sleep(100)) // Rate limit
-        downloadDependency(dir, dependency)
+    val dependencies = cpg.dependency.filterNot(_.name == Defines.Resolver).l
+    if (dependencies.nonEmpty) {
+      File.temporaryDirectory("joern-rubysrc2cpg").apply { dir =>
+        dependencies.foreach { dependency =>
+          Try(Thread.sleep(100)) // Rate limit
+          downloadDependency(dir, dependency)
+        }
+        untarDependencies(dir)
+        summarizeDependencies(dir / "lib") ++ internalProgramSummary
       }
-      untarDependencies(dir)
-      summarizeDependencies(dir / "lib") ++ internalProgramSummary
+    } else {
+      internalProgramSummary
     }
   }
 

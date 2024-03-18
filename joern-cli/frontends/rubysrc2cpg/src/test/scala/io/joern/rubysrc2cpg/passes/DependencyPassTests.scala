@@ -1,16 +1,17 @@
-package io.joern.rubysrc2cpg.querying
+package io.joern.rubysrc2cpg.passes
 
+import io.joern.rubysrc2cpg.passes.Defines as RubyDefines
+import io.joern.rubysrc2cpg.passes.DependencyPassTests
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
-import io.joern.rubysrc2cpg.passes.Defines as RubyDefines
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, Identifier}
 import io.shiftleft.semanticcpg.language.*
 
-class DependencyTests extends RubyCode2CpgFixture {
+class DependencyPassTests extends RubyCode2CpgFixture {
 
   "parsing a Ruby Gems lock file" should {
 
-    val cpg = code(DependencyTests.GEMFILELOCK, "Gemfile.lock")
+    val cpg = code(DependencyPassTests.GEMFILELOCK, "Gemfile.lock")
 
     "result in dependency nodes of the set packages" in {
       inside(cpg.dependency.nameNot(RubyDefines.Resolver).l) {
@@ -32,7 +33,7 @@ class DependencyTests extends RubyCode2CpgFixture {
 
   "parsing a Ruby Gems file" should {
 
-    val cpg = code(DependencyTests.GEMFILE, "Gemfile")
+    val cpg = code(DependencyPassTests.GEMFILE, "Gemfile")
 
     "result in dependency nodes of the set packages" in {
       inside(cpg.dependency.nameNot(RubyDefines.Resolver).l) {
@@ -54,7 +55,7 @@ class DependencyTests extends RubyCode2CpgFixture {
 
   "a Gems lock file" should {
 
-    val cpg = code(DependencyTests.GEMFILE, "Gemfile").moreCode(DependencyTests.GEMFILELOCK, "Gemfile.lock")
+    val cpg = code(DependencyPassTests.GEMFILE, "Gemfile").moreCode(DependencyPassTests.GEMFILELOCK, "Gemfile.lock")
 
     "be preferred over a normal Gemfile" in {
       // Our Gemfile.lock specifies exact versions whereas the Gemfile does not
@@ -131,7 +132,7 @@ class DownloadDependencyTest extends RubyCode2CpgFixture(downloadDependencies = 
 
 }
 
-object DependencyTests {
+object DependencyPassTests {
   private val GEMFILELOCK =
     """
       |GEM
