@@ -4,6 +4,7 @@ import better.files.File
 import io.joern.rubysrc2cpg.astcreation.GlobalTypes
 import io.joern.rubysrc2cpg.astcreation.GlobalTypes.builtinPrefix
 import io.joern.x2cpg.Defines
+import io.joern.rubysrc2cpg.passes.Defines as RDefines
 import io.joern.x2cpg.datastructures.*
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{DeclarationNew, NewLocal, NewMethodParameterIn}
@@ -116,6 +117,49 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
     case ScopeElement(x: TypeLikeScope, _)      => x.fullName
     case ScopeElement(x: MethodLikeScope, _)    => x.fullName
   }
+
+  /** Locates a position in the stack matching a partial function, modifies it and emits a result
+   *  @param pf
+   *    Tests ScopeElements of the stack. If they match, return the new value and the result to emi
+   *  @return 
+   *    the emitted result if the position was found and modifies
+   */
+  def updateSurrounding[T](pf: PartialFunction[ScopeElement[String, DeclarationNew, TypedScopeElement], (ScopeElement[String, DeclarationNew, TypedScopeElement], T)]): Option[T] = {
+    stack.zipWithIndex.collectFirst {
+      case (pf(elem, res), i) => (elem, res, i)
+    }.map { case (elem, res, i) =>
+      stack = stack.updated(i, elem)
+      res
+    }
+  }
+
+
+  def useProcParam: Option[String] = updateSurrounding {
+    case scope @ ScopeElement(MethodScope(fullName, param, _), variables) => (ScopeElement(MethodScope(fullName, param, true), variables), param.fold(x => x, x => x))
+  }
+
+  def anonProcParam: Option[String] = stack.collectFirst {
+    case ScopeElement(MethodScope(_, Left(param), true), _) => param
+  }
+
+  def setProcParam(param: String): Unit = updateSurrounding {
+    case scope @ ScopeElement(MethodScope(fullName, _, _), variables) => (ScopeElement(MethodScope(fullName, Right(param)), variables), ())
+  }
+
+  // def annonymousYieldProc: Option[NewMethodParameterIn] = stack.collectFirst {
+  //   case ScopeElement(MethodScope(_, false), variables) => variables.get(RDefines.AnonymousProcParameter).map { case x: NewMethodParameterIn => x }
+  // }.flatten
+  //
+  // def getOrCreateYieldProc(anonParam: => NewMethodParameterIn): Option[NewMethodParameterIn] = updateSurrounding[NewMethodParameterIn] {
+  //   case scope@ScopeElement(MethodScope(_, false), variables) => 
+  //     variables.collectFirst {
+  //       case (_, param: NewMethodParameterIn) if param.code.startsWith("&") => 
+  //         (scope, param)
+  //     }.getOrElse {
+  //       val p = anonParam
+  //       (scope.addVariable(p.name, p), p)
+  //     }
+  // }
 
   def surroundingTypeFullName: Option[String] = stack.collectFirst { case ScopeElement(x: TypeLikeScope, _) =>
     x.fullName

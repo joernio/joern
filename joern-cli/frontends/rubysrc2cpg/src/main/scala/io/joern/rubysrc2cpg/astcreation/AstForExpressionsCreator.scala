@@ -26,6 +26,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case node: SimpleCall               => astForSimpleCall(node)
     case node: RequireCall              => astForRequireCall(node)
     case node: IncludeCall              => astForIncludeCall(node)
+    case node: YieldExpr                => astForYield(node)
     case node: RangeExpression          => astForRange(node)
     case node: ArrayLiteral             => astForArrayLiteral(node)
     case node: HashLiteral              => astForHashLiteral(node)
@@ -197,7 +198,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val block = blockNode(node)
     scope.pushNewScope(BlockScope(block))
 
-    val tmp = SimpleIdentifier(Option(className))(node.span.spanStart(freshVariableName))
+    val tmp = SimpleIdentifier(Option(className))(node.span.spanStart(freshVariableName()))
     def tmpIdentifier = {
       val tmpAst = astForSimpleIdentifier(tmp)
       tmpAst.root.collect { case x: NewIdentifier => x.typeFullName(receiverTypeFullName) }
@@ -365,6 +366,17 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     astForSimpleCall(node.asSimpleCall)
   }
 
+  protected def astForYield(node: YieldExpr): Ast = {
+    scope.useProcParam match {
+      case Some(param) => 
+        astForMemberCall(MemberCall(SimpleIdentifier()(node.span.spanStart(param)), ".", "call", node.arguments)(node.span))
+      case None =>
+        logger.warn(s"Yield expression outside of method scope: ${code(node)} ($relativeFileName), skipping")
+        astForUnknown(node)
+
+    }
+  }
+
   protected def astForRange(node: RangeExpression): Ast = {
     val lbAst = astForExpression(node.lowerBound)
     val ubAst = astForExpression(node.upperBound)
@@ -398,7 +410,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   protected def astForHashLiteral(node: HashLiteral): Ast = {
-    val tmp = freshVariableName
+    val tmp = freshVariableName()
 
     def tmpAst(tmpNode: Option[RubyNode] = None) = astForSimpleIdentifier(
       SimpleIdentifier()(tmpNode.map(_.span).getOrElse(node.span).spanStart(tmp))

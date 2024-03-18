@@ -5,8 +5,8 @@ trait FreshVariableCreator { this: AstCreator =>
   private var varCounter: Int = 0
 
   private def tmpVariableTemplate(id: Int): String = s"<tmp-$id>"
-  protected def freshVariableName: String = {
-    val name = tmpVariableTemplate(varCounter)
+  protected def freshVariableName(template: Int => String = tmpVariableTemplate): String = {
+    val name = template(varCounter)
     varCounter += 1
     name
   }

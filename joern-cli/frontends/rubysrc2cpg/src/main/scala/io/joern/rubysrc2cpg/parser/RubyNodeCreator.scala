@@ -2,7 +2,6 @@ package io.joern.rubysrc2cpg.parser
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.parser.AntlrContextHelpers.*
-import io.joern.rubysrc2cpg.parser.RubyParser.RangeOperatorContext
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import org.antlr.v4.runtime.tree.{ParseTree, RuleNode}
@@ -523,6 +522,16 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     }
   }
 
+  override def visitYieldExpression(ctx: RubyParser.YieldExpressionContext): RubyNode = {
+    val arguments = Option(ctx.argumentWithParentheses()).iterator.flatMap(_.arguments).map(visit).toList
+    YieldExpr(arguments)(ctx.toTextSpan)
+  }
+
+  override def visitYieldMethodInvocationWithoutParentheses(ctx: RubyParser.YieldMethodInvocationWithoutParenthesesContext): RubyNode = {
+    val arguments = ctx.primaryValueList().primaryValue().asScala.map(visit).toList
+    YieldExpr(arguments)(ctx.toTextSpan)
+  }
+
   override def visitConstantIdentifierVariable(ctx: RubyParser.ConstantIdentifierVariableContext): RubyNode = {
     SimpleIdentifier()(ctx.toTextSpan)
   }
@@ -870,7 +879,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitProcParameter(ctx: RubyParser.ProcParameterContext): RubyNode = {
-    ProcParameter(visit(ctx.procParameterName()))(ctx.toTextSpan)
+    ProcParameter(Option(ctx.procParameterName).map(_.LOCAL_VARIABLE_IDENTIFIER()).map(_.getText()).getOrElse(ctx.getText()))(ctx.toTextSpan)
   }
 
   override def visitHashParameter(ctx: RubyParser.HashParameterContext): RubyNode = {

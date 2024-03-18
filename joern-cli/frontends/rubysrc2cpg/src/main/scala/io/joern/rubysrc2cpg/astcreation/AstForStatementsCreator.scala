@@ -160,7 +160,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     }
     def generatedNode: StatementList = node.expression
       .map { e =>
-        val tmp = SimpleIdentifier(None)(e.span.spanStart(freshVariableName))
+        val tmp = SimpleIdentifier(None)(e.span.spanStart(freshVariableName()))
         StatementList(
           List(SingleAssignment(tmp, "=", e)(e.span)) ++
             goCase(Some(tmp))

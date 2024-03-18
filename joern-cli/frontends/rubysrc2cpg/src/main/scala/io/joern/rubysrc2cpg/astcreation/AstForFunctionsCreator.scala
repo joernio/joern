@@ -40,7 +40,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     )
 
     if (methodName == XDefines.ConstructorMethodName) scope.pushNewScope(ConstructorScope(fullName))
-    else scope.pushNewScope(MethodScope(fullName))
+    else scope.pushNewScope(MethodScope(fullName, Left(freshVariableName(i => s"<proc-param-$i>"))))
 
     val parameterAsts = astForParameters(node.parameters)
 
@@ -76,12 +76,18 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       astForMethodBody(node.body, optionalStatementList)
     }
 
+    val anonProcParam = scope.anonProcParam.map { param =>
+        val paramNode = ProcParameter(param)(node.span.spanStart(param))
+        val index = parameterAsts.lastOption.flatMap(_.root).map { case m: NewMethodParameterIn => m.index }.getOrElse(0)
+        astForParameter(paramNode, index)
+    }
+
     scope.popScope()
 
     val modifiers =
       ModifierTypes.VIRTUAL :: (if isClosure then ModifierTypes.LAMBDA :: Nil else Nil) map newModifierNode
 
-    methodAst(method, parameterAsts, stmtBlockAst, methodReturn, modifiers) :: refs
+    methodAst(method, parameterAsts ++ anonProcParam, stmtBlockAst, methodReturn, modifiers) :: refs
   }
 
   private def transformAsClosureBody(refs: List[Ast], baseStmtBlockAst: Ast) = {
@@ -140,6 +146,19 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           typeFullName = None
         )
         scope.addToScope(node.name, parameterIn)
+        Ast(parameterIn)
+      case node: ProcParameter =>
+        val parameterIn = parameterInNode(
+          node = node,
+          name = node.name,
+          code = code(node),
+          index = index,
+          isVariadic = false,
+          evaluationStrategy = EvaluationStrategies.BY_REFERENCE,
+          typeFullName = None
+        )
+        scope.addToScope(node.name, parameterIn)
+        scope.setProcParam(node.name)
         Ast(parameterIn)
       case node: CollectionParameter =>
         val typeFullName = node match {
@@ -252,7 +271,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           astParentFullName = scope.surroundingScopeFullName
         )
 
-        scope.pushNewScope(MethodScope(fullName))
+        scope.pushNewScope(MethodScope(fullName, Left(freshVariableName(i => s"<proc-param-$i>"))))
 
         val thisParameterAst = Ast(
           newThisParameterNode(

@@ -110,9 +110,7 @@ object RubyIntermediateAst {
 
   final case class HashParameter(name: String)(span: TextSpan) extends RubyNode(span) with CollectionParameter
 
-  final case class ProcParameter(target: RubyNode)(span: TextSpan) extends RubyNode(span) with MethodParameter {
-    def name: String = target.text
-  }
+  final case class ProcParameter(name: String)(span: TextSpan) extends RubyNode(span) with MethodParameter
 
   final case class SingleAssignment(lhs: RubyNode, op: String, rhs: RubyNode)(span: TextSpan) extends RubyNode(span)
 
@@ -303,6 +301,9 @@ object RubyIntermediateAst {
     */
   final case class ProcOrLambdaExpr(block: Block)(span: TextSpan) extends RubyNode(span)
 
+
+  final case class YieldExpr(arguments: List[RubyNode])(span: TextSpan) extends RubyNode(span)
+
   /** Represents a call with a block argument.
     */
   sealed trait RubyCallWithBlock[C <: RubyCall] extends RubyCall {
@@ -335,6 +336,7 @@ object RubyIntermediateAst {
       with RubyCallWithBlock[MemberCall] {
     def withoutBlock: MemberCall = MemberCall(target, op, methodName, arguments)(span)
   }
+
 
   /** Represents index accesses, e.g. `x[0]`, `self.x.y[1, 2]` */
   final case class IndexAccess(target: RubyNode, indices: List[RubyNode])(span: TextSpan) extends RubyNode(span)
