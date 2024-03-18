@@ -459,11 +459,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val baseNode = createDotNetNodeInfo(condAccExpr.json(ParserKeys.Expression))
     val baseAst  = astForNode(baseNode)
 
-    val fieldIdentifier = NewFieldIdentifier()
-      .code(baseNode.code)
-      .canonicalName(baseNode.code)
-      .lineNumber(condAccExpr.lineNumber)
-      .columnNumber(condAccExpr.columnNumber)
+    val fieldIdentifier = fieldIdentifierNode(baseNode, baseNode.code, baseNode.code)
 
     val baseTypeFullName = getTypeFullNameFromAstNode(baseAst)
 
@@ -471,16 +467,16 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case Some(node) =>
         // Got a member access
         val typ = scope
-          .tryResolveFieldAccess(s"${node.code}", Option(baseTypeFullName))
+          .tryResolveFieldAccess(node.code, Option(baseTypeFullName))
           .map(_.typeName)
-          .getOrElse(Defines.Any)
+          .orElse(Option(Defines.Any))
 
         val identifier      = newIdentifierNode(baseNode.code, baseTypeFullName)
         val fieldAccessCode = s"${baseNode.code}?.${node.code}"
         val fieldAccess = newOperatorCallNode(
           Operators.fieldAccess,
           fieldAccessCode,
-          Some(typ).orElse(Some(Defines.Any)),
+          typ,
           condAccExpr.lineNumber,
           condAccExpr.columnNumber
         )
