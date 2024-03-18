@@ -2,42 +2,52 @@
 
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
 
-class CopyExprTests extends AbstractPassTest {
+class CopyExprTests extends AstSwiftSrc2CpgSuite {
 
   "CopyExprTests" should {
 
-    "testGlobal" ignore AstFixture("""
+    "testGlobal" ignore {
+      val cpg = code("""
         |var global: Int = 5
         |func testGlobal() {
         |  let _ = copy global
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testLet" ignore AstFixture("""
+    "testLet" ignore {
+      val cpg = code("""
         |func testLet() {
         |  let t = String()
         |  let _ = copy t
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testVar" ignore AstFixture("""
+    "testVar" ignore {
+      val cpg = code("""
         |func testVar() {
         |  var t = String()
         |  t = String()
         |  let _ = copy t
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testParseCanCopyClosureDollarIdentifier" ignore AstFixture("""
+    "testParseCanCopyClosureDollarIdentifier" ignore {
+      val cpg = code("""
         |class Klass {}
         |let f: (Klass) -> () = {
         |  let _ = copy $0
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
   }
 
 }

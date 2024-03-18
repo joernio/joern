@@ -309,12 +309,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   protected def astForSimpleIdentifier(node: RubyNode with RubyIdentifier): Ast = {
     val name = code(node)
 
-    if (name.startsWith("@@")) {
-      logger.warn(
-        s"Class (@@) are not handled as members yet, but are instead handled as simple identifier declarations. Found: $name"
-      )
-    }
-
     scope.lookupVariable(name) match {
       case None if scope.tryResolveMethodInvocation(node.text, List.empty).isDefined =>
         astForSimpleCall(SimpleCall(node, List())(node.span))

@@ -2,57 +2,85 @@
 
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
 
-class EscapedIdentifiersTests extends AbstractPassTest {
+class EscapedIdentifiersTests extends AstSwiftSrc2CpgSuite {
 
   "EscapedIdentifiersTests" should {
 
-    "testEscapedIdentifiers1" ignore AstFixture("""
+    "testEscapedIdentifiers1" ignore {
+      val cpg = code("""
       func `protocol`() {}
-      """) { cpg => ??? }
+      """)
+      ???
+    }
 
-    "testEscapedIdentifiers2" ignore AstFixture("""
+    "testEscapedIdentifiers2" ignore {
+      val cpg = code("""
       `protocol`()
-      """) { cpg => ??? }
+      """)
+      ???
+    }
 
-    "testEscapedIdentifiers3" ignore AstFixture("""
+    "testEscapedIdentifiers3" ignore {
+      val cpg = code("""
       class `Type` {}
-      """) { cpg => ??? }
+      """)
+      ???
+    }
 
-    "testEscapedIdentifiers4" ignore AstFixture("""
+    "testEscapedIdentifiers4" ignore {
+      val cpg = code("""
       var `class` = `Type`.self
-      """) { cpg => ??? }
+      """)
+      ???
+    }
 
-    "testEscapedIdentifiers5" ignore AstFixture("""
+    "testEscapedIdentifiers5" ignore {
+      val cpg = code("""
       func foo() {}
-      """) { cpg => ??? }
+      """)
+      ???
+    }
 
-    "testEscapedIdentifiers6" ignore AstFixture("""
+    "testEscapedIdentifiers6" ignore {
+      val cpg = code("""
       `foo`()
-      """) { cpg => ??? }
+      """)
+      ???
+    }
 
-    "testEscapedIdentifiers7" ignore AstFixture("""
+    "testEscapedIdentifiers7" ignore {
+      val cpg = code("""
       // Escaping suppresses identifier contextualization.
       var get: (() -> ()) -> () = { $0() }
-      """) { cpg => ??? }
+      """)
+      ???
+    }
 
-    "testEscapedIdentifiers8" ignore AstFixture("""
+    "testEscapedIdentifiers8" ignore {
+      val cpg = code("""
       var applyGet: Int {
         `get` { }
         return 0
       }
-      """) { cpg => ??? }
+      """)
+      ???
+    }
 
-    "testEscapedIdentifiers9" ignore AstFixture("""
+    "testEscapedIdentifiers9" ignore {
+      val cpg = code("""
       enum `switch` {}
-      """) { cpg => ??? }
+      """)
+      ???
+    }
 
-    "testEscapedIdentifiers10" ignore AstFixture("""
+    "testEscapedIdentifiers10" ignore {
+      val cpg = code("""
       typealias `Self` = Int
-      """) { cpg => ??? }
+      """)
+      ???
+    }
 
   }
 

@@ -60,7 +60,7 @@ object RubyIntermediateAst {
     name: RubyNode,
     baseClass: Option[RubyNode],
     body: RubyNode,
-    fields: List[InstanceFieldIdentifier]
+    fields: List[RubyNode with RubyFieldIdentifier]
   )(span: TextSpan)
       extends RubyNode(span)
       with TypeDeclaration
@@ -132,7 +132,13 @@ object RubyIntermediateAst {
     */
   sealed trait ControlFlowClause
 
+  /** Any structure that is an Identifier, except self. e.g. `a`, `@a`, `@@a`
+    */
   sealed trait RubyIdentifier
+
+  /** Ruby Instance or Class Variable Identifiers: `@a`, `@@a`
+    */
+  sealed trait RubyFieldIdentifier extends RubyIdentifier
 
   final case class RescueExpression(
     body: RubyNode,
@@ -209,7 +215,10 @@ object RubyIntermediateAst {
       with RubyIdentifier
 
   /** Represents a InstanceFieldIdentifier e.g `@x` */
-  final case class InstanceFieldIdentifier()(span: TextSpan) extends RubyNode(span) with RubyIdentifier
+  final case class InstanceFieldIdentifier()(span: TextSpan) extends RubyNode(span) with RubyFieldIdentifier
+
+  /** Represents a ClassFieldIdentifier e.g `@@x` */
+  final case class ClassFieldIdentifier()(span: TextSpan) extends RubyNode(span) with RubyFieldIdentifier
 
   final case class SelfIdentifier()(span: TextSpan) extends RubyNode(span)
 

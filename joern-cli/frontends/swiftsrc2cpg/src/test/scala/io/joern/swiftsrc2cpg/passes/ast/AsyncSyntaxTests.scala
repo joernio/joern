@@ -2,40 +2,58 @@
 
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
 
-class AsyncSyntaxTests extends AbstractPassTest {
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
+
+class AsyncSyntaxTests extends AstSwiftSrc2CpgSuite {
 
   "AsyncSyntaxTests" should {
 
-    "testAsyncSyntax1" ignore AstFixture("""
+    "testAsyncSyntax1" ignore {
+      val cpg = code("""
         |func asyncGlobal1() async { }
         |func asyncGlobal2() async throws { }
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testAsyncSyntax2" ignore AstFixture("""
+    "testAsyncSyntax2" ignore {
+      val cpg = code("""
         |typealias AsyncFunc1 = () async -> ()
         |typealias AsyncFunc2 = () async throws -> ()
         |typealias AsyncFunc3 = (_ a: Bool, _ b: Bool) async throws -> ()
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testAsyncSyntax3" ignore AstFixture("""
+    "testAsyncSyntax3" ignore {
+      val cpg = code("""
         |let _ = [() async -> ()]()
-        |let _ = [() async throws -> ()]()""".stripMargin) { cpg => ??? }
+        |let _ = [() async throws -> ()]()""".stripMargin)
+      ???
+    }
 
-    "testAsyncSyntax4" ignore AstFixture("let _ = await asyncGlobal1()") { cpg => ??? }
+    "testAsyncSyntax4" ignore {
+      val cpg = code("let _ = await asyncGlobal1()")
+      ???
+    }
 
-    "testAsyncSyntax5" ignore AstFixture("""
+    "testAsyncSyntax5" ignore {
+      val cpg = code("""
         |let _ = { () async in 5 }
         |let _ = { () throws in 5 }
-        |let _ = { () async throws in 5 }""".stripMargin) { cpg => ??? }
+        |let _ = { () async throws in 5 }""".stripMargin)
+      ???
+    }
 
-    "testAsyncSyntax6" ignore AstFixture("""
+    "testAsyncSyntax6" ignore {
+      val cpg = code("""
         |func testAwait() async {
         |  let _ = await asyncGlobal1()
-        |}""".stripMargin) { cpg => ??? }
+        |}""".stripMargin)
+      ???
+    }
   }
 
 }

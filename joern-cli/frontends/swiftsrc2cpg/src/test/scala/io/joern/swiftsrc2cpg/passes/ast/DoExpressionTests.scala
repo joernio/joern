@@ -1,39 +1,67 @@
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
 
-class DoExpressionTests extends AbstractPassTest {
+class DoExpressionTests extends AstSwiftSrc2CpgSuite {
 
   "DoExpressionTests" should {
 
-    "testDoExpr1" ignore AstFixture("let x = do { 5 }") { cpg => ??? }
+    "testDoExpr1" ignore {
+      val cpg = code("let x = do { 5 }")
+      ???
+    }
 
-    "testDoExpr2" ignore AstFixture("let x = do { 5 } catch { 0 }") { cpg => ??? }
+    "testDoExpr2" ignore {
+      val cpg = code("let x = do { 5 } catch { 0 }")
+      ???
+    }
 
-    "testDoExpr3" ignore AstFixture("func foo() { do { 5 } }") { cpg => ??? }
+    "testDoExpr3" ignore {
+      val cpg = code("func foo() { do { 5 } }")
+      ???
+    }
 
-    "testDoExpr4" ignore AstFixture("func foo() { do { 5 } as Int }") { cpg => ??? }
+    "testDoExpr4" ignore {
+      val cpg = code("func foo() { do { 5 } as Int }")
+      ???
+    }
 
-    "testDoExpr5" ignore AstFixture("do { 5 } as Int") { cpg => ??? }
+    "testDoExpr5" ignore {
+      val cpg = code("do { 5 } as Int")
+      ???
+    }
 
-    "testDoExpr6" ignore AstFixture("""
+    "testDoExpr6" ignore {
+      val cpg = code("""
         |func foo() {
         |  do { 5 } catch { 0 } as Int
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testDoExpr7" ignore AstFixture("y = do { 5 } catch { 0 } as Int") { cpg => ??? }
+    "testDoExpr7" ignore {
+      val cpg = code("y = do { 5 } catch { 0 } as Int")
+      ???
+    }
 
-    "testDoExpr8" ignore AstFixture("{ do { 5 } catch { 0 } }") { cpg => ??? }
+    "testDoExpr8" ignore {
+      val cpg = code("{ do { 5 } catch { 0 } }")
+      ???
+    }
 
-    "testDoExpr11" ignore AstFixture("return do { 5 }") { cpg => ??? }
+    "testDoExpr11" ignore {
+      val cpg = code("return do { 5 }")
+      ???
+    }
 
-    "testDoExpr12" ignore AstFixture("""
+    "testDoExpr12" ignore {
+      val cpg = code("""
         |return
         |do { 5 }
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
   }
 

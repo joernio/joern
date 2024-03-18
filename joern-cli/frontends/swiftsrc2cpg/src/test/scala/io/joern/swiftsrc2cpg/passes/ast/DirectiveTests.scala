@@ -1,8 +1,10 @@
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.shiftleft.semanticcpg.language._
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
+import io.joern.swiftsrc2cpg.Config
+import io.shiftleft.semanticcpg.language.*
 
-class DirectiveTests extends AbstractPassTest {
+class DirectiveTests extends AstSwiftSrc2CpgSuite {
 
   private val IfConfigExpressionCode = """
    |foo()
@@ -25,51 +27,45 @@ class DirectiveTests extends AbstractPassTest {
 
   "DirectiveTests" should {
 
-    "testConfigExpression1 (no defines given)" in AstFixture(IfConfigExpressionCode) { cpg =>
+    "testConfigExpression1 (no defines given)" in {
+      val cpg = code(IfConfigExpressionCode)
       cpg.call.code.l shouldBe List("foo()")
     }
 
-    "testConfigExpression2 (one define given)" in AstFixture(IfConfigExpressionCode, defines = Set("CONFIG1")) { cpg =>
+    "testConfigExpression2 (one define given)" in {
+      val cpg = code(IfConfigExpressionCode).withConfig(Config(Set("CONFIG1")))
       cpg.call.code.l shouldBe List("foo()", "config1()")
     }
 
-    "testConfigExpression3 (multiple defines given)" in AstFixture(
-      IfConfigExpressionCode,
-      defines = Set("CONFIG1", "CONFIG2")
-    ) { cpg =>
+    "testConfigExpression3 (multiple defines given)" in {
+      val cpg = code(IfConfigExpressionCode).withConfig(Config(Set("CONFIG1", "CONFIG2")))
       cpg.call.code.l shouldBe List("foo()", "config1()", "config2()", "elseConfig4()", "bar()")
     }
 
-    "testConfigExpression4 (all non-conflicting defines given)" in AstFixture(
-      IfConfigExpressionCode,
-      defines = Set("CONFIG1", "CONFIG2", "CONFIG3", "INNER1")
-    ) { cpg =>
+    "testConfigExpression4 (all non-conflicting defines given)" in {
+      val cpg = code(IfConfigExpressionCode).withConfig(Config(Set("CONFIG1", "CONFIG2", "CONFIG3", "INNER1")))
       cpg.call.code.l shouldBe List("foo()", "config1()", "config2()", "inner1()", "bar()")
     }
 
-    "testConfigExpression5 (all non-conflicting defines given for elseif)" in AstFixture(
-      IfConfigExpressionCode,
-      defines = Set("CONFIG1", "CONFIG2", "CONFIG4")
-    ) { cpg =>
+    "testConfigExpression5 (all non-conflicting defines given for elseif)" in {
+      val cpg = code(IfConfigExpressionCode).withConfig(Config(Set("CONFIG1", "CONFIG2", "CONFIG4")))
       cpg.call.code.l shouldBe List("foo()", "config1()", "config2()", "config4()", "bar()")
     }
 
-    "testConfigExpression6 (call behind define)" in AstFixture(
-      """
+    "testConfigExpression6 (call behind define)" in {
+      val cpg = code("""
         |foo
         |#if CONFIG1
         |.bar()
         |#else
         |.baz()
         |#endif
-        |""".stripMargin,
-      defines = Set("CONFIG1")
-    ) { cpg =>
+        |""".stripMargin).withConfig(Config(Set("CONFIG1")))
       cpg.call.code.l shouldBe List("foo.bar()", "foo.bar")
     }
 
-    "testConfigExpression7 (call behind define with trailing call)" in AstFixture(
-      """
+    "testConfigExpression7 (call behind define with trailing call)" in {
+      val cpg = code("""
         |foo
         |#if CONFIG1
         |.bar()
@@ -77,9 +73,7 @@ class DirectiveTests extends AbstractPassTest {
         |.baz()
         |#endif
         |.oneMore(x: 1)
-        |""".stripMargin,
-      defines = Set("CONFIG1")
-    ) { cpg =>
+        |""".stripMargin).withConfig(Config(Set("CONFIG1")))
       cpg.call.code.l shouldBe List(
         "(_tmp_0 = foo.bar()).oneMore(x: 1)",
         "(_tmp_0 = foo.bar()).oneMore",
@@ -90,17 +84,26 @@ class DirectiveTests extends AbstractPassTest {
       )
     }
 
-    "testSourceLocation1" ignore AstFixture("#sourceLocation()") { cpg => ??? }
+    "testSourceLocation1" ignore {
+      val cpg = code("#sourceLocation()")
+      ???
+    }
 
-    "testSourceLocation2" ignore AstFixture("""#sourceLocation(file: "foo", line: 42)""") { cpg => ??? }
+    "testSourceLocation2" ignore {
+      val cpg = code("""#sourceLocation(file: "foo", line: 42)""")
+      ???
+    }
 
-    "testHasAttribute" ignore AstFixture("""
+    "testHasAttribute" ignore {
+      val cpg = code("""
       |@frozen
       |#if hasAttribute(foo)
       |@foo
       |#endif
       |public struct S2 { }
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
   }
 
 }

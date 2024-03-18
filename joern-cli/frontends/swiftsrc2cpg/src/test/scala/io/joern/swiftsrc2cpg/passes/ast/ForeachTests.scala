@@ -1,51 +1,57 @@
 package io.joern.swiftsrc2cpg.passes.ast
 
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
+
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 
-class ForeachTests extends AbstractPassTest {
+class ForeachTests extends AstSwiftSrc2CpgSuite {
 
   "ForeachTests" should {
 
-    "testForeach1" in AstFixture("""
+    "testForeach1" in {
+      val cpg = code("""
         |for elem in elements {
         |  foo(elem)
         |}
-        |""".stripMargin) { cpg =>
+        |""".stripMargin)
       val List(method)      = cpg.method.nameExact("<global>").l
       val List(methodBlock) = method.astChildren.isBlock.l
       val List(loopBlock)   = methodBlock.astChildren.isBlock.l
       checkForLoopWithIdentifier(loopBlock)
     }
 
-    "testForeach2" in AstFixture("""
+    "testForeach2" in {
+      val cpg = code("""
         |for elem in elements where elem == 1 {
         |  foo(elem)
         |}
-        |""".stripMargin) { cpg =>
+        |""".stripMargin)
       val List(method)      = cpg.method.nameExact("<global>").l
       val List(methodBlock) = method.astChildren.isBlock.l
       val List(loopBlock)   = methodBlock.astChildren.isBlock.l
       checkForLoopWithIdentifier(loopBlock, withWhere = true)
     }
 
-    "testForeach3" in AstFixture("""
+    "testForeach3" in {
+      val cpg = code("""
         |for (a, b, c) in elements {
         |  foo(a, b, c)
         |}
-        |""".stripMargin) { cpg =>
+        |""".stripMargin)
       val List(method)      = cpg.method.nameExact("<global>").l
       val List(methodBlock) = method.astChildren.isBlock.l
       val List(loopBlock)   = methodBlock.astChildren.isBlock.l
       checkForLoopWithTuple(loopBlock)
     }
 
-    "testForeach4" in AstFixture("""
+    "testForeach4" in {
+      val cpg = code("""
         |for _ in elements {
         |  foo()
         |}
-        |""".stripMargin) { cpg =>
+        |""".stripMargin)
       val List(forLoop)  = cpg.forBlock.l
       val List(elements) = forLoop.astChildren.isIdentifier.l
       elements.name shouldBe "elements"

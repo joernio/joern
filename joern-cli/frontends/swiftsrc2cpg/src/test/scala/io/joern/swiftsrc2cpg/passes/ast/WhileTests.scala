@@ -1,18 +1,21 @@
 package io.joern.swiftsrc2cpg.passes.ast
 
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
+
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 
-class WhileTests extends AbstractPassTest {
+class WhileTests extends AstSwiftSrc2CpgSuite {
 
   "WhileTests" should {
 
-    "whileTest1" in AstFixture("""
+    "whileTest1" in {
+      val cpg = code("""
         |while (true) {
         |  print("Endless Loop")
         |}
-        |""".stripMargin) { cpg =>
+        |""".stripMargin)
       inside(cpg.method.name("<global>").block.astChildren.isControlStructure.l) {
         case List(controlStruct: ControlStructure) =>
           controlStruct.code should startWith("while (true) {")
@@ -26,12 +29,13 @@ class WhileTests extends AbstractPassTest {
       }
     }
 
-    "whileTest2" in AstFixture("""
+    "whileTest2" in {
+      val cpg = code("""
         |while (i <= n) {
         |  print(i)
         |  i = i + 1
         |}
-        |""".stripMargin) { cpg =>
+        |""".stripMargin)
       inside(cpg.method.name("<global>").block.astChildren.isControlStructure.l) {
         case List(controlStruct: ControlStructure) =>
           controlStruct.code should startWith("while (i <= n) {")
@@ -51,11 +55,12 @@ class WhileTests extends AbstractPassTest {
       }
     }
 
-    "whileTest3" in AstFixture("""
+    "whileTest3" in {
+      val cpg = code("""
         |repeat {
         |  print("Endless Loop")
         |} while (true)
-        |""".stripMargin) { cpg =>
+        |""".stripMargin)
       inside(cpg.method.name("<global>").block.astChildren.isControlStructure.l) {
         case List(controlStruct: ControlStructure) =>
           controlStruct.code should startWith("repeat {")
@@ -69,12 +74,13 @@ class WhileTests extends AbstractPassTest {
       }
     }
 
-    "whileTest4" in AstFixture("""
+    "whileTest4" in {
+      val cpg = code("""
         |repeat {
         |  print(i)
         |  i = i + 1
         |} while (i <= n)
-        |""".stripMargin) { cpg =>
+        |""".stripMargin)
       inside(cpg.method.name("<global>").block.astChildren.isControlStructure.l) {
         case List(controlStruct: ControlStructure) =>
           controlStruct.code should startWith("repeat {")
