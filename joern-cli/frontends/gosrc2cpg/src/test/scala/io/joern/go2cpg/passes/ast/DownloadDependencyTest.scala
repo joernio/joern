@@ -205,8 +205,9 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
     }
 
     "not create any entry in package to namespace mapping" in {
-      // it should not add `main` in the mapping as well as it should not contain any dependency mapping
+      // it should not add `main` in the mapping as well as it should not contain any dependency mapping in the case current sample
       goGlobal.aliasToNameSpaceMapping.size() shouldBe 0
+
     }
 
     "not create any entry in lambda signature to return type mapping" in {

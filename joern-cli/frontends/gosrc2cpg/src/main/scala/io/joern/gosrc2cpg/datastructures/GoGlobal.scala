@@ -2,11 +2,15 @@ package io.joern.gosrc2cpg.datastructures
 
 import io.joern.x2cpg.Ast
 
-import java.util.concurrent.ConcurrentHashMap
-
+import java.util.concurrent.{ConcurrentHashMap, ConcurrentSkipListSet}
 class GoGlobal {
 
   var processingDependencies = false
+
+  /** NOTE: This set is getting cleared inside {@link io.joern.gosrc2cpg.passes.MethodAndTypeCacheBuilderPass#process}
+    * to release the memory once done with the use.
+    */
+  val sourcePackageSet: java.util.Set[String] = new ConcurrentSkipListSet[String]()
 
   /** This map will only contain the mapping for those packages whose package name is different from the enclosing
     * folder name

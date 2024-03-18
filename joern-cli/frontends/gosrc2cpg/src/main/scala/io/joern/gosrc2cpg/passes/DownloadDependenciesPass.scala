@@ -32,7 +32,7 @@ class DownloadDependenciesPass(parentGoMod: GoModHelper, goGlobal: GoGlobal, con
         ExternalCommand.run("go mod init joern.io/temp", prjDir) match
           case Success(_) =>
             val futures = mod.dependencies
-              .filter(dep => !dep.beingUsed)
+              .filter(dep => dep.beingUsed)
               .map(dependency => {
                 Future {
                   val dependencyStr = s"${dependency.module}@${dependency.version}"

@@ -20,16 +20,14 @@ trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCre
 
       cpgOpt.map { _ =>
         // We don't want to process this part when third party dependencies are being processed.
-        val result = goGlobal.recordAliasToNamespaceMapping(declaredPackageName, fullyQualifiedPackage)
-        // TODO: we need to add this mapping only when declared package name is not matching
-        // with ending path string of fullyQualifiedPackage
-        if (result == null) {
-          // if result is null that means item got added first time otherwise it has been already added to global map
+        if (goGlobal.sourcePackageSet.add(fullyQualifiedPackage)) {
+          // java.util.Set.Add method will return true when set already doesn't contain the same value.
           val rootNode = createParserNodeInfo(parserResult.json)
           val ast      = astForPackage(rootNode)
           Ast.storeInDiffGraph(ast, diffGraph)
         }
       }
+      identifyAndRecordPackagesWithDifferentName()
       findAndProcess(parserResult.json)
       processPackageLevelGolbalVaraiblesAndConstants(parserResult.json)
     } catch {
@@ -37,6 +35,12 @@ trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCre
         logger.warn(s"Error: While processing - ${parserResult.fullPath}", ex)
     }
     diffGraph
+  }
+
+  private def identifyAndRecordPackagesWithDifferentName(): Unit = {
+    // record the package to full namespace mapping only when declared package name is not matching with containing folder name
+    if (declaredPackageName != fullyQualifiedPackage.split("/").last)
+      goGlobal.recordAliasToNamespaceMapping(declaredPackageName, fullyQualifiedPackage)
   }
 
   private def astForPackage(rootNode: ParserNodeInfo): Ast = {
