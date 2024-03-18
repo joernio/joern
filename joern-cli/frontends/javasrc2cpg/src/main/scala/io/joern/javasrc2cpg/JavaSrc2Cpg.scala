@@ -30,6 +30,7 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
       new MetaDataPass(cpg, language, config.inputPath).createAndApply()
       val astCreationPass = new AstCreationPass(config, cpg)
       astCreationPass.createAndApply()
+      astCreationPass.sourceParser.cleanupDelombokOutput()
       new ConfigFileCreationPass(cpg).createAndApply()
       if (!config.skipTypeInfPass) {
         TypeNodePass.withRegisteredTypes(astCreationPass.global.usedTypes.keys().asScala.toList, cpg).createAndApply()
