@@ -40,30 +40,17 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
   val global: Global = new Global()
   private val logger = LoggerFactory.getLogger(classOf[AstCreationPass])
 
-  private val sourceFilenames = sourcesOverride
-    .getOrElse(
-      SourceFiles.determine(
-        config.inputPath,
-        JavaSrc2Cpg.sourceFileExtensions,
-        ignoredDefaultRegex = Option(JavaSrc2Cpg.DefaultIgnoredFilesRegex),
-        ignoredFilesRegex = Option(config.ignoredFilesRegex),
-        ignoredFilesPath = Option(config.ignoredFiles)
-      )
-    )
-    .toArray
+  val (sourceParser, symbolSolver) = initParserAndUtils(config)
 
-  val (sourceParser, symbolSolver) = initParserAndUtils(config, sourceFilenames)
-
-  override def generateParts(): Array[String] = sourceFilenames
+  override def generateParts(): Array[String] = sourceParser.relativeFilenames.toArray
 
   override def runOnPart(diffGraph: DiffGraphBuilder, filename: String): Unit = {
-    val relativeFilename = Path.of(config.inputPath).relativize(Path.of(filename)).toString
-    sourceParser.parseAnalysisFile(relativeFilename, !config.disableFileContent) match {
+    sourceParser.parseAnalysisFile(filename, !config.disableFileContent) match {
       case Some(compilationUnit, fileContent) =>
         symbolSolver.inject(compilationUnit)
         val contentToUse = if (!config.disableFileContent) fileContent else None
         diffGraph.absorb(
-          new AstCreator(relativeFilename, compilationUnit, contentToUse, global, symbolSolver)(config.schemaValidation)
+          new AstCreator(filename, compilationUnit, contentToUse, global, symbolSolver)(config.schemaValidation)
             .createAst()
         )
 
@@ -71,10 +58,10 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
     }
   }
 
-  private def initParserAndUtils(config: Config, sourceFilenames: Array[String]): (SourceParser, JavaSymbolSolver) = {
+  private def initParserAndUtils(config: Config): (SourceParser, JavaSymbolSolver) = {
     val dependencies = getDependencyList(config.inputPath)
-    val sourceParser = SourceParser(config, dependencies.exists(_.contains("lombok")))
-    val symbolSolver = createSymbolSolver(config, dependencies, sourceParser, sourceFilenames)
+    val sourceParser = SourceParser(config, dependencies.exists(_.contains("lombok")), sourcesOverride)
+    val symbolSolver = createSymbolSolver(config, dependencies, sourceParser)
     (sourceParser, symbolSolver)
   }
 
@@ -95,8 +82,7 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
   private def createSymbolSolver(
     config: Config,
     dependencies: List[String],
-    sourceParser: SourceParser,
-    sourceFilenames: Array[String]
+    sourceParser: SourceParser
   ): JavaSymbolSolver = {
     val combinedTypeSolver = new SimpleCombinedTypeSolver()
     val symbolSolver       = new JavaSymbolSolver(combinedTypeSolver)
@@ -123,11 +109,8 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
       JdkJarTypeSolver.fromJdkPath(jdkPath, useCache = config.cacheJdkTypeSolver)
     )
 
-    val relativeSourceFilenames =
-      sourceFilenames.map(filename => Path.of(config.inputPath).relativize(Path.of(filename)).toString)
-
     val sourceTypeSolver =
-      EagerSourceTypeSolver(relativeSourceFilenames, sourceParser, combinedTypeSolver, symbolSolver)
+      EagerSourceTypeSolver(sourceParser, combinedTypeSolver, symbolSolver)
 
     combinedTypeSolver.addCachingTypeSolver(sourceTypeSolver)
 

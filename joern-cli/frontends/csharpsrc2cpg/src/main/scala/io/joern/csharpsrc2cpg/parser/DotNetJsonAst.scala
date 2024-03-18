@@ -244,6 +244,10 @@ object DotNetJsonAst {
 
   object Interpolation extends BaseExpr
 
+  object ConditionalAccessExpression extends MemberAccessExpr
+
+  object MemberBindingExpression extends BaseExpr
+
   object Unknown extends DotNetParserNode
 
 }
@@ -308,5 +312,6 @@ object ParserKeys {
   val Value             = "Value"
   val Variables         = "Variables"
   val WhenFalse         = "WhenFalse"
+  val WhenNotNull       = "WhenNotNull"
   val WhenTrue          = "WhenTrue"
 }

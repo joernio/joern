@@ -34,6 +34,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case ThisExpression                  => astForThisReceiver(expr) :: Nil
       case CastExpression                  => astForCastExpression(expr)
       case InterpolatedStringExpression    => astForInterpolatedStringExpression(expr)
+      case ConditionalAccessExpression     => astForConditionalAccessExpression(expr)
       case _: BaseLambdaExpression         => astForSimpleLambdaExpression(expr)
       case _                               => notHandledYet(expr)
   }
@@ -222,7 +223,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         val argTypes       = arguments.map(getTypeFullNameFromAstNode).toList
         val methodMetaData = scope.tryResolveMethodInvocation(callName, argTypes, baseTypeFullName)
         (receiverAst.headOption, baseTypeFullName, methodMetaData, arguments)
-      case IdentifierName =>
+      case IdentifierName | MemberBindingExpression =>
         // This is when a call is made directly, which could also be made from a static import
         val argTypes = astForArgumentList(argumentList).map(getTypeFullNameFromAstNode).toList
         scope
@@ -452,6 +453,38 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         literalNode(interpolatedTextExpr, code(interpolatedTextExpr), BuiltinTypes.DotNetTypeMap(BuiltinTypes.String))
       )
     )
+  }
+
+  private def astForConditionalAccessExpression(condAccExpr: DotNetNodeInfo): Seq[Ast] = {
+    val baseNode = createDotNetNodeInfo(condAccExpr.json(ParserKeys.Expression))
+    val baseAst  = astForNode(baseNode)
+
+    val fieldIdentifier = fieldIdentifierNode(baseNode, baseNode.code, baseNode.code)
+
+    val baseTypeFullName = getTypeFullNameFromAstNode(baseAst)
+
+    Try(createDotNetNodeInfo(condAccExpr.json(ParserKeys.WhenNotNull)(ParserKeys.Name))).toOption match {
+      case Some(node) =>
+        // Got a member access
+        val typ = scope
+          .tryResolveFieldAccess(node.code, Option(baseTypeFullName))
+          .map(_.typeName)
+          .orElse(Option(Defines.Any))
+
+        val identifier      = newIdentifierNode(baseNode.code, baseTypeFullName)
+        val fieldAccessCode = s"${baseNode.code}?.${node.code}"
+        val fieldAccess = newOperatorCallNode(
+          Operators.fieldAccess,
+          fieldAccessCode,
+          typ,
+          condAccExpr.lineNumber,
+          condAccExpr.columnNumber
+        )
+        val fieldIdentifierAst = Ast(fieldIdentifier)
+
+        Seq(callAst(fieldAccess, baseAst ++ Seq(fieldIdentifierAst)))
+      case _ => astForInvocationExpression(createDotNetNodeInfo(condAccExpr.json(ParserKeys.WhenNotNull)))
+    }
   }
 
 }
