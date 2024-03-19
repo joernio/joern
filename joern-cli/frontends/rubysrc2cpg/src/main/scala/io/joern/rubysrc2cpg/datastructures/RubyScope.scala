@@ -154,21 +154,6 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
       (ScopeElement(MethodScope(fullName, Right(param)), variables), ())
   }
 
-  // def annonymousYieldProc: Option[NewMethodParameterIn] = stack.collectFirst {
-  //   case ScopeElement(MethodScope(_, false), variables) => variables.get(RDefines.AnonymousProcParameter).map { case x: NewMethodParameterIn => x }
-  // }.flatten
-  //
-  // def getOrCreateYieldProc(anonParam: => NewMethodParameterIn): Option[NewMethodParameterIn] = updateSurrounding[NewMethodParameterIn] {
-  //   case scope@ScopeElement(MethodScope(_, false), variables) =>
-  //     variables.collectFirst {
-  //       case (_, param: NewMethodParameterIn) if param.code.startsWith("&") =>
-  //         (scope, param)
-  //     }.getOrElse {
-  //       val p = anonParam
-  //       (scope.addVariable(p.name, p), p)
-  //     }
-  // }
-
   def surroundingTypeFullName: Option[String] = stack.collectFirst { case ScopeElement(x: TypeLikeScope, _) =>
     x.fullName
   }
