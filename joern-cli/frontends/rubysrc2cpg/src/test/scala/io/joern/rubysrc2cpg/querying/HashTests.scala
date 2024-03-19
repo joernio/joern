@@ -13,9 +13,8 @@ class HashTests extends RubyCode2CpgFixture {
                      |{}
                      |""".stripMargin)
 
-    val List(hashCall) = cpg.call.l
+    val List(hashCall) = cpg.call.name(RubyOperators.hashInitializer).l
 
-    hashCall.methodFullName shouldBe RubyOperators.hashInitializer
     hashCall.code shouldBe "{}"
     hashCall.lineNumber shouldBe Some(2)
   }
@@ -29,7 +28,7 @@ class HashTests extends RubyCode2CpgFixture {
     hashCall.code shouldBe "{x:1}"
     hashCall.lineNumber shouldBe Some(2)
 
-    val List(assocCall) = hashCall.argument.isCall.l
+    val List(assocCall) = hashCall.inCall.astSiblings.assignment.l
     val List(x, one)    = assocCall.argument.l
     x.code shouldBe "<tmp-0>[x]"
     one.code shouldBe "1"
@@ -43,7 +42,7 @@ class HashTests extends RubyCode2CpgFixture {
 
     inside(cpg.call.name(RubyOperators.hashInitializer).l) {
       case hashInitializerInt :: hashInitializerString :: Nil =>
-        inside(hashInitializerInt.argument.isCall.l) {
+        inside(hashInitializerInt.inCall.astSiblings.assignment.l) {
           case firstCall :: secondCall :: thirdCall :: fourthCall :: fifthCall :: Nil =>
             firstCall.code shouldBe "<tmp-0>[1] = \"abc\""
             secondCall.code shouldBe "<tmp-0>[2] = \"abc\""
@@ -71,7 +70,7 @@ class HashTests extends RubyCode2CpgFixture {
           case _ => fail("Expected 5 calls (one per item in range)")
         }
 
-        inside(hashInitializerString.argument.isCall.l) {
+        inside(hashInitializerString.inCall.astSiblings.assignment.l) {
           case firstCall :: secondCall :: thirdCall :: Nil =>
             firstCall.code shouldBe "<tmp-1>['a'] = \"abc\""
             secondCall.code shouldBe "<tmp-1>['b'] = \"abc\""
@@ -100,8 +99,8 @@ class HashTests extends RubyCode2CpgFixture {
 
     inside(cpg.call.name(RubyOperators.hashInitializer).l) {
       case hashInitializer :: Nil =>
-        inside(hashInitializer.argument.l) {
-          case (firstCall: Call) :: (secondCall: Call) :: (tmp: Identifier) :: Nil =>
+        inside(hashInitializer.inCall.astSiblings.l) {
+          case _ :: (firstCall: Call) :: (secondCall: Call) :: (tmp: Identifier) :: Nil =>
             firstCall.code shouldBe "<tmp-0>[1] = \"abc\""
             secondCall.code shouldBe "<tmp-0>[2] = \"abc\""
             tmp.name shouldBe "<tmp-0>"
@@ -118,7 +117,7 @@ class HashTests extends RubyCode2CpgFixture {
 
     inside(cpg.call.name(RubyOperators.hashInitializer).l) {
       case hashInitializer :: Nil =>
-        inside(hashInitializer.argument.isCall.l) {
+        inside(hashInitializer.inCall.astSiblings.assignment.l) {
           case rangeExprArg :: Nil =>
             inside(rangeExprArg.argument.l) {
               case (lhs: Call) :: (rhs: Literal) :: Nil =>
@@ -139,6 +138,37 @@ class HashTests extends RubyCode2CpgFixture {
           case _ => fail("Expected one argument for range expression")
         }
       case _ => fail("Expected one hash initializer function")
+    }
+  }
+
+  "an implicit hash constructor (Hash::[]) should be lowered to a hash initializer" in {
+    val cpg = code("""
+        |x = Hash [1 => "a", 2 => "b", 3 => "c"]
+        |""".stripMargin)
+
+    inside(cpg.call.name(RubyOperators.hashInitializer).l) {
+      case hashCall :: Nil =>
+        hashCall.code shouldBe "Hash [1 => \"a\", 2 => \"b\", 3 => \"c\"]"
+        hashCall.lineNumber shouldBe Some(2)
+
+        inside(hashCall.parentBlock.astChildren.l) {
+          case _ :: _ :: (one: Call) :: (two: Call) :: (three: Call) :: (tmp: Identifier) :: Nil =>
+            one.code shouldBe "<tmp-0>[1] = \"a\""
+            two.code shouldBe "<tmp-0>[2] = \"b\""
+            three.code shouldBe "<tmp-0>[3] = \"c\""
+            tmp.code shouldBe "<tmp-0>"
+          case xs => fail(s"Expected 3 literals under the array initializer, instead got [${xs.code.mkString(", ")}]")
+        }
+
+        inside(hashCall.parentBlock.inCall.headOption) {
+          case Some(bracketCall) =>
+            bracketCall.name shouldBe "[]"
+            bracketCall.methodFullName shouldBe "__builtin.Hash:[]"
+            bracketCall.typeFullName shouldBe "__builtin.Hash"
+          case None => fail("Expected a call with the name []")
+        }
+
+      case xs => fail(s"Expected a single array initializer call, instead got [${xs.code.mkString(", ")}]")
     }
   }
 
