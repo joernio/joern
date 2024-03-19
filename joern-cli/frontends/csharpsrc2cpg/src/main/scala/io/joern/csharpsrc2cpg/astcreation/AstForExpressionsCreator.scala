@@ -514,7 +514,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           case MemberBindingExpression => astForMemberBindingExpression(node, baseTypeFullName)
           case InvocationExpression =>
             astForInvocationExpression(node)
-          case _ => Seq.empty[Ast]
+          case _ => astForNode(node)
         }
       case None => Seq.empty[Ast]
     }
