@@ -140,17 +140,21 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
       }
   }
 
+  /** Get the name of the implicit or explict proc param and mark the method scope as using the proc param
+  */
   def useProcParam: Option[String] = updateSurrounding {
-    case scope @ ScopeElement(MethodScope(fullName, param, _), variables) =>
+    case ScopeElement(MethodScope(fullName, param, _), variables) =>
       (ScopeElement(MethodScope(fullName, param, true), variables), param.fold(x => x, x => x))
   }
 
+  /** Get the name of the implicit or explict proc param */
   def anonProcParam: Option[String] = stack.collectFirst { case ScopeElement(MethodScope(_, Left(param), true), _) =>
     param
   }
 
+  /** Set the name of explict proc param */
   def setProcParam(param: String): Unit = updateSurrounding {
-    case scope @ ScopeElement(MethodScope(fullName, _, _), variables) =>
+    case ScopeElement(MethodScope(fullName, _, _), variables) =>
       (ScopeElement(MethodScope(fullName, Right(param)), variables), ())
   }
 
