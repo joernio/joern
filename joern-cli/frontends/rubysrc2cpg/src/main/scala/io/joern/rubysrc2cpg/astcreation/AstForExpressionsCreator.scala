@@ -171,7 +171,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
               if node.indices.exists(_.isInstanceOf[Association]) then HashLiteral(node.indices)(node.span) :: Nil
               else ArrayLiteral(node.indices)(node.span) :: Nil
             val expr = astForExpression(SimpleCall(arrayMethodName, args)(node.span))
-            expr.root.collect { case x: NewCall => x.methodFullName(s"$typeReference:${m.name}") }
+            expr.root.collect { case x: NewCall =>
+              x.methodFullName(s"$typeReference:${m.name}")
+              scope.tryResolveTypeReference(m.returnType).map(_.name).foreach(x.typeFullName(_))
+            }
             expr
           }
           .getOrElse(defaultBehaviour)

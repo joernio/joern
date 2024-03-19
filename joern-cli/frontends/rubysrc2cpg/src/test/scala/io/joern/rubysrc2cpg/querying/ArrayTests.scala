@@ -111,6 +111,7 @@ class ArrayTests extends RubyCode2CpgFixture {
           case Some(bracketCall) =>
             bracketCall.name shouldBe "[]"
             bracketCall.methodFullName shouldBe "__builtin.Array:[]"
+            bracketCall.typeFullName shouldBe "__builtin.Array"
           case None => fail("Expected a call with the name []")
         }
 
