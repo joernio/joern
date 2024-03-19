@@ -27,7 +27,6 @@ class AstCreator(
     with AstForPrimitivesCreator
     with AstForExpressionsCreator
     with AstForStatementsCreator
-    with AstForControlStructuresCreator
     with AstSummaryVisitor
     with AstGenNodeBuilder[AstCreator] {
 

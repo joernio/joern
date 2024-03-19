@@ -1,39 +1,14 @@
 package io.joern.csharpsrc2cpg.astcreation
 
-import io.circe.Json
-import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.{
-  BinaryExpr,
-  Block,
-  BreakStatement,
-  CasePatternSwitchLabel,
-  CaseSwitchLabel,
-  ContinueStatement,
-  DefaultSwitchLabel,
-  DoStatement,
-  ExpressionStatement,
-  ForEachStatement,
-  ForStatement,
-  GenericName,
-  GlobalStatement,
-  GotoStatement,
-  IfStatement,
-  JumpStatement,
-  LiteralExpr,
-  ReturnStatement,
-  SwitchStatement,
-  ThrowStatement,
-  TryStatement,
-  UnaryExpr,
-  WhileStatement
-}
+import io.joern.csharpsrc2cpg.CSharpOperators
+import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
-import io.shiftleft.codepropertygraph.generated.nodes.ControlStructure
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewControlStructure, NewIdentifier}
 
 import scala.::
-import scala.collection.mutable.ArrayBuffer
-import scala.util.{Failure, Success, Try}
+import scala.util.{Success, Try}
 
 trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -57,7 +32,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   protected def astForStatement(nodeInfo: DotNetNodeInfo): Seq[Ast] = {
-    nodeInfo.node match
+    nodeInfo.node match {
       case ExpressionStatement => astForExpressionStatement(nodeInfo)
       case GlobalStatement     => astForGlobalStatement(nodeInfo)
       case IfStatement         => astForIfStatement(nodeInfo)
@@ -68,8 +43,10 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case DoStatement         => astForDoStatement(nodeInfo)
       case WhileStatement      => astForWhileStatement(nodeInfo)
       case SwitchStatement     => astForSwitchStatement(nodeInfo)
+      case UsingStatement      => astForUsingStatement(nodeInfo)
       case _: JumpStatement    => astForJumpStatement(nodeInfo)
       case _                   => notHandledYet(nodeInfo)
+    }
   }
 
   private def astForSwitchLabel(labelNode: DotNetNodeInfo): Seq[Ast] = {
@@ -222,4 +199,95 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val _returnNode = returnNode(returnStmt, returnStmt.code)
     Seq(returnAst(_returnNode, identifierAst))
   }
+
+  protected def astForThrowStatement(throwStmt: DotNetNodeInfo): Seq[Ast] = {
+    val expr = createDotNetNodeInfo(throwStmt.json(ParserKeys.Expression))
+    val args = astForNode(expr)
+    val throwCall = createCallNodeForOperator(
+      throwStmt,
+      CSharpOperators.throws,
+      typeFullName = Option(getTypeFullNameFromAstNode(args))
+    )
+    Seq(callAst(throwCall, args))
+  }
+
+  protected def astForTryStatement(tryStmt: DotNetNodeInfo): Seq[Ast] = {
+    val tryNode = NewControlStructure()
+      .controlStructureType(ControlStructureTypes.TRY)
+      .code("try")
+      .lineNumber(line(tryStmt))
+      .columnNumber(column(tryStmt))
+    val tryAst = astForBlock(createDotNetNodeInfo(tryStmt.json(ParserKeys.Block)), Option("try"))
+
+    val catchAsts = Try(tryStmt.json(ParserKeys.Catches)).map(_.arr.flatMap(astForNode).toSeq).getOrElse(Seq.empty)
+
+    val finallyBlock = Try(createDotNetNodeInfo(tryStmt.json(ParserKeys.Finally))).map(astForFinallyClause) match
+      case Success(finallyAst :: Nil) =>
+        finallyAst.root.collect { case x: NewBlock => x.code("finally") }
+        finallyAst
+      case _ => Ast()
+
+    val controlStructureAst = tryCatchAst(tryNode, tryAst, catchAsts, Option(finallyBlock))
+    Seq(controlStructureAst)
+  }
+
+  protected def astForFinallyClause(finallyClause: DotNetNodeInfo): Seq[Ast] = {
+    Seq(astForBlock(createDotNetNodeInfo(finallyClause.json(ParserKeys.Block)), code = Option(code(finallyClause))))
+  }
+
+  /** Variables using the <a
+    * href="https://learn.microsoft.com/en-us/dotnet/api/system.idisposable?view=net-8.0">IDisposable</a> interface may
+    * be used in `using`, where a call to `Dispose` is guaranteed.
+    *
+    * Thus, this is lowered as a try-finally, with finally making a call to `Dispose` on the declared variable.
+    */
+  private def astForUsingStatement(usingStmt: DotNetNodeInfo): Seq[Ast] = {
+    val tryNode = NewControlStructure()
+      .controlStructureType(ControlStructureTypes.TRY)
+      .code("try")
+      .lineNumber(line(usingStmt))
+      .columnNumber(column(usingStmt))
+    val tryAst   = astForBlock(createDotNetNodeInfo(usingStmt.json(ParserKeys.Statement)), Option("try"))
+    val declNode = createDotNetNodeInfo(usingStmt.json(ParserKeys.Declaration))
+    val declAst  = astForNode(declNode)
+
+    val finallyAst = declAst.flatMap(_.nodes).collectFirst { case x: NewIdentifier => x.copy }.map { id =>
+      val callCode = s"${id.name}.Dispose()"
+      id.code(callCode)
+      val disposeCall = callNode(
+        usingStmt,
+        callCode,
+        "Dispose",
+        "System.Disposable.Dispose:System.Void()",
+        DispatchTypes.DYNAMIC_DISPATCH,
+        Option("System.Void()"),
+        Option("System.Void")
+      )
+      val disposeAst = callAst(disposeCall, receiver = Option(Ast(id)))
+      Ast(blockNode(usingStmt).code("finally"))
+        .withChild(disposeAst)
+    }
+
+    declAst :+ tryCatchAst(tryNode, tryAst, Seq.empty, finallyAst)
+  }
+
+  protected def astForCatchClause(catchClause: DotNetNodeInfo): Seq[Ast] = {
+    val declAst = astForNode(catchClause.json(ParserKeys.Declaration)).toList
+    val blockAst = astForBlock(
+      createDotNetNodeInfo(catchClause.json(ParserKeys.Block)),
+      code = Option(code(catchClause)),
+      prefixAsts = declAst
+    )
+    Seq(blockAst)
+  }
+
+  protected def astForCatchDeclaration(catchDeclaration: DotNetNodeInfo): Seq[Ast] = {
+    val name         = nameFromNode(catchDeclaration)
+    val typeFullName = nodeTypeFullName(catchDeclaration)
+    val _localNode   = localNode(catchDeclaration, name, name, typeFullName)
+    val localNodeAst = Ast(_localNode)
+    scope.addToScope(name, _localNode)
+    Seq(localNodeAst)
+  }
+
 }
