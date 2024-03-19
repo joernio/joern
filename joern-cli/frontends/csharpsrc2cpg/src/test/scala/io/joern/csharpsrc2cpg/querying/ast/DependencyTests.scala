@@ -1,6 +1,7 @@
 package io.joern.csharpsrc2cpg.querying.ast
 
 import io.joern.csharpsrc2cpg.testfixtures.CSharpCode2CpgFixture
+import io.joern.csharpsrc2cpg.Config
 import io.shiftleft.semanticcpg.language.*
 
 class DependencyTests extends CSharpCode2CpgFixture {
