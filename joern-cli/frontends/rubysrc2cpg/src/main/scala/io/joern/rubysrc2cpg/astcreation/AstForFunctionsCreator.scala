@@ -238,22 +238,22 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   protected def astForSingletonMethodDeclaration(node: SingletonMethodDeclaration): Ast = {
+    val fullName = computeMethodFullName(node.methodName)
+    val method = methodNode(
+      node = node,
+      name = node.methodName,
+      fullName = fullName,
+      code = code(node),
+      signature = None,
+      fileName = relativeFileName,
+      astParentType = scope.surroundingAstLabel,
+      astParentFullName = scope.surroundingScopeFullName
+    )
+
+    scope.pushNewScope(MethodScope(fullName))
+
     node.target match
       case _: SelfIdentifier =>
-        val fullName = computeMethodFullName(node.methodName)
-        val method = methodNode(
-          node = node,
-          name = node.methodName,
-          fullName = fullName,
-          code = code(node),
-          signature = None,
-          fileName = relativeFileName,
-          astParentType = scope.surroundingAstLabel,
-          astParentFullName = scope.surroundingScopeFullName
-        )
-
-        scope.pushNewScope(MethodScope(fullName))
-
         val thisParameterAst = Ast(
           newThisParameterNode(
             typeFullName = scope.surroundingTypeFullName.getOrElse(Defines.Any),
@@ -270,7 +270,28 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
         scope.popScope()
         methodAst(method, thisParameterAst +: parameterAsts, stmtBlockAst, methodReturnNode(node, Defines.Any))
+      case x: SimpleIdentifier =>
+        // This is the case for ModuleName.FuncName
+        val fullName = computeMethodFullName(node.methodName)
+        val method = methodNode(
+          node = node,
+          name = node.methodName,
+          fullName = fullName,
+          code = code(node),
+          signature = None,
+          fileName = relativeFileName,
+          astParentType = scope.surroundingAstLabel,
+          astParentFullName = scope.surroundingScopeFullName
+        )
 
+        scope.pushNewScope(MethodScope(fullName))
+
+        val parameterAsts         = astForParameters(node.parameters, true)
+        val optionalStatementList = statementListForOptionalParams(node.parameters)
+        val stmtBlockAst          = astForMethodBody(node.body, optionalStatementList)
+
+        scope.popScope()
+        methodAst(method, parameterAsts, stmtBlockAst, methodReturnNode(node, Defines.Any))
       case targetNode =>
         logger.warn(
           s"Non-self singleton method declarations are not supported yet: ${targetNode.text} (${targetNode.getClass.getSimpleName}), skipping"

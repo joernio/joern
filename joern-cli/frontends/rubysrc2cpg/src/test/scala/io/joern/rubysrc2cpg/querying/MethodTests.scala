@@ -256,4 +256,19 @@ class MethodTests extends RubyCode2CpgFixture {
 
   }
 
+  "Singleton Method" should {
+    val cpg = code("""
+        |module F
+        | def F.bar(x)
+        |   x
+        | end
+        |end
+        |
+        |F::bar(p)
+        |""".stripMargin)
+
+    "do its things" in {
+      cpg.method.name(":program").dotAst.l.foreach(println)
+    }
+  }
 }
