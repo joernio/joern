@@ -349,10 +349,14 @@ class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.cur
 
     val cpgDestinationPath = cpgDestinationPathOpt.get
 
-    if (CpgLoader.isProtoFormat(cpgFile.path)) {
-      report("You have provided a legacy proto CPG. Attempting conversion.")
+    val isProtoFormat = CpgLoader.isProtoFormat(cpgFile.path)
+    val isOverflowDbFormat = CpgLoader.isOverflowDbFormat(cpgFile.path)
+    if (isProtoFormat || isOverflowDbFormat) {
+      if (isProtoFormat) report("You have provided a legacy proto CPG. Attempting conversion.")
+      else if (isOverflowDbFormat) report("You have provided a legacy overflowdb CPG. Attempting conversion.")
       try {
-        CpgConverter.convertProtoCpgToFlatgraph(cpgFile.path.toString, cpgDestinationPath.toString)
+        val cpg = CpgLoader.load(cpgFile.path, cpgDestinationPath)
+        cpg.close()
       } catch {
         case exc: Exception =>
           report("Error converting legacy CPG: " + exc.getMessage)
