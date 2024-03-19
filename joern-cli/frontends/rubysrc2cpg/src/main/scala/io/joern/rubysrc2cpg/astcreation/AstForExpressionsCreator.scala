@@ -373,9 +373,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     scope.useProcParam match {
       case Some(param) =>
         astForReturnStatement(
-          ReturnExpression(List(
-            SimpleCall(SimpleIdentifier()(node.span.spanStart(param)), node.arguments)(node.span)
-          ))(node.span)
+          ReturnExpression(List(SimpleCall(SimpleIdentifier()(node.span.spanStart(param)), node.arguments)(node.span)))(
+            node.span
+          )
         )
       case None =>
         logger.warn(s"Yield expression outside of method scope: ${code(node)} ($relativeFileName), skipping")

@@ -141,7 +141,7 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
   }
 
   /** Get the name of the implicit or explict proc param and mark the method scope as using the proc param
-  */
+    */
   def useProcParam: Option[String] = updateSurrounding {
     case ScopeElement(MethodScope(fullName, param, _), variables) =>
       (ScopeElement(MethodScope(fullName, param, true), variables), param.fold(x => x, x => x))

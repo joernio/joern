@@ -81,7 +81,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     val anonProcParam = scope.anonProcParam.map { param =>
       val paramNode = ProcParameter(param)(node.span.spanStart(s"&$param"))
-      val nextIndex = parameterAsts.lastOption.flatMap(_.root).map { case m: NewMethodParameterIn => m.index + 1 }.getOrElse(0)
+      val nextIndex =
+        parameterAsts.lastOption.flatMap(_.root).map { case m: NewMethodParameterIn => m.index + 1 }.getOrElse(0)
       astForParameter(paramNode, nextIndex)
     }
 
