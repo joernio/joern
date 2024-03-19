@@ -20,7 +20,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   def astForExpression(expr: DotNetNodeInfo): Seq[Ast] = {
-    expr.node match
+    expr.node match {
       case _: UnaryExpr                    => astForUnaryExpression(expr)
       case _: BinaryExpr                   => astForBinaryExpression(expr)
       case _: LiteralExpr                  => astForLiteralExpression(expr)
@@ -37,6 +37,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case ConditionalAccessExpression     => astForConditionalAccessExpression(expr)
       case _: BaseLambdaExpression         => astForSimpleLambdaExpression(expr)
       case _                               => notHandledYet(expr)
+    }
   }
 
   private def astForAwaitExpression(awaitExpr: DotNetNodeInfo): Seq[Ast] = {

@@ -194,6 +194,8 @@ object DotNetJsonAst {
 
   object SwitchSection extends BaseExpr
 
+  object UsingStatement extends BaseStmt
+
   object RelationalPattern extends BasePattern
 
   object ConstantPattern extends BasePattern
