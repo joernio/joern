@@ -2,6 +2,7 @@ package io.joern.rubysrc2cpg.datastructures
 
 import better.files.File
 import io.joern.rubysrc2cpg.astcreation.GlobalTypes
+import io.joern.rubysrc2cpg.astcreation.GlobalTypes.builtinPrefix
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.datastructures.*
 import io.shiftleft.codepropertygraph.generated.NodeTypes
@@ -21,6 +22,23 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
 
   override val typesInScope: mutable.Set[RubyType] =
     mutable.Set(RubyType(GlobalTypes.builtinPrefix, builtinMethods, List.empty))
+
+  // Add some built-in methods that are significant
+  // TODO: Perhaps create an offline pre-built list of methods
+  typesInScope.addAll(
+    Seq(
+      RubyType(
+        s"$builtinPrefix.Array",
+        List(RubyMethod("[]", List.empty, s"$builtinPrefix.Array", Option(s"$builtinPrefix.Array"))),
+        List.empty
+      ),
+      RubyType(
+        s"$builtinPrefix.Hash",
+        List(RubyMethod("[]", List.empty, s"$builtinPrefix.Hash", Option(s"$builtinPrefix.Hash"))),
+        List.empty
+      )
+    )
+  )
 
   override val membersInScope: mutable.Set[MemberLike] = mutable.Set(builtinMethods*)
 
