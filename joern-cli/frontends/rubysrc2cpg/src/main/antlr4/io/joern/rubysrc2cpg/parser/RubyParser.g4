@@ -431,14 +431,7 @@ doBlock
 
 blockParameter
     :   BAR NL* BAR
-    |   BAR NL* blockParameterList NL* BAR
-    ;
-
-blockParameterList
-    :   leftHandSide
-        # singleElementBlockParameterList
-    |   multipleLeftHandSide
-        # multipleElementBlockParameterList
+    |   BAR NL* parameterList NL* BAR
     ;
 
 thenClause
