@@ -46,7 +46,7 @@ class ProcParameterAndYieldTests extends RubyCode2CpgFixture with Inspectors {
           call.name shouldBe "b"
           call.argument.code.l shouldBe List("x")
         }
-        
+
       }
     }
 
