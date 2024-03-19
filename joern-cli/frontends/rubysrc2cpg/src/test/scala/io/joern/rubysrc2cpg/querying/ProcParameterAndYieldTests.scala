@@ -20,6 +20,7 @@ class ProcParameterAndYieldTests extends RubyCode2CpgFixture with Inspectors {
           forAll(cpgs)(_.call.code("yield").name.l shouldBe List("b"))
         }
       }
+
       "without a proc parameter" should {
         val cpg1 = code("def foo() yield end")
         val cpg2 = code("def self.foo() yield end")
@@ -36,6 +37,16 @@ class ProcParameterAndYieldTests extends RubyCode2CpgFixture with Inspectors {
             param.index shouldBe i
           }
         }
+      }
+
+      "with yield arguments" should {
+        val cpg = code("def foo(x) yield(x) end")
+        "replace the yield with a call to the block parameter with arguments" in {
+          val List(call) = cpg.call.codeExact("yield(x)").l
+          call.name shouldBe "b"
+          call.argument.code.l shouldBe List("x")
+        }
+        
       }
     }
 
@@ -61,6 +72,19 @@ class ProcParameterAndYieldTests extends RubyCode2CpgFixture with Inspectors {
         ret.code shouldBe "yield"
       }
     }
+
+    "with implicitly returned yield" should {
+      val cpg = code("""
+        |def foo() 
+        |  yield
+        |end
+        |""".stripMargin)
+      "have a return node for the yield" in {
+        val List(ret) = cpg.method("foo").call.code("yield").astParent.isReturn.l
+        ret.code shouldBe "yield"
+      }
+    }
+
   }
 
 }
