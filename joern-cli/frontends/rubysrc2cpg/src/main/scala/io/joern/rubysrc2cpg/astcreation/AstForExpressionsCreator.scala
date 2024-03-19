@@ -372,10 +372,16 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   protected def astForYield(node: YieldExpr): Ast = {
     scope.useProcParam match {
       case Some(param) =>
-        astForReturnStatement(
-          ReturnExpression(List(SimpleCall(SimpleIdentifier()(node.span.spanStart(param)), node.arguments)(node.span)))(
-            node.span
-          )
+        val call = astForExpression(
+          SimpleCall(SimpleIdentifier()(node.span.spanStart(param)), node.arguments)(node.span)
+        )
+        val ret = returnAst(returnNode(node, code(node)))
+        val cond = astForExpression(
+          SimpleCall(SimpleIdentifier()(node.span.spanStart(tmpGen.fresh)), List())(node.span.spanStart("<nondet>"))
+        )
+        callAst(
+          callNode(node, code(node), Operators.conditional, Operators.conditional, DispatchTypes.STATIC_DISPATCH),
+          List(cond, call, ret)
         )
       case None =>
         logger.warn(s"Yield expression outside of method scope: ${code(node)} ($relativeFileName), skipping")

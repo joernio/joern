@@ -252,7 +252,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case node: MemberCallWithBlock => returnAstForRubyCall(node)
       case node: SimpleCallWithBlock => returnAstForRubyCall(node)
       case _: (LiteralExpr | BinaryExpression | UnaryExpression | SimpleIdentifier | IndexAccess | Association |
-            RubyCall) =>
+            YieldExpr | RubyCall) =>
         astForReturnStatement(ReturnExpression(List(node))(node.span)) :: Nil
       case node: SingleAssignment =>
         astForSingleAssignment(node) :: List(astForReturnStatement(ReturnExpression(List(node.lhs))(node.span)))
@@ -265,9 +265,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case ret: ReturnExpression => astForReturnStatement(ret) :: Nil
       case node: MethodDeclaration =>
         (astForMethodDeclaration(node) :+ astForReturnMethodDeclarationSymbolName(node)).toList
-
-      case node: YieldExpr => // Yield is already a return expression to handle do block returns
-        astForExpression(node) :: Nil
 
       case node =>
         logger.warn(
