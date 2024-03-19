@@ -8,19 +8,15 @@ import org.antlr.v4.runtime.tree.{ParseTree, RuleNode}
 import io.joern.x2cpg.Defines as XDefines;
 
 import scala.jdk.CollectionConverters.*
+import io.joern.rubysrc2cpg.utils.FreshNameGenerator
 
 /** Converts an ANTLR Ruby Parse Tree into the intermediate Ruby AST.
   */
 class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
 
-  private var classCounter: Int = 0
-
-  private def tmpClassTemplate(id: Int): String = s"<anon-class-$id>"
-
+  private val classNameGen = FreshNameGenerator(id => s"<anon-class-$id>")
   protected def freshClassName(span: TextSpan): SimpleIdentifier = {
-    val name = tmpClassTemplate(classCounter)
-    classCounter += 1
-    SimpleIdentifier(None)(span.spanStart(name))
+    SimpleIdentifier(None)(span.spanStart(classNameGen.fresh))
   }
 
   private def defaultTextSpan(code: String = ""): TextSpan = TextSpan(None, None, None, None, code)

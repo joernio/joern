@@ -7,8 +7,11 @@ import io.joern.rubysrc2cpg.passes.Defines.{RubyOperators, getBuiltInType}
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators, PropertyNames}
+import io.joern.rubysrc2cpg.utils.FreshNameGenerator
 
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
+
+  val tmpGen = FreshNameGenerator(i => s"<tmp-$i>")
 
   protected def astForExpression(node: RubyNode): Ast = node match
     case node: StaticLiteral            => astForStaticLiteral(node)
@@ -198,7 +201,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val block = blockNode(node)
     scope.pushNewScope(BlockScope(block))
 
-    val tmp = SimpleIdentifier(Option(className))(node.span.spanStart(freshVariableName()))
+    val tmp = SimpleIdentifier(Option(className))(node.span.spanStart(tmpGen.fresh))
     def tmpIdentifier = {
       val tmpAst = astForSimpleIdentifier(tmp)
       tmpAst.root.collect { case x: NewIdentifier => x.typeFullName(receiverTypeFullName) }
@@ -412,7 +415,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   protected def astForHashLiteral(node: HashLiteral): Ast = {
-    val tmp = freshVariableName()
+    val tmp = tmpGen.fresh
 
     def tmpAst(tmpNode: Option[RubyNode] = None) = astForSimpleIdentifier(
       SimpleIdentifier()(tmpNode.map(_.span).getOrElse(node.span).spanStart(tmp))

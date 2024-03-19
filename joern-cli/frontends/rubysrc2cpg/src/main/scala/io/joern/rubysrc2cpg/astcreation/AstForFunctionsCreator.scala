@@ -7,8 +7,11 @@ import io.joern.x2cpg.utils.NodeBuilders.{newClosureBindingNode, newLocalNode, n
 import io.joern.x2cpg.{Ast, AstEdge, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes, NodeTypes}
+import io.joern.rubysrc2cpg.utils.FreshNameGenerator
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
+
+  val procParamGen = FreshNameGenerator(i => Left(s"<proc-param-$i>"))
 
   /** Creates method declaration related structures.
     * @param node
@@ -40,7 +43,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     )
 
     if (methodName == XDefines.ConstructorMethodName) scope.pushNewScope(ConstructorScope(fullName))
-    else scope.pushNewScope(MethodScope(fullName, Left(freshVariableName(i => s"<proc-param-$i>"))))
+    else scope.pushNewScope(MethodScope(fullName, procParamGen.fresh))
 
     val parameterAsts = astForParameters(node.parameters)
 
@@ -271,7 +274,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           astParentFullName = scope.surroundingScopeFullName
         )
 
-        scope.pushNewScope(MethodScope(fullName, Left(freshVariableName(i => s"<proc-param-$i>"))))
+        scope.pushNewScope(MethodScope(fullName, procParamGen.fresh))
 
         val thisParameterAst = Ast(
           newThisParameterNode(

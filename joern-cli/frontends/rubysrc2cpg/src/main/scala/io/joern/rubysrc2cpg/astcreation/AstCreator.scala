@@ -27,7 +27,6 @@ class AstCreator(
     with AstForExpressionsCreator
     with AstForFunctionsCreator
     with AstForTypesCreator
-    with FreshVariableCreator
     with AstSummaryVisitor
     with AstNodeBuilder[RubyNode, AstCreator] {
 
