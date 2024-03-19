@@ -506,7 +506,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       if (getTypeFullNameFromAstNode(baseAst).equals(Defines.Any)) baseType
       else Option(getTypeFullNameFromAstNode(baseAst))
 
-    val s = Try(createDotNetNodeInfo(condAccExpr.json(ParserKeys.WhenNotNull))).toOption match {
+    Try(createDotNetNodeInfo(condAccExpr.json(ParserKeys.WhenNotNull))).toOption match {
       case Some(node) =>
         node.node match {
           case ConditionalAccessExpression =>
@@ -514,10 +514,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           case MemberBindingExpression => astForMemberBindingExpression(node, baseTypeFullName)
           case InvocationExpression =>
             astForInvocationExpression(node)
+          case _ => Seq.empty[Ast]
         }
+      case None => Seq.empty[Ast]
     }
-
-    s
   }
 
   private def astForSuppressNullableWarningExpression(suppressNullableExpr: DotNetNodeInfo): Seq[Ast] = {
