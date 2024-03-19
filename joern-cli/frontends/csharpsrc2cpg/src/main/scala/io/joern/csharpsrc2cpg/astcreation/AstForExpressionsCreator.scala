@@ -312,7 +312,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           case _ => {
             val fieldInScope = scope.findFieldInScope(fieldIdentifierName)
             val _identifierName =
-              if (fieldInScope.nonEmpty && fieldInScope.map(_.isStatic) == Option(true))
+              if (fieldInScope.nonEmpty && fieldInScope.map(_.isStatic).contains(true))
                 scope.surroundingTypeDeclFullName.getOrElse(Defines.Any)
               else Constants.This
             val _typeFullName = fieldInScope.map(_.typeFullName).getOrElse(Defines.Any)
@@ -322,9 +322,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case _ => {
         val fieldInScope = scope.findFieldInScope(fieldIdentifierName)
         val _identifierName =
-          if (fieldInScope.nonEmpty && fieldInScope.map(_.isStatic) == Option(true))
+          if (fieldInScope.nonEmpty && fieldInScope.map(_.isStatic).contains(true))
             scope.surroundingTypeDeclFullName.getOrElse(Defines.Any)
-          else "this"
+          else Constants.This
         val _typeFullName = fieldInScope.map(_.typeFullName).getOrElse(Defines.Any)
         (_identifierName, _typeFullName)
       }

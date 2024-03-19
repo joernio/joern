@@ -97,7 +97,7 @@ class MemberAccessTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "have correct types both on the LHS and RHS" in {
-      inside(cpg.assignment.l.sortBy(_.lineNumber).drop(1).l) {
+      inside(cpg.assignment.l.sortBy(_.lineNumber).drop(1)) {
         case a :: Nil =>
           inside(a.argument.l) { case (lhs: Identifier) :: (rhs: Call) :: Nil =>
             lhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
@@ -126,7 +126,7 @@ class MemberAccessTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "have correct types and attributes both on the LHS and RHS" in {
-      inside(cpg.assignment.l.sortBy(_.lineNumber).drop(1).l) {
+      inside(cpg.assignment.l.sortBy(_.lineNumber).drop(1)) {
         case a :: b :: Nil =>
           inside(a.argument.l) {
             case (lhs: Identifier) :: (rhs: Call) :: Nil =>
