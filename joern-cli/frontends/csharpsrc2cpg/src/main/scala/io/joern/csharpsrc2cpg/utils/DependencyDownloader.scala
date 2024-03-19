@@ -22,7 +22,12 @@ import scala.util.{Failure, Success, Try, Using}
   * @see
   *   <a href="https://learn.microsoft.com/en-us/nuget/api/overview">NuGet API</a>
   */
-class DependencyDownloader(cpg: Cpg, config: Config, internalProgramSummary: CSharpProgramSummary) {
+class DependencyDownloader(
+  cpg: Cpg,
+  config: Config,
+  internalProgramSummary: CSharpProgramSummary,
+  internalPackages: Set[String] = Set.empty
+) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -49,8 +54,8 @@ class DependencyDownloader(cpg: Cpg, config: Config, internalProgramSummary: CSh
     *   true if the dependency is already in the given summary, false if otherwise.
     */
   private def isAlreadySummarized(dependency: Dependency): Boolean = {
-    // TODO: Implement
-    false
+    // TODO: Check internalSummaries too
+    internalPackages.contains(dependency.name)
   }
 
   private case class NuGetPackageVersions(versions: List[String]) derives ReadWriter
@@ -67,12 +72,17 @@ class DependencyDownloader(cpg: Cpg, config: Config, internalProgramSummary: CSh
     */
   private def downloadDependency(targetDir: File, dependency: Dependency): Unit = {
 
-    def getVersion(packageName: String): Option[String] = {
+    def getVersion(packageName: String): Option[String] = Try {
       Using.resource(URI(s"https://$NUGET_BASE_API_V3/${packageName.toLowerCase}/index.json").toURL.openStream()) {
         is =>
           Try(read[NuGetPackageVersions](ujson.Readable.fromByteArray(is.readAllBytes()))).toOption
             .flatMap(_.versions.lastOption)
       }
+    } match {
+      case Failure(_) =>
+        logger.error(s"Unable to resolve `index.json` for `$packageName`, skipping...`")
+        None
+      case Success(x) => x
     }
 
     def createUrl(packageType: String, version: String): URL = {
@@ -168,12 +178,14 @@ class DependencyDownloader(cpg: Cpg, config: Config, internalProgramSummary: CSh
 
     // Move and merge files
     val libDir = targetDir / "lib"
-    // Sometimes these dependencies will include DLLs for multiple version of dotnet, we only want one
-    libDir.listRecursively.filterNot(_.isDirectory).distinctBy(_.name).foreach { f =>
-      f.copyTo(targetDir / f.name)
+    if (libDir.isDirectory) {
+      // Sometimes these dependencies will include DLLs for multiple version of dotnet, we only want one
+      libDir.listRecursively.filterNot(_.isDirectory).distinctBy(_.name).foreach { f =>
+        f.copyTo(targetDir / f.name)
+      }
+      // Clean-up lib dir
+      libDir.delete(swallowIOExceptions = true)
     }
-    // Clean-up lib dir
-    libDir.delete(swallowIOExceptions = true)
   }
 
   /** Given a directory of all the summaries, will produce a summary thereof.

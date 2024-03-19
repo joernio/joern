@@ -445,9 +445,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .arr
       .map(createDotNetNodeInfo)
       .flatMap { expr =>
-        expr.node match
+        expr.node match {
           case InterpolatedStringText => astForInterpolatedStringText(expr)
           case Interpolation          => astForInterpolation(expr)
+          case _                      => Nil
+        }
       }
       .toSeq
 
@@ -456,13 +458,17 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .json(ParserKeys.Contents)
       .arr
       .map(createDotNetNodeInfo)
-      .map { node =>
-        node.node match
+      .flatMap { node =>
+        node.node match {
           case InterpolatedStringText =>
-            node
-              .json(ParserKeys.TextToken)(ParserKeys.Value)
-              .str // Accessing node.json directly because DotNetNodeInfo contains stripped code, and does not contain braces
-          case Interpolation => node.json(ParserKeys.MetaData)(ParserKeys.Code).str
+            Try(
+              node
+                .json(ParserKeys.TextToken)(ParserKeys.Value)
+                .str
+            ).toOption // Accessing node.json directly because DotNetNodeInfo contains stripped code, and does not contain braces
+          case Interpolation => Try(node.json(ParserKeys.MetaData)(ParserKeys.Code).str).toOption
+          case _             => None
+        }
       }
       .mkString("")
 

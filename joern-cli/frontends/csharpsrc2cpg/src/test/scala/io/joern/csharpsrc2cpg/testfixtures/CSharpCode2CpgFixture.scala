@@ -63,7 +63,9 @@ class DefaultTestCpgWithCSharp extends DefaultTestCpg with CSharpFrontend with S
   }
 
   override def applyPostProcessingPasses(): Unit = {
-    CSharpSrc2Cpg.postProcessingPasses(this, config).foreach(_.createAndApply())
+    CSharpSrc2Cpg
+      .postProcessingPasses(this, getConfig().map(_.asInstanceOf[Config]).getOrElse(defaultConfig))
+      .foreach(_.createAndApply())
     super.applyPostProcessingPasses()
   }
 
@@ -73,7 +75,7 @@ trait CSharpFrontend extends LanguageFrontend {
 
   override val fileSuffix: String = ".cs"
 
-  implicit val config: Config =
+  implicit lazy val defaultConfig: Config =
     getConfig()
       .map(_.asInstanceOf[Config])
       .getOrElse(Config().withSchemaValidation(ValidationMode.Enabled))
