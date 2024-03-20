@@ -266,7 +266,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         val fullName = computeMethodFullName(node.methodName)
         scope.pushNewScope(MethodScope(fullName, procParamGen.fresh))
 
-        val (astParentType, astParentFullName, thisParamName, addEdge) = targetNode match {
+        val (astParentType, astParentFullName, thisParamCode, addEdge) = targetNode match {
           case _: SelfIdentifier =>
             (scope.surroundingAstLabel, scope.surroundingScopeFullName, Defines.This, false)
           case _: SimpleIdentifier =>
@@ -297,8 +297,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
         val thisParameterAst = Ast(
           newThisParameterNode(
-            name = thisParamName,
-            code = thisParamName,
+            code = thisParamCode,
             typeFullName = astParentFullName.getOrElse(Defines.Any),
             line = method.lineNumber,
             column = method.columnNumber

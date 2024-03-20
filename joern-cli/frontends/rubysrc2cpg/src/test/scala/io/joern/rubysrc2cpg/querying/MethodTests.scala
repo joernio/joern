@@ -276,7 +276,8 @@ class MethodTests extends RubyCode2CpgFixture {
         case bar :: baz :: Nil =>
           inside(bar.parameter.l) {
             case thisParam :: xParam :: Nil =>
-              thisParam.name shouldBe "F"
+              thisParam.name shouldBe "this"
+              thisParam.code shouldBe "F"
               thisParam.typeFullName shouldBe "Test0.rb:<global>::program.F"
 
               xParam.name shouldBe "x"
@@ -285,10 +286,12 @@ class MethodTests extends RubyCode2CpgFixture {
 
           inside(baz.parameter.l) {
             case thisParam :: xParam :: Nil =>
-              thisParam.name shouldBe "F"
+              thisParam.name shouldBe "this"
+              thisParam.code shouldBe "F"
               thisParam.typeFullName shouldBe "Test0.rb:<global>::program.F"
 
               xParam.name shouldBe "x"
+              xParam.code shouldBe "x"
             case xs => fail(s"Expected two parameters, got ${xs.name.mkString(", ")}")
           }
         case xs => fail(s"Expected bar and baz to exist under F, instead got ${xs.code.mkString(", ")}")
