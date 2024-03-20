@@ -7,8 +7,11 @@ import io.joern.x2cpg.utils.NodeBuilders.{newClosureBindingNode, newLocalNode, n
 import io.joern.x2cpg.{Ast, AstEdge, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes, NodeTypes}
+import io.joern.rubysrc2cpg.utils.FreshNameGenerator
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
+
+  val procParamGen = FreshNameGenerator(i => Left(s"<proc-param-$i>"))
 
   /** Creates method declaration related structures.
     * @param node
@@ -40,7 +43,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     )
 
     if (methodName == XDefines.ConstructorMethodName) scope.pushNewScope(ConstructorScope(fullName))
-    else scope.pushNewScope(MethodScope(fullName))
+    else scope.pushNewScope(MethodScope(fullName, procParamGen.fresh))
 
     val parameterAsts = astForParameters(node.parameters)
 
@@ -76,12 +79,19 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       astForMethodBody(node.body, optionalStatementList)
     }
 
+    val anonProcParam = scope.anonProcParam.map { param =>
+      val paramNode = ProcParameter(param)(node.span.spanStart(s"&$param"))
+      val nextIndex =
+        parameterAsts.lastOption.flatMap(_.root).map { case m: NewMethodParameterIn => m.index + 1 }.getOrElse(0)
+      astForParameter(paramNode, nextIndex)
+    }
+
     scope.popScope()
 
     val modifiers =
       ModifierTypes.VIRTUAL :: (if isClosure then ModifierTypes.LAMBDA :: Nil else Nil) map newModifierNode
 
-    methodAst(method, parameterAsts, stmtBlockAst, methodReturn, modifiers) :: refs
+    methodAst(method, parameterAsts ++ anonProcParam, stmtBlockAst, methodReturn, modifiers) :: refs
   }
 
   private def transformAsClosureBody(refs: List[Ast], baseStmtBlockAst: Ast) = {
@@ -140,6 +150,19 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           typeFullName = None
         )
         scope.addToScope(node.name, parameterIn)
+        Ast(parameterIn)
+      case node: ProcParameter =>
+        val parameterIn = parameterInNode(
+          node = node,
+          name = node.name,
+          code = code(node),
+          index = index,
+          isVariadic = false,
+          evaluationStrategy = EvaluationStrategies.BY_REFERENCE,
+          typeFullName = None
+        )
+        scope.addToScope(node.name, parameterIn)
+        scope.setProcParam(node.name)
         Ast(parameterIn)
       case node: CollectionParameter =>
         val typeFullName = node match {
@@ -252,7 +275,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           astParentFullName = scope.surroundingScopeFullName
         )
 
-        scope.pushNewScope(MethodScope(fullName))
+        scope.pushNewScope(MethodScope(fullName, procParamGen.fresh))
 
         val thisParameterAst = Ast(
           newThisParameterNode(
@@ -268,8 +291,20 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
         val stmtBlockAst = astForMethodBody(node.body, optionalStatementList)
 
+        val anonProcParam = scope.anonProcParam.map { param =>
+          val paramNode = ProcParameter(param)(node.span.spanStart(s"&$param"))
+          val nextIndex =
+            parameterAsts.lastOption.flatMap(_.root).map { case m: NewMethodParameterIn => m.index + 1 }.getOrElse(1)
+          astForParameter(paramNode, nextIndex)
+        }
+
         scope.popScope()
-        methodAst(method, thisParameterAst +: parameterAsts, stmtBlockAst, methodReturnNode(node, Defines.Any))
+        methodAst(
+          method,
+          (thisParameterAst +: parameterAsts) ++ anonProcParam,
+          stmtBlockAst,
+          methodReturnNode(node, Defines.Any)
+        )
 
       case targetNode =>
         logger.warn(

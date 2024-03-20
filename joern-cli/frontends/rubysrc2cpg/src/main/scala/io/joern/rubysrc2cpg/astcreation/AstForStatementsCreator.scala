@@ -160,7 +160,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     }
     def generatedNode: StatementList = node.expression
       .map { e =>
-        val tmp = SimpleIdentifier(None)(e.span.spanStart(freshVariableName))
+        val tmp = SimpleIdentifier(None)(e.span.spanStart(tmpGen.fresh))
         StatementList(
           List(SingleAssignment(tmp, "=", e)(e.span)) ++
             goCase(Some(tmp))
@@ -252,7 +252,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case node: MemberCallWithBlock => returnAstForRubyCall(node)
       case node: SimpleCallWithBlock => returnAstForRubyCall(node)
       case _: (LiteralExpr | BinaryExpression | UnaryExpression | SimpleIdentifier | IndexAccess | Association |
-            RubyCall) =>
+            YieldExpr | RubyCall) =>
         astForReturnStatement(ReturnExpression(List(node))(node.span)) :: Nil
       case node: SingleAssignment =>
         astForSingleAssignment(node) :: List(astForReturnStatement(ReturnExpression(List(node.lhs))(node.span)))
@@ -265,6 +265,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case ret: ReturnExpression => astForReturnStatement(ret) :: Nil
       case node: MethodDeclaration =>
         (astForMethodDeclaration(node) :+ astForReturnMethodDeclarationSymbolName(node)).toList
+
       case node =>
         logger.warn(
           s"Implicit return here not supported yet: ${node.text} (${node.getClass.getSimpleName}), only generating statement"

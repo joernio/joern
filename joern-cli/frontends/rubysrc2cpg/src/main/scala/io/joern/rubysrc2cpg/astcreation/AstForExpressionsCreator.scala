@@ -7,8 +7,11 @@ import io.joern.rubysrc2cpg.passes.Defines.{RubyOperators, getBuiltInType}
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators, PropertyNames}
+import io.joern.rubysrc2cpg.utils.FreshNameGenerator
 
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
+
+  val tmpGen = FreshNameGenerator(i => s"<tmp-$i>")
 
   protected def astForExpression(node: RubyNode): Ast = node match
     case node: StaticLiteral            => astForStaticLiteral(node)
@@ -26,6 +29,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case node: SimpleCall               => astForSimpleCall(node)
     case node: RequireCall              => astForRequireCall(node)
     case node: IncludeCall              => astForIncludeCall(node)
+    case node: YieldExpr                => astForYield(node)
     case node: RangeExpression          => astForRange(node)
     case node: ArrayLiteral             => astForArrayLiteral(node)
     case node: HashLiteral              => astForHashLiteral(node)
@@ -197,7 +201,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val block = blockNode(node)
     scope.pushNewScope(BlockScope(block))
 
-    val tmp = SimpleIdentifier(Option(className))(node.span.spanStart(freshVariableName))
+    val tmp = SimpleIdentifier(Option(className))(node.span.spanStart(tmpGen.fresh))
     def tmpIdentifier = {
       val tmpAst = astForSimpleIdentifier(tmp)
       tmpAst.root.collect { case x: NewIdentifier => x.typeFullName(receiverTypeFullName) }
@@ -365,6 +369,27 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     astForSimpleCall(node.asSimpleCall)
   }
 
+  protected def astForYield(node: YieldExpr): Ast = {
+    scope.useProcParam match {
+      case Some(param) =>
+        val call = astForExpression(
+          SimpleCall(SimpleIdentifier()(node.span.spanStart(param)), node.arguments)(node.span)
+        )
+        val ret = returnAst(returnNode(node, code(node)))
+        val cond = astForExpression(
+          SimpleCall(SimpleIdentifier()(node.span.spanStart(tmpGen.fresh)), List())(node.span.spanStart("<nondet>"))
+        )
+        callAst(
+          callNode(node, code(node), Operators.conditional, Operators.conditional, DispatchTypes.STATIC_DISPATCH),
+          List(cond, call, ret)
+        )
+      case None =>
+        logger.warn(s"Yield expression outside of method scope: ${code(node)} ($relativeFileName), skipping")
+        astForUnknown(node)
+
+    }
+  }
+
   protected def astForRange(node: RangeExpression): Ast = {
     val lbAst = astForExpression(node.lowerBound)
     val ubAst = astForExpression(node.upperBound)
@@ -398,7 +423,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   protected def astForHashLiteral(node: HashLiteral): Ast = {
-    val tmp = freshVariableName
+    val tmp = tmpGen.fresh
 
     def tmpAst(tmpNode: Option[RubyNode] = None) = astForSimpleIdentifier(
       SimpleIdentifier()(tmpNode.map(_.span).getOrElse(node.span).spanStart(tmp))

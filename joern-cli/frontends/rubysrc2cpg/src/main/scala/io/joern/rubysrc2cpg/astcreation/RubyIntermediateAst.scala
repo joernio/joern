@@ -110,9 +110,7 @@ object RubyIntermediateAst {
 
   final case class HashParameter(name: String)(span: TextSpan) extends RubyNode(span) with CollectionParameter
 
-  final case class ProcParameter(target: RubyNode)(span: TextSpan) extends RubyNode(span) with MethodParameter {
-    def name: String = target.text
-  }
+  final case class ProcParameter(name: String)(span: TextSpan) extends RubyNode(span) with MethodParameter
 
   final case class SingleAssignment(lhs: RubyNode, op: String, rhs: RubyNode)(span: TextSpan) extends RubyNode(span)
 
@@ -302,6 +300,8 @@ object RubyIntermediateAst {
   /** Represents standalone `proc { ... }` or `lambda { ... }` expressions
     */
   final case class ProcOrLambdaExpr(block: Block)(span: TextSpan) extends RubyNode(span)
+
+  final case class YieldExpr(arguments: List[RubyNode])(span: TextSpan) extends RubyNode(span)
 
   /** Represents a call with a block argument.
     */
