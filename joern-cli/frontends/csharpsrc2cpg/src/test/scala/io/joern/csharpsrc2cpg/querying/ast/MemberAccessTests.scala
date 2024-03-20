@@ -153,4 +153,125 @@ class MemberAccessTests extends CSharpCode2CpgFixture {
       }
     }
   }
+
+  "conditional method access expressions for chained calls" should {
+    val cpg = code("""
+        |namespace Foo {
+        | public class Baz {
+        |   public int Qux() {}
+        |   public Baz Fred(int a) {}
+        | }
+        | public class Bar {
+        |   public static void Main() {
+        |     var baz = new Baz();
+        |     var b = baz?.Fred(1)?.Fred(2)?.Qux();
+        |   }
+        | }
+        |}
+        |""".stripMargin)
+
+    "have correct types and attributes both on the LHS and RHS" in {
+      inside(cpg.assignment.l.sortBy(_.lineNumber).drop(1).l) {
+        case a :: Nil =>
+          inside(a.argument.l) {
+            case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+              lhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
+              rhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
+            case _ => fail("Expected 2 arguments under the assignment call")
+          }
+        case _ => fail("Expected 1 assignment call.")
+      }
+    }
+  }
+
+  "chained calls for fields and methods together" should {
+    "combination of method access expression for chained fields" should {
+      val cpg = code("""
+          |namespace Foo {
+          | public class Baz {
+          |   public Baz Qux {get;}
+          |   public int Fred() {}
+          | }
+          | public class Bar {
+          |   public static void Main() {
+          |     var baz = new Baz();
+          |     var b = baz.Qux.Qux.Qux.Fred();
+          |   }
+          | }
+          |}
+          |""".stripMargin)
+
+      "have correct types and attributes both on the LHS and RHS" in {
+        inside(cpg.assignment.l.sortBy(_.lineNumber).drop(1).l) {
+          case a :: Nil =>
+            inside(a.argument.l) {
+              case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+                lhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
+                rhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
+              case _ => fail("Expected 2 arguments under the assignment call")
+            }
+          case _ => fail("Expected 1 assignment call.")
+        }
+      }
+    }
+  }
+
+  "conditional method access expression for chained fields" should {
+    val cpg = code("""
+      |namespace Foo {
+      | public class Baz {
+      |   public Baz Qux {get;}
+      | }
+      | public class Bar {
+      |   public static void Main() {
+      |     var baz = new Baz();
+      |     var b = baz?.Qux?.Qux;
+      |   }
+      | }
+      |}
+      |""".stripMargin)
+
+    "have correct types and attributes both on the LHS and RHS" in {
+      inside(cpg.assignment.l.sortBy(_.lineNumber).drop(1).l) {
+        case a :: Nil =>
+          inside(a.argument.l) {
+            case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+              lhs.typeFullName shouldBe "Foo.Baz"
+              rhs.typeFullName shouldBe "Foo.Baz"
+            case _ => fail("Expected 2 arguments under the assignment call")
+          }
+        case _ => fail("Expected 1 assignment call.")
+      }
+    }
+  }
+
+  "combination of method access expression for chained fields" should {
+    val cpg = code("""
+        |namespace Foo {
+        | public class Baz {
+        |   public Baz Qux {get;}
+        |   public int Fred() {}
+        | }
+        | public class Bar {
+        |   public static void Main() {
+        |     var baz = new Baz();
+        |     var b = baz.Qux?.Qux!.Qux.Fred();
+        |   }
+        | }
+        |}
+        |""".stripMargin)
+
+    "have correct types and attributes both on the LHS and RHS" in {
+      inside(cpg.assignment.l.sortBy(_.lineNumber).drop(1).l) {
+        case a :: Nil =>
+          inside(a.argument.l) {
+            case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+              lhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
+              rhs.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
+            case _ => fail("Expected 2 arguments under the assignment call")
+          }
+        case _ => fail("Expected 1 assignment call.")
+      }
+    }
+  }
 }

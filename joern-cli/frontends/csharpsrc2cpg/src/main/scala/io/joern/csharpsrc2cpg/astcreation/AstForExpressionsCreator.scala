@@ -495,40 +495,59 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     )
   }
 
-  private def astForConditionalAccessExpression(condAccExpr: DotNetNodeInfo): Seq[Ast] = {
+  private def astForConditionalAccessExpression(
+    condAccExpr: DotNetNodeInfo,
+    baseType: Option[String] = None
+  ): Seq[Ast] = {
     val baseNode = createDotNetNodeInfo(condAccExpr.json(ParserKeys.Expression))
     val baseAst  = astForNode(baseNode)
 
-    val fieldIdentifier = fieldIdentifierNode(baseNode, baseNode.code, baseNode.code)
+    val baseTypeFullName =
+      if (getTypeFullNameFromAstNode(baseAst).equals(Defines.Any)) baseType
+      else Option(getTypeFullNameFromAstNode(baseAst))
 
-    val baseTypeFullName = getTypeFullNameFromAstNode(baseAst)
-
-    Try(createDotNetNodeInfo(condAccExpr.json(ParserKeys.WhenNotNull)(ParserKeys.Name))).toOption match {
+    Try(createDotNetNodeInfo(condAccExpr.json(ParserKeys.WhenNotNull))).toOption match {
       case Some(node) =>
-        // Got a member access
-        val typ = scope
-          .tryResolveFieldAccess(node.code, Option(baseTypeFullName))
-          .map(_.typeName)
-          .orElse(Option(Defines.Any))
-
-        val identifier      = newIdentifierNode(baseNode.code, baseTypeFullName)
-        val fieldAccessCode = s"${baseNode.code}?.${node.code}"
-        val fieldAccess = newOperatorCallNode(
-          Operators.fieldAccess,
-          fieldAccessCode,
-          typ,
-          condAccExpr.lineNumber,
-          condAccExpr.columnNumber
-        )
-        val fieldIdentifierAst = Ast(fieldIdentifier)
-
-        Seq(callAst(fieldAccess, baseAst ++ Seq(fieldIdentifierAst)))
-      case _ => astForInvocationExpression(createDotNetNodeInfo(condAccExpr.json(ParserKeys.WhenNotNull)))
+        node.node match {
+          case ConditionalAccessExpression =>
+            astForConditionalAccessExpression(node, baseTypeFullName)
+          case MemberBindingExpression => astForMemberBindingExpression(node, baseTypeFullName)
+          case InvocationExpression =>
+            astForInvocationExpression(node)
+          case _ => astForNode(node)
+        }
+      case None => Seq.empty[Ast]
     }
   }
 
   private def astForSuppressNullableWarningExpression(suppressNullableExpr: DotNetNodeInfo): Seq[Ast] = {
     val _identifierNode = createDotNetNodeInfo(suppressNullableExpr.json(ParserKeys.Operand))
     Seq(astForIdentifier(_identifierNode))
+  }
+
+  private def astForMemberBindingExpression(
+    memberBindingExpr: DotNetNodeInfo,
+    baseTypeFullName: Option[String] = None
+  ): Seq[Ast] = {
+    val typ = scope
+      .tryResolveFieldAccess(nameFromNode(memberBindingExpr), baseTypeFullName)
+      .map(_.typeName)
+      .map(f => scope.tryResolveTypeReference(f).map(_.name).orElse(Option(f)))
+      .getOrElse(Option(Defines.Any))
+
+    val fieldIdentifier = fieldIdentifierNode(memberBindingExpr, memberBindingExpr.code, memberBindingExpr.code)
+
+    val identifier = newIdentifierNode(memberBindingExpr.code, baseTypeFullName.getOrElse(Defines.Any))
+    val fieldAccess =
+      newOperatorCallNode(
+        Operators.fieldAccess,
+        memberBindingExpr.code,
+        typ,
+        memberBindingExpr.lineNumber,
+        memberBindingExpr.columnNumber
+      )
+    val fieldIdentifierAst = Ast(fieldIdentifier)
+
+    Seq(callAst(fieldAccess, Seq(Ast(identifier)) ++ Seq(fieldIdentifierAst)))
   }
 }
