@@ -125,7 +125,7 @@ methodOnlyIdentifier
     :   (CONSTANT_IDENTIFIER | LOCAL_VARIABLE_IDENTIFIER | pseudoVariable) (EMARK | QMARK | EQ)
     ;
     
-methodInvocationWithoutParentheses dave/
+methodInvocationWithoutParentheses
     :   command
         # commandMethodInvocationWithoutParentheses
     |   chainedCommandWithDoBlock ((DOT | COLON2) methodName commandArgumentList)?
