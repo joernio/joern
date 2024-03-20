@@ -5,16 +5,19 @@ import io.joern.rubysrc2cpg.parser.AntlrContextHelpers.*
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import org.antlr.v4.runtime.tree.{ParseTree, RuleNode}
-import io.joern.x2cpg.Defines as XDefines;
+import io.joern.x2cpg.Defines as XDefines
 
 import scala.jdk.CollectionConverters.*
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
+import org.slf4j.LoggerFactory
 
 /** Converts an ANTLR Ruby Parse Tree into the intermediate Ruby AST.
   */
 class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
 
+  private val logger       = LoggerFactory.getLogger(getClass)
   private val classNameGen = FreshNameGenerator(id => s"<anon-class-$id>")
+
   protected def freshClassName(span: TextSpan): SimpleIdentifier = {
     SimpleIdentifier(None)(span.spanStart(classNameGen.fresh))
   }
@@ -724,9 +727,6 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     val loweredClassDecls = lowerSingletonClassDeclarations(ctxBodyStatement)
 
     /** Generates SingleAssignment RubyNodes for list of fields and fields found in method decls
-      * @param fields
-      * @param fieldsInMethodDecls
-      * @return
       */
     def genSingleAssignmentStmtList(
       fields: List[RubyNode],
@@ -740,8 +740,6 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     }
 
     /** Partition RubyFields into InstanceFieldIdentifiers and ClassFieldIdentifiers
-      * @param fields
-      * @return
       */
     def partitionRubyFields(fields: List[RubyNode]): (List[RubyNode], List[RubyNode]) = {
       fields.partition {
@@ -807,8 +805,57 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     }
   }
 
+  /** Detects the alias statements and creates methods that reference the aliased method as a call.
+    * @param classBody
+    *   the class body node
+    * @return
+    *   the class body as a statement list.
+    */
+  private def lowerAliasStatementsToMethods(classBody: RubyNode): StatementList = {
+
+    val classBodyStmts = classBody match {
+      case StatementList(stmts) => stmts
+      case x                    => List(x)
+    }
+
+    val methodParamMap = classBodyStmts.collect { case method: MethodDeclaration =>
+      method.methodName -> method.parameters
+    }.toMap
+
+    val loweredMethods = classBodyStmts.collect { case alias: AliasStatement =>
+      methodParamMap.get(alias.oldName) match {
+        case Some(aliasingMethodParams) =>
+          MethodDeclaration(
+            alias.newName,
+            aliasingMethodParams,
+            StatementList(
+              SimpleCall(
+                SimpleIdentifier(None)(alias.span.spanStart(alias.oldName)),
+                aliasingMethodParams.map { x => SimpleIdentifier(None)(alias.span.spanStart(x.span.text)) }
+              )(alias.span) :: Nil
+            )(alias.span)
+          )(alias.span)
+        case None =>
+          logger.warn(
+            s"Unable to correctly lower aliased method ${alias.oldName}, the result will be in degraded parameter/argument flows"
+          )
+          MethodDeclaration(
+            alias.newName,
+            List.empty,
+            StatementList(
+              SimpleCall(SimpleIdentifier(None)(alias.span.spanStart(alias.oldName)), List.empty)(alias.span) :: Nil
+            )(alias.span)
+          )(alias.span)
+      }
+    }
+
+    StatementList(classBodyStmts.filterNot(_.isInstanceOf[AliasStatement]) ++ loweredMethods)(classBody.span)
+  }
+
   override def visitClassDefinition(ctx: RubyParser.ClassDefinitionContext): RubyNode = {
-    val (stmts, fields) = genInitFieldStmts(ctx.bodyStatement())
+    val (nonFieldStmts, fields) = genInitFieldStmts(ctx.bodyStatement())
+
+    val stmts = lowerAliasStatementsToMethods(nonFieldStmts)
 
     ClassDeclaration(visit(ctx.classPath()), Option(ctx.commandOrPrimaryValue()).map(visit), stmts, fields)(
       ctx.toTextSpan
@@ -967,6 +1014,10 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     } else {
       Unknown()(ctx.toTextSpan)
     }
+  }
+
+  override def visitAliasStatement(ctx: RubyParser.AliasStatementContext): RubyNode = {
+    AliasStatement(ctx.oldName.getText, ctx.newName.getText)(ctx.toTextSpan)
   }
 
 }

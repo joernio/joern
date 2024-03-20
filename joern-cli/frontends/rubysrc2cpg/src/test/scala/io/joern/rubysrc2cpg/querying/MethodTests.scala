@@ -1,6 +1,7 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.Return
 import io.shiftleft.semanticcpg.language.*
@@ -251,6 +252,49 @@ class MethodTests extends RubyCode2CpgFixture {
           ys.isVariadic shouldBe true
           ys.typeFullName shouldBe "__builtin.Hash"
         case xs => fail(s"Expected `foo` to have one parameter, got [${xs.code.mkString(", ")}]")
+      }
+    }
+
+  }
+
+  "aliased methods" should {
+
+    val cpg = code("""
+        |class Foo
+        |    @x = 0
+        |    def x=(z)
+        |        @x = z
+        |    end
+        |
+        |    def x
+        |        @x
+        |    end
+        |
+        |    alias x= bar=
+        |end
+        |
+        |foo = Foo.new
+        |
+        |foo.bar= 1
+        |
+        |puts foo.x # => 1
+        |""".stripMargin)
+
+    "create a method under `Foo` for both `x=`, `x`, and `bar=`, where `bar=` forwards parameters to a call to `x=`" in {
+      inside(cpg.typeDecl("Foo").l) {
+        case foo :: Nil =>
+          inside(foo.method.nameNot(Defines.ConstructorMethodName, Defines.StaticInitMethodName).l) {
+            case xeq :: x :: bar :: Nil =>
+              xeq.name shouldBe "x="
+              x.name shouldBe "x"
+              bar.name shouldBe "bar="
+
+              xeq.parameter.name.l shouldBe bar.parameter.name.l
+              // bar forwards parameters to a call to the aliased method
+              bar.call.name("x=").argument.isIdentifier.name.head shouldBe "z"
+            case xs => fail(s"Expected a three virtual methods under `Foo`, instead got [${xs.code.mkString(",")}]")
+          }
+        case xs => fail(s"Expected a single type decl for `Foo`, instead got [${xs.code.mkString(",")}]")
       }
     }
 
