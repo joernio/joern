@@ -55,8 +55,9 @@ class DependencyDownloader(
     */
   private def isAlreadySummarized(dependency: Dependency): Boolean = {
     // TODO: `namespace` != `packageId`, so we may want to have summaries store the `packageId` in future
-    internalProgramSummary.namespaceToType.keySet.exists(_.startsWith(dependency.name)) ||
-    internalPackages.contains(dependency.name)
+    internalProgramSummary.namespaceToType.keySet.exists(_.startsWith(dependency.name)) || internalPackages.contains(
+      dependency.name
+    )
   }
 
   private case class NuGetPackageVersions(versions: List[String]) derives ReadWriter
