@@ -256,7 +256,7 @@ class MethodTests extends RubyCode2CpgFixture {
 
   }
 
-  "Singleton Method" should {
+  "Singleton Methods for module scope" should {
     val cpg = code("""
         |module F
         | def F.bar(x)
@@ -271,8 +271,40 @@ class MethodTests extends RubyCode2CpgFixture {
         |F::bar(p)
         |""".stripMargin)
 
-    "do its things" in {
-      cpg.method.name(":program").dotAst.l.foreach(println)
+    "exist under the module TYPE_DECL" in {
+      inside(cpg.typeDecl.name("F").method.l) {
+        case bar :: baz :: Nil =>
+          inside(bar.parameter.l) {
+            case thisParam :: xParam :: Nil =>
+              thisParam.name shouldBe "F"
+              thisParam.typeFullName shouldBe "Test0.rb:<global>::program.F"
+
+              xParam.name shouldBe "x"
+            case xs => fail(s"Expected two parameters, got ${xs.name.mkString(", ")}")
+          }
+
+          inside(baz.parameter.l) {
+            case thisParam :: xParam :: Nil =>
+              thisParam.name shouldBe "F"
+              thisParam.typeFullName shouldBe "Test0.rb:<global>::program.F"
+
+              xParam.name shouldBe "x"
+            case xs => fail(s"Expected two parameters, got ${xs.name.mkString(", ")}")
+          }
+        case xs => fail(s"Expected bar and baz to exist under F, instead got ${xs.code.mkString(", ")}")
+      }
+    }
+
+    "baz should not exist in the :program block" in {
+      inside(cpg.method.name(":program").l) {
+        case prog :: Nil =>
+          inside(prog.block.astChildren.isMethod.name("baz").l) {
+            case Nil => // passing case
+            case _   => fail("Baz should not exist under program method block")
+          }
+        case _ => fail("Expected one Method for :program")
+      }
     }
   }
+
 }
