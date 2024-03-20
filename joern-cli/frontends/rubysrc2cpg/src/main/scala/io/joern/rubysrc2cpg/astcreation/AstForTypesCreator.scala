@@ -125,7 +125,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       astParentType = scope.surroundingAstLabel,
       astParentFullName = scope.surroundingScopeFullName
     )
-    scope.pushNewScope(MethodScope(fullName))
+    scope.pushNewScope(MethodScope(fullName, procParamGen.fresh))
     val block_ = blockNode(node)
     scope.pushNewScope(BlockScope(block_))
     // TODO: Should it be `return this.@abc`?
@@ -155,7 +155,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       astParentType = scope.surroundingAstLabel,
       astParentFullName = scope.surroundingScopeFullName
     )
-    scope.pushNewScope(MethodScope(fullName))
+    scope.pushNewScope(MethodScope(fullName, procParamGen.fresh))
     val parameter = parameterInNode(node, "x", "x", 1, false, EvaluationStrategies.BY_REFERENCE)
     val methodBody = {
       val block_ = blockNode(node)

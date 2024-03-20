@@ -57,7 +57,8 @@ trait MethodLikeScope extends TypedScopeElement {
   def fullName: String
 }
 
-case class MethodScope(fullName: String) extends MethodLikeScope
+case class MethodScope(fullName: String, procParam: Either[String, String], hasYield: Boolean = false)
+    extends MethodLikeScope
 
 case class ConstructorScope(fullName: String) extends MethodLikeScope
 

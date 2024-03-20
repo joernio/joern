@@ -258,7 +258,23 @@ class DoBlockTests extends RubyCode2CpgFixture {
         case xs => fail(s"Unexpected `foo` assignment children [${xs.code.mkString(",")}]")
       }
     }
+  }
 
+  "Hash parameter for Do-block" should {
+    val cpg = code("""
+        |  define_method(name) do |**args| # <--- Parser error on this line
+        |          setting_type.fetch(sendgrid_client: sendgrid_client, name: name, query_params: args)
+        |        end
+        |""".stripMargin)
+
+    "Create correct parameter for args" in {
+      inside(cpg.parameter.name("args").l) {
+        case argParam :: Nil =>
+          argParam.name shouldBe "args"
+          argParam.code shouldBe "**args"
+        case _ => fail("Expected parameter `**args` to exist")
+      }
+    }
   }
 
 }

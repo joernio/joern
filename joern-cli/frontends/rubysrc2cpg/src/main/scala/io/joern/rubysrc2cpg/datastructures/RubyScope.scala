@@ -4,6 +4,7 @@ import better.files.File
 import io.joern.rubysrc2cpg.astcreation.GlobalTypes
 import io.joern.rubysrc2cpg.astcreation.GlobalTypes.builtinPrefix
 import io.joern.x2cpg.Defines
+import io.joern.rubysrc2cpg.passes.Defines as RDefines
 import io.joern.x2cpg.datastructures.*
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{DeclarationNew, NewLocal, NewMethodParameterIn}
@@ -115,6 +116,46 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
     case ScopeElement(x: NamespaceLikeScope, _) => x.fullName
     case ScopeElement(x: TypeLikeScope, _)      => x.fullName
     case ScopeElement(x: MethodLikeScope, _)    => x.fullName
+  }
+
+  /** Locates a position in the stack matching a partial function, modifies it and emits a result
+    * @param pf
+    *   Tests ScopeElements of the stack. If they match, return the new value and the result to emi
+    * @return
+    *   the emitted result if the position was found and modifies
+    */
+  def updateSurrounding[T](
+    pf: PartialFunction[
+      ScopeElement[String, DeclarationNew, TypedScopeElement],
+      (ScopeElement[String, DeclarationNew, TypedScopeElement], T)
+    ]
+  ): Option[T] = {
+    stack.zipWithIndex
+      .collectFirst { case (pf(elem, res), i) =>
+        (elem, res, i)
+      }
+      .map { case (elem, res, i) =>
+        stack = stack.updated(i, elem)
+        res
+      }
+  }
+
+  /** Get the name of the implicit or explict proc param and mark the method scope as using the proc param
+    */
+  def useProcParam: Option[String] = updateSurrounding {
+    case ScopeElement(MethodScope(fullName, param, _), variables) =>
+      (ScopeElement(MethodScope(fullName, param, true), variables), param.fold(x => x, x => x))
+  }
+
+  /** Get the name of the implicit or explict proc param */
+  def anonProcParam: Option[String] = stack.collectFirst { case ScopeElement(MethodScope(_, Left(param), true), _) =>
+    param
+  }
+
+  /** Set the name of explict proc param */
+  def setProcParam(param: String): Unit = updateSurrounding {
+    case ScopeElement(MethodScope(fullName, _, _), variables) =>
+      (ScopeElement(MethodScope(fullName, Right(param)), variables), ())
   }
 
   def surroundingTypeFullName: Option[String] = stack.collectFirst { case ScopeElement(x: TypeLikeScope, _) =>

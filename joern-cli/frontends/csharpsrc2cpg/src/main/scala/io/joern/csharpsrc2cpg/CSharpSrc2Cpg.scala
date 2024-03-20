@@ -19,6 +19,7 @@ import io.shiftleft.passes.CpgPassBase
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths
+import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
@@ -45,10 +46,12 @@ class CSharpSrc2Cpg extends X2CpgFrontend[Config] {
 
         val hash = HashUtil.sha256(astCreators.map(_.parserResult).map(x => Paths.get(x.fullPath)))
         new MetaDataPass(cpg, Languages.CSHARPSRC, config.inputPath, Option(hash)).createAndApply()
-        new DependencyPass(cpg, buildFiles(config)).createAndApply()
+
+        val packageIds = mutable.HashSet.empty[String]
+        new DependencyPass(cpg, buildFiles(config), packageIds.add).createAndApply()
         // If "download dependencies" is enabled, then fetch dependencies and resolve their symbols for additional types
         val programSummary = if (config.downloadDependencies) {
-          DependencyDownloader(cpg, config, internalProgramSummary).download()
+          DependencyDownloader(cpg, config, internalProgramSummary, packageIds.toSet).download()
         } else {
           internalProgramSummary
         }
