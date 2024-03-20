@@ -45,8 +45,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     )
   }
 
-  protected def handleVariableOccurrence(node: RubyNode): Ast = {
-    val name       = code(node)
+  protected def handleVariableOccurrence(node: RubyNode, optName: Option[String] = None): Ast = {
+    val name = optName.getOrElse(code(node))
     val identifier = identifierNode(node, name, name, Defines.Any)
     val typeRef    = scope.tryResolveTypeReference(name)
 

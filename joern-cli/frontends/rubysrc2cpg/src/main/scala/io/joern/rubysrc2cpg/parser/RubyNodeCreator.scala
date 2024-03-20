@@ -876,6 +876,11 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     )(ctx.toTextSpan)
   }
 
+  
+  override def visitBlockArgument(ctx: RubyParser.BlockArgumentContext): RubyNode = {
+    BlockArgument(visit(ctx.operatorExpression))(ctx.toTextSpan)
+  }
+
   override def visitProcParameter(ctx: RubyParser.ProcParameterContext): RubyNode = {
     ProcParameter(
       Option(ctx.procParameterName).map(_.LOCAL_VARIABLE_IDENTIFIER()).map(_.getText()).getOrElse(ctx.getText())

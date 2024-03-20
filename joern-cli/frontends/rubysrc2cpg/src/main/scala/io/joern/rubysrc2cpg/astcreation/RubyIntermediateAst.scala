@@ -13,6 +13,7 @@ object RubyIntermediateAst {
     text: String
   ) {
     def spanStart(newText: String = ""): TextSpan = TextSpan(line, column, line, column, newText)
+    def spanEnd(newText: String = ""): TextSpan = TextSpan(lineEnd, columnEnd, lineEnd, columnEnd, newText)
   }
 
   sealed class RubyNode(val span: TextSpan) {
@@ -111,6 +112,10 @@ object RubyIntermediateAst {
   final case class HashParameter(name: String)(span: TextSpan) extends RubyNode(span) with CollectionParameter
 
   final case class ProcParameter(name: String)(span: TextSpan) extends RubyNode(span) with MethodParameter
+  final case class BlockArgument(node: RubyNode)(span: TextSpan) extends RubyNode(span)
+
+  final case class MethodRefFrom(node: RubyNode, uid: String) extends RubyNode(node.span)
+  final case class MethodRefTo(node: RubyNode, uid: String) extends RubyNode(node.span)
 
   final case class SingleAssignment(lhs: RubyNode, op: String, rhs: RubyNode)(span: TextSpan) extends RubyNode(span)
 

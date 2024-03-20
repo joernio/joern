@@ -37,6 +37,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case node: IfExpression             => astForIfExpression(node)
     case node: RescueExpression         => astForRescueExpression(node)
     case node: MandatoryParameter       => astForMandatoryParameter(node)
+    case node: ProcParameter            => astForProcParameter(node)
+    case node: BlockArgument            => astForBlockArgument(node)
     case node: SplattingRubyNode        => astForSplattingRubyNode(node)
     case node: AnonymousTypeDeclaration => astForAnonymousTypeDeclaration(node)
     case node: ProcOrLambdaExpr         => astForProcOrLambdaExpr(node)
@@ -342,7 +344,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     }
   }
 
-  protected def astForMandatoryParameter(node: RubyNode): Ast = handleVariableOccurrence(node)
+  protected def astForMandatoryParameter(node: MandatoryParameter): Ast = handleVariableOccurrence(node)
+  protected def astForProcParameter(node: ProcParameter): Ast = handleVariableOccurrence(node, Some(node.name))
+  protected def astForBlockArgument(node: BlockArgument): Ast = astForExpression(node.node)
 
   protected def astForSimpleCall(node: SimpleCall): Ast = {
     node.target match

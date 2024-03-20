@@ -8,7 +8,257 @@ import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewMethodRef, NewTypeDecl}
 
+import cats.*
+import cats.data.*
+import cats.syntax.all.*
+import cats.instances.*
+
 trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
+
+  type RubyRewrite[T] = Writer[List[RubyNode], T]
+
+  final case class Fresh(name: String, span: TextSpan) {
+    def id: SimpleIdentifier = SimpleIdentifier(None)(span.spanStart(name))
+    def call: SimpleCall = SimpleCall(id, List())(span.spanStart(name))
+    def ref: BlockArgument = BlockArgument(MethodRefTo(call, name))(span.spanStart(name))
+  }
+  def fresh(span: TextSpan): Fresh = Fresh(tmpGen.fresh, span)
+
+  implicit class RubyRewriteRubyNodeListExt(rr: RubyRewrite[List[RubyNode]]) {
+    def rets(span: TextSpan): RubyRewrite[TextSpan] =
+      for
+        rs <- rr
+        _ <- Writer.tell(List(
+          ReturnExpression(rs)(span)
+        ))
+      yield span
+  }
+
+  implicit class RubyRewriteRubyNodeExt(rr: RubyRewrite[RubyNode]) {
+    def atomic: Boolean = rr.written.isEmpty
+    def compound: Boolean = !atomic
+    def assign(lhs: RubyNode, op: String = "=", span: Option[TextSpan] = None): RubyRewrite[TextSpan] =
+      for
+        r <- rr
+        _ <- Writer.tell(List(
+          SingleAssignment(lhs, op, r)(span.getOrElse(r.span))
+        ))
+      yield r.span
+    def assign(): RubyRewrite[RubyNode] =
+      val res = fresh(rr.value.span).id
+      for
+        _ <- assign(res)
+      yield res
+    def tuck: RubyRewrite[TextSpan] = 
+      for
+        r <- rr
+        _ <- Writer.tell(List(r))
+      yield r.span
+    def ret: RubyRewrite[TextSpan] = rr.map(List(_)).rets(rr.value.span)
+    def defer(parameters: List[RubyNode] = List()): RubyRewrite[Fresh] = {
+      val span = rr.value.span
+      val n = fresh(span)
+      Writer(
+        List(MethodRefFrom(MethodDeclaration(n.name, parameters, rr.ret.body)(span), n.name)),
+        n
+      )
+    }
+
+    def deferCompound: RubyRewrite[RubyNode] =
+      if (compound)
+        defer().map(_.call)
+      else 
+        rr
+    
+  }
+
+  implicit class RubyRewriteUnitExt(rr: RubyRewrite[TextSpan]) {
+    def body: RubyNode = StatementList(rr.written)(rr.value)
+  }
+
+  implicit class TextSpanExt(span: TextSpan) {
+    def nilLiteralEnd: RubyNode = StaticLiteral(getBuiltInType(Defines.NilClass))(span.spanEnd("nil"))
+  }
+
+  def negate(node: RubyNode): RubyNode = UnaryExpression("!", node)(node.span)
+
+  protected def rewriteNode(node: RubyNode): RubyRewrite[RubyNode] = node match {
+
+    case node @ SimpleCall(target, arguments)    => 
+      for
+        tgt <- rewriteNode(target)
+        args <- arguments.traverse(rewriteNode)
+      yield SimpleCall(tgt, args)(node.span)
+
+    case node @ SimpleCallWithBlock(target, arguments, block @ Block(parameters, body)) =>
+      for
+        blk <- rewriteNode(body).defer(parameters)
+        res <- rewriteNode(SimpleCall(target, arguments :+ blk.ref)(node.span))
+      yield res
+
+    // case node: ForExpression              => ???
+    case node @ WhileExpression(condition, body)            =>
+      for
+        cond <- rewriteNode(condition).deferCompound
+        res = fresh(body.span).id
+        bdy = rewriteNode(body).assign(res).body
+        _ <- Writer.tell(List(
+          WhileExpression(cond, bdy)(node.span)
+        ))
+      yield res
+        
+    case node @ UntilExpression(cond, body) =>
+      rewriteNode(WhileExpression(negate(cond),body)(node.span))
+    case node @ IfExpression(cond, thenBody, List(), Some(elseClause @ ElseClause(elseBody))) =>
+      for 
+        cnd <- rewriteNode(cond).assign()
+        res = fresh(cnd.span).id
+        thn = rewriteNode(thenBody).assign(res).body
+        els = rewriteNode(elseBody).assign(res).body
+        _ <- Writer.tell(List(
+          IfExpression(cond, thn, List(), Some(ElseClause(els)(elseClause.span)))(node.span)
+        ))
+      yield res
+    case node @ IfExpression(cond, thenBody, elifClauses, elseClause) => 
+      val elseBody = elseClause match {
+        case None => node.span.nilLiteralEnd
+        case Some(ElseClause(body)) => body
+        case _ => ???
+      }
+      rewriteNode(IfExpression(cond, thenBody, List(), Some(elifClauses.foldRight(elseBody) {
+        case (elif @ ElsIfClause(elifCond, elifThen), rest) => IfExpression(elifCond, elifThen, List(), Some(ElseClause(rest)(rest.span)))(elif.span)
+        case _ => ???
+      }))(node.span))
+        
+    case node @ UnlessExpression(cond, thenClause, elseClause) =>
+      rewriteNode(IfExpression(negate(cond), thenClause, List(), elseClause)(node.span))
+    case node @ SingleAssignment(lhs, op, rhs) => 
+      for
+         _ <- rewriteNode(rhs).assign(lhs, op, Some(node.span))
+      yield lhs
+    case node @ StatementList(Nil)        => rewriteNode(StatementList(List(node.span.nilLiteralEnd))(node.span))
+    case node @ StatementList(stmts :+ stmt) => 
+      for
+        _ <- stmts.traverse_(rewriteNode(_).tuck)
+        r <- rewriteNode(stmt)
+      yield r
+
+    case node @ MemberAccess(target, op, name) => rewriteNode(MemberCall(target, op, name, List())(node.span))
+    case node @ MemberCall(target, op, name, arguments) =>
+      for
+        tgt <- rewriteNode(target)
+        args <- arguments.traverse(rewriteNode)
+      yield MemberCall(tgt, op, name, args)(node.span)
+    // case node: MemberCallWithBlock        => ???
+    case node @ MemberCallWithBlock(target, op, name, arguments, block @ Block(parameters, body)) =>
+      for
+        blk <- rewriteNode(body).defer(parameters)
+        res <- rewriteNode(MemberCall(target, op, name, arguments :+ blk.ref)(node.span))
+      yield res
+    case node @ ReturnExpression(expressions)           =>
+      for
+        exprs <- expressions.traverse(rewriteNode)
+      yield ReturnExpression(exprs)(node.span)
+    case node @ AnonymousClassDeclaration(name, baseClass, body) =>
+      val bdy = rewriteNode(body).tuck.body
+      AnonymousClassDeclaration(name, baseClass, bdy)(node.span).pure
+    case node @ SingletonClassDeclaration(name, baseClass, body) =>
+      val bdy = rewriteNode(body).tuck.body
+      SingletonClassDeclaration(name, baseClass, bdy)(node.span).pure
+    case node @ ModuleDeclaration(name, body) =>
+      val bdy = rewriteNode(body).tuck.body
+      ModuleDeclaration(name, bdy)(node.span).pure
+    case node @ ClassDeclaration(name, body, baseClass, fields) =>
+      val bdy = body.map(rewriteNode(_).tuck.body)
+      ClassDeclaration(name, bdy, baseClass, fields)(node.span).pure
+    case node @ MethodDeclaration(name, parameters, body)          => 
+      val bdy = rewriteNode(body).ret.body
+      MethodDeclaration(name, parameters, bdy)(node.span).pure
+    case node @ SingletonMethodDeclaration(target, name, parameters, body) => ???
+      val bdy = rewriteNode(body).ret.body
+      SingletonMethodDeclaration(target, name, parameters, bdy)(node.span).pure
+    case node @ MultipleAssignment(assignments) =>
+      for
+        assigns <- assignments.traverse(rewriteNode)
+      yield MultipleAssignment(assigns.map(_.asInstanceOf[SingleAssignment]))(node.span)
+
+    case node @ UnaryExpression(op, expression)            =>
+      rewriteNode(expression).map(UnaryExpression(op, _)(node.span))
+
+    case node @ BinaryExpression(lhs, op, rhs)           =>
+      for
+        l <- rewriteNode(lhs)
+        r <- rewriteNode(rhs)
+      yield BinaryExpression(l, op, r)(node.span)
+    case node @ SimpleObjectInstantiation(target, arguments) => 
+      for
+        tgt <- rewriteNode(target)
+        args <- arguments.traverse(rewriteNode)
+      yield SimpleObjectInstantiation(tgt, args)(node.span)
+    case node @ ObjectInstantiationWithBlock(target, arguments, block @ Block(parameters, body)) => ???
+      for
+        blk <- rewriteNode(body).defer(parameters)
+        res <- rewriteNode(SimpleObjectInstantiation(target, arguments :+ blk.ref)(node.span))
+      yield res
+      
+    case node @ IndexAccess(target, indices) =>
+      rewriteNode(target).map(IndexAccess(_, indices)(node.span))
+
+    case node @ AttributeAssignment(target, op, name, rhs) =>
+      for
+        tgt <- rewriteNode(target)
+        r <- rewriteNode(rhs)
+      yield AttributeAssignment(tgt, op, name, r)(node.span)
+    case node @ RangeExpression(lowerBound, upperBound, op) =>
+      for
+        lb <- rewriteNode(lowerBound)
+        ub <- rewriteNode(upperBound)
+      yield RangeExpression(lb, ub, op)(node.span)
+    case node: ArrayLiteral               => node.pure // For now
+
+    case node: HashLiteral                => node.pure // For now
+    case node@ Association(key, value)                =>
+      for
+        k <- rewriteNode(key)
+        v <- rewriteNode(value)
+      yield Association(k, v)(node.span)
+    case node @ RescueExpression(body, rescueClauses, elseClause, ensureClause) => 
+      val res = fresh(node.span).id
+      val bdy = rewriteNode(body).assign(res).body
+      val rBdys = rescueClauses.map {
+        case rescue @ RescueClause(exceptionClassList, assignment, thenBody) => rewriteNode(thenBody).map(RescueClause(exceptionClassList, assignment, _)(rescue.span)).assign(res).body
+        case _ => ???
+      }
+      val elsBdy = elseClause.map {
+        case els @ ElseClause(body) => rewriteNode(body).map(ElseClause(_)(els.span)).assign(res).body
+        case _ => ???
+      }
+      val ensBdy = ensureClause.map {
+        case ens @ EnsureClause(body) => rewriteNode(body).map(EnsureClause(_)(ens.span)).assign(res).body
+        case _ => ???
+      }
+      Writer(List(
+        RescueExpression(bdy, rBdys, elsBdy, ensBdy)(node.span)
+      ), res)
+
+
+    case node: CaseExpression             => node.pure // For now
+
+    // case node: ProcOrLambdaExpr           => ???
+    // case node: SplattingRubyNode          => ???
+    // case node: MandatoryParameter         => ???
+    // case node: SelfIdentifier             => ???
+    // case node: FieldsDeclaration          => ???
+    // case node: RequireCall                => ???
+    // case node: IncludeCall                => ???
+    // case node: DummyNode                  => ???
+    // case node: StaticLiteral              => ???
+    // case node: DynamicLiteral             => ???
+    // case node: HereDocNode                => ???
+    // case node: RubyIdentifier             => ???
+    // case node: YieldExpr                  => ???
+    case _                                => node.pure
+  }
 
   protected def astsForStatement(node: RubyNode): Seq[Ast] = node match
     case node: WhileExpression            => astForWhileStatement(node) :: Nil

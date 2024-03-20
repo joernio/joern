@@ -175,6 +175,8 @@ object AntlrContextHelpers {
         operatorExpressions ++ associations ++ splatting ++ block
       case ctx: AssociationsArgumentListContext =>
         Option(ctx.associationList()).map(_.associations).getOrElse(List.empty)
+      case ctx: BlockArgumentArgumentListContext =>
+        Option(ctx.blockArgument()).toList
       case ctx =>
         logger.warn(s"Unsupported element type ${ctx.getClass.getSimpleName}")
         List()
