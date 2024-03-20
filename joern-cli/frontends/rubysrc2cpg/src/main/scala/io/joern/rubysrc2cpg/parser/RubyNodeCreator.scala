@@ -825,6 +825,8 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     val loweredMethods = classBodyStmts.collect { case alias: AliasStatement =>
       methodParamMap.get(alias.oldName) match {
         case Some(aliasingMethodParams) =>
+          val argsCode = aliasingMethodParams.map(_.text).mkString(", ")
+          val callCode = s"${alias.oldName}($argsCode)"
           MethodDeclaration(
             alias.newName,
             aliasingMethodParams,
@@ -832,9 +834,9 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
               SimpleCall(
                 SimpleIdentifier(None)(alias.span.spanStart(alias.oldName)),
                 aliasingMethodParams.map { x => SimpleIdentifier(None)(alias.span.spanStart(x.span.text)) }
-              )(alias.span) :: Nil
-            )(alias.span)
-          )(alias.span)
+              )(alias.span.spanStart(callCode)) :: Nil
+            )(alias.span.spanStart(callCode))
+          )(alias.span.spanStart(s"def ${alias.newName}($argsCode)"))
         case None =>
           logger.warn(
             s"Unable to correctly lower aliased method ${alias.oldName}, the result will be in degraded parameter/argument flows"

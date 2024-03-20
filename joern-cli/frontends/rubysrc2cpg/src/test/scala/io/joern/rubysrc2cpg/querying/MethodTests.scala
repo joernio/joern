@@ -291,7 +291,12 @@ class MethodTests extends RubyCode2CpgFixture {
 
               xeq.parameter.name.l shouldBe bar.parameter.name.l
               // bar forwards parameters to a call to the aliased method
-              bar.call.name("x=").argument.isIdentifier.name.head shouldBe "z"
+              inside(bar.call.name("x=").l) {
+                case barCall :: Nil =>
+                  barCall.argument.isIdentifier.name.head shouldBe "z"
+                  barCall.code shouldBe "x=(z)"
+                case xs => fail(s"Expected a single call to `bar=`,  instead got [${xs.code.mkString(",")}]")
+              }
             case xs => fail(s"Expected a three virtual methods under `Foo`, instead got [${xs.code.mkString(",")}]")
           }
         case xs => fail(s"Expected a single type decl for `Foo`, instead got [${xs.code.mkString(",")}]")
