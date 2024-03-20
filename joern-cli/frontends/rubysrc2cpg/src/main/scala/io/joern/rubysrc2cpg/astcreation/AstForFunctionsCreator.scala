@@ -264,7 +264,6 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     node.target match
       case targetNode: SingletonMethodIdentifier =>
         val fullName = computeMethodFullName(node.methodName)
-        scope.pushNewScope(MethodScope(fullName, procParamGen.fresh))
 
         val (astParentType, astParentFullName, thisParamCode, addEdge) = targetNode match {
           case _: SelfIdentifier =>
@@ -284,6 +283,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
             }
         }
 
+        scope.pushNewScope(MethodScope(fullName, procParamGen.fresh))
         val method = methodNode(
           node = node,
           name = node.methodName,
