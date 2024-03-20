@@ -31,6 +31,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case node: HashLiteral              => astForHashLiteral(node)
     case node: Association              => astForAssociation(node)
     case node: IfExpression             => astForIfExpression(node)
+    case node: UnlessExpression         => astForUnlessExpression(node)
     case node: RescueExpression         => astForRescueExpression(node)
     case node: MandatoryParameter       => astForMandatoryParameter(node)
     case node: SplattingRubyNode        => astForSplattingRubyNode(node)
@@ -533,6 +534,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       callAst(call, conditionAst :: thenAst :: elseAsts_)
     }
     foldIfExpression(builder)(node)
+  }
+
+  protected def astForUnlessExpression(node: UnlessExpression): Ast = {
+    val notConditionAst = UnaryExpression("!", node.condition)(node.condition.span)
+    astForExpression(IfExpression(notConditionAst, node.trueBranch, List(), node.falseBranch)(node.span))
   }
 
   protected def astForRescueExpression(node: RescueExpression): Ast = {
