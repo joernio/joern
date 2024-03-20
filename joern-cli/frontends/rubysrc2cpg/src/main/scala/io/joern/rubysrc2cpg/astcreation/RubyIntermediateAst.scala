@@ -140,6 +140,8 @@ object RubyIntermediateAst {
     */
   sealed trait RubyFieldIdentifier extends RubyIdentifier
 
+  sealed trait SingletonMethodIdentifier
+
   final case class RescueExpression(
     body: RubyNode,
     rescueClauses: List[RubyNode],
@@ -213,6 +215,7 @@ object RubyIntermediateAst {
   final case class SimpleIdentifier(typeFullName: Option[String] = None)(span: TextSpan)
       extends RubyNode(span)
       with RubyIdentifier
+      with SingletonMethodIdentifier
 
   /** Represents a InstanceFieldIdentifier e.g `@x` */
   final case class InstanceFieldIdentifier()(span: TextSpan) extends RubyNode(span) with RubyFieldIdentifier
@@ -220,7 +223,7 @@ object RubyIntermediateAst {
   /** Represents a ClassFieldIdentifier e.g `@@x` */
   final case class ClassFieldIdentifier()(span: TextSpan) extends RubyNode(span) with RubyFieldIdentifier
 
-  final case class SelfIdentifier()(span: TextSpan) extends RubyNode(span)
+  final case class SelfIdentifier()(span: TextSpan) extends RubyNode(span) with SingletonMethodIdentifier
 
   /** Represents some kind of literal expression.
     */

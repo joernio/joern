@@ -238,41 +238,29 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   protected def astForSingletonMethodDeclaration(node: SingletonMethodDeclaration): Ast = {
-    val fullName = computeMethodFullName(node.methodName)
-    val method = methodNode(
-      node = node,
-      name = node.methodName,
-      fullName = fullName,
-      code = code(node),
-      signature = None,
-      fileName = relativeFileName,
-      astParentType = scope.surroundingAstLabel,
-      astParentFullName = scope.surroundingScopeFullName
-    )
-
-    scope.pushNewScope(MethodScope(fullName))
-
     node.target match
-      case _: SelfIdentifier =>
-        val thisParameterAst = Ast(
-          newThisParameterNode(
-            typeFullName = scope.surroundingTypeFullName.getOrElse(Defines.Any),
-            line = method.lineNumber,
-            column = method.columnNumber
-          )
-        )
-
-        val parameterAsts = astForParameters(node.parameters, true)
-
-        val optionalStatementList = statementListForOptionalParams(node.parameters)
-
-        val stmtBlockAst = astForMethodBody(node.body, optionalStatementList)
-
-        scope.popScope()
-        methodAst(method, thisParameterAst +: parameterAsts, stmtBlockAst, methodReturnNode(node, Defines.Any))
-      case x: SimpleIdentifier =>
-        // This is the case for ModuleName.FuncName
+      case targetNode: SingletonMethodIdentifier =>
         val fullName = computeMethodFullName(node.methodName)
+        scope.pushNewScope(MethodScope(fullName))
+
+        val (astParentType, astParentFullName, thisParamName, addEdge) = targetNode match {
+          case _: SelfIdentifier =>
+            (scope.surroundingAstLabel, scope.surroundingScopeFullName, Defines.This, false)
+          case _: SimpleIdentifier =>
+            val baseType = node.target.span.text
+            scope.surroundingTypeFullName.map(_.split("[.]").last) match {
+              case Some(typ) if typ == baseType =>
+                (scope.surroundingAstLabel, scope.surroundingTypeFullName, baseType, false)
+              case Some(typ) =>
+                scope.tryResolveTypeReference(baseType) match {
+                  case Some(typ) =>
+                    (Option(NodeTypes.TYPE_DECL), Option(typ.name), baseType, true)
+                  case None => (None, None, "", false)
+                }
+              case None => (None, None, "", false)
+            }
+        }
+
         val method = methodNode(
           node = node,
           name = node.methodName,
@@ -280,23 +268,40 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           code = code(node),
           signature = None,
           fileName = relativeFileName,
-          astParentType = scope.surroundingAstLabel,
-          astParentFullName = scope.surroundingScopeFullName
+          astParentType = astParentType,
+          astParentFullName = astParentFullName
         )
 
-        scope.pushNewScope(MethodScope(fullName))
+        val thisParameterAst = Ast(
+          newThisParameterNode(
+            name = thisParamName,
+            code = thisParamName,
+            typeFullName = astParentFullName.getOrElse(Defines.Any),
+            line = method.lineNumber,
+            column = method.columnNumber
+          )
+        )
 
         val parameterAsts         = astForParameters(node.parameters, true)
         val optionalStatementList = statementListForOptionalParams(node.parameters)
         val stmtBlockAst          = astForMethodBody(node.body, optionalStatementList)
 
         scope.popScope()
-        methodAst(method, parameterAsts, stmtBlockAst, methodReturnNode(node, Defines.Any))
+
+        val _methodAst =
+          methodAst(method, thisParameterAst +: parameterAsts, stmtBlockAst, methodReturnNode(node, Defines.Any))
+        if (addEdge) {
+          Ast.storeInDiffGraph(_methodAst, diffGraph)
+          Ast()
+        } else {
+          _methodAst
+        }
       case targetNode =>
         logger.warn(
-          s"Non-self singleton method declarations are not supported yet: ${targetNode.text} (${targetNode.getClass.getSimpleName}), skipping"
+          s"Target node type for singleton method declarations are not supported yet: ${targetNode.text} (${targetNode.getClass.getSimpleName}), skipping"
         )
         astForUnknown(node)
+
   }
 
   private def astForParameters(parameters: List[RubyNode], plusOne: Boolean = false): List[Ast] = {

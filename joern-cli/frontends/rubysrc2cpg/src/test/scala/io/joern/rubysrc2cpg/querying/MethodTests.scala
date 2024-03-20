@@ -264,6 +264,10 @@ class MethodTests extends RubyCode2CpgFixture {
         | end
         |end
         |
+        |def F.baz(x)
+        |  x
+        |end
+        |
         |F::bar(p)
         |""".stripMargin)
 
