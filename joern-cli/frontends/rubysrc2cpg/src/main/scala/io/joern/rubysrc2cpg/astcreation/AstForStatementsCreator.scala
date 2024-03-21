@@ -88,42 +88,50 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   def negate(node: RubyNode): RubyNode = UnaryExpression("!", node)(node.span)
 
-  protected def rewriteNode(node: RubyNode): RubyRewrite[RubyNode] = node match {
+  protected def rewriteNode(node: RubyNode, expectExpression: Boolean): RubyRewrite[RubyNode] = node match {
 
     case node @ SimpleCall(target, arguments)    => 
       for
-        tgt <- rewriteNode(target)
-        args <- arguments.traverse(rewriteNode)
+        tgt <- rewriteNode(target, true)
+        args <- arguments.traverse(rewriteNode(_, true))
       yield SimpleCall(tgt, args)(node.span)
 
     case node @ SimpleCallWithBlock(target, arguments, block @ Block(parameters, body)) =>
       for
-        blk <- rewriteNode(body).defer(parameters)
-        res <- rewriteNode(SimpleCall(target, arguments :+ blk.ref)(node.span))
+        blk <- rewriteNode(body, true).defer(parameters)
+        res <- rewriteNode(SimpleCall(target, arguments :+ blk.ref)(node.span), expectExpression)
       yield res
 
     // case node: ForExpression              => ???
     case node @ WhileExpression(condition, body)            =>
       for
-        cond <- rewriteNode(condition).deferCompound
-        res = fresh(body.span).id
-        bdy = rewriteNode(body).assign(res).body
-        _ <- Writer.tell(List(
-          WhileExpression(cond, bdy)(node.span)
-        ))
+        cond <- rewriteNode(condition, true).deferCompound
+        bdy = rewriteNode(body, expectExpression)
+        res <- 
+          if (expectExpression)
+            val tmp = fresh(body.span).id
+            Writer(List(
+              WhileExpression(cond, bdy.assign(tmp).body)(node.span)
+            ), tmp)
+          else
+            Writer(List(), WhileExpression(cond, bdy.tuck.body)(node.span))
       yield res
         
     case node @ UntilExpression(cond, body) =>
-      rewriteNode(WhileExpression(negate(cond),body)(node.span))
+      rewriteNode(WhileExpression(negate(cond),body)(node.span), expectExpression)
     case node @ IfExpression(cond, thenBody, List(), Some(elseClause @ ElseClause(elseBody))) =>
       for 
-        cnd <- rewriteNode(cond)
-        res = fresh(cnd.span).id
-        thn = rewriteNode(thenBody).assign(res).body
-        els = rewriteNode(elseBody).assign(res).body
-        _ <- Writer.tell(List(
-          IfExpression(cond, thn, List(), Some(ElseClause(els)(elseClause.span)))(node.span)
-        ))
+        cnd <- rewriteNode(cond, true)
+        thn = rewriteNode(thenBody, expectExpression)
+        els = rewriteNode(elseBody, expectExpression)
+        res <- 
+          if (expectExpression)
+            val tmp = fresh(cnd.span).id
+            Writer(List(
+              IfExpression(cond, thn.assign(tmp).body, List(), Some(ElseClause(els.assign(tmp).body)(elseClause.span)))(node.span)
+            ), tmp)
+          else
+            Writer(List(), IfExpression(cond, thn.tuck.body, List(), Some(ElseClause(els.tuck.body)(elseClause.span)))(node.span))
       yield res
     case node @ IfExpression(cond, thenBody, elifClauses, elseClause) => 
       val elseBody = elseClause match {
@@ -134,113 +142,113 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       rewriteNode(IfExpression(cond, thenBody, List(), Some(elifClauses.foldRight(elseBody) {
         case (elif @ ElsIfClause(elifCond, elifThen), rest) => IfExpression(elifCond, elifThen, List(), Some(ElseClause(rest)(rest.span)))(elif.span)
         case _ => ???
-      }))(node.span))
+      }))(node.span), expectExpression)
         
     case node @ UnlessExpression(cond, thenClause, elseClause) =>
-      rewriteNode(IfExpression(negate(cond), thenClause, List(), elseClause)(node.span))
+      rewriteNode(IfExpression(negate(cond), thenClause, List(), elseClause)(node.span), expectExpression)
     case node @ SingleAssignment(lhs, op, rhs) => 
       for
-         _ <- rewriteNode(rhs).assign(lhs, op, Some(node.span))
+         _ <- rewriteNode(rhs, true).assign(lhs, op, Some(node.span))
       yield lhs
-    case node @ StatementList(Nil)        => rewriteNode(StatementList(List(node.span.nilLiteralEnd))(node.span))
+    case node @ StatementList(Nil)        => rewriteNode(StatementList(List(node.span.nilLiteralEnd))(node.span), expectExpression)
     case node @ StatementList(stmts :+ stmt) => 
       for
-        _ <- stmts.traverse_(rewriteNode(_).tuck)
-        r <- rewriteNode(stmt)
+        _ <- stmts.traverse_(rewriteNode(_, false).tuck)
+        r <- rewriteNode(stmt, true)
       yield r
 
-    case node @ MemberAccess(target, op, name) => rewriteNode(MemberCall(target, op, name, List())(node.span))
+    case node @ MemberAccess(target, op, name) => rewriteNode(MemberCall(target, op, name, List())(node.span), expectExpression)
     case node @ MemberCall(target, op, name, arguments) =>
       for
-        tgt <- rewriteNode(target)
-        args <- arguments.traverse(rewriteNode)
+        tgt <- rewriteNode(target, true)
+        args <- arguments.traverse(rewriteNode(_, true))
       yield MemberCall(tgt, op, name, args)(node.span)
     // case node: MemberCallWithBlock        => ???
     case node @ MemberCallWithBlock(target, op, name, arguments, block @ Block(parameters, body)) =>
       for
-        blk <- rewriteNode(body).defer(parameters)
-        res <- rewriteNode(MemberCall(target, op, name, arguments :+ blk.ref)(node.span))
+        blk <- rewriteNode(body, true).defer(parameters)
+        res <- rewriteNode(MemberCall(target, op, name, arguments :+ blk.ref)(node.span), expectExpression)
       yield res
     case node @ ReturnExpression(expressions)           =>
       for
-        exprs <- expressions.traverse(rewriteNode)
+        exprs <- expressions.traverse(rewriteNode(_, true))
       yield ReturnExpression(exprs)(node.span)
     case node @ AnonymousClassDeclaration(name, baseClass, body) =>
-      val bdy = rewriteNode(body).tuck.body
+      val bdy = rewriteNode(body, false).tuck.body
       AnonymousClassDeclaration(name, baseClass, bdy)(node.span).pure
     case node @ SingletonClassDeclaration(name, baseClass, body) =>
-      val bdy = rewriteNode(body).tuck.body
+      val bdy = rewriteNode(body, false).tuck.body
       SingletonClassDeclaration(name, baseClass, bdy)(node.span).pure
     case node @ ModuleDeclaration(name, body) =>
-      val bdy = rewriteNode(body).tuck.body
+      val bdy = rewriteNode(body, false).tuck.body
       ModuleDeclaration(name, bdy)(node.span).pure
     case node @ ClassDeclaration(name, body, baseClass, fields) =>
-      val bdy = body.map(rewriteNode(_).tuck.body)
+      val bdy = body.map(rewriteNode(_, false).tuck.body)
       ClassDeclaration(name, bdy, baseClass, fields)(node.span).pure
     case node @ MethodDeclaration(name, parameters, body)          => 
-      val bdy = rewriteNode(body).ret.body
+      val bdy = rewriteNode(body, true).ret.body
       MethodDeclaration(name, parameters, bdy)(node.span).pure
     case node @ SingletonMethodDeclaration(target, name, parameters, body) => ???
-      val bdy = rewriteNode(body).ret.body
+      val bdy = rewriteNode(body, true).ret.body
       SingletonMethodDeclaration(target, name, parameters, bdy)(node.span).pure
     case node @ MultipleAssignment(assignments) =>
       for
-        assigns <- assignments.traverse(rewriteNode)
+        assigns <- assignments.traverse(rewriteNode(_,false))
       yield MultipleAssignment(assigns.map(_.asInstanceOf[SingleAssignment]))(node.span)
 
     case node @ UnaryExpression(op, expression)            =>
-      rewriteNode(expression).map(UnaryExpression(op, _)(node.span))
+      rewriteNode(expression, true).map(UnaryExpression(op, _)(node.span))
 
     case node @ BinaryExpression(lhs, op, rhs)           =>
       for
-        l <- rewriteNode(lhs)
-        r <- rewriteNode(rhs)
+        l <- rewriteNode(lhs, true)
+        r <- rewriteNode(rhs, true)
       yield BinaryExpression(l, op, r)(node.span)
     case node @ SimpleObjectInstantiation(target, arguments) => 
       for
-        tgt <- rewriteNode(target)
-        args <- arguments.traverse(rewriteNode)
+        tgt <- rewriteNode(target, true)
+        args <- arguments.traverse(rewriteNode(_, true))
       yield SimpleObjectInstantiation(tgt, args)(node.span)
     case node @ ObjectInstantiationWithBlock(target, arguments, block @ Block(parameters, body)) => ???
       for
-        blk <- rewriteNode(body).defer(parameters)
-        res <- rewriteNode(SimpleObjectInstantiation(target, arguments :+ blk.ref)(node.span))
+        blk <- rewriteNode(body, true).defer(parameters)
+        res <- rewriteNode(SimpleObjectInstantiation(target, arguments :+ blk.ref)(node.span), expectExpression)
       yield res
       
     case node @ IndexAccess(target, indices) =>
-      rewriteNode(target).map(IndexAccess(_, indices)(node.span))
+      rewriteNode(target, expectExpression).map(IndexAccess(_, indices)(node.span))
 
     case node @ AttributeAssignment(target, op, name, rhs) =>
       for
-        tgt <- rewriteNode(target)
-        r <- rewriteNode(rhs)
+        tgt <- rewriteNode(target, false) // We don't handle, for example `(if x then y else z).w = v`
+        r <- rewriteNode(rhs, true)
       yield AttributeAssignment(tgt, op, name, r)(node.span)
     case node @ RangeExpression(lowerBound, upperBound, op) =>
       for
-        lb <- rewriteNode(lowerBound)
-        ub <- rewriteNode(upperBound)
+        lb <- rewriteNode(lowerBound, true)
+        ub <- rewriteNode(upperBound, true)
       yield RangeExpression(lb, ub, op)(node.span)
     case node: ArrayLiteral               => node.pure // For now
 
     case node: HashLiteral                => node.pure // For now
     case node@ Association(key, value)                =>
       for
-        k <- rewriteNode(key)
-        v <- rewriteNode(value)
+        k <- rewriteNode(key, true)
+        v <- rewriteNode(value, true)
       yield Association(k, v)(node.span)
     case node @ RescueExpression(body, rescueClauses, elseClause, ensureClause) => 
       val res = fresh(node.span).id
-      val bdy = rewriteNode(body).assign(res).body
+      val bdy = rewriteNode(body, expectExpression).assign(res).body
       val rBdys = rescueClauses.map {
-        case rescue @ RescueClause(exceptionClassList, assignment, thenBody) => rewriteNode(thenBody).map(RescueClause(exceptionClassList, assignment, _)(rescue.span)).assign(res).body
+        case rescue @ RescueClause(exceptionClassList, assignment, thenBody) => rewriteNode(thenBody, expectExpression).map(RescueClause(exceptionClassList, assignment, _)(rescue.span)).assign(res).body
         case _ => ???
       }
       val elsBdy = elseClause.map {
-        case els @ ElseClause(body) => rewriteNode(body).map(ElseClause(_)(els.span)).assign(res).body
+        case els @ ElseClause(body) => rewriteNode(body, expectExpression).map(ElseClause(_)(els.span)).assign(res).body
         case _ => ???
       }
       val ensBdy = ensureClause.map {
-        case ens @ EnsureClause(body) => rewriteNode(body).map(EnsureClause(_)(ens.span)).assign(res).body
+        case ens @ EnsureClause(body) => rewriteNode(body, false).map(EnsureClause(_)(ens.span)).assign(res).body
         case _ => ???
       }
       Writer(List(
