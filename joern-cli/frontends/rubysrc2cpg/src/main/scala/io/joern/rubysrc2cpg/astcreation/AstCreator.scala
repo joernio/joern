@@ -28,6 +28,7 @@ class AstCreator(
     with AstForFunctionsCreator
     with AstForTypesCreator
     with AstSummaryVisitor
+    with RubyNodeRewriter
     with AstNodeBuilder[RubyNode, AstCreator] {
 
   /* Used to track variable names and their LOCAL nodes.
