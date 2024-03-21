@@ -42,8 +42,8 @@ class DependencyDownloadTests extends CSharpCode2CpgFixture {
       summary.typesUnderNamespace("CSharpx") should not be empty
     }
 
-    "not summarize NewtonsoftJson (as it publishes without PDB files)" in {
-      summary.typesUnderNamespace("Microsoft.AspNetCore.Mvc.NewtonsoftJson") shouldBe empty
+    "manage to summarize NewtonsoftJson (as it publishes without PDB files, but DotNetAstGen can generate these)" in {
+      summary.typesUnderNamespace("Microsoft.AspNetCore.Mvc.NewtonsoftJson") should not be empty
     }
 
   }

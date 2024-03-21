@@ -27,6 +27,8 @@ object Defines {
 
   val Resolver: String = "<dependency-resolver>"
 
+  val AnonymousProcParameter = "<anonymous-proc-param>"
+
   def getBuiltInType(typeInString: String) = s"${GlobalTypes.builtinPrefix}.$typeInString"
 
   object RubyOperators {

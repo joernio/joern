@@ -194,6 +194,8 @@ object DotNetJsonAst {
 
   object SwitchSection extends BaseExpr
 
+  object UsingStatement extends BaseStmt
+
   object RelationalPattern extends BasePattern
 
   object ConstantPattern extends BasePattern
@@ -247,6 +249,8 @@ object DotNetJsonAst {
   object ConditionalAccessExpression extends MemberAccessExpr
 
   object MemberBindingExpression extends BaseExpr
+
+  object SuppressNullableWarningExpression extends BaseExpr
 
   object Unknown extends DotNetParserNode
 

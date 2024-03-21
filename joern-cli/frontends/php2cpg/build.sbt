@@ -4,7 +4,7 @@ import better.files.File
 
 name := "php2cpg"
 
-val phpParserVersion       = "4.15.7"
+val phpParserVersion       = "4.15.8"
 val upstreamParserBinName  = "php-parser.phar"
 val versionedParserBinName = s"php-parser-$phpParserVersion.phar"
 val phpParserDlUrl =

@@ -1,6 +1,7 @@
 package io.joern.csharpsrc2cpg.querying.ast
 
 import io.joern.csharpsrc2cpg.testfixtures.CSharpCode2CpgFixture
+import io.joern.csharpsrc2cpg.Config
 import io.shiftleft.semanticcpg.language.*
 
 class DependencyTests extends CSharpCode2CpgFixture {
@@ -60,6 +61,44 @@ class DependencyTests extends CSharpCode2CpgFixture {
           json.name shouldBe "Newtonsoft.Json"
           json.version shouldBe "13.0.3"
         case xs => fail(s"Expected exactly 5 dependencies, instead got [${xs.name.mkString(",")}]")
+      }
+    }
+
+  }
+
+  "a `csproj` file specifying a builtin dependency" should {
+
+    val cpg = code("""
+        |using System;
+        |using Microsoft.EntityFrameworkCore;
+        |
+        |public class Foo {
+        |
+        | static void bar(ModelBuilder modelBuilder)
+        | {
+        |   modelBuilder.Entity("test");
+        | }
+        |
+        |}
+        |""".stripMargin)
+      .moreCode(
+        """
+        |<Project Sdk="Microsoft.NET.Sdk">
+        |    <ItemGroup>
+        |      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="doesNotExist" />
+        |    </ItemGroup>
+        |</Project>
+        |""".stripMargin,
+        "Foo.csproj"
+      )
+      .withConfig(Config().withDownloadDependencies(true))
+
+    "resolve the call from the local builtins, as the specified dependency would not successfully download" in {
+      inside(cpg.call("Entity").headOption) {
+        case Some(entity) =>
+          entity.methodFullName shouldBe "Microsoft.EntityFrameworkCore.ModelBuilder.Entity:Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder(System.String)"
+        case None =>
+          fail("Expected a call node for `Entity`")
       }
     }
 

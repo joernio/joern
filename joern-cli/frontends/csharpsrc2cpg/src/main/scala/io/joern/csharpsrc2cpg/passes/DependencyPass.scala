@@ -9,7 +9,8 @@ import org.slf4j.LoggerFactory
 
 import scala.util.{Failure, Try}
 
-class DependencyPass(cpg: Cpg, buildFiles: List[String]) extends ForkJoinParallelCpgPass[File](cpg) {
+class DependencyPass(cpg: Cpg, buildFiles: List[String], registerPackageId: String => _)
+    extends ForkJoinParallelCpgPass[File](cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -18,6 +19,14 @@ class DependencyPass(cpg: Cpg, buildFiles: List[String]) extends ForkJoinParalle
   override def runOnPart(builder: DiffGraphBuilder, part: File): Unit = {
     SecureXmlParsing.parseXml(part.contentAsString) match {
       case Some(xml) if xml.label == "Project" =>
+        // Find packageId (useful for monoliths)
+        xml.child
+          .collect { case x if x.label == "PropertyGroup" => x.child }
+          .flatten
+          .collect {
+            case packageId if packageId.label == "PackageId" => registerPackageId(packageId.text)
+          }
+        // Register dependencies
         xml.child
           .collect { case x if x.label == "ItemGroup" => x.child }
           .flatten

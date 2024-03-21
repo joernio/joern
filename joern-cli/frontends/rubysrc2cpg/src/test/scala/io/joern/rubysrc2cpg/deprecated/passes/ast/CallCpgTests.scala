@@ -147,7 +147,6 @@ class CallCpgTests extends RubyCode2CpgFixture(withPostProcessing = true, useDep
         |""".stripMargin)
 
     "take note of the here doc locations and construct the literals respectively from the following statements" in {
-      cpg.method(":program").dotAst.foreach(println)
       val List(one, two) = cpg.call.nameExact("puts").argument.isLiteral.l: @unchecked
       one.code shouldBe "content for heredoc one"
       one.lineNumber shouldBe Option(1)

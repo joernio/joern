@@ -1,14 +1,17 @@
 package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{Unknown, *}
-import io.joern.rubysrc2cpg.datastructures.{BlockScope, FieldDecl}
-import io.joern.rubysrc2cpg.passes.Defines.{RubyOperators, getBuiltInType}
-import io.joern.x2cpg.{Ast, Defines as XDefines, ValidationMode}
+import io.joern.rubysrc2cpg.datastructures.BlockScope
 import io.joern.rubysrc2cpg.passes.Defines
+import io.joern.rubysrc2cpg.passes.Defines.{RubyOperators, getBuiltInType}
+import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators, PropertyNames}
+import io.joern.rubysrc2cpg.utils.FreshNameGenerator
 
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
+
+  val tmpGen = FreshNameGenerator(i => s"<tmp-$i>")
 
   protected def astForExpression(node: RubyNode): Ast = node match
     case node: StaticLiteral            => astForStaticLiteral(node)
@@ -26,6 +29,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case node: SimpleCall               => astForSimpleCall(node)
     case node: RequireCall              => astForRequireCall(node)
     case node: IncludeCall              => astForIncludeCall(node)
+    case node: YieldExpr                => astForYield(node)
     case node: RangeExpression          => astForRange(node)
     case node: ArrayLiteral             => astForArrayLiteral(node)
     case node: HashLiteral              => astForHashLiteral(node)
@@ -153,11 +157,33 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   protected def astForIndexAccess(node: IndexAccess): Ast = {
-    val indexAsts = node.indices.map(astForExpression)
-    val targetAst = astForExpression(node.target)
-    val call = callNode(node, code(node), Operators.indexAccess, Operators.indexAccess, DispatchTypes.STATIC_DISPATCH)
-
-    callAst(call, targetAst +: indexAsts)
+    // Array::[] and Hash::[] looks like an index access to the parser, some other methods may have this name too
+    lazy val arrayMethodName = SimpleIdentifier(None)(node.span.spanStart("[]"))
+    lazy val defaultBehaviour = {
+      val indexAsts = node.indices.map(astForExpression)
+      val targetAst = astForExpression(node.target)
+      val call =
+        callNode(node, code(node), Operators.indexAccess, Operators.indexAccess, DispatchTypes.STATIC_DISPATCH)
+      callAst(call, targetAst +: indexAsts)
+    }
+    scope.tryResolveTypeReference(node.target.text).map(_.name) match {
+      case Some(typeReference) =>
+        scope
+          .tryResolveMethodInvocation("[]", List.empty, Option(typeReference))
+          .map { m =>
+            val args =
+              if node.indices.exists(_.isInstanceOf[Association]) then HashLiteral(node.indices)(node.span) :: Nil
+              else ArrayLiteral(node.indices)(node.span) :: Nil
+            val expr = astForExpression(SimpleCall(arrayMethodName, args)(node.span))
+            expr.root.collect { case x: NewCall =>
+              x.methodFullName(s"$typeReference:${m.name}")
+              scope.tryResolveTypeReference(m.returnType).map(_.name).foreach(x.typeFullName(_))
+            }
+            expr
+          }
+          .getOrElse(defaultBehaviour)
+      case None => defaultBehaviour
+    }
   }
 
   protected def astForObjectInstantiation(node: RubyNode with ObjectInstantiation): Ast = {
@@ -175,7 +201,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val block = blockNode(node)
     scope.pushNewScope(BlockScope(block))
 
-    val tmp = SimpleIdentifier(Option(className))(node.span.spanStart(freshVariableName))
+    val tmp = SimpleIdentifier(Option(className))(node.span.spanStart(tmpGen.fresh))
     def tmpIdentifier = {
       val tmpAst = astForSimpleIdentifier(tmp)
       tmpAst.root.collect { case x: NewIdentifier => x.typeFullName(receiverTypeFullName) }
@@ -343,6 +369,27 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     astForSimpleCall(node.asSimpleCall)
   }
 
+  protected def astForYield(node: YieldExpr): Ast = {
+    scope.useProcParam match {
+      case Some(param) =>
+        val call = astForExpression(
+          SimpleCall(SimpleIdentifier()(node.span.spanStart(param)), node.arguments)(node.span)
+        )
+        val ret = returnAst(returnNode(node, code(node)))
+        val cond = astForExpression(
+          SimpleCall(SimpleIdentifier()(node.span.spanStart(tmpGen.fresh)), List())(node.span.spanStart("<nondet>"))
+        )
+        callAst(
+          callNode(node, code(node), Operators.conditional, Operators.conditional, DispatchTypes.STATIC_DISPATCH),
+          List(cond, call, ret)
+        )
+      case None =>
+        logger.warn(s"Yield expression outside of method scope: ${code(node)} ($relativeFileName), skipping")
+        astForUnknown(node)
+
+    }
+  }
+
   protected def astForRange(node: RangeExpression): Ast = {
     val lbAst = astForExpression(node.lowerBound)
     val ubAst = astForExpression(node.upperBound)
@@ -376,10 +423,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   protected def astForHashLiteral(node: HashLiteral): Ast = {
+    val tmp = tmpGen.fresh
+
+    def tmpAst(tmpNode: Option[RubyNode] = None) = astForSimpleIdentifier(
+      SimpleIdentifier()(tmpNode.map(_.span).getOrElse(node.span).spanStart(tmp))
+    )
+
     val block = blockNode(node)
     scope.pushNewScope(BlockScope(block))
-
-    val tmp = freshVariableName
 
     val argumentAsts = node.elements.flatMap(elem =>
       elem match
@@ -388,19 +439,24 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           logger.warn(s"Could not represent element: ${code(node)} ($relativeFileName), skipping")
           astForUnknown(node) :: Nil
     )
-    val call = callNode(
+
+    val hashInitCall = callNode(
       node,
       code(node),
       RubyOperators.hashInitializer,
       RubyOperators.hashInitializer,
       DispatchTypes.STATIC_DISPATCH
     )
+
+    val assignment =
+      callNode(node, code(node), Operators.assignment, Operators.assignment, DispatchTypes.STATIC_DISPATCH)
+    val tmpAssignment = callAst(assignment, tmpAst() :: Ast(hashInitCall) :: Nil)
+
     scope.popScope()
-    blockAst(block, List(callAst(call, argumentAsts)))
+    blockAst(block, tmpAssignment +: argumentAsts :+ tmpAst(node.elements.lastOption))
   }
 
   protected def astForAssociationHash(node: Association, tmp: String): List[Ast] = {
-    val tmpAst = astForSimpleIdentifier(SimpleIdentifier()(node.span.spanStart(tmp)))
     node.key match {
       case rangeExpr: RangeExpression =>
         val expandedList = generateStaticLiteralsForRange(rangeExpr).map { x =>
@@ -408,12 +464,12 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         }
 
         if (expandedList.nonEmpty) {
-          expandedList :+ tmpAst
+          expandedList
         } else {
-          astForSingleKeyValue(node.key, node.value, tmp) :: tmpAst :: Nil
+          astForSingleKeyValue(node.key, node.value, tmp) :: Nil
         }
 
-      case _ => astForSingleKeyValue(node.key, node.value, tmp) :: tmpAst :: Nil
+      case _ => astForSingleKeyValue(node.key, node.value, tmp) :: Nil
     }
   }
 

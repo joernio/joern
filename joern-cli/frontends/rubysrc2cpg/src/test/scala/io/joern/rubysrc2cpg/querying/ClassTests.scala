@@ -415,7 +415,6 @@ class ClassTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "create respective member nodes" in {
-      cpg.typeDecl.nameExact("Foo").dotAst.l.foreach(println)
       inside(cpg.typeDecl.name("Foo").l) {
         case fooType :: Nil =>
           inside(fooType.member.l) {

@@ -57,7 +57,7 @@ class ControlStructureTests extends CSharpCode2CpgFixture {
       inside(tryBlocks) {
         case t :: c :: f :: Nil =>
           t.code shouldBe "try"
-          c.code shouldBe "catch"
+          c.code shouldBe "catch (Exception e)"
           f.code shouldBe "finally"
         case _ => fail("Invalid number of children under the `try` control structure!")
       }
@@ -77,16 +77,12 @@ class ControlStructureTests extends CSharpCode2CpgFixture {
 
     "generate a catch-block with a child block containing the correct console call" in {
       inside(Option(tryBlocks(1))) {
-        case Some(ctl) =>
-          inside(ctl.astChildren.l) {
-            case (catchBlock: Block) :: Nil =>
-              inside(catchBlock.astChildren.l) {
-                case (excepDecl: Local) :: (consoleCall: Call) :: Nil =>
-                  excepDecl.name shouldBe "e"
-                  consoleCall.code shouldBe "Console.WriteLine(\"Uh, oh!\")"
-                case _ => fail("Invalid `catch` block children!")
-              }
-            case _ => fail("No `catch` handler block found!")
+        case Some(catchBlock: Block) =>
+          inside(catchBlock.astChildren.l) {
+            case (excepDecl: Local) :: (consoleCall: Call) :: Nil =>
+              excepDecl.name shouldBe "e"
+              consoleCall.code shouldBe "Console.WriteLine(\"Uh, oh!\")"
+            case _ => fail("Invalid `catch` block children!")
           }
         case None => fail("No `catch` block found!")
       }
@@ -178,6 +174,49 @@ class ControlStructureTests extends CSharpCode2CpgFixture {
               case1_1.code shouldBe "case < 10:"
               defaultCase.code shouldBe "default:"
           }
+      }
+    }
+
+  }
+
+  "a using statement" should {
+    val cpg = code(basicBoilerplate("""
+        |var numbers = new List<int>();
+        |using (StreamReader reader = File.OpenText("numbers.txt"))
+        |{
+        |    string line;
+        |    while ((line = reader.ReadLine()) is not null)
+        |    {
+        |        if (int.TryParse(line, out int number))
+        |        {
+        |            numbers.Add(number);
+        |        }
+        |    }
+        |}
+        |""".stripMargin))
+
+    val tryBlocks = cpg.controlStructure.controlStructureTypeExact(ControlStructureTypes.TRY).astChildren.isBlock.l
+
+    "generate a try control structure with two children blocks" in {
+      inside(tryBlocks) {
+        case t :: f :: Nil =>
+          t.code shouldBe "try"
+          f.code shouldBe "finally"
+        case _ => fail("Invalid number of children under the `try` control structure!")
+      }
+    }
+
+    "generate a finally-block with the correct dispose call" in {
+      inside(tryBlocks.lastOption) {
+        case Some(ctl) =>
+          inside(ctl.astChildren.isCall.l) {
+            case disposeCall :: Nil =>
+              disposeCall.code shouldBe "reader.Dispose()"
+              disposeCall.name shouldBe "Dispose"
+              disposeCall.methodFullName shouldBe "System.Disposable.Dispose:System.Void()"
+            case _ => fail("No call node found!")
+          }
+        case None => fail("No `finally` block found!")
       }
     }
 
