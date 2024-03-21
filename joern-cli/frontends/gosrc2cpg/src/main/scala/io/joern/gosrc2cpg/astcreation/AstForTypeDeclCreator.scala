@@ -1,5 +1,5 @@
 package io.joern.gosrc2cpg.astcreation
-import io.joern.gosrc2cpg.datastructures.GoGlobal
+import io.joern.gosrc2cpg.datastructures.{GoGlobal, LambdaTypeInfo}
 import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg
@@ -21,8 +21,8 @@ trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { thi
   }
 
   protected def processFuncType(typeNode: ParserNodeInfo, typeDeclFullName: String): Seq[Ast] = {
-    val (signature, returnTypeFullName, _, _, _) = generateLambdaSignature(typeNode)
-    goGlobal.recordLambdaSigntureToLambdaType(signature, typeDeclFullName, returnTypeFullName)
+    val LambdaFunctionMetaData(signature, returnTypeFullName, _, _, _) = generateLambdaSignature(typeNode)
+    goGlobal.recordLambdaSigntureToLambdaType(signature, LambdaTypeInfo(typeDeclFullName, returnTypeFullName))
     Seq.empty
   }
 

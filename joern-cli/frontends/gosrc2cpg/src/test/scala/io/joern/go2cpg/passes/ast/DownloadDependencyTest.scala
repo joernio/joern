@@ -3,14 +3,15 @@ package io.joern.go2cpg.passes.ast
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
 import io.joern.gosrc2cpg.Config
 import io.joern.gosrc2cpg.astcreation.Defines
-import io.joern.gosrc2cpg.datastructures.GoGlobal
+import io.joern.gosrc2cpg.datastructures.{GoGlobal, LambdaTypeInfo}
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.*
+
+import scala.jdk.CollectionConverters.*
 
 class DownloadDependencyTest extends GoCodeToCpgSuite {
   val IGNORE_TEST_FILE_REGEX = ".*_test(s)?.*"
   "Simple use case of third-party dependency download" should {
-    // Refer this commit - https://github.com/Privado-Inc/privado/commit/102307a2cc83d2282f72e2e9ff909d608b37b46a
     val config = Config().withFetchDependencies(true).withIgnoredFilesRegex(IGNORE_TEST_FILE_REGEX)
     val cpg = code(
       """
@@ -165,10 +166,10 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
     }
 
     "Test call node" ignore {
-      // TODO: Need to hand interface Type for caching the meta data to make this test work.
+      // TODO: Need to handle interface Type for caching the meta data to make this test work.
       val List(callNode) = cpg.call.name("Close").l
       callNode.typeFullName shouldBe "error"
-      callNode.methodFullName shouldBe "github.com/redis/go-redis/v9.redis.UnversalClient.Close"
+      callNode.methodFullName shouldBe "github.com/redis/go-redis/v9.UnversalClient.Close"
     }
   }
 
@@ -326,6 +327,8 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
           |    "github.com/rs/zerolog/log"
           |)
           |func main() {
+          |    var eventHandler = func(e *zerolog.Event, level zerolog.Level, message string){
+          |    }
           |    zerolog.SetGlobalLevel(zerolog.InfoLevel)
           |    log.Error().Msg("Error message")
           |    log.Warn().Msg("Warning message")
@@ -338,7 +341,8 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
     cpg.method.l
 
     "Be correct for CALL Node typeFullNames" in {
-      val List(a, b, c, d, e) = cpg.call.nameNot(Operators.fieldAccess).l
+      val List(a, b, c, d, e) =
+        cpg.call.where(_.and(_.nameNot(Operators.fieldAccess), _.nameNot(Operators.assignment))).l
       a.typeFullName shouldBe "void"
       b.typeFullName shouldBe "void"
       c.typeFullName shouldBe "*github.com/rs/zerolog.Event"
@@ -369,7 +373,12 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
 
     "not create any entry in lambda signature to return type mapping" in {
       // "github.com/rs/zerolog" dependency has lambda Struct Types declared in the code. However they should not get cached as they are not getting used anywhere.
-      goGlobal.lambdaSignatureToLambdaTypeMap.size() shouldBe 0
+      goGlobal.lambdaSignatureToLambdaTypeMap.size() shouldBe 1
+      goGlobal.lambdaSignatureToLambdaTypeMap
+        .values()
+        .toArray()
+        .map(_.asInstanceOf[java.util.Set[LambdaTypeInfo]].asScala)
+        .flatMap(_.toList) shouldBe Array(LambdaTypeInfo("github.com/rs/zerolog.HookFunc", "void"))
     }
 
     "not create any entry in package level ctor map" in {

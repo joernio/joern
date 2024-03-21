@@ -1,5 +1,6 @@
 package io.joern.gosrc2cpg.datastructures
 
+import dotty.tools.dotc.util.Signatures.Signature
 import io.joern.x2cpg.Ast
 
 import java.util.concurrent.{ConcurrentHashMap, ConcurrentSkipListSet}
@@ -32,7 +33,7 @@ class GoGlobal {
     *
     * This will help map the Lambda TypeFullName with the respective Struct Type as supper Type
     */
-  val lambdaSignatureToLambdaTypeMap: ConcurrentHashMap[String, Set[(String, String)]] = new ConcurrentHashMap()
+  val lambdaSignatureToLambdaTypeMap: ConcurrentHashMap[String, java.util.Set[LambdaTypeInfo]] = new ConcurrentHashMap()
 
   val pkgLevelVarAndConstantAstMap: ConcurrentHashMap[String, Set[(Ast, String)]] = new ConcurrentHashMap()
 
@@ -79,16 +80,30 @@ class GoGlobal {
     }
   }
 
-  def recordLambdaSigntureToLambdaType(
-    signature: String,
-    lambdaStructTypeFullName: String,
-    returnTypeFullname: String
-  ): Unit = synchronized {
+  def recordForThisLamdbdaSignature(signature: String): Unit = synchronized {
+    Option(lambdaSignatureToLambdaTypeMap.get(signature)) match {
+      case None => lambdaSignatureToLambdaTypeMap.put(signature, new ConcurrentSkipListSet())
+      case _    =>
+    }
+  }
+
+  def recordLambdaSigntureToLambdaType(signature: String, lambdaTypeInfo: LambdaTypeInfo): Unit = {
     Option(lambdaSignatureToLambdaTypeMap.get(signature)) match {
       case Some(existingList) =>
-        val t = (lambdaStructTypeFullName, returnTypeFullname)
-        lambdaSignatureToLambdaTypeMap.put(signature, existingList + t)
-      case None => lambdaSignatureToLambdaTypeMap.put(signature, Set((lambdaStructTypeFullName, returnTypeFullname)))
+        existingList.add(lambdaTypeInfo)
+      case _ =>
+    }
+  }
+}
+
+case class LambdaTypeInfo(lambdaStructTypeFullName: String, returnTypeFullname: String)
+    extends Comparable[LambdaTypeInfo] {
+  override def compareTo(that: LambdaTypeInfo): Int = {
+    val lambdaStructTypeFullNameComparison = this.lambdaStructTypeFullName.compareTo(that.lambdaStructTypeFullName)
+    if (lambdaStructTypeFullNameComparison != 0) {
+      lambdaStructTypeFullNameComparison
+    } else {
+      this.returnTypeFullname.compareTo(that.returnTypeFullname)
     }
   }
 }

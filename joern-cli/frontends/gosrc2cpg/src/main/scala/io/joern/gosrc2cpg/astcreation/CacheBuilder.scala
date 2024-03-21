@@ -122,12 +122,27 @@ trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCre
           ) && !goGlobal.processingDependencies
         ) {
           createParserNodeInfo(obj)
+        } else if (
+          json.obj
+            .contains(ParserKeys.NodeType) && obj(ParserKeys.NodeType).str == "ast.FuncLit" && !json.obj.contains(
+            ParserKeys.NodeReferenceId
+          ) && !goGlobal.processingDependencies
+        ) {
+          processFuncLiteral(obj)
         }
+
         obj.value.values.foreach(subJson => findAndProcess(subJson))
       case arr: Arr =>
         arr.value.foreach(subJson => findAndProcess(subJson))
       case _ =>
     }
+  }
+
+  private def processFuncLiteral(funcLit: Value): Unit = {
+    val LambdaFunctionMetaData(signature, _, _, _, _) = generateLambdaSignature(
+      createParserNodeInfo(funcLit(ParserKeys.Type))
+    )
+    goGlobal.recordForThisLamdbdaSignature(signature)
   }
 
   protected def processTypeSepc(typeSepc: ParserNodeInfo): (String, String, Seq[Ast]) = {
