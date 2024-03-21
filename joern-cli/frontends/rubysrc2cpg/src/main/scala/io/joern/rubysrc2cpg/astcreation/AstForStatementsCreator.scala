@@ -45,10 +45,14 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         ))
       yield r.span
     def assign(): RubyRewrite[RubyNode] =
-      val res = fresh(rr.value.span).id
-      for
-        _ <- assign(res)
-      yield res
+      rr.value match {
+        case id: SimpleIdentifier =>
+          rr
+        case _ =>
+          val res = fresh(rr.value.span).id
+          assign(res).map { _ => res }
+      }
+
     def tuck: RubyRewrite[TextSpan] = 
       for
         r <- rr
@@ -73,7 +77,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   implicit class RubyRewriteUnitExt(rr: RubyRewrite[TextSpan]) {
-    def body: RubyNode = StatementList(rr.written)(rr.value)
+    def asList: List[RubyNode] = rr.written
+    def span: TextSpan = rr.value
+    def body: RubyNode = StatementList(asList)(span)
   }
 
   implicit class TextSpanExt(span: TextSpan) {
@@ -111,7 +117,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       rewriteNode(WhileExpression(negate(cond),body)(node.span))
     case node @ IfExpression(cond, thenBody, List(), Some(elseClause @ ElseClause(elseBody))) =>
       for 
-        cnd <- rewriteNode(cond).assign()
+        cnd <- rewriteNode(cond)
         res = fresh(cnd.span).id
         thn = rewriteNode(thenBody).assign(res).body
         els = rewriteNode(elseBody).assign(res).body
@@ -243,8 +249,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
 
     case node: CaseExpression             => node.pure // For now
+    case node: ProcOrLambdaExpr           => node.pure // For now
+    case node: DynamicLiteral             => node.pure // For now
 
-    // case node: ProcOrLambdaExpr           => ???
     // case node: SplattingRubyNode          => ???
     // case node: MandatoryParameter         => ???
     // case node: SelfIdentifier             => ???
@@ -253,7 +260,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     // case node: IncludeCall                => ???
     // case node: DummyNode                  => ???
     // case node: StaticLiteral              => ???
-    // case node: DynamicLiteral             => ???
     // case node: HereDocNode                => ???
     // case node: RubyIdentifier             => ???
     // case node: YieldExpr                  => ???

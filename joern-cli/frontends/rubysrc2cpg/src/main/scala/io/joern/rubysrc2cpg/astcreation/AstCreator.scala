@@ -94,7 +94,7 @@ class AstCreator(
         scope.pushNewScope(moduleScope)
         val block = blockNode(rootNode)
         scope.pushNewScope(BlockScope(block))
-        val statementAsts = rootNode.statements.flatMap(astsForStatement)
+        val statementAsts = rootNode.statements.flatMap(rewriteNode(_).tuck.asList).flatMap(astsForStatement)
         scope.popScope()
         val bodyAst = blockAst(block, statementAsts)
         scope.popScope()
