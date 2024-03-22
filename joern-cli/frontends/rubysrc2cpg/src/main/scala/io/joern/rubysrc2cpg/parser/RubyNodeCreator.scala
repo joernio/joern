@@ -481,9 +481,11 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
           // fixme: This workaround handles a parser ambiguity with method identifiers having `=` and assignments.
           //  The Ruby parser gives precedence to assignments over methods called with this suffix however
           val lhsIdentifier = SimpleIdentifier(None)(identifierCtx.toTextSpan.spanStart(idAssign.stripSuffix("=")))
-          SingleAssignment(lhsIdentifier, "=", ArrayLiteral(arguments)(ctx.commandArgument().toTextSpan))(
-            ctx.toTextSpan
-          )
+          val argNode = arguments match {
+            case arg :: Nil => arg
+            case xs         => ArrayLiteral(xs)(ctx.commandArgument().toTextSpan)
+          }
+          SingleAssignment(lhsIdentifier, "=", argNode)(ctx.toTextSpan)
         case _ =>
           SimpleCall(visit(identifierCtx), arguments)(ctx.toTextSpan)
       }
