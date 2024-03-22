@@ -255,7 +255,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
                       SingleAssignment(
                         node.lhs,
                         node.op,
-                        StaticLiteral(getBuiltInType(Defines.NilClass))(node.span.spanStart("nil"))
+                        StaticLiteral(getBuiltInType(Defines.NilClass))(span.spanStart("nil"))
                       )(span.spanStart(s"${node.lhs.span.text} ${node.op} nil")) :: Nil
                     )(span.spanStart(s"${node.lhs.span.text} ${node.op} nil"))
                   )(span.spanStart(s"else\n\t${node.lhs.span.text} ${node.op} nil\nend"))
@@ -305,7 +305,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case (head: ControlFlowClause) :: Nil     => clauseAssigningLastExpression(head) :: Nil
       case (head: ControlFlowExpression) :: Nil => transform(head) :: Nil
       case head :: Nil =>
-        SingleAssignment(lhs, op, head)(lhs.span.spanStart(s"${lhs.span.text} $op ${head.span.text}")) :: Nil
+        SingleAssignment(lhs, op, head)(rhs.span.spanStart(s"${lhs.span.text} $op ${head.span.text}")) :: Nil
       case Nil          => List.empty
       case head :: tail => head :: stmtListAssigningLastExpression(tail)
     }
@@ -326,7 +326,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case clause: ControlFlowClause   => clauseAssigningLastExpression(clause)
       case expr: ControlFlowExpression => transform(expr)
       case _ =>
-        SingleAssignment(lhs, op, rhs)(lhs.span.spanStart(s"${lhs.span.text} $op ${rhs.span.text}"))
+        SingleAssignment(lhs, op, rhs)(rhs.span.spanStart(s"${lhs.span.text} $op ${rhs.span.text}"))
     }
   }
 

@@ -160,11 +160,26 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
       |
       |""".stripMargin)
 
-    cpg.method(":program").dotAst.foreach(println)
     val assigns = cpg.assignment.l
     assigns.argument(1).code.l shouldBe List("x", "x", "x", "x")
     assigns.argument(2).code.l shouldBe List("1", "2", "3", "4")
+    assigns.map(_.lineNumber).l shouldBe List(Some(4), Some(5), Some(10), Some(11))
     assigns.argument(2).map(_.lineNumber).l shouldBe List(Some(4), Some(6), Some(10), Some(12))
+  }
+
+  "nested if-end should have implicit elses" in {
+    val cpg = code("""
+      |x = if true
+      | if true
+      |  1
+      | end
+      |end
+      |""".stripMargin)
+
+    val assigns = cpg.assignment.l
+    assigns.argument(1).code.l shouldBe List("x", "x", "x")
+    assigns.argument(2).code.l shouldBe List("1", "nil", "nil")
+    assigns.map(_.lineNumber).l shouldBe List(Some(4), Some(3), Some(2))
   }
 
 }
