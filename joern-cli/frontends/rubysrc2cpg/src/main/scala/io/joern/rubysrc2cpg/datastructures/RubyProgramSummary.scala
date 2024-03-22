@@ -1,7 +1,8 @@
 package io.joern.rubysrc2cpg.datastructures
 
-import io.joern.x2cpg.datastructures.{FieldLike, MethodLike, ProgramSummary, TypeLike}
 import io.joern.x2cpg.Defines as XDefines
+import io.joern.x2cpg.datastructures.{FieldLike, MethodLike, ProgramSummary, TypeLike}
+
 import scala.annotation.targetName
 
 class RubyProgramSummary(
@@ -33,6 +34,12 @@ case class RubyField(name: String, typeName: String) extends FieldLike
 
 case class RubyType(name: String, methods: List[RubyMethod], fields: List[RubyField])
     extends TypeLike[RubyMethod, RubyField] {
+
+  @targetName("add")
+  override def +(o: TypeLike[RubyMethod, RubyField]): TypeLike[RubyMethod, RubyField] = {
+    this.copy(methods = mergeMethods(o), fields = mergeFields(o))
+  }
+
   def hasConstructor: Boolean = {
     methods.exists(_.name == XDefines.ConstructorMethodName)
   }

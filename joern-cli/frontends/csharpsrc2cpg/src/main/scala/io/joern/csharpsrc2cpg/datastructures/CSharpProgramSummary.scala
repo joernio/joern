@@ -119,4 +119,10 @@ case class CSharpMethod(name: String, returnType: String, parameterTypes: List[(
     extends MethodLike derives ReadWriter
 
 case class CSharpType(name: String, methods: List[CSharpMethod], fields: List[CSharpField])
-    extends TypeLike[CSharpMethod, CSharpField] derives ReadWriter
+    extends TypeLike[CSharpMethod, CSharpField] derives ReadWriter {
+  @targetName("add")
+  override def +(o: TypeLike[CSharpMethod, CSharpField]): TypeLike[CSharpMethod, CSharpField] = {
+    this.copy(methods = mergeMethods(o), fields = mergeFields(o))
+  }
+
+}

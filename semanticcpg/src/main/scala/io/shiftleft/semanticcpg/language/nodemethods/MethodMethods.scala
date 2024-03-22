@@ -66,14 +66,11 @@ class MethodMethods(val method: Method) extends AnyVal with NodeExtension with H
   }
 
   def content: Option[String] = {
-    val contentOption   = method.file.content.headOption
-    val offsetOption    = method.offset
-    val offsetEndOption = method.offsetEnd
-
-    if (contentOption.isDefined && offsetOption.isDefined && offsetEndOption.isDefined) {
-      contentOption.map(_.substring(offsetOption.get, offsetEndOption.get))
-    } else {
-      None
-    }
+    for {
+      content <- method.file.content.headOption
+      if content != File.PropertyDefaults.Content
+      offset    <- method.offset
+      offsetEnd <- method.offsetEnd
+    } yield content.slice(offset, offsetEnd)
   }
 }

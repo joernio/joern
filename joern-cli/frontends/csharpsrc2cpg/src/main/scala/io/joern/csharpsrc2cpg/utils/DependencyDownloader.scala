@@ -54,8 +54,10 @@ class DependencyDownloader(
     *   true if the dependency is already in the given summary, false if otherwise.
     */
   private def isAlreadySummarized(dependency: Dependency): Boolean = {
-    // TODO: Check internalSummaries too
-    internalPackages.contains(dependency.name)
+    // TODO: `namespace` != `packageId`, so we may want to have summaries store the `packageId` in future
+    internalProgramSummary.namespaceToType.keySet.exists(_.startsWith(dependency.name)) || internalPackages.contains(
+      dependency.name
+    )
   }
 
   private case class NuGetPackageVersions(versions: List[String]) derives ReadWriter

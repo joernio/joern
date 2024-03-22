@@ -1,12 +1,12 @@
 package io.joern.c2cpg
 
 import io.joern.c2cpg.passes.{AstCreationPass, PreprocessorPass, TypeDeclNodePass}
-import io.joern.c2cpg.utils.Report
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
+import io.joern.x2cpg.utils.Report
 
 import java.util.regex.Pattern
 import scala.util.Try
@@ -43,4 +43,5 @@ object C2Cpg {
     s"(.*[$EscapedFileSeparator])?tests?[$EscapedFileSeparator].*".r,
     s"(.*[$EscapedFileSeparator])?CMakeFiles[$EscapedFileSeparator].*".r
   )
+
 }

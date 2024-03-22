@@ -2,6 +2,7 @@ package io.joern.x2cpg.datastructures
 
 import io.shiftleft.codepropertygraph.generated.nodes.DeclarationNew
 
+import scala.annotation.targetName
 import scala.collection.immutable.Map
 import scala.collection.mutable
 import scala.reflect.ClassTag
@@ -43,13 +44,21 @@ object ProgramSummary {
 
   /** Combines two namespace-to-type maps.
     */
-  def combine[T <: TypeLike[_, _]](a: Map[String, Set[T]], b: Map[String, Set[T]]): Map[String, Set[T]] = {
+  def combine[T <: TypeLike[M, F], M <: MethodLike, F <: FieldLike](
+    a: Map[String, Set[T]],
+    b: Map[String, Set[T]]
+  ): Map[String, Set[T]] = {
     val accumulator = mutable.HashMap.from(a)
 
-    b.keySet.foreach(k =>
-      accumulator.updateWith(k) {
-        case Some(existing) => Option(a.getOrElse(k, Set.empty) ++ b.getOrElse(k, Set.empty) ++ existing)
-        case None           => Option(a.getOrElse(k, Set.empty) ++ b.getOrElse(k, Set.empty))
+    b.keySet.foreach(namespace =>
+      accumulator.updateWith(namespace) {
+        case Some(existing) =>
+          val types = (existing.toList ++ b(namespace).toList)
+            .groupBy(_.name)
+            .map { case (_, ts) => ts.reduce((a, b) => (a + b).asInstanceOf[T]) }
+            .toSet
+          Option(types)
+        case None => b.get(namespace)
       }
     )
     accumulator.toMap
@@ -298,6 +307,38 @@ trait TypeLike[M <: MethodLike, F <: FieldLike] {
     *   the fields/properties declared directly under the type declaration.
     */
   def fields: List[F]
+
+  /** Adds the contents of the two types and produces a new type.
+    * @param o
+    *   the other type-like.
+    * @return
+    *   a type-like that is the combination of the two, with precedence to colliding contents to this type (LHS).
+    */
+  @targetName("add")
+  def +(o: TypeLike[M, F]): TypeLike[M, F]
+
+  /** Helper method for creating the sum of two type-like's methods, while preferring this types' methods on collisions.
+    * @param o
+    *   the other type-like.
+    * @return
+    *   the combination of the two type-like's methods.
+    */
+  protected def mergeMethods(o: TypeLike[M, _]): List[M] = {
+    val methodNames = methods.map(_.name).toSet
+    methods ++ o.methods.filterNot(m => methodNames.contains(m.name))
+  }
+
+  /** Helper method for creating the sum of two type-like's fields, while preferring this types' fields on collisions.
+    *
+    * @param o
+    *   the other type-like.
+    * @return
+    *   the combination of the two type-like's fields.
+    */
+  protected def mergeFields(o: TypeLike[_, F]): List[F] = {
+    val fieldNames = fields.map(_.name).toSet
+    fields ++ o.fields.filterNot(f => fieldNames.contains(f.name))
+  }
 
 }
 
