@@ -2,23 +2,27 @@ package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 
+import io.joern.rubysrc2cpg.passes.Defines
+import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
+import io.joern.rubysrc2cpg.utils.FreshNameGenerator
+
 import cats.*
 import cats.data.*
 import cats.syntax.all.*
 import cats.instances.*
-import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 
 trait RubyNodeRewriter { this: AstCreator =>
 
   type RubyRewrite[T] = Writer[List[RubyNode], T]
+
+  val rewriteGen = FreshNameGenerator(i => s"<tmp-gen-$i>")
 
   final case class Fresh(name: String, span: TextSpan) {
     def id: SimpleIdentifier = SimpleIdentifier(None)(span.spanStart(name))
     def call: SimpleCall = SimpleCall(id, List())(span.spanStart(name))
     def ref: BlockArgument = BlockArgument(MethodRefTo(call, name))(span.spanStart(name))
   }
-  def fresh(span: TextSpan): Fresh = Fresh(tmpGen.fresh, span)
+  def fresh(span: TextSpan): Fresh = Fresh(rewriteGen.fresh, span)
 
   implicit class RubyRewriteRubyNodeListExt(rr: RubyRewrite[List[RubyNode]]) {
     def rets(span: TextSpan): RubyRewrite[TextSpan] =
@@ -72,8 +76,17 @@ trait RubyNodeRewriter { this: AstCreator =>
     
   }
 
+  implicit class RubyFlattenExt(node: RubyNode) {
+    def extractStmts: Either[RubyNode, List[RubyNode]] = node match {
+      case StatementList(stmts) => Right(stmts)
+      case _ => Left(node)
+    }
+
+    def flatten: List[RubyNode] = node.extractStmts.fold(List(_), _.flatMap(_.flatten))
+  }
+
   implicit class RubyRewriteUnitExt(rr: RubyRewrite[TextSpan]) {
-    def asList: List[RubyNode] = rr.written
+    def asList: List[RubyNode] = rr.written.flatMap(_.flatten)
     def span: TextSpan = rr.value
     def body: RubyNode = StatementList(asList)(span)
   }
@@ -178,9 +191,9 @@ trait RubyNodeRewriter { this: AstCreator =>
     case node @ ModuleDeclaration(name, body) =>
       val bdy = rewriteNode(body, false).tuck.body
       ModuleDeclaration(name, bdy)(node.span).pure
-    case node @ ClassDeclaration(name, body, baseClass, fields) =>
-      val bdy = body.map(rewriteNode(_, false).tuck.body)
-      ClassDeclaration(name, bdy, baseClass, fields)(node.span).pure
+    case node @ ClassDeclaration(name, baseClass, body,  fields) =>
+      val bdy = rewriteNode(body, false).tuck.body
+      ClassDeclaration(name, baseClass, body, fields)(node.span).pure
     case node @ MethodDeclaration(name, parameters, body)          => 
       val bdy = rewriteNode(body, true).ret.body
       MethodDeclaration(name, parameters, bdy)(node.span).pure
