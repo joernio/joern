@@ -380,4 +380,7 @@ object RubyIntermediateAst {
   final case class BinaryExpression(lhs: RubyNode, op: String, rhs: RubyNode)(span: TextSpan) extends RubyNode(span)
 
   final case class HereDocNode(content: String)(span: TextSpan) extends RubyNode(span)
+
+  final case class AliasStatement(oldName: String, newName: String)(span: TextSpan) extends RubyNode(span)
+
 }

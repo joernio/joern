@@ -122,7 +122,7 @@ methodName
     ;
 
 methodOnlyIdentifier
-    :   (CONSTANT_IDENTIFIER | LOCAL_VARIABLE_IDENTIFIER | pseudoVariable) (EMARK | QMARK)
+    :   (CONSTANT_IDENTIFIER | LOCAL_VARIABLE_IDENTIFIER | pseudoVariable) (EMARK | QMARK | EQ)
     ;
     
 methodInvocationWithoutParentheses
