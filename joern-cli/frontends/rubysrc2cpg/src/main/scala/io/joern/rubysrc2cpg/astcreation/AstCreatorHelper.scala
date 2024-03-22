@@ -98,6 +98,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       "%"   -> Operators.modulo,
       "**"  -> Operators.exponentiation,
       "=="  -> Operators.equals,
+      "===" -> Operators.equals,
       "!="  -> Operators.notEquals,
       "<"   -> Operators.lessThan,
       "<="  -> Operators.lessEqualsThan,

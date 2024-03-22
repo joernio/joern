@@ -4,10 +4,10 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{Unknown, *}
 import io.joern.rubysrc2cpg.datastructures.BlockScope
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.{RubyOperators, getBuiltInType}
+import io.joern.rubysrc2cpg.utils.FreshNameGenerator
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators, PropertyNames}
-import io.joern.rubysrc2cpg.utils.FreshNameGenerator
 
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -127,10 +127,19 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   /** Attempts to extract a type from the base of a member call.
     */
   protected def typeFromCallTarget(baseNode: RubyNode): Option[String] = {
-    astForExpression(baseNode).nodes
-      .flatMap(_.properties.get(PropertyNames.TYPE_FULL_NAME).map(_.toString))
-      .filterNot(_ == XDefines.Any)
-      .headOption
+    scope.lookupVariable(baseNode.text) match {
+      // fixme: This should be under type recovery logic
+      case Some(decl: NewLocal) if decl.typeFullName != Defines.Any             => Option(decl.typeFullName)
+      case Some(decl: NewMethodParameterIn) if decl.typeFullName != Defines.Any => Option(decl.typeFullName)
+      case Some(decl: NewLocal) if decl.dynamicTypeHintFullName.nonEmpty => decl.dynamicTypeHintFullName.headOption
+      case Some(decl: NewMethodParameterIn) if decl.dynamicTypeHintFullName.nonEmpty =>
+        decl.dynamicTypeHintFullName.headOption
+      case _ =>
+        astForExpression(baseNode).nodes
+          .flatMap(_.properties.get(PropertyNames.TYPE_FULL_NAME).map(_.toString))
+          .filterNot(_ == XDefines.Any)
+          .headOption
+    }
   }
 
   protected def astForMemberCall(node: MemberCall): Ast = {
@@ -140,25 +149,24 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .map(x => s"$x:${node.methodName}")
       .getOrElse(XDefines.DynamicCallUnknownFullName)
 
-    val fieldAccessBase = astForExpression(node.target)
-    val fieldAccessAst  = astForFieldAccess(MemberAccess(node.target, node.op, node.methodName)(node.span))
-    val argumentAsts    = node.arguments.map(astForMethodCallArgument)
+    val fieldAccessReceiver = astForFieldAccess(MemberAccess(node.target, node.op, node.methodName)(node.span))
+    val argumentAsts        = node.arguments.map(astForMethodCallArgument)
 
     // This is consistent with `pysrc` calls
-    fieldAccessAst.root.collect { case x: AstNodeNew => x.order = 0 }
-    fieldAccessBase.root.collect { case x: AstNodeNew => x.order = 1 }
+    fieldAccessReceiver.root.collect { case x: AstNodeNew => x.order = 0 }
     argumentAsts.zipWithIndex.foreach { case (arg, idx) =>
-      arg.root.collect { case x: AstNodeNew => x.order = idx + 2 }
+      arg.root.collect { case x: AstNodeNew => x.order = idx + 1 }
     }
+    fieldAccessReceiver.root.collect { case x: NewCall => x.typeFullName(fullName) }
 
-    val fieldAccessCall = callNode(node, code(node), node.methodName, fullName, DispatchTypes.DYNAMIC_DISPATCH)
+    val dispatchType    = if node.op == "::" then DispatchTypes.STATIC_DISPATCH else DispatchTypes.DYNAMIC_DISPATCH
+    val fieldAccessCall = callNode(node, code(node), node.methodName, fullName, dispatchType)
 
-    callAst(fieldAccessCall, argumentAsts, Option(fieldAccessBase), Option(fieldAccessAst))
+    callAst(fieldAccessCall, argumentAsts, None, Option(fieldAccessReceiver))
   }
 
   protected def astForIndexAccess(node: IndexAccess): Ast = {
     // Array::[] and Hash::[] looks like an index access to the parser, some other methods may have this name too
-    lazy val arrayMethodName = SimpleIdentifier(None)(node.span.spanStart("[]"))
     lazy val defaultBehaviour = {
       val indexAsts = node.indices.map(astForExpression)
       val targetAst = astForExpression(node.target)
@@ -171,10 +179,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         scope
           .tryResolveMethodInvocation("[]", List.empty, Option(typeReference))
           .map { m =>
-            val args =
-              if node.indices.exists(_.isInstanceOf[Association]) then HashLiteral(node.indices)(node.span) :: Nil
-              else ArrayLiteral(node.indices)(node.span) :: Nil
-            val expr = astForExpression(SimpleCall(arrayMethodName, args)(node.span))
+            val expr = astForExpression(MemberCall(node.target, "::", "[]", node.indices)(node.span))
             expr.root.collect { case x: NewCall =>
               x.methodFullName(s"$typeReference:${m.name}")
               scope.tryResolveTypeReference(m.returnType).map(_.name).foreach(x.typeFullName(_))
@@ -402,13 +407,18 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       logger.warn(s"Interpolated array literals are not supported yet: ${code(node)} ($relativeFileName), skipping")
       astForUnknown(node)
     } else {
-      val argumentsType = if (node.isStringArray) {
-        getBuiltInType(Defines.String)
+      val arguments = if (node.text.startsWith("%")) {
+        val argumentsType =
+          if (node.isStringArray) getBuiltInType(Defines.String)
+          else getBuiltInType(Defines.Symbol)
+        node.elements.map {
+          case element @ StaticLiteral(_) => StaticLiteral(argumentsType)(element.span)
+          case element                    => element
+        }
       } else {
-        getBuiltInType(Defines.Symbol)
+        node.elements
       }
-      val argumentLiterals = node.elements.map(element => StaticLiteral(argumentsType)(element.span))
-      val argumentAsts     = argumentLiterals.map(astForExpression)
+      val argumentAsts = arguments.map(astForExpression)
 
       val call =
         callNode(
@@ -605,9 +615,17 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     // TODO: Type recovery should potentially resolve this
     val methodFullName = typeFromCallTarget(memberAccess.target)
       .map(x => s"$x:$methodName")
-      .getOrElse(methodName)
+      .getOrElse(XDefines.DynamicCallUnknownFullName)
     val argumentAsts = node.arguments.map(astForMethodCallArgument)
-    val call         = callNode(node, code(node), methodName, methodFullName, DispatchTypes.DYNAMIC_DISPATCH)
+    val dispatchType = if memberAccess.op == "::" then DispatchTypes.STATIC_DISPATCH else DispatchTypes.DYNAMIC_DISPATCH
+    val call         = callNode(node, code(node), methodName, methodFullName, dispatchType)
+
+    // Consistent with `pysrc`
+    receiverAst.root.foreach { case x: AstNodeNew => x.order = 0 }
+    argumentAsts.zipWithIndex.foreach { case (arg, idx) =>
+      arg.root.collect { case x: AstNodeNew => x.order = idx + 1 }
+    }
+
     callAst(call, argumentAsts, None, Some(receiverAst))
   }
 
