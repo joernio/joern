@@ -97,7 +97,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
 
     "specify the closure reference as an argument to the member call with block" in {
       inside(cpg.call("each").argument.l) {
-        case (_: Identifier) :: (lambdaRef: MethodRef) :: Nil =>
+        case (lambdaRef: MethodRef) :: Nil =>
           lambdaRef.methodFullName shouldBe "Test0.rb:<global>::program:<lambda>0"
         case xs =>
           fail(s"Expected `each` call to have call and method ref arguments, instead got [${xs.code.mkString(", ")}]")
@@ -157,7 +157,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
 
     "specify the closure reference as an argument to the member call with block" in {
       inside(cpg.call("each").argument.l) {
-        case (_: Identifier) :: (lambdaRef: MethodRef) :: Nil =>
+        case (lambdaRef: MethodRef) :: Nil =>
           lambdaRef.methodFullName shouldBe "Test0.rb:<global>::program:<lambda>0"
         case xs =>
           fail(s"Expected `each` call to have call and method ref arguments, instead got [${xs.code.mkString(", ")}]")

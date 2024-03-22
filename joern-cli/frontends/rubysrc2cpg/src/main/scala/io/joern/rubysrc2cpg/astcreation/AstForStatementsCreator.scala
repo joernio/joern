@@ -129,7 +129,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           // which is translated to `x.include? y` and `x.any?` conditions respectively
 
           val conditions = whenClause.matchExpressions.map { mExpr =>
-            expr.map(e => MemberCall(mExpr, ".", "===", List(e))(mExpr.span)).getOrElse(mExpr)
+            expr.map(e => BinaryExpression(mExpr, "===", e)(mExpr.span)).getOrElse(mExpr)
           } ++ (whenClause.matchSplatExpression.iterator.flatMap {
             case splat @ SplattingRubyNode(exprList) =>
               expr
