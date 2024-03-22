@@ -43,20 +43,20 @@ class ConditionalTests extends RubyCode2CpgFixture {
     val cpg = code("""
                      |f(x ? y : z)
                      |""".stripMargin)
-    val List(cond) = cpg.call(Operators.conditional).l
-    val List(x,y,z) = cond.argument.l
+    val List(cond)    = cpg.call(Operators.conditional).l
+    val List(x, y, z) = cond.argument.l
     x.code shouldBe "x"
-    List(y,z).isBlock.astChildren.isIdentifier.code.l shouldBe List("y","z")
+    List(y, z).isBlock.astChildren.isIdentifier.code.l shouldBe List("y", "z")
   }
 
   "`f(unless x then y else z end)` is lowered into conditional operator" in {
     val cpg = code("""
                      |f(unless x then y else z end)
                      |""".stripMargin)
-    val List(cond) = cpg.call(Operators.conditional).l
-    val List(x,y,z) = cond.argument.l
+    val List(cond)    = cpg.call(Operators.conditional).l
+    val List(x, y, z) = cond.argument.l
     List(x).isCall.name(Operators.logicalNot).argument.code.l shouldBe List("x")
-    List(y,z).isBlock.astChildren.isIdentifier.code.l shouldBe List("y","z")
+    List(y, z).isBlock.astChildren.isIdentifier.code.l shouldBe List("y", "z")
   }
 
 }
