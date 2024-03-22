@@ -56,7 +56,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case alias: CPPASTNamespaceAlias               => Seq(astForNamespaceAlias(alias))
       case asm: IASTASMDeclaration                   => Seq(astForASMDeclaration(asm))
       case _: ICPPASTUsingDirective                  => Seq.empty
-      case decl                                      => Seq(astForNode(decl))
+      case declaration                               => Seq(astForNode(declaration))
     }
 
   private def astForReturnStatement(ret: IASTReturnStatement): Ast = {
@@ -100,7 +100,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val doNode       = controlStructureNode(doStmt, ControlStructureTypes.DO, codeString)
     val conditionAst = astForConditionExpression(doStmt.getCondition)
     val bodyAst      = nullSafeAst(doStmt.getBody)
-    controlStructureAst(doNode, Some(conditionAst), bodyAst, placeConditionLast = true)
+    controlStructureAst(doNode, Option(conditionAst), bodyAst, placeConditionLast = true)
   }
 
   private def astForSwitchStatement(switchStmt: IASTSwitchStatement): Ast = {
@@ -108,7 +108,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val switchNode   = controlStructureNode(switchStmt, ControlStructureTypes.SWITCH, code)
     val conditionAst = astForConditionExpression(switchStmt.getControllerExpression)
     val stmtAsts     = nullSafeAst(switchStmt.getBody)
-    controlStructureAst(switchNode, Some(conditionAst), stmtAsts)
+    controlStructureAst(switchNode, Option(conditionAst), stmtAsts)
   }
 
   private def astsForCaseStatement(caseStmt: IASTCaseStatement): Seq[Ast] = {
@@ -122,14 +122,20 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def astForTryStatement(tryStmt: ICPPASTTryBlockStatement): Ast = {
-    val cpgTry = controlStructureNode(tryStmt, ControlStructureTypes.TRY, "try")
-    val body   = nullSafeAst(tryStmt.getTryBody)
-    // All catches must have order 2 for correct control flow generation.
-    // TODO fix this. Multiple siblings with the same order are invalid
-    val catches = tryStmt.getCatchHandlers.flatMap { stmt =>
-      astsForStatement(stmt.getCatchBody, 2)
+    val tryNode = controlStructureNode(tryStmt, ControlStructureTypes.TRY, "try")
+    val body    = nullSafeAst(tryStmt.getTryBody)
+    val catches = tryStmt.getCatchHandlers.zipWithIndex.map { case (h, index) =>
+      astForCatchHandler(h, index + 1)
     }.toIndexedSeq
-    Ast(cpgTry).withChildren(body).withChildren(catches)
+    Ast(tryNode).withChildren(body).withChildren(catches)
+  }
+
+  private def astForCatchHandler(catchHandler: ICPPASTCatchHandler, argIndex: Int): Ast = {
+    val catchNode =
+      controlStructureNode(catchHandler, ControlStructureTypes.CATCH, "catch").order(argIndex).argumentIndex(argIndex)
+    val declAst = astsForDeclaration(catchHandler.getDeclaration)
+    val bodyAst = astsForStatement(catchHandler.getCatchBody)
+    Ast(catchNode).withChildren(declAst).withChildren(bodyAst)
   }
 
   protected def astsForStatement(statement: IASTStatement, argIndex: Int = -1): Seq[Ast] = {
@@ -181,10 +187,10 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     asts
   }
 
-  private def astForConditionExpression(expr: IASTExpression, explicitArgumentIndex: Option[Int] = None): Ast = {
-    val ast = expr match {
+  private def astForConditionExpression(expression: IASTExpression, explicitArgumentIndex: Option[Int] = None): Ast = {
+    val ast = expression match {
       case exprList: IASTExpressionList =>
-        val compareAstBlock = blockNode(expr, Defines.empty, registerType(Defines.voidTypeName))
+        val compareAstBlock = blockNode(expression, Defines.empty, registerType(Defines.voidTypeName))
         scope.pushNewScope(compareAstBlock)
         val compareBlockAstChildren = exprList.getExpressions.toList.map(nullSafeAst)
         setArgumentIndices(compareBlockAstChildren)
@@ -213,7 +219,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val initAst = blockAst(initAstBlock, nullSafeAst(forStmt.getInitializerStatement, 1).toList)
     scope.popScope()
 
-    val compareAst = astForConditionExpression(forStmt.getConditionExpression, Some(2))
+    val compareAst = astForConditionExpression(forStmt.getConditionExpression, Option(2))
     val updateAst  = nullSafeAst(forStmt.getIterationExpression, 3)
     val bodyAsts   = nullSafeAst(forStmt.getBody, 4)
     forAst(forNode, Seq(), Seq(initAst), Seq(compareAst), Seq(updateAst), bodyAsts)
@@ -237,9 +243,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val compareAst = astForConditionExpression(whileStmt.getCondition)
     val bodyAst    = nullSafeAst(whileStmt.getBody)
     whileAst(
-      Some(compareAst),
+      Option(compareAst),
       bodyAst,
-      code = Some(code),
+      code = Option(code),
       lineNumber = line(whileStmt),
       columnNumber = column(whileStmt)
     )
@@ -290,6 +296,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         Ast(elseNode).withChild(blockAst(elseBlock, a.toList))
       case _ => Ast()
     }
-    controlStructureAst(ifNode, Some(conditionAst), Seq(thenAst, elseAst))
+    controlStructureAst(ifNode, Option(conditionAst), Seq(thenAst, elseAst))
   }
 }

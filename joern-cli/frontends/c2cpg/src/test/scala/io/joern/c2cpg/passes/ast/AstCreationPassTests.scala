@@ -1213,14 +1213,51 @@ class AstCreationPassTests extends AstC2CpgSuite {
         |void bar();
         |int foo(){
         | try { bar(); } 
-        | catch(x) { return 0; };
+        | catch(Foo x) { return 0; };
         |}
       """.stripMargin,
         "file.cpp"
       )
-      inside(cpg.controlStructure.l) { case List(t) =>
-        t.ast.isCall.order(1).code.l shouldBe List("bar()")
-        t.ast.isReturn.code.l shouldBe List("return 0;")
+      inside(cpg.controlStructure.isTry.l) { case List(t) =>
+        val List(tryBlock) = t.astChildren.isBlock.l
+        tryBlock.astChildren.isCall.order(1).code.l shouldBe List("bar()")
+        val List(catchX) = t.astChildren.isControlStructure.isCatch.l
+        catchX.order shouldBe 1
+        catchX.ast.isReturn.code.l shouldBe List("return 0;")
+        catchX.ast.isLocal.code.l shouldBe List("Foo x")
+      }
+    }
+
+    "be correct for try with multiple catches" in {
+      val cpg: Cpg = code(
+        """
+          |int main() {
+          |  try {
+          |    a;
+          |  } catch (short x) {
+          |    b;
+          |  } catch (int y) {
+          |    c;
+          |  } catch (long z) {
+          |    d;
+          |  }
+          |}
+          |""".stripMargin,
+        "file.cpp"
+      )
+      inside(cpg.controlStructure.isTry.l) { case List(t) =>
+        val List(tryBlock) = t.astChildren.isBlock.l
+        tryBlock.astChildren.isIdentifier.order(1).code.l shouldBe List("a")
+        val List(catchX, catchY, catchZ) = t.astChildren.isControlStructure.isCatch.l
+        catchX.order shouldBe 1
+        catchX.ast.isIdentifier.code.l shouldBe List("b")
+        catchX.ast.isLocal.code.l shouldBe List("short x")
+        catchY.order shouldBe 2
+        catchY.ast.isIdentifier.code.l shouldBe List("c")
+        catchY.ast.isLocal.code.l shouldBe List("int y")
+        catchZ.order shouldBe 3
+        catchZ.ast.isIdentifier.code.l shouldBe List("d")
+        catchZ.ast.isLocal.code.l shouldBe List("long z")
       }
     }
 

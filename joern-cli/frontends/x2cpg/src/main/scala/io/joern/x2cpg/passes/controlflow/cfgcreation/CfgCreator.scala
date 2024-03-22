@@ -168,6 +168,10 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
         cfgForSwitchStatement(node)
       case ControlStructureTypes.TRY =>
         cfgForTryStatement(node)
+      case ControlStructureTypes.CATCH =>
+        cfgForChildren(node)
+      case ControlStructureTypes.FINALLY =>
+        cfgForChildren(node)
       case ControlStructureTypes.MATCH =>
         cfgForMatchExpression(node)
       case _ =>
@@ -487,26 +491,44 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
   protected def cfgForTryStatement(node: ControlStructure): Cfg = {
     val maybeTryBlock =
       node.astChildren
-        .where(_.order(1))
+        .order(1)
         .where(_.astChildren) // Filter out empty `try` bodies
         .headOption
 
     val tryBodyCfg: Cfg = maybeTryBlock.map(cfgFor).getOrElse(Cfg.empty)
 
-    val catchBodyCfgs: List[Cfg] =
-      node.astChildren
-        .where(_.order(2))
-        .toList match {
+    val catchBodyCfgsByCatch: List[Cfg] =
+      node.astChildren.isControlStructure.isCatch.toList match {
         case Nil  => List(Cfg.empty)
         case asts => asts.map(cfgFor)
       }
+    val catchBodyCfgsByOrder: List[Cfg] =
+      node.astChildren.order(2).toList match {
+        case Nil  => List(Cfg.empty)
+        case asts => asts.map(cfgFor)
+      }
+    val catchBodyCfgs = if (catchBodyCfgsByCatch.isEmpty) {
+      catchBodyCfgsByOrder
+    } else {
+      catchBodyCfgsByCatch
+    }
 
-    val maybeFinallyBodyCfg: List[Cfg] =
-      node.astChildren
-        .where(_.order(3))
+    val maybeFinallyBodyCfgByFinally: List[Cfg] =
+      node.astChildren.isControlStructure.isFinally
         .map(cfgFor)
         .headOption // Assume there can only be one
         .toList
+    val maybeFinallyBodyCfgByOrder: List[Cfg] =
+      node.astChildren
+        .order(3)
+        .map(cfgFor)
+        .headOption // Assume there can only be one
+        .toList
+    val maybeFinallyBodyCfg = if (catchBodyCfgsByCatch.isEmpty && maybeFinallyBodyCfgByFinally.isEmpty) {
+      maybeFinallyBodyCfgByOrder
+    } else {
+      maybeFinallyBodyCfgByFinally
+    }
 
     val tryToCatchEdges = catchBodyCfgs.flatMap { catchBodyCfg =>
       edgesFromFringeTo(tryBodyCfg, catchBodyCfg.entryNode)
