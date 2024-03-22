@@ -360,11 +360,12 @@ class StepsTest extends AnyWordSpec with Matchers {
     val cpg = MockCpg().withCustom { (diffGraph, _) =>
       diffGraph
         .addNode(NewCall())
-        .addNode(NewCall()
-          .typeFullName("aa") // Cardinality.One
-          .argumentName("bb") // Cardinality.ZeroOrOne
-          .dynamicTypeHintFullName(Seq("cc", "dd")) // Cardinality.List
-      )
+        .addNode(
+          NewCall()
+            .typeFullName("aa")                       // Cardinality.One
+            .argumentName("bb")                       // Cardinality.ZeroOrOne
+            .dynamicTypeHintFullName(Seq("cc", "dd")) // Cardinality.List
+        )
     }.cpg
 
     val (Seq(emptyCall), Seq(callWithProperties)) = cpg.call.l.partition(_.argumentName.isEmpty)
