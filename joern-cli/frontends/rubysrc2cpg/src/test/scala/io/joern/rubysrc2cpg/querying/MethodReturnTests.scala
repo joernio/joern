@@ -240,6 +240,34 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
     }
   }
 
+  "implicit return of nested control flow" in {
+    val cpg = code("""
+      | def foo
+      |  if true
+      |   if true
+      |    1
+      |   else
+      |    2
+      |   end
+      |  else
+      |   if true
+      |    3
+      |   else
+      |    4
+      |   end
+      |  end
+      | end
+      |""".stripMargin)
+
+    inside(cpg.method.name("foo").l) {
+      case f :: Nil =>
+        val returns = f.methodReturn.toReturn.l
+        returns.code.l shouldBe List("1","2","3","4")
+        returns.map(_.lineNumber).l shouldBe List(Some(5), Some(7), Some(11), Some(13))
+    }
+  }
+
+
   "implicit RETURN node for ternary expression" in {
     val cpg = code("""
         |def f(x) = x ? 20 : 40

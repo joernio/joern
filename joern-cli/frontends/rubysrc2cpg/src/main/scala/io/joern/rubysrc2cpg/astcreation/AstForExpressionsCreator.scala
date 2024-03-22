@@ -249,25 +249,25 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           case Some(op) =>
             node.rhs match {
               case cfNode: ControlFlowExpression =>
-                def elseAssignNil = Option {
+                def elseAssignNil(span: TextSpan) = Option {
                   ElseClause(
                     StatementList(
                       SingleAssignment(
                         node.lhs,
                         node.op,
                         StaticLiteral(getBuiltInType(Defines.NilClass))(node.span.spanStart("nil"))
-                      )(node.span.spanStart(s"${node.lhs.span.text} ${node.op} nil")) :: Nil
-                    )(node.span.spanStart(s"${node.lhs.span.text} ${node.op} nil"))
-                  )(node.span.spanStart(s"else\n\t${node.lhs.span.text} ${node.op} nil\nend"))
+                      )(span.spanStart(s"${node.lhs.span.text} ${node.op} nil")) :: Nil
+                    )(span.spanStart(s"${node.lhs.span.text} ${node.op} nil"))
+                  )(span.spanStart(s"else\n\t${node.lhs.span.text} ${node.op} nil\nend"))
                 }
 
-                astForExpression(
-                  transformLastRubyNodeInControlFlowExpressionBody(
-                    cfNode,
-                    x => reassign(node.lhs, node.op, x),
+
+                def transform(e: RubyNode with ControlFlowExpression): RubyNode = transformLastRubyNodeInControlFlowExpressionBody(
+                    e,
+                    x => reassign(node.lhs, node.op, x, transform),
                     elseAssignNil
                   )
-                )
+                astForExpression(transform(cfNode))
               case _ =>
                 val lhsAst = astForExpression(node.lhs)
                 val rhsAst = astForExpression(node.rhs)
@@ -295,9 +295,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     }
   }
 
-  private def reassign(lhs: RubyNode, op: String, rhs: RubyNode): RubyNode = {
+  private def reassign(lhs: RubyNode, op: String, rhs: RubyNode, transform: (RubyNode with ControlFlowExpression) => RubyNode): RubyNode = {
     def stmtListAssigningLastExpression(stmts: List[RubyNode]): List[RubyNode] = stmts match {
       case (head: ControlFlowClause) :: Nil => clauseAssigningLastExpression(head) :: Nil
+      case (head: ControlFlowExpression) :: Nil => transform(head) :: Nil
       case head :: Nil =>
         SingleAssignment(lhs, op, head)(lhs.span.spanStart(s"${lhs.span.text} $op ${head.span.text}")) :: Nil
       case Nil          => List.empty
@@ -306,17 +307,18 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     def clauseAssigningLastExpression(x: RubyNode with ControlFlowClause): RubyNode = x match {
       case RescueClause(exceptionClassList, assignment, thenClause) =>
-        RescueClause(exceptionClassList, assignment, reassign(lhs, op, thenClause))(x.span)
-      case EnsureClause(thenClause)           => EnsureClause(reassign(lhs, op, thenClause))(x.span)
-      case ElsIfClause(condition, thenClause) => ElsIfClause(condition, reassign(lhs, op, thenClause))(x.span)
-      case ElseClause(thenClause)             => ElseClause(reassign(lhs, op, thenClause))(x.span)
+        RescueClause(exceptionClassList, assignment, reassign(lhs, op, thenClause, transform))(x.span)
+      case EnsureClause(thenClause)           => EnsureClause(reassign(lhs, op, thenClause, transform))(x.span)
+      case ElsIfClause(condition, thenClause) => ElsIfClause(condition, reassign(lhs, op, thenClause, transform))(x.span)
+      case ElseClause(thenClause)             => ElseClause(reassign(lhs, op, thenClause, transform))(x.span)
       case WhenClause(matchExpressions, matchSplatExpression, thenClause) =>
-        WhenClause(matchExpressions, matchSplatExpression, reassign(lhs, op, thenClause))(x.span)
+        WhenClause(matchExpressions, matchSplatExpression, reassign(lhs, op, thenClause, transform))(x.span)
     }
 
     rhs match {
       case StatementList(statements) => StatementList(stmtListAssigningLastExpression(statements))(rhs.span)
       case clause: ControlFlowClause => clauseAssigningLastExpression(clause)
+      case expr: ControlFlowExpression => transform(expr)
       case _ =>
         SingleAssignment(lhs, op, rhs)(lhs.span.spanStart(s"${lhs.span.text} $op ${rhs.span.text}"))
     }
