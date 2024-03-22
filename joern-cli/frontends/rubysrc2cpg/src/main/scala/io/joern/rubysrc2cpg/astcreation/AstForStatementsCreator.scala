@@ -339,7 +339,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   /** @param node
-    *   // TODO update \- Control Flow Expression RubyNode
+    *   \- Control Flow Expression RubyNode
     * @param transform
     *   \- RubyNode => RubyNode function for transformation on the clauses of the ControlFlowExpression
     * @return
