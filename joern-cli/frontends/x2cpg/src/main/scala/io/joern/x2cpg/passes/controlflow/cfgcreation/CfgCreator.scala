@@ -502,13 +502,11 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
         case Nil  => List(Cfg.empty)
         case asts => asts.map(cfgFor)
       }
-    val catchBodyCfgsByOrder: List[Cfg] =
+    val catchBodyCfgs = if (catchBodyCfgsByCatch.isEmpty) {
       node.astChildren.order(2).toList match {
         case Nil  => List(Cfg.empty)
         case asts => asts.map(cfgFor)
       }
-    val catchBodyCfgs = if (catchBodyCfgsByCatch.isEmpty) {
-      catchBodyCfgsByOrder
     } else {
       catchBodyCfgsByCatch
     }
@@ -518,14 +516,12 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
         .map(cfgFor)
         .headOption // Assume there can only be one
         .toList
-    val maybeFinallyBodyCfgByOrder: List[Cfg] =
+    val maybeFinallyBodyCfg = if (catchBodyCfgsByCatch.isEmpty && maybeFinallyBodyCfgByFinally.isEmpty) {
       node.astChildren
         .order(3)
         .map(cfgFor)
         .headOption // Assume there can only be one
         .toList
-    val maybeFinallyBodyCfg = if (catchBodyCfgsByCatch.isEmpty && maybeFinallyBodyCfgByFinally.isEmpty) {
-      maybeFinallyBodyCfgByOrder
     } else {
       maybeFinallyBodyCfgByFinally
     }
