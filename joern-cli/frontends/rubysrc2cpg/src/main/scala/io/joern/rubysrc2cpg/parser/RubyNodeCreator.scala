@@ -4,12 +4,12 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.parser.AntlrContextHelpers.*
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
-import org.antlr.v4.runtime.tree.{ParseTree, RuleNode}
+import io.joern.rubysrc2cpg.utils.FreshNameGenerator
 import io.joern.x2cpg.Defines as XDefines
+import org.antlr.v4.runtime.tree.{ParseTree, RuleNode}
+import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.*
-import io.joern.rubysrc2cpg.utils.FreshNameGenerator
-import org.slf4j.LoggerFactory
 
 /** Converts an ANTLR Ruby Parse Tree into the intermediate Ruby AST.
   */
@@ -477,6 +477,13 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
           RequireCall(visit(identifierCtx), argument, true)(ctx.toTextSpan)
         case ("include", List(argument)) =>
           IncludeCall(visit(identifierCtx), argument)(ctx.toTextSpan)
+        case (idAssign, arguments) if idAssign.endsWith("=") =>
+          // fixme: This workaround handles a parser ambiguity with method identifiers having `=` and assignments.
+          //  The Ruby parser gives precedence to assignments over methods called with this suffix however
+          val lhsIdentifier = SimpleIdentifier(None)(identifierCtx.toTextSpan.spanStart(idAssign.stripSuffix("=")))
+          SingleAssignment(lhsIdentifier, "=", ArrayLiteral(arguments)(ctx.commandArgument().toTextSpan))(
+            ctx.toTextSpan
+          )
         case _ =>
           SimpleCall(visit(identifierCtx), arguments)(ctx.toTextSpan)
       }
