@@ -142,7 +142,6 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
     rhsElseBranchValue.code shouldBe "40"
   }
 
-
   "nested if-else-end on the RHS of an assignment" in {
     val cpg = code("""
       |x = if true
@@ -161,11 +160,11 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
       |
       |""".stripMargin)
 
-      cpg.method(":program").dotAst.foreach(println)
-      val assigns = cpg.assignment.l
-      assigns.argument(1).code.l shouldBe List("x","x","x","x")
-      assigns.argument(2).code.l shouldBe List("1","2","3","4")
-      assigns.argument(2).map(_.lineNumber).l shouldBe List(Some(4), Some(6), Some(10), Some(12))
+    cpg.method(":program").dotAst.foreach(println)
+    val assigns = cpg.assignment.l
+    assigns.argument(1).code.l shouldBe List("x", "x", "x", "x")
+    assigns.argument(2).code.l shouldBe List("1", "2", "3", "4")
+    assigns.argument(2).map(_.lineNumber).l shouldBe List(Some(4), Some(6), Some(10), Some(12))
   }
 
 }

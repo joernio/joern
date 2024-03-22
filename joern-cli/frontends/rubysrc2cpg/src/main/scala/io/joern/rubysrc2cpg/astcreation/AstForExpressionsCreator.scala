@@ -261,8 +261,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
                   )(span.spanStart(s"else\n\t${node.lhs.span.text} ${node.op} nil\nend"))
                 }
 
-
-                def transform(e: RubyNode with ControlFlowExpression): RubyNode = transformLastRubyNodeInControlFlowExpressionBody(
+                def transform(e: RubyNode with ControlFlowExpression): RubyNode =
+                  transformLastRubyNodeInControlFlowExpressionBody(
                     e,
                     x => reassign(node.lhs, node.op, x, transform),
                     elseAssignNil
@@ -295,9 +295,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     }
   }
 
-  private def reassign(lhs: RubyNode, op: String, rhs: RubyNode, transform: (RubyNode with ControlFlowExpression) => RubyNode): RubyNode = {
+  private def reassign(
+    lhs: RubyNode,
+    op: String,
+    rhs: RubyNode,
+    transform: (RubyNode with ControlFlowExpression) => RubyNode
+  ): RubyNode = {
     def stmtListAssigningLastExpression(stmts: List[RubyNode]): List[RubyNode] = stmts match {
-      case (head: ControlFlowClause) :: Nil => clauseAssigningLastExpression(head) :: Nil
+      case (head: ControlFlowClause) :: Nil     => clauseAssigningLastExpression(head) :: Nil
       case (head: ControlFlowExpression) :: Nil => transform(head) :: Nil
       case head :: Nil =>
         SingleAssignment(lhs, op, head)(lhs.span.spanStart(s"${lhs.span.text} $op ${head.span.text}")) :: Nil
@@ -308,16 +313,17 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     def clauseAssigningLastExpression(x: RubyNode with ControlFlowClause): RubyNode = x match {
       case RescueClause(exceptionClassList, assignment, thenClause) =>
         RescueClause(exceptionClassList, assignment, reassign(lhs, op, thenClause, transform))(x.span)
-      case EnsureClause(thenClause)           => EnsureClause(reassign(lhs, op, thenClause, transform))(x.span)
-      case ElsIfClause(condition, thenClause) => ElsIfClause(condition, reassign(lhs, op, thenClause, transform))(x.span)
-      case ElseClause(thenClause)             => ElseClause(reassign(lhs, op, thenClause, transform))(x.span)
+      case EnsureClause(thenClause) => EnsureClause(reassign(lhs, op, thenClause, transform))(x.span)
+      case ElsIfClause(condition, thenClause) =>
+        ElsIfClause(condition, reassign(lhs, op, thenClause, transform))(x.span)
+      case ElseClause(thenClause) => ElseClause(reassign(lhs, op, thenClause, transform))(x.span)
       case WhenClause(matchExpressions, matchSplatExpression, thenClause) =>
         WhenClause(matchExpressions, matchSplatExpression, reassign(lhs, op, thenClause, transform))(x.span)
     }
 
     rhs match {
-      case StatementList(statements) => StatementList(stmtListAssigningLastExpression(statements))(rhs.span)
-      case clause: ControlFlowClause => clauseAssigningLastExpression(clause)
+      case StatementList(statements)   => StatementList(stmtListAssigningLastExpression(statements))(rhs.span)
+      case clause: ControlFlowClause   => clauseAssigningLastExpression(clause)
       case expr: ControlFlowExpression => transform(expr)
       case _ =>
         SingleAssignment(lhs, op, rhs)(lhs.span.spanStart(s"${lhs.span.text} $op ${rhs.span.text}"))

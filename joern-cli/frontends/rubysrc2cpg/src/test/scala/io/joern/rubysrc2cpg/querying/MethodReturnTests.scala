@@ -259,14 +259,12 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
       | end
       |""".stripMargin)
 
-    inside(cpg.method.name("foo").l) {
-      case f :: Nil =>
-        val returns = f.methodReturn.toReturn.l
-        returns.code.l shouldBe List("1","2","3","4")
-        returns.map(_.lineNumber).l shouldBe List(Some(5), Some(7), Some(11), Some(13))
+    inside(cpg.method.name("foo").l) { case f :: Nil =>
+      val returns = f.methodReturn.toReturn.l
+      returns.code.l shouldBe List("1", "2", "3", "4")
+      returns.map(_.lineNumber).l shouldBe List(Some(5), Some(7), Some(11), Some(13))
     }
   }
-
 
   "implicit RETURN node for ternary expression" in {
     val cpg = code("""
