@@ -497,33 +497,31 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
 
     val tryBodyCfg: Cfg = maybeTryBlock.map(cfgFor).getOrElse(Cfg.empty)
 
-    val catchBodyCfgsByCatch: List[Cfg] =
-      node.astChildren.isControlStructure.isCatch.toList match {
-        case Nil  => List(Cfg.empty)
-        case asts => asts.map(cfgFor)
-      }
-    val catchBodyCfgs = if (catchBodyCfgsByCatch.isEmpty) {
+    val catchControlStructures = node.astChildren.isControlStructure.isCatch.toList
+    val catchBodyCfgs = if (catchControlStructures.isEmpty) {
       node.astChildren.order(2).toList match {
         case Nil  => List(Cfg.empty)
         case asts => asts.map(cfgFor)
       }
     } else {
-      catchBodyCfgsByCatch
+      catchControlStructures match {
+        case Nil  => List(Cfg.empty)
+        case asts => asts.map(cfgFor)
+      }
     }
 
-    val maybeFinallyBodyCfgByFinally: List[Cfg] =
-      node.astChildren.isControlStructure.isFinally
-        .map(cfgFor)
-        .headOption // Assume there can only be one
-        .toList
-    val maybeFinallyBodyCfg = if (catchBodyCfgsByCatch.isEmpty && maybeFinallyBodyCfgByFinally.isEmpty) {
+    val finallyControlStructures = node.astChildren.isControlStructure.isFinally.toList
+    val maybeFinallyBodyCfg = if (catchControlStructures.isEmpty && finallyControlStructures.isEmpty) {
       node.astChildren
         .order(3)
         .map(cfgFor)
         .headOption // Assume there can only be one
         .toList
     } else {
-      maybeFinallyBodyCfgByFinally
+      finallyControlStructures
+        .map(cfgFor)
+        .headOption // Assume there can only be one
+        .toList
     }
 
     val tryToCatchEdges = catchBodyCfgs.flatMap { catchBodyCfg =>
