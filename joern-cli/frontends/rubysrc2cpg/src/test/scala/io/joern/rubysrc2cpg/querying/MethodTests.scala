@@ -302,6 +302,7 @@ class MethodTests extends RubyCode2CpgFixture {
         case xs => fail(s"Expected a single type decl for `Foo`, instead got [${xs.code.mkString(",")}]")
       }
     }
+  }
 
   "Singleton Methods for module scope" should {
     val cpg = code("""
