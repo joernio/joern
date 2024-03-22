@@ -160,11 +160,30 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
       |
       |""".stripMargin)
 
-    val assigns = cpg.assignment.l
-    assigns.argument(1).code.l shouldBe List("x", "x", "x", "x")
-    assigns.argument(2).code.l shouldBe List("1", "2", "3", "4")
-    assigns.map(_.lineNumber).l shouldBe List(Some(4), Some(5), Some(10), Some(11))
-    assigns.argument(2).map(_.lineNumber).l shouldBe List(Some(4), Some(6), Some(10), Some(12))
+    inside(cpg.assignment.l) {
+      case assign1 :: assign2 :: assign3 :: assign4 :: Nil =>
+        assign1.lineNumber shouldBe Some(4)
+        assign1.argument(1).code shouldBe "x"
+        assign1.argument(2).code shouldBe "1"
+        assign1.argument(2).lineNumber shouldBe Some(4)
+
+        assign2.lineNumber shouldBe Some(5)
+        assign2.argument(1).code shouldBe "x"
+        assign2.argument(2).code shouldBe "2"
+        assign2.argument(2).lineNumber shouldBe Some(6)
+
+        assign3.lineNumber shouldBe Some(10)
+        assign3.argument(1).code shouldBe "x"
+        assign3.argument(2).code shouldBe "3"
+        assign3.argument(2).lineNumber shouldBe Some(10)
+
+        assign4.lineNumber shouldBe Some(11)
+        assign4.argument(1).code shouldBe "x"
+        assign4.argument(2).code shouldBe "4"
+        assign4.argument(2).lineNumber shouldBe Some(12)
+      case xs => fail(s"Expected 4 assignments, instead got [${xs.code.mkString(",")}]")
+    }
+
   }
 
   "nested if-end should have implicit elses" in {
@@ -177,9 +196,21 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
       |""".stripMargin)
 
     val assigns = cpg.assignment.l
-    assigns.argument(1).code.l shouldBe List("x", "x", "x")
-    assigns.argument(2).code.l shouldBe List("1", "nil", "nil")
-    assigns.map(_.lineNumber).l shouldBe List(Some(4), Some(3), Some(2))
+    inside(cpg.assignment.l) {
+      case assign1 :: assignNil1 :: assignNil2 :: Nil =>
+        assign1.argument(1).code shouldBe "x"
+        assign1.argument(2).code shouldBe "1"
+        assign1.lineNumber shouldBe Some(4)
+
+        assignNil1.argument(1).code shouldBe "x"
+        assignNil1.argument(2).code shouldBe "nil"
+        assignNil1.lineNumber shouldBe Some(3)
+
+        assignNil2.argument(1).code shouldBe "x"
+        assignNil2.argument(2).code shouldBe "nil"
+        assignNil2.lineNumber shouldBe Some(2)
+      case xs => fail(s"Expected 3 assignments, instead got [${xs.code.mkString(",")}]")
+    }
   }
 
 }
