@@ -236,19 +236,21 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def astsForImplicitReturnStatement(node: RubyNode): Seq[Ast] = {
-    def elseReturnNil = Option {
+    def elseReturnNil(span: TextSpan) = Option {
       ElseClause(
         StatementList(
-          ReturnExpression(StaticLiteral(getBuiltInType(Defines.NilClass))(node.span.spanStart("nil")) :: Nil)(
-            node.span.spanStart("return nil")
+          ReturnExpression(StaticLiteral(getBuiltInType(Defines.NilClass))(span.spanStart("nil")) :: Nil)(
+            span.spanStart("return nil")
           ) :: Nil
-        )(node.span.spanStart("return nil"))
-      )(node.span.spanStart("else\n\treturn nil\nend"))
+        )(span.spanStart("return nil"))
+      )(span.spanStart("else\n\treturn nil\nend"))
     }
 
     node match
       case expr: ControlFlowExpression =>
-        astsForStatement(transformLastRubyNodeInControlFlowExpressionBody(expr, returnLastNode, elseReturnNil))
+        def transform(e: RubyNode with ControlFlowExpression): RubyNode =
+          transformLastRubyNodeInControlFlowExpressionBody(e, returnLastNode(_, transform), elseReturnNil)
+        astsForStatement(transform(expr))
       case node: MemberCallWithBlock => returnAstForRubyCall(node)
       case node: SimpleCallWithBlock => returnAstForRubyCall(node)
       case _: (LiteralExpr | BinaryExpression | UnaryExpression | SimpleIdentifier | IndexAccess | Association |
@@ -309,43 +311,45 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     * @return
     *   the RubyNode with an explicit expression
     */
-  private def returnLastNode(x: RubyNode): RubyNode = {
+  private def returnLastNode(x: RubyNode, transform: (RubyNode with ControlFlowExpression) => RubyNode): RubyNode = {
     def statementListReturningLastExpression(stmts: List[RubyNode]): List[RubyNode] = stmts match {
-      case (head: ControlFlowClause) :: Nil => clauseReturningLastExpression(head) :: Nil
-      case (head: ReturnExpression) :: Nil  => head :: Nil
-      case head :: Nil                      => ReturnExpression(head :: Nil)(head.span) :: Nil
-      case Nil                              => List.empty
-      case head :: tail                     => head :: statementListReturningLastExpression(tail)
+      case (head: ControlFlowClause) :: Nil     => clauseReturningLastExpression(head) :: Nil
+      case (head: ControlFlowExpression) :: Nil => transform(head) :: Nil
+      case (head: ReturnExpression) :: Nil      => head :: Nil
+      case head :: Nil                          => ReturnExpression(head :: Nil)(head.span) :: Nil
+      case Nil                                  => List.empty
+      case head :: tail                         => head :: statementListReturningLastExpression(tail)
     }
 
     def clauseReturningLastExpression(x: RubyNode with ControlFlowClause): RubyNode = x match {
       case RescueClause(exceptionClassList, assignment, thenClause) =>
-        RescueClause(exceptionClassList, assignment, returnLastNode(thenClause))(x.span)
-      case EnsureClause(thenClause)           => EnsureClause(returnLastNode(thenClause))(x.span)
-      case ElsIfClause(condition, thenClause) => ElsIfClause(condition, returnLastNode(thenClause))(x.span)
-      case ElseClause(thenClause)             => ElseClause(returnLastNode(thenClause))(x.span)
+        RescueClause(exceptionClassList, assignment, returnLastNode(thenClause, transform))(x.span)
+      case EnsureClause(thenClause)           => EnsureClause(returnLastNode(thenClause, transform))(x.span)
+      case ElsIfClause(condition, thenClause) => ElsIfClause(condition, returnLastNode(thenClause, transform))(x.span)
+      case ElseClause(thenClause)             => ElseClause(returnLastNode(thenClause, transform))(x.span)
       case WhenClause(matchExpressions, matchSplatExpression, thenClause) =>
-        WhenClause(matchExpressions, matchSplatExpression, returnLastNode(thenClause))(x.span)
+        WhenClause(matchExpressions, matchSplatExpression, returnLastNode(thenClause, transform))(x.span)
     }
 
     x match {
-      case StatementList(statements) => StatementList(statementListReturningLastExpression(statements))(x.span)
-      case clause: ControlFlowClause => clauseReturningLastExpression(clause)
-      case _                         => ReturnExpression(x :: Nil)(x.span)
+      case StatementList(statements)   => StatementList(statementListReturningLastExpression(statements))(x.span)
+      case clause: ControlFlowClause   => clauseReturningLastExpression(clause)
+      case node: ControlFlowExpression => transform(node)
+      case _                           => ReturnExpression(x :: Nil)(x.span)
     }
   }
 
   /** @param node
     *   \- Control Flow Expression RubyNode
     * @param transform
-    *   \- RubyNode => RubyNode function for transformation on last ruby node
+    *   \- RubyNode => RubyNode function for transformation on the clauses of the ControlFlowExpression
     * @return
     *   RubyNode with transform function applied
     */
   protected def transformLastRubyNodeInControlFlowExpressionBody(
     node: RubyNode with ControlFlowExpression,
     transform: RubyNode => RubyNode,
-    defaultElseBranch: Option[ElseClause]
+    defaultElseBranch: TextSpan => Option[ElseClause]
   ): RubyNode = {
     node match {
       case RescueExpression(body, rescueClauses, elseClause, ensureClause) =>
@@ -353,7 +357,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         RescueExpression(
           transform(body),
           rescueClauses.map(transform),
-          elseClause.map(transform).orElse(defaultElseBranch),
+          elseClause.map(transform).orElse(defaultElseBranch(node.span)),
           ensureClause
         )(node.span)
       case WhileExpression(condition, body) => WhileExpression(condition, transform(body))(node.span)
@@ -363,18 +367,22 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           condition,
           transform(thenClause),
           elsifClauses.map(transform),
-          elseClause.map(transform).orElse(defaultElseBranch)
+          elseClause.map(transform).orElse(defaultElseBranch(node.span))
         )(node.span)
       case UnlessExpression(condition, trueBranch, falseBranch) =>
-        UnlessExpression(condition, transform(trueBranch), falseBranch.map(transform).orElse(defaultElseBranch))(
-          node.span
-        )
+        UnlessExpression(
+          condition,
+          transform(trueBranch),
+          falseBranch.map(transform).orElse(defaultElseBranch(node.span))
+        )(node.span)
       case ForExpression(forVariable, iterableVariable, doBlock) =>
         ForExpression(forVariable, iterableVariable, transform(doBlock))(node.span)
       case CaseExpression(expression, whenClauses, elseClause) =>
-        CaseExpression(expression, whenClauses.map(transform), elseClause.map(transform).orElse(defaultElseBranch))(
-          node.span
-        )
+        CaseExpression(
+          expression,
+          whenClauses.map(transform),
+          elseClause.map(transform).orElse(defaultElseBranch(node.span))
+        )(node.span)
     }
   }
 }
