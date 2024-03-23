@@ -287,6 +287,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
                             x.dynamicTypeHintFullName(x.dynamicTypeHintFullName :+ tmp.typeFullName)
                           case x: NewMethodParameterIn =>
                             x.dynamicTypeHintFullName(x.dynamicTypeHintFullName :+ tmp.typeFullName)
+                          case x: NewMethod => 
                         }
                         i.dynamicTypeHintFullName(i.dynamicTypeHintFullName :+ tmp.typeFullName)
                       }
@@ -340,13 +341,30 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     scope.lookupVariable(name) match {
       case None if scope.tryResolveMethodInvocation(node.text, List.empty).isDefined =>
         astForSimpleCall(SimpleCall(node, List())(node.span))
+      case Some(_: NewMethod) =>
+        astForSimpleCall(SimpleCall(node, List())(node.span))
       case _ => handleVariableOccurrence(node)
     }
   }
 
   protected def astForMandatoryParameter(node: MandatoryParameter): Ast = handleVariableOccurrence(node)
   protected def astForProcParameter(node: ProcParameter): Ast = handleVariableOccurrence(node, Some(node.name))
-  protected def astForBlockArgument(node: BlockArgument): Ast = astForExpression(node.node)
+  protected def astForBlockArgument(node: BlockArgument): Ast = node.node match {
+    case id: SimpleIdentifier => 
+      scope.getMethodInScope(id.span.text).map { (method, methodRef) =>
+        val ref = methodRef.copy
+          .code(id.span.text)
+          .lineNumber(id.span.line)
+          .columnNumber(id.span.column)
+        Ast(ref).withRefEdge(ref, method)
+      }.getOrElse(Ast(NewMethodRef()
+          .code(id.span.text)
+          .lineNumber(id.span.line)
+          .columnNumber(id.span.column)))
+    case inner =>
+      logger.warn(s"Could not resolve block argument: ${inner} ($relativeFileName), skipping)")
+      astForUnknown(node)
+  }
 
   protected def astForSimpleCall(node: SimpleCall): Ast = {
     node.target match

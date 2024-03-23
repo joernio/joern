@@ -21,8 +21,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     * @return
     *   a method declaration with additional refs and types if specified.
     */
-  protected def astForMethodDeclaration(node: MethodDeclaration, isClosure: Boolean = false): Seq[Ast] = {
+  protected def astForMethodDeclaration(node: MethodDeclaration): Seq[Ast] = {
 
+    val isClosure = node.isClosure
     // Special case constructor methods
     val isInTypeDecl = scope.surroundingAstLabel.contains(NodeTypes.TYPE_DECL)
     val methodName = node.methodName match {
@@ -50,6 +51,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val optionalStatementList = statementListForOptionalParams(node.parameters)
 
     val methodReturn = methodReturnNode(node, Defines.Any)
+    val mRef = methodRefNode(node, methodName, fullName, methodReturn.typeFullName)
     val refs = if (isClosure) {
       List(
         typeDeclNode(
@@ -62,7 +64,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           astParentFullName = scope.surroundingScopeFullName.getOrElse("<empty>")
         ),
         typeRefNode(node, methodName, fullName),
-        methodRefNode(node, methodName, fullName, methodReturn.typeFullName)
+        mRef
       ).map {
         case x: NewTypeDecl => Ast(x).withChild(Ast(newModifierNode(ModifierTypes.LAMBDA)))
         case x              => Ast(x)
@@ -91,7 +93,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val modifiers =
       ModifierTypes.VIRTUAL :: (if isClosure then ModifierTypes.LAMBDA :: Nil else Nil) map newModifierNode
 
-    methodAst(method, parameterAsts ++ anonProcParam, stmtBlockAst, methodReturn, modifiers) :: refs
+    val mAst = methodAst(method, parameterAsts ++ anonProcParam, stmtBlockAst, methodReturn, modifiers) :: refs
+    scope.addMethodToScope(methodName, method, mRef)
+    mAst
   }
 
   private def transformAsClosureBody(refs: List[Ast], baseStmtBlockAst: Ast) = {

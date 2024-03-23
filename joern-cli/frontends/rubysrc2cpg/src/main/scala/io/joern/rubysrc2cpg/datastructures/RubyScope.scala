@@ -7,7 +7,7 @@ import io.joern.x2cpg.Defines
 import io.joern.rubysrc2cpg.passes.Defines as RDefines
 import io.joern.x2cpg.datastructures.*
 import io.shiftleft.codepropertygraph.generated.NodeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{DeclarationNew, NewLocal, NewMethodParameterIn}
+import io.shiftleft.codepropertygraph.generated.nodes.{DeclarationNew, NewLocal, NewMethodParameterIn, NewMethodRef, NewMethod}
 
 import scala.collection.mutable
 import scala.reflect.ClassTag
@@ -43,6 +43,8 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
 
   override val membersInScope: mutable.Set[MemberLike] = mutable.Set(builtinMethods*)
 
+  val methodToRef: mutable.Map[NewMethod, NewMethodRef] = mutable.Map.empty
+
   // Ruby does not have overloading, so this can be set to true
   override protected def isOverloadedBy(method: RubyMethod, argTypes: List[String]): Boolean = true
 
@@ -63,6 +65,20 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
 
   def getFieldsInScope: List[FieldDecl] =
     stack.collect { case ScopeElement(TypeScope(_, fields), _) => fields }.flatten
+
+  def getMethodInScope(name: String): Option[(NewMethod,NewMethodRef)] =
+    def go(vars: Map[String, DeclarationNew]): Option[(NewMethod,NewMethodRef)] = vars.get(name).collectFirst {
+      case x: NewMethod => methodToRef.get(x).map((x,_))
+    }.flatten
+    stack.collectFirst {
+      case ScopeElement(_, go.unlift(m)) => m
+    }
+    
+  def addMethodToScope(name: String, method: NewMethod, mRef: NewMethodRef): Unit = {
+    addToScope(name, method)
+    methodToRef.update(method, mRef)
+  }
+
 
   def findFieldInScope(fieldName: String): Option[FieldDecl] = {
     getFieldsInScope.find(_.name == fieldName)

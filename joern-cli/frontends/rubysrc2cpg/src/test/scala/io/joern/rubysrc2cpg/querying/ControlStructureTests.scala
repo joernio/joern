@@ -406,20 +406,34 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     }
   }
 
-  "implicit if assignment" should {
+  "`if-else-end` on the RHS of an assignment lowered to a tmp assignment" in {
     val cpg = code("""
-        | a = if(x > 4) then 123 end
+        |x = if true then 20 else 40 end
         |""".stripMargin)
 
-    "create assignment operators for if and default else branch" in {
-      inside(cpg.call.name(Operators.assignment).l) {
-        case ifAssignment :: defaultElseAssignment :: Nil =>
-          ifAssignment.code shouldBe "a = 123"
-          defaultElseAssignment.code shouldBe "a = nil"
-        case xs => fail(s"Expected two assignments, instead found ${xs.code.mkString(", ")}")
-      }
-    }
+    inside(cpg.assignment.l) {
+      case thenBranch :: elseBranch :: assign :: Nil =>
 
+        assign.methodFullName shouldBe Operators.assignment
+
+        inside(thenBranch.argument.l, elseBranch.argument.l, assign.argument.l) {
+          case (
+            (thenLhs : Identifier) :: (thenRhs : Literal) :: Nil, 
+            (elseLhs : Identifier) :: (elseRhs : Literal) :: Nil,
+            (assignLhs : Identifier) :: (assignRhs : Identifier) :: Nil
+          ) =>
+            assignLhs.code shouldBe "x"
+            thenLhs.code shouldBe "<tmp-gen-0>"
+            elseLhs.code shouldBe "<tmp-gen-0>"
+            assignRhs.code shouldBe "<tmp-gen-0>"
+            thenRhs.code shouldBe "20"
+            elseRhs.code shouldBe "40"
+            
+          case xs => fail("Failed, got this instead [${xs}]")
+        }
+      
+      case xs => fail(s"Expected 3 assignments, got [${xs.mkString(",")}]")  
+    }
   }
 
   "if-elsif-else in function with explicit return statements" should {
@@ -437,7 +451,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
 
     "Generate return nodes without unknown nodes" in {
       inside(cpg.method.name("foo").methodReturn.toReturn.l) {
-        case returnZero :: returnX :: returnY :: Nil =>
+        case returnZero :: returnX :: returnY :: returnTmp :: Nil =>
           returnZero.code shouldBe "return 0"
           // Confirms that returnZero child is `Literal` and not `UNKNOWN`
           inside(returnZero.astChildren.l) {
@@ -460,7 +474,14 @@ class ControlStructureTests extends RubyCode2CpgFixture {
             case _ => fail("Expected identifier for return child")
           }
 
-        case xs => fail(s"Expected three return expressions, instead found ${xs.code.mkString(", ")}")
+          returnTmp.code shouldBe "return <tmp-gen-0>"
+          inside(returnTmp.astChildren.l) {
+            case (tmp: Identifier) :: Nil =>
+              tmp.code shouldBe "<tmp-gen-0>"
+            case _ => fail("Expected identifier for return child")
+          }
+
+        case xs => fail(s"Expected four return expressions, instead found ${xs.code.mkString(", ")}")
       }
     }
   }

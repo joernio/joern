@@ -84,7 +84,7 @@ object RubyIntermediateAst {
     def hasSetter: Boolean = text.startsWith("attr_writer") || text.startsWith("attr_accessor")
   }
 
-  final case class MethodDeclaration(methodName: String, parameters: List[RubyNode], body: RubyNode)(span: TextSpan)
+  final case class MethodDeclaration(methodName: String, parameters: List[RubyNode], body: RubyNode, isClosure: Boolean = false)(span: TextSpan)
       extends RubyNode(span)
 
   final case class SingletonMethodDeclaration(
@@ -113,9 +113,6 @@ object RubyIntermediateAst {
 
   final case class ProcParameter(name: String)(span: TextSpan) extends RubyNode(span) with MethodParameter
   final case class BlockArgument(node: RubyNode)(span: TextSpan) extends RubyNode(span)
-
-  final case class MethodRefFrom(node: RubyNode, uid: String) extends RubyNode(node.span)
-  final case class MethodRefTo(node: RubyNode, uid: String) extends RubyNode(node.span)
 
   final case class SingleAssignment(lhs: RubyNode, op: String, rhs: RubyNode)(span: TextSpan) extends RubyNode(span)
 
@@ -369,7 +366,7 @@ object RubyIntermediateAst {
   /** Represents a `do` or `{ .. }` (braces) block. */
   final case class Block(parameters: List[RubyNode], body: RubyNode)(span: TextSpan) extends RubyNode(span) {
 
-    def toMethodDeclaration(name: String): MethodDeclaration = MethodDeclaration(name, parameters, body)(span)
+    def toMethodDeclaration(name: String): MethodDeclaration = MethodDeclaration(name, parameters, body, isClosure = true)(span)
 
   }
 

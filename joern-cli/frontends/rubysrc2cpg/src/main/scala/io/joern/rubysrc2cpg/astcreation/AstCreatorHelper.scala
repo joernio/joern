@@ -74,6 +74,9 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
             local match {
               case x: NewLocal             => identifier.dynamicTypeHintFullName(x.dynamicTypeHintFullName)
               case x: NewMethodParameterIn => identifier.dynamicTypeHintFullName(x.dynamicTypeHintFullName)
+              case x: NewMethod => scope.methodToRef.get(x).foreach { ref =>
+                identifier.dynamicTypeHintFullName(ref.dynamicTypeHintFullName)
+              }
             }
             Ast(identifier).withRefEdge(identifier, local)
         }

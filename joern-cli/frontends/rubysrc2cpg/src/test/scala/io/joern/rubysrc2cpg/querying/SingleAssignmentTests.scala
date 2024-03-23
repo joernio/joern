@@ -120,26 +120,4 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
     two.code shouldBe "2"
   }
 
-  "`if-else-end` on the RHS of an assignment is represented by a `conditional` operator call" in {
-    val cpg = code("""
-        |x = if true then 20 else 40 end
-        |""".stripMargin)
-
-    val List(assignmentIfBranch, assignmentElseBranch) = cpg.assignment.l
-
-    val rhsIfBranchIdentifier = assignmentIfBranch.argument(1).asInstanceOf[Identifier]
-    val rhsIfBranchValue      = assignmentIfBranch.argument(2).asInstanceOf[Literal]
-
-    val rhsElseBranchIdentifier = assignmentElseBranch.argument(1).asInstanceOf[Identifier]
-    val rhsElseBranchValue      = assignmentElseBranch.argument(2).asInstanceOf[Literal]
-
-    assignmentIfBranch.methodFullName shouldBe Operators.assignment
-    rhsIfBranchIdentifier.code shouldBe "x"
-    rhsIfBranchValue.code shouldBe "20"
-
-    assignmentElseBranch.methodFullName shouldBe Operators.assignment
-    rhsElseBranchIdentifier.code shouldBe "x"
-    rhsElseBranchValue.code shouldBe "40"
-  }
-
 }

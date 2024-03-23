@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.querying
 import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Literal, Method, MethodRef, Return}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Literal, Method, MethodRef, Return, Identifier}
 import io.shiftleft.semanticcpg.language.*
 
 class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
@@ -184,22 +184,26 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
     inside(cpg.method.name("f").l) {
       case f :: Nil =>
         // Check the two return statements
-        inside(f.methodReturn.toReturn.l) {
-          case return20 :: returnNil :: Nil =>
-            return20.code shouldBe "20"
-            return20.lineNumber shouldBe Some(4)
-            val List(twenty: Literal) = return20.astChildren.l: @unchecked
-            twenty.code shouldBe "20"
-            twenty.lineNumber shouldBe Some(4)
-            twenty.typeFullName shouldBe "__builtin.Integer"
+        inside(f.assignment.l, f.methodReturn.toReturn.l) {
+          case (thenAssign :: elseAssign :: Nil, ret :: Nil) =>
+            thenAssign.lineNumber shouldBe Some(4)
+            inside(thenAssign.argument.l) {
+              case (thenLhs : Identifier) :: (thenRhs : Literal) :: Nil => 
+                thenLhs.code shouldBe "<tmp-gen-0>"
+                thenRhs.code shouldBe "20"
+                thenRhs.typeFullName shouldBe "__builtin.Integer"
+            }
 
-            returnNil.code shouldBe "return nil"
-            returnNil.lineNumber shouldBe Some(3)
-            val List(nil: Literal) = returnNil.astChildren.l: @unchecked
-            nil.code shouldBe "nil"
-            nil.lineNumber shouldBe Some(3)
-            nil.typeFullName shouldBe "__builtin.NilClass"
-          case xs => fail(s"Expected exactly two return nodes, instead got [${xs.code.mkString(",")}]")
+            elseAssign.lineNumber shouldBe Some(5)
+            inside(elseAssign.argument.l) {
+              case (elseLhs : Identifier) :: (elseRhs : Literal) :: Nil => 
+                elseLhs.code shouldBe "<tmp-gen-0>"
+                elseRhs.code shouldBe "nil"
+                elseRhs.typeFullName shouldBe "__builtin.NilClass"
+            }
+
+            ret.astChildren.isIdentifier.code.l shouldBe List("<tmp-gen-0>")
+          case (as, rets) => fail(s"Expected exactly two assignments and one return node, instead got [${as.code.mkString(",")}] and [${rets.code.mkString(",")}]")
         }
       case xs => fail(s"Expected exactly one method with the name `f`, instead got [${xs.code.mkString(",")}]")
     }
@@ -219,22 +223,26 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
     inside(cpg.method.name("f").l) {
       case f :: Nil =>
         // Check the two return statements
-        inside(f.methodReturn.toReturn.l) {
-          case return20 :: return40 :: Nil =>
-            return20.code shouldBe "20"
-            return20.lineNumber shouldBe Some(4)
-            val List(twenty: Literal) = return20.astChildren.l: @unchecked
-            twenty.code shouldBe "20"
-            twenty.lineNumber shouldBe Some(4)
-            twenty.typeFullName shouldBe "__builtin.Integer"
+        inside(f.assignment.l, f.methodReturn.toReturn.l) {
+          case (thenAssign :: elseAssign :: Nil, ret :: Nil) =>
+            thenAssign.lineNumber shouldBe Some(4)
+            inside(thenAssign.argument.l) {
+              case (thenLhs : Identifier) :: (thenRhs : Literal) :: Nil => 
+                thenLhs.code shouldBe "<tmp-gen-0>"
+                thenRhs.code shouldBe "20"
+                thenRhs.typeFullName shouldBe "__builtin.Integer"
+            }
 
-            return40.code shouldBe "40"
-            return40.lineNumber shouldBe Some(6)
-            val List(forty: Literal) = return40.astChildren.l: @unchecked
-            forty.code shouldBe "40"
-            forty.lineNumber shouldBe Some(6)
-            forty.typeFullName shouldBe "__builtin.Integer"
-          case xs => fail(s"Expected exactly two return nodes, instead got [${xs.code.mkString(",")}]")
+            elseAssign.lineNumber shouldBe Some(6)
+            inside(elseAssign.argument.l) {
+              case (elseLhs : Identifier) :: (elseRhs : Literal) :: Nil => 
+                elseLhs.code shouldBe "<tmp-gen-0>"
+                elseRhs.code shouldBe "40"
+                elseRhs.typeFullName shouldBe "__builtin.Integer"
+            }
+
+            ret.astChildren.isIdentifier.code.l shouldBe List("<tmp-gen-0>")
+          case (as, rets) => fail(s"Expected exactly two assignments and one return node, instead got [${as.code.mkString(",")}] and [${rets.code.mkString(",")}]")
         }
       case xs => fail(s"Expected exactly one method with the name `f`, instead got [${xs.code.mkString(",")}]")
     }
@@ -248,22 +256,26 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
     inside(cpg.method.name("f").l) {
       case f :: Nil =>
         // Check the two return statements
-        inside(f.methodReturn.toReturn.l) {
-          case return20 :: return40 :: Nil =>
-            return20.code shouldBe "20"
-            return20.lineNumber shouldBe Some(2)
-            val List(twenty: Literal) = return20.astChildren.l: @unchecked
-            twenty.code shouldBe "20"
-            twenty.lineNumber shouldBe Some(2)
-            twenty.typeFullName shouldBe "__builtin.Integer"
+        inside(f.assignment.l, f.methodReturn.toReturn.l) {
+          case (thenAssign :: elseAssign :: Nil, ret :: Nil) =>
+            thenAssign.lineNumber shouldBe Some(2)
+            inside(thenAssign.argument.l) {
+              case (thenLhs : Identifier) :: (thenRhs : Literal) :: Nil => 
+                thenLhs.code shouldBe "<tmp-gen-0>"
+                thenRhs.code shouldBe "20"
+                thenRhs.typeFullName shouldBe "__builtin.Integer"
+            }
 
-            return40.code shouldBe "40"
-            return40.lineNumber shouldBe Some(2)
-            val List(forty: Literal) = return40.astChildren.l: @unchecked
-            forty.code shouldBe "40"
-            forty.lineNumber shouldBe Some(2)
-            forty.typeFullName shouldBe "__builtin.Integer"
-          case xs => fail(s"Expected exactly two return nodes, instead got [${xs.code.mkString(",")}]")
+            elseAssign.lineNumber shouldBe Some(2)
+            inside(elseAssign.argument.l) {
+              case (elseLhs : Identifier) :: (elseRhs : Literal) :: Nil => 
+                elseLhs.code shouldBe "<tmp-gen-0>"
+                elseRhs.code shouldBe "40"
+                elseRhs.typeFullName shouldBe "__builtin.Integer"
+            }
+
+            ret.astChildren.isIdentifier.code.l shouldBe List("<tmp-gen-0>")
+          case (as, rets) => fail(s"Expected exactly two assignments and one return node, instead got [${as.code.mkString(",")}] and [${rets.code.mkString(",")}]")
         }
       case xs => fail(s"Expected exactly one method with the name `f`, instead got [${xs.code.mkString(",")}]")
     }
@@ -335,7 +347,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
     "Create closureMethod and return structures" in {
       inside(cpg.method.name("bar").l) {
         case bar :: Nil =>
-          inside(bar.astChildren.collectAll[Method].l) {
+          inside(bar.astChildren.astChildren.collectAll[Method].l) {
             case closureMethod :: Nil =>
               closureMethod.name shouldBe "<lambda>0"
               closureMethod.fullName shouldBe "Test0.rb:<global>::program:bar:<lambda>0"
