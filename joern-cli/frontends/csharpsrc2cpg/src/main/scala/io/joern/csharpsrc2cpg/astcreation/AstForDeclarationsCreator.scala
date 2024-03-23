@@ -3,6 +3,7 @@ package io.joern.csharpsrc2cpg.astcreation
 import io.joern.csharpsrc2cpg.CSharpModifiers
 import io.joern.csharpsrc2cpg.astcreation.BuiltinTypes.DotNetTypeMap
 import io.joern.csharpsrc2cpg.datastructures.*
+import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.csharpsrc2cpg.utils.Utils.{composeMethodFullName, composeMethodLikeSignature}
 import io.joern.x2cpg.utils.NodeBuilders.{newMethodReturnNode, newModifierNode}
@@ -12,6 +13,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.proto.cpg.Cpg.EvaluationStrategies
 
 import scala.annotation.tailrec
+import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
 
 trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -59,6 +61,15 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
     inheritsFromTypeFullName.foreach(scope.pushTypeToScope)
 
+    val annotationAsts =
+      classDecl
+        .json(ParserKeys.AttributeLists)
+        .arrOpt
+        .getOrElse(ArrayBuffer.empty[ujson.Value])
+        .map(createDotNetNodeInfo)
+        .flatMap(astForAttributeLists)
+        .toSeq
+
     val typeDecl =
       typeDeclNode(classDecl, name, fullName, relativeFileName, code(classDecl), inherits = inheritsFromTypeFullName)
     scope.pushNewScope(TypeScope(fullName))
@@ -73,6 +84,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val typeDeclAst = Ast(typeDecl)
       .withChildren(modifiers)
       .withChildren(members)
+      .withChildren(annotationAsts)
     Seq(typeDeclAst)
   }
 
@@ -99,12 +111,22 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         Ast(memberNode(paramNode, name, paramNode.code, typeFullName))
       }
 
+    val annotationAsts =
+      recordDecl
+        .json(ParserKeys.AttributeLists)
+        .arrOpt
+        .getOrElse(ArrayBuffer.empty[ujson.Value])
+        .map(createDotNetNodeInfo)
+        .flatMap(astForAttributeLists)
+        .toSeq
+
     val members =
       astForMembers(recordDecl.json(ParserKeys.Members).arr.map(createDotNetNodeInfo).toSeq) ++ membersFromParams
     scope.popScope()
     val typeDeclAst = Ast(typeDecl)
       .withChildren(modifiers)
       .withChildren(members)
+      .withChildren(annotationAsts)
     Seq(typeDeclAst)
   }
 
@@ -119,11 +141,21 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     scope.pushNewScope(EnumScope(fullName, aliasFor))
     val modifiers = astForModifiers(enumDecl)
 
+    val annotationAsts =
+      enumDecl
+        .json(ParserKeys.AttributeLists)
+        .arrOpt
+        .getOrElse(ArrayBuffer.empty[ujson.Value])
+        .map(createDotNetNodeInfo)
+        .flatMap(astForAttributeLists)
+        .toSeq
+
     val members = astForMembers(enumDecl.json(ParserKeys.Members).arr.map(createDotNetNodeInfo).toSeq)
     scope.popScope()
     val typeDeclAst = Ast(typeDecl)
       .withChildren(modifiers)
       .withChildren(members)
+      .withChildren(annotationAsts)
     Seq(typeDeclAst)
   }
 
@@ -157,10 +189,19 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val declarationNode = createDotNetNodeInfo(fieldDecl.json(ParserKeys.Declaration))
     val declAsts        = astForVariableDeclaration(declarationNode, isStatic)
 
+    val annotationAsts =
+      fieldDecl
+        .json(ParserKeys.AttributeLists)
+        .arrOpt
+        .getOrElse(ArrayBuffer.empty[ujson.Value])
+        .map(createDotNetNodeInfo)
+        .flatMap(astForAttributeLists)
+        .toSeq
+
     val memberNodes = declAsts
       .flatMap(_.nodes.collectFirst { case x: NewIdentifier => x })
       .map(x => memberNode(declarationNode, x.name, code(declarationNode), x.typeFullName))
-    memberNodes.map(Ast(_).withChildren(astForModifiers(fieldDecl)))
+    memberNodes.map(Ast(_).withChildren(annotationAsts).withChildren(astForModifiers(fieldDecl)))
   }
 
   protected def astForLocalDeclarationStatement(localDecl: DotNetNodeInfo): Seq[Ast] = {
@@ -317,6 +358,15 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       .map(astForParameter(_, _, None))
       .toSeq
 
+    val annotationAsts =
+      methodDecl
+        .json(ParserKeys.AttributeLists)
+        .arrOpt
+        .getOrElse(ArrayBuffer.empty[ujson.Value])
+        .map(createDotNetNodeInfo)
+        .flatMap(astForAttributeLists)
+        .toSeq
+
     val methodReturnAstNode = createDotNetNodeInfo(methodDecl.json(ParserKeys.ReturnType))
     val methodReturn        = methodReturnNode(methodReturnAstNode, nodeTypeFullName(methodReturnAstNode))
     val signature =
@@ -335,7 +385,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val thisNode =
       if (!modifiers.exists(_.modifierType == ModifierTypes.STATIC)) astForThisParameter(methodDecl)
       else Ast()
-    Seq(methodAst(methodNode_, thisNode +: params, body, methodReturn, modifiers))
+    Seq(methodAstWithAnnotations(methodNode_, thisNode +: params, body, methodReturn, modifiers, annotationAsts))
   }
 
   private def methodSignature(methodReturn: NewMethodReturn, params: Seq[NewMethodParameterIn]): String = {
