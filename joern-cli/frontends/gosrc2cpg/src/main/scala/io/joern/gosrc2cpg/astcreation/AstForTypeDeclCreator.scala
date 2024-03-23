@@ -1,5 +1,5 @@
 package io.joern.gosrc2cpg.astcreation
-import io.joern.gosrc2cpg.datastructures.{GoGlobal, LambdaTypeInfo}
+import io.joern.gosrc2cpg.datastructures.LambdaTypeInfo
 import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg
@@ -39,7 +39,9 @@ trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { thi
               .map(fieldInfo => {
                 val fieldNodeInfo = createParserNodeInfo(fieldInfo)
                 val fieldName     = fieldNodeInfo.json(ParserKeys.Name).str
-                goGlobal.recordStructTypeMemberType(typeDeclFullName + Defines.dot + fieldName, typeFullName)
+                if (checkForDependencyFlags(fieldName)) {
+                  goGlobal.recordStructTypeMemberTypeInfo(typeDeclFullName, fieldName, typeFullName)
+                }
                 Ast(memberNode(typeInfo, fieldName, fieldNodeInfo.code, typeFullName))
               })
           })
@@ -58,14 +60,15 @@ trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { thi
             receiverAstAndFullName(xnode, fieldIdentifier)
           case _ =>
             // Otherwise its an alias to imported namespace using which global variable is getting accessed
-            val alias            = xnode.json(ParserKeys.Name).str
-            val receiverFullName = resolveAliasToFullName(alias, fieldIdentifier)
+            val alias     = xnode.json(ParserKeys.Name).str
+            val nameSpace = resolveAliasToFullName(alias)
             (
               astForNode(xnode),
-              goGlobal.structTypeMemberTypeMapping.getOrDefault(
-                receiverFullName,
-                s"$receiverFullName${Defines.dot}${Defines.FieldAccess}${Defines.dot}${XDefines.Unknown}"
-              )
+              goGlobal
+                .getStructTypeMemberType(nameSpace, fieldIdentifier)
+                .getOrElse(
+                  s"$nameSpace.$fieldIdentifier${Defines.dot}${Defines.FieldAccess}${Defines.dot}${XDefines.Unknown}"
+                )
             )
       case _ =>
         // This will take care of chained calls
@@ -75,10 +78,11 @@ trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { thi
   private def receiverAstAndFullName(xnode: ParserNodeInfo, fieldIdentifier: String): (Seq[Ast], String) = {
     val identifierAsts       = astForNode(xnode)
     val receiverTypeFullName = getTypeFullNameFromAstNode(identifierAsts)
-    val fieldTypeFullName = goGlobal.structTypeMemberTypeMapping.getOrDefault(
-      s"$receiverTypeFullName${Defines.dot}$fieldIdentifier",
-      s"$receiverTypeFullName${Defines.dot}$fieldIdentifier${Defines.dot}${Defines.FieldAccess}${Defines.dot}${XDefines.Unknown}"
-    )
+    val fieldTypeFullName = goGlobal
+      .getStructTypeMemberType(receiverTypeFullName, fieldIdentifier)
+      .getOrElse(
+        s"$receiverTypeFullName${Defines.dot}$fieldIdentifier${Defines.dot}${Defines.FieldAccess}${Defines.dot}${XDefines.Unknown}"
+      )
     (identifierAsts, fieldTypeFullName)
   }
 

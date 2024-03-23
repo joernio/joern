@@ -3,7 +3,7 @@ package io.joern.go2cpg.passes.ast
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
 import io.joern.gosrc2cpg.Config
 import io.joern.gosrc2cpg.astcreation.Defines
-import io.joern.gosrc2cpg.datastructures.{GoGlobal, LambdaTypeInfo}
+import io.joern.gosrc2cpg.datastructures.{GoGlobal, LambdaTypeInfo, MethodCacheMetaData, NameSpaceMetaData}
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.*
 
@@ -224,16 +224,20 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
 
     "not create any entry in method full name to return type map" in {
       // This should only contain the `main` method return type mapping as main source code is not invoking any of the dependency method.
-      goGlobal.methodFullNameReturnTypeMap.size() shouldBe 1
-      val List(mainfullname) = goGlobal.methodFullNameReturnTypeMap.keys().asIterator().toList
-      mainfullname shouldBe "main.main"
-      val Array(returnType) = goGlobal.methodFullNameReturnTypeMap.values().toArray
-      returnType shouldBe (Defines.voidTypeName, "main.main()")
+      goGlobal.nameSpaceMetaDataMap.size() shouldBe 1
+      val Array(metadata) = goGlobal.nameSpaceMetaDataMap.values().iterator().toArray
+      metadata.methodMetaMap.size() shouldBe 1
+      val List(mainfullname) = metadata.methodMetaMap.keys().asIterator().toList
+      mainfullname shouldBe "main"
+      val Array(returnType) = metadata.methodMetaMap.values().toArray
+      returnType shouldBe MethodCacheMetaData(Defines.voidTypeName, "main.main()")
     }
 
     "not create any entry in struct member to type map" in {
       // This should be empty as neither main code has defined any struct type nor we are accessing the third party struct type.
-      goGlobal.structTypeMemberTypeMapping.size() shouldBe 0
+      goGlobal.nameSpaceMetaDataMap.size() shouldBe 1
+      val Array(metadata) = goGlobal.nameSpaceMetaDataMap.values().iterator().toArray
+      metadata.structTypeMembers.size() shouldBe 0
     }
   }
 
@@ -293,16 +297,20 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
 
     "not create any entry in method full name to return type map" in {
       // This should only contain the `main` method return type mapping as main source code is not invoking any of the dependency method.
-      goGlobal.methodFullNameReturnTypeMap.size() shouldBe 1
-      val List(mainfullname) = goGlobal.methodFullNameReturnTypeMap.keys().asIterator().toList
+      goGlobal.nameSpaceMetaDataMap.size() shouldBe 1
+      val Array(metadata) = goGlobal.nameSpaceMetaDataMap.values().iterator().toArray
+      metadata.methodMetaMap.size() shouldBe 1
+      val List(mainfullname) = metadata.methodMetaMap.keys().asIterator().toList
       mainfullname shouldBe "main"
-      val Array(returnType) = goGlobal.methodFullNameReturnTypeMap.values().toArray
-      returnType shouldBe "unit"
+      val Array(returnType) = metadata.methodMetaMap.values().toArray
+      returnType shouldBe MethodCacheMetaData(Defines.voidTypeName, "main.main()")
     }
 
     "not create any entry in struct member to type map" in {
       // This should be empty as neither main code has defined any struct type nor we are accessing the third party struct type.
-      goGlobal.structTypeMemberTypeMapping.size() shouldBe 0
+      goGlobal.nameSpaceMetaDataMap.size() shouldBe 1
+      val Array(metadata) = goGlobal.nameSpaceMetaDataMap.values().iterator().toArray
+      metadata.structTypeMembers.size() shouldBe 0
     }
   }
 
@@ -390,11 +398,13 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
       // This should only contain the `main` method return type mapping as main source code is not invoking any of the dependency method.
       // TODO: While doing the implementation we need update this test
       // Lambda expression return types are also getting recorded under this map
-      goGlobal.methodFullNameReturnTypeMap.size() shouldBe 1
-      val List(mainfullname) = goGlobal.methodFullNameReturnTypeMap.keys().asIterator().toList
+      goGlobal.nameSpaceMetaDataMap.size() shouldBe 1
+      val Array(metadata) = goGlobal.nameSpaceMetaDataMap.values().iterator().toArray
+      metadata.methodMetaMap.size() shouldBe 1
+      val List(mainfullname) = metadata.methodMetaMap.keys().asIterator().toList
       mainfullname shouldBe "main"
-      val Array(returnType) = goGlobal.methodFullNameReturnTypeMap.values().toArray
-      returnType shouldBe "unit"
+      val Array(returnType) = metadata.methodMetaMap.values().toArray
+      returnType shouldBe MethodCacheMetaData(Defines.voidTypeName, "main.main()")
     }
 
     "not create any entry in struct member to type map" in {
@@ -402,7 +412,9 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
       // 1. Struct Type is directly being used
       // 2. Struct Type is being passed as parameter or returned as value of method that is being used.
       // 3. A method of Struct Type being used.
-      goGlobal.structTypeMemberTypeMapping.size() shouldBe 0
+      goGlobal.nameSpaceMetaDataMap.size() shouldBe 1
+      val Array(metadata) = goGlobal.nameSpaceMetaDataMap.values().iterator().toArray
+      metadata.structTypeMembers.size() shouldBe 0
     }
   }
 }

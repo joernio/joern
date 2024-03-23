@@ -1,17 +1,12 @@
 package io.joern.gosrc2cpg.datastructures
 
-import dotty.tools.dotc.util.Signatures.Signature
 import io.joern.x2cpg.Ast
+import org.slf4j.LoggerFactory
 
 import java.util.concurrent.{ConcurrentHashMap, ConcurrentSkipListSet}
 class GoGlobal {
-
+  private val logger         = LoggerFactory.getLogger(getClass)
   var processingDependencies = false
-
-  /** NOTE: This set is getting cleared inside {@link io.joern.gosrc2cpg.passes.MethodAndTypeCacheBuilderPass#process}
-    * to release the memory once done with the use.
-    */
-  val sourcePackageSet: java.util.Set[String] = new ConcurrentSkipListSet[String]()
 
   /** This map will only contain the mapping for those packages whose package name is different from the enclosing
     * folder name
@@ -37,9 +32,102 @@ class GoGlobal {
 
   val pkgLevelVarAndConstantAstMap: ConcurrentHashMap[String, Set[(Ast, String)]] = new ConcurrentHashMap()
 
-  // Mapping method fullname to its return type and signature, lambda expression return type also getting recorded under this map
-  val methodFullNameReturnTypeMap: ConcurrentHashMap[String, (String, String)] = new ConcurrentHashMap()
+  val nameSpaceMetaDataMap: ConcurrentHashMap[String, NameSpaceMetaData] = new ConcurrentHashMap()
 
+  def recordAliasToNamespaceMapping(alias: String, namespace: String): Unit = synchronized {
+    val existingVal = aliasToNameSpaceMapping.putIfAbsent(alias, namespace)
+    if (existingVal == null) {
+      recordForThisNamespace(namespace)
+    } else if (existingVal != namespace) {
+      // TODO: This might need better way of recording the information.
+      logger.warn(s"more than one namespaces are found for given alias `$alias` -> `$existingVal` and `$namespace`")
+    }
+  }
+
+  def recordForThisNamespace(namespace: String): Boolean = {
+    val existing = nameSpaceMetaDataMap.putIfAbsent(namespace, NameSpaceMetaData())
+    existing == null
+  }
+
+  def getMethodMetadata(namespace: String, methodName: String): Option[MethodCacheMetaData] = {
+    Option(nameSpaceMetaDataMap.get(namespace)) match {
+      case Some(existingNamespace) =>
+        Option(existingNamespace.methodMetaMap.get(methodName))
+      case _ =>
+        None
+    }
+  }
+
+  def recordMethodMetadata(namespace: String, methodName: String, methodMetaData: MethodCacheMetaData): Unit = {
+    Option(nameSpaceMetaDataMap.get(namespace)) match {
+      case Some(existingNamespace) =>
+        existingNamespace.methodMetaMap.put(methodName, methodMetaData)
+      case _ =>
+        // handling for types and lambda functions defined inside methods. Wrapping method becomes the part of their namespace.
+        val (wrappingNamespace, _) = splitNamespaceFromMember(namespace)
+        // now check if this namespace is present in the map. If yes then make the new entry for this sub namespace
+        if (nameSpaceMetaDataMap.containsKey(wrappingNamespace)) {
+          recordForThisNamespace(namespace)
+          recordMethodMetadata(namespace, methodName, methodMetaData)
+        }
+    }
+  }
+
+  def getStructTypeMemberType(namespace: String, memberName: String): Option[String] = {
+    Option(nameSpaceMetaDataMap.get(namespace)) match {
+      case Some(existingNamespace) =>
+        Option(existingNamespace.structTypeMembers.get(memberName))
+      case _ =>
+        None
+    }
+  }
+  def recordStructTypeMemberTypeInfo(namespace: String, memberName: String, memberType: String): Unit = {
+    Option(nameSpaceMetaDataMap.get(namespace)) match {
+      case Some(existingNamespace) =>
+        existingNamespace.structTypeMembers.put(memberName, memberType)
+      case _ =>
+        val (wrappingNamespace, _) = splitNamespaceFromMember(namespace)
+        if (nameSpaceMetaDataMap.containsKey(wrappingNamespace)) {
+          recordForThisNamespace(namespace)
+          recordStructTypeMemberTypeInfo(namespace, memberName, memberType)
+        }
+    }
+  }
+
+  def recordPkgLevelVarAndConstantAst(pkg: String, ast: Ast, filePath: String): Unit = synchronized {
+    Option(pkgLevelVarAndConstantAstMap.get(pkg)) match {
+      case Some(existingList) =>
+        val t = (ast, filePath)
+        pkgLevelVarAndConstantAstMap.put(pkg, existingList + t)
+      case None => pkgLevelVarAndConstantAstMap.put(pkg, Set((ast, filePath)))
+    }
+  }
+
+  def recordForThisLamdbdaSignature(signature: String): Unit = {
+    lambdaSignatureToLambdaTypeMap.putIfAbsent(signature, new ConcurrentSkipListSet())
+  }
+
+  def recordLambdaSigntureToLambdaType(signature: String, lambdaTypeInfo: LambdaTypeInfo): Unit = {
+    Option(lambdaSignatureToLambdaTypeMap.get(signature)) match {
+      case Some(existingList) =>
+        existingList.add(lambdaTypeInfo)
+      case _ =>
+    }
+  }
+
+  def splitNamespaceFromMember(fullName: String): (String, String) = {
+    if (fullName.contains('.')) {
+      val lastDotIndex  = fullName.lastIndexOf('.')
+      val nameSpaceName = fullName.substring(0, lastDotIndex)
+      val memberName    = fullName.substring(lastDotIndex + 1)
+      (nameSpaceName, memberName)
+    } else {
+      (fullName, "")
+    }
+  }
+}
+
+case class NameSpaceMetaData(
   /** Mapping fully qualified name of the member variable of a struct type to it's type It will also maintain the type
     * mapping for package level global variables. e.g.
     *
@@ -57,44 +145,12 @@ class GoGlobal {
     *
     * `joern.io/sample.HostURL` - `string`
     */
-  val structTypeMemberTypeMapping: ConcurrentHashMap[String, String] = new ConcurrentHashMap()
+  structTypeMembers: ConcurrentHashMap[String, String] = new ConcurrentHashMap(),
+  // Mapping method fullname to its return type and signature, lambda expression return type also getting recorded under this map
+  methodMetaMap: ConcurrentHashMap[String, MethodCacheMetaData] = ConcurrentHashMap()
+)
 
-  def recordAliasToNamespaceMapping(alias: String, namespace: String): String = {
-    aliasToNameSpaceMapping.putIfAbsent(alias, namespace)
-  }
-
-  def recordStructTypeMemberType(memberFullName: String, memberType: String): Unit = {
-    structTypeMemberTypeMapping.putIfAbsent(memberFullName, memberType)
-  }
-
-  def recordFullNameToReturnType(methodFullName: String, returnType: String, signature: String): Unit = {
-    methodFullNameReturnTypeMap.putIfAbsent(methodFullName, (returnType, signature))
-  }
-
-  def recordPkgLevelVarAndConstantAst(pkg: String, ast: Ast, filePath: String): Unit = synchronized {
-    Option(pkgLevelVarAndConstantAstMap.get(pkg)) match {
-      case Some(existingList) =>
-        val t = (ast, filePath)
-        pkgLevelVarAndConstantAstMap.put(pkg, existingList + t)
-      case None => pkgLevelVarAndConstantAstMap.put(pkg, Set((ast, filePath)))
-    }
-  }
-
-  def recordForThisLamdbdaSignature(signature: String): Unit = synchronized {
-    Option(lambdaSignatureToLambdaTypeMap.get(signature)) match {
-      case None => lambdaSignatureToLambdaTypeMap.put(signature, new ConcurrentSkipListSet())
-      case _    =>
-    }
-  }
-
-  def recordLambdaSigntureToLambdaType(signature: String, lambdaTypeInfo: LambdaTypeInfo): Unit = {
-    Option(lambdaSignatureToLambdaTypeMap.get(signature)) match {
-      case Some(existingList) =>
-        existingList.add(lambdaTypeInfo)
-      case _ =>
-    }
-  }
-}
+case class MethodCacheMetaData(returnType: String, signature: String)
 
 case class LambdaTypeInfo(lambdaStructTypeFullName: String, returnTypeFullname: String)
     extends Comparable[LambdaTypeInfo] {

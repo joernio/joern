@@ -60,6 +60,8 @@ class DownloadDependenciesPass(parentGoMod: GoModHelper, goGlobal: GoGlobal, con
         .withInputPath(dependencyLocation)
         .withIgnoredFilesRegex(config.ignoredFilesRegex.toString())
         .withIgnoredFiles(config.ignoredFiles.toList)
+      // TODO: Need to implement mechanism to filter and process only used namespaces(folders) of the dependency.
+      // In order to achieve this filtering, we need to add support for inclusive rule with goastgen utility first.
       val astGenResult = new AstGenRunner(depConfig).execute(astLocation).asInstanceOf[GoAstGenRunnerResult]
       val goMod = new GoModHelper(
         Some(depConfig),

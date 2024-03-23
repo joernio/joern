@@ -42,8 +42,6 @@ class MethodAndTypeCacheBuilderPass(
           .transitiveModifications()
       }
     }
-    // Clear this set once the source code packages are processed, as this one is no more needed.
-    goGlobal.sourcePackageSet.clear()
     astCreators
   }
 }

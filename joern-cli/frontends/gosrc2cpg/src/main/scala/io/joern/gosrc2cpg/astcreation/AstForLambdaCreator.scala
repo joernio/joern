@@ -1,6 +1,6 @@
 package io.joern.gosrc2cpg.astcreation
 
-import io.joern.gosrc2cpg.datastructures.LambdaTypeInfo
+import io.joern.gosrc2cpg.datastructures.{LambdaTypeInfo, MethodCacheMetaData}
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.datastructures.Stack.StackWrapper
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
@@ -52,7 +52,7 @@ trait AstForLambdaCreator(implicit withSchemaValidation: ValidationMode) { this:
       methodNode_.astParentFullName(fullName)
       Ast.storeInDiffGraph(astForMethod, diffGraph)
     }
-    goGlobal.recordFullNameToReturnType(fullName, returnTypeStr, signature)
+    goGlobal.recordMethodMetadata(baseFullName, lambdaName, MethodCacheMetaData(returnTypeStr, signature))
     Seq(Ast(methodRefNode(funcLiteral, funcLiteral.code, fullName, fullName)))
   }
 

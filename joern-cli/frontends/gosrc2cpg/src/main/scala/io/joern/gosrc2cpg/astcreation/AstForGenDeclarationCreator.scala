@@ -68,8 +68,9 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
               if (checkForDependencyFlags(variableName)) {
                 // While processing the dependencies code ignoring package level global variables starting with lower case letter
                 // as these variables are only accessible within package. So those will not be referred from main source code.
-                goGlobal.recordStructTypeMemberType(
-                  s"$fullyQualifiedPackage${Defines.dot}$variableName",
+                goGlobal.recordStructTypeMemberTypeInfo(
+                  fullyQualifiedPackage,
+                  variableName,
                   typeFullName.getOrElse(Defines.anyTypeName)
                 )
                 astForGlobalVarAndConstants(typeFullName.getOrElse(Defines.anyTypeName), localParserNode)
@@ -95,7 +96,7 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
     if (globalStatements) {
       val variableName = lhsParserNode.json(ParserKeys.Name).str
       if (checkForDependencyFlags(variableName)) {
-        goGlobal.recordStructTypeMemberType(s"$fullyQualifiedPackage${Defines.dot}$variableName", rhsTypeFullName)
+        goGlobal.recordStructTypeMemberTypeInfo(fullyQualifiedPackage, variableName, rhsTypeFullName)
         astForGlobalVarAndConstants(rhsTypeFullName, lhsParserNode, Some(rhsAst))
       }
       (Ast(), Ast())

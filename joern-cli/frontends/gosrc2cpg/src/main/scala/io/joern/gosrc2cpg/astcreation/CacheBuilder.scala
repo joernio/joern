@@ -1,5 +1,6 @@
 package io.joern.gosrc2cpg.astcreation
 
+import io.joern.gosrc2cpg.datastructures.MethodCacheMetaData
 import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.gosrc2cpg.utils.UtilityConstants.fileSeparateorPattern
@@ -20,7 +21,7 @@ trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCre
       if (checkIfGivenDependencyPackageCanBeProcessed()) {
         cpgOpt.map { _ =>
           // We don't want to process this part when third party dependencies are being processed.
-          if (goGlobal.sourcePackageSet.add(fullyQualifiedPackage)) {
+          if (goGlobal.recordForThisNamespace(fullyQualifiedPackage)) {
             // java.util.Set.Add method will return true when set already doesn't contain the same value.
             val rootNode = createParserNodeInfo(parserResult.json)
             val ast      = astForPackage(rootNode)
@@ -98,7 +99,7 @@ trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCre
             ParserKeys.NodeReferenceId
           ) && !goGlobal.processingDependencies
         ) {
-
+          // NOTE: Dependency code is not being processed here.
           processImports(obj, true)
         } else if (
           json.obj
@@ -121,6 +122,7 @@ trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCre
             ParserKeys.NodeReferenceId
           ) && !goGlobal.processingDependencies
         ) {
+          // NOTE: Dependency code is not being processed here.
           createParserNodeInfo(obj)
         } else if (
           json.obj
@@ -128,6 +130,7 @@ trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCre
             ParserKeys.NodeReferenceId
           ) && !goGlobal.processingDependencies
         ) {
+          // NOTE: Dependency code is not being processed here.
           processFuncLiteral(obj)
         }
 
@@ -195,11 +198,11 @@ trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCre
       // As the functions starting with lower case letters will only be accessible within that package. Which means
       // these methods / functions are not going to get referred from main source code.
       val receiverInfo = getReceiverInfo(Try(funcDeclVal(ParserKeys.Recv)))
-      val methodFullname = receiverInfo match
+      val (methodFullname, recordNamespace) = receiverInfo match
         case Some(_, typeFullName, _, _) =>
-          s"$typeFullName.$name"
+          (s"$typeFullName.$name", typeFullName)
         case _ =>
-          s"$fullyQualifiedPackage.$name"
+          (s"$fullyQualifiedPackage.$name", fullyQualifiedPackage)
       // TODO: handle multiple return type or tuple (int, int)
       val genericTypeMethodMap = processTypeParams(funcDeclVal(ParserKeys.Type))
       val (returnTypeStr, _) =
@@ -210,8 +213,7 @@ trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCre
         s"$methodFullname(${parameterSignature(params, genericTypeMethodMap)})${
             if returnTypeStr == Defines.voidTypeName then "" else returnTypeStr
           }"
-
-      goGlobal.recordFullNameToReturnType(methodFullname, returnTypeStr, signature)
+      goGlobal.recordMethodMetadata(recordNamespace, name, MethodCacheMetaData(returnTypeStr, signature))
       MethodMetadata(name, methodFullname, signature, params, receiverInfo, genericTypeMethodMap)
     } else
       MethodMetadata()
