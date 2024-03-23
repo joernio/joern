@@ -550,4 +550,18 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     Seq(callAst(fieldAccess, Seq(Ast(identifier)) ++ Seq(fieldIdentifierAst)))
   }
+
+  protected def astForAttributeLists(attributeList: DotNetNodeInfo): Seq[Ast] = {
+    attributeList.json(ParserKeys.Attributes).arr.map(createDotNetNodeInfo).map(astForAttribute).toSeq
+  }
+
+  private def astForAttribute(attribute: DotNetNodeInfo): Ast = {
+    val attributeName = nameFromNode(attribute)
+    val fullName      = nodeTypeFullName(attribute)
+    val argumentAsts =
+      Try(astForArgumentList(createDotNetNodeInfo(attribute.json(ParserKeys.ArgumentList)))).getOrElse(Seq.empty[Ast])
+
+    val _annotationNode = annotationNode(attribute, attribute.code, attributeName, fullName)
+    annotationAst(_annotationNode, argumentAsts)
+  }
 }
