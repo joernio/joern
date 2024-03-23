@@ -35,7 +35,7 @@ trait RubyNodeRewriter { this: AstCreator =>
     def rets(span: TextSpan): RubyRewrite[TextSpan] =
       for
         rs <- rr
-        retSpan = span.spanStart(s"return ${rs.map(_.span.text).mkString(", ")}")
+        retSpan = span
         _ <- Writer.tell(List(
           ReturnExpression(rs)(retSpan)
         ))
@@ -70,14 +70,6 @@ trait RubyNodeRewriter { this: AstCreator =>
             r
         ))
       yield r.span
-    def assign(): RubyRewrite[RubyNode] =
-      rr.value match {
-        case id: SimpleIdentifier =>
-          rr
-        case _ =>
-          val res = fresh(rr.value.span).id
-          assign(res).map { _ => res }
-      }
 
     def tuck: RubyRewrite[TextSpan] = 
       for
@@ -180,8 +172,9 @@ trait RubyNodeRewriter { this: AstCreator =>
         } match {
           case e if expectExpression => 
             e.orElse { 
-              val span = node.span.spanEnd("else nil end")
-              Some(ElseClause(node.span.nilLiteralEnd)(span))
+              val spanNil = node.span.nilLiteralEnd
+              val span = node.span.spanEnd(s"else ${spanNil.span.text} end")
+              Some(ElseClause(tmp.assignTo(spanNil.pure).body)(span))
             }
           case e => e
         }
@@ -229,7 +222,7 @@ trait RubyNodeRewriter { this: AstCreator =>
       yield ReturnExpression(exprs)(node.span)
     case node @ AnonymousClassDeclaration(name, baseClass, body) =>
       val bdy = rewriteNode(body, false).tuck.body
-      AnonymousClassDeclaration(name, baseClass, bdy)(node.span).symbol(name.getUnqualifiedName, expectExpression)
+      AnonymousClassDeclaration(name, baseClass, bdy)(node.span).pure
     case node @ SingletonClassDeclaration(name, baseClass, body) =>
       val bdy = rewriteNode(body, false).tuck.body
       SingletonClassDeclaration(name, baseClass, bdy)(node.span).symbol(name.getUnqualifiedName, expectExpression)

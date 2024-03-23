@@ -239,20 +239,18 @@ class ControlStructureTests extends RubyCode2CpgFixture {
   }
 
   "`... while ...` statement is represented by a `WHILE` CONTROL_STRUCTURE node" in {
-    val cpg = code("""
-        |puts 'hi' while (true)
-        |""".stripMargin)
+    val cpg = code("puts 'hi' while (true)")
 
     val List(whileNode) = cpg.whileBlock.l
     val List(whileCond) = whileNode.condition.isLiteral.l
-    val List(putsHi)    = whileNode.whenTrue.isCall.l
+    val List(putsHi)    = whileNode.whenTrue.isBlock.astChildren.isCall.l
 
     whileCond.code shouldBe "true"
-    whileCond.lineNumber shouldBe Some(2)
+    whileCond.lineNumber shouldBe Some(1)
 
     putsHi.methodFullName shouldBe "__builtin:puts"
     putsHi.code shouldBe "puts 'hi'"
-    putsHi.lineNumber shouldBe Some(2)
+    putsHi.lineNumber shouldBe Some(1)
   }
 
   "`begin ... rescue ... end is represented by a `TRY` CONTROL_STRUCTURE node" in {
@@ -389,23 +387,6 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     }
   }
 
-  "implicit if-elsif-else assignment" should {
-    val cpg = code("""
-        |   a = if (y > 3) then 123 elsif(y < 6) then 2003 elsif(y < 10) then 982 else 456 end
-        |""".stripMargin)
-
-    "Create assignment operators for each branch" in {
-      inside(cpg.call.name(Operators.assignment).l) {
-        case ifAssignment :: elsifOneAssignment :: elsifTwoAssignment :: elseAssignment :: Nil =>
-          ifAssignment.code shouldBe "a = 123"
-          elsifOneAssignment.code shouldBe "a = 2003"
-          elsifTwoAssignment.code shouldBe "a = 982"
-          elseAssignment.code shouldBe "a = 456"
-        case xs => fail(s"Expected four assignments, instead found ${xs.code.mkString(", ")}")
-      }
-    }
-  }
-
   "`if-else-end` on the RHS of an assignment lowered to a tmp assignment" in {
     val cpg = code("""
         |x = if true then 20 else 40 end
@@ -433,6 +414,15 @@ class ControlStructureTests extends RubyCode2CpgFixture {
         }
       
       case xs => fail(s"Expected 3 assignments, got [${xs.mkString(",")}]")  
+    }
+  }
+
+  "implicit if-elsif-else assignment" should {
+    val src = "a = if (y > 3) then 123 elsif(y < 6) then 2003 elsif(y < 10) then 982 else 456 end"
+    val cpg = code(src)
+
+    "Create assignment operators for each branch" in {
+      cpg.call.name(Operators.assignment).code.l shouldBe List("123", "2003", "982", "456", "<tmp-gen-2>", "<tmp-gen-1>", src)
     }
   }
 
@@ -474,7 +464,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
             case _ => fail("Expected identifier for return child")
           }
 
-          returnTmp.code shouldBe "return <tmp-gen-0>"
+          returnTmp.code shouldBe "<tmp-gen-0>"
           inside(returnTmp.astChildren.l) {
             case (tmp: Identifier) :: Nil =>
               tmp.code shouldBe "<tmp-gen-0>"
