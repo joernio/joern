@@ -76,7 +76,11 @@ trait RubyNodeRewriter { this: AstCreator =>
         r <- rr
         _ <- Writer.tell(List(r))
       yield r.span
-    def ret: RubyRewrite[TextSpan] = rr.map(List(_)).rets(rr.value.span)
+    def ret: RubyRewrite[TextSpan] = 
+      if (rr.value.isAssignable)
+        rr.map(List(_)).rets(rr.value.span)
+      else
+        rr.tuck
     def defer(parameters: List[RubyNode] = List()): RubyRewrite[Fresh] = {
       val span = rr.value.span
       val n = freshLam(span)
