@@ -168,6 +168,10 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
         cfgForSwitchStatement(node)
       case ControlStructureTypes.TRY =>
         cfgForTryStatement(node)
+      case ControlStructureTypes.CATCH =>
+        cfgForChildren(node)
+      case ControlStructureTypes.FINALLY =>
+        cfgForChildren(node)
       case ControlStructureTypes.MATCH =>
         cfgForMatchExpression(node)
       case _ =>
@@ -487,26 +491,38 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
   protected def cfgForTryStatement(node: ControlStructure): Cfg = {
     val maybeTryBlock =
       node.astChildren
-        .where(_.order(1))
+        .order(1)
         .where(_.astChildren) // Filter out empty `try` bodies
         .headOption
 
     val tryBodyCfg: Cfg = maybeTryBlock.map(cfgFor).getOrElse(Cfg.empty)
 
-    val catchBodyCfgs: List[Cfg] =
-      node.astChildren
-        .where(_.order(2))
-        .toList match {
+    val catchControlStructures = node.astChildren.isControlStructure.isCatch.toList
+    val catchBodyCfgs = if (catchControlStructures.isEmpty) {
+      node.astChildren.order(2).toList match {
         case Nil  => List(Cfg.empty)
         case asts => asts.map(cfgFor)
       }
+    } else {
+      catchControlStructures match {
+        case Nil  => List(Cfg.empty)
+        case asts => asts.map(cfgFor)
+      }
+    }
 
-    val maybeFinallyBodyCfg: List[Cfg] =
+    val finallyControlStructures = node.astChildren.isControlStructure.isFinally.toList
+    val maybeFinallyBodyCfg = if (catchControlStructures.isEmpty && finallyControlStructures.isEmpty) {
       node.astChildren
-        .where(_.order(3))
+        .order(3)
         .map(cfgFor)
         .headOption // Assume there can only be one
         .toList
+    } else {
+      finallyControlStructures
+        .map(cfgFor)
+        .headOption // Assume there can only be one
+        .toList
+    }
 
     val tryToCatchEdges = catchBodyCfgs.flatMap { catchBodyCfg =>
       edgesFromFringeTo(tryBodyCfg, catchBodyCfg.entryNode)

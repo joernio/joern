@@ -140,6 +140,13 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
           .map(_.name)
           .orElse(BuiltinTypes.DotNetTypeMap.get(typeString))
           .getOrElse(typeString)
+      case Attribute =>
+        val typeString = s"${nameFromNode(node)}Attribute"
+        scope
+          .tryResolveTypeReference(typeString)
+          .map(_.name)
+          .orElse(BuiltinTypes.DotNetTypeMap.get(typeString))
+          .getOrElse(typeString)
       case _ =>
         Try(node.json(ParserKeys.Type)).map(createDotNetNodeInfo) match
           case Success(typeNode) =>
@@ -183,7 +190,7 @@ object AstCreatorHelper {
       case IdentifierName | Parameter | _: DeclarationExpr | GenericName =>
         nameFromIdentifier(node)
       case QualifiedName => nameFromQualifiedName(node)
-      case SimpleMemberAccessExpression | MemberBindingExpression | SuppressNullableWarningExpression =>
+      case SimpleMemberAccessExpression | MemberBindingExpression | SuppressNullableWarningExpression | Attribute =>
         nameFromIdentifier(createDotNetNodeInfo(node.json(ParserKeys.Name)))
       case ObjectCreationExpression | CastExpression => nameFromNode(createDotNetNodeInfo(node.json(ParserKeys.Type)))
       case ThisExpression                            => "this"

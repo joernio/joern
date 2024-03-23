@@ -146,28 +146,20 @@ class HashTests extends RubyCode2CpgFixture {
         |x = Hash [1 => "a", 2 => "b", 3 => "c"]
         |""".stripMargin)
 
-    inside(cpg.call.name(RubyOperators.hashInitializer).l) {
+    inside(cpg.call.nameExact("[]").l) {
       case hashCall :: Nil =>
         hashCall.code shouldBe "Hash [1 => \"a\", 2 => \"b\", 3 => \"c\"]"
         hashCall.lineNumber shouldBe Some(2)
+        hashCall.methodFullName shouldBe "__builtin.Hash:[]"
+        hashCall.typeFullName shouldBe "__builtin.Hash"
 
-        inside(hashCall.parentBlock.astChildren.l) {
-          case _ :: _ :: (one: Call) :: (two: Call) :: (three: Call) :: (tmp: Identifier) :: Nil =>
-            one.code shouldBe "<tmp-0>[1] = \"a\""
-            two.code shouldBe "<tmp-0>[2] = \"b\""
-            three.code shouldBe "<tmp-0>[3] = \"c\""
-            tmp.code shouldBe "<tmp-0>"
-          case xs => fail(s"Expected 3 literals under the array initializer, instead got [${xs.code.mkString(", ")}]")
+        inside(hashCall.astChildren.l) {
+          case _ :: (one: Call) :: (two: Call) :: (three: Call) :: Nil =>
+            one.code shouldBe "1 => \"a\""
+            two.code shouldBe "2 => \"b\""
+            three.code shouldBe "3 => \"c\""
+          case xs => fail(s"Expected 3 literals under the hash initializer, instead got [${xs.code.mkString(", ")}]")
         }
-
-        inside(hashCall.parentBlock.inCall.headOption) {
-          case Some(bracketCall) =>
-            bracketCall.name shouldBe "[]"
-            bracketCall.methodFullName shouldBe "__builtin.Hash:[]"
-            bracketCall.typeFullName shouldBe "__builtin.Hash"
-          case None => fail("Expected a call with the name []")
-        }
-
       case xs => fail(s"Expected a single array initializer call, instead got [${xs.code.mkString(", ")}]")
     }
   }

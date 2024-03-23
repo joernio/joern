@@ -252,6 +252,10 @@ object DotNetJsonAst {
 
   object SuppressNullableWarningExpression extends BaseExpr
 
+  object AttributeList extends BaseExpr
+
+  object Attribute extends BaseExpr
+
   object Unknown extends DotNetParserNode
 
 }
@@ -263,6 +267,8 @@ object ParserKeys {
   val AstRoot           = "AstRoot"
   val Arguments         = "Arguments"
   val ArgumentList      = "ArgumentList"
+  val AttributeLists    = "AttributeLists"
+  val Attributes        = "Attributes"
   val BaseList          = "BaseList"
   val Body              = "Body"
   val Block             = "Block"

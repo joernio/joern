@@ -38,17 +38,22 @@ class CaseTests extends RubyCode2CpgFixture {
         .l
       orConds.map {
         case mExpr: Call if mExpr.name == "include?" =>
-          val List(lhs, rhs) = mExpr.argument.l
+          val List(lhs, rhs) = mExpr.astChildren.l
           rhs.code shouldBe "<tmp-0>"
           s"splat:${lhs.code}"
-        case mExpr: Call if mExpr.name == "===" =>
+        case mExpr: Call if mExpr.name == Operators.equals =>
           val List(lhs, rhs) = mExpr.argument.l
           rhs.code shouldBe "<tmp-0>"
           s"expr:${lhs.code}"
       }.l
     }.l
 
-    conds shouldBe List(List("expr:0"), List("expr:1", "expr:2"), List("expr:3", "splat:[4,5]"), List("splat:[6]"))
+    conds shouldBe List(
+      List("expr:0"),
+      List("expr:1", "expr:2"),
+      List("expr:3", "splat:[4,5].include?"),
+      List("splat:[6].include?")
+    )
     val matchResults = ifStmts.astChildren.order(2).astChildren ++ ifStmts.last.astChildren.order(3).astChildren
     matchResults.code.l shouldBe List("0", "1", "2", "3", "4")
 
@@ -80,7 +85,7 @@ class CaseTests extends RubyCode2CpgFixture {
         .l
       orConds.map {
         case c: Call if c.name == "any?" =>
-          val List(lhs) = c.argument.l
+          val List(lhs) = c.astChildren.l
           s"splat:${lhs.code}"
         case e: Expression =>
           s"expr:${e.code}"
@@ -89,8 +94,8 @@ class CaseTests extends RubyCode2CpgFixture {
     conds shouldBe List(
       List("expr:false", "expr:true"),
       List("expr:true"),
-      List("expr:false", "splat:[false,false]"),
-      List("splat:[false,true]")
+      List("expr:false", "splat:[false,false].any?"),
+      List("splat:[false,true].any?")
     )
 
     val matchResults = ifStmts.astChildren.order(2).astChildren.l
