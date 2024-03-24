@@ -16,6 +16,7 @@ object RubyIntermediateAst {
     def spanEnd(newText: String = ""): TextSpan = TextSpan(lineEnd, columnEnd, lineEnd, columnEnd, newText)
   }
 
+
   sealed class RubyNode(val span: TextSpan) {
     def line: Option[Integer] = span.line
 
@@ -26,6 +27,12 @@ object RubyIntermediateAst {
     def columnEnd: Option[Integer] = span.columnEnd
 
     def text: String = span.text
+  }
+  
+  object RubyNode {
+    object Span {
+      def unapply(node: RubyNode) = (node.span.text, node)
+    }
   }
 
   implicit class RubyNodeHelper(node: RubyNode) {

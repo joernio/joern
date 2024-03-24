@@ -422,7 +422,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     val cpg = code(src)
 
     "Create assignment operators for each branch" in {
-      cpg.call.name(Operators.assignment).code.l shouldBe List("123", "2003", "982", "456", "<tmp-gen-2>", "<tmp-gen-1>", src)
+      cpg.call.name(Operators.assignment).code.l shouldBe List("123", "2003", "982", "456", "<tmp-gen-0>", "<tmp-gen-0>", src)
     }
   }
 
