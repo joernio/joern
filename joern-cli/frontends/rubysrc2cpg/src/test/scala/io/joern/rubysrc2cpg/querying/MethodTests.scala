@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.querying
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.Return
+import io.shiftleft.codepropertygraph.generated.nodes.{Literal, Return}
 import io.shiftleft.semanticcpg.language.*
 
 class MethodTests extends RubyCode2CpgFixture {
@@ -384,21 +384,29 @@ class MethodTests extends RubyCode2CpgFixture {
 
   "return true if statement" should {
     val cpg = code("""
-        |  def is_valid?(token)
-        |    if token =~ /(?<user>\d+)-(?<email_hash>[A-Z0-9]{32})/i
-        |
-        |      # Fetch the user by their id, and hash their email address
-        |      @user = User.find_by(id: $~[:user])
-        |      email = Digest::MD5.hexdigest(@user.email)
-        |
-        |      # Compare and validate our hashes
-        |      return true if email == $~[:email_hash]
-        |    end
+        |  def foo
+        |    return true if 1 < 2
         |  end
         |""".stripMargin)
 
-    "do something" in {
-      cpg.method.name("is_valid\\?").l.foreach(println)
+    "Generate return for explicit return expression as last statement" in {
+      inside(cpg.method.name("foo").l) {
+        case fooMethod :: Nil =>
+          inside(fooMethod.methodReturn.toReturn.l) {
+            case returnTrue :: returnNil :: Nil =>
+              returnTrue.code shouldBe "return true"
+
+              val List(trueVal: Literal) = returnTrue.astChildren.isLiteral.l: @unchecked
+              trueVal.code shouldBe "true"
+
+              returnNil.code shouldBe "return nil"
+
+              val List(nilVal: Literal) = returnNil.astChildren.isLiteral.l: @unchecked
+              nilVal.code shouldBe "nil"
+            case xs => fail(s"Expected two returns, got ${xs.code.mkString(", ")} instead")
+          }
+        case xs => fail(s"Expected one method for foo, got ${xs.name.mkString(", ")} instead")
+      }
     }
   }
 

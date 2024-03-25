@@ -346,6 +346,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case clause: ControlFlowClause   => clauseReturningLastExpression(clause)
       case node: ControlFlowExpression => transform(node)
       case node: BreakStatement        => node
+      case node: ReturnExpression      => node
       case _                           => ReturnExpression(x :: Nil)(x.span)
     }
   }
