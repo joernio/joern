@@ -35,7 +35,7 @@ jobs:
             ~/.sbt
             ~/.coursier
           key: ${{ runner.os }}-sbt-${{ hashfiles('**/build.sbt') }}
-      - run: sbt scalafmtCheck +test
+      - run: sbt scalafmtCheck test
       - run: ./testDistro.sh
       - run: |
           cd joern-cli/target/universal/stage

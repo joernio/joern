@@ -20,7 +20,7 @@ jobs:
         with:
           ruby-version: 2.7
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v5
         with:
           go-version: 1.18
       - name: Set up Swift
@@ -43,7 +43,7 @@ jobs:
             ~/.coursier
           key: ${{ runner.os }}-sbt-${{ hashfiles('**/build.sbt') }}
       - name: Compile and run tests
-        run: sbt clean +test
+        run: sbt clean test
   formatting:
     runs-on: ubuntu-latest
     steps:
