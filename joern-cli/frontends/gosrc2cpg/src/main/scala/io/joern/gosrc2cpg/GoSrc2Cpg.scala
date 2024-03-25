@@ -38,6 +38,7 @@ class GoSrc2Cpg(goGlobalOption: Option[GoGlobal] = Some(GoGlobal())) extends X2C
             astGenResult.parsedModFile.flatMap(modFile => GoAstJsonParser.readModFile(Paths.get(modFile)).map(x => x))
           )
         )
+        goGlobal.mainModule = goMod.flatMap(modHelper => modHelper.getModMetaData().map(mod => mod.module.name))
         val astCreators =
           new MethodAndTypeCacheBuilderPass(Some(cpg), astGenResult.parsedFiles, config, goMod.get, goGlobal).process()
         if (config.fetchDependencies) {

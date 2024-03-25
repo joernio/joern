@@ -29,7 +29,7 @@ class DownloadDependenciesPass(parentGoMod: GoModHelper, goGlobal: GoGlobal, con
     parentGoMod
       .getModMetaData()
       .foreach(mod => {
-        ExternalCommand.run("go mod init joern.io/temp", prjDir) match
+        ExternalCommand.run("go mod init joern.io/temp", prjDir) match {
           case Success(_) =>
             val futures = mod.dependencies
               .filter(dep => dep.beingUsed)
@@ -37,18 +37,21 @@ class DownloadDependenciesPass(parentGoMod: GoModHelper, goGlobal: GoGlobal, con
                 Future {
                   val dependencyStr = s"${dependency.module}@${dependency.version}"
                   val cmd           = s"go get $dependencyStr"
-                  synchronized(ExternalCommand.run(cmd, prjDir)) match
+                  val results       = synchronized(ExternalCommand.run(cmd, prjDir))
+                  results match {
                     case Success(_) =>
                       print(". ")
                       processDependency(dependencyStr)
                     case Failure(f) =>
                       logger.error(s"\t- command '$cmd' failed", f)
+                  }
                 }
               })
             val allResults: Future[List[Unit]] = Future.sequence(futures)
             Await.result(allResults, Duration.Inf)
           case Failure(f) =>
             logger.error("\t- command 'go mod init joern.io/temp' failed", f)
+        }
       })
   }
 

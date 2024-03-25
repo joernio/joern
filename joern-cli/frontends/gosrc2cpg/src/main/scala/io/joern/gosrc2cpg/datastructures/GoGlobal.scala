@@ -5,8 +5,9 @@ import org.slf4j.LoggerFactory
 
 import java.util.concurrent.{ConcurrentHashMap, ConcurrentSkipListSet}
 class GoGlobal {
-  private val logger         = LoggerFactory.getLogger(getClass)
-  var processingDependencies = false
+  private val logger             = LoggerFactory.getLogger(getClass)
+  var mainModule: Option[String] = None
+  var processingDependencies     = false
 
   /** This map will only contain the mapping for those packages whose package name is different from the enclosing
     * folder name
@@ -36,7 +37,9 @@ class GoGlobal {
 
   def recordAliasToNamespaceMapping(alias: String, namespace: String): Unit = synchronized {
     val existingVal = aliasToNameSpaceMapping.putIfAbsent(alias, namespace)
-    if (existingVal == null) {
+    // NOTE: !namespace.startsWith(mainModule.get) this check will not add the mapping for main source code imports.
+    // This will make sure to add the entry in CacheBuilder, which in turn creates the required Package level TypeDecl AST structure as well.
+    if (existingVal == null && (mainModule == None || (mainModule != None && !namespace.startsWith(mainModule.get)))) {
       recordForThisNamespace(namespace)
     } else if (existingVal != namespace) {
       // TODO: This might need better way of recording the information.

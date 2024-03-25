@@ -334,6 +334,22 @@ class GlobalVariableAndConstantTests extends GoCodeToCpgSuite {
       "main.go"
     )
 
+    "Check package Type Decl" in {
+      val List(x) = cpg.typeDecl("main").l
+      x.fullName shouldBe "main"
+    }
+
+    "Traversal from package type decl to global variable member nodes" in {
+      val List(f) = cpg.typeDecl("joern.io/sample/another/lib1").l
+      val List(a) = f.member.l
+      a.name shouldBe "SchemeHTTP"
+      a.typeFullName shouldBe "string"
+      val List(s) = cpg.typeDecl("joern.io/sample/lib1").l
+      val List(b) = s.member.l
+      b.name shouldBe "SchemeHTTP"
+      b.typeFullName shouldBe "string"
+    }
+
     "Create two package level TypeDecls for each package" in {
       cpg.typeDecl.fullName.l shouldBe List("joern.io/sample/another/lib1", "joern.io/sample/lib1", "main")
     }
