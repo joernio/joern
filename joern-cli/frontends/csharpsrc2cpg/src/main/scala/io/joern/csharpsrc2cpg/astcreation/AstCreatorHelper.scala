@@ -174,9 +174,12 @@ object AstCreatorHelper {
     val cn       = metaData(ParserKeys.ColumnStart).numOpt.map(_.toInt.asInstanceOf[Integer])
     val lnEnd    = metaData(ParserKeys.LineEnd).numOpt.map(_.toInt.asInstanceOf[Integer])
     val cnEnd    = metaData(ParserKeys.ColumnEnd).numOpt.map(_.toInt.asInstanceOf[Integer])
-    val c =
-      metaData(ParserKeys.Code).strOpt.map(x => x.takeWhile(x => x != '\n' && x != '{')).getOrElse("<empty>").strip()
-    val node = nodeType(metaData, relativeFileName)
+    val node     = nodeType(metaData, relativeFileName)
+    val c = node.toString match
+      case "Attribute" =>
+        metaData(ParserKeys.Code).strOpt.map(x => x.takeWhile(x => x != '\n')).getOrElse("<empty>").strip()
+      case _ =>
+        metaData(ParserKeys.Code).strOpt.map(x => x.takeWhile(x => x != '\n' && x != '{')).getOrElse("<empty>").strip()
     DotNetNodeInfo(node, json, c, ln, cn, lnEnd, cnEnd)
   }
 

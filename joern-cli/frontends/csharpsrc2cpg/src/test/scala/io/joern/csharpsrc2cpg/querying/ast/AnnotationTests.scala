@@ -48,6 +48,26 @@ class AnnotationTests extends CSharpCode2CpgFixture {
         obsolete.fullName shouldBe "System.ObsoleteAttribute"
       }
     }
+
+    "have correct code for Route attribute" in {
+      val cpg = code("""
+          |using System;
+          |
+          |namespace Foo {
+          | [Route("api/v{version:number}/some/[controller]")]
+          | public class Controller {
+          |   public static void Main() {}
+          | }
+          |}
+          |""".stripMargin)
+
+      inside(cpg.typeDecl("Controller").annotation.l) { case route :: Nil =>
+        route.code shouldBe "Route(\"api/v{version:number}/some/[controller]\")"
+        route.name shouldBe "Route"
+        route.fullName shouldBe "RouteAttribute"
+      }
+
+    }
   }
 
   "annotations for members" should {

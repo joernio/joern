@@ -570,6 +570,10 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     SimpleIdentifier()(ctx.toTextSpan)
   }
 
+  override def visitMethodOnlyIdentifier(ctx: RubyParser.MethodOnlyIdentifierContext): RubyNode = {
+    SimpleIdentifier()(ctx.toTextSpan)
+  }
+
   override def visitIsDefinedKeyword(ctx: RubyParser.IsDefinedKeywordContext): RubyNode = {
     SimpleIdentifier()(ctx.toTextSpan)
   }
