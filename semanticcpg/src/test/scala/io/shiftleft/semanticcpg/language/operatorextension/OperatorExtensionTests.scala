@@ -4,52 +4,9 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.ArrayAccess
 import io.shiftleft.semanticcpg.testing.MockCpg
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-
-// TODO remove debug code
-object OperatorExtensionTests {
-
-  private val methodName = "method"
-
-  // TODOs
-  // check in profiler
-
-  def main(args: Array[String]): Unit = {
-    val start = System.nanoTime
-    val iterations = 200
-    1.to(iterations).foreach { i =>
-      val start = System.nanoTime
-      MockCpg()
-        .withMethod(methodName)
-        .withMethod(methodName)
-        .withMethod(methodName)
-        .withMethod(methodName)
-        .withMethod(methodName)
-        .withMethod(methodName)
-        .cpg
-      val duration = concurrent.duration.Duration.fromNanos(System.nanoTime - start)
-      println(s"iteration $i: ${duration.toMillis}ms")
-    }
-
-    val duration = concurrent.duration.Duration.fromNanos(System.nanoTime - start)
-    val average = (System.nanoTime - start) / iterations.toFloat / 1000000f
-    println(s"===> total duration: ${duration.toMillis}ms")
-    println(s"average time: ${average}ms")
-
-    /** average timings based on 20 iterations and X `withXyz` layers. on master (with odb) it's always 25ms
-     * 1: 180ms
-     * 2: 290ms
-     * 3: 530ms
-     * 4: 740ms
-     * 5: 925ms
-     * 6: 1025ms
-     */
-  }
-
-}
 
 class OperatorExtensionTests extends AnyWordSpec with Matchers {
 
