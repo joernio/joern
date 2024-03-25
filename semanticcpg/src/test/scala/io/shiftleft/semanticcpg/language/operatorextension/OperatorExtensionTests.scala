@@ -15,21 +15,20 @@ object OperatorExtensionTests {
   private val methodName = "method"
 
   // TODOs
-  // compare to master
   // check in profiler
 
   def main(args: Array[String]): Unit = {
     val start = System.nanoTime
-    val iterations = 20
+    val iterations = 200
     1.to(iterations).foreach { i =>
       val start = System.nanoTime
       MockCpg()
         .withMethod(methodName)
-//        .withMethod(methodName)
-//        .withMethod(methodName)
-//        .withMethod(methodName)
-//        .withMethod(methodName)
-//        .withMethod(methodName)
+        .withMethod(methodName)
+        .withMethod(methodName)
+        .withMethod(methodName)
+        .withMethod(methodName)
+        .withMethod(methodName)
         .cpg
       val duration = concurrent.duration.Duration.fromNanos(System.nanoTime - start)
       println(s"iteration $i: ${duration.toMillis}ms")

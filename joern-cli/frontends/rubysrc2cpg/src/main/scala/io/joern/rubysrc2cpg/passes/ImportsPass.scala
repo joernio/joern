@@ -3,11 +3,11 @@ package io.joern.rubysrc2cpg.passes
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.joern.x2cpg.Imports.createImportNodeAndLink
 import io.joern.x2cpg.X2Cpg.stripQuotes
 
-class ImportsPass(cpg: Cpg) extends ConcurrentWriterCpgPass[Call](cpg) {
+class ImportsPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Call](cpg) {
   protected val importCallName: String = "require"
   override def generateParts(): Array[Call] = cpg
     .call(importCallName)
