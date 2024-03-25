@@ -64,9 +64,9 @@ class GoGlobal {
         existingNamespace.methodMetaMap.put(methodName, methodMetaData)
       case _ =>
         // handling for types and lambda functions defined inside methods. Wrapping method becomes the part of their namespace.
-        val (wrappingNamespace, _) = splitNamespaceFromMember(namespace)
+        val (wrappingNamespace, membertoken) = splitNamespaceFromMember(namespace)
         // now check if this namespace is present in the map. If yes then make the new entry for this sub namespace
-        if (nameSpaceMetaDataMap.containsKey(wrappingNamespace)) {
+        if (nameSpaceMetaDataMap.containsKey(wrappingNamespace) && checkForDependencyFlags(membertoken)) {
           recordForThisNamespace(namespace)
           recordMethodMetadata(namespace, methodName, methodMetaData)
         }
@@ -86,8 +86,8 @@ class GoGlobal {
       case Some(existingNamespace) =>
         existingNamespace.structTypeMembers.put(memberName, memberType)
       case _ =>
-        val (wrappingNamespace, _) = splitNamespaceFromMember(namespace)
-        if (nameSpaceMetaDataMap.containsKey(wrappingNamespace)) {
+        val (wrappingNamespace, membertoken) = splitNamespaceFromMember(namespace)
+        if (nameSpaceMetaDataMap.containsKey(wrappingNamespace) && checkForDependencyFlags(membertoken)) {
           recordForThisNamespace(namespace)
           recordStructTypeMemberTypeInfo(namespace, memberName, memberType)
         }
@@ -124,6 +124,17 @@ class GoGlobal {
     } else {
       (fullName, "")
     }
+  }
+
+  /** While processing the dependencies code ignoring package level global variables, constants, types, and functions
+    * starting with lower case letter as those are only accessible within package. So those will not be referred from
+    * main source code.
+    *
+    * @param name
+    * @return
+    */
+  def checkForDependencyFlags(name: String): Boolean = {
+    !processingDependencies || processingDependencies && name.headOption.exists(_.isUpper)
   }
 }
 

@@ -150,7 +150,7 @@ trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCre
 
   protected def processTypeSepc(typeSepc: ParserNodeInfo): (String, String, Seq[Ast]) = {
     val name = typeSepc.json(ParserKeys.Name)(ParserKeys.Name).str
-    if (checkForDependencyFlags(name)) {
+    if (goGlobal.checkForDependencyFlags(name)) {
       // Ignoring recording the Type details when we are processing dependencies code with Type name starting with lower case letter
       // As the Types starting with lower case letters will only be accessible within that package. Which means
       // these Types are not going to get referred from main source code.
@@ -193,7 +193,7 @@ trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCre
 
   protected def processFuncDecl(funcDeclVal: Value): MethodMetadata = {
     val name = funcDeclVal(ParserKeys.Name).obj(ParserKeys.Name).str
-    if (checkForDependencyFlags(name)) {
+    if (goGlobal.checkForDependencyFlags(name)) {
       // Ignoring recording the method details when we are processing dependencies code with functions name starting with lower case letter
       // As the functions starting with lower case letters will only be accessible within that package. Which means
       // these methods / functions are not going to get referred from main source code.

@@ -39,7 +39,7 @@ trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { thi
               .map(fieldInfo => {
                 val fieldNodeInfo = createParserNodeInfo(fieldInfo)
                 val fieldName     = fieldNodeInfo.json(ParserKeys.Name).str
-                if (checkForDependencyFlags(fieldName)) {
+                if (goGlobal.checkForDependencyFlags(fieldName)) {
                   goGlobal.recordStructTypeMemberTypeInfo(typeDeclFullName, fieldName, typeFullName)
                 }
                 Ast(memberNode(typeInfo, fieldName, fieldNodeInfo.code, typeFullName))
