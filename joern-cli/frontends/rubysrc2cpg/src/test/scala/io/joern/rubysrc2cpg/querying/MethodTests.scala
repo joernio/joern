@@ -365,7 +365,7 @@ class MethodTests extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
-    "be represented by a a METHOD node" in {
+    "be represented by a METHOD node" in {
       inside(cpg.method.name("exists\\?").l) {
         case existsMethod :: Nil =>
           existsMethod.fullName shouldBe "Test0.rb:<global>::program:exists?"
@@ -382,14 +382,14 @@ class MethodTests extends RubyCode2CpgFixture {
     }
   }
 
-  "return true if statement" should {
+  "Explicit ReturnExpression as last statement" should {
     val cpg = code("""
         |  def foo
         |    return true if 1 < 2
         |  end
         |""".stripMargin)
 
-    "Generate return for explicit return expression as last statement" in {
+    "Represented by Return Node" in {
       inside(cpg.method.name("foo").l) {
         case fooMethod :: Nil =>
           inside(fooMethod.methodReturn.toReturn.l) {
@@ -467,4 +467,25 @@ class MethodTests extends RubyCode2CpgFixture {
     }
   }
 
+  "RescueExpression as Statement body" should {
+    val cpg = code("""
+        |  def self.silence_streams(*streams)
+        |    on_hold = streams.collect { |stream| stream.dup }
+        |    streams.each do |stream|
+        |      stream.reopen(RUBY_PLATFORM =~ /mswin/ ? "NUL:" : "/dev/null")
+        |      stream.sync = true
+        |    end
+        |    yield
+        |  ensure
+        |    streams.each_with_index do |stream, i|
+        |      stream.reopen(on_hold[i])
+        |    end
+        |  end
+        |""".stripMargin)
+
+    "" ignore {
+      // TODO: Implement tests once impl is ready
+      cpg.method.name("self.silence_streams").l.foreach(println)
+    }
+  }
 }
