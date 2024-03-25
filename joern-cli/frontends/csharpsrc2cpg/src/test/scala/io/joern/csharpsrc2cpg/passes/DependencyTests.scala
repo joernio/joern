@@ -1,7 +1,7 @@
-package io.joern.csharpsrc2cpg.querying.ast
+package io.joern.csharpsrc2cpg.passes
 
-import io.joern.csharpsrc2cpg.testfixtures.CSharpCode2CpgFixture
 import io.joern.csharpsrc2cpg.Config
+import io.joern.csharpsrc2cpg.testfixtures.CSharpCode2CpgFixture
 import io.shiftleft.semanticcpg.language.*
 
 class DependencyTests extends CSharpCode2CpgFixture {
@@ -99,6 +99,43 @@ class DependencyTests extends CSharpCode2CpgFixture {
           entity.methodFullName shouldBe "Microsoft.EntityFrameworkCore.ModelBuilder.Entity:Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder(System.String)"
         case None =>
           fail("Expected a call node for `Entity`")
+      }
+    }
+
+  }
+
+  "a `csproj` file specifying a dependency with the `Update` attribute" should {
+
+    val cpg = code("""
+        |using System;
+        |using Microsoft.EntityFrameworkCore;
+        |
+        |public class Foo {
+        |
+        | static void bar(ModelBuilder modelBuilder)
+        | {
+        |   modelBuilder.Entity("test");
+        | }
+        |
+        |}
+        |""".stripMargin)
+      .moreCode(
+        """
+          |<Project Sdk="Microsoft.NET.Sdk">
+          |    <ItemGroup>
+          |      <PackageReference Update="coverlet.msbuild" Version="3.2.0"/>
+          |    </ItemGroup>
+          |</Project>
+          |""".stripMargin,
+        "Foo.csproj"
+      )
+
+    "have the package references persisted with versions" in {
+      inside(cpg.dependency.l) {
+        case msbuild :: Nil =>
+          msbuild.name shouldBe "coverlet.msbuild"
+          msbuild.version shouldBe "3.2.0"
+        case xs => fail(s"Expected exactly 1 dependencies, instead got [${xs.name.mkString(",")}]")
       }
     }
 
