@@ -356,7 +356,30 @@ class MethodTests extends RubyCode2CpgFixture {
         case _ => fail("Expected one Method for :program")
       }
     }
+  }
 
+  "A Boolean method" should {
+    val cpg = code("""
+        |def exists?
+        |  true
+        |end
+        |""".stripMargin)
+
+    "be represented by a a METHOD node" in {
+      inside(cpg.method.name("exists\\?").l) {
+        case existsMethod :: Nil =>
+          existsMethod.fullName shouldBe "Test0.rb:<global>::program:exists?"
+          existsMethod.isExternal shouldBe false
+
+          inside(existsMethod.methodReturn.cfgIn.l) {
+            case existsMethodReturn :: Nil =>
+              existsMethodReturn.code shouldBe "true"
+            case _ => fail("Expected return for method")
+          }
+
+        case xs => fail(s"Expected one method, found ${xs.name.mkString(", ")}")
+      }
+    }
   }
 
 }
