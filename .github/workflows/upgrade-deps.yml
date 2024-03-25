@@ -27,7 +27,7 @@ jobs:
           key: ${{ runner.os }}-sbt-${{ hashfiles('**/build.sbt') }}
       - name: Upgrade all (internal) dependencies
         run: ./updateDependencies.sh --non-interactive
-      - run: sbt clean +test
+      - run: sbt clean test
       - run: ./testDistro.sh
       - run: |
           mkdir /tmp/foo
