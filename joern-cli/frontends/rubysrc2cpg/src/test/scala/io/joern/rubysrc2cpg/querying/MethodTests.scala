@@ -382,4 +382,43 @@ class MethodTests extends RubyCode2CpgFixture {
     }
   }
 
+  "return true if statement" should {
+    val cpg = code("""
+        |  def is_valid?(token)
+        |    if token =~ /(?<user>\d+)-(?<email_hash>[A-Z0-9]{32})/i
+        |
+        |      # Fetch the user by their id, and hash their email address
+        |      @user = User.find_by(id: $~[:user])
+        |      email = Digest::MD5.hexdigest(@user.email)
+        |
+        |      # Compare and validate our hashes
+        |      return true if email == $~[:email_hash]
+        |    end
+        |  end
+        |""".stripMargin)
+
+    "do something" in {
+      cpg.method.name("is_valid\\?").l.foreach(println)
+    }
+  }
+
+  "break unless statement" should {
+    val cpg = code("""
+        |  def generate_token(column)
+        |    loop do
+        |      self[column] = Encryption.encrypt_sensitive_value(self.id)
+        |      # puts "hi" unless User.exists?(column => self[column])
+        |      break unless User.exists?(column => self[column])
+        |    end
+        |
+        |    self.save!
+        |  end
+        |
+        |""".stripMargin)
+
+    "be" in {
+      cpg.method.name("generate_token").dotAst.l.foreach(println)
+    }
+  }
+
 }
