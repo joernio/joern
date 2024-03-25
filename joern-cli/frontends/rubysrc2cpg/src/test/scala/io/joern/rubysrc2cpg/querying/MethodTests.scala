@@ -404,20 +404,58 @@ class MethodTests extends RubyCode2CpgFixture {
 
   "break unless statement" should {
     val cpg = code("""
-        |  def generate_token(column)
+        |  def foo
         |    loop do
-        |      self[column] = Encryption.encrypt_sensitive_value(self.id)
-        |      # puts "hi" unless User.exists?(column => self[column])
-        |      break unless User.exists?(column => self[column])
+        |      break unless 1 < 2
         |    end
-        |
-        |    self.save!
         |  end
-        |
         |""".stripMargin)
 
-    "be" in {
-      cpg.method.name("generate_token").dotAst.l.foreach(println)
+    "generate control structure for break" in {
+      inside(cpg.method.name("foo").l) {
+        case fooMethod :: Nil =>
+          inside(fooMethod.astChildren.isMethod.name("<lambda>0").l) {
+            case loopMethod :: Nil =>
+              inside(loopMethod.block.astChildren.isControlStructure.l) {
+                case ifStruct :: Nil =>
+                  inside(ifStruct.astChildren.isBlock.l) {
+                    case breakBlock :: nilBlock :: Nil =>
+                      inside(breakBlock.astChildren.isControlStructure.l) {
+                        case breakStruct :: Nil =>
+                          breakStruct.code shouldBe "break"
+                        case xs =>
+                          fail(s"Expected on control structure for break, got ${xs.code.mkString(", ")} instead")
+                      }
+                    case xs => fail(s"Expected block for break and nil, got ${xs.code.mkString(", ")} instead")
+                  }
+                case xs => fail(s"Expected one control structure for if, got ${xs.code.mkString(", ")} instead")
+              }
+
+              inside(loopMethod.methodReturn.toReturn.l) {
+                case lambdaRet :: Nil =>
+                  lambdaRet.code shouldBe "return nil" // break statements cannot be returned, so only false branch should be present which returns nil for UnlessExpression
+                case xs => fail(s"Expected one return for lambda function, got ${xs.code.mkString(", ")} instead")
+              }
+            case xs => fail(s"Expected one lambda method, got ${xs.name.mkString(", ")} instead")
+          }
+        case xs => fail(s"Expected one method for foo, got ${xs.name.mkString(", ")} instead")
+      }
+    }
+
+    "generate one return for lambda loop do block" in {
+      inside(cpg.method.name("foo").l) {
+        case fooMethod :: Nil =>
+          inside(fooMethod.astChildren.isMethod.name("<lambda>0").l) {
+            case loopMethod :: Nil =>
+              inside(loopMethod.methodReturn.toReturn.l) {
+                case lambdaRet :: Nil =>
+                  lambdaRet.code shouldBe "return nil" // break statements cannot be returned, so only false branch should be present which returns nil for UnlessExpression
+                case xs => fail(s"Expected one return for lambda function, got ${xs.code.mkString(", ")} instead")
+              }
+            case xs => fail(s"Expected one lambda method, got ${xs.name.mkString(", ")} instead")
+          }
+        case xs => fail(s"Expected one method for foo, got ${xs.name.mkString(", ")} instead")
+      }
     }
   }
 
