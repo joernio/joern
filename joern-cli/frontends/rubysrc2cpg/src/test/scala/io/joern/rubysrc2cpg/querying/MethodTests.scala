@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.querying
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{Literal, Return}
+import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal, Return}
 import io.shiftleft.semanticcpg.language.*
 
 class MethodTests extends RubyCode2CpgFixture {
@@ -293,7 +293,13 @@ class MethodTests extends RubyCode2CpgFixture {
               // bar forwards parameters to a call to the aliased method
               inside(bar.call.name("x=").l) {
                 case barCall :: Nil =>
-                  barCall.argument.isIdentifier.name.head shouldBe "z"
+                  inside(barCall.argument.l) {
+                    case _ :: (z: Identifier) :: Nil =>
+                      z.name shouldBe "z"
+                      z.argumentIndex shouldBe 1
+                    case xs =>
+                      fail(s"Expected a two arguments for the call `x=`,  instead got [${xs.code.mkString(",")}]")
+                  }
                   barCall.code shouldBe "x=(z)"
                 case xs => fail(s"Expected a single call to `bar=`,  instead got [${xs.code.mkString(",")}]")
               }

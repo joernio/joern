@@ -48,12 +48,7 @@ class CaseTests extends RubyCode2CpgFixture {
       }.l
     }.l
 
-    conds shouldBe List(
-      List("expr:0"),
-      List("expr:1", "expr:2"),
-      List("expr:3", "splat:[4,5].include?"),
-      List("splat:[6].include?")
-    )
+    conds shouldBe List(List("expr:0"), List("expr:1", "expr:2"), List("expr:3", "splat:[4,5]"), List("splat:[6]"))
     val matchResults = ifStmts.astChildren.order(2).astChildren ++ ifStmts.last.astChildren.order(3).astChildren
     matchResults.code.l shouldBe List("0", "1", "2", "3", "4")
 
@@ -94,8 +89,8 @@ class CaseTests extends RubyCode2CpgFixture {
     conds shouldBe List(
       List("expr:false", "expr:true"),
       List("expr:true"),
-      List("expr:false", "splat:[false,false].any?"),
-      List("splat:[false,true].any?")
+      List("expr:false", "splat:[false,false]"),
+      List("splat:[false,true]")
     )
 
     val matchResults = ifStmts.astChildren.order(2).astChildren.l

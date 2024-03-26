@@ -391,7 +391,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
 
                   returnCall.name shouldBe "foo"
 
-                  val List(arg: MethodRef) = returnCall.argument.l: @unchecked
+                  val List(_, arg: MethodRef) = returnCall.argument.l: @unchecked
                   arg.methodFullName shouldBe "Test0.rb:<global>::program:bar:<lambda>0"
                 case xs => fail(s"Expected one call for return, but found ${xs.code.mkString(", ")} instead")
               }
