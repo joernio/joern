@@ -1035,4 +1035,8 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     AliasStatement(ctx.oldName.getText, ctx.newName.getText)(ctx.toTextSpan)
   }
 
+  override def visitBreakWithoutArguments(ctx: RubyParser.BreakWithoutArgumentsContext): RubyNode = {
+    BreakStatement()(ctx.toTextSpan)
+  }
+
 }
