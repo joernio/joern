@@ -572,4 +572,37 @@ class ClassTests extends RubyCode2CpgFixture {
       }
     }
   }
+
+  "Scope call under TYPE DECL" should {
+    val cpg = code("""
+        |class Foo
+        | scope :published, -> { where(status: "Published") }
+        |  def bar
+        |    puts 1
+        |  end
+        |end
+        |""".stripMargin)
+
+    "be moved to <init> constructor method" in {
+      inside(cpg.typeDecl.name("Foo").l) {
+        case fooClass :: Nil =>
+          inside(fooClass.method.name(Defines.ConstructorMethodName).l) {
+            case initMethod :: Nil =>
+              inside(initMethod.astChildren.isBlock.astChildren.isCall.l) {
+                case scopeCall :: Nil =>
+                  scopeCall.code shouldBe "scope :published, -> { where(status: \"Published\") }"
+
+                  inside(scopeCall.argument.l) {
+                    case (literalArg: Literal) :: unknownArg :: Nil =>
+                      literalArg.code shouldBe ":published"
+                    case xs => fail(s"Expected two arguments, got ${xs.code.mkString(", ")} instead")
+                  }
+                case xs => fail(s"Expected one call under constructor, got ${xs.code.mkString(", ")} instead")
+              }
+            case xs => fail(s"Expected one init method, got ${xs.code.mkString(", ")} instead")
+          }
+        case xs => fail(s"Expected one class, got ${xs.code.mkString(", ")} instead")
+      }
+    }
+  }
 }

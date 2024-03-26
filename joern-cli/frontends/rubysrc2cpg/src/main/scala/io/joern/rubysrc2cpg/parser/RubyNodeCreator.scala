@@ -774,6 +774,11 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
           x
         }
 
+        val (scopeDecls, stmtListWithoutScopeDecls) = rest.partition {
+          case x: SimpleCall if x.target.span.text == "scope" => true
+          case _                                              => false
+        }
+
         val fieldsInMethodDecls = findFieldsInMethodDecls(methodDecls)
 
         val (instanceFieldsInMethodDecls, classFieldsInMethodDecls) = partitionRubyFields(fieldsInMethodDecls)
@@ -799,17 +804,19 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
               //   where you end up having
               //   <instanceField> = nil; <instanceField> = ...;
               case stmtList: StatementList =>
-                val initializers = initStmtListStatements :+ clinitMethod
-                StatementList(initializers ++ rest)(stmtList.span)
+                val initializers = (initStmtListStatements ++ scopeDecls) :+ clinitMethod
+                StatementList(initializers ++ stmtListWithoutScopeDecls)(stmtList.span)
               case x => x
             }
           case None =>
             val newInitMethod =
-              MethodDeclaration("initialize", List.empty, StatementList(initStmtListStatements)(stmtList.span))(
-                stmtList.span
-              )
+              MethodDeclaration(
+                "initialize",
+                List.empty,
+                StatementList(initStmtListStatements ++ scopeDecls)(stmtList.span)
+              )(stmtList.span)
             val initializers = newInitMethod :: clinitMethod :: Nil
-            StatementList(initializers ++ rest)(stmtList.span)
+            StatementList(initializers ++ stmtListWithoutScopeDecls)(stmtList.span)
         }
         val combinedFields = rubyFieldIdentifiers ++ fieldsInMethodDecls
 
