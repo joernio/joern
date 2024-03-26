@@ -387,4 +387,5 @@ object RubyIntermediateAst {
 
   final case class AliasStatement(oldName: String, newName: String)(span: TextSpan) extends RubyNode(span)
 
+  final case class BreakStatement()(span: TextSpan) extends RubyNode(span)
 }

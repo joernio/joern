@@ -318,13 +318,13 @@ class ClassTests extends RubyCode2CpgFixture {
           val List(validateCall: Call) = userType.astChildren.isCall.l: @unchecked
 
           inside(validateCall.argument.l) {
-            case (passwordArg: Literal) :: (presenceArg: Literal) :: (confirmationArg: Literal) :: (lengthArg: Block) :: (onArg: Literal) :: (ifArg: Literal) :: Nil =>
+            case _ :: (passwordArg: Literal) :: (presenceArg: Literal) :: (confirmationArg: Literal) :: (lengthArg: Block) :: (onArg: Literal) :: (ifArg: Literal) :: Nil =>
               passwordArg.code shouldBe ":password"
               presenceArg.code shouldBe "true"
               confirmationArg.code shouldBe "true"
               onArg.code shouldBe ":create"
               ifArg.code shouldBe ":password"
-            case xs => fail(s"Expected 6 arguments, got ${xs.code.mkString(", ")} instead")
+            case xs => fail(s"Expected 7 arguments, got ${xs.code.mkString(", ")} instead")
           }
         case _ => fail("Expected typeDecl for user, none found instead")
       }
@@ -344,11 +344,11 @@ class ClassTests extends RubyCode2CpgFixture {
           inside(adminTypeDecl.astChildren.isCall.l) {
             case beforeActionCall :: skipBeforeActionCall :: layoutCall :: Nil =>
               inside(beforeActionCall.argument.l) {
-                case adminArg :: ifArg :: exceptArg :: Nil =>
+                case _ :: adminArg :: ifArg :: exceptArg :: Nil =>
                   adminArg.code shouldBe ":administrative"
                   ifArg.code shouldBe ":admin_param"
                   exceptArg.code shouldBe "[:get_user]"
-                case xs => fail(s"Expected 3 args, instead found ${xs.code.mkString(", ")}")
+                case xs => fail(s"Expected 4 args, instead found ${xs.code.mkString(", ")}")
               }
             case xs => fail(s"Expected 3 calls, instead found ${xs.code.mkString(", ")}")
           }

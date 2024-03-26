@@ -18,7 +18,7 @@ class ImportTests extends RubyCode2CpgFixture with Inspectors {
     importNode.importedAs shouldBe Some("test")
     val List(call) = importNode.call.l
     call.callee.name.l shouldBe List("require")
-    call.argument.code.l shouldBe List("'test'")
+    call.argument.where(_.argumentIndexGt(0)).code.l shouldBe List("'test'")
   }
 
   "`begin require 'test' rescue LoadError end` has a CALL node with an IMPORT node pointing to it" in {
@@ -33,7 +33,7 @@ class ImportTests extends RubyCode2CpgFixture with Inspectors {
     importNode.importedAs shouldBe Some("test")
     val List(call) = importNode.call.l
     call.callee.name.l shouldBe List("require")
-    call.argument.code.l shouldBe List("'test'")
+    call.argument.where(_.argumentIndexGt(0)).code.l shouldBe List("'test'")
   }
 
   "Ambiguous class resolves to required method" in {

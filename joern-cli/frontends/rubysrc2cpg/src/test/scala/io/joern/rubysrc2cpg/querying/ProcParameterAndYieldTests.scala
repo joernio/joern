@@ -54,7 +54,7 @@ class ProcParameterAndYieldTests extends RubyCode2CpgFixture with Inspectors {
         "replace the yield with a call to the block parameter with arguments" in {
           val List(call) = cpg.call.codeExact("yield(x)").astChildren.isCall.codeExact("yield(x)").l
           call.name shouldBe "<proc-param-0>"
-          call.argument.code.l shouldBe List("x")
+          call.argument.code.l shouldBe List("<proc-param-0>", "x")
         }
 
       }
