@@ -44,7 +44,9 @@ object RubyIntermediateAst {
     def size: Int = statements.size
   }
 
-  sealed trait TypeDeclaration {
+  sealed trait AllowedTypeDeclarationChild
+
+  sealed trait TypeDeclaration extends AllowedTypeDeclarationChild {
     def name: RubyNode
     def baseClass: Option[RubyNode]
     def body: RubyNode
@@ -85,6 +87,7 @@ object RubyIntermediateAst {
 
   final case class MethodDeclaration(methodName: String, parameters: List[RubyNode], body: RubyNode)(span: TextSpan)
       extends RubyNode(span)
+      with AllowedTypeDeclarationChild
 
   final case class SingletonMethodDeclaration(
     target: RubyNode,
@@ -93,6 +96,7 @@ object RubyIntermediateAst {
     body: RubyNode
   )(span: TextSpan)
       extends RubyNode(span)
+      with AllowedTypeDeclarationChild
 
   sealed trait MethodParameter {
     def name: String

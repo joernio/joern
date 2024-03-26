@@ -774,9 +774,9 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
           x
         }
 
-        val (scopeDecls, stmtListWithoutScopeDecls) = rest.partition {
-          case x: SimpleCall if x.target.span.text == "scope" => true
-          case _                                              => false
+        val (allowedTypeDeclChildren, nonAllowedTypeDeclChildren) = rest.partition {
+          case x: AllowedTypeDeclarationChild => true
+          case _                              => false
         }
 
         val fieldsInMethodDecls = findFieldsInMethodDecls(methodDecls)
@@ -804,8 +804,8 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
               //   where you end up having
               //   <instanceField> = nil; <instanceField> = ...;
               case stmtList: StatementList =>
-                val initializers = (initStmtListStatements ++ scopeDecls) :+ clinitMethod
-                StatementList(initializers ++ stmtListWithoutScopeDecls)(stmtList.span)
+                val initializers = (initStmtListStatements ++ nonAllowedTypeDeclChildren) :+ clinitMethod
+                StatementList(initializers ++ allowedTypeDeclChildren)(stmtList.span)
               case x => x
             }
           case None =>
@@ -813,10 +813,10 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
               MethodDeclaration(
                 "initialize",
                 List.empty,
-                StatementList(initStmtListStatements ++ scopeDecls)(stmtList.span)
+                StatementList(initStmtListStatements ++ nonAllowedTypeDeclChildren)(stmtList.span)
               )(stmtList.span)
             val initializers = newInitMethod :: clinitMethod :: Nil
-            StatementList(initializers ++ stmtListWithoutScopeDecls)(stmtList.span)
+            StatementList(initializers ++ allowedTypeDeclChildren)(stmtList.span)
         }
         val combinedFields = rubyFieldIdentifiers ++ fieldsInMethodDecls
 
