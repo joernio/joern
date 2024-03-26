@@ -110,7 +110,7 @@ class NamespaceTests extends CSharpCode2CpgFixture {
 
     "assign appropriate AST parent for both classes" in {
       val List(fooNamespace) = cpg.namespaceBlock.nameExact("Foo").l
-      val List(bar, baz)     = cpg.typeDecl.l
+      val List(bar, baz)     = cpg.typeDecl.name("Ba.*").l
       bar.astParent shouldBe fooNamespace
       baz.astParent shouldBe fooNamespace
 
