@@ -839,7 +839,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
   private def astForSubscriptDeclSyntax(node: SubscriptDeclSyntax): Ast = notHandledYet(node)
 
-  private def handleTypeAliasInitializer(node: TypeSyntax): String = {
+  protected def handleTypeAliasInitializer(node: TypeSyntax): String = {
     astForTypeSyntax(node).root match
       case Some(id: NewIdentifier)     => id.name
       case Some(typeDecl: NewTypeDecl) => typeDecl.fullName
