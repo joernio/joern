@@ -14,7 +14,7 @@ import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes}
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import ujson.Value
-
+import scala.collection.mutable.Map
 import scala.collection.mutable
 
 class AstCreator(
@@ -44,6 +44,7 @@ class AstCreator(
   protected val declaredPackageName = parserResult.json(ParserKeys.Name)(ParserKeys.Name).str
   protected val fullyQualifiedPackage =
     goMod.getNameSpace(parserResult.fullPath, declaredPackageName)
+  protected val parserNodeCache = mutable.TreeMap[Long, ParserNodeInfo]()
 
   override def createAst(): DiffGraphBuilder = {
     val rootNode = createParserNodeInfo(parserResult.json)
@@ -102,5 +103,12 @@ class AstCreator(
 
   protected def astForNode(json: Value): Seq[Ast] = {
     astForNode(createParserNodeInfo(json))
+  }
+
+  def cleanup(): Unit = {
+    methodAstParentStack.clear()
+    aliasToNameSpaceMapping.clear()
+    lineNumberMapping.clear()
+    parserNodeCache.clear()
   }
 }

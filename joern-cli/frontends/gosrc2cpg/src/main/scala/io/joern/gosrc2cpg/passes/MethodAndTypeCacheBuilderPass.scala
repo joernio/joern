@@ -29,6 +29,9 @@ class MethodAndTypeCacheBuilderPass(
           val relPathFileName = SourceFiles.toRelativePath(parserResult.fullPath, config.inputPath)
           val astCreator      = new AstCreator(relPathFileName, parserResult, goMod, goGlobal)(config.schemaValidation)
           val diffGraph       = astCreator.buildCache(cpgOpt)
+          if (goGlobal.processingDependencies) {
+            astCreator.cleanup()
+          }
           (astCreator, diffGraph)
         }
       )

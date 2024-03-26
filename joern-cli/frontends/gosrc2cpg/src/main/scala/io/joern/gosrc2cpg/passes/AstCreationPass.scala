@@ -35,6 +35,7 @@ class AstCreationPass(cpg: Cpg, astCreators: Seq[AstCreator], report: Report)
           (true, astCreator.relPathFileName)
       }
     }
+    astCreator.cleanup()
     report.updateReport(filename, cpg = gotCpg, duration)
   }
 }

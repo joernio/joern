@@ -51,6 +51,7 @@ class GoSrc2Cpg(goGlobalOption: Option[GoGlobal] = Option(GoGlobal())) extends X
               goGlobal.processingDependencies = false
             }
             new AstCreationPass(cpg, astCreators, report).createAndApply()
+            goGlobal.firstCleanup()
             if goGlobal.pkgLevelVarAndConstantAstMap.size() > 0 then
               new PackageCtorCreationPass(cpg, config, goGlobal).createAndApply()
             report.print()
