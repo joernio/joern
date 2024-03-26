@@ -23,7 +23,7 @@ class MethodAndTypeCacheBuilderPass(
 ) {
   def process(): Seq[AstCreator] = {
     val futures = astFiles
-      .map(file => {
+      .map(file =>
         Future {
           val parserResult    = GoAstJsonParser.readFile(Paths.get(file))
           val relPathFileName = SourceFiles.toRelativePath(parserResult.fullPath, config.inputPath)
@@ -31,7 +31,7 @@ class MethodAndTypeCacheBuilderPass(
           val diffGraph       = astCreator.buildCache(cpgOpt)
           (astCreator, diffGraph)
         }
-      })
+      )
     val allResults: Future[List[(AstCreator, DiffGraphBuilder)]] = Future.sequence(futures)
     val results                                                  = Await.result(allResults, Duration.Inf)
     val (astCreators, diffGraphs)                                = results.unzip
