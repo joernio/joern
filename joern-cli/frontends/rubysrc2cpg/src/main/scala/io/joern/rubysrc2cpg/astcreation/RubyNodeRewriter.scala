@@ -13,7 +13,7 @@ import org.slf4j.{Logger, LoggerFactory}
 
 trait RubyNodeRewriter { this: AstCreator =>
 
-  type RubyRewrite[T] = Writer[List[RubyNode], T]
+  type RubyRewrite[T] = Writer[Chain[RubyNode], T]
 
   val rewriteGen = FreshNameGenerator(i => s"<tmp-gen-$i>", raw"<tmp-gen-(\d+)".r)
   val lambdaGen = FreshNameGenerator(i => s"<lambda>$i")
@@ -35,7 +35,7 @@ trait RubyNodeRewriter { this: AstCreator =>
 
     def emit(node: RubyNode): RubyRewrite[RubyNode] =
       fresh.map { tmp =>
-        Writer(List(node), tmp.id)
+        Writer(Chain(node), tmp.id)
       }.getOrElse {
         node.pure
       }
@@ -46,7 +46,7 @@ trait RubyNodeRewriter { this: AstCreator =>
       for
         rs <- rr
         retSpan = span
-        _ <- Writer.tell(List(
+        _ <- Writer.tell(Chain(
           ReturnExpression(rs)(retSpan)
         ))
       yield span
@@ -55,7 +55,7 @@ trait RubyNodeRewriter { this: AstCreator =>
   implicit class RubyNodeExt(node: RubyNode) { 
     def symbol(name: String, tmp: Option[Fresh]): RubyRewrite[RubyNode] =
       if(tmp.isDefined) {
-        Writer(List(node), node.span.symbolLiteralBegin(name))
+        Writer(Chain(node), node.span.symbolLiteralBegin(name))
       } else {
         node.pure
       }
@@ -75,16 +75,16 @@ trait RubyNodeRewriter { this: AstCreator =>
         rhs <- rr
         _ <- Writer.tell((lhs, rhs) match
           // We skip assignments of identifcal temporary variables
-          case (RubyNode.Span(rewriteGen.extract(i), SimpleIdentifier(_)), RubyNode.Span(rewriteGen.extract(j), SimpleIdentifier(_))) if i == j => List()
-          case (l, r) if r.isAssignable => List(SingleAssignment(lhs, op, rhs)(span.getOrElse(r.span)))
-          case (_, r) => List(r)
+          case (RubyNode.Span(rewriteGen.extract(i), SimpleIdentifier(_)), RubyNode.Span(rewriteGen.extract(j), SimpleIdentifier(_))) if i == j => Chain()
+          case (l, r) if r.isAssignable => Chain(SingleAssignment(lhs, op, rhs)(span.getOrElse(r.span)))
+          case (_, r) => Chain(r)
         )
       yield rhs.span
 
     def tuck: RubyRewrite[TextSpan] = 
       for
         r <- rr
-        _ <- Writer.tell(List(r))
+        _ <- Writer.tell(Chain(r))
       yield r.span
     def ret: RubyRewrite[TextSpan] = 
       if (rr.value.isAssignable)
@@ -95,7 +95,7 @@ trait RubyNodeRewriter { this: AstCreator =>
       val span = rr.value.span
       val n = freshLam(span)
       Writer(
-        List(MethodDeclaration(n.name, parameters, rr.ret.body, isClosure = true)(span)),
+        Chain(MethodDeclaration(n.name, parameters, rr.ret.body, isClosure = true)(span)),
         n
       )
     }
@@ -109,23 +109,23 @@ trait RubyNodeRewriter { this: AstCreator =>
   }
 
   implicit class RubyFlattenExt(node: RubyNode) {
-    def extractStmts: Either[RubyNode, List[RubyNode]] = node match {
-      case StatementList(stmts) => Right(stmts)
+    def extractStmts: Either[RubyNode, Chain[RubyNode]] = node match {
+      case StatementList(stmts) => Right(Chain(stmts*))
       case _ => Left(node)
     }
 
     def pluck: RubyNode = node.extractStmts.fold(x => x, {
-      case List(x) => x
+      case Chain(x) => x
       case x => node
     })
 
-    def flatten: List[RubyNode] = node.extractStmts.fold(List(_), _.flatMap(_.flatten))
+    def flatten: Chain[RubyNode] = node.extractStmts.fold(Chain(_), _.flatMap(_.flatten))
   }
 
   implicit class RubyRewriteUnitExt(rr: RubyRewrite[TextSpan]) {
-    def asList: List[RubyNode] = rr.written.flatMap(_.flatten)
+    def asChain: Chain[RubyNode] = rr.written.flatMap(_.flatten)
     def span: TextSpan = rr.value
-    def body: RubyNode = StatementList(asList)(span)
+    def body: RubyNode = StatementList(asChain.toList)(span)
   }
 
   implicit class TextSpanExt(span: TextSpan) {
@@ -135,9 +135,11 @@ trait RubyNodeRewriter { this: AstCreator =>
 
   def negate(node: RubyNode): RubyNode = UnaryExpression("!", node)(node.span)
 
-  protected def rewriteExpr(node: RubyNode): RubyRewrite[RubyNode] = rewriteNode(node, fresh(node.span))
+  case class Depth(val depth: Int)
 
-  protected def rewriteNode(node: RubyNode, tmp: Option[Fresh]): RubyRewrite[RubyNode] = node match {
+  protected def rewriteExpr(node: RubyNode)(implicit depth: Depth): RubyRewrite[RubyNode] = rewriteNode(node, fresh(node.span))
+
+  protected def rewriteNode(node: RubyNode, tmp: Option[Fresh])(implicit depth: Depth): RubyRewrite[RubyNode] = node match {
 
     case node @ SimpleCall(target, arguments)    => 
       for
