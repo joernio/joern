@@ -363,6 +363,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           astForStatementListReturningLastExpression(
             StatementList(optionalStatementList.statements ++ stmtList.statements)(stmtList.span)
           )
+        case rescueExpr: RescueExpression =>
+          astForRescueExpression(rescueExpr)
         case _: (StaticLiteral | BinaryExpression | SingleAssignment | SimpleIdentifier | ArrayLiteral | HashLiteral |
               SimpleCall | MemberAccess | MemberCall) =>
           astForStatementListReturningLastExpression(

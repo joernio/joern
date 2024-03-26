@@ -2,7 +2,7 @@ package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{Literal, Return}
 import io.shiftleft.semanticcpg.language.*
 
@@ -467,25 +467,32 @@ class MethodTests extends RubyCode2CpgFixture {
     }
   }
 
-  "RescueExpression as Statement body" should {
+  "RescueExpression with `yield` as Statement body" should {
     val cpg = code("""
-        |  def self.silence_streams(*streams)
-        |    on_hold = streams.collect { |stream| stream.dup }
-        |    streams.each do |stream|
-        |      stream.reopen(RUBY_PLATFORM =~ /mswin/ ? "NUL:" : "/dev/null")
-        |      stream.sync = true
-        |    end
+        |  def foo
+        |    1
         |    yield
         |  ensure
-        |    streams.each_with_index do |stream, i|
-        |      stream.reopen(on_hold[i])
-        |    end
+        |    2
         |  end
         |""".stripMargin)
 
-    "" ignore {
-      // TODO: Implement tests once impl is ready
-      cpg.method.name("self.silence_streams").l.foreach(println)
+    "Should be represented as a TRY structure" in {
+      inside(cpg.method.name("foo").tryBlock.l) {
+        case tryBlock :: Nil =>
+          tryBlock.controlStructureType shouldBe ControlStructureTypes.TRY
+
+          inside(tryBlock.astChildren.l) {
+            case body :: ensureBody :: Nil =>
+              body.ast.isLiteral.code.l shouldBe List("1")
+              body.order shouldBe 1
+
+              ensureBody.ast.isLiteral.code.l shouldBe List("2")
+              ensureBody.order shouldBe 3
+            case xs => fail(s"Expected body and ensureBody, got ${xs.code.mkString(", ")} instead")
+          }
+        case xs => fail(s"Expected one method, found ${xs.method.name.mkString(", ")} instead")
+      }
     }
   }
 }
