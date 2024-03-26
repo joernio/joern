@@ -28,6 +28,7 @@ class AstCreator(
     with AstForFunctionsCreator
     with AstForTypesCreator
     with AstSummaryVisitor
+    with RubyNodeRewriter
     with AstNodeBuilder[RubyNode, AstCreator] {
 
   /* Used to track variable names and their LOCAL nodes.
@@ -94,9 +95,9 @@ class AstCreator(
         scope.pushNewScope(moduleScope)
         val block = blockNode(rootNode)
         scope.pushNewScope(BlockScope(block))
-        val rewrittenNodes = rootNode.statements.flatMap(RubyNodeRewriter.lower(_, RubyNodeRewriter.StmtContext()).lowering.tuck.stmts)
-        println("NODES")
-        println(rewrittenNodes)
+        val rewrittenNodes = rootNode.statements.flatMap(rewriteNode(_, None).tuck.asList)
+        // println("NODES")
+        // println(rewrittenNodes)
         val statementAsts = rewrittenNodes.flatMap(astsForStatement)
         scope.popScope()
         val bodyAst = blockAst(block, statementAsts)
