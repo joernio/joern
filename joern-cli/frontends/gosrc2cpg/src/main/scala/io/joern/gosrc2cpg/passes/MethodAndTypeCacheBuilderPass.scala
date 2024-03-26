@@ -8,6 +8,7 @@ import io.joern.gosrc2cpg.parser.GoAstJsonParser
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
+import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -21,30 +22,37 @@ class MethodAndTypeCacheBuilderPass(
   goMod: GoModHelper,
   goGlobal: GoGlobal
 ) {
+  private val logger = LoggerFactory.getLogger(getClass)
   def process(): Seq[AstCreator] = {
     val futures = astFiles
       .map(file =>
         Future {
-          val parserResult    = GoAstJsonParser.readFile(Paths.get(file))
-          val relPathFileName = SourceFiles.toRelativePath(parserResult.fullPath, config.inputPath)
-          val astCreator      = new AstCreator(relPathFileName, parserResult, goMod, goGlobal)(config.schemaValidation)
-          val diffGraph       = astCreator.buildCache(cpgOpt)
-          if (goGlobal.processingDependencies) {
-            astCreator.cleanup()
-          }
-          (astCreator, diffGraph)
+          try {
+            val parserResult    = GoAstJsonParser.readFile(Paths.get(file))
+            val relPathFileName = SourceFiles.toRelativePath(parserResult.fullPath, config.inputPath)
+            val astCreator = new AstCreator(relPathFileName, parserResult, goMod, goGlobal)(config.schemaValidation)
+            val diffGraph  = astCreator.buildCache(cpgOpt)
+            if (goGlobal.processingDependencies) {
+              astCreator.cleanup()
+            }
+            Some(astCreator, diffGraph)
+          } catch
+            case exception: Exception =>
+              logger.error(s"error while processing file $file", exception)
+              None
         }
       )
-    val allResults: Future[List[(AstCreator, DiffGraphBuilder)]] = Future.sequence(futures)
-    val results                                                  = Await.result(allResults, Duration.Inf)
-    val (astCreators, diffGraphs)                                = results.unzip
-    cpgOpt.map { cpg =>
-      diffGraphs.foreach { diffGraph =>
-        overflowdb.BatchedUpdate
-          .applyDiff(cpg.graph, diffGraph, null, null)
-          .transitiveModifications()
-      }
-    }
-    astCreators
+    val allResults: Future[List[Option[(AstCreator, DiffGraphBuilder)]]] = Future.sequence(futures)
+    val results                                                          = Await.result(allResults, Duration.Inf)
+    results.flatMap(result =>
+      result.flatMap(r => {
+        cpgOpt.map { cpg =>
+          overflowdb.BatchedUpdate
+            .applyDiff(cpg.graph, r._2, null, null)
+            .transitiveModifications()
+        }
+        Some(r._1)
+      })
+    )
   }
 }
