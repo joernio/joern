@@ -1,15 +1,14 @@
 package io.joern.csharpsrc2cpg.astcreation
 
-import io.joern.csharpsrc2cpg.CSharpOperators
 import io.joern.csharpsrc2cpg.datastructures.CSharpMethod
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
+import io.joern.csharpsrc2cpg.{CSharpOperators, Constants}
 import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode, newOperatorCallNode}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFieldIdentifier, NewLiteral, NewTypeRef}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import ujson.Value
-import io.joern.csharpsrc2cpg.Constants
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.{Failure, Success, Try}
@@ -564,4 +563,24 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val _annotationNode = annotationNode(attribute, attribute.code, attributeName, fullName)
     annotationAst(_annotationNode, argumentAsts)
   }
+
+  /** Lowers a pattern expression into a condition and then a declaration if one occurs.
+    * @param isPatternExpression
+    *   a pattern expression which may include a declaration.
+    * @return
+    *   a condition and then (potentially) declaration.
+    */
+  protected def astsForIsPatternExpression(isPatternExpression: DotNetNodeInfo): List[Ast] = {
+    val pattern = createDotNetNodeInfo(isPatternExpression.json(ParserKeys.Pattern))
+    val patternAst = pattern.node match {
+      case DeclarationPattern => Seq.empty // TODO: Maybe this has more properties, check DotNetAstGen
+      case x =>
+        logger.warn(s"Unsupported pattern in pattern expression, $x")
+        astForNode(pattern)
+    }
+    val expressionNode = createDotNetNodeInfo(isPatternExpression.json(ParserKeys.Expression))
+    val expression     = astForExpression(expressionNode)
+    List.empty
+  }
+
 }

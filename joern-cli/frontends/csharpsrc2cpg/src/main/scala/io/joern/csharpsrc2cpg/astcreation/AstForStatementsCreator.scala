@@ -4,8 +4,8 @@ import io.joern.csharpsrc2cpg.CSharpOperators
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewControlStructure, NewIdentifier}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes}
 
 import scala.::
 import scala.util.{Success, Try}
@@ -16,12 +16,38 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     astForStatement(createDotNetNodeInfo(statement))
   }
 
+  /** Separates the `AST` result of a conditional expression into the condition as well as any declared variables to
+    * prepend.
+    * @param conditionAst
+    *   the condition.
+    * @param prependIfBody
+    *   statements to prepend to the `if`/`then` body.
+    */
+  final case class ConditionAstResult(conditionAst: Ast, prependIfBody: List[Ast])
+
+  // TODO: Use this method elsewhere on other control structures
+  protected def astForConditionNode(condNode: DotNetNodeInfo): ConditionAstResult = {
+    lazy val default = ConditionAstResult(astForNode(condNode).headOption.getOrElse(Ast()), List.empty)
+    condNode.node match {
+      case x: PatternExpr =>
+        astsForIsPatternExpression(condNode) match {
+          case head :: tail => ConditionAstResult(head, tail)
+          case Nil =>
+            logger.warn(
+              s"Unable to handle pattern expression $x in condition expression, resorting to default behaviour"
+            )
+            default
+        }
+      case _ => default
+    }
+  }
+
   private def astForIfStatement(ifStmt: DotNetNodeInfo): Seq[Ast] = {
-    val conditionNode = createDotNetNodeInfo(ifStmt.json(ParserKeys.Condition))
-    val conditionAst  = astForNode(conditionNode).headOption.getOrElse(Ast())
+    val conditionNode                                   = createDotNetNodeInfo(ifStmt.json(ParserKeys.Condition))
+    val ConditionAstResult(conditionAst, prependIfBody) = astForConditionNode(conditionNode)
 
     val thenNode     = createDotNetNodeInfo(ifStmt.json(ParserKeys.Statement))
-    val thenAst: Ast = astForBlock(thenNode)
+    val thenAst: Ast = astForBlock(thenNode, prefixAsts = prependIfBody)
     val ifNode =
       controlStructureNode(ifStmt, ControlStructureTypes.IF, s"if (${conditionNode.code})")
     val elseAst = ifStmt.json(ParserKeys.Else) match

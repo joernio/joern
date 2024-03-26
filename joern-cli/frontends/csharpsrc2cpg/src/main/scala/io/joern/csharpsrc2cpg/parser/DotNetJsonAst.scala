@@ -81,6 +81,12 @@ object DotNetJsonAst {
 
   object ParenthesizedLambdaExpression extends BaseLambdaExpression
 
+  sealed trait PatternExpr extends BaseExpr
+
+  object IsPatternExpression extends PatternExpr
+
+  object DeclarationPattern extends PatternExpr
+
   sealed trait ClauseExpr extends BaseExpr
 
   object EqualsValueClause extends ClauseExpr
