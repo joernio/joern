@@ -25,6 +25,7 @@ class AstCreationPass(cpg: Cpg, astCreators: Seq[AstCreator], report: Report)
       report.addReportInfo(astCreator.relPathFileName, fileLOC, parsed = true)
       Try {
         val localDiff = astCreator.createAst()
+        astCreator.cleanup()
         diffGraph.absorb(localDiff)
       } match {
         case Failure(exception) =>
@@ -35,7 +36,6 @@ class AstCreationPass(cpg: Cpg, astCreators: Seq[AstCreator], report: Report)
           (true, astCreator.relPathFileName)
       }
     }
-    astCreator.cleanup()
     report.updateReport(filename, cpg = gotCpg, duration)
   }
 }
