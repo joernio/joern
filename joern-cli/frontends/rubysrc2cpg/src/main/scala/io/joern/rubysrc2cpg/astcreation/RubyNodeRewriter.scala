@@ -11,7 +11,9 @@ import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
 import org.slf4j.{Logger, LoggerFactory}
 
-trait RubyNodeRewriter { this: AstCreator =>
+object RubyNodeRewriter {
+
+  protected val logger: Logger = LoggerFactory.getLogger(getClass)
 
   type RubyRewrite[T] = Writer[List[RubyNode], T]
 
@@ -65,6 +67,12 @@ trait RubyNodeRewriter { this: AstCreator =>
       case _: ReturnExpression => false
       case _ => true
     }
+
+    // def extractLhs(node: RubyNode): Option[(RubyNode, RubyNode => RubyNode)] = node match {
+    //   case node @ IndexAccess(target, indices) => Some((target, IndexAccess(_,indices)(node.span)))
+    //   case node @ IndexAccess(target, indices) => Some((target, IndexAccess(_,indices)(node.span)))
+    //   case _ => None
+    // }
   }
 
   implicit class RubyRewriteRubyNodeExt(rr: RubyRewrite[RubyNode]) {
@@ -190,7 +198,6 @@ trait RubyNodeRewriter { this: AstCreator =>
         case (node, _) =>
           logger.warn("Expected elif clause")
           Some(Unknown()(node.span))
-
       })(node.span), tmp)
         
     case node @ UnlessExpression(cond, thenClause, elseClause) =>
@@ -340,7 +347,177 @@ trait RubyNodeRewriter { this: AstCreator =>
     // case node: HereDocNode                => ???
     // case node: RubyIdentifier             => ???
     // case node: YieldExpr                  => ???
+    // case node: YieldExpr                  => ???
     case _                                => node.pure
+  }
+
+  def freshId(span: TextSpan): RubyNode = Fresh(rewriteGen.fresh, span).id
+  
+  final case class Log(val stmts: Chain[RubyNode], val hasSplit: Boolean)
+  implicit val logMonoid: Monoid[Log] = new Monoid[Log] {
+    override def empty = Log(Chain.empty, false)
+    override def combine(a: Log, b: Log): Log = Log(a.stmts combine b.stmts, a.hasSplit || b.hasSplit)
+  }
+
+  type Lowering[T] = WriterT[Eval,Log,T]
+  type LoweringCont[T] = ContT[Lowering,RubyNode,T]
+
+  object Log {
+    def setSplit[T]: Lowering[Unit] = WriterT.tell(Log(Chain.empty, true))
+    def stmt[T](nodes: RubyNode*): Lowering[Unit] = WriterT.tell(Log(Chain(nodes*), false))
+  }
+
+  implicit class LoweringExt[T](l: Lowering[T]) {
+    def lift: LoweringCont[T] = ContT.liftF(l)
+    def log: Log = l.written.value
+    def stmts: List[RubyNode] = log.stmts.toList.flatMap(_.flatten)
+    def extract: T = l.value.value
+  }
+
+  implicit class LoweringRubyNodeExt(l : Lowering[RubyNode]) {
+    def span: TextSpan = l.value.value.span
+    def tuck: Lowering[TextSpan] = 
+      for
+        n <- l
+        _ <- Log.stmt(n)
+      yield n.span
+  }
+
+  implicit class LoweringTextSpanExt(l : Lowering[TextSpan]) {
+    def body: RubyNode = StatementList(l.stmts)(l.extract)
+  }
+
+  implicit class TraverseLoweringContRubyNodeExt[T[_]](lc: T[LoweringCont[RubyNode]])(implicit traverse: Traverse[T]) {
+    /** Checks if ant of the elements of l will split. If so assign then temporary variables to preserve argument order.
+     *  Otherwise pass them as is.
+     */
+    def tmpify: LoweringCont[T[RubyNode]] = ContT.apply { next =>
+      val l = lc.traverse(_.lowering)
+      if(l.log.hasSplit)
+        println("GOT HERE 1")
+        lc.sequence.run(node => 
+          for
+            n <- next(node)
+            tmp = freshId(n.span)
+            _ <- Log.stmt(SingleAssignment(tmp, "=", n)(n.span))
+            _ = println("GOT HERE 2")
+          yield tmp
+            
+        )
+      else
+        lc.sequence.run(next)
+        
+    }
+  }
+
+
+  implicit class LoweringContRubyNodeExt(l: LoweringCont[RubyNode]) {
+    def tmpify: LoweringCont[RubyNode] = TraverseLoweringContRubyNodeExt[Id](l).tmpify
+
+    def lowering: Lowering[RubyNode] = l.run(x => x.pure)
+  }
+
+
+  abstract class Context {
+    def noLhs: Context = this match {
+      case LhsContext() => ExprContext()
+      case ctxt => ctxt
+    }
+    def noStmt: Context = this match {
+      case StmtContext() => ExprContext()
+      case ctxt => ctxt
+    }
+  }
+  final case class StmtContext() extends Context
+  final case class ExprContext() extends Context
+  final case class LhsContext() extends Context
+
+
+  def lower(node: RubyNode, ctxt: Context): LoweringCont[RubyNode] = node match {
+    case node @ IfExpression(cond, thenBody, List(), elseClauses) => ContT.apply { next =>
+      for
+        cnd <- lower(cond, ExprContext()).tmpify.lowering
+        thn = lower(thenBody, ctxt.noLhs).run(next).tuck.body
+        els = elseClauses.map {
+          case elseClause @ ElseClause(elseBody) =>
+            ElseClause(lower(elseBody, ctxt.noLhs).run(next).tuck.body)(elseClause.span)
+          case clause => 
+            logger.warn(s"Expected else body, got [${clause}]")
+            ElseClause(Unknown()(clause.span))(clause.span)
+        } match {
+          case e if ctxt == ExprContext() => 
+            e.orElse { 
+              val spanNil = node.span.nilLiteralEnd
+              val span = node.span.spanEnd(s"else ${spanNil.span.text} end")
+              Some(ElseClause(next(spanNil).tuck.body)(span))
+            }
+          case e => e
+        }
+        _ <- Log.setSplit
+        _ = println("GOT HERE 3")
+      yield IfExpression(cnd, thn, List(), els)(node.span)
+    }
+    case node @ IfExpression(cond, thenBody, elifClauses, elseClauses) => 
+      lower(IfExpression(cond, thenBody, List(), elifClauses.foldRight(elseClauses) {
+        case (elif @ ElsIfClause(elifCond, elifThen), rest) => Some(ElseClause(IfExpression(elifCond, elifThen, List(), rest)(elif.span))(elif.span))
+        case (node, _) =>
+          logger.warn("Expected elif clause")
+          Some(Unknown()(node.span))
+      })(node.span), ctxt)
+
+    case node @ UnlessExpression(cond, thenClause, elseClause) =>
+      lower(IfExpression(negate(cond), thenClause, List(), elseClause)(node.span), ctxt)
+
+    case node @ SimpleCall(target, arguments) =>
+      for
+        expr <- Tuple2K(target: Id[RubyNode], arguments).map(lower(_,ExprContext())).tmpify
+      yield expr match {
+        case Tuple2K(tgt, args) => SimpleCall(tgt, args)(node.span)
+      }
+
+    case node @ MemberCall(target, op, name, arguments) =>
+      for
+        exprs <- ctxt match {
+          case LhsContext() =>
+            Tuple2K(lower(target, ExprContext()): Id[LoweringCont[RubyNode]], arguments.map(lower(_,ExprContext()).tmpify)).sequence
+          case _ => 
+            Tuple2K(target: Id[RubyNode], arguments).map(lower(_,ExprContext())).tmpify
+        }
+      yield 
+        exprs match { case Tuple2K(tgt, args) => MemberCall(tgt, op, name, args)(node.span) }
+
+    case node @ MemberAccess(target, op, name) => 
+      lower(MemberCall(target, op, name, List())(node.span), ctxt)
+
+    case node @ IndexAccess(target, indices) =>
+      for
+        exprs <- ctxt match {
+          case LhsContext() =>
+            Tuple2K(lower(target, ExprContext()): Id[LoweringCont[RubyNode]], indices.map(lower(_,ExprContext()).tmpify)).sequence
+          case _ => 
+            Tuple2K(target: Id[RubyNode], indices).map(lower(_,ExprContext())).tmpify
+        }
+      yield 
+        exprs match { case Tuple2K(tgt, idxs) => IndexAccess(tgt, idxs)(node.span) }
+
+    case node @ SingleAssignment(lhs, op, rhs) =>
+      for
+        l <- lower(lhs, LhsContext())
+        r <- lower(rhs, ExprContext())
+      yield SingleAssignment(l, op, r)(node.span)
+
+    case node @ AttributeAssignment(lhs, op, name, rhs) =>
+      lower(MemberCall(lhs, op, s"${name}=", List(rhs))(node.span), LhsContext())
+
+    case node @ StatementList(Nil)        => lower(StatementList(List(node.span.nilLiteralEnd))(node.span), ctxt)
+    case node @ StatementList(stmts :+ stmt) => ContT.apply { next =>
+      for
+        _ <- stmts.traverse_(lower(_, StmtContext()).lowering.tuck)
+        r <- lower(stmt, ctxt).run(next)
+      yield r
+    }
+
+    case node => node.pure
   }
 
 }
