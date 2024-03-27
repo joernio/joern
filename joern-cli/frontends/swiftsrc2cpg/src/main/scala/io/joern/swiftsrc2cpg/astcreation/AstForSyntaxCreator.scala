@@ -215,8 +215,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     // TODO: handle ellipsis
     // TODO: handle defaultValue
     val name = node.secondName.fold(code(node.firstName))(code)
-    val tpe  = code(node.`type`)
-    registerType(tpe)
+    val tpe  = handleTypeAliasInitializer(node.`type`)
     val parameterNode =
       parameterInNode(
         node,

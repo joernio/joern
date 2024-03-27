@@ -18,6 +18,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.PropertyNames
+import io.shiftleft.passes.IntervalKeyPool
 
 import scala.collection.mutable
 
@@ -33,6 +34,10 @@ object AstCreatorHelper {
 }
 
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
+
+  private val anonClassKeyPool = new IntervalKeyPool(first = 0, last = Long.MaxValue)
+
+  protected def nextAnonClassName(): String = s"<anon-class>${anonClassKeyPool.next}"
 
   protected def notHandledYet(node: SwiftNode): Ast = {
     val text =

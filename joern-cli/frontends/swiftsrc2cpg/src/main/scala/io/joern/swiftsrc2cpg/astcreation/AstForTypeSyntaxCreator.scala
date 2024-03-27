@@ -10,10 +10,8 @@ import io.shiftleft.codepropertygraph.generated.EdgeTypes
 trait AstForTypeSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
 
-  private val AnonTypeDeclNamePrefix = "_anon_cdecl"
-
   private def typeDeclForTypeSyntax(node: TypeSyntax): NewTypeDecl = {
-    val name                     = generateUnusedVariableName(usedVariableNames, AnonTypeDeclNamePrefix)
+    val name                     = nextAnonClassName()
     val (typeName, typeFullName) = calcTypeNameAndFullName(name)
     registerType(typeFullName)
 

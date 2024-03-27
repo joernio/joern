@@ -19,7 +19,7 @@ class CodeDumperFromContentTests extends SwiftSrc2CpgSuite {
       inside(cpg.method.nameExact("my_func").dumpRaw.l) {
         case content :: Nil =>
           content.linesIterator.map(_.strip).l shouldBe List(
-            "func my_func(param1: Int) -> Int { /* <=== Test0.swift:<global>:my_func */",
+            "func my_func(param1: Int) -> Int { /* <=== Test0.swift:<global>:my_func:Int(Int) */",
             "let x: Int = foo(p: param1)",
             "}"
           )
