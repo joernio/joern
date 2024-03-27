@@ -22,6 +22,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
+          cache: false
           go-version: 1.18
       - name: Set up Swift
         if: matrix.os == 'windows-latest'
