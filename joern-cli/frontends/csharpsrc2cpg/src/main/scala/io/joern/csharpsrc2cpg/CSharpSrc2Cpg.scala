@@ -10,7 +10,7 @@ import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.astgen.AstGenRunner.AstGenRunnerResult
 import io.joern.x2cpg.astgen.ParserResult
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
-import io.joern.x2cpg.passes.frontend.MetaDataPass
+import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.joern.x2cpg.utils.{ConcurrentTaskUtil, Environment, HashUtil, Report}
 import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.Cpg
@@ -56,6 +56,7 @@ class CSharpSrc2Cpg extends X2CpgFrontend[Config] {
           internalProgramSummary
         }
         new AstCreationPass(cpg, astCreators.map(_.withSummary(programSummary)), report).createAndApply()
+        TypeNodePass.withTypesFromCpg(cpg).createAndApply()
         report.print()
       }
     }

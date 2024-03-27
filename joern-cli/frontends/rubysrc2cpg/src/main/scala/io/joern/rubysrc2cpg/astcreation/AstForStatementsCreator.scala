@@ -205,8 +205,13 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   protected def astForDoBlock(block: Block with RubyNode): Seq[Ast] = {
     // Create closure structures: [MethodDecl, TypeRef, MethodRef]
-    val methodName         = nextClosureName()
-    val methodAstsWithRefs = astForMethodDeclaration(block.toMethodDeclaration(methodName), isClosure = true)
+    val methodName = nextClosureName()
+
+    val methodAstsWithRefs = block.body match {
+      case x: Block => astForMethodDeclaration(x.toMethodDeclaration(methodName), isClosure = true)
+      case _        => astForMethodDeclaration(block.toMethodDeclaration(methodName), isClosure = true)
+    }
+
     // Set span contents
     methodAstsWithRefs.flatMap(_.nodes).foreach {
       case m: NewMethodRef => DummyNode(m.copy)(block.span.spanStart(m.code))

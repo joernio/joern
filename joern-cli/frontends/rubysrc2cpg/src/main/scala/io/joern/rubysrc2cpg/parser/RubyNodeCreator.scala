@@ -516,6 +516,12 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     }
   }
 
+  override def visitLambdaExpression(ctx: RubyParser.LambdaExpressionContext): RubyNode = {
+    val parameters = Option(ctx.parameterList()).fold(List())(_.parameters).map(visit)
+    val body       = visit(ctx.block())
+    Block(parameters, body)(ctx.toTextSpan)
+  }
+
   override def visitMethodCallWithParenthesesExpression(
     ctx: RubyParser.MethodCallWithParenthesesExpressionContext
   ): RubyNode = {
@@ -867,14 +873,52 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     StatementList(classBodyStmts.filterNot(_.isInstanceOf[AliasStatement]) ++ loweredMethods)(classBody.span)
   }
 
+  /** Moves children nodes not allowed directly under TypeDecl to the `initialize` method
+    * @param stmts
+    *   \- StatementList for ClassDecl
+    * @return
+    *   - `initialize` MethodDeclaration with all non-allowed children nodes added
+    *   - list of all nodes allowed directly under type decl
+    */
+  private def filterNonAllowedTypeDeclChildren(stmts: StatementList): (RubyNode, List[RubyNode]) = {
+    val (initMethod, nonInitStmts) = stmts.statements.partition {
+      case x: MethodDeclaration if x.methodName == "initialize" => true
+      case _                                                    => false
+    }
+
+    val (allowedTypeDeclChildren, nonAllowedTypeDeclChildren) = nonInitStmts.partition {
+      case x: AllowedTypeDeclarationChild => true
+      case _                              => false
+    }
+
+    val initMethodDecl = initMethod.headOption match {
+      case Some(initMethodOpt) =>
+        val castInitMethod = initMethodOpt.asInstanceOf[MethodDeclaration]
+        val updatedMethodBody = StatementList(
+          castInitMethod.body.asStatementList.statements ++ nonAllowedTypeDeclChildren
+        )(castInitMethod.body.span)
+        MethodDeclaration("initialize", List.empty, updatedMethodBody)(castInitMethod.span)
+      case None =>
+        logger.warn("Could not find initialize method")
+        defaultResult()
+    }
+
+    (initMethodDecl, allowedTypeDeclChildren)
+  }
+
   override def visitClassDefinition(ctx: RubyParser.ClassDefinitionContext): RubyNode = {
     val (nonFieldStmts, fields) = genInitFieldStmts(ctx.bodyStatement())
 
     val stmts = lowerAliasStatementsToMethods(nonFieldStmts)
 
-    ClassDeclaration(visit(ctx.classPath()), Option(ctx.commandOrPrimaryValue()).map(visit), stmts, fields)(
-      ctx.toTextSpan
-    )
+    val (initMethodDecl, allowedTypeDeclChildren) = filterNonAllowedTypeDeclChildren(stmts)
+
+    ClassDeclaration(
+      visit(ctx.classPath()),
+      Option(ctx.commandOrPrimaryValue()).map(visit),
+      StatementList(initMethodDecl +: allowedTypeDeclChildren)(stmts.span),
+      fields
+    )(ctx.toTextSpan)
   }
 
   /** Lowers all MethodDeclaration found in SingletonClassDeclaration to SingletonMethodDeclaration.
