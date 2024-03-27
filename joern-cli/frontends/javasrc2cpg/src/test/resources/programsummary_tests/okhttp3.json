@@ -1,0 +1,59 @@
+{
+  "okhttp3": [
+    {
+      "name": "OkHttpClient",
+      "methods": [
+        {
+          "name": "newCall",
+          "returnType": "Call",
+          "parameterTypes": [
+            [
+              "request",
+              "Request"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": [],
+      "isStatic": false,
+      "innerClasses": [
+        {
+          "name": "Builder",
+          "methods": [
+            {
+              "name": "build",
+              "returnType": "OkHttpClient",
+              "parameterTypes": [],
+              "isStatic": false
+            }
+          ],
+          "fields": [],
+          "isStatic": true,
+          "innerClasses": []
+        }
+      ]
+    },
+    {
+      "name": "Request",
+      "methods": [],
+      "fields": [],
+      "isStatic": false,
+      "innerClasses": []
+    },
+    {
+      "name": "Call",
+      "methods": [
+        {
+          "name": "executeAsync",
+          "returnType": "void",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": [],
+      "isStatic": false,
+      "innerClasses": []
+    }
+  ]
+}
