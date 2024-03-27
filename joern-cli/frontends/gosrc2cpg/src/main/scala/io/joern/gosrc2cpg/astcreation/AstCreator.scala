@@ -42,8 +42,6 @@ class AstCreator(
     with AstGenNodeBuilder[AstCreator] {
 
   protected val logger: Logger = LoggerFactory.getLogger(classOf[AstCreator])
-  protected val tempParserNodeCacheFilePath: Option[Path] =
-    tmpDir.map(dir => Paths.get(dir.pathAsString, s"node-cache${UUID.randomUUID().toString}"))
   protected val tempAliasToNameSpaceMappingFilePath: Option[Path] =
     tmpDir.map(dir => Paths.get(dir.pathAsString, s"alias-cache${UUID.randomUUID().toString}"))
   protected val methodAstParentStack: Stack[NewNode]                 = new Stack()
@@ -129,10 +127,6 @@ class AstCreator(
   }
 
   def cacheSerializeAndStore(): Unit = {
-//    tempParserNodeCacheFilePath.map(file => {
-//      Files.write(file, serialise(parserNodeCache))
-//      parserNodeCache.clear()
-//    })
     tempAliasToNameSpaceMappingFilePath.map(file => {
       Files.write(file, serialise(aliasToNameSpaceMapping))
       aliasToNameSpaceMapping.clear()
@@ -141,10 +135,6 @@ class AstCreator(
   }
 
   def loadCacheToProcess(): Unit = {
-//    tempParserNodeCacheFilePath.map(file => {
-//      val deserialised = deserialise(Files.readAllBytes(file))
-//      parserNodeCache = deserialised.asInstanceOf[mutable.TreeMap[Long, ParserNodeInfo]]
-//    })
     tempAliasToNameSpaceMappingFilePath.map(file => {
       val deserialised = deserialise(Files.readAllBytes(file))
       aliasToNameSpaceMapping = deserialised.asInstanceOf[mutable.Map[String, String]]
