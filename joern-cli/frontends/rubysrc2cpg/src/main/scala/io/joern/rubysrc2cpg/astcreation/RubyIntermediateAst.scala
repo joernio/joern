@@ -44,7 +44,9 @@ object RubyIntermediateAst {
     def size: Int = statements.size
   }
 
-  sealed trait TypeDeclaration {
+  sealed trait AllowedTypeDeclarationChild
+
+  sealed trait TypeDeclaration extends AllowedTypeDeclarationChild {
     def name: RubyNode
     def baseClass: Option[RubyNode]
     def body: RubyNode
@@ -77,7 +79,9 @@ object RubyIntermediateAst {
   ) extends RubyNode(span)
       with AnonymousTypeDeclaration
 
-  final case class FieldsDeclaration(fieldNames: List[RubyNode])(span: TextSpan) extends RubyNode(span) {
+  final case class FieldsDeclaration(fieldNames: List[RubyNode])(span: TextSpan)
+      extends RubyNode(span)
+      with AllowedTypeDeclarationChild {
     def hasGetter: Boolean = text.startsWith("attr_reader") || text.startsWith("attr_accessor")
 
     def hasSetter: Boolean = text.startsWith("attr_writer") || text.startsWith("attr_accessor")
@@ -85,6 +89,7 @@ object RubyIntermediateAst {
 
   final case class MethodDeclaration(methodName: String, parameters: List[RubyNode], body: RubyNode)(span: TextSpan)
       extends RubyNode(span)
+      with AllowedTypeDeclarationChild
 
   final case class SingletonMethodDeclaration(
     target: RubyNode,
@@ -93,6 +98,7 @@ object RubyIntermediateAst {
     body: RubyNode
   )(span: TextSpan)
       extends RubyNode(span)
+      with AllowedTypeDeclarationChild
 
   sealed trait MethodParameter {
     def name: String
