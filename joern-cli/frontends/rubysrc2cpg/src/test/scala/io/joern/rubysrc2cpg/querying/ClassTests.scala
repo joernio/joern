@@ -2,8 +2,17 @@ package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, FieldIdentifier, Identifier, Literal, Return}
+import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  Block,
+  Call,
+  FieldIdentifier,
+  Identifier,
+  Literal,
+  MethodRef,
+  Modifier,
+  Return
+}
 import io.shiftleft.semanticcpg.language.*
 import io.joern.rubysrc2cpg.passes.Defines as RubyDefines
 
@@ -616,6 +625,59 @@ class ClassTests extends RubyCode2CpgFixture {
                     case xs => fail(s"Expected three arguments, got ${xs.code.mkString(", ")} instead")
                   }
                 case xs => fail(s"Expected one call under constructor, got ${xs.code.mkString(", ")} instead")
+              }
+            case xs => fail(s"Expected one init method, got ${xs.code.mkString(", ")} instead")
+          }
+        case xs => fail(s"Expected one class, got ${xs.code.mkString(", ")} instead")
+      }
+    }
+  }
+
+  "Scope call with Lambda Expression" should {
+    val cpg = code("""
+         |class Foo
+         |  scope :hits_by_ip, ->(ip, col = "*") { select("#{col}").where(ip_address: ip).order("id DESC") }
+         |  def bar
+         |    puts 1
+         |  end
+         |end
+         |""".stripMargin)
+
+    "correct method full name for method ref under call" in {
+      inside(cpg.typeDecl.name("Foo").l) {
+        case fooClass :: Nil =>
+          inside(fooClass.method.name(Defines.ConstructorMethodName).l) {
+            case initMethod :: Nil =>
+              inside(initMethod.astChildren.isBlock.l) {
+                case methodBlock :: Nil =>
+                  inside(methodBlock.astChildren.l) {
+                    case methodCall :: Nil =>
+                      inside(methodCall.astChildren.l) {
+                        case (identifier: Identifier) :: (literal: Literal) :: (methodRef: MethodRef) :: Nil =>
+                          identifier.code shouldBe "scope"
+                          literal.code shouldBe ":hits_by_ip"
+                          methodRef.methodFullName shouldBe "Test0.rb:<global>::program.Foo:<init>:<lambda>0"
+                        case xs => fail(s"Expected three children, got ${xs.code.mkString(", ")} instead")
+                      }
+                    case xs => fail(s"Expected one call, got ${xs.code.mkString(", ")} instead")
+                  }
+                case xs => fail(s"Expected one block under method, got ${xs.code.mkString(", ")} instead")
+              }
+            case xs => fail(s"Expected one init method, got ${xs.code.mkString(", ")} instead")
+          }
+        case xs => fail(s"Expected one class, got ${xs.code.mkString(", ")} instead")
+      }
+    }
+
+    "correct method def under <init> block" in {
+      inside(cpg.typeDecl.name("Foo").l) {
+        case fooClass :: Nil =>
+          inside(fooClass.method.name(Defines.ConstructorMethodName).l) {
+            case initMethod :: Nil =>
+              inside(initMethod.astChildren.isMethod.l) {
+                case lambdaMethod :: Nil =>
+                  lambdaMethod.fullName shouldBe "Test0.rb:<global>::program.Foo:<init>:<lambda>0"
+                case xs => fail(s"Expected method decl for lambda, got ${xs.code.mkString(", ")} instead")
               }
             case xs => fail(s"Expected one init method, got ${xs.code.mkString(", ")} instead")
           }
