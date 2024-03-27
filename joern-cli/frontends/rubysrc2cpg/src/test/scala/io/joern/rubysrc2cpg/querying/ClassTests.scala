@@ -315,16 +315,24 @@ class ClassTests extends RubyCode2CpgFixture {
           |""".stripMargin)
       inside(cpg.typeDecl.name("User").l) {
         case userType :: Nil =>
-          val List(validateCall: Call) = userType.astChildren.isCall.l: @unchecked
+          inside(userType.method.name(Defines.ConstructorMethodName).l) {
+            case constructor :: Nil =>
+              inside(constructor.astChildren.isBlock.l) {
+                case methodBlock :: Nil =>
+                  val List(validateCall: Call) = methodBlock.astChildren.isCall.l: @unchecked
 
-          inside(validateCall.argument.l) {
-            case _ :: (passwordArg: Literal) :: (presenceArg: Literal) :: (confirmationArg: Literal) :: (lengthArg: Block) :: (onArg: Literal) :: (ifArg: Literal) :: Nil =>
-              passwordArg.code shouldBe ":password"
-              presenceArg.code shouldBe "true"
-              confirmationArg.code shouldBe "true"
-              onArg.code shouldBe ":create"
-              ifArg.code shouldBe ":password"
-            case xs => fail(s"Expected 7 arguments, got ${xs.code.mkString(", ")} instead")
+                  inside(validateCall.argument.l) {
+                    case (identArg: Identifier) :: (passwordArg: Literal) :: (presenceArg: Literal) :: (confirmationArg: Literal) :: (lengthArg: Block) :: (onArg: Literal) :: (ifArg: Literal) :: Nil =>
+                      passwordArg.code shouldBe ":password"
+                      presenceArg.code shouldBe "true"
+                      confirmationArg.code shouldBe "true"
+                      onArg.code shouldBe ":create"
+                      ifArg.code shouldBe ":password"
+                    case xs => fail(s"Expected 7 arguments, got ${xs.code.mkString(", ")} instead")
+                  }
+                case xs => fail(s"Expected one block for method body, got ${xs.code.mkString(", ")} instead")
+              }
+            case xs => fail(s"Expected one constructor method, got ${xs.name.mkString(", ")} instead")
           }
         case _ => fail("Expected typeDecl for user, none found instead")
       }
@@ -341,17 +349,26 @@ class ClassTests extends RubyCode2CpgFixture {
 
       inside(cpg.typeDecl.name("AdminController").l) {
         case adminTypeDecl :: Nil =>
-          inside(adminTypeDecl.astChildren.isCall.l) {
-            case beforeActionCall :: skipBeforeActionCall :: layoutCall :: Nil =>
-              inside(beforeActionCall.argument.l) {
-                case _ :: adminArg :: ifArg :: exceptArg :: Nil =>
-                  adminArg.code shouldBe ":administrative"
-                  ifArg.code shouldBe ":admin_param"
-                  exceptArg.code shouldBe "[:get_user]"
-                case xs => fail(s"Expected 4 args, instead found ${xs.code.mkString(", ")}")
+          inside(adminTypeDecl.method.name(Defines.ConstructorMethodName).l) {
+            case constructor :: Nil =>
+              inside(constructor.astChildren.isBlock.l) {
+                case methodBlock :: Nil =>
+                  inside(methodBlock.astChildren.isCall.l) {
+                    case beforeActionCall :: skipBeforeActionCall :: layoutCall :: Nil =>
+                      inside(beforeActionCall.argument.l) {
+                        case identArg :: adminArg :: ifArg :: exceptArg :: Nil =>
+                          adminArg.code shouldBe ":administrative"
+                          ifArg.code shouldBe ":admin_param"
+                          exceptArg.code shouldBe "[:get_user]"
+                        case xs => fail(s"Expected 4 args, instead found ${xs.code.mkString(", ")}")
+                      }
+                    case xs => fail(s"Expected 3 calls, instead found ${xs.code.mkString(", ")}")
+                  }
+                case xs => fail(s"Expected one block for method body, got ${xs.code.mkString(", ")} instead")
               }
-            case xs => fail(s"Expected 3 calls, instead found ${xs.code.mkString(", ")}")
+            case xs => fail(s"Expected one constructor method, got ${xs.name.mkString(", ")} instead")
           }
+
         case _ => fail("Expected one typeDecl for AdminController")
       }
     }
@@ -593,9 +610,10 @@ class ClassTests extends RubyCode2CpgFixture {
                   scopeCall.code shouldBe "scope :published, -> { where(status: \"Published\") }"
 
                   inside(scopeCall.argument.l) {
-                    case (literalArg: Literal) :: unknownArg :: Nil =>
+                    case (scopeIdent: Identifier) :: (literalArg: Literal) :: unknownArg :: Nil =>
+                      scopeIdent.code shouldBe "scope"
                       literalArg.code shouldBe ":published"
-                    case xs => fail(s"Expected two arguments, got ${xs.code.mkString(", ")} instead")
+                    case xs => fail(s"Expected three arguments, got ${xs.code.mkString(", ")} instead")
                   }
                 case xs => fail(s"Expected one call under constructor, got ${xs.code.mkString(", ")} instead")
               }

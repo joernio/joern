@@ -774,11 +774,6 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
           x
         }
 
-        val (allowedTypeDeclChildren, nonAllowedTypeDeclChildren) = rest.partition {
-          case x: AllowedTypeDeclarationChild => true
-          case _                              => false
-        }
-
         val fieldsInMethodDecls = findFieldsInMethodDecls(methodDecls)
 
         val (instanceFieldsInMethodDecls, classFieldsInMethodDecls) = partitionRubyFields(fieldsInMethodDecls)
@@ -804,19 +799,17 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
               //   where you end up having
               //   <instanceField> = nil; <instanceField> = ...;
               case stmtList: StatementList =>
-                val initializers = (initStmtListStatements ++ nonAllowedTypeDeclChildren) :+ clinitMethod
-                StatementList(initializers ++ allowedTypeDeclChildren)(stmtList.span)
+                val initializers = initStmtListStatements :+ clinitMethod
+                StatementList(initializers ++ rest)(stmtList.span)
               case x => x
             }
           case None =>
             val newInitMethod =
-              MethodDeclaration(
-                "initialize",
-                List.empty,
-                StatementList(initStmtListStatements ++ nonAllowedTypeDeclChildren)(stmtList.span)
-              )(stmtList.span)
+              MethodDeclaration("initialize", List.empty, StatementList(initStmtListStatements)(stmtList.span))(
+                stmtList.span
+              )
             val initializers = newInitMethod :: clinitMethod :: Nil
-            StatementList(initializers ++ allowedTypeDeclChildren)(stmtList.span)
+            StatementList(initializers ++ rest)(stmtList.span)
         }
         val combinedFields = rubyFieldIdentifiers ++ fieldsInMethodDecls
 
@@ -874,14 +867,52 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     StatementList(classBodyStmts.filterNot(_.isInstanceOf[AliasStatement]) ++ loweredMethods)(classBody.span)
   }
 
+  /** Moves children nodes not allowed directly under TypeDecl to the `initialize` method
+    * @param stmts
+    *   \- StatementList for ClassDecl
+    * @return
+    *   - `initialize` MethodDeclaration with all non-allowed children nodes added
+    *   - list of all nodes allowed directly under type decl
+    */
+  private def filterNonAllowedTypeDeclChildren(stmts: StatementList): (RubyNode, List[RubyNode]) = {
+    val (initMethod, nonInitStmts) = stmts.statements.partition {
+      case x: MethodDeclaration if x.methodName == "initialize" => true
+      case _                                                    => false
+    }
+
+    val (allowedTypeDeclChildren, nonAllowedTypeDeclChildren) = nonInitStmts.partition {
+      case x: AllowedTypeDeclarationChild => true
+      case _                              => false
+    }
+
+    val initMethodDecl = initMethod.headOption match {
+      case Some(initMethodOpt) =>
+        val castInitMethod = initMethodOpt.asInstanceOf[MethodDeclaration]
+        val updatedMethodBody = StatementList(
+          castInitMethod.body.asStatementList.statements ++ nonAllowedTypeDeclChildren
+        )(castInitMethod.body.span)
+        MethodDeclaration("initialize", List.empty, updatedMethodBody)(castInitMethod.span)
+      case None =>
+        logger.warn("Could not find initialize method")
+        defaultResult()
+    }
+
+    (initMethodDecl, allowedTypeDeclChildren)
+  }
+
   override def visitClassDefinition(ctx: RubyParser.ClassDefinitionContext): RubyNode = {
     val (nonFieldStmts, fields) = genInitFieldStmts(ctx.bodyStatement())
 
     val stmts = lowerAliasStatementsToMethods(nonFieldStmts)
 
-    ClassDeclaration(visit(ctx.classPath()), Option(ctx.commandOrPrimaryValue()).map(visit), stmts, fields)(
-      ctx.toTextSpan
-    )
+    val (initMethodDecl, allowedTypeDeclChildren) = filterNonAllowedTypeDeclChildren(stmts)
+
+    ClassDeclaration(
+      visit(ctx.classPath()),
+      Option(ctx.commandOrPrimaryValue()).map(visit),
+      StatementList(initMethodDecl +: allowedTypeDeclChildren)(stmts.span),
+      fields
+    )(ctx.toTextSpan)
   }
 
   /** Lowers all MethodDeclaration found in SingletonClassDeclaration to SingletonMethodDeclaration.

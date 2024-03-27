@@ -79,7 +79,9 @@ object RubyIntermediateAst {
   ) extends RubyNode(span)
       with AnonymousTypeDeclaration
 
-  final case class FieldsDeclaration(fieldNames: List[RubyNode])(span: TextSpan) extends RubyNode(span) {
+  final case class FieldsDeclaration(fieldNames: List[RubyNode])(span: TextSpan)
+      extends RubyNode(span)
+      with AllowedTypeDeclarationChild {
     def hasGetter: Boolean = text.startsWith("attr_reader") || text.startsWith("attr_accessor")
 
     def hasSetter: Boolean = text.startsWith("attr_writer") || text.startsWith("attr_accessor")
