@@ -1,5 +1,6 @@
 package io.joern.gosrc2cpg.passes
 
+import better.files.File
 import io.joern.gosrc2cpg.Config
 import io.joern.gosrc2cpg.astcreation.AstCreator
 import io.joern.gosrc2cpg.datastructures.GoGlobal
@@ -20,7 +21,8 @@ class MethodAndTypeCacheBuilderPass(
   astFiles: List[String],
   config: Config,
   goMod: GoModHelper,
-  goGlobal: GoGlobal
+  goGlobal: GoGlobal,
+  tmpDir: Option[File] = None
 ) {
   private val logger = LoggerFactory.getLogger(getClass)
   def process(): Seq[AstCreator] = {
@@ -28,12 +30,19 @@ class MethodAndTypeCacheBuilderPass(
       .map(file =>
         Future {
           try {
-            val parserResult    = GoAstJsonParser.readFile(Paths.get(file))
-            val relPathFileName = SourceFiles.toRelativePath(parserResult.fullPath, config.inputPath)
-            val astCreator = new AstCreator(relPathFileName, parserResult, goMod, goGlobal)(config.schemaValidation)
-            val diffGraph  = astCreator.buildCache(cpgOpt)
+            val relFilePath = tmpDir.map(dir => {
+              SourceFiles.toRelativePath(file, dir.pathAsString).replace(".json", "")
+            })
+            val parserResult = GoAstJsonParser.readFile(Paths.get(file))
+            val astCreator =
+              new AstCreator(file, relFilePath.getOrElse("dummyfile.go"), goMod, goGlobal, tmpDir)(
+                config.schemaValidation
+              )
+            val diffGraph = astCreator.buildCache(cpgOpt)
             if (goGlobal.processingDependencies) {
               astCreator.cleanup()
+            } else {
+              astCreator.cacheSerializeAndStore()
             }
             Some(astCreator, diffGraph)
           } catch
@@ -45,13 +54,13 @@ class MethodAndTypeCacheBuilderPass(
     val allResults: Future[List[Option[(AstCreator, DiffGraphBuilder)]]] = Future.sequence(futures)
     val results                                                          = Await.result(allResults, Duration.Inf)
     results.flatMap(result =>
-      result.flatMap(r => {
+      result.flatMap((astCreator, diffGraph) => {
         cpgOpt.map { cpg =>
           overflowdb.BatchedUpdate
-            .applyDiff(cpg.graph, r._2, null, null)
+            .applyDiff(cpg.graph, diffGraph, null, null)
             .transitiveModifications()
         }
-        Some(r._1)
+        Some(astCreator)
       })
     )
   }

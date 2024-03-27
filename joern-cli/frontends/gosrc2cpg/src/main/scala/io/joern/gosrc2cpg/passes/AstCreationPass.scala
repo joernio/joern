@@ -1,11 +1,6 @@
 package io.joern.gosrc2cpg.passes
 
-import io.joern.gosrc2cpg.Config
 import io.joern.gosrc2cpg.astcreation.AstCreator
-import io.joern.gosrc2cpg.datastructures.GoGlobal
-import io.joern.gosrc2cpg.parser.GoAstJsonParser
-import io.joern.x2cpg.astgen.ParserResult
-import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.utils.{Report, TimeUtils}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass
@@ -21,7 +16,7 @@ class AstCreationPass(cpg: Cpg, astCreators: Seq[AstCreator], report: Report)
   override def generateParts(): Array[AstCreator] = astCreators.toArray
   override def runOnPart(diffGraph: DiffGraphBuilder, astCreator: AstCreator): Unit = {
     val ((gotCpg, filename), duration) = TimeUtils.time {
-      val fileLOC = IOUtils.readLinesInFile(Paths.get(astCreator.parserResult.fullPath)).size
+      val fileLOC = IOUtils.readLinesInFile(Paths.get(astCreator.originalFilePath)).size
       report.addReportInfo(astCreator.relPathFileName, fileLOC, parsed = true)
       Try {
         val localDiff = astCreator.createAst()
@@ -29,10 +24,10 @@ class AstCreationPass(cpg: Cpg, astCreators: Seq[AstCreator], report: Report)
         diffGraph.absorb(localDiff)
       } match {
         case Failure(exception) =>
-          logger.warn(s"Failed to generate a CPG for: '${astCreator.parserResult.fullPath}'", exception)
+          logger.warn(s"Failed to generate a CPG for: '${astCreator.originalFilePath}'", exception)
           (false, astCreator.relPathFileName)
         case Success(_) =>
-          logger.info(s"Generated a CPG for: '${astCreator.parserResult.fullPath}'")
+          logger.info(s"Generated a CPG for: '${astCreator.originalFilePath}'")
           (true, astCreator.relPathFileName)
       }
     }

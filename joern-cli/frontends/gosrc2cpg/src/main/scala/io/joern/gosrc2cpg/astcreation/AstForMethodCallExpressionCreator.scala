@@ -51,7 +51,7 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
         (Some(xNode), funcDetails.json(ParserKeys.Sel)(ParserKeys.Name).str)
       case x =>
         logger.warn(
-          s"Unhandled class ${x.getClass} under astForCallExpression! file -> ${parserResult.fullPath} -> Line no -> ${funcDetails.lineNumber.get}"
+          s"Unhandled class ${x.getClass} under astForCallExpression! file -> $originalFilePath -> Line no -> ${funcDetails.lineNumber.get}"
         )
         (None, "")
     callMethodFullNameTypeFullNameAndSignature(methodName, aliasOpt)

@@ -38,6 +38,7 @@ package object astgen {
     * @param fileContent
     *   the raw file contents.
     */
-  case class ParserResult(filename: String, fullPath: String, json: Value, fileContent: String) extends BaseParserResult
+  case class ParserResult(filename: String, fullPath: String, json: Value, var fileContent: String)
+      extends BaseParserResult
 
 }

@@ -16,7 +16,8 @@ import scala.util.Try
 trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   def buildCache(cpgOpt: Option[Cpg]): DiffGraphBuilder = {
-    val diffGraph = new DiffGraphBuilder
+    val diffGraph    = new DiffGraphBuilder
+    val parserResult = init()
     try {
       if (checkIfGivenDependencyPackageCanBeProcessed()) {
         cpgOpt.map { _ =>

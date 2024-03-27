@@ -86,7 +86,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
                 EvaluationStrategies.BY_SHARING
               )
             case x =>
-              logger.warn(s"Unhandled class ${x.getClass} under getReceiverInfo! file -> ${parserResult.fullPath}")
+              logger.warn(s"Unhandled class ${x.getClass} under getReceiverInfo! file -> $originalFilePath")
               ("", "")
           (recName, typeFullName, evaluationStrategy, recnode)
         })

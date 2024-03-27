@@ -17,7 +17,7 @@ trait AstForLambdaCreator(implicit withSchemaValidation: ValidationMode) { this:
     val lambdaName = nextClosureName()
     // if the top of the stack function is fake file level method node (which is checked with filename) then use the fully qualified package name as base fullname
     val baseFullName = methodAstParentStack
-      .collectFirst({ case m: NewMethod if !m.fullName.endsWith(parserResult.filename) => m.fullName })
+      .collectFirst({ case m: NewMethod if !m.fullName.endsWith(fileName) => m.fullName })
       .getOrElse(fullyQualifiedPackage)
     val fullName = s"$baseFullName.$lambdaName"
     val LambdaFunctionMetaData(signature, returnTypeStr, methodReturn, params, genericTypeMethodMap) =

@@ -43,7 +43,14 @@ class GoSrc2Cpg(goGlobalOption: Option[GoGlobal] = Option(GoGlobal())) extends X
             )
             goGlobal.mainModule = goMod.flatMap(modHelper => modHelper.getModMetaData().map(mod => mod.module.name))
             val astCreators =
-              new MethodAndTypeCacheBuilderPass(Some(cpg), astGenResult.parsedFiles, config, goMod.get, goGlobal)
+              new MethodAndTypeCacheBuilderPass(
+                Some(cpg),
+                astGenResult.parsedFiles,
+                config,
+                goMod.get,
+                goGlobal,
+                Some(tmpDir)
+              )
                 .process()
             if (config.fetchDependencies) {
               goGlobal.processingDependencies = true
@@ -51,9 +58,10 @@ class GoSrc2Cpg(goGlobalOption: Option[GoGlobal] = Option(GoGlobal())) extends X
               goGlobal.processingDependencies = false
             }
             new AstCreationPass(cpg, astCreators, report).createAndApply()
-            goGlobal.firstCleanup()
-            if goGlobal.pkgLevelVarAndConstantAstMap.size() > 0 then
+            if (goGlobal.pkgLevelVarAndConstantAstMap.size() > 0) {
               new PackageCtorCreationPass(cpg, config, goGlobal).createAndApply()
+              goGlobal.pkgLevelVarAndConstantAstMap.clear()
+            }
             report.print()
           })
       }

@@ -2,6 +2,7 @@ package io.joern.gosrc2cpg.astcreation
 
 import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserAst, ParserKeys, ParserNodeInfo}
+import io.joern.x2cpg.astgen.ParserResult
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.joern.x2cpg.{Ast, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewModifier, NewNode}
@@ -116,15 +117,17 @@ trait AstCreatorHelper { this: AstCreator =>
 
   protected def columnEndNo(node: Value): Option[Integer] = Try(node(ParserKeys.NodeColEndNo).num).toOption.map(_.toInt)
 
-  protected def positionLookupTables(source: String): Map[Int, String] = {
+  protected def positionLookupTables(parserResult: ParserResult): Map[Int, String] = {
     if (!goGlobal.processingDependencies) {
-      source
+      val map = parserResult.fileContent
         .split("\n")
         .zipWithIndex
         .map { case (sourceLine, lineNumber) =>
           (lineNumber + 1, sourceLine)
         }
         .toMap
+      parserResult.fileContent = ""
+      map
     } else {
       Map[Int, String]()
     }
