@@ -76,7 +76,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       val baseStmtBlockAst = astForMethodBody(node.body, optionalStatementList)
       transformAsClosureBody(refs, baseStmtBlockAst)
     } else {
-      astForMethodBody(node.body, optionalStatementList)
+      if (methodName != XDefines.ConstructorMethodName && node.methodName != XDefines.StaticInitMethodName) {
+        astForMethodBody(node.body, optionalStatementList)
+      } else {
+        astForConstructorMethodBody(node.body, optionalStatementList)
+      }
     }
 
     val anonProcParam = scope.anonProcParam.map { param =>
@@ -370,6 +374,24 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           astForStatementListReturningLastExpression(
             StatementList(optionalStatementList.statements ++ List(body))(body.span)
           )
+        case body =>
+          logger.warn(
+            s"Non-linear method bodies are not supported yet: ${body.text} (${body.getClass.getSimpleName}) ($relativeFileName), skipping"
+          )
+          astForUnknown(body)
+    }
+  }
+
+  private def astForConstructorMethodBody(body: RubyNode, optionalStatementList: StatementList): Ast = {
+    if (this.parseLevel == AstParseLevel.SIGNATURES) {
+      Ast()
+    } else {
+      body match
+        case stmtList: StatementList =>
+          astForStatementList(StatementList(optionalStatementList.statements ++ stmtList.statements)(stmtList.span))
+        case _: (StaticLiteral | BinaryExpression | SingleAssignment | SimpleIdentifier | ArrayLiteral | HashLiteral |
+              SimpleCall | MemberAccess | MemberCall) =>
+          astForStatementList(StatementList(optionalStatementList.statements ++ List(body))(body.span))
         case body =>
           logger.warn(
             s"Non-linear method bodies are not supported yet: ${body.text} (${body.getClass.getSimpleName}) ($relativeFileName), skipping"
