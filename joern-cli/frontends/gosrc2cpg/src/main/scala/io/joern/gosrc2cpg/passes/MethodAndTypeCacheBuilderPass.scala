@@ -5,13 +5,11 @@ import io.joern.gosrc2cpg.Config
 import io.joern.gosrc2cpg.astcreation.AstCreator
 import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.model.GoModHelper
-import io.joern.gosrc2cpg.parser.GoAstJsonParser
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 import org.slf4j.LoggerFactory
 
-import java.nio.file.Paths
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
@@ -33,7 +31,6 @@ class MethodAndTypeCacheBuilderPass(
             val relFilePath = tmpDir.map(dir => {
               SourceFiles.toRelativePath(file, dir.pathAsString).replace(".json", "")
             })
-            val parserResult = GoAstJsonParser.readFile(Paths.get(file))
             val astCreator =
               new AstCreator(file, relFilePath.getOrElse("dummyfile.go"), goMod, goGlobal, tmpDir)(
                 config.schemaValidation
