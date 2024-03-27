@@ -13,9 +13,6 @@ import org.slf4j.LoggerFactory
 import java.io.File as JFile
 import java.nio.file.Paths
 import java.util.concurrent.LinkedBlockingQueue
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success, Try}
 
 class DownloadDependenciesPass(parentGoMod: GoModHelper, goGlobal: GoGlobal, config: Config) {
