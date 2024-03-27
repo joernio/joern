@@ -1,6 +1,6 @@
 package io.joern.rubysrc2cpg.astcreation
 
-import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{Unknown, *}
+import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{Unknown, Block as RubyBlock, *}
 import io.joern.rubysrc2cpg.datastructures.BlockScope
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.{RubyOperators, getBuiltInType}
@@ -670,7 +670,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     node match
       // Associations in method calls are keyword arguments
       case assoc: Association => astForKeywordArgument(assoc)
-      case _                  => astForExpression(node)
+      case block: RubyBlock =>
+        val Seq(methodDecl, typeDecl, _, methodRef) = astForDoBlock(block)
+        Ast.storeInDiffGraph(methodDecl, diffGraph)
+        Ast.storeInDiffGraph(typeDecl, diffGraph)
+
+        methodRef
+      case _ => astForExpression(node)
   }
 
   private def astForKeywordArgument(assoc: Association): Ast = {

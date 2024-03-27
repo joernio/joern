@@ -516,6 +516,12 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     }
   }
 
+  override def visitLambdaExpression(ctx: RubyParser.LambdaExpressionContext): RubyNode = {
+    val parameters = Option(ctx.parameterList()).fold(List())(_.parameters).map(visit)
+    val body       = visit(ctx.block())
+    Block(parameters, body)(ctx.toTextSpan)
+  }
+
   override def visitMethodCallWithParenthesesExpression(
     ctx: RubyParser.MethodCallWithParenthesesExpressionContext
   ): RubyNode = {
