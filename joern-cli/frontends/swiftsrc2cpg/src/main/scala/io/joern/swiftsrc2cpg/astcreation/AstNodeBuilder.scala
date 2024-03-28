@@ -78,8 +78,8 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
       case i: IfConfigDeclSyntax =>
         val elements = jumpTargetFromIfConfigDeclSyntax(i)
         val elemCode = elements.headOption.fold(codeForJumpTarget(i.clauses.children.head))(codeForJumpTarget)
-        val elemName = elements.headOption.fold(nameForJumpTarget(i.clauses.children.head))(nameForJumpTarget)
-        (elemName, elemCode)
+        val elemName =
+          elements.headOption.fold(nameForJumpTarget(i.clauses.children.head))(nameForJumpTarget)(elemName, elemCode)
     }
     NewJumpTarget()
       .parserTypeName(switchCase.toString)

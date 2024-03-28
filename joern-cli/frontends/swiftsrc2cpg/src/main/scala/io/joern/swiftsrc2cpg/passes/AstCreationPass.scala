@@ -40,8 +40,7 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
     val ((gotCpg, filename), duration) = TimeUtils.time {
       SwiftJsonParser.readFile(Paths.get(input)) match {
         case Failure(exception) =>
-          logger.warn(s"Failed to read '$input'", exception)
-          (false, input)
+          logger.warn(s"Failed to read '$input'", exception)(false, input)
         case Success(parseResult) =>
           val fileLOC = IOUtils.readLinesInFile(Paths.get(parseResult.fullPath)).size
           report.addReportInfo(parseResult.filename, fileLOC, parsed = true)
@@ -50,11 +49,12 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
             diffGraph.absorb(localDiff)
           } match {
             case Failure(exception) =>
-              logger.warn(s"Failed to generate a CPG for: '${parseResult.fullPath}'", exception)
-              (false, parseResult.filename)
+              logger.warn(s"Failed to generate a CPG for: '${parseResult.fullPath}'", exception)(
+                false,
+                parseResult.filename
+              )
             case Success(_) =>
-              logger.info(s"Generated a CPG for: '${parseResult.fullPath}'")
-              (true, parseResult.filename)
+              logger.info(s"Generated a CPG for: '${parseResult.fullPath}'")(true, parseResult.filename)
           }
       }
     }

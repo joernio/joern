@@ -185,8 +185,8 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
           )
           .toSet
         // Non-overridden methods linked as external stubs should be excluded if they are detected
-        val (externalMs, internalMs) = tgtMs.partition(_.isExternal)
-        (if (externalMs.nonEmpty && internalMs.nonEmpty) internalMs else tgtMs)
+        val (externalMs, internalMs) = tgtMs
+          .partition(_.isExternal)(if (externalMs.nonEmpty && internalMs.nonEmpty) internalMs else tgtMs)
           .foreach { tgtM =>
             if (!callsOut.contains(tgtM.fullName)) {
               dstGraph.addEdge(call, tgtM, EdgeTypes.CALL)

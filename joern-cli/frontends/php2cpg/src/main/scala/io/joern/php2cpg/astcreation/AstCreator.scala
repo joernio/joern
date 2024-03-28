@@ -1471,8 +1471,7 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
       case expr: PhpExpr =>
         val ast = astForExpr(expr)
         // The name doesn't make sense in this case, but the AST will be more useful
-        val name = ast.rootCode.getOrElse(NameConstants.Unknown)
-        (Option(ast), name)
+        val name = ast.rootCode.getOrElse(NameConstants.Unknown)(Option(ast), name)
     }
 
     val tmpIdentifier = getTmpIdentifier(expr, Option(className))

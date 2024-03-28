@@ -167,23 +167,22 @@ trait AstCreatorHelper { this: AstCreator =>
       case Ident =>
         val typeNameForcode = nodeInfo.json(ParserKeys.Name).str
         val fullName =
-          generateTypeFullName(typeName = Some(typeNameForcode), genericTypeMethodMap = genericTypeMethodMap)
-        (fullName, typeNameForcode)
+          generateTypeFullName(typeName = Some(typeNameForcode), genericTypeMethodMap = genericTypeMethodMap)(
+            fullName,
+            typeNameForcode
+          )
       case SelectorExpr =>
         val typeNameForcode =
           s"${nodeInfo.json(ParserKeys.X)(ParserKeys.Name).str}.${nodeInfo.json(ParserKeys.Sel)(ParserKeys.Name).str}"
         val fullName = generateTypeFullName(
           typeName = Some(nodeInfo.json(ParserKeys.Sel)(ParserKeys.Name).str),
           aliasName = Some(nodeInfo.json(ParserKeys.X)(ParserKeys.Name).str)
-        )
-        (fullName, typeNameForcode)
+        )(fullName, typeNameForcode)
       case InterfaceType =>
         val typeNameForcode = "interface{}"
-        val fullName        = generateTypeFullName(typeName = Some(typeNameForcode))
-        (fullName, typeNameForcode)
+        val fullName        = generateTypeFullName(typeName = Some(typeNameForcode))(fullName, typeNameForcode)
       case _ =>
-        val fullName = generateTypeFullName()
-        (fullName, fullName)
+        val fullName = generateTypeFullName()(fullName, fullName)
     }
   }
 
@@ -193,16 +192,17 @@ trait AstCreatorHelper { this: AstCreator =>
   ): (String, String) = {
     nodeInfo.node match {
       case ArrayType =>
-        val (fullName, typeNameForcode) = internalTypeFullName(createParserNodeInfo(nodeInfo.json(ParserKeys.Elt)))
-        (s"[]$fullName", s"[]$typeNameForcode")
+        val (fullName, typeNameForcode) = internalTypeFullName(createParserNodeInfo(nodeInfo.json(ParserKeys.Elt)))(
+          s"[]$fullName",
+          s"[]$typeNameForcode"
+        )
       case CompositeLit if createParserNodeInfo(nodeInfo.json(ParserKeys.Type)).json.obj.contains(ParserKeys.Elt) =>
         val (fullName, typeNameForcode) = internalTypeFullName(
           createParserNodeInfo(nodeInfo.json(ParserKeys.Type)(ParserKeys.Elt))
-        )
-        (s"[]$fullName", s"[]$typeNameForcode")
+        )(s"[]$fullName", s"[]$typeNameForcode")
       case _ =>
-        val (fullName, typeNameForcode) = internalTypeFullName(nodeInfo, genericTypeMethodMap)
-        (fullName, typeNameForcode)
+        val (fullName, typeNameForcode) =
+          internalTypeFullName(nodeInfo, genericTypeMethodMap)(fullName, typeNameForcode)
     }
   }
 
@@ -213,11 +213,17 @@ trait AstCreatorHelper { this: AstCreator =>
     nodeInfo.node match {
       case StarExpr =>
         // TODO: Need to handle pointer to pointer use case.
-        val (fullName, typeNameForcode) = internalArrayTypeHandler(createParserNodeInfo(nodeInfo.json(ParserKeys.X)))
-        (s"*$fullName", s"*$typeNameForcode", EvaluationStrategies.BY_SHARING)
+        val (fullName, typeNameForcode) = internalArrayTypeHandler(createParserNodeInfo(nodeInfo.json(ParserKeys.X)))(
+          s"*$fullName",
+          s"*$typeNameForcode",
+          EvaluationStrategies.BY_SHARING
+        )
       case _ =>
-        val (fullName, typeNameForcode) = internalArrayTypeHandler(nodeInfo, genericTypeMethodMap)
-        (fullName, typeNameForcode, EvaluationStrategies.BY_VALUE)
+        val (fullName, typeNameForcode) = internalArrayTypeHandler(nodeInfo, genericTypeMethodMap)(
+          fullName,
+          typeNameForcode,
+          EvaluationStrategies.BY_VALUE
+        )
     }
   }
 
@@ -229,21 +235,18 @@ trait AstCreatorHelper { this: AstCreator =>
       case ArrayType =>
         val (fullName, typeNameForcode, evaluationStrategy) = internalStarExpHandler(
           createParserNodeInfo(nodeInfo.json(ParserKeys.Elt))
-        )
-        (s"[]$fullName", s"[]$typeNameForcode", false, evaluationStrategy)
+        )(s"[]$fullName", s"[]$typeNameForcode", false, evaluationStrategy)
       case CompositeLit if createParserNodeInfo(nodeInfo.json(ParserKeys.Type)).json.obj.contains(ParserKeys.Elt) =>
         val (fullName, typeNameForcode, evaluationStrategy) = internalStarExpHandler(
           createParserNodeInfo(nodeInfo.json(ParserKeys.Type)(ParserKeys.Elt))
-        )
-        (s"[]$fullName", s"[]$typeNameForcode", false, evaluationStrategy)
+        )(s"[]$fullName", s"[]$typeNameForcode", false, evaluationStrategy)
       case Ellipsis =>
         val (fullName, typeNameForcode, evaluationStrategy) = internalStarExpHandler(
           createParserNodeInfo(nodeInfo.json(ParserKeys.Elt))
-        )
-        (s"[]$fullName", s"...$typeNameForcode", true, evaluationStrategy)
+        )(s"[]$fullName", s"...$typeNameForcode", true, evaluationStrategy)
       case _ =>
-        val (fullName, typeNameForcode, evaluationStrategy) = internalStarExpHandler(nodeInfo, genericTypeMethodMap)
-        (fullName, typeNameForcode, false, evaluationStrategy)
+        val (fullName, typeNameForcode, evaluationStrategy) =
+          internalStarExpHandler(nodeInfo, genericTypeMethodMap)(fullName, typeNameForcode, false, evaluationStrategy)
     }
   }
 

@@ -28,11 +28,12 @@ class AstCreationPass(cpg: Cpg, astCreators: Seq[AstCreator], report: Report)
         diffGraph.absorb(localDiff)
       } match {
         case Failure(exception) =>
-          logger.warn(s"Failed to generate a CPG for: '${astCreator.parserResult.fullPath}'", exception)
-          (false, astCreator.relPathFileName)
+          logger.warn(s"Failed to generate a CPG for: '${astCreator.parserResult.fullPath}'", exception)(
+            false,
+            astCreator.relPathFileName
+          )
         case Success(_) =>
-          logger.info(s"Generated a CPG for: '${astCreator.parserResult.fullPath}'")
-          (true, astCreator.relPathFileName)
+          logger.info(s"Generated a CPG for: '${astCreator.parserResult.fullPath}'")(true, astCreator.relPathFileName)
       }
     }
     report.updateReport(filename, cpg = gotCpg, duration)

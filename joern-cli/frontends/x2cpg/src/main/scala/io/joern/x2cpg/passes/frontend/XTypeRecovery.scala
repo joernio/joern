@@ -732,12 +732,10 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   protected def getSymbolFromCall(c: Call): (LocalKey, Set[FieldPath]) = c.name match {
     case Operators.fieldAccess =>
       val fa        = c.asInstanceOf[FieldAccess]
-      val fieldName = getFieldName(fa)
-      (LocalVar(fieldName), getFieldParents(fa).map(fp => FieldPath(fp, fieldName)))
+      val fieldName = getFieldName(fa)(LocalVar(fieldName), getFieldParents(fa).map(fp => FieldPath(fp, fieldName)))
     case Operators.indexAccess => (indexAccessToCollectionVar(c).getOrElse(LocalVar(c.name)), Set.empty)
     case x =>
-      logger.debug(s"Using default LHS call name '$x' @ ${debugLocation(c)}")
-      (LocalVar(c.name), Set.empty)
+      logger.debug(s"Using default LHS call name '$x' @ ${debugLocation(c)}")(LocalVar(c.name), Set.empty)
   }
 
   /** Extracts a string representation of the name of the field within this field access.

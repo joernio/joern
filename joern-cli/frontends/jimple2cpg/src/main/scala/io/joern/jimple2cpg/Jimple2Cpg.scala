@@ -100,8 +100,7 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
 
     val globalFromAstCreation: () => Global = input.extension match {
       case Some(".apk" | ".dex") if input.isRegularFile =>
-        sootLoadApk(input, config.android)
-        { () =>
+        sootLoadApk(input, config.android) { () =>
           val astCreator = SootAstCreationPass(cpg, config)
           astCreator.createAndApply()
           astCreator.global

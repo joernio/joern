@@ -164,8 +164,7 @@ object SourceParser {
 
     val (analysisRoot, typesRoot) = Delombok.parseDelombokModeOption(config.delombokMode) match {
       case DelombokMode.Default if usesLombok =>
-        logger.info(s"Analysing delomboked code as lombok dependency was found.")
-        (delombokDir, delombokDir)
+        logger.info(s"Analysing delomboked code as lombok dependency was found.")(delombokDir, delombokDir)
 
       case DelombokMode.Default => (inputPath, inputPath)
 

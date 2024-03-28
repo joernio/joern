@@ -588,8 +588,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
         val signature =
           singleLambdaArgExprMaybe
             .map(lambdaInvocationSignature(_, renderedReturnType))
-            .getOrElse(fullNameSignature)
-        (s"$renderedFqName:$fullNameSignature", signature)
+            .getOrElse(fullNameSignature)(s"$renderedFqName:$fullNameSignature", signature)
       case None =>
         resolvedCallDescriptor(expr.getReceiverExpression) match {
           case Some(desc) =>
@@ -608,8 +607,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
                   case _                   => 0
                 }
                 val signature = s"${Defines.UnresolvedSignature}($numArgs)"
-                val fullName  = s"$lhsName.$name:$signature"
-                (fullName, signature)
+                val fullName  = s"$lhsName.$name:$signature" (fullName, signature)
             }
           case None => defaultValue
         }

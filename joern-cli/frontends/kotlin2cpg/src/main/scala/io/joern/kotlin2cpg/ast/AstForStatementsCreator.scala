@@ -352,8 +352,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
         }
         (astForSubject, finalAstForSubject)
       case _ =>
-        logger.warn(s"Subject Expression empty in this file `${relativizedPath}`.")
-        (Ast(), Ast())
+        logger.warn(s"Subject Expression empty in this file `${relativizedPath}`.")(Ast(), Ast())
     }
 
     val astsForEntries =

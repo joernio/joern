@@ -176,18 +176,15 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
               // referencing implicit this
               val receiverAst = astForNodeWithFunctionReference(callee)
               val baseNode    = identifierNode(m, "this")
-              scope.addVariableReference("this", baseNode)
-              (receiverAst, baseNode, code(member))
+              scope.addVariableReference("this", baseNode)(receiverAst, baseNode, code(member))
             case Some(d: DeclReferenceExprSyntax) if code(d) == "this" || code(d) == "self" =>
               val receiverAst = astForNodeWithFunctionReference(callee)
               val baseNode    = identifierNode(d, code(d))
-              scope.addVariableReference(code(d), baseNode)
-              (receiverAst, baseNode, code(member))
+              scope.addVariableReference(code(d), baseNode)(receiverAst, baseNode, code(member))
             case Some(d: DeclReferenceExprSyntax) =>
               val receiverAst = astForNodeWithFunctionReference(callee)
               val baseNode    = identifierNode(d, code(d))
-              scope.addVariableReference(code(d), baseNode)
-              (receiverAst, baseNode, code(member))
+              scope.addVariableReference(code(d), baseNode)(receiverAst, baseNode, code(member))
             case Some(otherBase) =>
               val tmpVarName  = generateUnusedVariableName(usedVariableNames, "_tmp")
               val baseTmpNode = identifierNode(otherBase, tmpVarName)
@@ -199,14 +196,12 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
               val memberNode = createFieldIdentifierNode(code(member), line(member), column(member))
               val fieldAccessAst =
                 createFieldAccessCallAst(tmpAssignmentAst, memberNode, line(callee), column(callee))
-              val thisTmpNode = identifierNode(callee, tmpVarName)
-              (fieldAccessAst, thisTmpNode, code(member))
+              val thisTmpNode = identifierNode(callee, tmpVarName)(fieldAccessAst, thisTmpNode, code(member))
           }
         case _ =>
           val receiverAst = astForNodeWithFunctionReference(callee)
           val thisNode    = identifierNode(callee, "this").dynamicTypeHintFullName(typeHintForThisExpression())
-          scope.addVariableReference(thisNode.name, thisNode)
-          (receiverAst, thisNode, calleeCode)
+          scope.addVariableReference(thisNode.name, thisNode)(receiverAst, thisNode, calleeCode)
       }
       handleCallNodeArgs(node, receiverAst, baseNode, callName)
     }
@@ -516,8 +511,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
                   .withChild(testAst)
                   .withConditionEdge(ifNode, testAst.nodes.head)
                   .withChild(consequentAst)
-            }
-            (childrenTestAsts, childrenFlowAsts)
+            }(childrenTestAsts, childrenFlowAsts)
           case other => (List(astForNode(other)), List.empty)
         }
         val needsSyntheticBreak = !s.statements.children.lastOption.exists(_.item.isInstanceOf[FallThroughStmtSyntax])
@@ -526,8 +520,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         } else {
           flowAst :+ astForNode(s.statements)
         }
-        setArgumentIndices(cAsts)
-        (tAsts.toList, cAsts.toList)
+        setArgumentIndices(cAsts)(tAsts.toList, cAsts.toList)
       case i: IfConfigDeclSyntax =>
         (List.empty, List(astForIfConfigDeclSyntax(i)))
     }
