@@ -121,10 +121,14 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
   private def astForPrimaryAssociatedTypeListSyntax(node: PrimaryAssociatedTypeListSyntax): Ast = notHandledYet(node)
 
   private def astForSimpleStringLiteralSegmentListSyntax(node: SimpleStringLiteralSegmentListSyntax): Ast = {
-    val stringFormatCall = callNode(node, code(node), Operators.formatString, DispatchTypes.STATIC_DISPATCH)
-    val childrenAsts     = node.children.map(astForNodeWithFunctionReference)
-    setArgumentIndices(childrenAsts)
-    callAst(stringFormatCall, childrenAsts)
+    node.children match {
+      case child :: Nil => astForNodeWithFunctionReference(child)
+      case children =>
+        val stringFormatCall = callNode(node, code(node), Operators.formatString, DispatchTypes.STATIC_DISPATCH)
+        val childrenAsts     = children.map(astForNodeWithFunctionReference)
+        setArgumentIndices(childrenAsts)
+        callAst(stringFormatCall, childrenAsts)
+    }
   }
 
   private def astForSpecializeAttributeArgumentListSyntax(node: SpecializeAttributeArgumentListSyntax): Ast = {
@@ -132,10 +136,14 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
   }
 
   private def astForStringLiteralSegmentListSyntax(node: StringLiteralSegmentListSyntax): Ast = {
-    val stringFormatCall = callNode(node, code(node), Operators.formatString, DispatchTypes.STATIC_DISPATCH)
-    val childrenAsts     = node.children.map(astForNodeWithFunctionReference)
-    setArgumentIndices(childrenAsts)
-    callAst(stringFormatCall, childrenAsts)
+    node.children match {
+      case child :: Nil => astForNodeWithFunctionReference(child)
+      case children =>
+        val stringFormatCall = callNode(node, code(node), Operators.formatString, DispatchTypes.STATIC_DISPATCH)
+        val childrenAsts     = children.map(astForNodeWithFunctionReference)
+        setArgumentIndices(childrenAsts)
+        callAst(stringFormatCall, childrenAsts)
+    }
   }
 
   private def astForSwitchCaseItemListSyntax(node: SwitchCaseItemListSyntax): Ast = {
