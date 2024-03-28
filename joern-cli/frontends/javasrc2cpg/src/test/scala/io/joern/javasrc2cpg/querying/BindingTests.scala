@@ -4,6 +4,27 @@ import io.shiftleft.semanticcpg.language._
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 
 class BindingTests extends JavaSrcCode2CpgFixture {
+  "an inherited generic method" should {
+    val cpg = code("""
+        |interface Foo<T> {
+        |  public T getValue();
+        |}
+        |
+        |interface Bar extends Foo<String> {}
+        |""".stripMargin)
+
+    "have an erased and concrete binding for the inherited method" in {
+      val typeDecl = cpg.typeDecl.name("Bar")
+      inside(typeDecl.methodBinding.name("getValue").sortBy(_.signature).l) {
+        case List(concreteBinding, erasedBinding) =>
+          concreteBinding.signature shouldBe "java.lang.String()"
+          concreteBinding.methodFullName shouldBe "Foo.getValue:java.lang.Object()"
+
+          erasedBinding.signature shouldBe "java.lang.Object()"
+          erasedBinding.methodFullName shouldBe "Foo.getValue:java.lang.Object()"
+      }
+    }
+  }
   "override for generic method" should {
     lazy val cpg = code("""
         |import java.util.function.Consumer;

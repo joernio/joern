@@ -8,6 +8,36 @@ import io.shiftleft.codepropertygraph.generated.Operators
 
 class AnonymousClassTests extends JavaSrcCode2CpgFixture {
 
+  "anonymous classes not implementing all methods from parent" should {
+    val cpg = code("""
+      |package foo;
+      |
+      |abstract class Bar<T> {
+      |  abstract public T bar();
+      |
+      |  public void implementedMethod() {
+      |    // do nothing
+      |  }
+      |}
+      |
+      |class Foo {
+      |  void foo() {
+      |    Bar b = new Bar<String>() {
+      |      public String bar() {
+      |        return "";
+      |      }
+      |    };
+      |  }
+      |}
+      |""".stripMargin)
+
+    "have the correct bindings" in {
+      inside(cpg.typeDecl.name(".*Bar.*0.*").methodBinding.name("bar").sortBy(_.signature)).l {
+
+      }
+    }
+  }
+
   "simple anonymous classes extending interfaces in method bodies" should {
     val cpg = code("""
         |package foo;
@@ -42,6 +72,12 @@ class AnonymousClassTests extends JavaSrcCode2CpgFixture {
           anonBinding.methodFullName shouldBe "foo.Foo.foo.Bar$0.bar:void()"
           anonBinding.bindingTypeDecl.fullName shouldBe "foo.Foo.foo.Bar$0"
       }
+    }
+
+    "have correct behaviour for anonymousDecl.methodBinding" in {
+      cpg.typeDecl.name(".*Bar.*0.*").methodBinding.methodFullName.toSet shouldBe Set(
+        "foo.Foo.foo.Bar$0.bar:void()"
+      )
     }
 
     "have a type declaration for the anonymous class" in {

@@ -81,7 +81,7 @@ object BindingTable {
     // override previously added entries.
     directTableEntries.foreach(bindingTable.add)
 
-    // Override the bindings for generic base class methods if they are overriden.
+    // Override the bindings for generic base class methods if they are overridden.
     // To do so we need to traverse all methods in all parent type and calculate
     // their signature in the derived type declarations context, meaning with the
     // concrete values for the generic type parameters. If this signature together
