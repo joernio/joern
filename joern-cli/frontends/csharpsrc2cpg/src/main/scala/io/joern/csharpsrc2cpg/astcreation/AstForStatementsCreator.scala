@@ -201,14 +201,16 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   protected def astForThrowStatement(throwStmt: DotNetNodeInfo): Seq[Ast] = {
-    val expr = createDotNetNodeInfo(throwStmt.json(ParserKeys.Expression))
-    val args = astForNode(expr)
+    val argsAst = Try(throwStmt.json(ParserKeys.Expression)).toOption match {
+      case Some(_expr: ujson.Obj) => astForNode(createDotNetNodeInfo(_expr))
+      case _                      => Seq.empty[Ast]
+    }
     val throwCall = createCallNodeForOperator(
       throwStmt,
       CSharpOperators.throws,
-      typeFullName = Option(getTypeFullNameFromAstNode(args))
+      typeFullName = Option(getTypeFullNameFromAstNode(argsAst))
     )
-    Seq(callAst(throwCall, args))
+    Seq(callAst(throwCall, argsAst))
   }
 
   protected def astForTryStatement(tryStmt: DotNetNodeInfo): Seq[Ast] = {
