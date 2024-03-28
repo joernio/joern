@@ -12,6 +12,8 @@ import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 
+import scala.annotation.unused
+
 trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
 
@@ -233,64 +235,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForInfixOperatorExprSyntax(node: InfixOperatorExprSyntax): Ast = {
-    val op = code(node.operator) match {
-      case "="                   => Operators.assignment
-      case "+="                  => Operators.assignmentPlus
-      case "-="                  => Operators.assignmentMinus
-      case "*="                  => Operators.assignmentMultiplication
-      case "/="                  => Operators.assignmentDivision
-      case "%="                  => Operators.assignmentModulo
-      case "**="                 => Operators.assignmentExponentiation
-      case "&&"                  => Operators.logicalAnd
-      case "&"                   => Operators.and
-      case "&="                  => Operators.assignmentAnd
-      case "&&="                 => Operators.assignmentAnd
-      case "|="                  => Operators.assignmentOr
-      case "|"                   => Operators.or
-      case "||="                 => Operators.assignmentOr
-      case "||"                  => Operators.logicalOr
-      case "^="                  => Operators.assignmentXor
-      case "&<<"                 => Operators.shiftLeft
-      case "<<"                  => Operators.shiftLeft
-      case "&>>="                => Operators.assignmentArithmeticShiftRight
-      case "&>>"                 => Operators.arithmeticShiftRight
-      case ">>"                  => Operators.arithmeticShiftRight
-      case "&<<="                => Operators.assignmentShiftLeft
-      case "<<="                 => Operators.assignmentShiftLeft
-      case ">>="                 => Operators.assignmentArithmeticShiftRight
-      case ">>>="                => Operators.assignmentLogicalShiftRight
-      case "??="                 => Operators.notNullAssert
-      case "<="                  => Operators.lessEqualsThan
-      case ">="                  => Operators.greaterEqualsThan
-      case "<"                   => Operators.lessThan
-      case ">"                   => Operators.greaterThan
-      case "=="                  => Operators.equals
-      case "!="                  => Operators.notEquals
-      case "==="                 => Operators.equals
-      case "!=="                 => Operators.notEquals
-      case "&+"                  => Operators.plus
-      case "+"                   => Operators.plus
-      case "&+="                 => Operators.assignmentPlus
-      case "&-"                  => Operators.minus
-      case "-"                   => Operators.minus
-      case "&-="                 => Operators.assignmentMinus
-      case "&/"                  => Operators.division
-      case "/"                   => Operators.division
-      case "&/="                 => Operators.assignmentDivision
-      case "&*"                  => Operators.multiplication
-      case "*"                   => Operators.multiplication
-      case "&*="                 => Operators.assignmentMultiplication
-      case "..<" | ">.." | "..." => Operators.range
-      case "%"                   => Operators.modulo
-      case "!"                   => Operators.logicalNot
-      case "^"                   => Operators.xor
-      case "??"                  => Operators.elvis
-      case "~="                  => Operators.in
-      case _ =>
-        notHandledYet(node.operator)
-        "<operator>.unknown"
-    }
-
+    val op        = Defines.InfixOperatorMap(code(node.operator))
     val lhsAst    = astForNodeWithFunctionReference(node.leftOperand)
     val rhsAst    = astForNodeWithFunctionReference(node.rightOperand)
     val callNode_ = callNode(node, code(node), op, DispatchTypes.STATIC_DISPATCH)
@@ -357,7 +302,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
   }
 
-  private def astForMissingExprSyntax(node: MissingExprSyntax): Ast = Ast()
+  private def astForMissingExprSyntax(@unused node: MissingExprSyntax): Ast = Ast()
 
   private def astForNilLiteralExprSyntax(node: NilLiteralExprSyntax): Ast = {
     Ast(literalNode(node, code(node), Option(Defines.Nil)))
@@ -422,41 +367,16 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForPostfixOperatorExprSyntax(node: PostfixOperatorExprSyntax): Ast = {
-    val operatorMethod = code(node.operator) match {
-      case "++"  => Operators.postIncrement
-      case "--"  => Operators.postDecrement
-      case "^"   => Operators.xor
-      case "<"   => Operators.lessThan
-      case ">"   => Operators.greaterThan
-      case "..." => "<operator>.splat"
-      case _ =>
-        notHandledYet(node.operator)
-        "<operator>.unknown"
-    }
-    val unaryCall     = callNode(node, code(node), operatorMethod, operatorMethod, DispatchTypes.STATIC_DISPATCH)
-    val expressionAst = astForNodeWithFunctionReference(node.expression)
+    val operatorMethod = Defines.PostfixOperatorMap(code(node.operator))
+    val unaryCall      = callNode(node, code(node), operatorMethod, operatorMethod, DispatchTypes.STATIC_DISPATCH)
+    val expressionAst  = astForNodeWithFunctionReference(node.expression)
     callAst(unaryCall, List(expressionAst))
   }
 
   private def astForPrefixOperatorExprSyntax(node: PrefixOperatorExprSyntax): Ast = {
-    val operatorMethod = code(node.operator) match {
-      case "-"   => Operators.preDecrement
-      case "+"   => Operators.preIncrement
-      case "~"   => Operators.not
-      case "!"   => Operators.logicalNot
-      case "..<" => Operators.lessThan
-      case "<"   => Operators.lessThan
-      case "..>" => Operators.greaterThan
-      case ">"   => Operators.greaterThan
-      case "=="  => Operators.equals
-      case "%"   => Operators.modulo
-      case "..." => "<operator>.splat"
-      case _ =>
-        notHandledYet(node.operator)
-        "<operator>.unknown"
-    }
-    val unaryCall     = callNode(node, code(node), operatorMethod, operatorMethod, DispatchTypes.STATIC_DISPATCH)
-    val expressionAst = astForNodeWithFunctionReference(node.expression)
+    val operatorMethod = Defines.PrefixOperatorMap(code(node.operator))
+    val unaryCall      = callNode(node, code(node), operatorMethod, operatorMethod, DispatchTypes.STATIC_DISPATCH)
+    val expressionAst  = astForNodeWithFunctionReference(node.expression)
     callAst(unaryCall, List(expressionAst))
   }
 
