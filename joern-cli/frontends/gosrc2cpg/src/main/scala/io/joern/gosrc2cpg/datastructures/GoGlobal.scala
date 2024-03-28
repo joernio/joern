@@ -4,7 +4,7 @@ import io.joern.x2cpg.Ast
 import org.slf4j.LoggerFactory
 
 import java.util.concurrent.{ConcurrentHashMap, ConcurrentSkipListSet}
-class GoGlobal {
+class GoGlobal(val testflag: Boolean = false) {
   private val logger             = LoggerFactory.getLogger(getClass)
   var mainModule: Option[String] = None
   var processingDependencies     = false
@@ -138,6 +138,13 @@ class GoGlobal {
     */
   def checkForDependencyFlags(name: String): Boolean = {
     !processingDependencies || processingDependencies && name.headOption.exists(_.isUpper)
+  }
+  def firstCleanup(): Unit = {
+    if (!testflag) {
+      aliasToNameSpaceMapping.clear()
+      lambdaSignatureToLambdaTypeMap.clear()
+      nameSpaceMetaDataMap.clear()
+    }
   }
 }
 
