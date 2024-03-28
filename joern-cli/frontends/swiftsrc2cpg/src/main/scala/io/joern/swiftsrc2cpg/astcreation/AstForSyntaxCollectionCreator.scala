@@ -6,6 +6,8 @@ import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Stack.*
 import io.shiftleft.codepropertygraph.generated.nodes.File.PropertyDefaults
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.Operators
 
 trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
@@ -119,7 +121,14 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
   private def astForPrimaryAssociatedTypeListSyntax(node: PrimaryAssociatedTypeListSyntax): Ast = notHandledYet(node)
 
   private def astForSimpleStringLiteralSegmentListSyntax(node: SimpleStringLiteralSegmentListSyntax): Ast = {
-    astForListSyntaxChildren(node, node.children)
+    node.children match {
+      case child :: Nil => astForNodeWithFunctionReference(child)
+      case children =>
+        val stringFormatCall = callNode(node, code(node), Operators.formatString, DispatchTypes.STATIC_DISPATCH)
+        val childrenAsts     = children.map(astForNodeWithFunctionReference)
+        setArgumentIndices(childrenAsts)
+        callAst(stringFormatCall, childrenAsts)
+    }
   }
 
   private def astForSpecializeAttributeArgumentListSyntax(node: SpecializeAttributeArgumentListSyntax): Ast = {
@@ -127,7 +136,14 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
   }
 
   private def astForStringLiteralSegmentListSyntax(node: StringLiteralSegmentListSyntax): Ast = {
-    astForListSyntaxChildren(node, node.children)
+    node.children match {
+      case child :: Nil => astForNodeWithFunctionReference(child)
+      case children =>
+        val stringFormatCall = callNode(node, code(node), Operators.formatString, DispatchTypes.STATIC_DISPATCH)
+        val childrenAsts     = children.map(astForNodeWithFunctionReference)
+        setArgumentIndices(childrenAsts)
+        callAst(stringFormatCall, childrenAsts)
+    }
   }
 
   private def astForSwitchCaseItemListSyntax(node: SwitchCaseItemListSyntax): Ast = {
