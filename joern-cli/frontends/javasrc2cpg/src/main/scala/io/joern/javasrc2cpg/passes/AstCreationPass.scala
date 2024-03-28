@@ -1,37 +1,21 @@
 package io.joern.javasrc2cpg.passes
 
 import better.files.File
-import com.github.javaparser.{JavaParser, ParserConfiguration}
-import com.github.javaparser.ParserConfiguration.LanguageLevel
 import com.github.javaparser.ast.CompilationUnit
-import com.github.javaparser.ast.Node.Parsedness
 import com.github.javaparser.symbolsolver.JavaSymbolSolver
-import com.github.javaparser.symbolsolver.resolution.typesolvers.{
-  ClassLoaderTypeSolver,
-  JarTypeSolver,
-  ReflectionTypeSolver
-}
+import com.github.javaparser.symbolsolver.resolution.typesolvers.JarTypeSolver
 import io.joern.javasrc2cpg.JavaSrc2Cpg.JavaSrcEnvVar
 import io.joern.javasrc2cpg.astcreation.AstCreator
-import io.joern.javasrc2cpg.passes.AstCreationPass.*
-import io.joern.javasrc2cpg.typesolvers.{EagerSourceTypeSolver, JdkJarTypeSolver, SimpleCombinedTypeSolver}
-import io.joern.javasrc2cpg.util.Delombok.DelombokMode
-import io.joern.javasrc2cpg.util.Delombok.DelombokMode.*
+import io.joern.javasrc2cpg.typesolvers.*
 import io.joern.javasrc2cpg.util.{Delombok, SourceParser}
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
-import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.datastructures.Global
-import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
 import io.joern.x2cpg.utils.dependency.DependencyResolver
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import org.slf4j.LoggerFactory
 
-import java.net.URLClassLoader
-import java.nio.file.{Path, Paths}
-import scala.collection.parallel.CollectionConverters.*
-import scala.jdk.CollectionConverters.*
-import scala.jdk.OptionConverters.RichOptional
+import java.nio.file.Paths
 import scala.util.{Success, Try}
 
 class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[String]] = None)
@@ -112,7 +96,14 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
     val sourceTypeSolver =
       EagerSourceTypeSolver(sourceParser, combinedTypeSolver, symbolSolver)
 
+    val summaryTypeSolver = JavaSummaryTypeSolver(
+      JavaProgramSummary(config.typeSummariesPath.flatMap(JavaProgramSummary.fromJsonDirectoryPath).toList),
+      combinedTypeSolver,
+      symbolSolver
+    )
+
     combinedTypeSolver.addCachingTypeSolver(sourceTypeSolver)
+    combinedTypeSolver.addCachingTypeSolver(summaryTypeSolver)
 
     // Add solvers for inference jars
     val jarsList = config.inferenceJarPaths.flatMap(recursiveJarsFromPath).toList

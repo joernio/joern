@@ -28,7 +28,7 @@ class SourceParser(
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  /** Parse the given file into a JavaParser CompliationUnit that will be used for creating the CPG AST.
+  /** Parse the given file into a JavaParser CompilationUnit that will be used for creating the CPG AST.
     *
     * @param relativeFilename
     *   path to the input file relative to the project root.
