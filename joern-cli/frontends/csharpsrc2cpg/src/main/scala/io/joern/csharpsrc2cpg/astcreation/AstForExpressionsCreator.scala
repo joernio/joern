@@ -222,10 +222,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           case head :: _ => Option(getTypeFullNameFromAstNode(head)).filterNot(_ == Defines.Any)
           case _         => None
         }
-        val arguments      = astForArgumentList(argumentList, baseTypeFullName)
-        val argTypes       = arguments.map(getTypeFullNameFromAstNode).toList
-        val methodMetaData = scope.tryResolveMethodInvocation(callName, argTypes, baseTypeFullName)
-        (receiverAst.headOption, baseTypeFullName, methodMetaData, arguments)
+        val arguments = astForArgumentList(argumentList, baseTypeFullName)
+        val argTypes  = arguments.map(getTypeFullNameFromAstNode).toList
+        val methodMetaData = scope.tryResolveMethodInvocation(callName, argTypes, baseTypeFullName)(
+          receiverAst.headOption,
+          baseTypeFullName,
+          methodMetaData,
+          arguments
+        )
       case IdentifierName | MemberBindingExpression =>
         // This is when a call is made directly, which could also be made from a static import
         val argTypes = astForArgumentList(argumentList).map(getTypeFullNameFromAstNode).toList
@@ -240,21 +244,28 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
             val receiverNode = Ast(
               identifierNode(invocationExpr, typeName, typeName, typeFullName.getOrElse(Defines.Any))
             )
-            val arguments = astForArgumentList(argumentList, typeFullName)
-            (Option(receiverNode), typeFullName, Option(methodMetaData), arguments)
+            val arguments = astForArgumentList(argumentList, typeFullName)(
+              Option(receiverNode),
+              typeFullName,
+              Option(methodMetaData),
+              arguments
+            )
           case Some(methodMetaData) =>
             // If dynamic, create implicit `this` identifier explicitly
             val typeMetaData = scope.typeForMethod(methodMetaData)
             val typeFullName = typeMetaData.map(_.name)
             val thisAst      = astForThisReceiver(invocationExpr, typeFullName)
-            val arguments    = astForArgumentList(argumentList, typeFullName)
-            (Option(thisAst), typeMetaData.map(_.name), Option(methodMetaData), arguments)
+            val arguments = astForArgumentList(argumentList, typeFullName)(
+              Option(thisAst),
+              typeMetaData.map(_.name),
+              Option(methodMetaData),
+              arguments
+            )
           case None =>
             (None, None, None, Seq.empty[Ast])
         }
       case x =>
-        logger.warn(s"Unhandled LHS $x for InvocationExpression")
-        (None, None, None, Seq.empty[Ast])
+        logger.warn(s"Unhandled LHS $x for InvocationExpression")(None, None, None, Seq.empty[Ast])
     }
     val methodSignature = methodMetaData match {
       case Some(m) => s"${m.returnType}(${m.parameterTypes.filterNot(_._1 == "this").map(_._2).mkString(",")})"

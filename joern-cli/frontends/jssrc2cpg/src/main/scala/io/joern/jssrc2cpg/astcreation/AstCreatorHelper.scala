@@ -194,8 +194,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
           }
         }
         functionFullNames.add(fullName)
-        functionNodeToNameAndFullName(func) = (name, fullName)
-        (name, fullName)
+        functionNodeToNameAndFullName(func) = (name, fullName)(name, fullName)
     }
   }
 

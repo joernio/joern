@@ -87,8 +87,9 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
           case m: Method if m.name == Defines.Program =>
             val childrenTypes = m.block.astChildren.collectAll[TypeDecl].l
             val fullName      = s"${namespace.fullName}:${m.name}"
-            val nestedTypes   = childrenTypes.flatMap(handleNestedTypes(_, fullName))
-            (path, fullName) -> (childrenTypes.map(toType).toSet ++ nestedTypes.flatMap(_._2))
+            val nestedTypes = childrenTypes.flatMap(handleNestedTypes(_, fullName))(path, fullName) -> (childrenTypes
+              .map(toType)
+              .toSet ++ nestedTypes.flatMap(_._2))
         }.toSeq
 
         moduleEntry +: typeEntries

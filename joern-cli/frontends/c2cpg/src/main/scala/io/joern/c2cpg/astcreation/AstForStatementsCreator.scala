@@ -255,16 +255,14 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val (code, conditionAst) = ifStmt match {
       case s @ (_: CASTIfStatement | _: CPPASTIfStatement) if s.getConditionExpression != null =>
         val c          = s"if (${nullSafeCode(s.getConditionExpression)})"
-        val compareAst = astForConditionExpression(s.getConditionExpression)
-        (c, compareAst)
+        val compareAst = astForConditionExpression(s.getConditionExpression)(c, compareAst)
       case s: CPPASTIfStatement if s.getConditionExpression == null =>
         val c         = s"if (${nullSafeCode(s.getConditionDeclaration)})"
         val exprBlock = blockNode(s.getConditionDeclaration, Defines.empty, Defines.voidTypeName)
         scope.pushNewScope(exprBlock)
         val a = astsForDeclaration(s.getConditionDeclaration)
         setArgumentIndices(a)
-        scope.popScope()
-        (c, blockAst(exprBlock, a.toList))
+        scope.popScope()(c, blockAst(exprBlock, a.toList))
     }
 
     val ifNode = controlStructureNode(ifStmt, ControlStructureTypes.IF, code)

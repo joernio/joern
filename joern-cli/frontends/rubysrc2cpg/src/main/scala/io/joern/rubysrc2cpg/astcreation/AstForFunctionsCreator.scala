@@ -119,11 +119,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     capturedLocalNodes
       .collect {
         case local: NewLocal =>
-          val closureBindingId = scope.surroundingScopeFullName.map(x => s"$x:${local.name}")
-          (local, local.name, local.code, closureBindingId)
+          val closureBindingId = scope.surroundingScopeFullName
+            .map(x => s"$x:${local.name}")(local, local.name, local.code, closureBindingId)
         case param: NewMethodParameterIn =>
-          val closureBindingId = scope.surroundingScopeFullName.map(x => s"$x:${param.name}")
-          (param, param.name, param.code, closureBindingId)
+          val closureBindingId = scope.surroundingScopeFullName
+            .map(x => s"$x:${param.name}")(param, param.name, param.code, closureBindingId)
       }
       .collect { case (decl, name, code, Some(closureBindingId)) =>
         val local          = newLocalNode(name, code, Option(closureBindingId))

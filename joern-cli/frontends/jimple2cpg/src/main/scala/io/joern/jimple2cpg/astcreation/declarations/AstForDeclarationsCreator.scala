@@ -65,8 +65,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode)
   private def astForAnnotationElement(annoElement: AnnotationElem, parent: AbstractHost): Ast = {
     def getLiteralElementNameAndCode(annoElement: AnnotationElem): (String, String) = annoElement match {
       case x: AnnotationClassElem =>
-        val desc = registerType(x.getDesc.parseAsJavaType)
-        (desc, desc)
+        val desc = registerType(x.getDesc.parseAsJavaType)(desc, desc)
       case x: AnnotationBooleanElem => (x.getValue.toString, x.getValue.toString)
       case x: AnnotationDoubleElem  => (x.getValue.toString, x.getValue.toString)
       case x: AnnotationEnumElem    => (x.getConstantName, x.getConstantName)

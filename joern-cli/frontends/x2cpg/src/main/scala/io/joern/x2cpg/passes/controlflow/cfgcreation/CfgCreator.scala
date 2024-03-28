@@ -572,8 +572,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
         case (currCfg :: prevCfgs, astNode) =>
           astNode match {
             case jumpTarget: JumpTarget =>
-              val jumpCfg = cfgForJumpTarget(jumpTarget)
-              (currCfg ++ jumpCfg) :: prevCfgs
+              val jumpCfg = cfgForJumpTarget(jumpTarget)(currCfg ++ jumpCfg) :: prevCfgs
 
             case node: AstNode =>
               val nodeCfg = cfgFor(node)

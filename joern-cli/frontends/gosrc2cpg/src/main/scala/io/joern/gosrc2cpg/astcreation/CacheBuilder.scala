@@ -181,13 +181,11 @@ trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCre
       case Some(importedAs) =>
         // As these alias could be different for each file. Hence we maintain the cache at file level.
         if (recordFindings)
-          aliasToNameSpaceMapping.put(importedAs, importedEntity)
-        (importedEntity, importedAs)
+          aliasToNameSpaceMapping.put(importedAs, importedEntity)(importedEntity, importedAs)
       case _ =>
         val derivedImportedAs = importedEntity.split("/").last
         if (recordFindings)
-          goGlobal.recordAliasToNamespaceMapping(derivedImportedAs, importedEntity)
-        (importedEntity, derivedImportedAs)
+          goGlobal.recordAliasToNamespaceMapping(derivedImportedAs, importedEntity)(importedEntity, derivedImportedAs)
     }
   }
 

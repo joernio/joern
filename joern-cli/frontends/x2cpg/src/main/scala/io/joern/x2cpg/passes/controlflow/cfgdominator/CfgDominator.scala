@@ -67,8 +67,7 @@ class CfgDominator[NodeType](adapter: CfgAdapter[NodeType]) {
 
     postOrderNumbering.collect {
       case (node, index) if node != cfgEntry =>
-        val immediateDominatorIndex = dominators(index)
-        (node, postOrderNumberingToNode(immediateDominatorIndex))
+        val immediateDominatorIndex = dominators(index)(node, postOrderNumberingToNode(immediateDominatorIndex))
     }
   }
 

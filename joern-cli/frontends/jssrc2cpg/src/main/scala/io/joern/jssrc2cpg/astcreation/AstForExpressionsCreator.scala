@@ -61,13 +61,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
               val receiverAst = astForNodeWithFunctionReference(callee.json)
               val baseNode = identifierNode(base, base.code)
                 .dynamicTypeHintFullName(this.rootTypeDecl.map(_.fullName).toSeq)
-              scope.addVariableReference(base.code, baseNode)
-              (receiverAst, baseNode, member.code)
+              scope.addVariableReference(base.code, baseNode)(receiverAst, baseNode, member.code)
             case Identifier =>
               val receiverAst = astForNodeWithFunctionReference(callee.json)
               val baseNode    = identifierNode(base, base.code)
-              scope.addVariableReference(base.code, baseNode)
-              (receiverAst, baseNode, member.code)
+              scope.addVariableReference(base.code, baseNode)(receiverAst, baseNode, member.code)
             case _ =>
               val tmpVarName  = generateUnusedVariableName(usedVariableNames, "_tmp")
               val baseTmpNode = identifierNode(base, tmpVarName)
@@ -87,8 +85,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         case _ =>
           val receiverAst = astForNodeWithFunctionReference(callee.json)
           val thisNode    = identifierNode(callee, "this").dynamicTypeHintFullName(typeHintForThisExpression())
-          scope.addVariableReference(thisNode.name, thisNode)
-          (receiverAst, thisNode, calleeCode)
+          scope.addVariableReference(thisNode.name, thisNode)(receiverAst, thisNode, calleeCode)
       }
       handleCallNodeArgs(callExpr, receiverAst, baseNode, callName)
     }
@@ -445,8 +442,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
               val keyName =
                 if (hasKey(nodeInfo.json("key"), "name")) nodeInfo.json("key")("name").str
                 else code(nodeInfo.json("key"))
-              val keyNode = createFieldIdentifierNode(keyName, nodeInfo.lineNumber, nodeInfo.columnNumber)
-              (keyNode, astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true))
+              val keyNode = createFieldIdentifierNode(keyName, nodeInfo.lineNumber, nodeInfo.columnNumber)(
+                keyNode,
+                astForFunctionDeclaration(nodeInfo, shouldCreateFunctionReference = true)
+              )
             case ObjectProperty =>
               val key = createBabelNodeInfo(nodeInfo.json("key"))
               val keyName = key.node match {
@@ -457,8 +456,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
                 case _ => key.code
               }
               val keyNode = createFieldIdentifierNode(keyName, nodeInfo.lineNumber, nodeInfo.columnNumber)
-              val ast     = astForNodeWithFunctionReference(nodeInfo.json("value"))
-              (keyNode, ast)
+              val ast     = astForNodeWithFunctionReference(nodeInfo.json("value"))(keyNode, ast)
             case _ =>
               // can't happen as per https://github.com/babel/babel/blob/main/packages/babel-types/src/ast-types/generated/index.ts#L573
               // just to make the compiler happy here.

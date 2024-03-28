@@ -622,24 +622,22 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val filename                     = parserResult.filename
     val (signature, returnType) = node match {
       case f: FunctionDeclSyntax =>
-        val returnType = f.signature.returnClause.fold(Defines.Any)(c => code(c.`type`))
-        (s"$returnType${paramSignature(f.signature.parameterClause)}", returnType)
+        val returnType = f.signature.returnClause.fold(Defines.Any)(c => code(c.`type`))(
+          s"$returnType${paramSignature(f.signature.parameterClause)}",
+          returnType
+        )
       case a: AccessorDeclSyntax =>
-        val returnType = Defines.Any
-        (s"$returnType${a.parameters.fold("()")(code)}", returnType)
+        val returnType = Defines.Any(s"$returnType${a.parameters.fold("()")(code)}", returnType)
       case i: InitializerDeclSyntax =>
-        val (_, returnType) = astParentInfo()
-        (s"$returnType${paramSignature(i.signature.parameterClause)}", returnType)
+        val (_, returnType) = astParentInfo()(s"$returnType${paramSignature(i.signature.parameterClause)}", returnType)
       case _: DeinitializerDeclSyntax =>
-        val returnType = Defines.Any
-        (s"$returnType()", returnType)
+        val returnType = Defines.Any(s"$returnType()", returnType)
       case s: SubscriptDeclSyntax =>
-        val returnType = code(s.returnClause.`type`)
-        (s"$returnType${paramSignature(s.parameterClause)}", returnType)
+        val returnType = code(s.returnClause.`type`)(s"$returnType${paramSignature(s.parameterClause)}", returnType)
       case c: ClosureExprSyntax =>
-        val returnType      = c.signature.flatMap(_.returnClause).fold(Defines.Any)(r => code(r.`type`))
-        val paramClauseCode = c.signature.flatMap(_.parameterClause).fold("()")(paramSignature)
-        (s"$returnType$paramClauseCode", returnType)
+        val returnType = c.signature.flatMap(_.returnClause).fold(Defines.Any)(r => code(r.`type`))
+        val paramClauseCode =
+          c.signature.flatMap(_.parameterClause).fold("()")(paramSignature)(s"$returnType$paramClauseCode", returnType)
     }
     registerType(returnType)
     val methodFullNameAndSignature = s"$methodFullName:$signature"
