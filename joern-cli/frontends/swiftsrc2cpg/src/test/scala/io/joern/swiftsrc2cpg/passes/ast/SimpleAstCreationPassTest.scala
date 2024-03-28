@@ -101,6 +101,15 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
       boundMethod shouldBe cpg.method.nameExact("method").head
     }
 
+    "have correct ref to local for simple let" in {
+      val cpg = code("""
+          |let x = ""
+          |""".stripMargin)
+      val List(localX) = cpg.local.nameExact("x").l
+      val List(idX)    = cpg.identifier.nameExact("x").l
+      idX.refOut.head shouldBe localX
+    }
+
     "have correct closure bindings" in {
       val cpg = code("""
         |func foo() -> {

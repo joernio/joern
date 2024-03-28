@@ -942,7 +942,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           Ast()
         } else {
           val patternIdentifier = identifierNode(binding.pattern, name).typeFullName(typeFullName)
-          val patternAst        = Ast(patternIdentifier)
+          scope.addVariableReference(name, patternIdentifier)
+          val patternAst = Ast(patternIdentifier)
           modifiers.foreach { mod =>
             diffGraph.addEdge(patternIdentifier, mod, EdgeTypes.AST)
           }
