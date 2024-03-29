@@ -18,6 +18,8 @@ import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.File.PropertyDefaults
 
+import scala.annotation.unused
+
 trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   private def astForAccessorBlockSyntax(node: AccessorBlockSyntax): Ast = {
@@ -273,7 +275,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForMatchingPatternConditionSyntax(node: MatchingPatternConditionSyntax): Ast = {
     val lhsAst    = astForNode(node.pattern)
     val rhsAst    = astForNode(node.initializer.value)
-    val callNode_ = callNode(node, code(node), Operators.assignment, DispatchTypes.STATIC_DISPATCH)
+    val callNode_ = callNode(node, code(node), Operators.equals, DispatchTypes.STATIC_DISPATCH)
     val argAsts   = List(lhsAst, rhsAst)
     callAst(callNode_, argAsts)
   }
@@ -376,7 +378,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForSwitchCaseLabelSyntax(node: SwitchCaseLabelSyntax): Ast = notHandledYet(node)
   private def astForSwitchCaseSyntax(node: SwitchCaseSyntax): Ast           = notHandledYet(node)
 
-  private def astForSwitchDefaultLabelSyntax(node: SwitchDefaultLabelSyntax): Ast = Ast()
+  private def astForSwitchDefaultLabelSyntax(@unused node: SwitchDefaultLabelSyntax): Ast = Ast()
 
   private def astForTuplePatternElementSyntax(node: TuplePatternElementSyntax): Ast     = notHandledYet(node)
   private def astForTupleTypeElementSyntax(node: TupleTypeElementSyntax): Ast           = notHandledYet(node)
