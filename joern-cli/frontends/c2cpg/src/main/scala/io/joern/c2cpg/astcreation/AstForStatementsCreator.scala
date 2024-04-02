@@ -123,9 +123,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   private def astForTryStatement(tryStmt: ICPPASTTryBlockStatement): Ast = {
     val tryNode = controlStructureNode(tryStmt, ControlStructureTypes.TRY, "try")
-    val body    = nullSafeAst(tryStmt.getTryBody)
+    val body    = nullSafeAst(tryStmt.getTryBody, 1)
     val catches = tryStmt.getCatchHandlers.zipWithIndex.map { case (h, index) =>
-      astForCatchHandler(h, index + 1)
+      astForCatchHandler(h, index + 2)
     }.toIndexedSeq
     Ast(tryNode).withChildren(body).withChildren(catches)
   }

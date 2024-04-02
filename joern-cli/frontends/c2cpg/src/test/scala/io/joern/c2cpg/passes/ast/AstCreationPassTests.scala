@@ -1220,9 +1220,10 @@ class AstCreationPassTests extends AstC2CpgSuite {
       )
       inside(cpg.controlStructure.isTry.l) { case List(t) =>
         val List(tryBlock) = t.astChildren.isBlock.l
+        tryBlock.order shouldBe 1
         tryBlock.astChildren.isCall.order(1).code.l shouldBe List("bar()")
         val List(catchX) = t.astChildren.isControlStructure.isCatch.l
-        catchX.order shouldBe 1
+        catchX.order shouldBe 2
         catchX.ast.isReturn.code.l shouldBe List("return 0;")
         catchX.ast.isLocal.code.l shouldBe List("Foo x")
       }
@@ -1247,15 +1248,16 @@ class AstCreationPassTests extends AstC2CpgSuite {
       )
       inside(cpg.controlStructure.isTry.l) { case List(t) =>
         val List(tryBlock) = t.astChildren.isBlock.l
+        tryBlock.order shouldBe 1
         tryBlock.astChildren.isIdentifier.order(1).code.l shouldBe List("a")
         val List(catchX, catchY, catchZ) = t.astChildren.isControlStructure.isCatch.l
-        catchX.order shouldBe 1
+        catchX.order shouldBe 2
         catchX.ast.isIdentifier.code.l shouldBe List("b")
         catchX.ast.isLocal.code.l shouldBe List("short x")
-        catchY.order shouldBe 2
+        catchY.order shouldBe 3
         catchY.ast.isIdentifier.code.l shouldBe List("c")
         catchY.ast.isLocal.code.l shouldBe List("int y")
-        catchZ.order shouldBe 3
+        catchZ.order shouldBe 4
         catchZ.ast.isIdentifier.code.l shouldBe List("d")
         catchZ.ast.isLocal.code.l shouldBe List("long z")
       }
