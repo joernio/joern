@@ -1,6 +1,7 @@
 package io.joern.go2cpg.passes.ast
 
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
+import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.*
 
@@ -625,6 +626,7 @@ class TypeFullNameTests extends GoCodeToCpgSuite {
   }
 
   "Method call return value assigned to variable type check" should {
+    val goGlobal = GoGlobal()
     val cpg = code(
       """
         |module joern.io/sample
@@ -673,7 +675,7 @@ class TypeFullNameTests extends GoCodeToCpgSuite {
         |}
         |""".stripMargin,
       "main.go"
-    )
+    ).withGoGlobal(goGlobal)
 
     "Call node typeFullName check with primitive return type" in {
       val List(bar) = cpg.call("bar").l

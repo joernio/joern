@@ -1,5 +1,6 @@
 package io.joern.gosrc2cpg.astcreation
 
+import io.joern.gosrc2cpg.datastructures.MethodCacheMetaData
 import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
@@ -94,26 +95,22 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
         // Then we are assuming that the given function is defined inside same package as that of current file's package.
         // This assumption will be invalid when another package is imported with alias "."
         val methodFullName = s"$fullyQualifiedPackage.$methodName"
-        val (returnTypeFullNameCache, signatureCache) =
-          goGlobal.methodFullNameReturnTypeMap
-            .getOrDefault(methodFullName, (Defines.anyTypeName, s"$methodFullName()"))
+        val methodInfo = goGlobal
+          .getMethodMetadata(fullyQualifiedPackage, methodName)
+          .getOrElse(MethodCacheMetaData(Defines.anyTypeName, s"$methodFullName()"))
         val (signature, fullName, returnTypeFullName) =
-          Defines.builtinFunctions.getOrElse(methodName, (signatureCache, methodFullName, returnTypeFullNameCache))
+          Defines.builtinFunctions.getOrElse(methodName, (methodInfo.signature, methodFullName, methodInfo.returnType))
         val probableLambdaTypeFullName = scope.lookupVariable(methodName) match
           case Some((_, lambdaTypeFullName)) => Some(lambdaTypeFullName)
           case _ =>
-            Option(goGlobal.structTypeMemberTypeMapping.get(methodFullName)) match
-              case Some(globalLambdaTypeFullName) => Some(globalLambdaTypeFullName)
-              case _                              => None
+            goGlobal.getStructTypeMemberType(fullyQualifiedPackage, methodName)
         val (postLambdaFullname, postLambdaSignature, postLambdaReturnTypeFullName) = probableLambdaTypeFullName match
           case Some(lambdaTypeFullName) =>
-            Option(
-              goGlobal.methodFullNameReturnTypeMap
-                .get(lambdaTypeFullName)
-            ) match
-              case Some((lambdaReturnTypeFullNameCache, lambdaSignatureCache)) =>
-                (lambdaTypeFullName, lambdaSignatureCache, lambdaReturnTypeFullNameCache)
-              case _ => (fullName, signature, returnTypeFullName)
+            val (nameSpaceName, lambdaName) = goGlobal.splitNamespaceFromMember(lambdaTypeFullName)
+            goGlobal.getMethodMetadata(nameSpaceName, lambdaName) match {
+              case Some(metaData) => (lambdaTypeFullName, metaData.signature, metaData.returnType)
+              case _              => (fullName, signature, returnTypeFullName)
+            }
           case _ =>
             (fullName, signature, returnTypeFullName)
         (methodName, postLambdaSignature, postLambdaFullname, postLambdaReturnTypeFullName, Seq.empty)
@@ -126,18 +123,21 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
                 processReceiverAst(methodName, xnode)
               case _ =>
                 // Otherwise its an alias to imported namespace on which method call is made
-                val alias = xnode.json(ParserKeys.Name).str
-                val callMethodFullName =
-                  resolveAliasToFullName(alias, methodName)
+                val alias              = xnode.json(ParserKeys.Name).str
+                val fullNamespace      = resolveAliasToFullName(alias)
+                val callMethodFullName = s"$fullNamespace.$methodName"
                 val lambdaFullName =
-                  goGlobal.structTypeMemberTypeMapping.getOrDefault(callMethodFullName, callMethodFullName)
-                val (returnTypeFullNameCache, signatureCache) = Option(
-                  goGlobal.methodFullNameReturnTypeMap
-                    .get(lambdaFullName)
-                ) match
-                  case Some((returnTypeFullName, signature)) => (returnTypeFullName, signature)
-                  case _ => (s"$callMethodFullName.${Defines.ReturnType}.${XDefines.Unknown}", s"$callMethodFullName()")
-
+                  goGlobal.getStructTypeMemberType(fullNamespace, methodName).getOrElse(callMethodFullName)
+                val (nameSpace, memberName) = goGlobal.splitNamespaceFromMember(lambdaFullName)
+                val MethodCacheMetaData(returnTypeFullNameCache, signatureCache) =
+                  goGlobal
+                    .getMethodMetadata(nameSpace, memberName)
+                    .getOrElse(
+                      MethodCacheMetaData(
+                        s"$callMethodFullName.${Defines.ReturnType}.${XDefines.Unknown}",
+                        s"$callMethodFullName()"
+                      )
+                    )
                 (methodName, signatureCache, lambdaFullName, returnTypeFullNameCache, Seq.empty)
           case _ =>
             // This will take care of chained method calls. It will call `astForCallExpression` in recursive way,
@@ -157,12 +157,14 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
         .getOrElse(Defines.anyTypeName)
         .stripPrefix("*")
     val callMethodFullName = s"$receiverTypeFullName.$methodName"
-    val (returnTypeFullNameCache, signatureCache) =
-      goGlobal.methodFullNameReturnTypeMap
-        .getOrDefault(
-          callMethodFullName,
-          (s"$receiverTypeFullName.$methodName.${Defines.ReturnType}.${XDefines.Unknown}", s"$callMethodFullName()")
+    val MethodCacheMetaData(returnTypeFullNameCache, signatureCache) = goGlobal
+      .getMethodMetadata(receiverTypeFullName, methodName)
+      .getOrElse(
+        MethodCacheMetaData(
+          s"$receiverTypeFullName.$methodName.${Defines.ReturnType}.${XDefines.Unknown}",
+          s"$callMethodFullName()"
         )
+      )
     (methodName, signatureCache, callMethodFullName, returnTypeFullNameCache, receiverAst)
   }
 }

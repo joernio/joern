@@ -21,7 +21,7 @@ class SetterTests extends RubyCode2CpgFixture {
     fieldAccess.lineNumber shouldBe Some(2)
     fieldAccess.fieldIdentifier.code.l shouldBe List("y=")
 
-    val List(one) = setter.argument.l
+    val List(_, one) = setter.argument.l
     one.code shouldBe "1"
     one.lineNumber shouldBe Some(2)
   }

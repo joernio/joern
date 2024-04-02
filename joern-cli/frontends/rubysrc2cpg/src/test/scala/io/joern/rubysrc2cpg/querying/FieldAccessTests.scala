@@ -12,18 +12,19 @@ class FieldAccessTests extends RubyCode2CpgFixture {
                      |x.y
                      |""".stripMargin)
 
-    val List(fieldAccess) = cpg.fieldAccess.l
+    inside(cpg.call("y").headOption) {
+      case Some(xyCall) =>
+        xyCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        xyCall.lineNumber shouldBe Some(2)
+        xyCall.code shouldBe "x.y"
 
-    fieldAccess.code shouldBe "x.y"
-    fieldAccess.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-    fieldAccess.lineNumber shouldBe Some(2)
-    fieldAccess.fieldIdentifier.code.l shouldBe List("y")
-
-    val List(fieldAccessCall: Call) = fieldAccess.astParent.toList: @unchecked
-
-    fieldAccessCall.code shouldBe "x.y"
-    fieldAccessCall.name shouldBe "y"
-    fieldAccessCall.receiver.l shouldBe List(fieldAccess)
+        inside(xyCall.receiver.headOption) {
+          case Some(x: Identifier) =>
+            x.name shouldBe "x"
+          case _ => fail("Expected an identifier receiver")
+        }
+      case None => fail("Expected a call with the name `y`")
+    }
   }
 
   "`self.x` should correctly create a `this` node field base" in {
@@ -40,21 +41,20 @@ class FieldAccessTests extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
-    inside(cpg.fieldAccess.code("self.*").l) {
+    inside(cpg.call.name("sick_days_earned").l) {
       case sickDays :: _ =>
         sickDays.code shouldBe "self.sick_days_earned"
-        sickDays.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        sickDays.name shouldBe "sick_days_earned"
+        sickDays.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
 
         inside(sickDays.argument.l) {
-          case (self: Identifier) :: sickDaysEarned :: Nil =>
+          case (self: Identifier) :: Nil =>
             self.name shouldBe "this"
             self.code shouldBe "self"
             self.typeFullName should endWith("PaidTimeOff")
-
-            sickDaysEarned.code shouldBe "sick_days_earned"
           case xs => fail(s"Expected exactly two field access arguments, instead got [${xs.code.mkString(", ")}]")
         }
-      case Nil => fail("Expected at least one field access with `self` base, but got none.")
+      case Nil => fail("Expected at least one call with `self` base, but got none.")
     }
   }
 

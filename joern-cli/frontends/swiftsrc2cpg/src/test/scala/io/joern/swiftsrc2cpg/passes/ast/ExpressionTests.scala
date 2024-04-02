@@ -145,9 +145,22 @@ class ExpressionTests extends AstSwiftSrc2CpgSuite {
       ???
     }
 
-    "testStringLiterals" ignore {
+    "testStringLiterals1" ignore {
       val cpg = code(""""\(x)"""")
       ???
+    }
+
+    "testStringLiterals2" in {
+      val cpg              = code(""""Foo '\(x)' bar"""")
+      val List(formatCall) = cpg.call.nameExact(Operators.formatString).l
+      val List(arg1, arg3) = formatCall.argument.isLiteral.l
+      arg1.code shouldBe """"Foo '""""
+      arg1.argumentIndex shouldBe 1
+      arg3.code shouldBe """"' bar""""
+      arg3.argumentIndex shouldBe 3
+      val List(arg2) = formatCall.argument.isIdentifier.l
+      arg2.name shouldBe "x"
+      arg2.argumentIndex shouldBe 2
     }
 
     "testMoveExpression" ignore {

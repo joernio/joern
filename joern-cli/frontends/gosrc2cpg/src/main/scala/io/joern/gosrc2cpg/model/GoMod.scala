@@ -5,6 +5,10 @@ import io.circe.{Decoder, HCursor}
 import io.joern.gosrc2cpg.Config
 import io.joern.gosrc2cpg.utils.UtilityConstants.fileSeparateorPattern
 
+import java.util.Set
+import java.util.concurrent.ConcurrentSkipListSet
+import scala.util.control.Breaks.*
+
 class GoModHelper(config: Option[Config] = None, meta: Option[GoMod] = None) {
 
   def getModMetaData(): Option[GoMod] = meta
@@ -41,6 +45,22 @@ class GoModHelper(config: Option[Config] = None, meta: Option[GoMod] = None) {
     val tokens = meta.get.module.name +: pathTokens.dropRight(1).filterNot(x => x == null || x.trim.isEmpty)
     tokens.mkString("/")
   }
+
+  def recordUsedDependencies(importStmt: String): Unit = {
+    breakable {
+      meta.map(mod =>
+        // TODO: && also add a check for builtin package imports to skip those
+        if (!importStmt.startsWith(mod.module.name)) {
+          for (dependency <- mod.dependencies) {
+            if (importStmt.startsWith(dependency.module)) {
+              dependency.beingUsed = true
+              dependency.usedPackages.add(importStmt)
+            }
+          }
+        }
+      )
+    }
+  }
 }
 
 case class GoMod(fileFullPath: String, module: GoModModule, dependencies: List[GoModDependency])
@@ -55,10 +75,12 @@ case class GoModDependency(
   module: String,
   version: String,
   indirect: Boolean,
+  var beingUsed: Boolean,
   lineNo: Option[Int] = None,
   colNo: Option[Int] = None,
   endLineNo: Option[Int] = None,
-  endColNo: Option[Int] = None
+  endColNo: Option[Int] = None,
+  usedPackages: Set[String] = new ConcurrentSkipListSet[String]()
 )
 
 object CirceEnDe {
@@ -94,6 +116,7 @@ object CirceEnDe {
           module = module.getOrElse(""),
           version = version.getOrElse(""),
           indirect = indirect.getOrElse(false),
+          beingUsed = false,
           lineNo = lineNo.toOption,
           colNo = colNo.toOption,
           endLineNo = endLineNo.toOption,

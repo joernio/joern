@@ -16,11 +16,13 @@ class SingleAssignmentTests extends RubyCode2CpgFixture(withPostProcessing = tru
     val source = cpg.literal.l
     val sink   = cpg.method.name("puts").callIn.argument.l
     val flows  = sink.reachableByFlows(source).map(flowToResultPairs).distinct.sortBy(_.length).l
-    flows.size shouldBe 4
-    val List(flow1, flow2, flow3, flow4) = flows
+    flows.size shouldBe 6
+    val List(flow1, flow2, flow3, flow4, flow5, flow6) = flows
     flow1 shouldBe List(("y = 1", 2), ("puts y", 3))
     flow2 shouldBe List(("y = 1", 2), ("x = y = 1", 2), ("puts x", 4))
     flow3 shouldBe List(("y = 1", 2), ("z = x = y = 1", 2), ("puts z", 5))
-    flow4 shouldBe List(("y = 1", 2), ("x = y = 1", 2), ("z = x = y = 1", 2), ("puts z", 5))
+    flow4 shouldBe List(("y = 1", 2), ("puts y", 3), ("puts x", 4))
+    flow5 shouldBe List(("y = 1", 2), ("x = y = 1", 2), ("puts x", 4), ("puts z", 5))
+    flow6 shouldBe List(("y = 1", 2), ("x = y = 1", 2), ("z = x = y = 1", 2), ("puts z", 5))
   }
 }

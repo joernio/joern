@@ -7,13 +7,13 @@ import io.joern.x2cpg.ValidationMode
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 
+import scala.annotation.unused
+
 trait AstForTypeSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
 
-  private val AnonTypeDeclNamePrefix = "_anon_cdecl"
-
   private def typeDeclForTypeSyntax(node: TypeSyntax): NewTypeDecl = {
-    val name                     = generateUnusedVariableName(usedVariableNames, AnonTypeDeclNamePrefix)
+    val name                     = nextAnonClassName()
     val (typeName, typeFullName) = calcTypeNameAndFullName(name)
     registerType(typeFullName)
 
@@ -68,7 +68,7 @@ trait AstForTypeSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     astForTypeSyntax(node.baseType)
   }
 
-  private def astForMissingTypeSyntax(node: MissingTypeSyntax): Ast = Ast()
+  private def astForMissingTypeSyntax(@unused node: MissingTypeSyntax): Ast = Ast()
 
   private def astForNamedOpaqueReturnTypeSyntax(node: NamedOpaqueReturnTypeSyntax): Ast = {
     astForTypeSyntax(node.`type`)

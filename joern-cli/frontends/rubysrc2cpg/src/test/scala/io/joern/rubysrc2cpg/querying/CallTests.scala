@@ -17,7 +17,11 @@ class CallTests extends RubyCode2CpgFixture {
     puts.lineNumber shouldBe Some(2)
     puts.code shouldBe "puts 'hello'"
 
-    val List(hello) = puts.argument.l
+    val List(rec: Identifier, hello: Literal) = puts.argument.l: @unchecked
+    rec.argumentIndex shouldBe 0
+    rec.name shouldBe "puts"
+
+    hello.argumentIndex shouldBe 1
     hello.code shouldBe "'hello'"
     hello.lineNumber shouldBe Some(2)
   }
@@ -75,7 +79,10 @@ class CallTests extends RubyCode2CpgFixture {
 
     "contain they keyword in the argumentName property" in {
       inside(cpg.call.nameExact("foo").argument.l) {
-        case (hello: Literal) :: (baz: Literal) :: Nil =>
+        case (foo: Identifier) :: (hello: Literal) :: (baz: Literal) :: Nil =>
+          foo.name shouldBe "foo"
+          foo.argumentIndex shouldBe 0
+
           hello.code shouldBe "\"hello\""
           hello.argumentIndex shouldBe 1
           hello.argumentName shouldBe None

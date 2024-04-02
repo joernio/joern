@@ -6,7 +6,7 @@ import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewMethodRef, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewMethodRef, NewTypeDecl, NewControlStructure}
 
 trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -27,6 +27,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     case node: MethodDeclaration          => astForMethodDeclaration(node)
     case node: SingletonMethodDeclaration => astForSingletonMethodDeclaration(node) :: Nil
     case node: MultipleAssignment         => node.assignments.map(astForExpression)
+    case node: BreakStatement             => astForBreakStatement(node) :: Nil
     case _                                => astForExpression(node) :: Nil
 
   private def astForWhileStatement(node: WhileExpression): Ast = {
@@ -204,8 +205,13 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   protected def astForDoBlock(block: Block with RubyNode): Seq[Ast] = {
     // Create closure structures: [MethodDecl, TypeRef, MethodRef]
-    val methodName         = nextClosureName()
-    val methodAstsWithRefs = astForMethodDeclaration(block.toMethodDeclaration(methodName), isClosure = true)
+    val methodName = nextClosureName()
+
+    val methodAstsWithRefs = block.body match {
+      case x: Block => astForMethodDeclaration(x.toMethodDeclaration(methodName), isClosure = true)
+      case _        => astForMethodDeclaration(block.toMethodDeclaration(methodName), isClosure = true)
+    }
+
     // Set span contents
     methodAstsWithRefs.flatMap(_.nodes).foreach {
       case m: NewMethodRef => DummyNode(m.copy)(block.span.spanStart(m.code))
@@ -304,6 +310,15 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     returnAst(returnNode(node, code(node)), List(astForMemberCall(node)))
   }
 
+  private def astForBreakStatement(node: BreakStatement): Ast = {
+    val _node = NewControlStructure()
+      .controlStructureType(ControlStructureTypes.BREAK)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
+      .code(code(node))
+    Ast(_node)
+  }
+
   /** Wraps the last RubyNode with a ReturnExpression.
     * @param x
     *   the node to wrap a return around. If a StatementList is given, then the ReturnExpression will wrap around the
@@ -335,6 +350,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case StatementList(statements)   => StatementList(statementListReturningLastExpression(statements))(x.span)
       case clause: ControlFlowClause   => clauseReturningLastExpression(clause)
       case node: ControlFlowExpression => transform(node)
+      case node: BreakStatement        => node
+      case node: ReturnExpression      => node
       case _                           => ReturnExpression(x :: Nil)(x.span)
     }
   }

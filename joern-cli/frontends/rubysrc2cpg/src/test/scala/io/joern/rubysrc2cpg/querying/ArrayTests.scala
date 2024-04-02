@@ -109,7 +109,7 @@ class ArrayTests extends RubyCode2CpgFixture {
         bracketCall.typeFullName shouldBe "__builtin.Array"
 
         inside(bracketCall.argument.l) {
-          case one :: two :: three :: Nil =>
+          case _ :: one :: two :: three :: Nil =>
             one.code shouldBe "1"
             two.code shouldBe "2"
             three.code shouldBe "3"
