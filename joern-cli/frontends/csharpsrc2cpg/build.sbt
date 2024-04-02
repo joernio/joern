@@ -34,7 +34,7 @@ enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 
 lazy val AstgenWin      = "dotnetastgen-win.exe"
 lazy val AstgenLinux    = "dotnetastgen-linux"
-lazy val AstgenLinuxArm = "dotnetastgen-linux-arm"
+lazy val AstgenLinuxArm = "dotnetastgen-linux-arm64"
 lazy val AstgenMac      = "dotnetastgen-macos"
 
 lazy val AllPlatforms = Seq(AstgenWin, AstgenLinux, AstgenLinuxArm, AstgenMac)
