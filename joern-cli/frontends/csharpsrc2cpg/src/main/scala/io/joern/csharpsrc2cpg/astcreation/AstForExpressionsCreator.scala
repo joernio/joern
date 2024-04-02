@@ -583,7 +583,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
         val instanceOfCallNode = newOperatorCallNode(
           Operators.instanceOf,
-          s"${designation.code} instanceof ${typeInfo.code}",
+          code(pattern),
           Option(BuiltinTypes.Bool),
           line(expressionNode),
           column(expressionNode)
@@ -615,13 +615,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
         val typeFullName = nodeTypeFullName(expr)
 
-        val equalCallNode = newOperatorCallNode(
-          Operators.equals,
-          s"${expressionNode.code} == ${expr.code}",
-          Option(BuiltinTypes.Bool),
-          line(expr),
-          column(expr)
-        )
+        val equalCallNode =
+          newOperatorCallNode(Operators.equals, code(pattern), Option(BuiltinTypes.Bool), line(expr), column(expr))
         val equalCallAst = callAst(equalCallNode, expression ++ exprAst)
 
         List(equalCallAst)
