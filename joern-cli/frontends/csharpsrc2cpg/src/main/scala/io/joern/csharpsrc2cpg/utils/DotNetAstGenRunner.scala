@@ -64,7 +64,7 @@ class DotNetAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
     metaData: AstGenProgramMetaData
   ): Try[Seq[String]] = {
     val excludeCommand = if (exclude.isEmpty) "" else s"-e \"$exclude\""
-    ExternalCommand.run(s"$astGenCommand -o ${out.toString()} -i $in $excludeCommand", ".")
+    ExternalCommand.run(s"$astGenCommand -o ${out.toString()} -i \"$in\" $excludeCommand", ".")
   }
 
 }
