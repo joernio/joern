@@ -4,7 +4,7 @@ import io.joern.csharpsrc2cpg.datastructures.CSharpMethod
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.csharpsrc2cpg.{CSharpOperators, Constants}
-import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode, newOperatorCallNode}
+import io.joern.x2cpg.utils.NodeBuilders.{newCallNode, newIdentifierNode, newOperatorCallNode}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFieldIdentifier, NewLiteral, NewTypeRef}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
@@ -572,15 +572,63 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     */
   protected def astsForIsPatternExpression(isPatternExpression: DotNetNodeInfo): List[Ast] = {
     val pattern = createDotNetNodeInfo(isPatternExpression.json(ParserKeys.Pattern))
-    val patternAst = pattern.node match {
-      case DeclarationPattern => Seq.empty // TODO: Maybe this has more properties, check DotNetAstGen
-      case x =>
-        logger.warn(s"Unsupported pattern in pattern expression, $x")
-        astForNode(pattern)
-    }
+
     val expressionNode = createDotNetNodeInfo(isPatternExpression.json(ParserKeys.Expression))
     val expression     = astForExpression(expressionNode)
-    List.empty
+
+    pattern.node match {
+      case DeclarationPattern =>
+        val designation = createDotNetNodeInfo(pattern.json(ParserKeys.Designation))
+        val typeInfo    = createDotNetNodeInfo(pattern.json(ParserKeys.Type))
+
+        val instanceOfCallNode = newOperatorCallNode(
+          Operators.instanceOf,
+          s"${designation.code} instanceof ${typeInfo.code}",
+          Option(BuiltinTypes.Bool),
+          line(expressionNode),
+          column(expressionNode)
+        )
+
+        val assignmentAst = newOperatorCallNode(
+          Operators.assignment,
+          s"${typeInfo.code} ${designation.code} = ${expressionNode.code}",
+          Option(nodeTypeFullName(typeInfo)),
+          line(expressionNode),
+          column(expressionNode)
+        )
+
+        val designationAst = astForIdentifier(designation, nodeTypeFullName(typeInfo))
+
+        val typeNode = NewTypeRef()
+          .code(nodeTypeFullName(typeInfo))
+          .lineNumber(line(expressionNode))
+          .columnNumber(column(expressionNode))
+          .typeFullName(nodeTypeFullName(typeInfo))
+
+        val conditionAst      = callAst(instanceOfCallNode, expression :+ Ast(typeNode))
+        val assignmentCallAst = callAst(assignmentAst, designationAst +: expression)
+
+        List(conditionAst, assignmentCallAst)
+      case ConstantPattern =>
+        val expr    = createDotNetNodeInfo(pattern.json(ParserKeys.Expression))
+        val exprAst = astForExpression(expr)
+
+        val typeFullName = nodeTypeFullName(expr)
+
+        val equalCallNode = newOperatorCallNode(
+          Operators.equals,
+          s"${expressionNode.code} == ${expr.code}",
+          Option(BuiltinTypes.Bool),
+          line(expr),
+          column(expr)
+        )
+        val equalCallAst = callAst(equalCallNode, expression ++ exprAst)
+
+        List(equalCallAst)
+      case x =>
+        logger.warn(s"Unsupported pattern in pattern expression, $x")
+        astForExpression(pattern).toList
+    }
   }
 
 }

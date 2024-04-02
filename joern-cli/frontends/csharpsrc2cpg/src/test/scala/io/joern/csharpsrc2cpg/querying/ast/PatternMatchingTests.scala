@@ -1,7 +1,7 @@
 package io.joern.csharpsrc2cpg.querying.ast
 
 import io.joern.csharpsrc2cpg.testfixtures.CSharpCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, TypeRef}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, TypeRef}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, NodeTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
@@ -60,7 +60,34 @@ class PatternMatchingTests extends CSharpCode2CpgFixture {
 
       }
     }
+  }
 
+  "Pattern matching with null type check" should {
+    val cpg = code(basicBoilerplate("""
+      |int? maybe = 12;
+      |
+      |if (maybe is null)
+      |{
+      |    Console.WriteLine($"The nullable int 'maybe' has the value {number}");
+      |}
+      |""".stripMargin))
+
+    "have equals check in if statement" in {
+      inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).condition.headOption) {
+        case Some(condition: Call) =>
+          condition.name shouldBe Operators.equals
+
+          inside(condition.argument.l) {
+            case (maybe: Identifier) :: (nullType: Literal) :: Nil =>
+              maybe.name shouldBe "maybe"
+              maybe.typeFullName shouldBe "System.Int32"
+
+              nullType.typeFullName shouldBe "null"
+            case xs => fail(s"Expect identifier and literal, instead got [${xs.code.mkString(", ")}]")
+          }
+        case _ => fail("Expected an if-statement with condition call")
+      }
+    }
   }
 
 }
