@@ -160,7 +160,7 @@ class DependencyTests extends CSharpCode2CpgFixture {
         .withConfig(config)
 
       inside(cpg.dependency.l) { case dep :: Nil =>
-        dep.name shouldBe "System.Security.Cryptography.Pkcs"
+        dep.name shouldBe " System.Security.Cryptography.Pkcs"
         dep.version shouldBe "6.0.4"
       }
     }
