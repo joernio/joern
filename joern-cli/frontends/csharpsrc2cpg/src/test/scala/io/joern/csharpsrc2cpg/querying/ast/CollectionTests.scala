@@ -203,7 +203,6 @@ class CollectionTests extends CSharpCode2CpgFixture {
                   inside(indexAccessCall.argument.l) {
                     case (ident: Identifier) :: (index: Literal) :: Nil =>
                       ident.code shouldBe "foo"
-                      println(ident.typeFullName)
                       ident.typeFullName shouldBe "System.Int32[]"
 
                       index.code shouldBe "4"
