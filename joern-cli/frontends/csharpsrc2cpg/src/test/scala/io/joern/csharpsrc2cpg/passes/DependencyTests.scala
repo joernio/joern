@@ -141,4 +141,28 @@ class DependencyTests extends CSharpCode2CpgFixture {
 
   }
 
+  "a csproj file specifying a dependency with trailing or leading whitespaces" should {
+    val config = Config().withDownloadDependencies(true);
+    "not throw a exception" in {
+      val cpg = code("""
+          |namespace Foo;
+          |""".stripMargin)
+        .moreCode(
+          """
+            |<Project Sdk="Microsoft.NET.Sdk">
+            |    <ItemGroup>
+            |      <PackageReference Include=" System.Security.Cryptography.Pkcs" Version="6.0.4"/>
+            |    </ItemGroup>
+            |</Project>
+            |""".stripMargin,
+          "Foo.csproj"
+        )
+        .withConfig(config)
+
+      inside(cpg.dependency.l) { case dep :: Nil =>
+        dep.name shouldBe " System.Security.Cryptography.Pkcs"
+        dep.version shouldBe "6.0.4"
+      }
+    }
+  }
 }
