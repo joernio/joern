@@ -28,6 +28,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case AwaitExpression                   => astForAwaitExpression(expr)
       case ObjectCreationExpression          => astForObjectCreationExpression(expr)
       case SimpleMemberAccessExpression      => astForSimpleMemberAccessExpression(expr)
+      case ElementAccessExpression           => astForElementAccessExpression(expr)
       case ImplicitArrayCreationExpression   => astForImplicitArrayCreationExpression(expr)
       case ConditionalExpression             => astForConditionalExpression(expr)
       case _: IdentifierNode                 => astForIdentifier(expr) :: Nil
@@ -353,6 +354,27 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val fieldIdentAst = Ast(fieldIdentifier)
 
     Seq(callAst(fieldAccess, Seq(identifierAst, fieldIdentAst)))
+  }
+
+  protected def astForElementAccessExpression(elementAccessExpression: DotNetNodeInfo): Seq[Ast] = {
+    val exprAst = astForExpression(createDotNetNodeInfo(elementAccessExpression.json(ParserKeys.Expression)))
+
+    createDotNetNodeInfo(elementAccessExpression.json(ParserKeys.ArgumentList))
+      .json(ParserKeys.Arguments)
+      .arr
+      .map { x =>
+        val argDotNetInfo = createDotNetNodeInfo(x)
+        val argAst        = astForExpression(createDotNetNodeInfo(argDotNetInfo.json(ParserKeys.Expression)))
+        val callNode = newOperatorCallNode(
+          Operators.indexAccess,
+          code = elementAccessExpression.code,
+          line = line(elementAccessExpression),
+          column = column(elementAccessExpression)
+        )
+
+        callAst(callNode, exprAst ++ argAst)
+      }
+      .toSeq
   }
 
   def astForObjectCreationExpression(objectCreation: DotNetNodeInfo): Seq[Ast] = {

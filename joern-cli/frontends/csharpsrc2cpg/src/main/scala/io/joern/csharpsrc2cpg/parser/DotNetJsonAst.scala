@@ -170,6 +170,8 @@ object DotNetJsonAst {
 
   object ArgumentList extends BaseExpr
 
+  object BracketedArgumentList extends BaseExpr
+
   trait MemberAccessExpr extends BaseExpr
 
   object SimpleMemberAccessExpression extends MemberAccessExpr
@@ -237,6 +239,8 @@ object DotNetJsonAst {
   object NullableType extends BaseExpr
 
   object ArrayInitializerExpression extends BaseExpr
+
+  object ElementAccessExpression extends BaseExpr
 
   object CollectionExpression extends BaseExpr
 
