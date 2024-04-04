@@ -37,4 +37,6 @@ libraryDependencies ++= Seq(
   "org.scalatest"        %% "scalatest"            % Versions.scalatest % Test
 )
 
-Test / compile := (Test / compile).dependsOn((Projects.c2cpg / stage)).value
+Test / compile := (Test / compile)
+  .dependsOn(Projects.c2cpg / stage, Projects.jssrc2cpg / stage, Projects.swiftsrc2cpg / stage)
+  .value

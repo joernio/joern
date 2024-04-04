@@ -5,7 +5,7 @@ import better.files.File
 import io.joern.console.cpgcreation.{CCpgGenerator, CpgGenerator, CpgGeneratorFactory, ImportCode}
 import io.joern.console.workspacehandling.{Project, ProjectFile, WorkspaceLoader}
 import io.joern.console.{Console, ConsoleConfig, FrontendConfig, InstallConfig}
-import io.joern.console.cpgcreation.JsSrcCpgGenerator
+import io.joern.console.cpgcreation.{JsSrcCpgGenerator, SwiftSrcCpgGenerator}
 import io.joern.console.cpgcreation.guessLanguage
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.utils.ProjectRoot
@@ -69,6 +69,19 @@ class TestConsole(workspaceDir: String) extends Console[Project](TestWorkspaceLo
           new TestCpgGeneratorFactory(newConfig).forLanguage(language)
         }
       }
+
+    override def swiftsrc: SourceBasedFrontend =
+      new SwiftSrcFrontend("testSwiftSrcFrontend", Languages.SWIFTSRC, "", "swift") {
+        override def cpgGeneratorForLanguage(
+          language: String,
+          config: FrontendConfig,
+          rootPath: Path,
+          args: List[String]
+        ): Option[CpgGenerator] = {
+          val newConfig = new ConsoleConfig(TestConsole.this.config.install, config.withArgs(args))
+          new TestCpgGeneratorFactory(newConfig).forLanguage(language)
+        }
+      }
   }
 }
 
@@ -80,24 +93,33 @@ class TestCpgGeneratorFactory(config: ConsoleConfig) extends CpgGeneratorFactory
     )
   }
 
-  private def newJssrcCpgGenerator(): JsSrcCpgGenerator = {
+  private def newJsSrcCpgGenerator(): JsSrcCpgGenerator = {
     JsSrcCpgGenerator(
       config.frontend,
       Path.of(ProjectRoot.relativise("joern-cli/frontends/jssrc2cpg/target/universal/stage/bin"))
     )
   }
 
+  private def newSwiftSrcCpgGenerator(): SwiftSrcCpgGenerator = {
+    SwiftSrcCpgGenerator(
+      config.frontend,
+      Path.of(ProjectRoot.relativise("joern-cli/frontends/swiftsrc2cpg/target/universal/stage/bin"))
+    )
+  }
+
   override def forCodeAt(inputPath: String): Option[CpgGenerator] = {
     guessLanguage(inputPath) match
-      case Some(Languages.JSSRC) => Option(newJssrcCpgGenerator())
-      case Some(Languages.NEWC)  => Option(newCCpgGenerator())
-      case _                     => None // no other languages are tested here
+      case Some(Languages.NEWC)     => Option(newCCpgGenerator())
+      case Some(Languages.JSSRC)    => Option(newJsSrcCpgGenerator())
+      case Some(Languages.SWIFTSRC) => Option(newSwiftSrcCpgGenerator())
+      case _                        => None // no other languages are tested here
   }
 
   override def forLanguage(language: String): Option[CpgGenerator] = language match {
-    case Languages.NEWC  => Option(newCCpgGenerator())
-    case Languages.JSSRC => Option(newJssrcCpgGenerator())
-    case _               => None // no other languages are tested here
+    case Languages.NEWC     => Option(newCCpgGenerator())
+    case Languages.JSSRC    => Option(newJsSrcCpgGenerator())
+    case Languages.SWIFTSRC => Option(newSwiftSrcCpgGenerator())
+    case _                  => None // no other languages are tested here
   }
 
 }

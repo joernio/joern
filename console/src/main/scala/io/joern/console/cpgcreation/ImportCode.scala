@@ -61,7 +61,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
   def jssrc: SourceBasedFrontend =
     new JsFrontend("jssrc", Languages.JSSRC, "Javascript/Typescript Source Frontend based on astgen", "js")
   def swiftsrc: SourceBasedFrontend =
-    new SourceBasedFrontend("swiftsrc", Languages.SWIFTSRC, "Swift Source Frontend based on swiftastgen", "swift")
+    new SwiftSrcFrontend("swiftsrc", Languages.SWIFTSRC, "Swift Source Frontend based on swiftastgen", "swift")
   def csharp: Frontend          = new BinaryFrontend("csharp", Languages.CSHARP, "C# Source Frontend (Roslyn)")
   def llvm: Frontend            = new BinaryFrontend("llvm", Languages.LLVM, "LLVM Bitcode Frontend")
   def php: SourceBasedFrontend  = new SourceBasedFrontend("php", Languages.PHP, "PHP source frontend", "php")
@@ -161,6 +161,19 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
       args: List[String]
     ): Option[CpgGenerator] = {
       super.cpgGeneratorForLanguage(language, config, rootPath, addDeprecatedFlagIfNeeded(args))
+    }
+  }
+
+  class SwiftSrcFrontend(name: String, language: String, description: String, extension: String)
+      extends SourceBasedFrontend(name, language, description, extension) {
+    override def apply(inputPath: String, projectName: String, args: List[String]): Cpg = {
+      if (!File(inputPath).isDirectory) {
+        // The Swift frontend does not support importing a single file.
+        // Hence, we have to copy it into a temporary folder with super.fromFile and import that folder.
+        super.fromFile(inputPath, projectName, args)
+      } else {
+        super.apply(inputPath, projectName, args)
+      }
     }
   }
 
