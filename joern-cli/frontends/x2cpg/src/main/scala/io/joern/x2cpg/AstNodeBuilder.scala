@@ -169,7 +169,7 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
     evaluationStrategy: String,
     typeFullName: String
   ): NewMethodParameterIn =
-    parameterInNode(node, name, code, index, isVariadic, evaluationStrategy, Some(typeFullName))
+    parameterInNode(node, name, code, index, isVariadic, evaluationStrategy, Option(typeFullName))
 
   protected def parameterInNode(
     node: Node,
@@ -285,7 +285,7 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
   }
 
   def methodNode(node: Node, name: String, fullName: String, signature: String, fileName: String): NewMethod = {
-    methodNode(node, name, name, fullName, Some(signature), fileName)
+    methodNode(node, name, name, fullName, Option(signature), fileName)
   }
 
   protected def methodNode(

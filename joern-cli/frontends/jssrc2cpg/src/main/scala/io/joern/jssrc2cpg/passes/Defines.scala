@@ -22,4 +22,6 @@ object Defines {
 
   val JsTypes: List[String] =
     List(Any, Number, String, Boolean, Null, Math, Symbol, Console, Object, BigInt, Unknown, Never, Void, Undefined)
+
+  def isBuiltinType(tpe: String): Boolean = JsTypes.contains(tpe.stripSuffix("[]"))
 }

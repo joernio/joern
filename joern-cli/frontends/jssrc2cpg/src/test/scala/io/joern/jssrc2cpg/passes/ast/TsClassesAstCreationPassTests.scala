@@ -320,7 +320,7 @@ class TsClassesAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
         |""".stripMargin)
       val List(userType) = cpg.typeDecl.name("User").l
       userType.member.name.l shouldBe List("email", "organizationIds", "username", "name", "gender")
-      userType.member.typeFullName.toSet shouldBe Set("__ecma.String", "string[]")
+      userType.member.typeFullName.toSet shouldBe Set("__ecma.String", "__ecma.String[]")
     }
 
     "AST generation for dynamically defined type in a parameter" in {
@@ -332,12 +332,12 @@ class TsClassesAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
         |    }
         |}
         |""".stripMargin)
-      val List(credentialsType) = cpg.typeDecl.nameExact("_anon_cdecl").l
-      credentialsType.fullName shouldBe "Test0.ts::program:Test:run:_anon_cdecl"
+      val List(credentialsType) = cpg.typeDecl.nameExact("<anon-class>0").l
+      credentialsType.fullName shouldBe "Test0.ts::program:Test:run:<anon-class>0"
       credentialsType.member.name.l shouldBe List("username", "password")
       credentialsType.member.typeFullName.toSet shouldBe Set("__ecma.String")
       val List(credentialsParam) = cpg.parameter.nameExact("credentials").l
-      credentialsParam.typeFullName shouldBe "Test0.ts::program:Test:run:_anon_cdecl"
+      credentialsParam.typeFullName shouldBe "Test0.ts::program:Test:run:<anon-class>0"
       // should not produce dangling nodes that are meant to be inside procedures
       cpg.all.collectAll[CfgNode].whereNot(_._astIn).size shouldBe 0
       cpg.identifier.count(_.refsTo.size > 1) shouldBe 0
@@ -350,12 +350,12 @@ class TsClassesAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
         |    log(`${username}: ${password}`);
         |}
         |""".stripMargin)
-      val List(credentialsType) = cpg.typeDecl.nameExact("_anon_cdecl").l
-      credentialsType.fullName shouldBe "Test0.ts::program:apiCall:_anon_cdecl"
+      val List(credentialsType) = cpg.typeDecl.nameExact("<anon-class>0").l
+      credentialsType.fullName shouldBe "Test0.ts::program:apiCall:<anon-class>0"
       credentialsType.member.name.l shouldBe List("username", "password")
       credentialsType.member.typeFullName.toSet shouldBe Set(Defines.Any)
       val List(credentialsParam) = cpg.parameter.nameExact("param1_0").l
-      credentialsParam.typeFullName shouldBe "Test0.ts::program:apiCall:_anon_cdecl"
+      credentialsParam.typeFullName shouldBe "Test0.ts::program:apiCall:<anon-class>0"
       // should not produce dangling nodes that are meant to be inside procedures
       cpg.all.collectAll[CfgNode].whereNot(_._astIn).size shouldBe 0
       cpg.identifier.count(_.refsTo.size > 1) shouldBe 0

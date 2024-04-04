@@ -339,13 +339,14 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val declNodeInfo   = createBabelNodeInfo(declarator)
     val initNodeInfo   = Try(createBabelNodeInfo(declarator("init"))).toOption
     val declaratorCode = s"$kind ${code(declarator)}"
-    val typeFullName   = typeFor(declNodeInfo)
+    val tpe            = typeFor(declNodeInfo)
+    val typeFullName   = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
 
     val idName = idNodeInfo.node match {
       case Identifier => idNodeInfo.json("name").str
       case _          => idNodeInfo.code
     }
-    val nLocalNode = localNode(declNodeInfo, idName, idName, typeFullName).order(0)
+    val nLocalNode = localNode(declNodeInfo, idName, idName, typeFullName).order(0).possibleTypes(Seq(tpe))
     scope.addVariable(idName, nLocalNode, scopeType)
     diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)
 
