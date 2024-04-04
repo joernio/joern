@@ -14,6 +14,8 @@ case class SwiftSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends 
     if (isWin) rootPath.resolve("swiftsrc2cpg.bat") else rootPath.resolve("swiftsrc2cpg.sh")
   private var swiftConfig: Option[Config] = None
 
+  /** Generate a CPG for the given input path. Returns the output path, or None, if no CPG was generated.
+    */
   override def generate(inputPath: String, outputPath: String = "cpg.bin.zip"): Try[String] = {
     if (File(inputPath).isDirectory) {
       invoke(inputPath, outputPath)
