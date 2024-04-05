@@ -9,7 +9,8 @@ import io.shiftleft.semanticcpg.language.operatorextension.allAssignmentTypes
 import io.shiftleft.semanticcpg.utils.MemberAccess.isFieldAccess
 import org.slf4j.LoggerFactory
 
-import java.util.concurrent.{ForkJoinPool, ForkJoinTask, RecursiveTask, RejectedExecutionException}
+import java.util.concurrent.*
+import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 
 case class StartingPointWithSource(startingPoint: CfgNode, source: StoredNode)
@@ -21,7 +22,19 @@ object SourcesToStartingPoints {
   def sourceTravsToStartingPoints[NodeType](sourceTravs: IterableOnce[NodeType]*): List[StartingPointWithSource] = {
     val fjp = ForkJoinPool.commonPool()
     try {
-      fjp.invoke(new SourceTravsToStartingPointsTask(sourceTravs: _*)).distinct
+      val sources: List[StoredNode] = sourceTravs
+        .flatMap(_.iterator.toList)
+        .collect { case n: StoredNode => n }
+        .dedup
+        .toList
+        .sortBy(_.id)
+      val resultAggregator       = SourceStartingPointResultAggregator(sources.size)
+      val resultAggregatorThread = new Thread(resultAggregator)
+      resultAggregatorThread.setName("Starting points result aggregator")
+      resultAggregatorThread.start()
+      sources.foreach(src => fjp.submit(new SourceToStartingPoints(src, resultAggregator.resultQueue)))
+      resultAggregatorThread.join()
+      resultAggregator.result.toList
     } catch {
       case e: RejectedExecutionException =>
         log.error("Unable to execute 'SourceTravsToStartingPoints` task", e); List()
@@ -29,26 +42,21 @@ object SourcesToStartingPoints {
       fjp.shutdown()
     }
   }
-
 }
 
-class SourceTravsToStartingPointsTask[NodeType](sourceTravs: IterableOnce[NodeType]*)
-    extends RecursiveTask[List[StartingPointWithSource]] {
-
-  private val log = LoggerFactory.getLogger(this.getClass)
-
-  override def compute(): List[StartingPointWithSource] = {
-    val sources: List[StoredNode] = sourceTravs
-      .flatMap(_.iterator.toList)
-      .collect { case n: StoredNode => n }
-      .dedup
-      .toList
-      .sortBy(_.id)
-    val tasks = sources.map(src => (src, new SourceToStartingPoints(src).fork()))
-    tasks.flatMap { case (src, t: ForkJoinTask[List[CfgNode]]) =>
-      Try(t.get()) match {
-        case Failure(e)       => log.error("Unable to complete 'SourceToStartingPoints' task", e); List()
-        case Success(sources) => sources.map(s => StartingPointWithSource(s, src))
+class SourceStartingPointResultAggregator(var totalNoTasks: Int) extends Runnable {
+  val logger      = LoggerFactory.getLogger(this.getClass)
+  val result      = ListBuffer[StartingPointWithSource]()
+  val resultQueue = LinkedBlockingQueue[List[StartingPointWithSource]]()
+  override def run(): Unit = {
+    var terminate = false
+    while (!terminate) {
+      val taskResult = resultQueue.take()
+      result ++= taskResult
+      totalNoTasks -= 1
+      if (totalNoTasks == 0) {
+        logger.debug("Shutting down SourceStartingPointResultAggregator thread")
+        terminate = true
       }
     }
   }
@@ -59,11 +67,22 @@ class SourceTravsToStartingPointsTask[NodeType](sourceTravs: IterableOnce[NodeTy
   * each method, traversing the AST from left to right. This isn't fool-proof, e.g., goto-statements would be
   * problematic, but it works quite well in practice.
   */
-class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode]] {
-
+class SourceToStartingPoints(src: StoredNode, resultQueue: LinkedBlockingQueue[List[StartingPointWithSource]])
+    extends Callable[Unit] {
+  val logger      = LoggerFactory.getLogger(this.getClass)
   private val cpg = Cpg(src.graph())
 
-  override def compute(): List[CfgNode] = sourceToStartingPoints(src)
+  override def call(): Unit = {
+    val result =
+      Try(sourceToStartingPoints(src).map(s => StartingPointWithSource(s, src))) match {
+        case Failure(e) =>
+          logger.error("Unable to complete 'SourceToStartingPoints' task", e)
+          List[StartingPointWithSource]()
+        case Success(result) => result
+      }
+
+    resultQueue.put(result)
+  }
 
   private def sourceToStartingPoints(src: StoredNode): List[CfgNode] = {
     src match {
