@@ -10,7 +10,7 @@ import java.nio.file.Paths
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
-class PhpParser private (phpParserPath: String, phpIniPath: String) {
+class PhpParser private (phpParserPath: String, phpIniPath: String, disableFileContent: Boolean) {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
@@ -19,14 +19,15 @@ class PhpParser private (phpParserPath: String, phpIniPath: String) {
     s"php --php-ini $phpIniPath $phpParserPath $phpParserCommands $filename"
   }
 
-  def parseFile(inputPath: String): Option[PhpFile] = {
+  def parseFile(inputPath: String): Option[(PhpFile, Option[String])] = {
     val inputFile      = File(inputPath)
     val inputFilePath  = inputFile.canonicalPath
     val inputDirectory = inputFile.parent.canonicalPath
     val command        = phpParseCommand(inputFilePath)
     ExternalCommand.run(command, inputDirectory) match {
       case Success(output) =>
-        processParserOutput(output, inputFilePath)
+        val content = Option.unless(disableFileContent)(inputFile.contentAsString)
+        processParserOutput(output, inputFilePath).map((_, content))
       case Failure(exception) =>
         logger.error(s"Failure running php-parser with $command", exception.getMessage)
         None
@@ -118,6 +119,6 @@ object PhpParser {
     for (
       phpParserPath <- maybePhpParserPath(config);
       phpIniPath    <- maybePhpIniPath(config)
-    ) yield new PhpParser(phpParserPath, phpIniPath)
+    ) yield new PhpParser(phpParserPath, phpIniPath, config.disableFileContent)
   }
 }
