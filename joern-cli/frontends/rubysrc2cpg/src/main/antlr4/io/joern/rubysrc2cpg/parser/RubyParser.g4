@@ -284,7 +284,7 @@ primaryValue
         // Definitions
     |   CLASS classPath (LT commandOrPrimaryValueClass)? (SEMI | NL) bodyStatement END
         # classDefinition
-    |   CLASS LT2 commandOrPrimaryValue (SEMI | NL) bodyStatement END
+    |   CLASS LT2 commandOrPrimaryValueClass (SEMI | NL) bodyStatement END
         # singletonClassDefinition
     |   MODULE classPath bodyStatement END
         # moduleDefinition
