@@ -1,6 +1,7 @@
 package io.joern.rubysrc2cpg.parser
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
+import io.joern.rubysrc2cpg.deprecated.passes.RubyImportResolverPass
 import io.joern.rubysrc2cpg.parser.AntlrContextHelpers.*
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
@@ -915,7 +916,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
 
     ClassDeclaration(
       visit(ctx.classPath()),
-      Option(ctx.commandOrPrimaryValue()).map(visit),
+      Option(ctx.commandOrPrimaryValueClass()).map(visit),
       StatementList(initMethodDecl +: allowedTypeDeclChildren)(stmts.span),
       fields
     )(ctx.toTextSpan)

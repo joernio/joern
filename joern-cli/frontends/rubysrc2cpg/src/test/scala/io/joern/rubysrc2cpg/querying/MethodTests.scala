@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.querying
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal, Return}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, Return}
 import io.shiftleft.semanticcpg.language.*
 
 class MethodTests extends RubyCode2CpgFixture {
@@ -498,6 +498,43 @@ class MethodTests extends RubyCode2CpgFixture {
             case xs => fail(s"Expected body and ensureBody, got ${xs.code.mkString(", ")} instead")
           }
         case xs => fail(s"Expected one method, found ${xs.method.name.mkString(", ")} instead")
+      }
+    }
+  }
+
+  "Chained method calls" should {
+    val cpg = code("""
+        |class Foo
+        | def authenticate(email, password)
+        |   auth = nil
+        |   if a == Digest::MD5.hexdigest(password)
+        |     auth = a
+        |   end
+        | end
+        |end
+        |""".stripMargin)
+
+    "have chained calls" in {
+      inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).condition.headOption) {
+        case Some(ifCond: Call) =>
+          inside(ifCond.argument.l) {
+            case (leftArg: Identifier) :: (rightArg: Call) :: Nil =>
+              rightArg.name shouldBe "hexdigest"
+              rightArg.code shouldBe "Digest::MD5.hexdigest(password)"
+
+              inside(rightArg.argument.l) {
+                case (md5: Call) :: (passwordArg: Identifier) :: Nil =>
+                  md5.name shouldBe "MD5"
+                  inside(md5.argument.l) {
+                    case (digest: Identifier) :: Nil =>
+                      digest.name shouldBe "Digest"
+                    case xs => fail(s"Expected 1 argument, got ${xs.code.mkString(", ")} instead")
+                  }
+                case xs => fail(s"Expected identifier and call, got ${xs.code.mkString(", ")} instead")
+              }
+            case xs => fail(s"Expected 3 arguments, got ${xs.code.mkString(", ")} instead")
+          }
+        case None => fail("Expected if-condition")
       }
     }
   }
