@@ -374,4 +374,14 @@ class TSTypesTests extends AstJsSrc2CpgSuite {
     x.typeFullName shouldBe Defines.String
   }
 
+  "have correct types various array types" in {
+    val cpg = code(
+      """
+        |function foo(a: string[], b: Bar[], c: (() => string)[], d: { x: string, y: number }[]) {}
+        |""".stripMargin,
+      "Main.ts"
+    ).withConfig(Config().withTsTypes(true))
+    cpg.method.nameExact("foo").parameter.indexNot(0).typeFullName.sorted.distinct.l shouldBe List(Defines.Array)
+  }
+
 }

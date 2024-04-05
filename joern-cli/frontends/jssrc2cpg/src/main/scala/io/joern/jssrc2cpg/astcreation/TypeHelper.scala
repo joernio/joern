@@ -12,14 +12,6 @@ trait TypeHelper { this: AstCreator =>
   private val ReturnTypeKey     = "returnType"
   private val ImportMatcher     = Pattern.compile("(typeof )?import\\([\"'](.*)[\"']\\)")
 
-  private val ArrayReplacements = Map(
-    "any[]"     -> s"${Defines.Any}[]",
-    "unknown[]" -> s"${Defines.Unknown}[]",
-    "number[]"  -> s"${Defines.Number}[]",
-    "string[]"  -> s"${Defines.String}[]",
-    "boolean[]" -> s"${Defines.Boolean}[]"
-  )
-
   private val TypeReplacements = Map(
     " any"     -> s" ${Defines.Any}",
     " unknown" -> s" ${Defines.Unknown}",
@@ -45,7 +37,7 @@ trait TypeHelper { this: AstCreator =>
     case StringTypeAnnotation         => Defines.String
     case SymbolTypeAnnotation         => Defines.Symbol
     case NumberLiteralTypeAnnotation  => code(flowType.json)
-    case ArrayTypeAnnotation          => code(flowType.json)
+    case ArrayTypeAnnotation          => Defines.Array
     case BooleanLiteralTypeAnnotation => code(flowType.json)
     case NullLiteralTypeAnnotation    => code(flowType.json)
     case StringLiteralTypeAnnotation  => code(flowType.json)
@@ -77,7 +69,7 @@ trait TypeHelper { this: AstCreator =>
       if (isNumberType(refCode)) Defines.Number
       else if (isStringType(refCode)) Defines.String
       else refCode
-    case TSArrayType         => code(tsType.json)
+    case TSArrayType         => Defines.Array
     case TSThisType          => typeHintForThisExpression(Option(tsType)).headOption.getOrElse(Defines.Any)
     case TSOptionalType      => typeForTypeAnnotation(createBabelNodeInfo(tsType.json(TypeAnnotationKey)))
     case TSRestType          => typeForTypeAnnotation(createBabelNodeInfo(tsType.json(TypeAnnotationKey)))
@@ -125,13 +117,16 @@ trait TypeHelper { this: AstCreator =>
       case Some(key) => typeForTypeAnnotation(createBabelNodeInfo(node.json(key)))
       case None      => typeFromTypeMap(node)
     }
-    val cleanedType = (TypeReplacements ++ ArrayReplacements).foldLeft(tpe) { case (typeStr, (m, r)) =>
-      typeStr.replace(m, r)
+    val tpeWithTypeReplacements = TypeReplacements.foldLeft(tpe) { case (typeStr, (m, r)) => typeStr.replace(m, r) }
+    val tpeWithArrayReplacements = if (tpeWithTypeReplacements.endsWith("[]")) {
+      Defines.Array
+    } else {
+      tpeWithTypeReplacements.replaceAll(":[^,.]+\\[]", s": ${Defines.Array}")
     }
-    if (!cleanedType.contains("{") && !tpe.contains("(")) {
-      registerType(cleanedType)
+    if (!tpeWithArrayReplacements.contains("{") && !tpe.contains("(")) {
+      registerType(tpeWithArrayReplacements)
     }
-    cleanedType
+    tpeWithArrayReplacements
   }
 
   protected def typeHintForThisExpression(node: Option[BabelNodeInfo] = None): Seq[String] = {

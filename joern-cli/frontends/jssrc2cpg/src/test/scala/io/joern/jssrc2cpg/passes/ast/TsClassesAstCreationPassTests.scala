@@ -320,7 +320,7 @@ class TsClassesAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
         |""".stripMargin)
       val List(userType) = cpg.typeDecl.name("User").l
       userType.member.name.l shouldBe List("email", "organizationIds", "username", "name", "gender")
-      userType.member.typeFullName.toSet shouldBe Set("__ecma.String", "__ecma.String[]")
+      userType.member.typeFullName.toSet shouldBe Set(Defines.String, Defines.Array)
     }
 
     "AST generation for dynamically defined type in a parameter" in {
