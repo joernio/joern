@@ -35,8 +35,11 @@ class AstCreationPass(config: Config, cpg: Cpg, parser: PhpParser)(implicit with
       File(config.inputPath).relativize(File(filename)).toString
     }
     parser.parseFile(filename) match {
-      case Some(parseResult) =>
-        diffGraph.absorb(new AstCreator(relativeFilename, parseResult)(config.schemaValidation).createAst())
+      case Some((parseResult, fileContent)) =>
+        diffGraph.absorb(
+          new AstCreator(relativeFilename, parseResult, fileContent, config.disableFileContent)(config.schemaValidation)
+            .createAst()
+        )
 
       case None =>
         logger.warn(s"Could not parse file $filename. Results will be missing!")

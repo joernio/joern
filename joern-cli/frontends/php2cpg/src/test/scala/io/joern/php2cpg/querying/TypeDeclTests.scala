@@ -1,52 +1,78 @@
 package io.joern.php2cpg.querying
 
+import io.joern.php2cpg.Config
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, Local, Member, Method}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.codepropertygraph.generated.nodes.Block
 import io.shiftleft.codepropertygraph.generated.nodes.MethodRef
 import io.shiftleft.codepropertygraph.generated.nodes.TypeRef
 
 class TypeDeclTests extends PhpCode2CpgFixture {
 
-  "typedecl nodes for empty classes should have the correct basic properties set" in {
+  "typedecl nodes for empty classes" should {
     val cpg = code("""<?php
-		 |class A extends B implements C, D {}
-		 |""".stripMargin)
+        |class A extends B implements C, D {}
+        |""".stripMargin).withConfig(Config().withDisableFileContent(false))
 
-    inside(cpg.typeDecl.nameExact("A").l) { case List(typeDecl) =>
-      typeDecl.fullName shouldBe "A"
-      typeDecl.lineNumber shouldBe Some(2)
-      typeDecl.code shouldBe "class A extends B implements C, D"
+    "have the correct basic properties set" in {
+      inside(cpg.typeDecl.nameExact("A").l) { case List(typeDecl) =>
+        typeDecl.fullName shouldBe "A"
+        typeDecl.lineNumber shouldBe Some(2)
+        typeDecl.code shouldBe "class A extends B implements C, D"
+      }
+    }
+
+    "have the content offsets set correctly" in {
+      inside(cpg.typeDecl.name("A").l) { case List(typeDecl) =>
+        val offsetStart = typeDecl.offset.get
+        val offsetEnd   = typeDecl.offsetEnd.get
+        typeDecl.file.head.content.substring(offsetStart, offsetEnd) shouldBe "class A extends B implements C, D {}"
+      }
     }
   }
 
-  "class methods should be created correctly" in {
+  "class methods" should {
     val cpg = code("""<?php
-		 |class Foo {
-		 |  final public function foo(int $x): int {
-		 |    return 0;
-		 |  }
-		 |}
-		 |""".stripMargin)
+        |class Foo {
+        |  final public function foo(int $x): int {
+        |    return 0;
+        |  }
+        |}
+        |""".stripMargin).withConfig(Config().withDisableFileContent(false))
 
-    inside(cpg.method.name("foo").l) { case List(fooMethod) =>
-      fooMethod.fullName shouldBe s"Foo->foo"
-      fooMethod.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
-      fooMethod.modifier.map(_.modifierType).toSet shouldBe Set(ModifierTypes.FINAL, ModifierTypes.PUBLIC)
-      fooMethod.methodReturn.typeFullName shouldBe "int"
-      inside(fooMethod.parameter.l) { case List(thisParam, xParam) =>
-        thisParam.name shouldBe "this"
-        thisParam.code shouldBe "this"
-        thisParam.dynamicTypeHintFullName should contain("Foo")
-        thisParam.typeFullName shouldBe "Foo"
-        thisParam.index shouldBe 0
+    "be created correctly" in {
+      inside(cpg.method.name("foo").l) { case List(fooMethod) =>
+        fooMethod.fullName shouldBe s"Foo->foo"
+        fooMethod.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
+        fooMethod.modifier.map(_.modifierType).toSet shouldBe Set(ModifierTypes.FINAL, ModifierTypes.PUBLIC)
+        fooMethod.methodReturn.typeFullName shouldBe "int"
+        inside(fooMethod.parameter.l) { case List(thisParam, xParam) =>
+          thisParam.name shouldBe "this"
+          thisParam.code shouldBe "this"
+          thisParam.dynamicTypeHintFullName should contain("Foo")
+          thisParam.typeFullName shouldBe "Foo"
+          thisParam.index shouldBe 0
 
-        xParam.code shouldBe "$x"
-        xParam.typeFullName shouldBe "int"
-        xParam.index shouldBe 1
+          xParam.code shouldBe "$x"
+          xParam.typeFullName shouldBe "int"
+          xParam.index shouldBe 1
+        }
+      }
+    }
+
+    "have the content offsets set correctly" in {
+      inside(cpg.typeDecl.name("Foo").l) { case List(typeDecl) =>
+        val offsetStart = typeDecl.offset.get
+        val offsetEnd   = typeDecl.offsetEnd.get
+        typeDecl.file.head.content.substring(offsetStart, offsetEnd) shouldBe
+          """class Foo {
+            |  final public function foo(int $x): int {
+            |    return 0;
+            |  }
+            |}""".stripMargin
       }
     }
   }
