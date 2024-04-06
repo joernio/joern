@@ -6,7 +6,7 @@ import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewMethodRef, NewTypeDecl, NewControlStructure}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewControlStructure, NewMethod, NewMethodRef, NewTypeDecl}
 
 trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -208,8 +208,10 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val methodName = nextClosureName()
 
     val methodAstsWithRefs = block.body match {
-      case x: Block => astForMethodDeclaration(x.toMethodDeclaration(methodName), isClosure = true)
-      case _        => astForMethodDeclaration(block.toMethodDeclaration(methodName), isClosure = true)
+      case x: Block =>
+        astForMethodDeclaration(x.toMethodDeclaration(methodName, Option(block.parameters)), isClosure = true)
+      case _ =>
+        astForMethodDeclaration(block.toMethodDeclaration(methodName, Option(block.parameters)), isClosure = true)
     }
 
     // Set span contents

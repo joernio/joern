@@ -373,7 +373,10 @@ object RubyIntermediateAst {
   /** Represents a `do` or `{ .. }` (braces) block. */
   final case class Block(parameters: List[RubyNode], body: RubyNode)(span: TextSpan) extends RubyNode(span) {
 
-    def toMethodDeclaration(name: String): MethodDeclaration = MethodDeclaration(name, parameters, body)(span)
+    def toMethodDeclaration(name: String, parameters: Option[List[RubyNode]]): MethodDeclaration = parameters match {
+      case Some(givenParameters) => MethodDeclaration(name, givenParameters, body)(span)
+      case None                  => MethodDeclaration(name, this.parameters, body)(span)
+    }
 
   }
 

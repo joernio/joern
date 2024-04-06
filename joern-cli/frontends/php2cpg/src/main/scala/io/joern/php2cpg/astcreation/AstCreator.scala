@@ -17,8 +17,9 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
-class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidation: ValidationMode)
-    extends AstCreatorBase(filename)
+class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String], disableFileContent: Boolean)(implicit
+  withSchemaValidation: ValidationMode
+) extends AstCreatorBase(filename)
     with AstNodeBuilder[PhpNode, AstCreator] {
 
   private val logger          = LoggerFactory.getLogger(AstCreator.getClass)
@@ -71,6 +72,9 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
   }
 
   private def astForPhpFile(file: PhpFile): Ast = {
+    val fileNode = NewFile().name(filename)
+    fileContent.foreach(fileNode.content(_))
+
     scope.pushNewScope(globalNamespace)
 
     val (globalDeclStmts, globalMethodStmts) =
@@ -94,7 +98,7 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
 
     scope.popScope() // globalNamespace
 
-    Ast(globalNamespace).withChild(globalTypeDeclAst)
+    Ast(fileNode).withChild(Ast(globalNamespace).withChild(globalTypeDeclAst))
   }
 
   private def astsForStmt(stmt: PhpStmt): List[Ast] = {
@@ -1701,6 +1705,12 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
   protected def lineEnd(phpNode: PhpNode): Option[Integer]   = None
   protected def columnEnd(phpNode: PhpNode): Option[Integer] = None
   protected def code(phpNode: PhpNode): String               = "" // Sadly, the Php AST does not carry any code fields
+
+  override protected def offset(phpNode: PhpNode): Option[(Int, Int)] = {
+    Option.when(!disableFileContent) {
+      (phpNode.attributes.startFilePos, phpNode.attributes.endFilePos)
+    }
+  }
 }
 
 object AstCreator {

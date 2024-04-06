@@ -13,14 +13,6 @@ case class JsSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends Cpg
   private lazy val command: Path = if (isWin) rootPath.resolve("jssrc2cpg.bat") else rootPath.resolve("jssrc2cpg.sh")
   private var jsConfig: Option[Config] = None
 
-  private def withFileInTmpFile(inputPath: String)(f: File => Try[String]): Try[String] = {
-    val dir = File.newTemporaryDirectory("jssrc2cpg")
-    File(inputPath).copyToDirectory(dir)
-    val result = f(dir)
-    dir.deleteOnExit(swallowIOExceptions = true)
-    result
-  }
-
   /** Generate a CPG for the given input path. Returns the output path, or None, if no CPG was generated.
     */
   override def generate(inputPath: String, outputPath: String = "cpg.bin.zip"): Try[String] = {
