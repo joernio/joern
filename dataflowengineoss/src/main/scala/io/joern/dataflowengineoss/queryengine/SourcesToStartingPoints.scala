@@ -21,7 +21,9 @@ object SourcesToStartingPoints {
   private val log = LoggerFactory.getLogger(SourcesToStartingPoints.getClass)
 
   def sourceTravsToStartingPoints[NodeType](sourceTravs: IterableOnce[NodeType]*): List[StartingPointWithSource] = {
-    val fjp = ForkJoinPool.commonPool()
+    val executorService = Executors.newWorkStealingPool()
+    val completionService =
+      new ExecutorCompletionService[Unit](executorService)
     try {
       val sources: List[StoredNode] = sourceTravs
         .flatMap(_.iterator.toList)
@@ -33,7 +35,9 @@ object SourcesToStartingPoints {
       val firstResultAggregatorThread = new Thread(firstResultAggregator)
       firstResultAggregatorThread.setName("Starting points first result aggregator")
       firstResultAggregatorThread.start()
-      sources.foreach(src => fjp.submit(new SourceToStartingPoints(src, firstResultAggregator.resultQueue)))
+      sources.foreach(src =>
+        completionService.submit(new SourceToStartingPoints(src, firstResultAggregator.resultQueue))
+      )
       firstResultAggregatorThread.join()
       val secondResults = sources.headOption
         .map(src => {
@@ -44,7 +48,7 @@ object SourcesToStartingPoints {
           secondResultAggregatorThread.setName("Starting points second result aggregator")
           secondResultAggregatorThread.start()
           methods.foreach(m =>
-            fjp.submit(
+            completionService.submit(
               new SourceToStartingPointsInMethod(
                 m,
                 firstResultAggregator.methodTasks.toList,
@@ -61,7 +65,7 @@ object SourcesToStartingPoints {
       case e: RejectedExecutionException =>
         log.error("Unable to execute 'SourceTravsToStartingPoints` task", e); List()
     } finally {
-      fjp.shutdown()
+      executorService.shutdown()
     }
   }
 }
