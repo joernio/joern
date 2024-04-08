@@ -26,7 +26,7 @@ object SourcesToStartingPoints {
       new ExecutorCompletionService[Unit](executorService)
     try {
       val sources: List[StoredNode] = sourceTravs
-        .flatMap(_.iterator.toList)
+        .flatMap(_.iterator)
         .collect { case n: StoredNode => n }
         .dedup
         .toList
