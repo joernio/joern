@@ -15,8 +15,6 @@ class PhpTypeHintCallLinker(cpg: Cpg) extends XTypeHintCallLinker(cpg) {
   override protected def calls: Iterator[Call] = {
     cpg.call
       .nameNot("<operator>.*", "<operators>.*")
-      .filter(c =>
-        calleeNames(c).nonEmpty && c.callee.fullNameNot(Pattern.quote(Defines.UnresolvedNamespace) + ".*").isEmpty
-      )
+      .filter(c => calleeNames(c).nonEmpty && c.callee.forall(_.fullName.startsWith(Defines.UnresolvedNamespace)))
   }
 }
