@@ -550,3 +550,42 @@ class TypeInferenceTests extends JavaSrcCode2CpgFixture {
   }
 
 }
+
+class TypeInferenceByArgSizeTests extends JavaSrcCode2CpgFixture {
+  "Calls having same namespace as a method" should {
+    val cpg = code("""
+        |import com.myorg.client.Client;
+        |import com.myorg.config.RestConfigBase;
+        |import com.myorg.config.RestConfig;
+        |import com.myorg.interceptor.Interceptor;
+        |
+        |public class Sample {
+        |
+        |    public static Client createClient(RestConfigBase config) {
+        |        return new MyClient(config);
+        |    }
+        |
+        |    public static Client createClient(RestConfigBase config, Interceptor interceptor) {
+        |        return new MyClient(config, interceptor);
+        |    }
+        |
+        |    Client getClient() {
+        |        return Sample.createClient(new RestConfig("someUrl", "othervalue"));
+        |    }
+        |
+        |}
+        |""".stripMargin)
+
+    "have resolved methodFullName if argument and parameter size matches" in {
+      val createClientCalls = cpg.call("createClient").l
+
+      createClientCalls.size shouldBe 1
+      createClientCalls.methodFullName.l shouldBe List(
+        "Sample.createClient:com.myorg.client.Client(com.myorg.config.RestConfigBase)"
+      )
+      createClientCalls.callee.fullName.l shouldBe List(
+        "Sample.createClient:com.myorg.client.Client(com.myorg.config.RestConfigBase)"
+      )
+    }
+  }
+}
