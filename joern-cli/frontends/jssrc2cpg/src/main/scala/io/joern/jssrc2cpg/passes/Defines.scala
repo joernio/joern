@@ -4,6 +4,7 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 object Defines {
   val Any: String               = "ANY"
+  val Array: String             = "__ecma.Array"
   val Number: String            = "__ecma.Number"
   val String: String            = "__ecma.String"
   val Boolean: String           = "__ecma.Boolean"
@@ -21,5 +22,23 @@ object Defines {
   val GlobalNamespace: String   = NamespaceTraversal.globalNamespaceName
 
   val JsTypes: List[String] =
-    List(Any, Number, String, Boolean, Null, Math, Symbol, Console, Object, BigInt, Unknown, Never, Void, Undefined)
+    List(
+      Any,
+      Array,
+      Number,
+      String,
+      Boolean,
+      Null,
+      Math,
+      Symbol,
+      Console,
+      Object,
+      BigInt,
+      Unknown,
+      Never,
+      Void,
+      Undefined
+    )
+
+  def isBuiltinType(tpe: String): Boolean = JsTypes.contains(tpe.stripSuffix("[]"))
 }

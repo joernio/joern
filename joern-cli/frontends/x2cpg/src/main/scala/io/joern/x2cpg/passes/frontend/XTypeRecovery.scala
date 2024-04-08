@@ -14,10 +14,7 @@ import overflowdb.BatchedUpdate
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import scopt.OParser
 
-import java.util.concurrent.RecursiveTask
-import java.util.concurrent.atomic.AtomicBoolean
 import scala.annotation.tailrec
-import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 import scala.util.matching.Regex
@@ -236,10 +233,10 @@ object XTypeRecovery {
   // The below are convenience calls for accessing type properties, one day when this pass uses `Tag` nodes instead of
   // the symbol table then perhaps this would work out better
   implicit class AllNodeTypesFromNodeExt(x: StoredNode) {
-    def allTypes: Iterator[String] = (x.property(PropertyNames.TYPE_FULL_NAME, "ANY") +: x.property(
-      PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
-      Seq.empty
-    )).iterator
+    def allTypes: Iterator[String] =
+      (x.property(PropertyNames.TYPE_FULL_NAME, "ANY") +:
+        (x.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty)
+          ++ x.property(PropertyNames.POSSIBLE_TYPES, Seq.empty))).iterator
 
     def getKnownTypes: Set[String] = {
       x.allTypes.toSet.filterNot(XTypeRecovery.unknownTypePattern.matches)
@@ -288,7 +285,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 
   /** The root of the target codebase.
     */
-  protected val codeRoot: String = cpg.metaData.root.headOption.getOrElse("") + java.io.File.separator
+  protected val codeRoot: String = s"${cpg.metaData.root.headOption.getOrElse("")}${java.io.File.separator}"
 
   /** The delimiter used to separate methods/functions in qualified names.
     */
@@ -315,8 +312,9 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 
   protected def prepopulateSymbolTableEntry(x: AstNode): Unit = x match {
     case x @ (_: Identifier | _: Local | _: MethodParameterIn) => symbolTable.append(x, x.getKnownTypes)
-    case x: Call => symbolTable.append(x, (x.methodFullName +: x.dynamicTypeHintFullName).toSet)
-    case _       =>
+    case call: Call =>
+      symbolTable.append(call, (call.methodFullName +: (call.dynamicTypeHintFullName ++ call.possibleTypes)).toSet)
+    case _ =>
   }
 
   protected def hasTypes(node: AstNode): Boolean = node match {
@@ -453,7 +451,9 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         case x: Block                                                      => visitStatementsInBlock(x)
         case x: Local                                                      => symbolTable.get(x)
         case _: ControlStructure                                           => Set.empty[String]
-        case x => logger.debug(s"Unhandled block element ${x.label}:${x.code} @ ${debugLocation(x)}"); Set.empty[String]
+        case x =>
+          logger.debug(s"Unhandled block element ${x.label}:${x.code} @ ${debugLocation(x)}")
+          Set.empty[String]
       }
       .lastOption
       .getOrElse(Set.empty[String])
@@ -492,7 +492,10 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         case x: Call if x.typeFullName != "ANY" =>
           Set(x.typeFullName)
         case x: Call =>
-          cpg.method.fullNameExact(c.methodFullName).methodReturn.typeFullNameNot("ANY").typeFullName.toSet match {
+          val returns                 = cpg.method.fullNameExact(c.methodFullName).methodReturn.typeFullNameNot("ANY")
+          val returnWithPossibleTypes = cpg.method.fullNameExact(c.methodFullName).methodReturn.where(_.possibleTypes)
+          val fullNames               = returns.typeFullName ++ returnWithPossibleTypes.possibleTypes
+          fullNames.toSet match {
             case xs if xs.nonEmpty => xs
             case _ => symbolTable.get(x).map(t => Seq(t, XTypeRecovery.DummyReturnType).mkString(pathSep.toString))
           }
@@ -640,7 +643,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     val rs = cpg.method
       .fullNameExact(methodFullNames: _*)
       .methodReturn
-      .flatMap(mr => mr.typeFullName +: mr.dynamicTypeHintFullName)
+      .flatMap(mr => mr.typeFullName +: (mr.dynamicTypeHintFullName ++ mr.possibleTypes))
       .filterNot(_.equals("ANY"))
       .toSet
     if (rs.isEmpty) methodFullNames.map(_.concat(s"$pathSep${XTypeRecovery.DummyReturnType}")).toSet
@@ -654,7 +657,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 
   /** Not all frontends populate <code>typeFullName</code> for literals so we allow this to be overridden.
     */
-  protected def getLiteralType(l: Literal): Set[String] = Set(l.typeFullName)
+  protected def getLiteralType(l: Literal): Set[String] = Set(l.typeFullName) ++ l.possibleTypes
 
   /** Will handle an identifier holding a function pointer.
     */
@@ -892,7 +895,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** Visits an identifier that is the target of a cast operation.
     */
   protected def visitIdentifierAssignedToCast(i: Identifier, c: Call): Set[String] =
-    associateTypes(i, (c.typeFullName +: c.dynamicTypeHintFullName).filterNot(_ == "ANY").toSet)
+    associateTypes(i, (c.typeFullName +: (c.dynamicTypeHintFullName ++ c.possibleTypes)).filterNot(_ == "ANY").toSet)
 
   protected def getFieldBaseType(base: Identifier, fi: FieldIdentifier): Set[String] =
     getFieldBaseType(base.name, fi.canonicalName)
@@ -901,14 +904,13 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     symbolTable
       .get(LocalVar(baseName))
       .flatMap(t => typeDeclIterator(t).member.nameExact(fieldName))
-      .typeFullNameNot("ANY")
-      .flatMap(m => m.typeFullName +: m.dynamicTypeHintFullName)
-      .toSet
+      .flatMap(m => m.typeFullName +: (m.dynamicTypeHintFullName ++ m.possibleTypes))
+      .filterNot(_ == "ANY")
 
   protected def visitReturns(ret: Return): Unit = {
     val m = ret.method
     val existingTypes = mutable.HashSet.from(
-      (m.methodReturn.typeFullName +: m.methodReturn.dynamicTypeHintFullName)
+      (m.methodReturn.typeFullName +: (m.methodReturn.dynamicTypeHintFullName ++ m.methodReturn.possibleTypes))
         .filterNot(_ == "ANY")
     )
     @tailrec
@@ -921,7 +923,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
           .fullNameExact(ts.map(_.compUnitFullName).toSeq: _*)
           .member
           .nameExact(sym.identifier)
-          .flatMap(m => m.typeFullName +: m.dynamicTypeHintFullName)
+          .flatMap(m => m.typeFullName +: (m.dynamicTypeHintFullName ++ m.possibleTypes))
           .filterNot { x => x == "ANY" || x == "this" }
           .toSet
         if (cpgTypes.nonEmpty) cpgTypes
@@ -1187,8 +1189,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         case m: Member =>
           // To avoid overwriting member updates, we store them elsewhere until the end
           newTypesForMembers.updateWith(m) {
-            case Some(ts) => Some(ts ++ types)
-            case None     => Some(types.toSet)
+            case Some(ts) => Option(ts ++ types)
+            case None     => Option(types.toSet)
           }
         case i: Identifier                               => storeIdentifierTypeInfo(i, types)
         case l: Local                                    => storeLocalTypeInfo(l, types)
@@ -1225,7 +1227,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     * cleared. If not then `dynamicTypeHintFullName` is set to the types.
     */
   protected def setTypes(n: StoredNode, types: Seq[String]): Unit =
-    if (types.size == 1) builder.setNodeProperty(n, PropertyNames.TYPE_FULL_NAME, types.head)
+    if (types.sizeIs == 1) builder.setNodeProperty(n, PropertyNames.TYPE_FULL_NAME, types.head)
     else builder.setNodeProperty(n, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, types)
 
   /** Allows one to modify the types assigned to locals.

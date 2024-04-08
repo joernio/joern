@@ -82,8 +82,11 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
   def linkCallToCallee(call: Call, method: MethodBase, builder: DiffGraphBuilder): Unit = {
     builder.addEdge(call, method, EdgeTypes.CALL)
     method match {
-      case method: Method =>
-        builder.setNodeProperty(call, PropertyNames.TYPE_FULL_NAME, method.methodReturn.typeFullName)
+      case m: Method if m.methodReturn.possibleTypes.headOption.exists(_ != "ANY") =>
+        val typeFullName = m.methodReturn.possibleTypes.headOption.getOrElse(m.methodReturn.typeFullName)
+        builder.setNodeProperty(call, PropertyNames.TYPE_FULL_NAME, typeFullName)
+      case m: Method =>
+        builder.setNodeProperty(call, PropertyNames.TYPE_FULL_NAME, m.methodReturn.typeFullName)
       case _ =>
     }
   }

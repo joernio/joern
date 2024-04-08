@@ -7,15 +7,17 @@ import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 
 trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  protected def astForIdentifier(ident: BabelNodeInfo, typeFullName: Option[String] = None): Ast = {
+  protected def astForIdentifier(ident: BabelNodeInfo, maybePossibleType: Option[String] = None): Ast = {
     val name      = ident.json("name").str
     val identNode = identifierNode(ident, name)
-    val tpe = typeFullName match {
+    val possibleType = maybePossibleType match {
+      case None              => typeFor(ident)
       case Some(Defines.Any) => typeFor(ident)
       case Some(otherType)   => otherType
-      case None              => typeFor(ident)
     }
-    identNode.typeFullName = tpe
+    val typeFullName = if (Defines.isBuiltinType(possibleType)) possibleType else Defines.Any
+    identNode.typeFullName(typeFullName)
+    identNode.possibleTypes(Seq(possibleType))
     scope.addVariableReference(name, identNode)
     Ast(identNode)
   }

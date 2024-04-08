@@ -3,7 +3,7 @@ package io.joern.jssrc2cpg.astcreation
 import io.joern.jssrc2cpg.parser.BabelAst.*
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.{Defines, EcmaBuiltins, GlobalBuiltins}
-import io.joern.x2cpg.{Ast, ValidationMode, AstNodeBuilder}
+import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.datastructures.Stack.*
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
@@ -226,19 +226,23 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   protected def astForCastExpression(castExpr: BabelNodeInfo): Ast = {
-    val op = Operators.cast
-    val typ = typeFor(castExpr) match {
-      case t if GlobalBuiltins.builtins.contains(t) => s"__ecma.$t"
-      case t                                        => t
-    }
+    val op      = Operators.cast
     val lhsNode = castExpr.json("typeAnnotation")
-    val lhsAst  = Ast(literalNode(castExpr, code(lhsNode), None).dynamicTypeHintFullName(Seq(typ)))
     val rhsAst  = astForNodeWithFunctionReference(castExpr.json("expression"))
-    val node =
-      callNode(castExpr, castExpr.code, op, DispatchTypes.STATIC_DISPATCH)
-        .dynamicTypeHintFullName(Seq(typ))
-    val argAsts = List(lhsAst, rhsAst)
-    callAst(node, argAsts)
+    typeFor(castExpr) match {
+      case tpe if GlobalBuiltins.builtins.contains(tpe) || Defines.isBuiltinType(tpe) =>
+        val lhsAst = Ast(literalNode(castExpr, code(lhsNode), Option(tpe)))
+        val node =
+          callNode(castExpr, castExpr.code, op, DispatchTypes.STATIC_DISPATCH).dynamicTypeHintFullName(Seq(tpe))
+        val argAsts = List(lhsAst, rhsAst)
+        callAst(node, argAsts)
+      case t =>
+        val possibleTypes = Seq(t)
+        val lhsAst        = Ast(literalNode(castExpr, code(lhsNode), None).possibleTypes(possibleTypes))
+        val node    = callNode(castExpr, castExpr.code, op, DispatchTypes.STATIC_DISPATCH).possibleTypes(possibleTypes)
+        val argAsts = List(lhsAst, rhsAst)
+        callAst(node, argAsts)
+    }
   }
 
   protected def astForBinaryExpression(binExpr: BabelNodeInfo): Ast = {
@@ -404,7 +408,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       scope.popScope()
       localAstParentStack.pop()
 
-      val blockChildrenAsts = if (elementsJsons.length > MAX_INITIALIZERS) {
+      val blockChildrenAsts = if (elementsJsons.sizeIs > MAX_INITIALIZERS) {
         val placeholder = literalNode(arrExpr, "<too-many-initializers>", Defines.Any)
         assignmentTmpArrayCallNode +: elementAsts :+ Ast(placeholder) :+ Ast(tmpArrayReturnNode)
       } else { assignmentTmpArrayCallNode +: elementAsts :+ Ast(tmpArrayReturnNode) }
