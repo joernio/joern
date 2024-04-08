@@ -69,7 +69,7 @@ object SourcesToStartingPoints {
   }
 }
 
-class SourceStartingPointResultAggregator(var totalNoTasks: Int) extends Runnable {
+class SourceStartingPointResultAggregator(private var totalNoTasks: Int) extends Runnable {
   val logger      = LoggerFactory.getLogger(this.getClass)
   val finalResult = ListBuffer[StartingPointWithSource]()
   val methodTasks = ListBuffer[UsageInput]()
