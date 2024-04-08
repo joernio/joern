@@ -31,36 +31,35 @@ object SourcesToStartingPoints {
         .dedup
         .toList
         .sortBy(_.id)
-      val firstResultAggregator       = SourceStartingPointResultAggregator(sources.size)
-      val firstResultAggregatorThread = new Thread(firstResultAggregator)
-      firstResultAggregatorThread.setName("Starting points first result aggregator")
-      firstResultAggregatorThread.start()
-      sources.foreach(src =>
-        completionService.submit(new SourceToStartingPoints(src, firstResultAggregator.resultQueue))
-      )
-      firstResultAggregatorThread.join()
-      val secondResults = sources.headOption
+      sources.headOption
         .map(src => {
-          val cpg                          = Cpg(src.graph())
-          val methods                      = cpg.method.l
-          val secondResultAggregator       = SourceStartingPointResultAggregator(methods.size)
-          val secondResultAggregatorThread = new Thread(secondResultAggregator)
-          secondResultAggregatorThread.setName("Starting points second result aggregator")
-          secondResultAggregatorThread.start()
+          val allExceptUsageInOtherClasses       = SourceStartingPointResultAggregator(sources.size)
+          val allExceptUsageInOtherClassesThread = new Thread(allExceptUsageInOtherClasses)
+          allExceptUsageInOtherClassesThread.setName("All except usage in other classes result aggregator")
+          allExceptUsageInOtherClassesThread.start()
+          sources.foreach(src =>
+            completionService.submit(new SourceToStartingPoints(src, allExceptUsageInOtherClasses.resultQueue))
+          )
+          allExceptUsageInOtherClassesThread.join()
+          val cpg                       = Cpg(src.graph())
+          val methods                   = cpg.method.l
+          val usageInOtherClasses       = SourceStartingPointResultAggregator(methods.size)
+          val usageInOtherClassesThread = new Thread(usageInOtherClasses)
+          usageInOtherClassesThread.setName("Usage in other classes result aggregator")
+          usageInOtherClassesThread.start()
           methods.foreach(m =>
             completionService.submit(
               new SourceToStartingPointsInMethod(
                 m,
-                firstResultAggregator.methodTasks.toList,
-                secondResultAggregator.resultQueue
+                allExceptUsageInOtherClasses.methodTasks.toList,
+                usageInOtherClasses.resultQueue
               )
             )
           )
-          secondResultAggregatorThread.join()
-          secondResultAggregator.finalResult.toList
+          usageInOtherClassesThread.join()
+          allExceptUsageInOtherClasses.finalResult.toList ++ usageInOtherClasses.finalResult.toList
         })
         .getOrElse(Nil)
-      firstResultAggregator.finalResult.toList ++ secondResults
     } catch {
       case e: RejectedExecutionException =>
         log.error("Unable to execute 'SourceTravsToStartingPoints` task", e); List()
