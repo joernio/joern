@@ -8,7 +8,8 @@ import io.joern.php2cpg.passes.{
   ClosureRefPass,
   LocalCreationPass,
   PhpTypeStubsParserPass,
-  PhpTypeRecoveryPassGenerator
+  PhpTypeRecoveryPassGenerator,
+  PhpTypeHintCallLinker
 }
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
@@ -92,6 +93,6 @@ object Php2Cpg {
     List(new PhpTypeStubsParserPass(cpg, setKnownTypesConfig)) ++ new PhpTypeRecoveryPassGenerator(
       cpg,
       typeRecoveryConfig
-    ).generate()
+    ).generate() :+ PhpTypeHintCallLinker(cpg)
   }
 }

@@ -422,4 +422,27 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture() {
       barMethod.methodReturn.dynamicTypeHintFullName shouldBe Seq("int")
     }
   }
+
+  "objects instantiated from an external dependency" should {
+    val cpg = code("""<?php
+        |use Curler\Client;
+        |
+        |$client = new Client();
+        |$response = $client->get('https://example2.com/data', $userId);
+        |echo $response->getBody();
+        |>
+        |""".stripMargin)
+
+    "resolve all types and calls for `$client`" in {
+      cpg.identifier("client").typeFullName.toSet shouldBe Set("Curler\\Client")
+      cpg.call("__construct").methodFullName.toSet shouldBe Set("Curler\\Client->__construct")
+      cpg.call("get").methodFullName.toSet shouldBe Set("Curler\\Client->get")
+    }
+
+    "resolve all types and calls for `$response`, where the call should have some dummy type" in {
+      cpg.identifier("response").typeFullName.toSet shouldBe Set("Curler\\Client->get-><returnValue>")
+      cpg.call("getBody").methodFullName.toSet shouldBe Set("Curler\\Client->get-><returnValue>->getBody")
+    }
+  }
+
 }

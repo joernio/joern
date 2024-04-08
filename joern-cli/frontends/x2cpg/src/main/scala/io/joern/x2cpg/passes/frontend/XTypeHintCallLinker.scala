@@ -23,7 +23,7 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
 
   implicit protected val resolver: NoResolve.type = NoResolve
   private val fileNamePattern                     = Pattern.compile("^(.*(.py|.js|.rb)).*$")
-  protected val pathSep: Char                     = '.'
+  protected val pathSep: String                   = "."
 
   protected def calls: Iterator[Call] = cpg.call
     .nameNot("<operator>.*", "<operators>.*")
@@ -118,7 +118,7 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     }
     val name =
       if (methodName.contains(pathSep) && methodName.length > methodName.lastIndexOf(pathSep) + 1)
-        methodName.substring(methodName.lastIndexOf(pathSep) + 1)
+        methodName.substring(methodName.lastIndexOf(pathSep) + pathSep.length)
       else methodName
     createMethodStub(name, methodName, call.argumentOut.size, isExternal, builder)
   }
