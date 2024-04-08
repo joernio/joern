@@ -24,12 +24,10 @@ class Engine(context: EngineContext) {
 
   import Engine.*
 
-  private val logger: Logger = LoggerFactory.getLogger(this.getClass)
-  private val resultProcessorQueue: LinkedBlockingQueue[Option[TaskSummary]] =
-    new LinkedBlockingQueue[Option[TaskSummary]]()
+  private val logger: Logger                   = LoggerFactory.getLogger(this.getClass)
   private val executorService: ExecutorService = Executors.newWorkStealingPool()
   private val completionService =
-    new ExecutorCompletionService[Unit](executorService)
+    new ExecutorCompletionService[TaskSummary](executorService)
 
   /** All results of tasks are accumulated in this table. At the end of the analysis, we extract results from the table
     * and return them.
@@ -74,13 +72,46 @@ class Engine(context: EngineContext) {
     sources: Set[CfgNode],
     sinks: List[CfgNode]
   ): List[TableEntry] = {
-    val resultProcessor       = new ResultProcessor(sources)
-    val resultProcessorThread = new Thread(resultProcessor)
-    resultProcessorThread.setName("reachableByFlow result processor")
-    resultProcessorThread.start()
-    val startTimeSec: Long = System.currentTimeMillis / 1000
+
+    /** Solving a task produces a list of summaries. The following method is called for each of these summaries. It
+      * submits new tasks and adds results to the result table.
+      */
+    def handleSummary(taskSummary: TaskSummary): Unit = {
+      val newTasks = taskSummary.followupTasks
+      submitTasks(newTasks, sources)
+      val newResults = taskSummary.tableEntries
+      addEntriesToMainTable(newResults)
+    }
+
+    def addEntriesToMainTable(entries: Vector[(TaskFingerprint, TableEntry)]): Unit = {
+      entries.groupBy(_._1).foreach { case (fingerprint, entryList) =>
+        val entries = entryList.map(_._2).toList
+        mainResultTable.updateWith(fingerprint) {
+          case Some(list) => Some(list ++ entries)
+          case None       => Some(entries)
+        }
+      }
+    }
+
+    def runUntilAllTasksAreSolved(): Unit = {
+      while (numberOfTasksRunning > 0) {
+        Try {
+          completionService.take.get
+        } match {
+          case Success(resultsOfTask) =>
+            numberOfTasksRunning -= 1
+            handleSummary(resultsOfTask)
+          case Failure(exception) =>
+            numberOfTasksRunning -= 1
+            logger.warn(s"SolveTask failed with exception:", exception)
+            exception.printStackTrace()
+        }
+      }
+    }
+
     submitTasks(tasks.toVector, sources)
-    resultProcessorThread.join()
+    val startTimeSec: Long = System.currentTimeMillis / 1000
+    runUntilAllTasksAreSolved()
     val taskFinishTimeSec: Long = System.currentTimeMillis / 1000
     logger.debug(
       "Time measurement -----> Task processing done in " +
@@ -106,7 +137,7 @@ class Engine(context: EngineContext) {
       } else {
         started.add(task.fingerprint)
         numberOfTasksRunning += 1
-        completionService.submit(new TaskSolver(task, context, sources, resultProcessorQueue))
+        completionService.submit(new TaskSolver(task, context, sources))
       }
     }
   }
@@ -153,44 +184,6 @@ class Engine(context: EngineContext) {
     executorService.shutdown()
   }
 
-  class ResultProcessor(sources: Set[CfgNode]) extends Runnable {
-
-    override def run(): Unit = {
-      var terminate = false
-      while (!terminate) {
-        resultProcessorQueue.take() match {
-          case None =>
-            logger.debug("Shutting down Task summary processor thread")
-            terminate = true
-          case Some(taskSummary) =>
-            handleSummary(taskSummary)
-        }
-      }
-    }
-
-    /** Solving a task produces a list of summaries. The following method is called for each of these summaries. It
-      * submits new tasks and adds results to the result table.
-      */
-    private def handleSummary(taskSummary: TaskSummary): Unit = {
-      numberOfTasksRunning -= 1
-      val newTasks = taskSummary.followupTasks
-      submitTasks(newTasks, sources)
-      val newResults = taskSummary.tableEntries
-      addEntriesToMainTable(newResults)
-      if (numberOfTasksRunning == 0)
-        resultProcessorQueue.put(None)
-    }
-
-    private def addEntriesToMainTable(entries: Vector[(TaskFingerprint, TableEntry)]): Unit = {
-      entries.groupBy(_._1).foreach { case (fingerprint, entryList) =>
-        val entries = entryList.map(_._2).toList
-        mainResultTable.updateWith(fingerprint) {
-          case Some(list) => Some(list ++ entries)
-          case None       => Some(entries)
-        }
-      }
-    }
-  }
 }
 
 object Engine {

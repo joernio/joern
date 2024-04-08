@@ -2,11 +2,10 @@ package io.joern.dataflowengineoss.queryengine
 
 import io.joern.dataflowengineoss.queryengine.QueryEngineStatistics.{PATH_CACHE_HITS, PATH_CACHE_MISSES}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
-import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.semanticcpg.language.{toCfgNodeMethods, toExpressionMethods, *}
-import org.slf4j.{Logger, LoggerFactory}
+import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.semanticcpg.language.{toCfgNodeMethods, toExpressionMethods, _}
 
-import java.util.concurrent.{Callable, LinkedBlockingQueue}
+import java.util.concurrent.Callable
 import scala.collection.mutable
 
 /** Callable for solving a ReachableByTask
@@ -21,40 +20,28 @@ import scala.collection.mutable
   * @param sources
   *   the set of sources that we are looking to reach.
   */
-class TaskSolver(
-  task: ReachableByTask,
-  context: EngineContext,
-  sources: Set[CfgNode],
-  resultProcessorQueue: LinkedBlockingQueue[Option[TaskSummary]]
-) extends Callable[Unit] {
-  private val logger: Logger = LoggerFactory.getLogger(this.getClass)
-  import Engine.*
+class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[CfgNode]) extends Callable[TaskSummary] {
+
+  import Engine._
 
   /** Entry point of callable. First checks if the maximum call depth has been exceeded, in which case an empty result
     * list is returned. Otherwise, the task is solved and its results are returned.
     */
-  override def call(): Unit = {
-    try {
-      implicit val sem: Semantics = context.semantics
-      val path                    = Vector(PathElement(task.sink, task.callSiteStack))
-      val table: mutable.Map[TaskFingerprint, Vector[ReachableByResult]] = mutable.Map()
-      results(task.sink, path, table, task.callSiteStack)
-      // TODO why do we update the call depth here?
-      val finalResults = table.get(task.fingerprint).get.map { r =>
-        r.copy(
-          taskStack = r.taskStack.dropRight(1) :+ r.fingerprint.copy(callDepth = task.callDepth),
-          path = r.path ++ task.initialPath
-        )
-      }
-      val (partial, complete) = finalResults.partition(_.partial)
-      val newTasks            = new TaskCreator(context).createFromResults(partial)
-      resultProcessorQueue.put(Option(TaskSummary(complete.flatMap(r => resultToTableEntries(r)), newTasks)))
-    } catch
-      case exception: Exception =>
-        logger.error("Error in TaskSolver,", exception)
-        // NOTE: Required to put the empty task summary in the queue to process so the task counter is decremented
-        // In turn Result processor thread can be stopped when all the tasks are processed.
-        resultProcessorQueue.put(Option(TaskSummary(Vector(), Vector())))
+  override def call(): TaskSummary = {
+    implicit val sem: Semantics = context.semantics
+    val path                    = Vector(PathElement(task.sink, task.callSiteStack))
+    val table: mutable.Map[TaskFingerprint, Vector[ReachableByResult]] = mutable.Map()
+    results(task.sink, path, table, task.callSiteStack)
+    // TODO why do we update the call depth here?
+    val finalResults = table.get(task.fingerprint).get.map { r =>
+      r.copy(
+        taskStack = r.taskStack.dropRight(1) :+ r.fingerprint.copy(callDepth = task.callDepth),
+        path = r.path ++ task.initialPath
+      )
+    }
+    val (partial, complete) = finalResults.partition(_.partial)
+    val newTasks            = new TaskCreator(context).createFromResults(partial)
+    TaskSummary(complete.flatMap(r => resultToTableEntries(r)), newTasks)
   }
 
   private def resultToTableEntries(r: ReachableByResult): List[(TaskFingerprint, TableEntry)] = {
