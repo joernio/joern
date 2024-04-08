@@ -48,10 +48,8 @@ class TypeInferencePass(cpg: Cpg) extends ConcurrentWriterCpgPass[Call](cpg) {
 
     lazy val typeDeclMatches = (callNameParts.typeDecl == methodNameParts.typeDecl)
 
-    if (ignoreArgTypes)
-      parameterSizesMatch && typeDeclMatches
-    else
-      parameterSizesMatch && argTypesMatch && typeDeclMatches
+    if ignoreArgTypes then parameterSizesMatch && typeDeclMatches
+    else parameterSizesMatch && argTypesMatch && typeDeclMatches
   }
 
   /** Check if argument types match by comparing exact full names. An argument type of `ANY` always matches.
