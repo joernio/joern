@@ -25,12 +25,11 @@ object SourcesToStartingPoints {
     val completionService =
       new ExecutorCompletionService[Unit](executorService)
     try {
-      val sources: List[StoredNode] = sourceTravs
+      val sources = sourceTravs
         .flatMap(_.iterator)
         .collect { case n: StoredNode => n }
         .dedup
         .toList
-        .sortBy(_.id)
       sources.headOption
         .map(src => {
           val allExceptUsageInOtherClasses       = SourceStartingPointResultAggregator(sources.size)
@@ -57,7 +56,8 @@ object SourcesToStartingPoints {
             )
           )
           usageInOtherClassesThread.join()
-          allExceptUsageInOtherClasses.finalResult.toList ++ usageInOtherClasses.finalResult.toList
+          (allExceptUsageInOtherClasses.finalResult.toList ++ usageInOtherClasses.finalResult.toList)
+            .sortBy(_.source.id)
         })
         .getOrElse(Nil)
     } catch {
