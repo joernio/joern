@@ -22,8 +22,6 @@ object SourcesToStartingPoints {
 
   def sourceTravsToStartingPoints[NodeType](sourceTravs: IterableOnce[NodeType]*): List[StartingPointWithSource] = {
     val executorService = Executors.newWorkStealingPool()
-    val completionService =
-      new ExecutorCompletionService[Unit](executorService)
     try {
       val sources = sourceTravs
         .flatMap(_.iterator)
@@ -37,7 +35,7 @@ object SourcesToStartingPoints {
           allExceptUsageInOtherClassesThread.setName("All except usage in other classes result aggregator")
           allExceptUsageInOtherClassesThread.start()
           sources.foreach(src =>
-            completionService.submit(new SourceToStartingPoints(src, allExceptUsageInOtherClasses.resultQueue))
+            executorService.submit(new SourceToStartingPoints(src, allExceptUsageInOtherClasses.resultQueue))
           )
           allExceptUsageInOtherClassesThread.join()
           val cpg                       = Cpg(src.graph())
@@ -47,7 +45,7 @@ object SourcesToStartingPoints {
           usageInOtherClassesThread.setName("Usage in other classes result aggregator")
           usageInOtherClassesThread.start()
           methods.foreach(m =>
-            completionService.submit(
+            executorService.submit(
               new SourceToStartingPointsInMethod(
                 m,
                 allExceptUsageInOtherClasses.methodTasks.toList,
