@@ -29,7 +29,7 @@ class TSTypesTests extends AstJsSrc2CpgSuite {
   "have correct types for empty method with rest parameter" in {
     val cpg          = code("function method(x, ...args) {}").withConfig(Config().withTsTypes(true))
     val List(method) = cpg.method.nameExact("method").l
-    method.methodReturn.typeFullName shouldBe "void"
+    method.methodReturn.typeFullName shouldBe Defines.Any
 
     val List(t, x, args) = method.parameter.l
     t.index shouldBe 0
@@ -57,7 +57,7 @@ class TSTypesTests extends AstJsSrc2CpgSuite {
   "have correct types for empty method" in {
     val cpg          = code("function method(x) {}").withConfig(Config().withTsTypes(true))
     val List(method) = cpg.method.nameExact("method").l
-    method.methodReturn.typeFullName shouldBe "void"
+    method.methodReturn.typeFullName shouldBe Defines.Any
   }
 
   "have types for identifiers with type inference" in {
