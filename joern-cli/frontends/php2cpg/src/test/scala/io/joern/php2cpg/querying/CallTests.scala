@@ -123,6 +123,22 @@ class CallTests extends PhpCode2CpgFixture {
       barCall.code shouldBe "self::bar($x)"
     }
   }
+  
+  "chained method calls should have the correct code and mfn values" in {
+    val cpg = code("""<?php
+        |$f->foo(A::class)->bar();
+        |""".stripMargin)
+    
+    inside(cpg.call.sortBy(_.name).l) { case List(barCall, fooCall) =>
+      barCall.name shouldBe "bar"
+      barCall.methodFullName shouldBe "<unresolvedNamespace>->bar:<unresolvedSignature>(0)"
+      barCall.code shouldBe "$f->foo(A::class)->bar();"
+      
+      fooCall.name shouldBe "foo"
+      fooCall.methodFullName shouldBe "<unresolvedNamespace>->foo:<unresolvedSignature>(1)"
+      fooCall.code shouldBe "$f->foo(A::class)"
+    }
+  } 
 
   "method calls with simple names should be correct" in {
     val cpg = code("""<?php

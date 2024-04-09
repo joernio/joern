@@ -915,18 +915,17 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
     Ast(jumpTarget) :: maybeConditionAst.toList ++ stmtAsts
   }
 
-  private def codeForMethodCall(call: PhpCallExpr, targetAst: Ast, name: String): String = {
-    val callOperator = if (call.isNullSafe) "?->" else "->"
+  private def codeForMethodCall(call: PhpCallExpr, targetAst: Ast, name: String, callOperator: String): String = {
     s"${targetAst.rootCodeOrEmpty}$callOperator$name"
   }
 
-  private def codeForStaticMethodCall(call: PhpCallExpr, name: String): String = {
+  private def codeForStaticMethodCall(call: PhpCallExpr, name: String, callOperator: String): String = {
     val className =
       call.target
         .map(astForExpr)
         .map(_.rootCode.getOrElse(UnresolvedNamespace))
         .getOrElse(UnresolvedNamespace)
-    s"$className::$name"
+    s"$className$callOperator$name"
   }
 
   private def astForCall(call: PhpCallExpr): Ast = {
@@ -953,11 +952,18 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
       }
       .mkString(",")
 
+    val callOperator = if (call.isStatic)
+      "::"
+    else if (call.isNullSafe)
+      "?->"
+    else
+      "->"
+
     val codePrefix =
       if (!call.isStatic && targetAst.isDefined)
-        codeForMethodCall(call, targetAst.get, name)
+        codeForMethodCall(call, targetAst.get, name, callOperator)
       else if (call.isStatic)
-        codeForStaticMethodCall(call, name)
+        codeForStaticMethodCall(call, name, callOperator)
       else
         name
 
@@ -968,6 +974,8 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
         DispatchTypes.STATIC_DISPATCH
       else
         DispatchTypes.DYNAMIC_DISPATCH
+        
+    val signature = s"$UnresolvedSignature(${call.args.size})"
 
     val fullName = call.target match {
       // Static method call with a known class name
@@ -976,8 +984,9 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
         else s"${nameExpr.name}${StaticMethodDelimiter}$name"
       }
 
-      case Some(expr) =>
-        s"$UnresolvedNamespace\\$codePrefix"
+      case Some(_) =>
+        val targetSuffix = targetAst.flatMap(_.rootType).filterNot(_ == TypeConstants.Any).map(typ => s"\\$typ").getOrElse("")
+        s"$UnresolvedNamespace$targetSuffix$callOperator$name:$signature"
 
       case None if PhpBuiltins.FuncNames.contains(name) =>
         // No signature/namespace for MFN for builtin functions to ensure stable names as type info improves.
@@ -989,7 +998,6 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
     }
 
     // Use method signature for methods that can be linked to avoid varargs issue.
-    val signature = s"$UnresolvedSignature(${call.args.size})"
     val callRoot  = callNode(call, code, name, fullName, dispatchType, Some(signature), Some(TypeConstants.Any))
 
     val receiverAst = (targetAst, nameAst) match {
