@@ -131,11 +131,11 @@ class CallTests extends PhpCode2CpgFixture {
     
     inside(cpg.call.sortBy(_.name).l) { case List(barCall, fooCall) =>
       barCall.name shouldBe "bar"
-      barCall.methodFullName shouldBe "<unresolvedNamespace>->bar:<unresolvedSignature>(0)"
-      barCall.code shouldBe "$f->foo(A::class)->bar();"
+      barCall.methodFullName shouldBe "<unresolvedNamespace>->bar"
+      barCall.code shouldBe "$f->foo(A::class)->bar()"
       
       fooCall.name shouldBe "foo"
-      fooCall.methodFullName shouldBe "<unresolvedNamespace>->foo:<unresolvedSignature>(1)"
+      fooCall.methodFullName shouldBe "<unresolvedNamespace>->foo"
       fooCall.code shouldBe "$f->foo(A::class)"
     }
   } 
@@ -147,7 +147,7 @@ class CallTests extends PhpCode2CpgFixture {
 
     inside(cpg.call.l) { case List(fooCall) =>
       fooCall.name shouldBe "foo"
-      fooCall.methodFullName shouldBe """<unresolvedNamespace>\$f->foo"""
+      fooCall.methodFullName shouldBe """<unresolvedNamespace>->foo"""
       fooCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       fooCall.lineNumber shouldBe Some(2)
       fooCall.code shouldBe "$f->foo($x)"
@@ -169,7 +169,7 @@ class CallTests extends PhpCode2CpgFixture {
 
     inside(cpg.call.filter(_.name != Operators.fieldAccess).l) { case List(fooCall) =>
       fooCall.name shouldBe "$foo"
-      fooCall.methodFullName shouldBe """<unresolvedNamespace>\$$f->$foo"""
+      fooCall.methodFullName shouldBe """<unresolvedNamespace>->$foo"""
       fooCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       fooCall.lineNumber shouldBe Some(2)
       fooCall.code shouldBe "$$f->$foo($x)"

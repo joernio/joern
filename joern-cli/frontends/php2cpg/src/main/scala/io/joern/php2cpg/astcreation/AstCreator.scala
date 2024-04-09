@@ -974,7 +974,7 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
         DispatchTypes.STATIC_DISPATCH
       else
         DispatchTypes.DYNAMIC_DISPATCH
-        
+
     val signature = s"$UnresolvedSignature(${call.args.size})"
 
     val fullName = call.target match {
@@ -985,8 +985,8 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
       }
 
       case Some(_) =>
-        val targetSuffix = targetAst.flatMap(_.rootType).filterNot(_ == TypeConstants.Any).map(typ => s"\\$typ").getOrElse("")
-        s"$UnresolvedNamespace$targetSuffix$callOperator$name:$signature"
+        val targetPrefix = targetAst.flatMap(_.rootType).filterNot(_ == TypeConstants.Any).map(typ => s"\\$typ").getOrElse(UnresolvedNamespace)
+        s"$targetPrefix$callOperator$name"
 
       case None if PhpBuiltins.FuncNames.contains(name) =>
         // No signature/namespace for MFN for builtin functions to ensure stable names as type info improves.
