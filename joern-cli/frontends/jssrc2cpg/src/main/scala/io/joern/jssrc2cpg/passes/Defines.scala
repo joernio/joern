@@ -12,12 +12,12 @@ object Defines {
   val Math: String              = "__ecma.Math"
   val Symbol: String            = "__ecma.Symbol"
   val Console: String           = "__whatwg.console"
-  val Object: String            = "object"
-  val BigInt: String            = "bigint"
-  val Unknown: String           = "unknown"
-  val Void: String              = "void"
-  val Never: String             = "never"
-  val Undefined: String         = "undefined"
+  val Object: String            = "__ecma.Object"
+  val BigInt: String            = "__ecma.BigInt"
+  val Unknown: String           = Any
+  val Void: String              = Any
+  val Never: String             = Any
+  val Undefined: String         = Any
   val NodeModulesFolder: String = "node_modules"
   val GlobalNamespace: String   = NamespaceTraversal.globalNamespaceName
 

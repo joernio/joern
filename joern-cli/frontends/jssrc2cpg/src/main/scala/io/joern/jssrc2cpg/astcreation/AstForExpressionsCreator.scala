@@ -59,8 +59,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           base.node match {
             case ThisExpression =>
               val receiverAst = astForNodeWithFunctionReference(callee.json)
-              val baseNode = identifierNode(base, base.code)
-                .dynamicTypeHintFullName(this.rootTypeDecl.map(_.fullName).toSeq)
+              val baseNode    = identifierNode(base, base.code).dynamicTypeHintFullName(typeHintForThisExpression())
               scope.addVariableReference(base.code, baseNode)
               (receiverAst, baseNode, member.code)
             case Identifier =>

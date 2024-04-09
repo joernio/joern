@@ -13,15 +13,18 @@ trait TypeHelper { this: AstCreator =>
   private val ImportMatcher     = Pattern.compile("(typeof )?import\\([\"'](.*)[\"']\\)")
 
   private val TypeReplacements = Map(
-    " any"     -> s" ${Defines.Any}",
-    " unknown" -> s" ${Defines.Unknown}",
-    " number"  -> s" ${Defines.Number}",
-    " null"    -> s" ${Defines.Null}",
-    " string"  -> s" ${Defines.String}",
-    " boolean" -> s" ${Defines.Boolean}",
-    " bigint"  -> s" ${Defines.BigInt}",
-    "{}"       -> Defines.Object,
-    "typeof "  -> ""
+    " any"       -> s" ${Defines.Any}",
+    " unknown"   -> s" ${Defines.Unknown}",
+    " void"      -> s" ${Defines.Void}",
+    " never"     -> s" ${Defines.Never}",
+    " undefined" -> s" ${Defines.Undefined}",
+    " number"    -> s" ${Defines.Number}",
+    " null"      -> s" ${Defines.Null}",
+    " string"    -> s" ${Defines.String}",
+    " boolean"   -> s" ${Defines.Boolean}",
+    " bigint"    -> s" ${Defines.BigInt}",
+    "{}"         -> Defines.Object,
+    "typeof "    -> ""
   )
 
   protected def isPlainTypeAlias(alias: BabelNodeInfo): Boolean = if (hasKey(alias.json, "right")) {
@@ -134,8 +137,10 @@ trait TypeHelper { this: AstCreator =>
       case Some(tpe) => Seq(tpe)
       case None if node.isDefined =>
         typeFor(node.get) match {
-          case t if t != Defines.Any && t != "this" => Seq(t)
-          case _                                    => rootTypeDecl.map(_.fullName).toSeq
+          case tpe if tpe != Defines.Any && tpe != "this" =>
+            val typeFullName = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
+            Seq(typeFullName)
+          case _ => rootTypeDecl.map(_.fullName).toSeq
         }
       case None => rootTypeDecl.map(_.fullName).toSeq
     }
