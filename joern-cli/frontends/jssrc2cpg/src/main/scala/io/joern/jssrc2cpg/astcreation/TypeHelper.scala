@@ -137,10 +137,8 @@ trait TypeHelper { this: AstCreator =>
       case Some(tpe) => Seq(tpe)
       case None if node.isDefined =>
         typeFor(node.get) match {
-          case tpe if tpe != Defines.Any && tpe != "this" =>
-            val typeFullName = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
-            Seq(typeFullName)
-          case _ => rootTypeDecl.map(_.fullName).toSeq
+          case tpe if tpe != Defines.Any && tpe != "this" => if (Defines.isBuiltinType(tpe)) Seq(tpe) else Seq.empty
+          case _                                          => rootTypeDecl.map(_.fullName).toSeq
         }
       case None => rootTypeDecl.map(_.fullName).toSeq
     }
