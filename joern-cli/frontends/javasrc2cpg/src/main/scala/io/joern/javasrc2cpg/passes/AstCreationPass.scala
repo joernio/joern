@@ -78,13 +78,16 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
       false
     }
 
-    Option.when(shouldFetch)(DependencyResolver.getDependencies(Paths.get(inputPath))).flatten match {
-      case Some(deps) => deps.toList
-      case None =>
-        logger.warn(s"Could not fetch dependencies for project at path $inputPath")
-        List()
+    if (shouldFetch) {
+      DependencyResolver.getDependencies(Paths.get(inputPath)) match {
+        case Some(deps) => deps.toList
+        case None =>
+          logger.warn(s"Could not fetch dependencies for project at path $inputPath")
+          List()
+      }
+    } else {
+      List()
     }
-
   }
 
   private def createSymbolSolver(
