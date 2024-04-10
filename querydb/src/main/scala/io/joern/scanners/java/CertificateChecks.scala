@@ -44,8 +44,8 @@ object CertificateChecks extends QueryBundle {
           node.start.repeat(_.cfgNext)(_.until(_.filter(!isPrologue(_))))
 
         cpg.method
-          .nameExact(validators.keys.toSeq: _*)
-          .signatureExact(validators.values.toSeq: _*)
+          .nameExact(validators.keys.toSeq*)
+          .signatureExact(validators.values.toSeq*)
           .cfgFirst
           .flatMap(skipPrologue)
           .filter {

@@ -8,7 +8,7 @@ class DataFlowSolver {
     * and `out`. These maps associate all CFG nodes with the set of definitions at node entry and node exit
     * respectively.
     */
-  def calculateMopSolutionForwards[Node, T <: Iterable[_]](problem: DataFlowProblem[Node, T]): Solution[Node, T] = {
+  def calculateMopSolutionForwards[Node, T <: Iterable[?]](problem: DataFlowProblem[Node, T]): Solution[Node, T] = {
     var out: Map[Node, T] = problem.inOutInit.initOut
     var in                = problem.inOutInit.initIn
     val workList          = mutable.ListBuffer[Node]()
@@ -42,7 +42,7 @@ class DataFlowSolver {
     * and `out`. These maps associate all CFG nodes with the set of definitions at node entry and node exit
     * respectively.
     */
-  def calculateMopSolutionBackwards[Node, T <: Iterable[_]](problem: DataFlowProblem[Node, T]): Solution[Node, T] = {
+  def calculateMopSolutionBackwards[Node, T <: Iterable[?]](problem: DataFlowProblem[Node, T]): Solution[Node, T] = {
     var out: Map[Node, T] = problem.inOutInit.initOut
     var in                = problem.inOutInit.initIn
     val workList          = mutable.ListBuffer[Node]()

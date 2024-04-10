@@ -187,7 +187,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     }
   }
 
-  protected def astForObjectInstantiation(node: RubyNode with ObjectInstantiation): Ast = {
+  protected def astForObjectInstantiation(node: RubyNode & ObjectInstantiation): Ast = {
     val className  = node.target.text
     val methodName = XDefines.ConstructorMethodName
     val (receiverTypeFullName, fullName) = scope.tryResolveTypeReference(className) match {
@@ -265,7 +265,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
                   )(span.spanStart(s"else\n\t${node.lhs.span.text} ${node.op} nil\nend"))
                 }
 
-                def transform(e: RubyNode with ControlFlowExpression): RubyNode =
+                def transform(e: RubyNode & ControlFlowExpression): RubyNode =
                   transformLastRubyNodeInControlFlowExpressionBody(
                     e,
                     x => reassign(node.lhs, node.op, x, transform),
@@ -303,7 +303,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     lhs: RubyNode,
     op: String,
     rhs: RubyNode,
-    transform: (RubyNode with ControlFlowExpression) => RubyNode
+    transform: (RubyNode & ControlFlowExpression) => RubyNode
   ): RubyNode = {
     def stmtListAssigningLastExpression(stmts: List[RubyNode]): List[RubyNode] = stmts match {
       case (head: ControlFlowClause) :: Nil     => clauseAssigningLastExpression(head) :: Nil
@@ -314,7 +314,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case head :: tail => head :: stmtListAssigningLastExpression(tail)
     }
 
-    def clauseAssigningLastExpression(x: RubyNode with ControlFlowClause): RubyNode = x match {
+    def clauseAssigningLastExpression(x: RubyNode & ControlFlowClause): RubyNode = x match {
       case RescueClause(exceptionClassList, assignment, thenClause) =>
         RescueClause(exceptionClassList, assignment, reassign(lhs, op, thenClause, transform))(x.span)
       case EnsureClause(thenClause) => EnsureClause(reassign(lhs, op, thenClause, transform))(x.span)
@@ -341,7 +341,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     astForMemberCallWithoutBlock(call, memberAccess)
   }
 
-  protected def astForSimpleIdentifier(node: RubyNode with RubyIdentifier): Ast = {
+  protected def astForSimpleIdentifier(node: RubyNode & RubyIdentifier): Ast = {
     val name = code(node)
 
     scope.lookupVariable(name) match {
@@ -657,7 +657,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     methodRef
   }
 
-  private def astsForCallWithBlockInExpr[C <: RubyCall](node: RubyNode with RubyCallWithBlock[C]): Ast = {
+  private def astsForCallWithBlockInExpr[C <: RubyCall](node: RubyNode & RubyCallWithBlock[C]): Ast = {
     val Seq(methodDecl, typeDecl, callWithLambdaArg) = astsForCallWithBlock(node): @unchecked
 
     Ast.storeInDiffGraph(methodDecl, diffGraph)

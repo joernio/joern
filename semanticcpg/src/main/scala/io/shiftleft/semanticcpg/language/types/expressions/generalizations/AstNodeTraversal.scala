@@ -210,7 +210,7 @@ class AstNodeTraversal[A <: AstNode](val traversal: Iterator[A]) extends AnyVal 
 
   def walkAstUntilReaching(labels: List[String]): Iterator[StoredNode] =
     traversal
-      .repeat(_.out(EdgeTypes.AST))(_.emitAllButFirst.until(_.hasLabel(labels: _*)))
+      .repeat(_.out(EdgeTypes.AST))(_.emitAllButFirst.until(_.hasLabel(labels*)))
       .dedup
       .cast[StoredNode]
 

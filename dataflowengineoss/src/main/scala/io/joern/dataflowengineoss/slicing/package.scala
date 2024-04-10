@@ -107,18 +107,18 @@ package object slicing {
     */
   implicit class MethodFilterExt(trav: Iterator[Method]) {
 
-    def withMethodNameFilter(implicit config: BaseConfig[_]): Iterator[Method] = config.methodNameFilter match {
+    def withMethodNameFilter(implicit config: BaseConfig[?]): Iterator[Method] = config.methodNameFilter match {
       case Some(filter) => trav.name(filter)
       case None         => trav
     }
 
-    def withMethodParameterFilter(implicit config: BaseConfig[_]): Iterator[Method] =
+    def withMethodParameterFilter(implicit config: BaseConfig[?]): Iterator[Method] =
       config.methodParamTypeFilter match {
         case Some(filter) => trav.where(_.parameter.evalType(filter))
         case None         => trav
       }
 
-    def withMethodAnnotationFilter(implicit config: BaseConfig[_]): Iterator[Method] =
+    def withMethodAnnotationFilter(implicit config: BaseConfig[?]): Iterator[Method] =
       config.methodAnnotationFilter match {
         case Some(filter) => trav.where(_.annotation.code(filter))
         case None         => trav

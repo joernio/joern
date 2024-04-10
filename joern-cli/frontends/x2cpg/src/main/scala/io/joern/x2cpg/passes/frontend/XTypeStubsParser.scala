@@ -22,7 +22,7 @@ trait TypeStubsParserConfig[R <: X2CpgConfig[R]] { this: R =>
 
 object XTypeStubsParser {
 
-  def parserOptions[R <: X2CpgConfig[R] with TypeStubsParserConfig[R]]: OParser[_, R] = {
+  def parserOptions[R <: X2CpgConfig[R] & TypeStubsParserConfig[R]]: OParser[?, R] = {
     val builder = OParser.builder[R]
     import builder.*
     OParser.sequence(

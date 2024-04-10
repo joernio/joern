@@ -219,7 +219,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
                 assignmentCallAst.nodes
                   .collect { case i: NewIdentifier if localTmpNode.name == i.name => i }
                   .map { i => assignmentCallAst.withRefEdge(i, localTmpNode) }
-                  .reduce(_ merge _)
+                  .reduce(_ `merge` _)
               case RestElement => handleRestInParameters(elementNodeInfo, nodeInfo, paramName)
               case _           => astForNodeWithFunctionReference(elementNodeInfo.json)
             }

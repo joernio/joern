@@ -70,7 +70,7 @@ object MissingLengthCheck extends QueryBundle {
     }
 
     val lowerBounds = arrayAccess.method.controlStructure.condition
-      .where(_.ast.isIdentifier.nameExact(lens: _*))
+      .where(_.ast.isIdentifier.nameExact(lens*))
       .ast
       .isLiteral
       .toInt ++

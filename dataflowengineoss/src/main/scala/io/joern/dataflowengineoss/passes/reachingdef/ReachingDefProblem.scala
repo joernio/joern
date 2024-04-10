@@ -202,7 +202,7 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph)
               .collect {
                 case x if nodeToNumber.contains(x) =>
                   Definition.fromNode(x.asInstanceOf[StoredNode], nodeToNumber)
-              }: _*
+              }*
           )
         }
       }

@@ -125,7 +125,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
         val fieldAccess = head.asInstanceOf[FieldAccess]
         val (sym, ts)   = getSymbolFromCall(fieldAccess)
         val cpgTypes = cpg.typeDecl
-          .fullNameExact(ts.map(_.compUnitFullName).toSeq: _*)
+          .fullNameExact(ts.map(_.compUnitFullName).toSeq*)
           .member
           .nameExact(sym.identifier)
           .flatMap(m => m.typeFullName +: m.dynamicTypeHintFullName)
@@ -197,7 +197,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
       Set(fa.method.fullName)
     } else if (fa.method.typeDecl.nonEmpty) {
       val parentTypes       = fa.method.typeDecl.fullName.toSet
-      val baseTypeFullNames = cpg.typeDecl.fullNameExact(parentTypes.toSeq: _*).inheritsFromTypeFullName.toSet
+      val baseTypeFullNames = cpg.typeDecl.fullNameExact(parentTypes.toSeq*).inheritsFromTypeFullName.toSet
       (parentTypes ++ baseTypeFullNames).filterNot(_.matches("(?i)(any|object)"))
     } else {
       super.getFieldParents(fa)
@@ -251,7 +251,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
   override protected def methodReturnValues(methodFullNames: Seq[String]): Set[String] = {
     /* Look up methods in existing CPG */
     val rs = cpg.method
-      .fullNameExact(methodFullNames: _*)
+      .fullNameExact(methodFullNames*)
       .methodReturn
       .flatMap(mr => mr.typeFullName +: mr.dynamicTypeHintFullName)
       .filterNot(_ == "ANY")

@@ -146,7 +146,7 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     val typeDeclFullName           = fullName.replace(s".${call.name}", "")
     val candidateInheritedMethods =
       cpg.typeDecl
-        .fullNameExact(allSuperClasses(typeDeclFullName).toIndexedSeq: _*)
+        .fullNameExact(allSuperClasses(typeDeclFullName).toIndexedSeq*)
         .astChildren
         .isMethod
         .name(call.name)
@@ -209,7 +209,7 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     }
   }
 
-  private def nodesWithFullName(x: String): Iterable[NodeRef[_ <: NodeDb]] =
+  private def nodesWithFullName(x: String): Iterable[NodeRef[? <: NodeDb]] =
     cpg.graph.indexManager.lookup(PropertyNames.FULL_NAME, x).asScala
 
   private def methodFullNameToNode(x: String): Option[Method] =

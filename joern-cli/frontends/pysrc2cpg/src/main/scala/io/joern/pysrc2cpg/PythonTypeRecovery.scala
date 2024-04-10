@@ -126,7 +126,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
     val fieldParents = getFieldParents(fa)
     fa.astChildren.l match {
       case List(base: Identifier, fi: FieldIdentifier) if base.name.equals("self") && fieldParents.nonEmpty =>
-        val referencedFields = cpg.typeDecl.fullNameExact(fieldParents.toSeq: _*).member.nameExact(fi.canonicalName)
+        val referencedFields = cpg.typeDecl.fullNameExact(fieldParents.toSeq*).member.nameExact(fi.canonicalName)
         val globalTypes =
           referencedFields.flatMap(m => m.typeFullName +: m.dynamicTypeHintFullName).filterNot(_ == Constants.ANY).toSet
         associateTypes(i, globalTypes)
@@ -147,7 +147,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
       Set(fa.method.fullName)
     } else if (fa.method.typeDecl.nonEmpty) {
       val parentTypes       = fa.method.typeDecl.fullName.toSet
-      val baseTypeFullNames = cpg.typeDecl.fullNameExact(parentTypes.toSeq: _*).inheritsFromTypeFullName.toSet
+      val baseTypeFullNames = cpg.typeDecl.fullNameExact(parentTypes.toSeq*).inheritsFromTypeFullName.toSet
       (parentTypes ++ baseTypeFullNames).filterNot(_.matches("(?i)(any|object)"))
     } else {
       super.getFieldParents(fa)

@@ -32,7 +32,7 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
   protected def calleeNames(c: Call): Seq[String] =
     c.dynamicTypeHintFullName.filterNot(_.equals("ANY")).distinct
 
-  protected def callees(names: Seq[String]): List[Method] = cpg.method.fullNameExact(names: _*).toList
+  protected def callees(names: Seq[String]): List[Method] = cpg.method.fullNameExact(names*).toList
 
   override def run(builder: DiffGraphBuilder): Unit = linkCalls(builder)
 
