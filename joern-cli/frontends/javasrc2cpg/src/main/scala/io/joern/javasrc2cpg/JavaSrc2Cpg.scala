@@ -78,5 +78,10 @@ object JavaSrc2Cpg {
           "JAVASRC_JDK_PATH",
           "Path to the JDK home used for retrieving type information about builtin Java types."
         )
+    case FetchDependencies
+        extends JavaSrcEnvVar(
+          "JAVASRC_FETCH_DEPENDENCIES",
+          "If set, javasrc2cpg will fetch dependencies regardless of the --fetch-dependencies flag."
+        )
   }
 }

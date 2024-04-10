@@ -66,17 +66,24 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
   }
 
   private def getDependencyList(inputPath: String): List[String] = {
-    if (config.fetchDependencies) {
-      DependencyResolver.getDependencies(Paths.get(inputPath)) match {
-        case Some(deps) => deps.toList
-        case None =>
-          logger.warn(s"Could not fetch dependencies for project at path $inputPath")
-          List()
-      }
+    val shouldFetch = if (System.getenv(JavaSrcEnvVar.FetchDependencies.name).nonEmpty) {
+      logger.info(s"Enabling dependency fetching: Environment variable ${JavaSrcEnvVar.FetchDependencies.name} is set")
+      true
+    } else if (config.fetchDependencies) {
+      logger.info(s"Enabling dependency fetching: --fetch-dependencies flag was set")
+      true
     } else {
-      logger.info("dependency resolving disabled")
-      List()
+      logger.info("dependency resolving not enabled")
+      false
     }
+
+    Option.when(shouldFetch)(DependencyResolver.getDependencies(Paths.get(inputPath))).flatten match {
+      case Some(deps) => deps.toList
+      case None =>
+        logger.warn(s"Could not fetch dependencies for project at path $inputPath")
+        List()
+    }
+
   }
 
   private def createSymbolSolver(
