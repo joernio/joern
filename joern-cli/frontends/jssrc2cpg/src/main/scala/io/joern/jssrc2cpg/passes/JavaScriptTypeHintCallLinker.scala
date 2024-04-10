@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.language.*
 
 class JavaScriptTypeHintCallLinker(cpg: Cpg) extends XTypeHintCallLinker(cpg) {
 
-  override protected val pathSep = ':'
+  override protected val pathSep = ":"
 
   override protected def calls: Iterator[Call] = cpg.call
     .or(_.nameNot("<operator>.*", "<operators>.*"), _.name("<operator>.new"))

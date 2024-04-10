@@ -177,7 +177,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
       case t if t.matches(".*\\.<(member|returnValue|indexAccess)>(\\(.*\\))?") =>
         super.createCallFromIdentifierTypeFullName(typeFullName, callName)
       case t if isConstructor(tName) =>
-        Seq(t, callName).mkString(pathSep.toString)
+        Seq(t, callName).mkString(pathSep)
       case _ => super.createCallFromIdentifierTypeFullName(typeFullName, callName)
     }
   }

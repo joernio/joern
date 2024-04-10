@@ -14,6 +14,7 @@ import overflowdb.BatchedUpdate
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import scopt.OParser
 
+import java.util.regex.{Matcher, Pattern}
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
@@ -196,7 +197,7 @@ object XTypeRecovery {
 
   val unknownTypePattern: Regex = s"(i?)(UNKNOWN|ANY|${Defines.UnresolvedNamespace}).*".r
 
-  def dummyMemberType(prefix: String, memberName: String, sep: Char = '.'): String =
+  def dummyMemberType(prefix: String, memberName: String, sep: String = "."): String =
     s"$prefix$sep$DummyMemberLoad($memberName)"
 
   /** Scans the type for placeholder/dummy types.
@@ -289,7 +290,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 
   /** The delimiter used to separate methods/functions in qualified names.
     */
-  protected val pathSep = '.'
+  protected val pathSep = "."
 
   /** New node tracking set.
     */
@@ -497,7 +498,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
           val fullNames               = returns.typeFullName ++ returnWithPossibleTypes.possibleTypes
           fullNames.toSet match {
             case xs if xs.nonEmpty => xs
-            case _ => symbolTable.get(x).map(t => Seq(t, XTypeRecovery.DummyReturnType).mkString(pathSep.toString))
+            case _ => symbolTable.get(x).map(t => Seq(t, XTypeRecovery.DummyReturnType).mkString(pathSep))
           }
         case x =>
           symbolTable.get(x)
@@ -535,7 +536,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** Returns the appropriate field parent scope.
     */
   protected def getFieldParents(fa: FieldAccess): Set[String] = {
-    val fieldName = getFieldName(fa).split(pathSep).last
+    val fieldName = getFieldName(fa).split(Pattern.quote(pathSep)).last
     Try(cpg.member.nameExact(fieldName).typeDecl.fullName.filterNot(_.contains("ANY")).toSet) match
       case Failure(exception) =>
         logger.warn("Unable to obtain name of member's parent type declaration", exception)
@@ -859,7 +860,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         // TODO: This is more prone to giving dummy values as it does not do global look-ups
         //  but this is okay for now
         val buf = mutable.ArrayBuffer.empty[String]
-        for (segment <- baseName.split(pathSep) ++ Array(fi.canonicalName)) {
+        for (segment <- baseName.split(Pattern.quote(pathSep)) ++ Array(fi.canonicalName)) {
           val types =
             if (buf.isEmpty) symbolTable.get(LocalVar(segment))
             else buf.flatMap(t => symbolTable.get(LocalVar(s"$t$pathSep$segment"))).toSet
@@ -938,7 +939,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       case ::(head: Call, Nil) if head.argumentOut.headOption.exists(symbolTable.contains) =>
         symbolTable
           .get(head.argumentOut.head)
-          .map(t => Seq(t, head.name, XTypeRecovery.DummyReturnType).mkString(pathSep.toString))
+          .map(t => Seq(t, head.name, XTypeRecovery.DummyReturnType).mkString(pathSep))
       case ::(identifier: Identifier, Nil) if symbolTable.contains(identifier) =>
         symbolTable.get(identifier)
       case ::(head: Call, Nil) =>
@@ -1101,7 +1102,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     columnNo: Option[Integer]
   ): NewMethodRef =
     NewMethodRef()
-      .code(s"${baseName.map(_.appended(pathSep)).getOrElse("")}$funcName")
+      .code(s"${baseName.map(_ + pathSep).getOrElse("")}$funcName")
       .methodFullName(methodFullName)
       .lineNumber(lineNo)
       .columnNumber(columnNo)

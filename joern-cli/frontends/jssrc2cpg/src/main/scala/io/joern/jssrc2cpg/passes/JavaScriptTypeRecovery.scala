@@ -35,7 +35,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
 
   import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
 
-  override protected val pathSep = ':'
+  override protected val pathSep = ":"
 
   /** A heuristic method to determine if a call is a constructor or not.
     */
@@ -94,7 +94,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
         }
         .flatMap {
           case (t, ts) if Set(t) == ts => Set(t)
-          case (_, ts)                 => ts.map(_.replaceAll("\\.(?!js::program)", pathSep.toString))
+          case (_, ts)                 => ts.map(_.replaceAll("\\.(?!js::program)", pathSep))
         }
       p match {
         case _: MethodParameterIn => symbolTable.put(p, resolvedHints)
