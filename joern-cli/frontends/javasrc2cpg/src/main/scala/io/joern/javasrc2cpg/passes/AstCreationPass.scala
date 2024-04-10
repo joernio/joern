@@ -66,7 +66,19 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
   }
 
   private def getDependencyList(inputPath: String): List[String] = {
-    if (config.fetchDependencies) {
+    val envVarValue = Option(System.getenv(JavaSrcEnvVar.FetchDependencies.name))
+    val shouldFetch = if (envVarValue.exists(_.nonEmpty)) {
+      logger.info(s"Enabling dependency fetching: Environment variable ${JavaSrcEnvVar.FetchDependencies.name} is set")
+      true
+    } else if (config.fetchDependencies) {
+      logger.info(s"Enabling dependency fetching: --fetch-dependencies flag was set")
+      true
+    } else {
+      logger.info("dependency resolving not enabled")
+      false
+    }
+
+    if (shouldFetch) {
       DependencyResolver.getDependencies(Paths.get(inputPath)) match {
         case Some(deps) => deps.toList
         case None =>
@@ -74,7 +86,6 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
           List()
       }
     } else {
-      logger.info("dependency resolving disabled")
       List()
     }
   }
