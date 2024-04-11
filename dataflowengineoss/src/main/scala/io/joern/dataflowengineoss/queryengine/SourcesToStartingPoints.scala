@@ -289,7 +289,7 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
     val fieldAccessUsages = fieldIdentifiers.isFieldIdentifier
       .canonicalNameExact(name)
       .inFieldAccess
-      .where(_.argument(1).codeExact(thisRefs: _*))
+      .where(_.argument(1).codeExact(thisRefs*))
       .takeWhile(notLeftHandOfAssignment)
       .l
     (identifierUsages ++ fieldAccessUsages).sortBy(x => (x.lineNumber, x.columnNumber)).headOption.toList

@@ -24,7 +24,7 @@ object PathTraversals extends QueryBundle {
         val zipEntryTypeFullNames =
           List("org.apache.commons.compress.archivers.ArchiveEntry", "java.util.zip.ZipEntry")
         def zipEntryParams =
-          cpg.method.parameter.typeFullNameExact(zipEntryTypeFullNames: _*)
+          cpg.method.parameter.typeFullNameExact(zipEntryTypeFullNames*)
         def fileOutStreamInit =
           cpg.method.fullNameExact("java.io.FileOutputStream.<init>:void(java.io.File)").callIn
         def pathStartsWithCalls =

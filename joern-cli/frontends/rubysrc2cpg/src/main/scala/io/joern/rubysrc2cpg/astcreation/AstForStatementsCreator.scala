@@ -187,7 +187,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
    * foo(<args>, <method_ref>)
    * ```
    */
-  protected def astsForCallWithBlock[C <: RubyCall](node: RubyNode with RubyCallWithBlock[C]): Seq[Ast] = {
+  protected def astsForCallWithBlock[C <: RubyCall](node: RubyNode & RubyCallWithBlock[C]): Seq[Ast] = {
     val Seq(methodDecl, typeDecl, _, methodRef) = astForDoBlock(node.block): @unchecked
     val methodRefDummyNode                      = methodRef.root.map(DummyNode(_)(node.span)).toList
 
@@ -203,7 +203,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     methodDecl :: typeDecl :: callWithLambdaArg :: Nil
   }
 
-  protected def astForDoBlock(block: Block with RubyNode): Seq[Ast] = {
+  protected def astForDoBlock(block: Block & RubyNode): Seq[Ast] = {
     // Create closure structures: [MethodDecl, TypeRef, MethodRef]
     val methodName = nextClosureName()
 
@@ -256,7 +256,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
     node match
       case expr: ControlFlowExpression =>
-        def transform(e: RubyNode with ControlFlowExpression): RubyNode =
+        def transform(e: RubyNode & ControlFlowExpression): RubyNode =
           transformLastRubyNodeInControlFlowExpressionBody(e, returnLastNode(_, transform), elseReturnNil)
         astsForStatement(transform(expr))
       case node: MemberCallWithBlock => returnAstForRubyCall(node)
@@ -283,7 +283,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         astsForStatement(node).toList
   }
 
-  private def returnAstForRubyCall[C <: RubyCall](node: RubyNode with RubyCallWithBlock[C]): Seq[Ast] = {
+  private def returnAstForRubyCall[C <: RubyCall](node: RubyNode & RubyCallWithBlock[C]): Seq[Ast] = {
     val Seq(methodDecl, typeDecl, callAst) = astsForCallWithBlock(node): @unchecked
 
     Ast.storeInDiffGraph(methodDecl, diffGraph)
@@ -328,7 +328,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     * @return
     *   the RubyNode with an explicit expression
     */
-  private def returnLastNode(x: RubyNode, transform: (RubyNode with ControlFlowExpression) => RubyNode): RubyNode = {
+  private def returnLastNode(x: RubyNode, transform: (RubyNode & ControlFlowExpression) => RubyNode): RubyNode = {
     def statementListReturningLastExpression(stmts: List[RubyNode]): List[RubyNode] = stmts match {
       case (head: ControlFlowClause) :: Nil     => clauseReturningLastExpression(head) :: Nil
       case (head: ControlFlowExpression) :: Nil => transform(head) :: Nil
@@ -338,7 +338,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case head :: tail                         => head :: statementListReturningLastExpression(tail)
     }
 
-    def clauseReturningLastExpression(x: RubyNode with ControlFlowClause): RubyNode = x match {
+    def clauseReturningLastExpression(x: RubyNode & ControlFlowClause): RubyNode = x match {
       case RescueClause(exceptionClassList, assignment, thenClause) =>
         RescueClause(exceptionClassList, assignment, returnLastNode(thenClause, transform))(x.span)
       case EnsureClause(thenClause)           => EnsureClause(returnLastNode(thenClause, transform))(x.span)
@@ -366,7 +366,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     *   RubyNode with transform function applied
     */
   protected def transformLastRubyNodeInControlFlowExpressionBody(
-    node: RubyNode with ControlFlowExpression,
+    node: RubyNode & ControlFlowExpression,
     transform: RubyNode => RubyNode,
     defaultElseBranch: TextSpan => Option[ElseClause]
   ): RubyNode = {

@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory
 
 import scala.util.{Failure, Try}
 
-class DependencyPass(cpg: Cpg, buildFiles: List[String], registerPackageId: String => _)
+class DependencyPass(cpg: Cpg, buildFiles: List[String], registerPackageId: String => ?)
     extends ForkJoinParallelCpgPass[File](cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)

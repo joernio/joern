@@ -16,7 +16,7 @@ class QueryDatabase(
 
   /** Determine all bundles on the class path
     */
-  def allBundles: List[Class[_ <: QueryBundle]] =
+  def allBundles: List[Class[? <: QueryBundle]] =
     new Reflections(
       new ConfigurationBuilder().setUrls(
         ClasspathHelper.forPackage(namespace, ClasspathHelper.contextClassLoader(), ClasspathHelper.staticClassLoader())
@@ -36,7 +36,7 @@ class QueryDatabase(
   def queriesInBundle[T <: QueryBundle](bundle: Class[T]): List[Query] = {
     val instance = bundle.getField("MODULE$").get(null)
     queryCreatorsInBundle(bundle).map { case (method, args) =>
-      val query           = method.invoke(instance, args: _*).asInstanceOf[Query]
+      val query           = method.invoke(instance, args*).asInstanceOf[Query]
       val bundleNamespace = bundle.getPackageName
       // the namespace currently looks like `io.joern.scanners.c.CopyLoops`
       val namespaceParts = bundleNamespace.split('.')
@@ -82,7 +82,7 @@ class DefaultArgumentProvider {
     None
   }
 
-  final def defaultArgument(method: Method, bundle: Class[_], parameter: Parameter, i: Int): Any = {
+  final def defaultArgument(method: Method, bundle: Class[?], parameter: Parameter, i: Int): Any = {
     val instance         = bundle.getField("MODULE$").get(null)
     val defaultArgOption = typeSpecificDefaultArg(parameter.getType.getTypeName)
     defaultArgOption.getOrElse {

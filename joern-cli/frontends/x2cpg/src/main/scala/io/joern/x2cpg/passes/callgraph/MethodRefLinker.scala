@@ -17,7 +17,7 @@ class MethodRefLinker(cpg: Cpg) extends CpgPass(cpg) with LinkingUtil {
     // Create REF edges from METHOD_REFs to METHOD
     linkToSingle(
       cpg,
-      srcNodes = cpg.graph.nodes(srcLabels: _*).toList,
+      srcNodes = cpg.graph.nodes(srcLabels*).toList,
       srcLabels = List(NodeTypes.METHOD_REF),
       dstNodeLabel = NodeTypes.METHOD,
       edgeType = EdgeTypes.REF,

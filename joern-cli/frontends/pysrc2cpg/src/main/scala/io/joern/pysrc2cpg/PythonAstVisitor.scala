@@ -39,7 +39,7 @@ class PythonAstVisitor(
 
   protected val contextStack = new ContextStack()
 
-  private var memOpMap: AstNodeToMemoryOperationMap = _
+  private var memOpMap: AstNodeToMemoryOperationMap = scala.compiletime.uninitialized
 
   private val members = mutable.Map.empty[NewTypeDecl, List[String]]
 
@@ -180,7 +180,7 @@ class PythonAstVisitor(
     result
   }
 
-  private def unhandled(node: ast.iast with ast.iattributes): NewNode = {
+  private def unhandled(node: ast.iast & ast.iattributes): NewNode = {
     val unhandledAsUnknown = true
     if (unhandledAsUnknown) {
       nodeBuilder.unknownNode(node.toString, node.getClass.getName, lineAndColOf(node))

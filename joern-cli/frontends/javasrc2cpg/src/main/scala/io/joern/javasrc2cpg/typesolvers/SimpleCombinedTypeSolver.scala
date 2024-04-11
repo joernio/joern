@@ -14,7 +14,7 @@ import scala.jdk.OptionConverters.RichOptional
 class SimpleCombinedTypeSolver extends TypeSolver {
 
   private val logger             = LoggerFactory.getLogger(this.getClass)
-  private var parent: TypeSolver = _
+  private var parent: TypeSolver = scala.compiletime.uninitialized
   // Ideally all types would be cached in the SimpleCombinedTypeSolver to avoid unnecessary unresolved types
   // from being cached. The EagerSourceTypeSolver preloads all types, however, so separating caching and
   // non-caching solvers avoids caching types twice.

@@ -20,14 +20,14 @@ class EagerSourceTypeSolver(
 ) extends TypeSolver {
 
   private val logger             = LoggerFactory.getLogger(this.getClass)
-  private var parent: TypeSolver = _
+  private var parent: TypeSolver = scala.compiletime.uninitialized
 
   private val foundTypes: Map[String, SymbolReference[ResolvedReferenceTypeDeclaration]] = {
     sourceParser.relativeFilenames
       .flatMap(sourceParser.parseTypesFile)
       .flatMap { cu =>
         symbolSolver.inject(cu)
-        cu.findAll(classOf[TypeDeclaration[_]])
+        cu.findAll(classOf[TypeDeclaration[?]])
           .asScala
           .map { typeDeclaration =>
             val name = typeDeclaration.getFullyQualifiedName.toScala match {

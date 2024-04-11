@@ -15,7 +15,7 @@ import scala.reflect.ClassTag
   * @tparam T
   *   the type/class meta data class.
   */
-trait ProgramSummary[T <: TypeLike[_, _]] {
+trait ProgramSummary[T <: TypeLike[?, ?]] {
 
   /** A mapping between a namespace/directory and the containing types.
     */
@@ -76,7 +76,7 @@ object ProgramSummary {
   *   the type/class meta data class.
   */
 trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: ProgramSummary[T]) {
-  this: Scope[_, _, TypedScopeElement] =>
+  this: Scope[?, ?, TypedScopeElement] =>
 
   /** Tracks the types that are visible to this scope.
     */
@@ -323,7 +323,7 @@ trait TypeLike[M <: MethodLike, F <: FieldLike] {
     * @return
     *   the combination of the two type-like's methods.
     */
-  protected def mergeMethods(o: TypeLike[M, _]): List[M] = {
+  protected def mergeMethods(o: TypeLike[M, ?]): List[M] = {
     val methodNames = methods.map(_.name).toSet
     methods ++ o.methods.filterNot(m => methodNames.contains(m.name))
   }
@@ -335,7 +335,7 @@ trait TypeLike[M <: MethodLike, F <: FieldLike] {
     * @return
     *   the combination of the two type-like's fields.
     */
-  protected def mergeFields(o: TypeLike[_, F]): List[F] = {
+  protected def mergeFields(o: TypeLike[?, F]): List[F] = {
     val fieldNames = fields.map(_.name).toSet
     fields ++ o.fields.filterNot(f => fieldNames.contains(f.name))
   }

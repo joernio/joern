@@ -11,7 +11,7 @@ class TypeRefPass(cpg: Cpg) extends ForkJoinParallelCpgPass[List[Node]](cpg) wit
   val srcLabels = List(NodeTypes.TYPE)
 
   def generateParts(): Array[List[Node]] = {
-    val nodes = cpg.graph.nodes(srcLabels: _*).toList
+    val nodes = cpg.graph.nodes(srcLabels*).toList
     nodes.grouped(getBatchSize(nodes.size)).toArray
   }
   def runOnPart(builder: DiffGraphBuilder, part: List[overflowdb.Node]): Unit = {

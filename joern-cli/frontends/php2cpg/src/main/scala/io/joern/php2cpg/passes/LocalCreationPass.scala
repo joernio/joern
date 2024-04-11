@@ -21,7 +21,7 @@ import io.joern.x2cpg.AstNodeBuilder
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 
 object LocalCreationPass {
-  def allLocalCreationPasses(cpg: Cpg): Iterator[LocalCreationPass[_ <: AstNode]] =
+  def allLocalCreationPasses(cpg: Cpg): Iterator[LocalCreationPass[? <: AstNode]] =
     Iterator(new NamespaceLocalPass(cpg), new MethodLocalPass(cpg))
 }
 

@@ -22,7 +22,7 @@ class ExtensionInheritancePass(cpg: Cpg) extends ConcurrentWriterCpgPass[TypeDec
   ): Unit = {
     val fullNames = (part.inheritsFromTypeFullName ++ fromExtensions.map(_.fullName)).toSet.toSeq
     builder.setNodeProperty(part, PropertyNames.INHERITS_FROM_TYPE_FULL_NAME, fullNames)
-    cpg.typ.fullNameExact(fullNames: _*).foreach(tgt => builder.addEdge(part, tgt, EdgeTypes.INHERITS_FROM))
+    cpg.typ.fullNameExact(fullNames*).foreach(tgt => builder.addEdge(part, tgt, EdgeTypes.INHERITS_FROM))
   }
 
   override def runOnPart(builder: DiffGraphBuilder, part: TypeDecl): Unit = {

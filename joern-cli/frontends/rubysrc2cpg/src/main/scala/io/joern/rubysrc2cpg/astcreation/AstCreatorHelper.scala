@@ -30,7 +30,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def prefixAsBuiltin(x: String): String = s"$builtinPrefix$pathSep$x"
   protected def pathSep                            = "."
 
-  private def astForFieldInstance(name: String, node: RubyNode with RubyFieldIdentifier): Ast = {
+  private def astForFieldInstance(name: String, node: RubyNode & RubyFieldIdentifier): Ast = {
     val identName = node match {
       case _: InstanceFieldIdentifier => Defines.This
       case _: ClassFieldIdentifier    => scope.surroundingTypeFullName.map(_.split("[.]").last).getOrElse(Defines.Any)

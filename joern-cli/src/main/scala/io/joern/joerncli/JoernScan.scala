@@ -129,7 +129,7 @@ object JoernScan extends BridgeBase {
 
   private def dumpQueriesAsJson(outFileName: String): Unit = {
     implicit val engineContext: EngineContext = EngineContext(Semantics.empty)
-    implicit val formats: AnyRef with Formats = Serialization.formats(NoTypeHints)
+    implicit val formats: AnyRef & Formats    = Serialization.formats(NoTypeHints)
     val queryDb                               = new QueryDatabase(new JoernDefaultArgumentProvider(0))
     better.files
       .File(outFileName)
