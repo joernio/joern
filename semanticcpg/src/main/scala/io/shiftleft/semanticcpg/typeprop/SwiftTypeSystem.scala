@@ -2,8 +2,11 @@ package io.shiftleft.semanticcpg.typeprop
 import io.shiftleft.codepropertygraph.generated.{Operators, nodes}
 import io.shiftleft.codepropertygraph.generated.nodes.StoredNode
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.typeprop.TypeProp2.SymFn
 
-class SwiftLanguage(symbolProvider: SymbolProviderInterface) extends CpgLanguageInterface {
+import scala.collection.mutable
+
+class SwiftTypeSystem() extends TypeSystem[nodes.StoredNode] {
 
   override def inputsOff(output: nodes.StoredNode): InputsAndTransferFunc[nodes.StoredNode] = {
     output match {
@@ -11,17 +14,23 @@ class SwiftLanguage(symbolProvider: SymbolProviderInterface) extends CpgLanguage
         
       case call: nodes.Call =>
         val receiverAndArguments = call.receiver ++ call.argument
-        new InputsAndTransferFunc(receiverAndArguments.toBuffer, handleCall(call.methodFullName))
+        val transferFunc = () => {
+          Some("abc")
+        }
+        new InputsAndTransferFunc(receiverAndArguments.toBuffer, transferFunc)
       case identifier: nodes.Identifier =>
         val local = identifier.refsTo.take(1)
         new InputsAndTransferFunc(local.toBuffer, handleIdentifier)
       case local: nodes.Local =>
         // TODO use DFO here. We need the initialising assignment to a local variable
-        val firstIdentifier = local.referencingIdentifiers.sortBy(_.lineNumber).take(1)
-        // Parent call defines the local type. So far the assumption is that this
-        // parent call is always an initialisation assignment.
-        val parentCall = firstIdentifier.astParent.isCall
-        new InputsAndTransferFunc(parentCall.toBuffer, handleLocal)
+        val firstIdentifier = local.referencingIdentifiers.sortBy(_.lineNumber).head
+        val parentCall = firstIdentifier.astParent.asInstanceOf[nodes.Call]
+        val transferFunc = () => {
+          val parentCallSymbol = pointToFullName.get(parentCall).flatMap(fullNameToSym.get)
+          val paramFullName = parentCallSymbol.get.paramFullNames(firstIdentifier.argumentIndex)
+          Some(paramFullName)
+        }
+        new InputsAndTransferFunc(parentCall.toBuffer, transferFunc)
     }
   }
 
@@ -35,10 +44,5 @@ class SwiftLanguage(symbolProvider: SymbolProviderInterface) extends CpgLanguage
   private def handleIdentifier(inputs: collection.Seq[Option[String]]): Option[String] = {
     val localSymFullName = inputs.head
     localSymFullName
-  }
-
-  private def handleLocal(inputs: collection.Seq[Option[String]]): Option[String] = {
-    val assignmentRhsSymFullName = inputs.head
-    assignmentRhsSymFullName
   }
 }

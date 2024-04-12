@@ -2,8 +2,9 @@ package io.joern.swiftsrc2cpg.testfixtures
 
 import io.joern.dataflowengineoss.testfixtures.SemanticTestCpg
 import io.joern.x2cpg.testfixtures.DefaultTestCpg
-import io.shiftleft.semanticcpg.typeprop.{Sym, SymbolProviderInterface}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.typeprop.{ExternalSymbolProvider, SwiftTypeSystem, Sym}
+import io.shiftleft.semanticcpg.language.*
+
 import scala.collection.mutable
 
 class SwiftDefaultTestCpg(val fileSuffix: String)
@@ -17,7 +18,8 @@ class SwiftDefaultTestCpg(val fileSuffix: String)
   }
 
   override protected def applyPostProcessingPasses(): Unit = {
-    new TypeProp2(symbolProvider).run(this.methodReturn.b)
+    val typeSystem = new SwiftTypeSystem()
+    new TypeProp2(typeSystem, symbolProvider).run(this.methodReturn.b)
   }
   
   private val symbolProvider = new TestSymbolProvider()
@@ -27,10 +29,10 @@ class SwiftDefaultTestCpg(val fileSuffix: String)
   }
 }
 
-class TestSymbolProvider() extends SymbolProviderInterface {
+class TestSymbolProvider() extends ExternalSymbolProvider {
   
   private val fullNameToSymbol = mutable.HashMap.empty[String, Sym]
-  override def getSymbol(fullName: String): Option[Sym] = {
+  override def getSymbol(fullName: SymFn): Option[Sym] = {
     fullNameToSymbol.get(fullName)
   }
   

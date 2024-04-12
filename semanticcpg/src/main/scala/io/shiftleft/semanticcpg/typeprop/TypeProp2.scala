@@ -1,30 +1,40 @@
 package io.shiftleft.semanticcpg.typeprop
 
+import io.shiftleft.semanticcpg.typeprop.TypeProp2.SymFn
+
 import scala.collection.mutable
 
 case class InputsAndTransferFunc[Point](inputs: collection.Seq[Point],
-                                        transferFunc: (collection.Seq[Option[String]]) => Option[String])
+                                        transferFunc: () => Option[String])
 
-trait LanguageInterface[Point] {
+trait TypeSystem[Point] {
+  var pointToFullName: mutable.HashMap[Point, SymFn] = _
+  var fullNameToSym: mutable.HashMap[SymFn, Sym] = _
+  
   def inputsOff(output: Point): InputsAndTransferFunc[Point]
 }
 
-trait SymbolProviderInterface {
-  def getSymbol(fullName: String): Option[Sym]
+trait ExternalSymbolProvider {
+  def getSymbol(fullName: SymFn): Option[Sym]
 }
 
-class Sym(val fullName: String, retSym: String, paramSyms: Array[String]) {
-  
+class Sym(val fullName: SymFn, retSym: SymFn, val paramFullNames: Array[SymFn]) {
+
 }
 
 case class StackElement[Point](output: Point,
                                inputsAndTransFunc: InputsAndTransferFunc[Point]
                        )
 
-class TypeProp2[Point](language: LanguageInterface[Point]) {
+class TypeProp2[Point](typeSystem: TypeSystem[Point],
+                       externalSymbolProvider: ExternalSymbolProvider) {
 
   private val propagationStack = mutable.Stack.empty[StackElement[Point]]
-  private val symbolFullNames = mutable.HashMap.empty[Point, String]
+  private val pointToFullName = mutable.HashMap.empty[Point, SymFn]
+  private val fullNameToSymbol = mutable.HashMap.empty[SymFn, Sym]
+
+  typeSystem.pointToFullName = pointToFullName
+  typeSystem.fullNameToSym = fullNameToSymbol
 
   def run(starts: collection.Seq[Point]): Unit = {
     val startsIt = starts.iterator
@@ -37,12 +47,12 @@ class TypeProp2[Point](language: LanguageInterface[Point]) {
 
       while (propagationStack.nonEmpty) {
         val element = propagationStack.head
-        val (fulfilled, notFulfilled) = element.inputsAndTransFunc.inputs.partition(symbolFullNames.contains)
+        val (fulfilled, notFulfilled) = element.inputsAndTransFunc.inputs.partition(pointToFullName.contains)
 
         if (notFulfilled.isEmpty) {
           propagationStack.pop()
-          val symbolFullName = element.inputsAndTransFunc.transferFunc(fulfilled.map(f => Option(symbolFullNames.apply(f))))
-          symbolFullNames.put(element.output, symbolFullName.orNull)
+          val symbolFullName = element.inputsAndTransFunc.transferFunc()
+          pointToFullName.put(element.output, symbolFullName.orNull)
         } else {
           notFulfilled.foreach { notFulfilled =>
             propagationStack.push(elementFromOutput(notFulfilled))
@@ -53,7 +63,12 @@ class TypeProp2[Point](language: LanguageInterface[Point]) {
   }
 
   private def elementFromOutput(output: Point): StackElement[Point] = {
-    val inputsAndTransFunc = language.inputsOff(output)
+    val inputsAndTransFunc = typeSystem.inputsOff(output)
     new StackElement(output, inputsAndTransFunc)
   }
+}
+
+object TypeProp2 {
+  // Symbol full name
+  type SymFn = String
 }
