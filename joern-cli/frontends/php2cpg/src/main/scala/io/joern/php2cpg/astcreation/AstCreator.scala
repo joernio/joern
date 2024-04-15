@@ -67,7 +67,8 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
       returnByRef = false,
       namespacedName = None,
       isClassMethod = false,
-      attributes = file.attributes
+      attributes = file.attributes,
+      attributeGroups = Seq.empty[PhpAttributeGroup]
     )
   }
 
@@ -91,7 +92,8 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
       classLikeType = ClassLikeTypes.Class,
       scalarType = None,
       hasConstructor = false,
-      attributes = file.attributes
+      attributes = file.attributes,
+      Seq.empty[PhpAttributeGroup]
     )
 
     val globalTypeDeclAst = astForClassLikeStmt(globalTypeDeclStmt)
@@ -236,10 +238,24 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
     val methodBodyStmts = bodyPrefixAsts ++ decl.stmts.flatMap(astsForStmt)
     val methodReturn    = newMethodReturnNode(returnType, line = line(decl), column = None)
 
-    val methodBody = blockAst(blockNode(decl), methodBodyStmts)
+    val attributeAsts = decl.attributeGroups.flatMap(astForAttributeGroup)
+    val methodBody    = blockAst(blockNode(decl), methodBodyStmts)
 
     scope.popScope()
-    methodAstWithAnnotations(method, parameters, methodBody, methodReturn, modifiers)
+    methodAstWithAnnotations(method, parameters, methodBody, methodReturn, modifiers, attributeAsts)
+  }
+
+  private def astForAttributeGroup(attrGrp: PhpAttributeGroup): Seq[Ast] = {
+    attrGrp.attrs.map(astForAttribute)
+  }
+
+  private def astForAttribute(attribute: PhpAttribute): Ast = {
+    val name     = attribute.name
+    val fullName = composeMethodFullName(name.name, true)
+    val _annotationNode =
+      annotationNode(attribute, code = name.name, attribute.name.name, fullName)
+    val argsAst = attribute.args.map(astForCallArg)
+    annotationAst(_annotationNode, argsAst)
   }
 
   private def stmtBodyBlockAst(stmt: PhpStmtWithBody): Ast = {
@@ -260,10 +276,11 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
     val byRefCodePrefix = if (param.byRef) "&" else ""
     val code            = s"$byRefCodePrefix$$${param.name}"
     val paramNode = parameterInNode(param, param.name, code, index, param.isVariadic, evaluationStrategy, typeFullName)
+    val attributeAsts = param.attributeGroups.flatMap(astForAttributeGroup)
 
     scope.addToScope(param.name, paramNode)
 
-    Ast(paramNode)
+    Ast(paramNode).withChildren(attributeAsts)
   }
 
   private def astForExpr(expr: PhpExpr): Ast = {
@@ -732,11 +749,12 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
     val createDefaultConstructor = stmt.hasConstructor
 
     scope.pushNewScope(typeDecl)
-    val bodyStmts = astsForClassLikeBody(stmt, stmt.stmts, createDefaultConstructor)
-    val modifiers = stmt.modifiers.map(newModifierNode).map(Ast(_))
+    val bodyStmts      = astsForClassLikeBody(stmt, stmt.stmts, createDefaultConstructor)
+    val modifiers      = stmt.modifiers.map(newModifierNode).map(Ast(_))
+    val annotationAsts = stmt.attributeGroups.flatMap(astForAttributeGroup)
     scope.popScope()
 
-    Ast(typeDecl).withChildren(modifiers).withChildren(bodyStmts)
+    Ast(typeDecl).withChildren(modifiers).withChildren(bodyStmts).withChildren(annotationAsts)
   }
 
   private def astForStaticAndConstInits: Option[Ast] = {
@@ -1431,7 +1449,8 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
       closureExpr.returnByRef,
       namespacedName = None,
       isClassMethod = closureExpr.isStatic,
-      closureExpr.attributes
+      closureExpr.attributes,
+      List.empty[PhpAttributeGroup]
     )
     val methodAst = astForMethodDecl(methodDecl, localsForUses.map(Ast(_)), Option(methodName))
 
