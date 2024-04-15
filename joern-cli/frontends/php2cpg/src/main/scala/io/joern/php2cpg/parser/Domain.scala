@@ -52,6 +52,9 @@ object Domain {
     val isNull    = s"is_null"
     val unset     = s"unset"
     val shellExec = s"shell_exec"
+
+    // Used for composer dependencies
+    val autoload = "<autoload>"
   }
 
   object PhpDomainTypeConstants {
