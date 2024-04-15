@@ -7,7 +7,7 @@ val CaskVersion           = "0.9.2"
 val CirceVersion          = "0.14.6"
 val ZeroturnaroundVersion = "1.17"
 val OsLibVersion          = "0.9.3"
-val PprintVersion         = "0.8.1"
+val PprintVersion         = "0.9.0"
 val CommonsLangVersion    = "3.14.0"
 
 dependsOn(
