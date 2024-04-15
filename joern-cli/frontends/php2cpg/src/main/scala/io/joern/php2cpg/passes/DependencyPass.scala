@@ -24,7 +24,7 @@ class DependencyPass(cpg: Cpg, composerPaths: List[String]) extends ForkJoinPara
     val composer =
       composerFile.inputStream.apply(is => Try(read[Composer](ujson.Readable.fromByteArray(is.readAllBytes())))) match {
         case Failure(exception) =>
-          logger.error("Unable to deserialize `composer.json`", exception)
+          logger.error(s"Unable to deserialize `${composerFile.pathAsString}`", exception)
           Composer()
         case Success(composer) => composer
       }
