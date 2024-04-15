@@ -57,4 +57,9 @@ class SemVerParserTests extends AnyWordSpec with Matchers {
       .map(_.toString) shouldBe List("1.0.0-alpha", "1.0.0", "2.0.0", "2.1.0", "2.1.1")
   }
 
+  "be able to parse a fuzzy regex and normalize it" in {
+    SemVer(">=7.*.0") shouldBe SemVer(7, 0, 0)
+    SemVer("~=3.*") shouldBe SemVer(3, 0, 0)
+  }
+
 }

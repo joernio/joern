@@ -8,41 +8,61 @@ package io.joern.x2cpg.utils
   */
 object SemVer {
 
+  /** Parses a raw semver string and coverts fuzzy semver to a regular semver with some heuristics.
+    * @param rawString
+    *   the string to parse.
+    * @return
+    *   a regular SemVer object.
+    */
   def apply(rawString: String): SemVer = {
+
+    def parse(regularString: String): SemVer = {
+      val buildStart      = regularString.indexOf("+")
+      val hasBuild        = buildStart > 0
+      val preReleaseStart = regularString.indexOf("-")
+      val hasPreRelease   = preReleaseStart > 0 && (if hasBuild then preReleaseStart < buildStart else true)
+
+      val versionString =
+        if (hasPreRelease) regularString.substring(0, preReleaseStart)
+        else if (hasBuild) regularString.substring(0, buildStart)
+        else regularString
+
+      if versionString.endsWith(".") || versionString.startsWith(".") then
+        throw SemVerParsingException(s"Unable to parse core version '$versionString'")
+
+      val (major, minor, patch) = parseVersionCore(versionString)
+      if (major < 0 || minor < 0 || patch < 0)
+        throw new SemVerParsingException(s"Found a negative integer within the core version '$versionString'")
+
+      val preRelease =
+        if (hasPreRelease && hasBuild)
+          regularString.substring(versionString.length, buildStart).split("-").filterNot(_.isBlank).toList
+        else if (hasPreRelease) regularString.substring(versionString.length).split("-").filterNot(_.isBlank).toList
+        else Nil
+
+      val build =
+        if (hasBuild) Option(regularString.substring(buildStart + 1))
+        else None
+
+      SemVer(major, minor, patch, preRelease, build)
+    }
+
     if (rawString.isBlank) throw SemVerParsingException("Blank string given")
 
-    val buildStart      = rawString.indexOf("+")
-    val hasBuild        = buildStart > 0
-    val preReleaseStart = rawString.indexOf("-")
-    val hasPreRelease   = preReleaseStart > 0 && (if hasBuild then preReleaseStart < buildStart else true)
-
-    val versionString =
-      if (hasPreRelease) rawString.substring(0, preReleaseStart)
-      else if (hasBuild) rawString.substring(0, buildStart)
-      else rawString
-
-    if versionString.endsWith(".") || versionString.startsWith(".") then
-      throw SemVerParsingException(s"Unable to parse core version '$versionString'")
-
-    val (major, minor, patch) = parseVersionCore(versionString)
-    if (major < 0 || minor < 0 || patch < 0)
-      throw new SemVerParsingException(s"Found a negative integer within the core version '$versionString'")
-
-    val preRelease =
-      if (hasPreRelease && hasBuild)
-        rawString.substring(versionString.length, buildStart).split("-").filterNot(_.isBlank).toList
-      else if (hasPreRelease) rawString.substring(versionString.length).split("-").filterNot(_.isBlank).toList
-      else Nil
-
-    val build =
-      if (hasBuild) Option(rawString.substring(buildStart + 1))
-      else None
-
-    SemVer(major, minor, patch, preRelease, build)
+    val regularString = rawString
+      .replaceAll("^(<=|>=|==|!=|~=|>|<)", "") // ignore equality prefixes
+      .trim
+    parse(regularString)
   }
 
   private def parseVersionCore(versionCore: String): (Int, Int, Int) = {
-    versionCore.split("[.]").map(Integer.parseInt).toList match {
+    versionCore
+      .split("[.]")
+      .map {
+        case "*" => 0 // ignore fuzzy version
+        case x   => Integer.parseInt(x)
+      }
+      .toList match {
       case major :: minor :: patch :: xs => (major, minor, patch)
       case major :: minor :: Nil         => (major, minor, 0)
       case major :: Nil                  => (major, 0, 0)
