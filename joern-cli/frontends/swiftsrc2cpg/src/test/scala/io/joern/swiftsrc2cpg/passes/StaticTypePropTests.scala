@@ -17,7 +17,6 @@ class StaticTypePropTests extends SwiftSrc2CpgSuite(withPostProcessing = true) {
 
     cpg.method.l
   }
-
   "basic test 2" in {
     val cpg = code(
       """

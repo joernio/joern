@@ -1,5 +1,5 @@
 package io.shiftleft.semanticcpg.typeprop
-import io.shiftleft.codepropertygraph.generated.{Operators, nodes}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
 import io.shiftleft.codepropertygraph.generated.nodes.StoredNode
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.typeprop.TypeProp2.SymFn
@@ -12,10 +12,11 @@ class SwiftTypeSystem() extends TypeSystem[nodes.StoredNode] {
     output match {
       case call: nodes.Call if call.methodFullName == Operators.assignment =>
         
-      case call: nodes.Call =>
+      case call: nodes.Call if call.dispatchType == DispatchTypes.STATIC_DISPATCH =>
+        // TODO for now we ignore receiver and argument
         val receiverAndArguments = call.receiver ++ call.argument
         val transferFunc = () => {
-          Some("abc")
+          Some(call.methodFullName)
         }
         new InputsAndTransferFunc(receiverAndArguments.toBuffer, transferFunc)
       case identifier: nodes.Identifier =>

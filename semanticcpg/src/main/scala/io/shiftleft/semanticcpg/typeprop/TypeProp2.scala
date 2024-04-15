@@ -10,7 +10,8 @@ case class InputsAndTransferFunc[Point](inputs: collection.Seq[Point],
 trait TypeSystem[Point] {
   var pointToFullName: mutable.HashMap[Point, SymFn] = _
   var fullNameToSym: mutable.HashMap[SymFn, Sym] = _
-  
+  var nameToFullName: mutable.HashMap()
+
   def inputsOff(output: Point): InputsAndTransferFunc[Point]
 }
 
