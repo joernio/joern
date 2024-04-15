@@ -62,4 +62,16 @@ class SemVerParserTests extends AnyWordSpec with Matchers {
     SemVer("~=3.*") shouldBe SemVer(3, 0, 0)
   }
 
+  "be able to deserialize SemVer from JSON" in {
+    import upickle.default.*
+
+    val jsonStr =
+      """{
+        |   "foo": "1.0.0"
+        |}
+        |""".stripMargin
+
+    read[Map[String, SemVer]](jsonStr) shouldBe Map("foo" -> SemVer(1, 0, 0))
+  }
+
 }

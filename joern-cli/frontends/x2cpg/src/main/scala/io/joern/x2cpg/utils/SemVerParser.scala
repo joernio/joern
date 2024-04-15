@@ -1,5 +1,9 @@
 package io.joern.x2cpg.utils
 
+import io.joern.x2cpg.utils.SemVer.getClass
+import org.slf4j.LoggerFactory
+import upickle.default.*
+
 /** Parses the given string as if it contains a semver version, or refers to some regex matching some other semver
   * versions.
   *
@@ -7,6 +11,8 @@ package io.joern.x2cpg.utils
   *   <a href="https://semver.org">SemVer</a>
   */
 object SemVer {
+
+  private val logger = LoggerFactory.getLogger(getClass)
 
   /** Parses a raw semver string and coverts fuzzy semver to a regular semver with some heuristics.
     * @param rawString
@@ -69,6 +75,20 @@ object SemVer {
       case Nil => throw new SemVerParsingException("Empty core version found while parsing sem-ver version!")
     }
   }
+
+  /** Allows converting to and from JSON with `ujson`.
+    */
+  given ReadWriter[SemVer] =
+    readwriter[ujson.Value]
+      .bimap[SemVer](
+        x => ujson.Str(x.toString),
+        {
+          case json @ (j: ujson.Str) => SemVer(json.str)
+          case x =>
+            logger.warn(s"Unexpected value type for semantic versioning strings: ${x.getClass}")
+            SemVer("<unknown>")
+        }
+      )
 
 }
 
