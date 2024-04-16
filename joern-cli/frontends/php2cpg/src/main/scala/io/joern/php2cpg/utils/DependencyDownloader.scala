@@ -1,8 +1,10 @@
 package io.joern.php2cpg.utils
 
 import better.files.File
+import com.github.sh4869.semver_parser.{Range, SemVer}
 import io.joern.php2cpg.Config
 import io.joern.php2cpg.parser.Domain.PhpOperators
+import io.joern.php2cpg.passes.{Autoload, Composer}
 import io.joern.x2cpg.astgen.AstGenRunner.DefaultAstGenRunnerResult
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Dependency
@@ -10,9 +12,10 @@ import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 import upickle.default.*
 
-import java.io.FileOutputStream
+import java.io.{FileOutputStream, IOException}
 import java.net.{HttpURLConnection, URI, URL, URLConnection}
 import java.util.zip.{GZIPInputStream, InflaterInputStream, ZipEntry}
+import javax.json.JsonException
 import scala.util.{Failure, Success, Try, Using}
 
 /** Queries <a href="https://packagist.org">Packgist</a> for dependencies and downloads them.
@@ -30,19 +33,12 @@ class DependencyDownloader(cpg: Cpg, config: Config) {
   def download(): File = {
     val dir = File.newTemporaryDirectory("joern-php2cpg").deleteOnExit(swallowIOExceptions = true)
     cpg.dependency.filterNot(isAutoloadedDependency).foreach(downloadDependency(dir, _))
-    unzipDependencies(dir)
     dir
   }
 
   private def isAutoloadedDependency(dependency: Dependency): Boolean = {
     dependency.version.startsWith(PhpOperators.autoload)
   }
-
-  private case class Dist(reference: String, shasum: String, `type`: String, url: URL) derives ReadWriter
-
-  private case class Package(dist: Dist, version_normalized: String) derives ReadWriter
-
-  private case class PackagistResponse(packages: Map[String, Package]) derives ReadWriter
 
   /** Downloads the dependency to a temporary directory. This will be a `zip` file for each dependency respectively.
     *
@@ -52,14 +48,31 @@ class DependencyDownloader(cpg: Cpg, config: Config) {
     *   the dependency to download.
     */
   private def downloadDependency(targetDir: File, dependency: Dependency): Unit = {
+    Thread.sleep(100) // throttling
 
-    val dependencyName    = dependency.name.strip()
-    val dependencyVersion = dependency.version // TODO: Parse properly
+    val dependencyName  = dependency.name.strip()
+    val dependencyRange = Range(dependency.version)
 
-    dependencyName.split("\\\\").toList match {
+    def getCompatiblePackage(vendor: String, pack: String): Option[Package] = Try {
+      Using.resource(URI(s"https://$PACKAGIST_API/$vendor/$pack.json").toURL.openStream()) { is =>
+        read[PackageReleases](ujson.Readable.fromByteArray(is.readAllBytes()))
+      }
+    } match {
+      case Failure(_: IOException) =>
+        logger.error(s"Unable to resolve package information for `$vendor/$pack`, skipping...`")
+        None
+      case Failure(e) =>
+        logger.error(s"Unable to handle package information `$vendor/$pack`, skipping...`", e)
+        None
+      case Success(x) => x.packages.flatMap(_._2).collectFirst { case x if dependencyRange.valid(x.version) => x }
+    }
+
+    dependencyName.split("/").toList match {
       case vendor :: pack :: Nil =>
-        val uri = URI(s"https://$PACKAGIST_API/$vendor/$pack.json").toURL
-        downloadPackage(targetDir, dependency, uri)
+        getCompatiblePackage(vendor, pack).foreach { pack =>
+          downloadPackage(targetDir, dependency, pack)
+          unzipDependency(targetDir, pack)
+        }
       case xs =>
         logger.warn(s"Ignoring package ${xs.mkString("\\")} as vendor and package name cannot be distinguished")
     }
@@ -70,26 +83,22 @@ class DependencyDownloader(cpg: Cpg, config: Config) {
     *   the directory to download and unpack to.
     * @param dependency
     *   the dependency information.
-    * @param url
-    *   the download URL.
+    * @param pack
+    *   the package info.
     * @return
     *   the package version.
     */
-  private def downloadPackage(targetDir: File, dependency: Dependency, url: URL): Unit = {
+  private def downloadPackage(targetDir: File, dependency: Dependency, pack: Package): Unit = {
     var connection: Option[HttpURLConnection] = None
+    val url                                   = pack.dist.url
     try {
       connection = Option(url.openConnection()).collect { case x: HttpURLConnection => x }
       // allow both GZip and Deflate (ZLib) encodings
-      connection.foreach(_.setRequestProperty("Accept-Encoding", "gzip, deflate"))
       connection match {
         case Some(conn: HttpURLConnection) if conn.getResponseCode == HttpURLConnection.HTTP_OK =>
-          val fileName = targetDir / s"${dependency.name}.zip"
+          val fileName = targetDir / s"${dependency.name.split("/").last}.zip"
 
-          val inputStream = Option(conn.getContentEncoding) match {
-            case Some(encoding) if encoding.equalsIgnoreCase("gzip")    => GZIPInputStream(conn.getInputStream)
-            case Some(encoding) if encoding.equalsIgnoreCase("deflate") => InflaterInputStream(conn.getInputStream)
-            case _                                                      => conn.getInputStream
-          }
+          val inputStream = conn.getInputStream
 
           Try {
             Using.resources(inputStream, new FileOutputStream(fileName.pathAsString)) { (is, fos) =>
@@ -121,28 +130,31 @@ class DependencyDownloader(cpg: Cpg, config: Config) {
     }
   }
 
-  /** Unzips all the `pkg` files and extracts the `DLL`, `XML`, and `PDB` files.
+  /** Unzips all the `zip` files and extracts the `php` files.
     *
     * @param targetDir
     *   the temporary directory containing all of the successfully downloaded dependencies.
     */
-  private def unzipDependencies(targetDir: File): Unit = {
+  private def unzipDependency(targetDir: File, pack: Package): Unit = {
 
     def zipFilter(zipEntry: ZipEntry): Boolean = {
       val isZipSlip = zipEntry.getName.contains("..")
-      !isZipSlip && (zipEntry.isDirectory || zipEntry.getName.matches(".*lib.*\\.(dll|xml|pdb)$"))
+      !isZipSlip && (zipEntry.isDirectory || zipEntry.getName.matches(".*\\.(php|json)$"))
     }
 
     targetDir.list.foreach { pkg =>
-      // Will unzip to `targetDir/lib` and clean-up
       pkg.unzipTo(targetDir, zipFilter)
       pkg.delete(swallowIOExceptions = true)
     }
 
-    // Move and merge files
+    // Move and merge files according to `composer.json`
+    val composer = targetDir.walk().collectFirst {
+      case x if x.name == "composer.json" =>
+        Try(Using.resource(x.newInputStream) { is => read[Composer](ujson.Readable.fromByteArray(is.readAllBytes())) })
+    }
+    // TODO
     val libDir = targetDir / "lib"
     if (libDir.isDirectory) {
-      // Sometimes these dependencies will include DLLs for multiple version of dotnet, we only want one
       libDir.listRecursively.filterNot(_.isDirectory).distinctBy(_.name).foreach { f =>
         f.copyTo(targetDir / f.name)
       }
@@ -152,3 +164,27 @@ class DependencyDownloader(cpg: Cpg, config: Config) {
   }
 
 }
+
+implicit val urlRw: ReadWriter[URL] = readwriter[ujson.Value]
+  .bimap[URL](
+    x => ujson.Str(x.toString),
+    {
+      case json @ (j: ujson.Str) => URL(json.str)
+      case x                     => throw JsonException(s"Unexpected value type for URL strings: ${x.getClass}")
+    }
+  )
+
+implicit val semverRw: ReadWriter[SemVer] = readwriter[ujson.Value]
+  .bimap[SemVer](
+    x => ujson.Str(x.toString),
+    {
+      case json @ (j: ujson.Str) => SemVer(json.str)
+      case x                     => throw JsonException(s"Unexpected value type for URL strings: ${x.getClass}")
+    }
+  )
+
+private case class Dist(reference: String, shasum: String, `type`: String, url: URL) derives ReadWriter
+
+private case class Package(dist: Dist, version: SemVer) derives ReadWriter
+
+private case class PackageReleases(packages: Map[String, List[Package]]) derives ReadWriter

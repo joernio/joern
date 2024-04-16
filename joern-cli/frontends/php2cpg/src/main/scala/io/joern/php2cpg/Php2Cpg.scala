@@ -12,6 +12,7 @@ import io.joern.php2cpg.passes.{
   PhpTypeRecoveryPassGenerator,
   PhpTypeStubsParserPass
 }
+import io.joern.php2cpg.utils.DependencyDownloader
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass, XTypeRecoveryConfig, XTypeStubsParserConfig}
@@ -62,6 +63,7 @@ class Php2Cpg extends X2CpgFrontend[Config] {
       withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
         new MetaDataPass(cpg, Languages.PHP, config.inputPath).createAndApply()
         new DependencyPass(cpg, buildFiles(config)).createAndApply()
+        if config.downloadDependencies then DependencyDownloader(cpg, config).download()
         new AstCreationPass(config, cpg, parser.get)(config.schemaValidation).createAndApply()
         new AstParentInfoPass(cpg).createAndApply()
         new AnyTypePass(cpg).createAndApply()

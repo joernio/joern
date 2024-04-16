@@ -1,7 +1,6 @@
 package io.joern.php2cpg
 
 import io.joern.php2cpg.Frontend.*
-import io.joern.php2cpg.utils.DependencyDownloader
 import io.joern.x2cpg.passes.frontend.*
 import io.joern.x2cpg.{DependencyDownloadConfig, X2CpgConfig, X2CpgMain}
 import scopt.OParser

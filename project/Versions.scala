@@ -12,6 +12,7 @@ object Versions {
   val requests       = "0.8.0"
   val upickle        = "3.2.0"
   val scalaReplPP    = "0.1.85"
+  val semverParser   = "0.0.6"
   val typeSafeConfig = "1.4.3"
   val versionSort    = "1.0.11"
 
