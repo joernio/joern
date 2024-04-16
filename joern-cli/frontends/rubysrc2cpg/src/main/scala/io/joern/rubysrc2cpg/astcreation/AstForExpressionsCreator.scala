@@ -154,7 +154,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val argumentAsts = node.arguments.map(astForMethodCallArgument)
 
     receiver.root.collect { case x: NewCall => x.typeFullName(fullName) }
-    
+
     val fieldAccessCall = callNode(node, code(node), node.methodName, fullName, DispatchTypes.DYNAMIC_DISPATCH)
 
     callAst(fieldAccessCall, argumentAsts, Option(receiver))
@@ -344,9 +344,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val name = code(node)
 
     scope.lookupVariable(name) match {
+      case Some(_) => handleVariableOccurrence(node)
       case None if scope.tryResolveMethodInvocation(node.text, List.empty).isDefined =>
         astForSimpleCall(SimpleCall(node, List())(node.span))
-      case _ => handleVariableOccurrence(node)
+      case None => handleVariableOccurrence(node)
     }
   }
 
