@@ -11,8 +11,6 @@ import org.json4s.native.JsonMethods.parse
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import java.util.Optional
-
 class StepsTest extends AnyWordSpec with Matchers {
 
   private val cpg: Cpg = MockCpg()
@@ -361,21 +359,35 @@ class StepsTest extends AnyWordSpec with Matchers {
 
     val (Seq(emptyCall), Seq(callWithProperties)) = cpg.call.l.partition(_.argumentName.isEmpty)
 
-    emptyCall.propertyOption(Properties.TYPE_FULL_NAME) shouldBe Optional.of("<empty>")
-    emptyCall.propertyOption(Properties.TYPE_FULL_NAME.name) shouldBe Optional.of("<empty>")
-    emptyCall.propertyOption(Properties.ARGUMENT_NAME) shouldBe Optional.empty
-    emptyCall.propertyOption(Properties.ARGUMENT_NAME.name) shouldBe Optional.empty
+    // Cardinality.One
+    emptyCall.property(PropertyKeys.TypeFullName) shouldBe "<empty>"
+    emptyCall.propertyOption(PropertyKeys.TypeFullName) shouldBe Some("<empty>")
+    emptyCall.propertyOption(PropertyKeys.TypeFullName.name) shouldBe Some("<empty>")
+    // Cardinality.ZeroOrOne
+    emptyCall.property(PropertyKeys.ArgumentName) shouldBe None
+    emptyCall.propertyOption(PropertyKeys.ArgumentName) shouldBe None
+    emptyCall.propertyOption(PropertyKeys.ArgumentName.name) shouldBe None
+    // Cardinality.List
     // these ones are rather a historic accident it'd be better and more consistent to return `None` here -
     // we'll defer that change until after the flatgraph port though and just document it for now
-    emptyCall.propertyOption(Properties.DYNAMIC_TYPE_HINT_FULL_NAME) shouldBe Optional.of(Seq.empty)
-    emptyCall.propertyOption(Properties.DYNAMIC_TYPE_HINT_FULL_NAME.name) shouldBe Optional.of(Seq.empty)
+    emptyCall.property(PropertyKeys.DynamicTypeHintFullName) shouldBe Seq.empty
+    emptyCall.propertyOption(PropertyKeys.DynamicTypeHintFullName) shouldBe Some(Seq.empty)
+    emptyCall.propertyOption(PropertyKeys.DynamicTypeHintFullName.name) shouldBe Some(Seq.empty)
 
-    callWithProperties.propertyOption(Properties.TYPE_FULL_NAME) shouldBe Optional.of("aa")
-    callWithProperties.propertyOption(Properties.TYPE_FULL_NAME.name) shouldBe Optional.of("aa")
-    callWithProperties.propertyOption(Properties.ARGUMENT_NAME) shouldBe Optional.of("bb")
-    callWithProperties.propertyOption(Properties.ARGUMENT_NAME.name) shouldBe Optional.of("bb")
-    callWithProperties.propertyOption(Properties.DYNAMIC_TYPE_HINT_FULL_NAME) shouldBe Optional.of(Seq("cc", "dd"))
-    callWithProperties.propertyOption(Properties.DYNAMIC_TYPE_HINT_FULL_NAME.name) shouldBe Optional.of(Seq("cc", "dd"))
+    // Cardinality.One
+    callWithProperties.property(PropertyKeys.TypeFullName) shouldBe "aa"
+    callWithProperties.propertyOption(PropertyKeys.TypeFullName) shouldBe Some("aa")
+    callWithProperties.propertyOption(PropertyKeys.TypeFullName.name) shouldBe Some("aa")
+
+    // Cardinality.ZeroOrOne
+    callWithProperties.property(PropertyKeys.ArgumentName) shouldBe Some("bb")
+    callWithProperties.propertyOption(PropertyKeys.ArgumentName) shouldBe Some("bb")
+    callWithProperties.propertyOption(PropertyKeys.ArgumentName.name) shouldBe Some("bb")
+
+    // Cardinality.List
+    callWithProperties.property(PropertyKeys.DynamicTypeHintFullName) shouldBe Seq("cc", "dd")
+    callWithProperties.propertyOption(PropertyKeys.DynamicTypeHintFullName) shouldBe Some(Seq("cc", "dd"))
+    callWithProperties.propertyOption(PropertyKeys.DynamicTypeHintFullName.name) shouldBe Some(Seq("cc", "dd"))
   }
 
 }
