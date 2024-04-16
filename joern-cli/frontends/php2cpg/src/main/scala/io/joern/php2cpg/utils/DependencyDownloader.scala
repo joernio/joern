@@ -4,7 +4,7 @@ import better.files.File
 import com.github.sh4869.semver_parser.{Range, SemVer}
 import io.joern.php2cpg.Config
 import io.joern.php2cpg.parser.Domain.PhpOperators
-import io.joern.php2cpg.passes.{Autoload, Composer}
+import io.joern.php2cpg.passes.{Autoload, Composer, PsrArray, PsrString}
 import io.joern.x2cpg.astgen.AstGenRunner.DefaultAstGenRunnerResult
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Dependency
@@ -68,10 +68,10 @@ class DependencyDownloader(cpg: Cpg, config: Config) {
     }
 
     dependencyName.split("/").toList match {
-      case vendor :: pack :: Nil =>
-        getCompatiblePackage(vendor, pack).foreach { pack =>
+      case vendor :: packName :: Nil =>
+        getCompatiblePackage(vendor, packName).foreach { pack =>
           downloadPackage(targetDir, dependency, pack)
-          unzipDependency(targetDir, pack)
+          unzipDependency(targetDir, pack, vendor)
         }
       case xs =>
         logger.warn(s"Ignoring package ${xs.mkString("\\")} as vendor and package name cannot be distinguished")
@@ -135,32 +135,50 @@ class DependencyDownloader(cpg: Cpg, config: Config) {
     * @param targetDir
     *   the temporary directory containing all of the successfully downloaded dependencies.
     */
-  private def unzipDependency(targetDir: File, pack: Package): Unit = {
+  private def unzipDependency(targetDir: File, pack: Package, vendor: String): Unit = {
 
     def zipFilter(zipEntry: ZipEntry): Boolean = {
       val isZipSlip = zipEntry.getName.contains("..")
       !isZipSlip && (zipEntry.isDirectory || zipEntry.getName.matches(".*\\.(php|json)$"))
     }
 
+    def moveDir(targetNamespace: String, pathPrefix: String): Unit = {
+      val fullTargetNamespace = targetDir / targetNamespace.replaceAll(
+        "\\\\",
+        java.io.File.separator
+      ) createDirectoryIfNotExists (createParents = true)
+      val fullPathPrefix = targetDir / pathPrefix.replaceAll("/", java.io.File.separator)
+      fullPathPrefix.list.foreach(_.moveToDirectory(fullTargetNamespace))
+      fullPathPrefix.delete(swallowIOExceptions = true)
+    }
+
     targetDir.list.foreach { pkg =>
       pkg.unzipTo(targetDir, zipFilter)
       pkg.delete(swallowIOExceptions = true)
+      // This is usually unpacked to some dir and not directly
+      targetDir.list
+        .filter(f => f.isDirectory && f.name.startsWith(vendor.replaceAll("\\\\", "-")))
+        .foreach { unpackedDest =>
+          unpackedDest.list.foreach { x => x.moveToDirectory(targetDir) }
+          unpackedDest.delete(swallowIOExceptions = true)
+        }
     }
 
     // Move and merge files according to `composer.json`
-    val composer = targetDir.walk().collectFirst {
-      case x if x.name == "composer.json" =>
-        Try(Using.resource(x.newInputStream) { is => read[Composer](ujson.Readable.fromByteArray(is.readAllBytes())) })
-    }
-    // TODO
-    val libDir = targetDir / "lib"
-    if (libDir.isDirectory) {
-      libDir.listRecursively.filterNot(_.isDirectory).distinctBy(_.name).foreach { f =>
-        f.copyTo(targetDir / f.name)
+    targetDir
+      .walk()
+      .collectFirst {
+        case x if x.name == "composer.json" =>
+          Using.resource(x.newInputStream) { is => read[Composer](ujson.Readable.fromByteArray(is.readAllBytes())) }
       }
-      // Clean-up lib dir
-      libDir.delete(swallowIOExceptions = true)
-    }
+      .foreach { composer =>
+        composer.autoload.`psr-4`.foreach {
+          case (targetNamespace, PsrString(pathPrefix))  => moveDir(targetNamespace, pathPrefix)
+          case (targetNamespace, PsrArray(pathPrefixes)) => pathPrefixes.foreach(moveDir(targetNamespace, _))
+        }
+      }
+    // Clean up `.json` files
+    targetDir.walk().filter(_.`extension`.contains(".json")).foreach(_.delete(swallowIOExceptions = true))
   }
 
 }

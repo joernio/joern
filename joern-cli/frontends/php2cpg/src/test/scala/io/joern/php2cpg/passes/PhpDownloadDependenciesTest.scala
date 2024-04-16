@@ -1,4 +1,4 @@
-package io.joern.php2cpg.querying
+package io.joern.php2cpg.passes
 
 import io.joern.php2cpg.Config
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
