@@ -7,7 +7,13 @@ import io.joern.rubysrc2cpg.passes.Defines.{RubyOperators, getBuiltInType}
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{
+  ControlStructureTypes,
+  DispatchTypes,
+  EdgeTypes,
+  Operators,
+  PropertyNames
+}
 
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -272,7 +278,18 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
                   )
                 astForExpression(transform(cfNode))
               case _ =>
-                val lhsAst = astForExpression(node.lhs)
+                // The if the LHS defines a new variable, put the local variable into scope
+                val lhsAst = node.lhs match {
+                  case x: SimpleIdentifier if scope.lookupVariable(code(x)).isEmpty =>
+                    val name  = code(x)
+                    val local = localNode(x, name, name, Defines.Any)
+                    scope.addToScope(name, local) match {
+                      case BlockScope(block) => diffGraph.addEdge(block, local, EdgeTypes.AST)
+                      case _                 =>
+                    }
+                    astForExpression(node.lhs)
+                  case _ => astForExpression(node.lhs)
+                }
                 val rhsAst = astForExpression(node.rhs)
 
                 // If this is a simple object instantiation assignment, we can give the LHS variable a type hint

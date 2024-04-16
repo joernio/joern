@@ -167,4 +167,18 @@ class CallTests extends RubyCode2CpgFixture {
     }
   }
 
+  "an identifier sharing the name of a previously defined method" should {
+    val cpg = code("""
+        |def foo()
+        |end
+        |
+        |foo = 1
+        |foo
+        |""".stripMargin)
+
+    "get precedence over the method" in {
+      cpg.call("foo").size shouldBe 0
+    }
+  }
+
 }
