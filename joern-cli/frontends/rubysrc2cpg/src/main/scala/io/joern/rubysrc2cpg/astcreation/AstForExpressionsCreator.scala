@@ -154,9 +154,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val argumentAsts = node.arguments.map(astForMethodCallArgument)
 
     receiver.root.collect { case x: NewCall => x.typeFullName(fullName) }
-
-    val dispatchType    = if node.op == "::" then DispatchTypes.STATIC_DISPATCH else DispatchTypes.DYNAMIC_DISPATCH
-    val fieldAccessCall = callNode(node, code(node), node.methodName, fullName, dispatchType)
+    
+    val fieldAccessCall = callNode(node, code(node), node.methodName, fullName, DispatchTypes.DYNAMIC_DISPATCH)
 
     callAst(fieldAccessCall, argumentAsts, Option(receiver))
   }
@@ -232,7 +231,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         x.arguments.map(astForMethodCallArgument) :+ methodRef
     }
 
-    val constructorCall    = callNode(node, code(node), methodName, fullName, DispatchTypes.STATIC_DISPATCH)
+    val constructorCall    = callNode(node, code(node), methodName, fullName, DispatchTypes.DYNAMIC_DISPATCH)
     val constructorCallAst = callAst(constructorCall, argumentAsts, Option(tmpIdentifier))
     scope.popScope()
 
@@ -626,8 +625,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .map(x => s"$x:$methodName")
       .getOrElse(XDefines.DynamicCallUnknownFullName)
     val argumentAsts = node.arguments.map(astForMethodCallArgument)
-    val dispatchType = if memberAccess.op == "::" then DispatchTypes.STATIC_DISPATCH else DispatchTypes.DYNAMIC_DISPATCH
-    val call         = callNode(node, code(node), methodName, methodFullName, dispatchType)
+    val call         = callNode(node, code(node), methodName, methodFullName, DispatchTypes.DYNAMIC_DISPATCH)
 
     callAst(call, argumentAsts, Some(receiverAst))
   }
@@ -642,7 +640,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case None => defaultResult
     }
     val argumentAst      = node.arguments.map(astForMethodCallArgument)
-    val call             = callNode(node, code(node), methodName, methodFullName, DispatchTypes.STATIC_DISPATCH)
+    val call             = callNode(node, code(node), methodName, methodFullName, DispatchTypes.DYNAMIC_DISPATCH)
     val receiverCallName = identifierNode(node, call.name, call.name, receiverType)
 
     callAst(call, argumentAst, Option(Ast(receiverCallName)))

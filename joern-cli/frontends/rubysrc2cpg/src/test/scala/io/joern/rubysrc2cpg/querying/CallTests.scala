@@ -33,7 +33,7 @@ class CallTests extends RubyCode2CpgFixture {
 
     val List(foo) = cpg.call.name("foo").l
     foo.code shouldBe "foo(1,2)"
-    foo.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+    foo.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
     foo.lineNumber shouldBe Some(2)
 
     val one = foo.argument(1)
@@ -51,7 +51,7 @@ class CallTests extends RubyCode2CpgFixture {
     val List(fieldAccess) = cpg.fieldAccess.l
 
     fieldAccess.code shouldBe "x.y"
-    fieldAccess.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+    fieldAccess.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
     fieldAccess.lineNumber shouldBe Some(2)
     fieldAccess.fieldIdentifier.code.l shouldBe List("y")
 
