@@ -3,7 +3,7 @@ package io.joern.x2cpg.testfixtures
 import flatgraph.Graph
 import io.joern.x2cpg.X2CpgConfig
 import io.joern.x2cpg.utils.TestCodeWriter
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 
 import java.nio.file.{Files, Path}
 import java.util.Comparator
@@ -35,7 +35,7 @@ abstract class TestCpg extends Cpg(Cpg.empty.graph) with LanguageFrontend with T
   }
 
   private def checkGraphEmpty(): Unit = {
-    if (_graph0.isDefined) {
+    if (_graph.isDefined) {
       throw new RuntimeException("Modifying test data is not allowed after accessing graph.")
     }
   }
@@ -51,17 +51,17 @@ abstract class TestCpg extends Cpg(Cpg.empty.graph) with LanguageFrontend with T
     if (_graph.isEmpty) {
       val codeDir = writeCode(fileSuffix)
       try {
-        _graph0 = Option(execute(codeDir.toFile).graph)
+        _graph = Option(execute(codeDir.toFile).graph)
         applyPasses()
         if (_withPostProcessing) applyPostProcessingPasses()
       } finally {
         cleanupOutput()
       }
     }
-    _graph0.get
+    _graph.get
   }
 
   override def close(): Unit = {
-    _graph0.foreach(_.close())
+    _graph.foreach(_.close())
   }
 }

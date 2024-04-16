@@ -60,8 +60,8 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
         builder.setNodeProperty(x, PropertyNames.TYPE_FULL_NAME, resolvedTypeHints.head)
 
     case x @ (_: Identifier | _: Local | _: MethodParameterIn)
-        if x.property(PropertyNames.POSSIBLE_TYPES, Seq.empty[String]).nonEmpty =>
-      val possibleTypes = x.property(PropertyNames.POSSIBLE_TYPES, Seq.empty[String])
+        if x.property(PropertyKeys.PossibleTypes).nonEmpty =>
+      val possibleTypes = x.property(PropertyKeys.PossibleTypes)
       if (possibleTypes.sizeIs == 1 && !possibleTypes.contains("ANY")) {
         val typeFullName         = possibleTypes.head
         val typeHints            = symbolTable.get(LocalVar(typeFullName)) - typeFullName
