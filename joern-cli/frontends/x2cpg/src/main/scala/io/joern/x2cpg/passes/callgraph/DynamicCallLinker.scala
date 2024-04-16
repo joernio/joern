@@ -149,7 +149,7 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
         .fullNameExact(allSuperClasses(typeDeclFullName).toIndexedSeq*)
         .astChildren
         .isMethod
-        .name(call.name)
+        .nameExact(call.name)
         .and(_.signatureExact(signature))
         .fullName
         .l

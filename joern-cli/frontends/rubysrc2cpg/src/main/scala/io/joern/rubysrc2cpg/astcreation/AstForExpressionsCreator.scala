@@ -7,7 +7,13 @@ import io.joern.rubysrc2cpg.passes.Defines.{RubyOperators, getBuiltInType}
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{
+  ControlStructureTypes,
+  DispatchTypes,
+  EdgeTypes,
+  Operators,
+  PropertyNames
+}
 
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -155,8 +161,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     receiver.root.collect { case x: NewCall => x.typeFullName(fullName) }
 
-    val dispatchType    = if node.op == "::" then DispatchTypes.STATIC_DISPATCH else DispatchTypes.DYNAMIC_DISPATCH
-    val fieldAccessCall = callNode(node, code(node), node.methodName, fullName, dispatchType)
+    val fieldAccessCall = callNode(node, code(node), node.methodName, fullName, DispatchTypes.DYNAMIC_DISPATCH)
 
     callAst(fieldAccessCall, argumentAsts, Option(receiver))
   }
@@ -232,7 +237,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         x.arguments.map(astForMethodCallArgument) :+ methodRef
     }
 
-    val constructorCall    = callNode(node, code(node), methodName, fullName, DispatchTypes.STATIC_DISPATCH)
+    val constructorCall    = callNode(node, code(node), methodName, fullName, DispatchTypes.DYNAMIC_DISPATCH)
     val constructorCallAst = callAst(constructorCall, argumentAsts, Option(tmpIdentifier))
     scope.popScope()
 
@@ -273,7 +278,18 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
                   )
                 astForExpression(transform(cfNode))
               case _ =>
-                val lhsAst = astForExpression(node.lhs)
+                // The if the LHS defines a new variable, put the local variable into scope
+                val lhsAst = node.lhs match {
+                  case x: SimpleIdentifier if scope.lookupVariable(code(x)).isEmpty =>
+                    val name  = code(x)
+                    val local = localNode(x, name, name, Defines.Any)
+                    scope.addToScope(name, local) match {
+                      case BlockScope(block) => diffGraph.addEdge(block, local, EdgeTypes.AST)
+                      case _                 =>
+                    }
+                    astForExpression(node.lhs)
+                  case _ => astForExpression(node.lhs)
+                }
                 val rhsAst = astForExpression(node.rhs)
 
                 // If this is a simple object instantiation assignment, we can give the LHS variable a type hint
@@ -345,9 +361,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val name = code(node)
 
     scope.lookupVariable(name) match {
+      case Some(_) => handleVariableOccurrence(node)
       case None if scope.tryResolveMethodInvocation(node.text, List.empty).isDefined =>
         astForSimpleCall(SimpleCall(node, List())(node.span))
-      case _ => handleVariableOccurrence(node)
+      case None => handleVariableOccurrence(node)
     }
   }
 
@@ -626,8 +643,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .map(x => s"$x:$methodName")
       .getOrElse(XDefines.DynamicCallUnknownFullName)
     val argumentAsts = node.arguments.map(astForMethodCallArgument)
-    val dispatchType = if memberAccess.op == "::" then DispatchTypes.STATIC_DISPATCH else DispatchTypes.DYNAMIC_DISPATCH
-    val call         = callNode(node, code(node), methodName, methodFullName, dispatchType)
+    val call         = callNode(node, code(node), methodName, methodFullName, DispatchTypes.DYNAMIC_DISPATCH)
 
     callAst(call, argumentAsts, Some(receiverAst))
   }
@@ -642,7 +658,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case None => defaultResult
     }
     val argumentAst      = node.arguments.map(astForMethodCallArgument)
-    val call             = callNode(node, code(node), methodName, methodFullName, DispatchTypes.STATIC_DISPATCH)
+    val call             = callNode(node, code(node), methodName, methodFullName, DispatchTypes.DYNAMIC_DISPATCH)
     val receiverCallName = identifierNode(node, call.name, call.name, receiverType)
 
     callAst(call, argumentAst, Option(Ast(receiverCallName)))
