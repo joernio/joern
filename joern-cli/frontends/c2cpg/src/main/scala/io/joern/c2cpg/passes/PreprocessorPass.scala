@@ -22,7 +22,7 @@ class PreprocessorPass(config: Config) {
     SourceFiles
       .determine(
         config.inputPath,
-        FileDefaults.SOURCE_FILE_EXTENSIONS,
+        FileDefaults.SOURCE_FILE_EXTENSIONS - FileDefaults.PREPROCESSED_EXT,
         ignoredDefaultRegex = Option(DefaultIgnoredFolders),
         ignoredFilesRegex = Option(config.ignoredFilesRegex),
         ignoredFilesPath = Option(config.ignoredFiles)
