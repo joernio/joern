@@ -5,6 +5,8 @@ import io.joern.x2cpg.datastructures.{FieldLike, MethodLike, ProgramSummary, Typ
 
 import scala.annotation.targetName
 
+import upickle.default.{ReadWriter, macroRW}
+
 class RubyProgramSummary(
   initialNamespaceMap: Map[String, Set[RubyType]] = Map.empty,
   initialPathMap: Map[String, Set[RubyType]] = Map.empty
@@ -29,11 +31,12 @@ case class RubyMethod(
   returnType: String,
   baseTypeFullName: Option[String]
 ) extends MethodLike
+    derives ReadWriter
 
-case class RubyField(name: String, typeName: String) extends FieldLike
+case class RubyField(name: String, typeName: String) extends FieldLike derives ReadWriter
 
 case class RubyType(name: String, methods: List[RubyMethod], fields: List[RubyField])
-    extends TypeLike[RubyMethod, RubyField] {
+    extends TypeLike[RubyMethod, RubyField] derives ReadWriter {
 
   @targetName("add")
   override def +(o: TypeLike[RubyMethod, RubyField]): TypeLike[RubyMethod, RubyField] = {
@@ -43,4 +46,5 @@ case class RubyType(name: String, methods: List[RubyMethod], fields: List[RubyFi
   def hasConstructor: Boolean = {
     methods.exists(_.name == XDefines.ConstructorMethodName)
   }
+
 }
