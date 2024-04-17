@@ -4,7 +4,6 @@ import better.files.File
 import io.joern.php2cpg.Config
 import io.joern.php2cpg.astcreation.AstCreator
 import io.joern.php2cpg.parser.PhpParser
-import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.{SourceFiles, ValidationMode}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass
@@ -12,7 +11,12 @@ import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.*
 
-class AstCreationPass(config: Config, cpg: Cpg, parser: PhpParser)(implicit withSchemaValidation: ValidationMode)
+class AstCreationPass(
+  config: Config,
+  cpg: Cpg,
+  parser: PhpParser,
+  parserLevel: AstParseLevel = AstParseLevel.AS_INTERNAL
+)(implicit withSchemaValidation: ValidationMode)
     extends ConcurrentWriterCpgPass[String](cpg) {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -37,7 +41,9 @@ class AstCreationPass(config: Config, cpg: Cpg, parser: PhpParser)(implicit with
     parser.parseFile(filename) match {
       case Some((parseResult, fileContent)) =>
         diffGraph.absorb(
-          new AstCreator(relativeFilename, parseResult, fileContent, config.disableFileContent)(config.schemaValidation)
+          new AstCreator(relativeFilename, parseResult, fileContent, config.disableFileContent, parserLevel)(
+            config.schemaValidation
+          )
             .createAst()
         )
 
@@ -45,4 +51,17 @@ class AstCreationPass(config: Config, cpg: Cpg, parser: PhpParser)(implicit with
         logger.warn(s"Could not parse file $filename. Results will be missing!")
     }
   }
+}
+
+/** Determines till what depth the AST creator will parse until.
+  */
+enum AstParseLevel {
+
+  /** This level will parse all types and methods signatures, but exclude method bodies and set these nodes as external.
+    */
+  case AS_EXTERNAL
+
+  /** This level will parse the full AST as internal code.
+    */
+  case AS_INTERNAL
 }

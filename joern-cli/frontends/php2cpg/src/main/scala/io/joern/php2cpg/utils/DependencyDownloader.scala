@@ -74,7 +74,7 @@ class DependencyDownloader(cpg: Cpg, config: Config) {
           unzipDependency(targetDir, pack, vendor)
         }
       case xs =>
-        logger.warn(s"Ignoring package ${xs.mkString("\\")} as vendor and package name cannot be distinguished")
+        logger.warn(s"Ignoring package `${xs.mkString("\\")}` as vendor and package name cannot be distinguished")
     }
   }
 

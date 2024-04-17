@@ -34,6 +34,12 @@ class PhpDownloadDependenciesTest extends PhpCode2CpgFixture() {
           |""".stripMargin)
       .withConfig(Config().withDownloadDependencies(true))
 
+    "download the AWS library and populate the CPG with external high-level nodes" in {
+      cpg.method.fullName(".*S3Client.*").map(x => (x.name, x.fullName, x.isExternal)).foreach(println)
+//      val List(s3Client) = cpg.typeDecl("S3Client").isExternal(true).l: @unchecked
+//      s3Client.isExternal shouldBe true
+    }
+    
     "download the AWS library and infer the full name of `S3Client` correctly" in {
       cpg.identifier("s3").typeFullName.toSet shouldBe Set("AWS\\S3\\S3Client")
     }
