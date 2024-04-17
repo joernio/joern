@@ -101,6 +101,13 @@ package object slicing {
       if (config.mustEndAtExternalMethod) trav.where(_.callee.filter(_.isExternal))
       else trav
 
+    def withSinkFilter(implicit config: DataFlowConfig): Iterator[Call] = {
+      config.sinkPatternFilter match {
+        case Some(pattern) => trav.code(pattern)
+        case None => trav
+      }
+    }
+
   }
 
   /** Adds extensions to modify a method traversal based on config options
