@@ -155,7 +155,7 @@ class StepsTest extends AnyWordSpec with Matchers {
       val nodeId  = mainMethods.head.id
       val printed = mainMethods.p.head
       printed.should(startWith(s"""(METHOD,$nodeId):"""))
-      printed.should(include("IS_EXTERNAL: false"))
+      printed.should(include("SIGNATURE: asignature"))
       printed.should(include("FULL_NAME: woo"))
     }
 
