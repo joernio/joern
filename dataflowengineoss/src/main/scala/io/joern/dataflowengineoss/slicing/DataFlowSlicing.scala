@@ -25,10 +25,12 @@ object DataFlowSlicing {
       case None           => cpg.call
     }).method.withMethodNameFilter.withMethodParameterFilter.withMethodAnnotationFilter.call.withExternalCalleeFilter.withSinkFilter
       .map(c => () => new TrackDataFlowTask(config, c).call())
-      .iterator
+      .l
+
+    println(s"Processing ${tasks.size} sinks")
 
     ConcurrentTaskUtil
-      .runUsingThreadPool(tasks, config.parallelism.getOrElse(Runtime.getRuntime.availableProcessors()))
+      .runUsingThreadPool(tasks.iterator, config.parallelism.getOrElse(Runtime.getRuntime.availableProcessors()))
       .flatMap {
         case Success(slice) => slice
         case Failure(e) =>
