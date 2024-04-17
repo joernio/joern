@@ -6,14 +6,19 @@ import net.ruippeixotog.scalascraper.browser.JsoupBrowser
 import net.ruippeixotog.scalascraper.dsl.DSL.*
 import net.ruippeixotog.scalascraper.dsl.DSL.Extract.*
 import net.ruippeixotog.scalascraper.model.Element
-
 import better.files.File
+import io.joern.x2cpg.utils.ConcurrentTaskUtil
+import org.slf4j.{Logger, LoggerFactory}
 
-/** Class to generate JSON representation for all builtin Ruby libraries.
+import scala.util.{Failure, Success}
+
+/** Class to generate MessagePack representation for all builtin Ruby libraries.
   * @param rubyVersion
   *   \- Ruby version installed
   */
 class BuiltinPackageDumper(rubyVersion: String = "3.3.0") {
+  private val logger: Logger = LoggerFactory.getLogger(this.getClass)
+
   private val CLASS    = "class"
   private val INSTANCE = "instance"
 
@@ -27,21 +32,20 @@ class BuiltinPackageDumper(rubyVersion: String = "3.3.0") {
   def run(): Unit = {
     val (builtinPaths, gemPaths) = generatePaths()
 
-    val builtinTypes = gemPaths
-      .slice(0, 3)
-      .map((baseModuleName, paths) => {
+    val types = ConcurrentTaskUtil.runUsingThreadPool(gemPaths.slice(0, 30).map(
+      (baseModuleName, paths) => () => {
         val dirPath = s"src/main/resources/builtin_types"
         val dir     = File(dirPath)
 
         dir.createDirectoryIfNotExists()
 
-        val rubyTypes = paths.map { path =>
-          // for each of these baseModuleNames, we create a new file
+        paths.map { path =>
           val doc = browser.get(path)
 
           val namespace =
             doc >?> element("h1.class, h1.module") match {
               case Some(classOrModuleElement) =>
+                // Text on website is: Class/Module <some>::<module/class>::<name>
                 val classOrModuleName = classOrModuleElement.text.split("\\s")(1).replaceAll("::","\\.").strip
                 s"$baseModuleName.$classOrModuleName"
               case None       => baseModuleName
@@ -50,9 +54,19 @@ class BuiltinPackageDumper(rubyVersion: String = "3.3.0") {
           val rubyMethods = buildRubyMethods(doc, namespace)
 
           val rubyType = RubyType(namespace, rubyMethods, List.empty)
-          writeToFile(dirPath, rubyType)
+
+          (dirPath, rubyType)
         }
-      })
+      }
+    ).iterator
+    ).flatMap{
+      case Success(rubyTypes) =>
+        rubyTypes.foreach{ (dir, rubyType) => writeToFile(dir, rubyType)}
+        Option.empty
+      case Failure(ex) =>
+        logger.warn(s"Failed to scrape/write Ruby builtin types: $ex")
+        None
+    }
   }
 
   private def writeToFile(baseDir: String, rubyType: RubyType): Unit = {
