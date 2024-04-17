@@ -104,7 +104,7 @@ package object slicing {
     def withSinkFilter(implicit config: DataFlowConfig): Iterator[Call] = {
       config.sinkPatternFilter match {
         case Some(pattern) => trav.code(pattern)
-        case None => trav
+        case None          => trav
       }
     }
 
