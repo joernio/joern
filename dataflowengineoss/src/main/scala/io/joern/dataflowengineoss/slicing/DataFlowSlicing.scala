@@ -27,7 +27,7 @@ object DataFlowSlicing {
       .map(c => () => new TrackDataFlowTask(config, c).call())
       .l
 
-    println(s"Processing ${tasks.size} sinks")
+    logger.info(s"Processing ${tasks.size} sinks")
 
     ConcurrentTaskUtil
       .runUsingThreadPool(tasks.iterator, config.parallelism.getOrElse(Runtime.getRuntime.availableProcessors()))
