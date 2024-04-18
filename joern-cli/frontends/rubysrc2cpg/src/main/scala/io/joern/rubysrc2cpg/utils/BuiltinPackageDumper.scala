@@ -9,6 +9,8 @@ import net.ruippeixotog.scalascraper.model.Element
 import better.files.File
 import io.joern.x2cpg.utils.ConcurrentTaskUtil
 import org.slf4j.{Logger, LoggerFactory}
+import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream
+import java.io.FileOutputStream
 
 import scala.util.{Failure, Success}
 
@@ -37,23 +39,27 @@ class BuiltinPackageDumper(rubyVersion: String = "3.3.0") {
 
     val paths = generatePaths()
 
+    val typesMap = collection.mutable.Map[String, List[RubyType]]()
+
     val types = ConcurrentTaskUtil
       .runUsingThreadPool(generateRubyTypes(paths))
       .flatMap {
         case Success(rubyTypes) =>
-          rubyTypes.foreach { rubyType => writeToFile(rubyType) }
-          rubyTypes
+          typesMap.addOne(rubyTypes._1, rubyTypes._2)
         case Failure(ex) =>
           logger.warn(s"Failed to scrape/write Ruby builtin types: $ex")
           None
       }
+
+    writeToFileJson(typesMap)
+    writeToFile(typesMap)
   }
 
-  private def generateRubyTypes(pathsMap: collection.mutable.Map[String, List[String]]): Iterator[() => List[RubyType]] = {
+  private def generateRubyTypes(pathsMap: collection.mutable.Map[String, List[String]]): Iterator[() => (String, List[RubyType])] = {
     pathsMap
-      .map((baseModuleName, paths) =>
+      .map((gemName, paths) =>
         () => {
-          paths.map { path =>
+          val rubyTypes = paths.map { path =>
             val doc = browser.get(path)
 
             val namespace =
@@ -61,37 +67,87 @@ class BuiltinPackageDumper(rubyVersion: String = "3.3.0") {
                 case Some(classOrModuleElement) =>
                   // Text on website is: Class/Module <some>::<module/class>::<name>
                   val classOrModuleName = classOrModuleElement.text.split("\\s")(1).replaceAll("::", "\\.").strip
-                  s"$baseModuleName.$classOrModuleName"
-                case None => baseModuleName
+                  s"$gemName.$classOrModuleName"
+                case None => gemName
               }
 
             val rubyMethods = buildRubyMethods(doc, namespace)
 
             RubyType(namespace, rubyMethods, List.empty)
           }
+          (gemName, rubyTypes)
         }
       )
       .iterator
   }
 
-  private def writeToFile(rubyType: RubyType): Unit = {
-    val rubyTypeNameSegments = rubyType.name.split("\\.")
+  private def writeToFile(rubyTypesMap: collection.mutable.Map[String, List[RubyType]]): Unit = {
+    val dir = File(s"${baseDir}/")
+    dir.createDirectoryIfNotExists()
 
-    val (directorySuffixes, fileName) = rubyTypeNameSegments.size match {
-      case x if x == 1 =>
-        ("", rubyTypeNameSegments(x - 1))
-      case x if x > 1 =>
-        (rubyTypeNameSegments.take(x - 1).mkString("."), rubyTypeNameSegments(x - 1))
+
+    rubyTypesMap.foreach { (gem, rubyTypes) =>
+      // gem is file name
+      val gemsMap = collection.mutable.Map[String, List[RubyType]]()
+
+      rubyTypes.foreach { rubyType =>
+        val rubyTypeNameSegments = rubyType.name.split("\\.")
+
+        val namespaceKey = rubyTypeNameSegments.size match {
+          case x if x == 1 =>
+            ""
+          case x if x > 1 =>
+            rubyTypeNameSegments.take(x - 1).mkString(".")
+        }
+
+        if gemsMap.contains(namespaceKey) then
+          gemsMap.update(namespaceKey, gemsMap(namespaceKey) :+ rubyType)
+        else
+          gemsMap.put(namespaceKey, List(rubyType))
+      }
+
+
+      val typesFile = File(s"${dir.pathAsString}/$gem.mpk")
+      typesFile.createIfNotExists()
+
+      val msg: upack.Msg = upickle.default.writeMsg(gemsMap)
+      typesFile.writeByteArray(upack.writeToByteArray(msg))
     }
 
-    val dir = File(s"$baseDir/$directorySuffixes")
-    dir.createDirectoryIfNotExists(createParents = true)
+    dir.zipTo(destination = File(s"${baseDir}.zip"))
+    dir.delete()
+  }
 
-    val typeFile = File(s"${dir.pathAsString}/$fileName.mpk")
-    typeFile.createIfNotExists()
+  private def writeToFileJson(rubyTypesMap: collection.mutable.Map[String, List[RubyType]]): Unit = {
+    val dir = File(s"${baseDir}_json/")
+    dir.createDirectoryIfNotExists()
 
-    val msg: upack.Msg = upickle.default.writeMsg(rubyType)
-    typeFile.writeByteArray(upack.writeToByteArray(msg))
+    rubyTypesMap.foreach{ (gem, rubyTypes) =>
+      // gem is file name
+      val gemsMap = collection.mutable.Map[String, List[RubyType]]()
+
+      rubyTypes.foreach{ rubyType =>
+        val rubyTypeNameSegments = rubyType.name.split("\\.")
+
+        val namespaceKey = rubyTypeNameSegments.size match {
+          case x if x == 1 =>
+            ""
+          case x if x > 1 =>
+            rubyTypeNameSegments.take(x - 1).mkString(".")
+        }
+
+        if gemsMap.contains(namespaceKey) then
+          gemsMap.update(namespaceKey, gemsMap(namespaceKey) ++ List(rubyType))
+        else
+          gemsMap.put(namespaceKey, List(rubyType))
+      }
+
+
+      val typesFile = File(s"${dir.pathAsString}/$gem.json")
+      typesFile.createIfNotExists()
+
+      typesFile.write(upickle.default.write(gemsMap, indent = 2))
+    }
   }
 
   private def buildRubyMethods(doc: browser.DocumentType, namespace: String): List[RubyMethod] = {
@@ -119,7 +175,7 @@ class BuiltinPackageDumper(rubyVersion: String = "3.3.0") {
       }
       .filterNot(_ == "")
       .distinct
-      .map(x => RubyMethod(x, List.empty, Defines.Any, Option(namespace)))
+      .map(x => RubyMethod(s"$namespace.$x", List.empty, Defines.Any, Option(namespace)))
   }
 
   private def generatePaths(): collection.mutable.Map[String, List[String]] = {
@@ -151,9 +207,63 @@ class BuiltinPackageDumper(rubyVersion: String = "3.3.0") {
         }
         .filter(!_.contains("table_of_contents"))
 
-      linksMap.addOne(extensionName, anchorHrefs)
+      linksMap.get(extensionName) match {
+        case Some(prevHrefs) if prevHrefs.length < anchorHrefs.length => linksMap.update(extensionName, anchorHrefs)
+        case Some(prevHrefs) => // do nothing
+        case None => linksMap.addOne(extensionName, anchorHrefs)
+      }
     }
 
     linksMap
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+  Map:
+  "bundler.Bundler.CLI" ->
+*/
