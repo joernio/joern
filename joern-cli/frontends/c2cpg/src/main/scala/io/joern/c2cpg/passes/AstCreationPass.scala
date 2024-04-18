@@ -28,20 +28,28 @@ class AstCreationPass(cpg: Cpg, config: Config, report: Report = new Report())
   def typesSeen(): List[String] = global.usedTypes.keys().asScala.filterNot(_ == Defines.anyTypeName).toList
 
   override def generateParts(): Array[String] = {
+    val sourceFileExtensions = FileDefaults.SOURCE_FILE_EXTENSIONS
+      ++ FileDefaults.HEADER_FILE_EXTENSIONS
+      ++ Option.when(config.withPreprocessedFiles)(FileDefaults.PREPROCESSED_EXT).toList
     val allSourceFiles = SourceFiles
       .determine(
         config.inputPath,
-        FileDefaults.SOURCE_FILE_EXTENSIONS ++ FileDefaults.HEADER_FILE_EXTENSIONS,
+        sourceFileExtensions,
         ignoredDefaultRegex = Option(DefaultIgnoredFolders),
         ignoredFilesRegex = Option(config.ignoredFilesRegex),
         ignoredFilesPath = Option(config.ignoredFiles)
       )
-    allSourceFiles.filter {
-      case f if !f.endsWith(FileDefaults.PREPROCESSED_EXT) =>
-        val fAsPreprocessedFile = s"${f.substring(0, f.lastIndexOf("."))}${FileDefaults.PREPROCESSED_EXT}"
-        !allSourceFiles.exists { sourceFile => f != sourceFile && sourceFile == fAsPreprocessedFile }
-      case _ => true
-    }.toArray
+      .toArray
+    if (config.withPreprocessedFiles) {
+      allSourceFiles.filter {
+        case f if !f.endsWith(FileDefaults.PREPROCESSED_EXT) =>
+          val fAsPreprocessedFile = s"${f.substring(0, f.lastIndexOf("."))}${FileDefaults.PREPROCESSED_EXT}"
+          !allSourceFiles.exists { sourceFile => f != sourceFile && sourceFile == fAsPreprocessedFile }
+        case _ => true
+      }
+    } else {
+      allSourceFiles
+    }
   }
 
   override def runOnPart(diffGraph: DiffGraphBuilder, filename: String): Unit = {

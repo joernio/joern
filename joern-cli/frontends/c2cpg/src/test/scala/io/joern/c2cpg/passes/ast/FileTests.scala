@@ -1,7 +1,8 @@
 package io.joern.c2cpg.passes.ast
 
 import io.joern.c2cpg.testfixtures.C2CpgSuite
-import io.shiftleft.semanticcpg.language._
+import io.joern.c2cpg.Config
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
@@ -72,6 +73,7 @@ class FileTests extends C2CpgSuite {
       .moreCode("int baz() {}", "main.h")
       .moreCode("int other() {}", "other.h")
       .moreCode("int other() {}", "other.i")
+      .withConfig(Config(withPreprocessedFiles = true))
 
     "contain the correct file nodes" in {
       cpg.method.nameNot("<global>").internal.name.sorted.l shouldBe List("foo", "other")
@@ -88,14 +90,13 @@ class FileTests extends C2CpgSuite {
         |int bar() {}
         |""".stripMargin,
       "a.i"
-    )
-      .moreCode(
-        """
+    ).moreCode(
+      """
           |# 1 "b.cpp" 1
           |class B {};
           |""".stripMargin,
-        "b.i"
-      )
+      "b.i"
+    ).withConfig(Config(withPreprocessedFiles = true))
 
     "be parsed correctly" in {
       cpg.file.nameNot("<includes>", "<unknown>").name.sorted.l shouldBe List("a.i", "b.i")

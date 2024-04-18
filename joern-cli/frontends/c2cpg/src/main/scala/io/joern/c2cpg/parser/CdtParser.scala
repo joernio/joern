@@ -55,7 +55,7 @@ class CdtParser(config: Config) extends ParseProblemsLogger with PreprocessorSta
   if (config.noImageLocations) opts |= ILanguage.OPTION_NO_IMAGE_LOCATIONS
 
   private def preprocessedFileIsFromCPPFile(file: Path, code: String): Boolean = {
-    if (file.toString.endsWith(FileDefaults.PREPROCESSED_EXT)) {
+    if (config.withPreprocessedFiles && file.toString.endsWith(FileDefaults.PREPROCESSED_EXT)) {
       val fileWithoutExt  = file.toString.stripSuffix(FileDefaults.PREPROCESSED_EXT)
       val filesWithCPPExt = FileDefaults.CPP_FILE_EXTENSIONS.map(ext => File(s"$fileWithoutExt$ext").name)
       code.linesIterator.exists(line => filesWithCPPExt.exists(f => line.contains(s"\"$f\"")))

@@ -11,11 +11,11 @@ object FileDefaults {
   private val CPP_HEADER_EXT   = ".hpp"
   private val OTHER_HEADER_EXT = ".hh"
 
-  val SOURCE_FILE_EXTENSIONS: Set[String] = Set(C_EXT, CC_EXT, CPP_EXT, PREPROCESSED_EXT)
+  val SOURCE_FILE_EXTENSIONS: Set[String] = Set(C_EXT, CC_EXT, CPP_EXT)
 
   val HEADER_FILE_EXTENSIONS: Set[String] = Set(C_HEADER_EXT, CPP_HEADER_EXT, OTHER_HEADER_EXT)
 
-  val CPP_FILE_EXTENSIONS = Set(CC_EXT, CPP_EXT, CPP_HEADER_EXT)
+  val CPP_FILE_EXTENSIONS: Set[String] = Set(CC_EXT, CPP_EXT, CPP_HEADER_EXT)
 
   def isHeaderFile(filePath: String): Boolean =
     HEADER_FILE_EXTENSIONS.exists(filePath.endsWith)
