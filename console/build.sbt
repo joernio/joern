@@ -2,9 +2,7 @@ name := "console"
 
 enablePlugins(JavaAppPackaging)
 
-val ScoptVersion          = "4.1.0"
 val CaskVersion           = "0.9.2"
-val CirceVersion          = "0.14.6"
 val ZeroturnaroundVersion = "1.17"
 val OsLibVersion          = "0.9.3"
 val PprintVersion         = "0.8.1"
@@ -25,10 +23,8 @@ dependsOn(
 libraryDependencies ++= Seq(
   "io.shiftleft"         %% "codepropertygraph"    % Versions.cpg,
   "com.michaelpollmeier" %% "scala-repl-pp-server" % Versions.scalaReplPP,
-  "com.github.scopt"     %% "scopt"                % ScoptVersion,
+  "com.github.scopt"     %% "scopt"                % Versions.scopt,
   "org.typelevel"        %% "cats-effect"          % Versions.cats,
-  "io.circe"             %% "circe-generic"        % CirceVersion,
-  "io.circe"             %% "circe-parser"         % CirceVersion,
   "org.zeroturnaround"    % "zt-zip"               % ZeroturnaroundVersion,
   "com.lihaoyi"          %% "os-lib"               % OsLibVersion,
   "com.lihaoyi"          %% "pprint"               % PprintVersion,

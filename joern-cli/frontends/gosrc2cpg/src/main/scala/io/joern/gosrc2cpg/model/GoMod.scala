@@ -1,10 +1,10 @@
 package io.joern.gosrc2cpg.model
 
-import io.circe.Decoder.Result
-import io.circe.{Decoder, HCursor}
 import io.joern.gosrc2cpg.Config
 import io.joern.gosrc2cpg.utils.UtilityConstants.fileSeparateorPattern
+import upickle.default.*
 
+import java.util
 import java.util.Set
 import java.util.concurrent.ConcurrentSkipListSet
 import scala.util.control.Breaks.*
@@ -63,81 +63,38 @@ class GoModHelper(config: Option[Config] = None, meta: Option[GoMod] = None) {
   }
 }
 
-case class GoMod(fileFullPath: String, module: GoModModule, dependencies: List[GoModDependency])
+case class GoMod(
+  @upickle.implicits.key("node_filename") fileFullPath: String,
+  @upickle.implicits.key("Module") module: GoModModule,
+  @upickle.implicits.key("dependencies") dependencies: List[GoModDependency]
+) derives ReadWriter
+
 case class GoModModule(
-  name: String,
-  lineNo: Option[Int] = None,
-  colNo: Option[Int] = None,
-  endLineNo: Option[Int] = None,
-  endColNo: Option[Int] = None
-)
+  @upickle.implicits.key("Name") name: String,
+  @upickle.implicits.key("node_line_no") lineNo: Option[Int] = None,
+  @upickle.implicits.key("node_col_no") colNo: Option[Int] = None,
+  @upickle.implicits.key("node_line_no_end") endLineNo: Option[Int] = None,
+  @upickle.implicits.key("node_col_no_end") endColNo: Option[Int] = None
+) derives ReadWriter
+
 case class GoModDependency(
-  module: String,
-  version: String,
-  indirect: Boolean,
-  var beingUsed: Boolean,
-  lineNo: Option[Int] = None,
-  colNo: Option[Int] = None,
-  endLineNo: Option[Int] = None,
-  endColNo: Option[Int] = None,
-  usedPackages: Set[String] = new ConcurrentSkipListSet[String]()
-)
+  @upickle.implicits.key("Module") module: String,
+  @upickle.implicits.key("Version") version: String,
+  @upickle.implicits.key("Indirect") indirect: Boolean = false,
+  var beingUsed: Boolean = false,
+  @upickle.implicits.key("node_line_no") lineNo: Option[Int] = None,
+  @upickle.implicits.key("node_col_no") colNo: Option[Int] = None,
+  @upickle.implicits.key("node_line_no_end") endLineNo: Option[Int] = None,
+  @upickle.implicits.key("node_col_no_end") endColNo: Option[Int] = None,
+  usedPackages: util.Set[String] = new ConcurrentSkipListSet[String]()
+) derives ReadWriter
 
-object CirceEnDe {
-  implicit val decoderModModule: Decoder[GoModModule] = new Decoder[GoModModule] {
-    override def apply(c: HCursor): Result[GoModModule] = {
-      val name      = c.downField("Name").as[String]
-      val lineNo    = c.downField("node_line_no").as[Int]
-      val endLineNo = c.downField("node_line_no_end").as[Int]
-      val colNo     = c.downField("node_col_no").as[Int]
-      val endColNo  = c.downField("node_col_no_end").as[Int]
-      Right(
-        GoModModule(
-          name = name.getOrElse(""),
-          lineNo = lineNo.toOption,
-          colNo = colNo.toOption,
-          endLineNo = endLineNo.toOption,
-          endColNo = endColNo.toOption
-        )
-      )
-    }
-  }
-  implicit val decoderModDependency: Decoder[GoModDependency] = new Decoder[GoModDependency] {
-    override def apply(c: HCursor): Result[GoModDependency] = {
-      val module    = c.downField("Module").as[String]
-      val version   = c.downField("Version").as[String]
-      val indirect  = c.downField("Indirect").as[Boolean]
-      val lineNo    = c.downField("node_line_no").as[Int]
-      val endLineNo = c.downField("node_line_no_end").as[Int]
-      val colNo     = c.downField("node_col_no").as[Int]
-      val endColNo  = c.downField("node_col_no_end").as[Int]
-      Right(
-        GoModDependency(
-          module = module.getOrElse(""),
-          version = version.getOrElse(""),
-          indirect = indirect.getOrElse(false),
-          beingUsed = false,
-          lineNo = lineNo.toOption,
-          colNo = colNo.toOption,
-          endLineNo = endLineNo.toOption,
-          endColNo = endColNo.toOption
-        )
-      )
-    }
-  }
+implicit val javaSetRw: ReadWriter[util.Set[String]] = {
+  import scala.jdk.CollectionConverters.*
 
-  implicit val decoderModMetadata: Decoder[GoMod] = new Decoder[GoMod] {
-    override def apply(c: HCursor): Result[GoMod] = {
-      val fileName     = c.downField("node_filename").as[String]
-      val module       = c.downField("Module").as[GoModModule]
-      val dependencies = c.downField("dependencies").as[List[GoModDependency]]
-      Right(
-        GoMod(
-          fileFullPath = fileName.getOrElse(""),
-          module = module.getOrElse(null),
-          dependencies = dependencies.getOrElse(List[GoModDependency]())
-        )
-      )
-    }
-  }
+  readwriter[ujson.Value]
+    .bimap[util.Set[String]](
+      x => ujson.Arr(x.asScala.map(ujson.Str.apply).toSeq*),
+      json => json.arr.map(_.str).toSet.asJava
+    )
 }

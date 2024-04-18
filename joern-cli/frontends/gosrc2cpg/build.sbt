@@ -1,7 +1,8 @@
+import com.typesafe.config.{Config, ConfigFactory}
+import versionsort.VersionHelper
+
 import scala.sys.process.stringToProcess
 import scala.util.Try
-import versionsort.VersionHelper
-import com.typesafe.config.{Config, ConfigFactory}
 
 name := "gosrc2cpg"
 
@@ -12,9 +13,8 @@ libraryDependencies ++= Seq(
   "org.scalatest"             %% "scalatest"         % Versions.scalatest % Test,
   "com.lihaoyi"               %% "os-lib"            % "0.9.3",
   "com.fasterxml.jackson.core" % "jackson-databind"  % "2.17.0",
-  "io.circe"                  %% "circe-core"        % Versions.circe,
-  "io.circe"                  %% "circe-generic"     % Versions.circe,
-  "io.circe"                  %% "circe-parser"      % Versions.circe
+  "com.lihaoyi"               %% "upickle"           % Versions.upickle,
+  "com.lihaoyi"               %% "ujson"             % Versions.upickle
 )
 
 scalacOptions ++= Seq(
