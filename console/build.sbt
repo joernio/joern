@@ -18,7 +18,7 @@ libraryDependencies ++= Seq(
   "io.shiftleft"         %% "codepropertygraph"    % Versions.cpg,
   "com.michaelpollmeier" %% "scala-repl-pp-server" % Versions.scalaReplPP,
   "com.github.scopt"     %% "scopt"                % Versions.scopt,
-  "org.typelevel"        %% "cats-effect"          % Versions.cats,
+  "org.typelevel"        %% "cats-effect"          % Versions.catsEffect,
   "org.zeroturnaround"    % "zt-zip"               % Versions.zeroTurnaround,
   "com.lihaoyi"          %% "os-lib"               % Versions.osLib,
   "com.lihaoyi"          %% "pprint"               % Versions.pPrint,

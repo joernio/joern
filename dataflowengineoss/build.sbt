@@ -8,7 +8,7 @@ libraryDependencies ++= Seq(
   "com.lihaoyi"            %% "upickle"                    % Versions.upickle,
   "com.lihaoyi"            %% "ujson"                      % Versions.upickle,
   "org.scalatest"          %% "scalatest"                  % Versions.scalatest % Test,
-  "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4"
+  "org.scala-lang.modules" %% "scala-parallel-collections" % Versions.scalaParallel
 )
 
 enablePlugins(Antlr4Plugin)
