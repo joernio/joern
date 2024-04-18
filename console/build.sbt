@@ -2,12 +2,6 @@ name := "console"
 
 enablePlugins(JavaAppPackaging)
 
-val CaskVersion           = "0.9.2"
-val ZeroturnaroundVersion = "1.17"
-val OsLibVersion          = "0.9.3"
-val PprintVersion         = "0.8.1"
-val CommonsLangVersion    = "3.14.0"
-
 dependsOn(
   Projects.semanticcpg,
   Projects.macros,
@@ -25,11 +19,11 @@ libraryDependencies ++= Seq(
   "com.michaelpollmeier" %% "scala-repl-pp-server" % Versions.scalaReplPP,
   "com.github.scopt"     %% "scopt"                % Versions.scopt,
   "org.typelevel"        %% "cats-effect"          % Versions.cats,
-  "org.zeroturnaround"    % "zt-zip"               % ZeroturnaroundVersion,
-  "com.lihaoyi"          %% "os-lib"               % OsLibVersion,
-  "com.lihaoyi"          %% "pprint"               % PprintVersion,
-  "com.lihaoyi"          %% "cask"                 % CaskVersion,
-  "org.apache.commons"    % "commons-lang3"        % CommonsLangVersion,
+  "org.zeroturnaround"    % "zt-zip"               % Versions.zeroTurnaround,
+  "com.lihaoyi"          %% "os-lib"               % Versions.osLib,
+  "com.lihaoyi"          %% "pprint"               % Versions.pPrint,
+  "com.lihaoyi"          %% "cask"                 % Versions.cask,
+  "org.apache.commons"    % "commons-lang3"        % Versions.commonsLang,
   "org.scalatest"        %% "scalatest"            % Versions.scalatest % Test
 )
 
