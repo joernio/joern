@@ -105,7 +105,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
   }
 
   private def abstractModifierForCallable(
-    callableDeclaration: CallableDeclaration[_],
+    callableDeclaration: CallableDeclaration[?],
     isInterfaceMethod: Boolean
   ): Option[NewModifier] = {
     callableDeclaration match {
@@ -118,7 +118,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     }
   }
 
-  private def modifiersForMethod(methodDeclaration: CallableDeclaration[_]): List[NewModifier] = {
+  private def modifiersForMethod(methodDeclaration: CallableDeclaration[?]): List[NewModifier] = {
     val isInterfaceMethod = scope.enclosingTypeDecl.isInterface
 
     val abstractModifier = abstractModifierForCallable(methodDeclaration, isInterfaceMethod)
@@ -488,7 +488,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
   /** Constructor and Method declarations share a lot of fields, so this method adds the fields they have in common.
     * `fullName` and `signature` are omitted
     */
-  private def createPartialMethod(declaration: CallableDeclaration[_]): NewMethod = {
+  private def createPartialMethod(declaration: CallableDeclaration[?]): NewMethod = {
     val code         = declaration.getDeclarationAsString.trim
     val columnNumber = declaration.getBegin.map(x => Integer.valueOf(x.column)).toScala
     val endLine      = declaration.getEnd.map(x => Integer.valueOf(x.line)).toScala

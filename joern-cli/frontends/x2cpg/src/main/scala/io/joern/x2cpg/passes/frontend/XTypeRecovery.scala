@@ -67,7 +67,7 @@ object XTypeRecoveryPassGenerator {
       .whereNot(_.referencedMember)
       .foreach { fieldAccess =>
         getFieldBaseTypes(fieldAccess).member
-          .nameExact(fieldAccess.fieldIdentifier.canonicalName.toSeq: _*)
+          .nameExact(fieldAccess.fieldIdentifier.canonicalName.toSeq*)
           .foreach(builder.addEdge(fieldAccess, _, EdgeTypes.REF))
       }
   }
@@ -206,7 +206,7 @@ object XTypeRecovery {
 
   /** Parser options for languages implementing this pass.
     */
-  def parserOptions[R <: X2CpgConfig[R] with TypeRecoveryParserConfig[R]]: OParser[_, R] = {
+  def parserOptions[R <: X2CpgConfig[R] & TypeRecoveryParserConfig[R]]: OParser[?, R] = {
     val builder = OParser.builder[R]
     import builder.*
     OParser.sequence(
@@ -581,7 +581,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       // We have been able to resolve the type inter-procedurally
       associateTypes(i, globalTypes)
     } else if (baseTypes.nonEmpty) {
-      lazy val existingMembers = cpg.typeDecl.fullNameExact(baseTypes.toSeq: _*).member.nameExact(fieldName)
+      lazy val existingMembers = cpg.typeDecl.fullNameExact(baseTypes.toSeq*).member.nameExact(fieldName)
       if (baseTypes.equals(symbolTable.get(LocalVar(fieldFullName)))) {
         associateTypes(i, baseTypes)
       } else if (existingMembers.isEmpty) {
@@ -642,7 +642,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     */
   protected def methodReturnValues(methodFullNames: Seq[String]): Set[String] = {
     val rs = cpg.method
-      .fullNameExact(methodFullNames: _*)
+      .fullNameExact(methodFullNames*)
       .methodReturn
       .flatMap(mr => mr.typeFullName +: (mr.dynamicTypeHintFullName ++ mr.possibleTypes))
       .filterNot(_.equals("ANY"))
@@ -921,7 +921,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         val fieldAccess = head.asInstanceOf[FieldAccess]
         val (sym, ts)   = getSymbolFromCall(fieldAccess)
         val cpgTypes = cpg.typeDecl
-          .fullNameExact(ts.map(_.compUnitFullName).toSeq: _*)
+          .fullNameExact(ts.map(_.compUnitFullName).toSeq*)
           .member
           .nameExact(sym.identifier)
           .flatMap(m => m.typeFullName +: (m.dynamicTypeHintFullName ++ m.possibleTypes))

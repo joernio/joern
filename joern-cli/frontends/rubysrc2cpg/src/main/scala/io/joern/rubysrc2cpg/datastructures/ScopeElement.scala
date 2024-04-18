@@ -16,7 +16,7 @@ case class FieldDecl(
   typeFullName: String,
   isStatic: Boolean,
   isInitialized: Boolean,
-  node: RubyNode with RubyFieldIdentifier
+  node: RubyNode & RubyFieldIdentifier
 ) extends TypedScopeElement
 
 /** A type-like scope with a full name.

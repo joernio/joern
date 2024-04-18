@@ -9,6 +9,6 @@ object OpNodes {
     * and is common in languages such as Python/JavaScript.
     */
 
-  type ModuleVariable = Local with StaticType[ModuleVariableT]
+  type ModuleVariable = Local & StaticType[ModuleVariableT]
 
 }

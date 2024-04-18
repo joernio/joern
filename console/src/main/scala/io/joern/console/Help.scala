@@ -6,7 +6,7 @@ import overflowdb.traversal.help.{DocFinder, Table}
 
 object Help {
 
-  def overview(clazz: Class[_])(using AvailableWidthProvider): String = {
+  def overview(clazz: Class[?])(using AvailableWidthProvider): String = {
     val columnNames = List("command", "description", "example")
     val rows = DocFinder
       .findDocumentedMethodsOf(clazz)
@@ -52,7 +52,7 @@ object Help {
         |
         |""".stripMargin)
 
-  def codeForHelpCommand(clazz: Class[_]): String = {
+  def codeForHelpCommand(clazz: Class[?]): String = {
     val membersCode = DocFinder
       .findDocumentedMethodsOf(clazz)
       .map { case StepDoc(_, funcName, doc) =>

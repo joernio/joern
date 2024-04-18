@@ -6,7 +6,7 @@ import com.github.javaparser.ast.stmt.BlockStmt
 import scala.jdk.CollectionConverters._
 
 object TypeSizeReducer {
-  def simplifyType(typeDeclaration: TypeDeclaration[_]): Unit = {
+  def simplifyType(typeDeclaration: TypeDeclaration[?]): Unit = {
     typeDeclaration
       .getMethods()
       .asScala

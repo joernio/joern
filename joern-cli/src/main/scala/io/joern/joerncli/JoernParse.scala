@@ -14,7 +14,7 @@ object JoernParse {
   // Special string used to separate joern-parse opts from frontend-specific opts
   val ArgsDelimitor           = "--frontend-args"
   val DefaultCpgOutFile       = "cpg.bin"
-  var generator: CpgGenerator = _
+  var generator: CpgGenerator = scala.compiletime.uninitialized
 
   def main(args: Array[String]): Unit = {
     run(args) match {

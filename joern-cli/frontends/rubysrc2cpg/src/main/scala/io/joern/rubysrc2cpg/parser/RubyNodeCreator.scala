@@ -724,7 +724,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     )(ctx.toTextSpan)
   }
 
-  private def findFieldsInMethodDecls(methodDecls: List[MethodDeclaration]): List[RubyNode with RubyFieldIdentifier] = {
+  private def findFieldsInMethodDecls(methodDecls: List[MethodDeclaration]): List[RubyNode & RubyFieldIdentifier] = {
     // TODO: Handle case where body of method is not a StatementList
     methodDecls
       .flatMap { x =>
@@ -736,14 +736,14 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
           case _ => List.empty
         }
       }
-      .collect { case x: RubyNode with RubyFieldIdentifier =>
+      .collect { case x: (RubyNode & RubyFieldIdentifier) =>
         x
       }
   }
 
   private def genInitFieldStmts(
     ctxBodyStatement: RubyParser.BodyStatementContext
-  ): (RubyNode, List[RubyNode with RubyFieldIdentifier]) = {
+  ): (RubyNode, List[RubyNode & RubyFieldIdentifier]) = {
     val loweredClassDecls = lowerSingletonClassDeclarations(ctxBodyStatement)
 
     /** Generates SingleAssignment RubyNodes for list of fields and fields found in method decls
@@ -771,8 +771,8 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     loweredClassDecls match {
       case stmtList: StatementList =>
         val (rubyFieldIdentifiers, rest) = stmtList.statements.partition {
-          case x: RubyNode with RubyFieldIdentifier => true
-          case _                                    => false
+          case x: (RubyNode & RubyFieldIdentifier) => true
+          case _                                   => false
         }
 
         val (instanceFields, classFields) = partitionRubyFields(rubyFieldIdentifiers)
@@ -820,7 +820,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
         }
         val combinedFields = rubyFieldIdentifiers ++ fieldsInMethodDecls
 
-        (updatedStmtList, combinedFields.asInstanceOf[List[RubyNode with RubyFieldIdentifier]])
+        (updatedStmtList, combinedFields.asInstanceOf[List[RubyNode & RubyFieldIdentifier]])
       case decls => (decls, List.empty)
     }
   }

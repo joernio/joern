@@ -62,7 +62,7 @@ object RubyIntermediateAst {
     name: RubyNode,
     baseClass: Option[RubyNode],
     body: RubyNode,
-    fields: List[RubyNode with RubyFieldIdentifier]
+    fields: List[RubyNode & RubyFieldIdentifier]
   )(span: TextSpan)
       extends RubyNode(span)
       with TypeDeclaration
@@ -318,7 +318,7 @@ object RubyIntermediateAst {
 
     def block: Block
 
-    def withoutBlock: RubyNode with C
+    def withoutBlock: RubyNode & C
   }
 
   final case class SimpleCallWithBlock(target: RubyNode, arguments: List[RubyNode], block: Block)(span: TextSpan)
