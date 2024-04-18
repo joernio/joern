@@ -80,4 +80,29 @@ class FileTests extends C2CpgSuite {
 
   }
 
+  "File test for preprocessed files from C and CPP files" should {
+
+    val cpg = code(
+      """
+        |# 1 "a.c" 1
+        |int bar() {}
+        |""".stripMargin,
+      "a.i"
+    )
+      .moreCode(
+        """
+          |# 1 "b.cpp" 1
+          |class B {};
+          |""".stripMargin,
+        "b.i"
+      )
+
+    "be parsed correctly" in {
+      cpg.file.nameNot("<includes>", "<unknown>").name.sorted.l shouldBe List("a.i", "b.i")
+      cpg.method.nameExact("bar").file.name.l shouldBe List("a.i")
+      cpg.typeDecl.nameExact("B").file.name.l shouldBe List("b.i")
+    }
+
+  }
+
 }

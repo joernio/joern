@@ -15,7 +15,7 @@ object FileDefaults {
 
   val HEADER_FILE_EXTENSIONS: Set[String] = Set(C_HEADER_EXT, CPP_HEADER_EXT, OTHER_HEADER_EXT)
 
-  private val CPP_FILE_EXTENSIONS = Set(CC_EXT, CPP_EXT, CPP_HEADER_EXT)
+  val CPP_FILE_EXTENSIONS = Set(CC_EXT, CPP_EXT, CPP_HEADER_EXT)
 
   def isHeaderFile(filePath: String): Boolean =
     HEADER_FILE_EXTENSIONS.exists(filePath.endsWith)
