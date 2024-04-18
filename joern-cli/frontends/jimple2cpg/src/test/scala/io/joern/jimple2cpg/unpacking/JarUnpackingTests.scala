@@ -16,10 +16,10 @@ import scala.util.{Failure, Success, Try}
 
 class JarUnpackingTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
-  var recurseCpgs: Map[String, Cpg]   = _
-  var noRecurseCpgs: Map[String, Cpg] = _
-  var depthsCpgs: Map[String, Cpg]    = _
-  var slippyCpg: Cpg                  = _
+  var recurseCpgs: Map[String, Cpg]   = scala.compiletime.uninitialized
+  var noRecurseCpgs: Map[String, Cpg] = scala.compiletime.uninitialized
+  var depthsCpgs: Map[String, Cpg]    = scala.compiletime.uninitialized
+  var slippyCpg: Cpg                  = scala.compiletime.uninitialized
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()

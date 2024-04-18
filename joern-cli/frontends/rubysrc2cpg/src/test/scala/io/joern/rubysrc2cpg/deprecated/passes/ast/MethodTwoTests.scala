@@ -23,7 +23,7 @@ class MethodTwoTests extends RubyCode2CpgFixture(useDeprecatedFrontend = true) {
         x.code should startWith("def foo(a, b)")
         x.isExternal shouldBe false
         x.order shouldBe 1
-        x.filename endsWith "Test0.rb"
+        x.filename.endsWith("Test0.rb")
         x.lineNumber shouldBe Option(2)
         x.lineNumberEnd shouldBe Option(4)
       }
