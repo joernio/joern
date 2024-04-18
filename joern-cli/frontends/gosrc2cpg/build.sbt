@@ -11,9 +11,7 @@ dependsOn(Projects.dataflowengineoss % "compile->compile;test->test", Projects.x
 libraryDependencies ++= Seq(
   "io.shiftleft"              %% "codepropertygraph" % Versions.cpg,
   "org.scalatest"             %% "scalatest"         % Versions.scalatest % Test,
-  "com.lihaoyi"               %% "os-lib"            % Versions.osLib,
-  "com.lihaoyi"               %% "upickle"           % Versions.upickle,
-  "com.lihaoyi"               %% "ujson"             % Versions.upickle
+  "com.lihaoyi"               %% "os-lib"            % Versions.osLib
 )
 
 scalacOptions ++= Seq(

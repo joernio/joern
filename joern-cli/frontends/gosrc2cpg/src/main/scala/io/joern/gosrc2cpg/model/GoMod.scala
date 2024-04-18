@@ -64,9 +64,9 @@ class GoModHelper(config: Option[Config] = None, meta: Option[GoMod] = None) {
 }
 
 case class GoMod(
-  @upickle.implicits.key("node_filename") fileFullPath: String,
+  @upickle.implicits.key("node_filename") fileFullPath: String = "",
   @upickle.implicits.key("Module") module: GoModModule,
-  @upickle.implicits.key("dependencies") dependencies: List[GoModDependency]
+  @upickle.implicits.key("dependencies") dependencies: List[GoModDependency] = List.empty
 ) derives ReadWriter
 
 case class GoModModule(
