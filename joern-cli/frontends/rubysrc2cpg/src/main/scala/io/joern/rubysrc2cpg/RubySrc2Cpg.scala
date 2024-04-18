@@ -68,6 +68,8 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
         internalProgramSummary
       }
 
+//      RubyProgramSummary.BuiltinTypes
+
       val astCreationPass = new AstCreationPass(cpg, astCreators.map(_.withSummary(programSummary)))
       astCreationPass.createAndApply()
       val importsPass = new ImportsPass(cpg)

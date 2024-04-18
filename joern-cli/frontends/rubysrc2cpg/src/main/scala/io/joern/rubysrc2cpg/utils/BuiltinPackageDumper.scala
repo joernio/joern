@@ -25,64 +25,69 @@ class BuiltinPackageDumper(rubyVersion: String = "3.3.0") {
   private val browser = JsoupBrowser()
   private val baseUrl = s"https://ruby-doc.org/$rubyVersion"
 
+  private val baseDir = "src/main/resources/builtin_types"
+
   // Below unicode value caluclated with: println("\\u" + Integer.toHexString('→' | 0x10000).substring(1))
   // taken from: https://stackoverflow.com/questions/2220366/get-unicode-value-of-a-character
   private val arrowUnicodeValue = "\\u2192"
 
   def run(): Unit = {
-    val (builtinPaths, gemPaths) = generatePaths()
+    val builtinDir = File(baseDir)
+    builtinDir.createDirectoryIfNotExists()
 
-    val types = ConcurrentTaskUtil.runUsingThreadPool(gemPaths.slice(0, 30).map(
-      (baseModuleName, paths) => () => {
-        val dirPath = s"src/main/resources/builtin_types"
-        val dir     = File(dirPath)
+    val paths = generatePaths()
 
-        dir.createDirectoryIfNotExists()
-
-        paths.map { path =>
-          val doc = browser.get(path)
-
-          val namespace =
-            doc >?> element("h1.class, h1.module") match {
-              case Some(classOrModuleElement) =>
-                // Text on website is: Class/Module <some>::<module/class>::<name>
-                val classOrModuleName = classOrModuleElement.text.split("\\s")(1).replaceAll("::","\\.").strip
-                s"$baseModuleName.$classOrModuleName"
-              case None       => baseModuleName
-            }
-
-          val rubyMethods = buildRubyMethods(doc, namespace)
-
-          val rubyType = RubyType(namespace, rubyMethods, List.empty)
-
-          (dirPath, rubyType)
-        }
+    val types = ConcurrentTaskUtil
+      .runUsingThreadPool(generateRubyTypes(paths))
+      .flatMap {
+        case Success(rubyTypes) =>
+          rubyTypes.foreach { rubyType => writeToFile(rubyType) }
+          rubyTypes
+        case Failure(ex) =>
+          logger.warn(s"Failed to scrape/write Ruby builtin types: $ex")
+          None
       }
-    ).iterator
-    ).flatMap{
-      case Success(rubyTypes) =>
-        rubyTypes.foreach{ (dir, rubyType) => writeToFile(dir, rubyType)}
-        Option.empty
-      case Failure(ex) =>
-        logger.warn(s"Failed to scrape/write Ruby builtin types: $ex")
-        None
-    }
   }
 
-  private def writeToFile(baseDir: String, rubyType: RubyType): Unit = {
+  private def generateRubyTypes(pathsMap: collection.mutable.Map[String, List[String]]): Iterator[() => List[RubyType]] = {
+    pathsMap
+      .map((baseModuleName, paths) =>
+        () => {
+          paths.map { path =>
+            val doc = browser.get(path)
+
+            val namespace =
+              doc >?> element("h1.class, h1.module") match {
+                case Some(classOrModuleElement) =>
+                  // Text on website is: Class/Module <some>::<module/class>::<name>
+                  val classOrModuleName = classOrModuleElement.text.split("\\s")(1).replaceAll("::", "\\.").strip
+                  s"$baseModuleName.$classOrModuleName"
+                case None => baseModuleName
+              }
+
+            val rubyMethods = buildRubyMethods(doc, namespace)
+
+            RubyType(namespace, rubyMethods, List.empty)
+          }
+        }
+      )
+      .iterator
+  }
+
+  private def writeToFile(rubyType: RubyType): Unit = {
     val rubyTypeNameSegments = rubyType.name.split("\\.")
 
     val (directorySuffixes, fileName) = rubyTypeNameSegments.size match {
       case x if x == 1 =>
-        ("", rubyTypeNameSegments(x-1))
+        ("", rubyTypeNameSegments(x - 1))
       case x if x > 1 =>
-        (rubyTypeNameSegments.take(x - 1).mkString("/"), rubyTypeNameSegments(x-1))
+        (rubyTypeNameSegments.take(x - 1).mkString("."), rubyTypeNameSegments(x - 1))
     }
 
     val dir = File(s"$baseDir/$directorySuffixes")
     dir.createDirectoryIfNotExists(createParents = true)
 
-    val typeFile = File(s"${dir.pathAsString}/${fileName}.mpk")
+    val typeFile = File(s"${dir.pathAsString}/$fileName.mpk")
     typeFile.createIfNotExists()
 
     val msg: upack.Msg = upickle.default.writeMsg(rubyType)
@@ -106,7 +111,9 @@ class BuiltinPackageDumper(rubyVersion: String = "3.3.0") {
         val method = x.text.split(arrowUnicodeValue)(0)
 
         funcNameRegex.findFirstMatchIn(method) match {
-          case Some(methodName) => s"${methodName.toString.replaceAll("[!?=]", "").strip}"
+          case Some(methodName) =>
+            // Some methods are `methodName == something`, which is why the split on space here is required
+            s"${methodName.toString.replaceAll("[!?=]", "").split("\\s+")(0).strip}"
           case None             => ""
         }
       }
@@ -115,7 +122,7 @@ class BuiltinPackageDumper(rubyVersion: String = "3.3.0") {
       .map(x => RubyMethod(x, List.empty, Defines.Any, Option(namespace)))
   }
 
-  private def generatePaths(): (List[String], collection.mutable.Map[String, List[String]]) = {
+  private def generatePaths(): collection.mutable.Map[String, List[String]] = {
     val doc = browser.get(baseUrl)
 
     val liElements = doc >> elementList("#classindex-section > .link-list > li")
@@ -135,6 +142,8 @@ class BuiltinPackageDumper(rubyVersion: String = "3.3.0") {
       s"$baseUrl/${anchor.get.attr("href").replaceAll("\\./", "")}"
     }
 
+    linksMap.addOne("__builtin", baseLinks)
+
     links.foreach { (extensionName, anchorElements) =>
       val anchorHrefs = anchorElements
         .map { anchorElement =>
@@ -145,6 +154,6 @@ class BuiltinPackageDumper(rubyVersion: String = "3.3.0") {
       linksMap.addOne(extensionName, anchorHrefs)
     }
 
-    (baseLinks, linksMap)
+    linksMap
   }
 }
