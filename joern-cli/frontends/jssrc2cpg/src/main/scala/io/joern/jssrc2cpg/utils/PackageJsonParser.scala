@@ -45,7 +45,7 @@ object PackageJsonParser {
           val packageJson = read[ujson.Obj](content)
 
           var depToVersion = Map.empty[String, String]
-          val dependencyIt = packageJson("dependencies").objOpt.getOrElse(Map.empty[String, ujson.Value])
+          val dependencyIt = packageJson.value.get("dependencies").map(_.obj).getOrElse(Map.empty[String, ujson.Value])
           dependencyIt.foreach {
             case (depName, value @ ujson.Str(version)) =>
               depToVersion = depToVersion.updated(depName, version)
@@ -67,7 +67,7 @@ object PackageJsonParser {
           var depToVersion = Map.empty[String, String]
           ProjectDependencies
             .foreach { dependency =>
-              val dependencyIt = packageJson(dependency).objOpt.getOrElse(Map.empty[String, ujson.Value])
+              val dependencyIt = packageJson.value.get(dependency).map(_.obj).getOrElse(Map.empty[String, ujson.Value])
               dependencyIt.foreach { case (key, value) =>
                 depToVersion = depToVersion.updated(key, value.str)
               }
