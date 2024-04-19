@@ -58,7 +58,7 @@ class StepsTest extends AnyWordSpec with Matchers {
       "providing multiple" in {
         // find two arbitrary methods so we can find it again in the next step
         val methods               = cpg.method.toList.take(2)
-        val results: List[Method] = cpg.method.id(methods.map(_.id): _*).toList
+        val results: List[Method] = cpg.method.id(methods.map(_.id)*).toList
 
         results.size shouldBe 2
         results.toSet shouldBe methods.toSet

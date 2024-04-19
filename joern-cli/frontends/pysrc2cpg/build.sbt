@@ -4,7 +4,7 @@ dependsOn(Projects.dataflowengineoss % "compile->compile;test->test", Projects.x
 
 libraryDependencies ++= Seq(
   "io.shiftleft"           %% "codepropertygraph"          % Versions.cpg,
-  "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
+  "org.scala-lang.modules" %% "scala-parallel-collections" % Versions.scalaParallel,
   "org.scalatest"          %% "scalatest"                  % Versions.scalatest % Test
 )
 
