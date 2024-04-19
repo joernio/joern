@@ -1,15 +1,14 @@
 package io.joern.gosrc2cpg.parser
 
-import io.circe.parser.*
-import io.joern.gosrc2cpg.model.CirceEnDe.decoderModMetadata
 import io.joern.gosrc2cpg.model.GoMod
 import io.joern.x2cpg.astgen.ParserResult
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 import ujson.Value.Value
+import upickle.default.*
 
 import java.nio.file.{Path, Paths}
-import scala.util.Try
+import scala.util.{Try, Success, Failure}
 
 object GoAstJsonParser {
 
@@ -26,11 +25,11 @@ object GoAstJsonParser {
 
   def readModFile(file: Path): Option[GoMod] = {
     val jsonContent = IOUtils.readLinesInFile(file).mkString
-    (decode[GoMod](jsonContent) match {
-      case Left(error) =>
-        logger.warn(s"Error decoding JSON - '${file.toString}': $error")
-        Left(error)
-      case x => x
-    }).toOption
+    Try(read[GoMod](jsonContent)) match {
+      case Failure(error) =>
+        logger.warn(s"Error decoding JSON - '${file.toString}'", error)
+        None
+      case Success(x) => Some(x)
+    }
   }
 }

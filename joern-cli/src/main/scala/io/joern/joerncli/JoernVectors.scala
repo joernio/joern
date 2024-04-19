@@ -1,6 +1,5 @@
 package io.joern.joerncli
 
-import io.circe.Json
 import io.joern.joerncli.CpgBasedTool.exitIfInvalid
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.PropertyNames
@@ -36,8 +35,7 @@ class BagOfPropertiesForNodes extends EmbeddingGenerator[AstNode, (String, Strin
   override def hash(label: String): String           = label
 
   override def vectorToString(vector: Map[(String, String), Double]): String = {
-    val jsonObj = Json.fromFields(vector.keys.map { case (k, v) => (k, Json.fromString(v)) })
-    jsonObj.toString
+    ujson.write(vector.keys.map { case (k, v) => (k, ujson.Str(v)) })
   }
 
 }
