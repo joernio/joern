@@ -154,7 +154,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     // TODO: Type recovery should potentially resolve this
     val fullName = typeFromCallTarget(node.target)
       .map(x => s"$x:${node.methodName}")
-      .getOrElse(XDefines.Any)
+      .getOrElse(XDefines.DynamicCallUnknownFullName)
 
     val receiver     = astForExpression(node.target)
     val argumentAsts = node.arguments.map(astForMethodCallArgument)
