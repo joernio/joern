@@ -32,7 +32,7 @@ class MethodDecoratorPass(cpg: Cpg) extends CpgPass(cpg) {
           .lineNumber(parameterIn.lineNumber)
           .columnNumber(parameterIn.columnNumber)
 
-        val method = parameterIn._astIn.headOption
+        val method = parameterIn.astIn.headOption
         if (method.isEmpty) {
           logger.warn("Parameter without method encountered: " + parameterIn.toString)
         } else {

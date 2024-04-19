@@ -113,8 +113,8 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     if (visitedNodes.contains(cur)) return visitedNodes
     visitedNodes.addOne(cur)
 
-    (if (inSuperDirection) cpg.typeDecl.fullNameExact(cur.fullName).flatMap(_._inheritsFromOut.cast[Type].referencedTypeDecl)
-     else cpg.typ.fullNameExact(cur.fullName).flatMap(_._inheritsFromIn))
+    (if (inSuperDirection) cpg.typeDecl.fullNameExact(cur.fullName).typeViaInheritsFromOut.referencedTypeDecl
+     else cpg.typ.fullNameExact(cur.fullName).inheritsFromIn)
       .collectAll[TypeDecl]
       .to(mutable.LinkedHashSet) match {
       case classesToEval if classesToEval.isEmpty => visitedNodes

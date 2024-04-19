@@ -5,5 +5,5 @@ import io.shiftleft.semanticcpg.language.*
 
 class DependencyTraversal(val traversal: Iterator[Dependency]) extends AnyVal {
   def imports: Iterator[Import] =
-    traversal._importsIn.cast[Import]
+    traversal.importsIn
 }

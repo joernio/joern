@@ -7,7 +7,7 @@ class MethodParameterOutTraversal(val traversal: Iterator[MethodParameterOut]) e
 
   def paramIn: Iterator[MethodParameterIn] = {
     // TODO define a named step in schema
-    traversal.flatMap(_._parameterLinkIn.collectAll[MethodParameterIn])
+    traversal.flatMap(_.parameterLinkIn.collectAll[MethodParameterIn])
   }
 
   /* method parameter indexes are  based, i.e. first parameter has index  (that's how java2cpg generates it) */
@@ -31,7 +31,7 @@ class MethodParameterOutTraversal(val traversal: Iterator[MethodParameterOut]) e
       call <- method._callIn
       arg  <- call._argumentOut.collectAll[Expression]
       // TODO define 'parameterLinkIn' as named step in schema
-      if paramOut._parameterLinkIn.collectAll[MethodParameterIn].index.headOption.contains(arg.argumentIndex)
+      if paramOut.parameterLinkIn.collectAll[MethodParameterIn].index.headOption.contains(arg.argumentIndex)
     } yield arg
 
 }

@@ -58,7 +58,7 @@ class TypeTraversal(val traversal: Iterator[Type]) extends AnyVal {
   /** Type declarations which derive from this type.
     */
   def derivedTypeDecl: Iterator[TypeDecl] =
-    traversal._inheritsFromIn.collectAll[TypeDecl]
+    traversal.inheritsFromIn
 
   /** Direct alias types.
     */
@@ -74,21 +74,21 @@ class TypeTraversal(val traversal: Iterator[Type]) extends AnyVal {
     traversal.localViaEvalTypeIn
 
   def memberOfType: Iterator[Member] =
-    traversal._evalTypeIn.collectAll[Member]
+    traversal.evalTypeIn.collectAll[Member]
 
   @deprecated("Please use `parameterOfType`")
   def parameter: Iterator[MethodParameterIn] = parameterOfType
 
   def parameterOfType: Iterator[MethodParameterIn] =
-    traversal._evalTypeIn.collectAll[MethodParameterIn]
+    traversal.evalTypeIn.collectAll[MethodParameterIn]
 
   def methodReturnOfType: Iterator[MethodReturn] =
-    traversal._evalTypeIn.collectAll[MethodReturn]
+    traversal.evalTypeIn.collectAll[MethodReturn]
 
   def expressionOfType: Iterator[Expression] = expression
 
   // TODO define in schema
   def expression: Iterator[Expression] =
-    traversal._evalTypeIn.collectAll[Expression]
+    traversal.evalTypeIn.collectAll[Expression]
 
 }

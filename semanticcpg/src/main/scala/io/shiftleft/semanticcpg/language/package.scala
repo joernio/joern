@@ -278,11 +278,6 @@ trait LowPrioImplicits {
 
   implicit def toCfgNodeMethods(node: CfgNode): CfgNodeMethods                = new CfgNodeMethods(node)
 
-   // implicit def iterableOnceToIterator[A](iterableOnce: IterableOnce[A]): Iterator[A] =
-   //  iterableOnce.iterator
-
-  // implicit def singleToCfgNodeTraversal[A <: CfgNode](a: A): CfgNodeTraversal[A] =
-    // new CfgNodeTraversal[A](Iterator.single(a))
   implicit def iterOnceToCfgNodeTraversal[A <: CfgNode](a: IterableOnce[A]): CfgNodeTraversal[A] =
     new CfgNodeTraversal[A](a.iterator)
 

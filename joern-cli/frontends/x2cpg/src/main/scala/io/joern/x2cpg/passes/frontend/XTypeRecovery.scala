@@ -406,7 +406,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     *   assignment call pointer.
     */
   protected def visitAssignments(a: Assignment): Set[String] =
-    visitAssignmentArguments(a._argumentOut.cast[CfgNode].l)
+    visitAssignmentArguments(a.argumentOut.cast[CfgNode].l)
 
   protected def visitAssignmentArguments(args: List[AstNode]): Set[String] = args match {
     case List(i: Identifier, b: Block)                             => visitIdentifierAssignedToBlock(i, b)
@@ -755,11 +755,11 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       sb.toString()
     }
 
-    lazy val typesFromBaseCall = fa._argumentOut.headOption match
+    lazy val typesFromBaseCall = fa.argumentOut.headOption match
       case Some(call: Call) => getTypesFromCall(call)
       case _                => Set.empty[String]
 
-    fa._argumentOut.l match {
+    fa.argumentOut.l match {
       case ::(i: Identifier, ::(f: FieldIdentifier, _)) if i.name.matches("(self|this)") => wrapName(f.canonicalName)
       case ::(i: Identifier, ::(f: FieldIdentifier, _)) => wrapName(s"${i.name}$pathSep${f.canonicalName}")
       case ::(c: Call, ::(f: FieldIdentifier, _)) if c.name.equals(Operators.fieldAccess) =>
@@ -785,7 +785,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   protected def visitCallAssignedToLiteral(c: Call, l: Literal): Set[String] = {
     if (c.name.equals(Operators.indexAccess)) {
       // For now, we will just handle this on a very basic level
-      c._argumentOut.cast[CfgNode].l match {
+      c.argumentOut.cast[CfgNode].l match {
         case List(_: Identifier, _: Literal) =>
           indexAccessToCollectionVar(c).map(cv => symbolTable.append(cv, getLiteralType(l))).getOrElse(Set.empty)
         case List(_: Identifier, idx: Identifier) if symbolTable.contains(idx) =>
@@ -828,7 +828,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
           .getOrElse(XTypeRecovery.DummyIndexAccess)
       else x.name
 
-    Option(c._argumentOut.cast[CfgNode].l match {
+    Option(c.argumentOut.cast[CfgNode].l match {
       case List(i: Identifier, idx: Literal)    => CollectionVar(i.name, idx.code)
       case List(i: Identifier, idx: Identifier) => CollectionVar(i.name, idx.code)
       case List(c: Call, idx: Call)             => CollectionVar(callName(c), callName(idx))
@@ -844,7 +844,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     */
   protected def visitIdentifierAssignedToFieldLoad(i: Identifier, fa: FieldAccess): Set[String] = {
     val fieldName = getFieldName(fa)
-    fa._argumentOut.l match {
+    fa.argumentOut.l match {
       case ::(base: Identifier, ::(fi: FieldIdentifier, _)) if symbolTable.contains(LocalVar(base.name)) =>
         // Get field from global table if referenced as a variable
         val localTypes = symbolTable.get(LocalVar(base.name))
@@ -937,7 +937,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
           callPaths.map(c => s"$c$pathSep${XTypeRecovery.DummyReturnType}")
         else
           returnValues
-      case ::(head: Call, Nil) if head._argumentOut.cast[CfgNode].headOption.exists(symbolTable.contains) =>
+      case ::(head: Call, Nil) if head.argumentOut.cast[CfgNode].headOption.exists(symbolTable.contains) =>
         symbolTable
           .get(head.argumentOut.head)
           .map(t => Seq(t, head.name, XTypeRecovery.DummyReturnType).mkString(pathSep))
@@ -947,7 +947,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         extractTypes(head.argument.l)
       case _ => Set.empty
     }
-    val returnTypes = extractTypes(ret._argumentOut.cast[CfgNode].l)
+    val returnTypes = extractTypes(ret.argumentOut.cast[CfgNode].l)
     existingTypes.addAll(returnTypes)
     builder.setNodeProperty(ret.method.methodReturn, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, existingTypes)
   }
@@ -1121,7 +1121,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     inCall match {
       case x: Call =>
         builder.addEdge(x, mRef, EdgeTypes.ARGUMENT)
-        mRef.argumentIndex(x._argumentOut.size + 1)
+        mRef.argumentIndex(x.argumentOut.size + 1)
       case x =>
         mRef.argumentIndex(x.astChildren.size + 1)
     }

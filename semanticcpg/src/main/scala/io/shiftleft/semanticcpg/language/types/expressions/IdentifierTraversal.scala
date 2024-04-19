@@ -10,7 +10,7 @@ class IdentifierTraversal(val traversal: Iterator[Identifier]) extends AnyVal {
   /** Traverse to all declarations of this identifier
     */
   def refsTo: Iterator[Declaration] = {
-    traversal.flatMap(_._refOut).cast[Declaration]
+    traversal.flatMap(_.refOut).cast[Declaration]
   }
 
 }

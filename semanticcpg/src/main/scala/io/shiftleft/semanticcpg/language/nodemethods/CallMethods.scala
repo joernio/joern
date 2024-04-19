@@ -14,16 +14,16 @@ class CallMethods(val node: Call) extends AnyVal with NodeExtension with HasLoca
     node.dispatchType == "DYNAMIC_DISPATCH"
 
   def receiver: Iterator[Expression] =
-    node._receiverOut.collectAll[Expression]
+    node.receiverOut.collectAll[Expression]
 
   def arguments(index: Int): Iterator[Expression] =
-    node._argumentOut.collect {
+    node.argumentOut.collect {
       case expr: Expression if expr.argumentIndex == index => expr
     }
 
   // TODO define as named step in the schema
   def argument: Iterator[Expression] =
-    node._argumentOut.collectAll[Expression]
+    node.argumentOut.collectAll[Expression]
 
   def argument(index: Int): Expression =
     arguments(index).next

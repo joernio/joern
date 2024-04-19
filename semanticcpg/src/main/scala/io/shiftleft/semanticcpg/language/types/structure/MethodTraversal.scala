@@ -158,7 +158,7 @@ class MethodTraversal(val traversal: Iterator[Method]) extends AnyVal {
   @Doc(info = "Namespace block this method is declared in")
   def namespaceBlock: Iterator[NamespaceBlock] = {
     traversal.flatMap { m =>
-      m._astIn.headOption match {
+      m.astIn.headOption match {
         // some language frontends don't have a TYPE_DECL for a METHOD
         case Some(namespaceBlock: NamespaceBlock) => namespaceBlock.start
         // other language frontends always embed their method in a TYPE_DECL

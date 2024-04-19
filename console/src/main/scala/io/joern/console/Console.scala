@@ -96,13 +96,13 @@ class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.cur
   @Doc(
     info = "Close current workspace and open a different one",
     longInfo = """ | By default, the workspace in $INSTALL_DIR/workspace is used.
-                  | This method allows specifying a different workspace directory
-                  | via the `pathName` parameter.
-                  | Before changing the workspace, the current workspace will be
-                  | closed, saving any unsaved changes.
-                  | If `pathName` points to a non-existing directory, then a new
-                  | workspace is first created.
-                  |"""
+                 | This method allows specifying a different workspace directory
+                 | via the `pathName` parameter.
+                 | Before changing the workspace, the current workspace will be
+                 | closed, saving any unsaved changes.
+                 | If `pathName` points to a non-existing directory, then a new
+                 | workspace is first created.
+                 |"""
   )
   def switchWorkspace(pathName: String): Unit = {
     if (workspaceManager != null) {

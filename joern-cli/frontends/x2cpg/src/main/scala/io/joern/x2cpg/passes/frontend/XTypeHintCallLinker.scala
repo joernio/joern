@@ -119,7 +119,7 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
       if (methodName.contains(pathSep) && methodName.length > methodName.lastIndexOf(pathSep) + 1)
         methodName.substring(methodName.lastIndexOf(pathSep) + pathSep.length)
       else methodName
-    createMethodStub(name, methodName, call._argumentOut.size, isExternal, builder)
+    createMethodStub(name, methodName, call.argumentOut.size, isExternal, builder)
   }
 
   /** Try to extract a type full name from the method full name, if one exists in the CPG then we are lucky and we use

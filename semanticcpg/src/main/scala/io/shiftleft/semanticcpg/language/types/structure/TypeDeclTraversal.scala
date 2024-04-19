@@ -16,7 +16,7 @@ class TypeDeclTraversal(val traversal: Iterator[TypeDecl]) extends AnyVal {
   /** Types referencing to this type declaration.
     */
   def referencingType: Iterator[Type] =
-    traversal._refIn.collectAll[Type]
+    traversal.refIn
 
   /** Namespace in which this type declaration is defined
     */

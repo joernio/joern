@@ -73,7 +73,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
   }
 
   override def visitAssignments(a: OpNodes.Assignment): Set[String] = {
-    a._argumentOut.l match {
+    a.argumentOut.l match {
       case List(i: Identifier, c: Call) if c.name.isBlank && c.signature.isBlank =>
         // This is usually some decorator wrapper
         c.argument.isMethodRef.headOption match {

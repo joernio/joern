@@ -10,12 +10,12 @@ class NamespaceTraversal(val traversal: Iterator[Namespace]) extends AnyVal {
   /** The type declarations defined in this namespace
     */
   def typeDecl: Iterator[TypeDecl] =
-    traversal._refIn._astOut.collectAll[TypeDecl]
+    traversal.refIn.astOut.collectAll[TypeDecl]
 
   /** Methods defined in this namespace
     */
   def method: Iterator[Method] =
-    traversal._refIn._astOut.collectAll[Method]
+    traversal.refIn.astOut.collectAll[Method]
 
   /** External namespaces - any namespaces which contain one or more external type.
     */

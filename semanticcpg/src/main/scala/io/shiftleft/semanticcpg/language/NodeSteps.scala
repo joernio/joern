@@ -25,9 +25,9 @@ class NodeSteps[NodeType <: StoredNode](val traversal: Iterator[NodeType]) exten
   def file: Iterator[File] = {
     traversal.flatMap {
       case namespace: Namespace =>
-        namespace._refIn.iterator._sourceFileOut.cast[File]
+        namespace.refIn.sourceFileOut
       case comment: Comment =>
-        comment._astIn.iterator.collectAll[File]
+        comment.astIn
       case node =>
        Iterator(node).repeat(_.coalesce(_._sourceFileOut, _._astIn))(_.until(_.hasLabel(File.Label))).cast[File]
     }

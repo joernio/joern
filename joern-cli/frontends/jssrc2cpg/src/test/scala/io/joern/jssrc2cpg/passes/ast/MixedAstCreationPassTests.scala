@@ -51,7 +51,7 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       val List(localX)       = methodBlock.astChildren.isLocal.l
       val List(assignment)   = methodBlock.astChildren.isCall.l
       val List(identifierX)  = assignment.astChildren.isIdentifier.l
-      val List(localXViaRef) = identifierX._refOut.l
+      val List(localXViaRef) = identifierX.refOut.l
       localXViaRef shouldBe localX
     }
 
@@ -65,7 +65,7 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       val List(localX)       = methodBlock.astChildren.isLocal.l
       val List(assignment)   = methodBlock.astChildren.isCall.l
       val List(identifierX)  = assignment.astChildren.isIdentifier.l
-      val List(localXViaRef) = identifierX._refOut.l
+      val List(localXViaRef) = identifierX.refOut.l
       localXViaRef shouldBe localX
     }
 
@@ -76,7 +76,7 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       val List(localX)       = methodBlock.astChildren.isLocal.l
       val List(assignment)   = methodBlock.astChildren.isCall.l
       val List(identifierX)  = assignment.astChildren.isIdentifier.l
-      val List(localXViaRef) = identifierX._refOut.l
+      val List(localXViaRef) = identifierX.refOut.l
       localXViaRef shouldBe localX
     }
 
@@ -90,12 +90,12 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       val List(localX)        = methodBlock.astChildren.isLocal.l
       val List(assignment1)   = methodBlock.astChildren.isCall.order(1).l
       val List(identifierX1)  = assignment1.astChildren.isIdentifier.l
-      val List(localXViaRef1) = identifierX1._refOut.l
+      val List(localXViaRef1) = identifierX1.refOut.l
       localXViaRef1 shouldBe localX
 
       val List(assignment2)   = methodBlock.astChildren.isCall.order(2).l
       val List(identifierX2)  = assignment2.astChildren.isIdentifier.l
-      val List(localXViaRef2) = identifierX2._refOut.l
+      val List(localXViaRef2) = identifierX2.refOut.l
       localXViaRef2 shouldBe localX
     }
 
@@ -107,7 +107,7 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       val List(nestedBlock)  = methodBlock.astChildren.isBlock.l
       val List(assignment)   = nestedBlock.astChildren.isCall.l
       val List(identifierX)  = assignment.astChildren.isIdentifier.l
-      val List(localXViaRef) = identifierX._refOut.l
+      val List(localXViaRef) = identifierX.refOut.l
       localXViaRef shouldBe localX
     }
 
@@ -122,7 +122,7 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       val List(localX)       = nestedBlock.astChildren.isLocal.l
       val List(assignment)   = methodBlock.astChildren.isCall.l
       val List(identifierX)  = assignment.astChildren.isIdentifier.l
-      val List(localXViaRef) = identifierX._refOut.l
+      val List(localXViaRef) = identifierX.refOut.l
       localXViaRef shouldBe localX
     }
 
@@ -136,7 +136,7 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       val List(localX)       = methodBlock.astChildren.isLocal.l
       val List(assignment)   = methodBlock.astChildren.isCall.l
       val List(identifierX)  = assignment.astChildren.isIdentifier.l
-      val List(localXViaRef) = identifierX._refOut.l
+      val List(localXViaRef) = identifierX.refOut.l
       localXViaRef shouldBe localX
     }
 
@@ -151,7 +151,7 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       val List(localX)       = nestedBlock.astChildren.isLocal.l
       val List(assignment)   = methodBlock.astChildren.isCall.l
       val List(identifierX)  = assignment.astChildren.isIdentifier.l
-      val List(localXViaRef) = identifierX._refOut.l
+      val List(localXViaRef) = identifierX.refOut.l
       localXViaRef shouldBe localX
     }
 
@@ -166,7 +166,7 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       val List(nestedBlock)  = methodBlock.astChildren.isBlock.l
       val List(assignment)   = nestedBlock.astChildren.isCall.l
       val List(identifierX)  = assignment.astChildren.isIdentifier.l
-      val List(localXViaRef) = identifierX._refOut.l
+      val List(localXViaRef) = identifierX.refOut.l
       localXViaRef shouldBe localX
     }
 
@@ -186,12 +186,12 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       val List(innerLocalX)       = nestedBlock.astChildren.isLocal.l
       val List(innerAssignment)   = nestedBlock.astChildren.isCall.l
       val List(innerIdentifierX)  = innerAssignment.astChildren.isIdentifier.l
-      val List(innerLocalXViaRef) = innerIdentifierX._refOut.l
+      val List(innerLocalXViaRef) = innerIdentifierX.refOut.l
       innerLocalXViaRef shouldBe innerLocalX
 
       val List(outerAssignment)   = methodBlock.astChildren.isCall.l
       val List(outerIdentifierX)  = outerAssignment.astChildren.isIdentifier.l
-      val List(outerLocalXViaRef) = outerIdentifierX._refOut.l
+      val List(outerLocalXViaRef) = outerIdentifierX.refOut.l
       outerLocalXViaRef shouldBe outerLocalX
     }
 
@@ -257,7 +257,7 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       closureBinding.closureOriginalName shouldBe Option("x")
       closureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
 
-      closureBinding._refOut.head shouldBe fooLocalX
+      closureBinding.refOut.head shouldBe fooLocalX
 
       val List(barMethod)      = cpg.method.nameExact("bar").l
       val List(barMethodBlock) = barMethod.astChildren.isBlock.l
@@ -265,7 +265,7 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       barLocals.closureBindingId shouldBe Option("Test0.js::program:foo:bar:x")
 
       val List(identifierX) = barMethodBlock.astChildren.isCall.astChildren.isIdentifier.nameExact("x").l
-      identifierX._refOut.head shouldBe barLocals
+      identifierX.refOut.head shouldBe barLocals
     }
 
     "have correct closure binding (two variables)" in {
@@ -285,17 +285,17 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       val List(fooLocalY) = fooBlock.astChildren.isLocal.nameExact("y").l
       val List(barRef)    = fooBlock.astChildren.isCall.astChildren.isMethodRef.l
 
-      val List(closureBindForY, closureBindForX) = barRef._captureOut.cast[ClosureBinding].l
+      val List(closureBindForY, closureBindForX) = barRef.captureOut.cast[ClosureBinding].l
 
       closureBindForX.closureOriginalName shouldBe Option("x")
       closureBindForX.closureBindingId shouldBe Option("Test0.js::program:foo:bar:x")
       closureBindForX.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-      closureBindForX._refOut.head shouldBe fooLocalX
+      closureBindForX.refOut.head shouldBe fooLocalX
 
       closureBindForY.closureOriginalName shouldBe Option("y")
       closureBindForY.closureBindingId shouldBe Option("Test0.js::program:foo:bar:y")
       closureBindForY.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-      closureBindForY._refOut.head shouldBe fooLocalY
+      closureBindForY.refOut.head shouldBe fooLocalY
 
       val List(barMethod)                    = cpg.method.nameExact("bar").l
       val List(barMethodBlock)               = barMethod.astChildren.isBlock.l
@@ -305,13 +305,13 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       barLocalsForX.closureBindingId shouldBe Option("Test0.js::program:foo:bar:x")
 
       val List(identifierX) = barMethodBlock.astChildren.isCall.astChildren.isIdentifier.nameExact("x").l
-      identifierX._refOut.head shouldBe barLocalsForX
+      identifierX.refOut.head shouldBe barLocalsForX
 
       barLocalsForY.name shouldBe "y"
       barLocalsForY.closureBindingId shouldBe Option("Test0.js::program:foo:bar:y")
 
       val List(identifierY) = barMethodBlock.astChildren.isCall.astChildren.isIdentifier.nameExact("y").l
-      identifierY._refOut.head shouldBe barLocalsForY
+      identifierY.refOut.head shouldBe barLocalsForY
     }
 
     "have correct closure binding for capturing over 2 levels" in {
@@ -335,7 +335,7 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       closureBindingXInFoo.closureBindingId shouldBe Option("Test0.js::program:foo:bar:x")
       closureBindingXInFoo.closureOriginalName shouldBe Option("x")
       closureBindingXInFoo.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-      closureBindingXInFoo._refOut.head shouldBe fooLocalX
+      closureBindingXInFoo.refOut.head shouldBe fooLocalX
 
       val List(barMethod)      = cpg.method.nameExact("bar").l
       val List(barMethodBlock) = barMethod.astChildren.isBlock.l
@@ -344,14 +344,14 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       barLocalX.closureBindingId shouldBe Option("Test0.js::program:foo:bar:x")
 
       val List(barIdentifierX) = barMethodBlock.astChildren.isCall.astChildren.isIdentifier.nameExact("x").l
-      barIdentifierX._refOut.head shouldBe barLocalX
+      barIdentifierX.refOut.head shouldBe barLocalX
 
       val List(bazRef)               = barMethodBlock.astChildren.isCall.astChildren.isMethodRef.l
       val List(closureBindingXInBar) = bazRef.captureOut.l
       closureBindingXInBar.closureBindingId shouldBe Option("Test0.js::program:foo:bar:baz:x")
       closureBindingXInBar.closureOriginalName shouldBe Option("x")
       closureBindingXInBar.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-      closureBindingXInBar._refOut.head shouldBe barLocalX
+      closureBindingXInBar.refOut.head shouldBe barLocalX
 
       val List(bazMethod)      = cpg.method.nameExact("baz").l
       val List(bazMethodBlock) = bazMethod.astChildren.isBlock.l
@@ -359,7 +359,7 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       bazLocalX.closureBindingId shouldBe Option("Test0.js::program:foo:bar:baz:x")
 
       val List(bazIdentifierX) = bazMethodBlock.astChildren.isCall.astChildren.isIdentifier.nameExact("x").l
-      bazIdentifierX._refOut.head shouldBe bazLocalX
+      bazIdentifierX.refOut.head shouldBe bazLocalX
     }
 
     "have correct closure binding for capturing over 2 levels with intermediate blocks" in {
@@ -386,7 +386,7 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       closureBindingXInFoo.closureBindingId shouldBe Option("Test0.js::program:foo:bar:x")
       closureBindingXInFoo.closureOriginalName shouldBe Option("x")
       closureBindingXInFoo.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-      closureBindingXInFoo._refOut.head shouldBe fooLocalX
+      closureBindingXInFoo.refOut.head shouldBe fooLocalX
 
       val List(barMethod)      = cpg.method.nameExact("bar").l
       val List(barMethodBlock) = barMethod.astChildren.isBlock.l
@@ -395,7 +395,7 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       barLocalX.closureBindingId shouldBe Option("Test0.js::program:foo:bar:x")
 
       val List(barIdentifierX) = barMethodBlock.astChildren.isCall.astChildren.isIdentifier.nameExact("x").l
-      barIdentifierX._refOut.head shouldBe barLocalX
+      barIdentifierX.refOut.head shouldBe barLocalX
 
       val List(barMethodInnerBlock)  = barMethodBlock.astChildren.isBlock.l
       val List(bazRef)               = barMethodInnerBlock.astChildren.isCall.astChildren.isMethodRef.l
@@ -403,7 +403,7 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       closureBindingXInBar.closureBindingId shouldBe Option("Test0.js::program:foo:bar:baz:x")
       closureBindingXInBar.closureOriginalName shouldBe Option("x")
       closureBindingXInBar.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-      closureBindingXInBar._refOut.head shouldBe barLocalX
+      closureBindingXInBar.refOut.head shouldBe barLocalX
 
       val List(bazMethod)      = cpg.method.nameExact("baz").l
       val List(bazMethodBlock) = bazMethod.astChildren.isBlock.l
@@ -413,7 +413,7 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
 
       val List(bazMethodInnerBlock) = bazMethodBlock.astChildren.isBlock.l
       val List(bazIdentifierX)      = bazMethodInnerBlock.astChildren.isCall.astChildren.isIdentifier.nameExact("x").l
-      bazIdentifierX._refOut.head shouldBe bazLocalX
+      bazIdentifierX.refOut.head shouldBe bazLocalX
     }
 
     "have correct closure binding for capturing over 2 levels with no intermediate use" in {
@@ -435,7 +435,7 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       closureBindingXInFoo.closureBindingId shouldBe Option("Test0.js::program:foo:bar:x")
       closureBindingXInFoo.closureOriginalName shouldBe Option("x")
       closureBindingXInFoo.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-      closureBindingXInFoo._refOut.head shouldBe fooLocalX
+      closureBindingXInFoo.refOut.head shouldBe fooLocalX
 
       val List(barMethod)      = cpg.method.nameExact("bar").l
       val List(barMethodBlock) = barMethod.astChildren.isBlock.l
@@ -448,7 +448,7 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       closureBindingXInBar.closureBindingId shouldBe Option("Test0.js::program:foo:bar:baz:x")
       closureBindingXInBar.closureOriginalName shouldBe Option("x")
       closureBindingXInBar.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-      closureBindingXInBar._refOut.head shouldBe barLocalX
+      closureBindingXInBar.refOut.head shouldBe barLocalX
 
       val List(bazMethod)      = cpg.method.nameExact("baz").l
       val List(bazMethodBlock) = bazMethod.astChildren.isBlock.l
@@ -457,7 +457,7 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       bazLocalX.closureBindingId shouldBe Option("Test0.js::program:foo:bar:baz:x")
 
       val List(bazIdentifierX) = bazMethodBlock.astChildren.isCall.astChildren.isIdentifier.nameExact("x").l
-      bazIdentifierX._refOut.head shouldBe bazLocalX
+      bazIdentifierX.refOut.head shouldBe bazLocalX
     }
 
     "have correct closure binding for capturing the same variable into 2 different anonymous methods" in {
@@ -479,7 +479,7 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       closureBindingXAnon1.closureBindingId shouldBe Option("Test0.js::program:foo:<lambda>0:x")
       closureBindingXAnon1.closureOriginalName shouldBe Option("x")
       closureBindingXAnon1.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-      closureBindingXAnon1._refOut.head shouldBe fooLocalX
+      closureBindingXAnon1.refOut.head shouldBe fooLocalX
 
       val List(anon2Ref) =
         fooBlock.astChildren.isCall.astChildren.isMethodRef.methodFullNameExact("Test0.js::program:foo:<lambda>1").l
@@ -487,7 +487,7 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       closureBindingXAnon2.closureBindingId shouldBe Option("Test0.js::program:foo:<lambda>1:x")
       closureBindingXAnon2.closureOriginalName shouldBe Option("x")
       closureBindingXAnon2.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-      closureBindingXAnon2._refOut.head shouldBe fooLocalX
+      closureBindingXAnon2.refOut.head shouldBe fooLocalX
     }
 
     "have correct closure bindings" in {
@@ -507,7 +507,7 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       closureBinding.closureBindingId shouldBe Option("Test0.js::program:foo:bar:x")
       closureBinding.closureOriginalName shouldBe Option("x")
       closureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-      closureBinding._refOut.head shouldBe fooLocalX
+      closureBinding.refOut.head shouldBe fooLocalX
 
       val List(barMethod)      = cpg.method.nameExact("bar").l
       val List(barMethodBlock) = barMethod.astChildren.isBlock.l
@@ -515,7 +515,7 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       barLocals.closureBindingId shouldBe Option("Test0.js::program:foo:bar:x")
 
       val List(identifierX) = barMethodBlock.astChildren.isCall.astChildren.isIdentifier.nameExact("x").l
-      identifierX._refOut.head shouldBe barLocals
+      identifierX.refOut.head shouldBe barLocals
     }
 
     "have correct method full names for scoped anonymous functions" in {

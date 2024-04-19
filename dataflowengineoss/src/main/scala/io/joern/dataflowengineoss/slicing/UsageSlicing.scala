@@ -153,7 +153,7 @@ object UsageSlicing {
       // Handle the case where a call is an invocation of a field member (lambda) or function/method call
       val (callName, resolvedMethod): (Option[String], Option[String]) =
         if (isMemberInvocation)
-          baseCall._argumentOut.flatMap {
+          baseCall.argumentOut.flatMap {
             case x: FieldIdentifier =>
               Option(Option(x.code) -> None)
             case x: Call => Option(Option(x.name) -> getResolvedMethod(x))
@@ -197,7 +197,7 @@ object UsageSlicing {
           case None                 => "ANY"
         }
       } else {
-        baseCall._argumentOut.flatMap {
+        baseCall.argumentOut.flatMap {
           case x: Call if !DefComponent.unresolvedCallPattern.matcher(x.methodFullName).matches() =>
             cpg.method.fullNameExact(x.methodFullName).methodReturn.typeFullName.headOption
           case x: Call =>

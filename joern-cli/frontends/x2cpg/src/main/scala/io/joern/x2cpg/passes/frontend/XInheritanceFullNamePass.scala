@@ -42,7 +42,7 @@ abstract class XInheritanceFullNamePass(cpg: Cpg) extends ForkJoinParallelCpgPas
 
   private def extractTypeDeclFromNode(node: AstNode): Option[String] = node match {
     case x: Call if x._isCallForImportOut.nonEmpty =>
-      x._isCallForImportOut.cast[Import].importedEntity.map {
+      x.isCallForImportOut.importedEntity.map {
         case imp if relativePathPattern.matcher(imp).matches() =>
           imp.split(pathSep).toList match {
             case head :: next =>

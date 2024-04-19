@@ -18,11 +18,11 @@ class MethodReturnTraversal(val traversal: Iterator[MethodReturn]) extends AnyVa
     */
   @Doc(info = "traverse to last expressions in CFG (can be multiple)")
   def cfgLast: Iterator[CfgNode] =
-    traversal._cfgIn.collectAll[CfgNode]
+    traversal.cfgIn
 
   /** Traverse to return type
     */
   @Doc(info = "traverse to return type")
   def typ: Iterator[Type] =
-    traversal._evalTypeOut.collectAll[Type]
+    traversal.evalTypeOut
 }

@@ -388,7 +388,7 @@ class SimpleAstCreationPassTests extends AstJsSrc2CpgSuite {
       val List(assignment)  = methodBlock.astChildren.isCall.l
       val List(identifierX) = assignment.astChildren.isIdentifier.l
 
-      val List(localXViaRef) = identifierX._refOut.l
+      val List(localXViaRef) = identifierX.refOut.l
       localXViaRef shouldBe localX
 
       val List(block) = assignment.astChildren.isBlock.l
@@ -419,7 +419,7 @@ class SimpleAstCreationPassTests extends AstJsSrc2CpgSuite {
       val List(assignment)  = methodBlock.astChildren.isCall.l
       val List(identifierX) = assignment.astChildren.isIdentifier.l
 
-      val List(localXViaRef) = identifierX._refOut.l
+      val List(localXViaRef) = identifierX.refOut.l
       localXViaRef shouldBe localX
 
       val List(block) = assignment.astChildren.isBlock.l
@@ -449,7 +449,7 @@ class SimpleAstCreationPassTests extends AstJsSrc2CpgSuite {
       val List(assignment)  = methodBlock.astChildren.isCall.l
       val List(identifierX) = assignment.astChildren.isIdentifier.l
 
-      val List(localXViaRef) = identifierX._refOut.l
+      val List(localXViaRef) = identifierX.refOut.l
       localXViaRef shouldBe localX
 
       val List(block) = assignment.astChildren.isBlock.l
@@ -470,7 +470,7 @@ class SimpleAstCreationPassTests extends AstJsSrc2CpgSuite {
       val List(assignment)  = methodBlock.astChildren.isCall.l
       val List(identifierX) = assignment.astChildren.isIdentifier.l
 
-      val List(localXViaRef) = identifierX._refOut.l
+      val List(localXViaRef) = identifierX.refOut.l
       localXViaRef shouldBe localX
 
       val List(block) = assignment.astChildren.isBlock.l
@@ -488,7 +488,7 @@ class SimpleAstCreationPassTests extends AstJsSrc2CpgSuite {
       val List(assignment)  = methodBlock.astChildren.isCall.l
       val List(identifierX) = assignment.astChildren.isIdentifier.l
 
-      val List(localXViaRef) = identifierX._refOut.l
+      val List(localXViaRef) = identifierX.refOut.l
       localXViaRef shouldBe localX
 
       val List(block) = assignment.astChildren.isBlock.l
@@ -505,7 +505,7 @@ class SimpleAstCreationPassTests extends AstJsSrc2CpgSuite {
       val List(assignment)  = methodBlock.astChildren.isCall.l
       val List(identifierX) = assignment.astChildren.isIdentifier.l
 
-      val List(localXViaRef) = identifierX._refOut.l
+      val List(localXViaRef) = identifierX.refOut.l
       localXViaRef shouldBe localX
 
       val List(block) = assignment.astChildren.isBlock.l
@@ -576,7 +576,7 @@ class SimpleAstCreationPassTests extends AstJsSrc2CpgSuite {
       val List(methodIdentifier) = assignment.astChildren.isIdentifier.argumentIndex(1).l
       methodIdentifier.name shouldBe "method"
 
-      methodIdentifier._refOut.head shouldBe localForMethod
+      methodIdentifier.refOut.head shouldBe localForMethod
     }
 
     "have correct parameter order in lambda function with ignored param" in {
@@ -858,11 +858,11 @@ class SimpleAstCreationPassTests extends AstJsSrc2CpgSuite {
       val List(typeDecl) = cpg.typeDecl.nameExact("method").l
       typeDecl.fullName should endWith("Test0.js::program:method")
 
-      val List(binding) = typeDecl._bindsOut.cast[Binding].l
+      val List(binding) = typeDecl.bindsOut.cast[Binding].l
       binding.name shouldBe ""
       binding.signature shouldBe ""
 
-      val List(boundMethod) = binding._refOut.l
+      val List(boundMethod) = binding.refOut.l
       boundMethod shouldBe cpg.method.nameExact("method").head
     }
 
