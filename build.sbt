@@ -73,18 +73,17 @@ ThisBuild / scalacOptions ++= Seq(
   "11"
 )
 
-// TODO uncomment
-// lazy val createDistribution = taskKey[File]("Create a complete Joern distribution")
-// createDistribution := {
-//   val distributionFile = file("target/joern-cli.zip")
-//   val zip              = (joerncli / Universal / packageBin).value
+lazy val createDistribution = taskKey[File]("Create a complete Joern distribution")
+createDistribution := {
+  val distributionFile = file("target/joern-cli.zip")
+  val zip              = (joerncli / Universal / packageBin).value
 
-//   IO.copyFile(zip, distributionFile)
-//   val querydbDistribution = (querydb / createDistribution).value
+  IO.copyFile(zip, distributionFile)
+  val querydbDistribution = (querydb / createDistribution).value
 
-//   println(s"created distribution - resulting files: $distributionFile")
-//   distributionFile
-// }
+  println(s"created distribution - resulting files: $distributionFile")
+  distributionFile
+}
 
 ThisBuild / resolvers ++= Seq(
   Resolver.mavenLocal,
