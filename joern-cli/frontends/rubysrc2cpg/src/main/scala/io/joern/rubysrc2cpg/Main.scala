@@ -8,7 +8,8 @@ import scopt.OParser
 final case class Config(
   antlrCacheMemLimit: Double = 0.6d,
   useDeprecatedFrontend: Boolean = false,
-  downloadDependencies: Boolean = false
+  downloadDependencies: Boolean = false,
+  downloadBuiltinPackages: Boolean = false
 ) extends X2CpgConfig[Config]
     with DependencyDownloadConfig[Config]
     with TypeRecoveryParserConfig[Config] {
@@ -23,6 +24,10 @@ final case class Config(
 
   def withUseDeprecatedFrontend(value: Boolean): Config = {
     copy(useDeprecatedFrontend = value).withInheritedFields(this)
+  }
+
+  def withDownloadBuiltinPackages(value: Boolean): Config = {
+    copy(downloadBuiltinPackages = value).withInheritedFields(this)
   }
 
   override def withDownloadDependencies(value: Boolean): Config = {
@@ -54,6 +59,9 @@ private object Frontend {
       opt[Unit]("useDeprecatedFrontend")
         .action((_, c) => c.withUseDeprecatedFrontend(true))
         .text("uses the original (but deprecated) Ruby frontend (default false)"),
+      opt[Unit]("downloadBuiltinPackages")
+        .action((_, c) => c.withDownloadBuiltinPackages(true))
+        .text("download builtin package information from RubyDocs"),
       DependencyDownloadConfig.parserOptions,
       XTypeRecovery.parserOptions
     )

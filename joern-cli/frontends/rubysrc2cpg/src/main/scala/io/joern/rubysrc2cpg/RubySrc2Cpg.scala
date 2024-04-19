@@ -29,9 +29,6 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   override def createCpg(config: Config): Try[Cpg] = {
-    val dumper = BuiltinPackageDownloader()
-    dumper.run()
-
     withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
       new MetaDataPass(cpg, Languages.RUBYSRC, config.inputPath).createAndApply()
       new ConfigFileCreationPass(cpg).createAndApply()
@@ -68,7 +65,9 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
         internalProgramSummary
       }
 
-//      RubyProgramSummary.BuiltinTypes
+      if (config.downloadBuiltinPackages) {
+        BuiltinPackageDownloader().run()
+      }
 
       val astCreationPass = new AstCreationPass(cpg, astCreators.map(_.withSummary(programSummary)))
       astCreationPass.createAndApply()
