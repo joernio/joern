@@ -7,7 +7,7 @@ import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser
 import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser.*
 import io.joern.rubysrc2cpg.parser.RubyParser
 import io.joern.rubysrc2cpg.passes.{AstCreationPass, ConfigFileCreationPass, DependencyPass, ImportsPass}
-import io.joern.rubysrc2cpg.utils.{BuiltinPackageDumper, DependencyDownloader}
+import io.joern.rubysrc2cpg.utils.{BuiltinPackageDownloader, DependencyDownloader}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.passes.base.AstLinkerPass
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
@@ -29,7 +29,7 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   override def createCpg(config: Config): Try[Cpg] = {
-    val dumper = BuiltinPackageDumper()
+    val dumper = BuiltinPackageDownloader()
     dumper.run()
 
     withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>

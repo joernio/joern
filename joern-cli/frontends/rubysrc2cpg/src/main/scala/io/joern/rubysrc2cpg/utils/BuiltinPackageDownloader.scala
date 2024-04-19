@@ -9,16 +9,14 @@ import net.ruippeixotog.scalascraper.model.Element
 import better.files.File
 import io.joern.x2cpg.utils.ConcurrentTaskUtil
 import org.slf4j.{Logger, LoggerFactory}
-import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream
-import java.io.FileOutputStream
 
 import scala.util.{Failure, Success}
 
-/** Class to generate MessagePack representation for all builtin Ruby libraries.
+/** Class to scrape and generate Ruby Namespace Map for builtin Ruby packages from https://ruby-doc.org
   * @param rubyVersion
-  *   \- Ruby version installed
+  *   \- Ruby version to fetch dependencies for
   */
-class BuiltinPackageDumper(rubyVersion: String = "3.3.0") {
+class BuiltinPackageDownloader(rubyVersion: String = "3.3.0") {
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
   private val CLASS    = "class"
@@ -55,6 +53,11 @@ class BuiltinPackageDumper(rubyVersion: String = "3.3.0") {
     writeToFile(typesMap)
   }
 
+  /**
+   * Generates a `RubyType` for each class/module in each gem
+   * @param pathsMap
+   * @return
+   */
   private def generateRubyTypes(pathsMap: collection.mutable.Map[String, List[String]]): Iterator[() => (String, List[RubyType])] = {
     pathsMap
       .map((gemName, paths) =>
@@ -150,6 +153,12 @@ class BuiltinPackageDumper(rubyVersion: String = "3.3.0") {
     }
   }
 
+  /**
+   * Scrapes the given RubyDoc page and generates a `RubyMethod` for each public class and instance method found
+   * @param doc - page to scrape
+   * @param namespace
+   * @return - List of RubyMethod's for the given class/module
+   */
   private def buildRubyMethods(doc: browser.DocumentType, namespace: String): List[RubyMethod] = {
     def generateMethodHeadingsSelector(methodType: String): String = {
       s"#public-$methodType-5Buntitled-5D-method-details > .method-detail > .method-heading"
@@ -178,6 +187,10 @@ class BuiltinPackageDumper(rubyVersion: String = "3.3.0") {
       .map(x => RubyMethod(s"$namespace.$x", List.empty, Defines.Any, Option(namespace)))
   }
 
+  /**
+   * Generates links for all classes on the RubyDocs page
+   * @return Map[gemName -> list of paths]
+   */
   private def generatePaths(): collection.mutable.Map[String, List[String]] = {
     val doc = browser.get(baseUrl)
 
