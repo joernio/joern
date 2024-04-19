@@ -118,6 +118,7 @@ class BuiltinPackageDownloader(rubyVersion: String = "3.3.0") {
     dir.delete()
   }
 
+  // TODO: Remove before merging to master at a later stage
   private def writeToFileJson(rubyTypesMap: collection.mutable.Map[String, List[RubyType]]): Unit = {
     val dir = File(s"${baseDir}_json/")
     dir.createDirectoryIfNotExists()
