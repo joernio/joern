@@ -146,6 +146,9 @@ class BuiltinPackageDownloader(rubyVersion: String = "3.3.0") {
 
       typesFile.write(upickle.default.write(gemsMap, indent = 2))
     }
+
+    dir.zipTo(destination = File(s"${baseDir}_json.zip"))
+    dir.delete()
   }
 
   /** Scrapes the given RubyDoc page and generates a `RubyMethod` for each public class and instance method found
