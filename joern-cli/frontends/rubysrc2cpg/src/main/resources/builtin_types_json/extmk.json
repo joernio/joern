@@ -1,0 +1,14 @@
+{
+  "extmk": [
+    {
+      "name": "extmk.Gem",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "extmk.Object",
+      "methods": [],
+      "fields": []
+    }
+  ]
+}

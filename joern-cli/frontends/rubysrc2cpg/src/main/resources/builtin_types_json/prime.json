@@ -1,0 +1,318 @@
+{
+  "prime": [
+    {
+      "name": "prime.Integer",
+      "methods": [
+        {
+          "name": "prime.Integer.each_prime",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "prime.Integer"
+          ]
+        },
+        {
+          "name": "prime.Integer.from_prime_division",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "prime.Integer"
+          ]
+        },
+        {
+          "name": "prime.Integer.prime",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "prime.Integer"
+          ]
+        },
+        {
+          "name": "prime.Integer.prime_division",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "prime.Integer"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "prime.Prime",
+      "methods": [
+        {
+          "name": "prime.Prime.each",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "prime.Prime"
+          ]
+        },
+        {
+          "name": "prime.Prime.include",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "prime.Prime"
+          ]
+        },
+        {
+          "name": "prime.Prime.int_from_prime_division",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "prime.Prime"
+          ]
+        },
+        {
+          "name": "prime.Prime.prime",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "prime.Prime"
+          ]
+        },
+        {
+          "name": "prime.Prime.prime_division",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "prime.Prime"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "prime.Prime": [
+    {
+      "name": "prime.Prime.EratosthenesGenerator",
+      "methods": [
+        {
+          "name": "prime.Prime.EratosthenesGenerator.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "prime.Prime.EratosthenesGenerator"
+          ]
+        },
+        {
+          "name": "prime.Prime.EratosthenesGenerator.next",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "prime.Prime.EratosthenesGenerator"
+          ]
+        },
+        {
+          "name": "prime.Prime.EratosthenesGenerator.rewind",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "prime.Prime.EratosthenesGenerator"
+          ]
+        },
+        {
+          "name": "prime.Prime.EratosthenesGenerator.succ",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "prime.Prime.EratosthenesGenerator"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "prime.Prime.EratosthenesSieve",
+      "methods": [
+        {
+          "name": "prime.Prime.EratosthenesSieve.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "prime.Prime.EratosthenesSieve"
+          ]
+        },
+        {
+          "name": "prime.Prime.EratosthenesSieve.get_nth_prime",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "prime.Prime.EratosthenesSieve"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "prime.Prime.Generator23",
+      "methods": [
+        {
+          "name": "prime.Prime.Generator23.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "prime.Prime.Generator23"
+          ]
+        },
+        {
+          "name": "prime.Prime.Generator23.next",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "prime.Prime.Generator23"
+          ]
+        },
+        {
+          "name": "prime.Prime.Generator23.rewind",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "prime.Prime.Generator23"
+          ]
+        },
+        {
+          "name": "prime.Prime.Generator23.succ",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "prime.Prime.Generator23"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "prime.Prime.PseudoPrimeGenerator",
+      "methods": [
+        {
+          "name": "prime.Prime.PseudoPrimeGenerator.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "prime.Prime.PseudoPrimeGenerator"
+          ]
+        },
+        {
+          "name": "prime.Prime.PseudoPrimeGenerator.each",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "prime.Prime.PseudoPrimeGenerator"
+          ]
+        },
+        {
+          "name": "prime.Prime.PseudoPrimeGenerator.next",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "prime.Prime.PseudoPrimeGenerator"
+          ]
+        },
+        {
+          "name": "prime.Prime.PseudoPrimeGenerator.rewind",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "prime.Prime.PseudoPrimeGenerator"
+          ]
+        },
+        {
+          "name": "prime.Prime.PseudoPrimeGenerator.size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "prime.Prime.PseudoPrimeGenerator"
+          ]
+        },
+        {
+          "name": "prime.Prime.PseudoPrimeGenerator.succ",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "prime.Prime.PseudoPrimeGenerator"
+          ]
+        },
+        {
+          "name": "prime.Prime.PseudoPrimeGenerator.upper_bound",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "prime.Prime.PseudoPrimeGenerator"
+          ]
+        },
+        {
+          "name": "prime.Prime.PseudoPrimeGenerator.with_index",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "prime.Prime.PseudoPrimeGenerator"
+          ]
+        },
+        {
+          "name": "prime.Prime.PseudoPrimeGenerator.with_object",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "prime.Prime.PseudoPrimeGenerator"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "prime.Prime.TrialDivision",
+      "methods": [
+        {
+          "name": "prime.Prime.TrialDivision.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "prime.Prime.TrialDivision"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "prime.Prime.TrialDivisionGenerator",
+      "methods": [
+        {
+          "name": "prime.Prime.TrialDivisionGenerator.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "prime.Prime.TrialDivisionGenerator"
+          ]
+        },
+        {
+          "name": "prime.Prime.TrialDivisionGenerator.next",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "prime.Prime.TrialDivisionGenerator"
+          ]
+        },
+        {
+          "name": "prime.Prime.TrialDivisionGenerator.rewind",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "prime.Prime.TrialDivisionGenerator"
+          ]
+        },
+        {
+          "name": "prime.Prime.TrialDivisionGenerator.succ",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "prime.Prime.TrialDivisionGenerator"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "securerandom": [
+    {
+      "name": "securerandom.SecureRandom",
+      "methods": [
+        {
+          "name": "securerandom.SecureRandom.bytes",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "securerandom.SecureRandom"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

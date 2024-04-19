@@ -1,0 +1,26 @@
+{
+  "find": [
+    {
+      "name": "find.Find",
+      "methods": [
+        {
+          "name": "find.Find.find",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "find.Find"
+          ]
+        },
+        {
+          "name": "find.Find.prune",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "find.Find"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

@@ -1,0 +1,928 @@
+{
+  "resolv.Resolv": [
+    {
+      "name": "resolv.Resolv.DNS",
+      "methods": [
+        {
+          "name": "resolv.Resolv.DNS.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.DNS.open",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.DNS.close",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.DNS.each_address",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.DNS.each_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.DNS.each_resource",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.DNS.fetch_resource",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.DNS.getaddress",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.DNS.getaddresses",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.DNS.getname",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.DNS.getnames",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.DNS.getresource",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.DNS.getresources",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.DNS.timeouts",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.Hosts",
+      "methods": [
+        {
+          "name": "resolv.Resolv.Hosts.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.Hosts"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.Hosts.each_address",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.Hosts"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.Hosts.each_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.Hosts"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.Hosts.getaddress",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.Hosts"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.Hosts.getaddresses",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.Hosts"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.Hosts.getname",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.Hosts"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.Hosts.getnames",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.Hosts"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.IPv4",
+      "methods": [
+        {
+          "name": "resolv.Resolv.IPv4.create",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.IPv4"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.IPv4.to_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.IPv4"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.IPv6",
+      "methods": [
+        {
+          "name": "resolv.Resolv.IPv6.create",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.IPv6"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.IPv6.to_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.IPv6"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.LOC",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.MDNS",
+      "methods": [
+        {
+          "name": "resolv.Resolv.MDNS.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.MDNS"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.MDNS.each_address",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.MDNS"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.ResolvError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.ResolvTimeout",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "resolv.Resolv.DNS.SvcParam": [
+    {
+      "name": "resolv.Resolv.DNS.SvcParam.ALPN",
+      "methods": [
+        {
+          "name": "resolv.Resolv.DNS.SvcParam.ALPN.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.SvcParam.ALPN"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.DNS.SvcParam.DoHPath",
+      "methods": [
+        {
+          "name": "resolv.Resolv.DNS.SvcParam.DoHPath.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.SvcParam.DoHPath"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.DNS.SvcParam.Generic",
+      "methods": [
+        {
+          "name": "resolv.Resolv.DNS.SvcParam.Generic.create",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.SvcParam.Generic"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.DNS.SvcParam.Generic.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.SvcParam.Generic"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.DNS.SvcParam.IPv4Hint",
+      "methods": [
+        {
+          "name": "resolv.Resolv.DNS.SvcParam.IPv4Hint.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.SvcParam.IPv4Hint"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.DNS.SvcParam.IPv6Hint",
+      "methods": [
+        {
+          "name": "resolv.Resolv.DNS.SvcParam.IPv6Hint.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.SvcParam.IPv6Hint"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.DNS.SvcParam.Mandatory",
+      "methods": [
+        {
+          "name": "resolv.Resolv.DNS.SvcParam.Mandatory.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.SvcParam.Mandatory"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.DNS.SvcParam.NoDefaultALPN",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.DNS.SvcParam.Port",
+      "methods": [
+        {
+          "name": "resolv.Resolv.DNS.SvcParam.Port.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.SvcParam.Port"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "resolv.Resolv.DNS.Resource": [
+    {
+      "name": "resolv.Resolv.DNS.Resource.ANY",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.DNS.Resource.CNAME",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.DNS.Resource.DomainName",
+      "methods": [
+        {
+          "name": "resolv.Resolv.DNS.Resource.DomainName.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.Resource.DomainName"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.DNS.Resource.Generic",
+      "methods": [
+        {
+          "name": "resolv.Resolv.DNS.Resource.Generic.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.Resource.Generic"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.DNS.Resource.HINFO",
+      "methods": [
+        {
+          "name": "resolv.Resolv.DNS.Resource.HINFO.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.Resource.HINFO"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.DNS.Resource.IN",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.DNS.Resource.LOC",
+      "methods": [
+        {
+          "name": "resolv.Resolv.DNS.Resource.LOC.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.Resource.LOC"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.DNS.Resource.MINFO",
+      "methods": [
+        {
+          "name": "resolv.Resolv.DNS.Resource.MINFO.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.Resource.MINFO"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.DNS.Resource.MX",
+      "methods": [
+        {
+          "name": "resolv.Resolv.DNS.Resource.MX.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.Resource.MX"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.DNS.Resource.NS",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.DNS.Resource.PTR",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.DNS.Resource.SOA",
+      "methods": [
+        {
+          "name": "resolv.Resolv.DNS.Resource.SOA.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.Resource.SOA"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.DNS.Resource.TXT",
+      "methods": [
+        {
+          "name": "resolv.Resolv.DNS.Resource.TXT.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.Resource.TXT"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.DNS.Resource.TXT.data",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.Resource.TXT"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "resolv.Resolv.DNS.Resource.IN": [
+    {
+      "name": "resolv.Resolv.DNS.Resource.IN.A",
+      "methods": [
+        {
+          "name": "resolv.Resolv.DNS.Resource.IN.A.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.Resource.IN.A"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.DNS.Resource.IN.AAAA",
+      "methods": [
+        {
+          "name": "resolv.Resolv.DNS.Resource.IN.AAAA.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.Resource.IN.AAAA"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.DNS.Resource.IN.HTTPS",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.DNS.Resource.IN.SRV",
+      "methods": [
+        {
+          "name": "resolv.Resolv.DNS.Resource.IN.SRV.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.Resource.IN.SRV"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.DNS.Resource.IN.SVCB",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.DNS.Resource.IN.ServiceBinding",
+      "methods": [
+        {
+          "name": "resolv.Resolv.DNS.Resource.IN.ServiceBinding.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.Resource.IN.ServiceBinding"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.DNS.Resource.IN.ServiceBinding.alias_mode",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.Resource.IN.ServiceBinding"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.DNS.Resource.IN.ServiceBinding.service_mode",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.Resource.IN.ServiceBinding"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.DNS.Resource.IN.WKS",
+      "methods": [
+        {
+          "name": "resolv.Resolv.DNS.Resource.IN.WKS.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.Resource.IN.WKS"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "resolv": [
+    {
+      "name": "resolv.Resolv",
+      "methods": [
+        {
+          "name": "resolv.Resolv.each_address",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.each_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.getaddress",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.getaddresses",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.getname",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.getnames",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "resolv.Resolv.DNS.Config": [
+    {
+      "name": "resolv.Resolv.DNS.Config.NXDomain",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.DNS.Config.OtherResolvError",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "resolv.Resolv.DNS": [
+    {
+      "name": "resolv.Resolv.DNS.Config",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.DNS.DecodeError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.DNS.EncodeError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.DNS.Name",
+      "methods": [
+        {
+          "name": "resolv.Resolv.DNS.Name.create",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.Name"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.DNS.Name.absolute",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.Name"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.DNS.Name.subdomain_of",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.Name"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.DNS.Name.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.Name"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.DNS.Query",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.DNS.Requester",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.DNS.Resource",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.DNS.SvcParam",
+      "methods": [
+        {
+          "name": "resolv.Resolv.DNS.SvcParam.key_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.SvcParam"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.DNS.SvcParam.key_number",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.SvcParam"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.DNS.SvcParams",
+      "methods": [
+        {
+          "name": "resolv.Resolv.DNS.SvcParams.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.SvcParams"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.DNS.SvcParams.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.SvcParams"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.DNS.SvcParams.add",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.SvcParams"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.DNS.SvcParams.count",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.SvcParams"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.DNS.SvcParams.delete",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.SvcParams"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.DNS.SvcParams.each",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.SvcParams"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.DNS.SvcParams.empty",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.DNS.SvcParams"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "resolv.Resolv.DNS.Requester": [
+    {
+      "name": "resolv.Resolv.DNS.Requester.RequestError",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "resolv.Resolv.LOC": [
+    {
+      "name": "resolv.Resolv.LOC.Alt",
+      "methods": [
+        {
+          "name": "resolv.Resolv.LOC.Alt.create",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.LOC.Alt"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.LOC.Alt.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.LOC.Alt"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.LOC.Coord",
+      "methods": [
+        {
+          "name": "resolv.Resolv.LOC.Coord.create",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.LOC.Coord"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.LOC.Coord.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.LOC.Coord"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "resolv.Resolv.LOC.Size",
+      "methods": [
+        {
+          "name": "resolv.Resolv.LOC.Size.create",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.LOC.Size"
+          ]
+        },
+        {
+          "name": "resolv.Resolv.LOC.Size.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "resolv.Resolv.LOC.Size"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

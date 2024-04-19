@@ -1,0 +1,98 @@
+{
+  "tempfile": [
+    {
+      "name": "tempfile.Tempfile",
+      "methods": [
+        {
+          "name": "tempfile.Tempfile.create",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "tempfile.Tempfile"
+          ]
+        },
+        {
+          "name": "tempfile.Tempfile.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "tempfile.Tempfile"
+          ]
+        },
+        {
+          "name": "tempfile.Tempfile.close",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "tempfile.Tempfile"
+          ]
+        },
+        {
+          "name": "tempfile.Tempfile.delete",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "tempfile.Tempfile"
+          ]
+        },
+        {
+          "name": "tempfile.Tempfile.initialize_clone",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "tempfile.Tempfile"
+          ]
+        },
+        {
+          "name": "tempfile.Tempfile.initialize_dup",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "tempfile.Tempfile"
+          ]
+        },
+        {
+          "name": "tempfile.Tempfile.length",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "tempfile.Tempfile"
+          ]
+        },
+        {
+          "name": "tempfile.Tempfile.open",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "tempfile.Tempfile"
+          ]
+        },
+        {
+          "name": "tempfile.Tempfile.path",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "tempfile.Tempfile"
+          ]
+        },
+        {
+          "name": "tempfile.Tempfile.size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "tempfile.Tempfile"
+          ]
+        },
+        {
+          "name": "tempfile.Tempfile.unlink",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "tempfile.Tempfile"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

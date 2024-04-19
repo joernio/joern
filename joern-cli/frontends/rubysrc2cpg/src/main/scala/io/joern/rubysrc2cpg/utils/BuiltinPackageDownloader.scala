@@ -53,12 +53,13 @@ class BuiltinPackageDownloader(rubyVersion: String = "3.3.0") {
     writeToFile(typesMap)
   }
 
-  /**
-   * Generates a `RubyType` for each class/module in each gem
-   * @param pathsMap
-   * @return
-   */
-  private def generateRubyTypes(pathsMap: collection.mutable.Map[String, List[String]]): Iterator[() => (String, List[RubyType])] = {
+  /** Generates a `RubyType` for each class/module in each gem
+    * @param pathsMap
+    * @return
+    */
+  private def generateRubyTypes(
+    pathsMap: collection.mutable.Map[String, List[String]]
+  ): Iterator[() => (String, List[RubyType])] = {
     pathsMap
       .map((gemName, paths) =>
         () => {
@@ -88,7 +89,6 @@ class BuiltinPackageDownloader(rubyVersion: String = "3.3.0") {
     val dir = File(s"${baseDir}/")
     dir.createDirectoryIfNotExists()
 
-
     rubyTypesMap.foreach { (gem, rubyTypes) =>
       // gem is file name
       val gemsMap = collection.mutable.Map[String, List[RubyType]]()
@@ -103,12 +103,9 @@ class BuiltinPackageDownloader(rubyVersion: String = "3.3.0") {
             rubyTypeNameSegments.take(x - 1).mkString(".")
         }
 
-        if gemsMap.contains(namespaceKey) then
-          gemsMap.update(namespaceKey, gemsMap(namespaceKey) :+ rubyType)
-        else
-          gemsMap.put(namespaceKey, List(rubyType))
+        if gemsMap.contains(namespaceKey) then gemsMap.update(namespaceKey, gemsMap(namespaceKey) :+ rubyType)
+        else gemsMap.put(namespaceKey, List(rubyType))
       }
-
 
       val typesFile = File(s"${dir.pathAsString}/$gem.mpk")
       typesFile.createIfNotExists()
@@ -125,11 +122,11 @@ class BuiltinPackageDownloader(rubyVersion: String = "3.3.0") {
     val dir = File(s"${baseDir}_json/")
     dir.createDirectoryIfNotExists()
 
-    rubyTypesMap.foreach{ (gem, rubyTypes) =>
+    rubyTypesMap.foreach { (gem, rubyTypes) =>
       // gem is file name
       val gemsMap = collection.mutable.Map[String, List[RubyType]]()
 
-      rubyTypes.foreach{ rubyType =>
+      rubyTypes.foreach { rubyType =>
         val rubyTypeNameSegments = rubyType.name.split("\\.")
 
         val namespaceKey = rubyTypeNameSegments.size match {
@@ -139,12 +136,9 @@ class BuiltinPackageDownloader(rubyVersion: String = "3.3.0") {
             rubyTypeNameSegments.take(x - 1).mkString(".")
         }
 
-        if gemsMap.contains(namespaceKey) then
-          gemsMap.update(namespaceKey, gemsMap(namespaceKey) ++ List(rubyType))
-        else
-          gemsMap.put(namespaceKey, List(rubyType))
+        if gemsMap.contains(namespaceKey) then gemsMap.update(namespaceKey, gemsMap(namespaceKey) ++ List(rubyType))
+        else gemsMap.put(namespaceKey, List(rubyType))
       }
-
 
       val typesFile = File(s"${dir.pathAsString}/$gem.json")
       typesFile.createIfNotExists()
@@ -153,12 +147,13 @@ class BuiltinPackageDownloader(rubyVersion: String = "3.3.0") {
     }
   }
 
-  /**
-   * Scrapes the given RubyDoc page and generates a `RubyMethod` for each public class and instance method found
-   * @param doc - page to scrape
-   * @param namespace
-   * @return - List of RubyMethod's for the given class/module
-   */
+  /** Scrapes the given RubyDoc page and generates a `RubyMethod` for each public class and instance method found
+    * @param doc
+    *   \- page to scrape
+    * @param namespace
+    * @return
+    *   \- List of RubyMethod's for the given class/module
+    */
   private def buildRubyMethods(doc: browser.DocumentType, namespace: String): List[RubyMethod] = {
     def generateMethodHeadingsSelector(methodType: String): String = {
       s"#public-$methodType-5Buntitled-5D-method-details > .method-detail > .method-heading"
@@ -179,7 +174,7 @@ class BuiltinPackageDownloader(rubyVersion: String = "3.3.0") {
           case Some(methodName) =>
             // Some methods are `methodName == something`, which is why the split on space here is required
             s"${methodName.toString.replaceAll("[!?=]", "").split("\\s+")(0).strip}"
-          case None             => ""
+          case None => ""
         }
       }
       .filterNot(_ == "")
@@ -187,10 +182,10 @@ class BuiltinPackageDownloader(rubyVersion: String = "3.3.0") {
       .map(x => RubyMethod(s"$namespace.$x", List.empty, Defines.Any, Option(namespace)))
   }
 
-  /**
-   * Generates links for all classes on the RubyDocs page
-   * @return Map[gemName -> list of paths]
-   */
+  /** Generates links for all classes on the RubyDocs page
+    * @return
+    *   Map[gemName -> list of paths]
+    */
   private def generatePaths(): collection.mutable.Map[String, List[String]] = {
     val doc = browser.get(baseUrl)
 
@@ -222,8 +217,8 @@ class BuiltinPackageDownloader(rubyVersion: String = "3.3.0") {
 
       linksMap.get(extensionName) match {
         case Some(prevHrefs) if prevHrefs.length < anchorHrefs.length => linksMap.update(extensionName, anchorHrefs)
-        case Some(prevHrefs) => // do nothing
-        case None => linksMap.addOne(extensionName, anchorHrefs)
+        case Some(prevHrefs)                                          => // do nothing
+        case None                                                     => linksMap.addOne(extensionName, anchorHrefs)
       }
     }
 

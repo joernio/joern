@@ -1,0 +1,337 @@
+{
+  "digest.Digest": [
+    {
+      "name": "digest.Digest.Base",
+      "methods": [
+        {
+          "name": "digest.Digest.Base.digest_base",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "digest.Digest.Base"
+          ]
+        },
+        {
+          "name": "digest.Digest.Base.block_length",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "digest.Digest.Base"
+          ]
+        },
+        {
+          "name": "digest.Digest.Base.digest_length",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "digest.Digest.Base"
+          ]
+        },
+        {
+          "name": "digest.Digest.Base.reset",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "digest.Digest.Base"
+          ]
+        },
+        {
+          "name": "digest.Digest.Base.update",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "digest.Digest.Base"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "digest.Digest.Class",
+      "methods": [
+        {
+          "name": "digest.Digest.Class.base64digest",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "digest.Digest.Class"
+          ]
+        },
+        {
+          "name": "digest.Digest.Class.Digest::Class.bubblebabble",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "digest.Digest.Class"
+          ]
+        },
+        {
+          "name": "digest.Digest.Class.Digest::Class.digest",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "digest.Digest.Class"
+          ]
+        },
+        {
+          "name": "digest.Digest.Class.file",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "digest.Digest.Class"
+          ]
+        },
+        {
+          "name": "digest.Digest.Class.Digest::Class.hexdigest",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "digest.Digest.Class"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "digest.Digest.Instance",
+      "methods": [
+        {
+          "name": "digest.Digest.Instance.digest_obj",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "digest.Digest.Instance"
+          ]
+        },
+        {
+          "name": "digest.Digest.Instance.base64digest",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "digest.Digest.Instance"
+          ]
+        },
+        {
+          "name": "digest.Digest.Instance.block_length",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "digest.Digest.Instance"
+          ]
+        },
+        {
+          "name": "digest.Digest.Instance.bubblebabble",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "digest.Digest.Instance"
+          ]
+        },
+        {
+          "name": "digest.Digest.Instance.digest",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "digest.Digest.Instance"
+          ]
+        },
+        {
+          "name": "digest.Digest.Instance.digest_length",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "digest.Digest.Instance"
+          ]
+        },
+        {
+          "name": "digest.Digest.Instance.file",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "digest.Digest.Instance"
+          ]
+        },
+        {
+          "name": "digest.Digest.Instance.hexdigest",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "digest.Digest.Instance"
+          ]
+        },
+        {
+          "name": "digest.Digest.Instance.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "digest.Digest.Instance"
+          ]
+        },
+        {
+          "name": "digest.Digest.Instance.length",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "digest.Digest.Instance"
+          ]
+        },
+        {
+          "name": "digest.Digest.Instance.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "digest.Digest.Instance"
+          ]
+        },
+        {
+          "name": "digest.Digest.Instance.reset",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "digest.Digest.Instance"
+          ]
+        },
+        {
+          "name": "digest.Digest.Instance.size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "digest.Digest.Instance"
+          ]
+        },
+        {
+          "name": "digest.Digest.Instance.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "digest.Digest.Instance"
+          ]
+        },
+        {
+          "name": "digest.Digest.Instance.update",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "digest.Digest.Instance"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "digest.Digest.MD5",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "digest.Digest.RMD160",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "digest.Digest.SHA1",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "digest.Digest.SHA2",
+      "methods": [
+        {
+          "name": "digest.Digest.SHA2.Digest::SHA2.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "digest.Digest.SHA2"
+          ]
+        },
+        {
+          "name": "digest.Digest.SHA2.digest_obj",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "digest.Digest.SHA2"
+          ]
+        },
+        {
+          "name": "digest.Digest.SHA2.block_length",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "digest.Digest.SHA2"
+          ]
+        },
+        {
+          "name": "digest.Digest.SHA2.digest_length",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "digest.Digest.SHA2"
+          ]
+        },
+        {
+          "name": "digest.Digest.SHA2.reset",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "digest.Digest.SHA2"
+          ]
+        },
+        {
+          "name": "digest.Digest.SHA2.update",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "digest.Digest.SHA2"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "digest": [
+    {
+      "name": "digest.Digest",
+      "methods": [
+        {
+          "name": "digest.Digest.bubblebabble",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "digest.Digest"
+          ]
+        },
+        {
+          "name": "digest.Digest.hexencode",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "digest.Digest"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "digest.Object",
+      "methods": [
+        {
+          "name": "digest.Object.Digest",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "digest.Object"
+          ]
+        },
+        {
+          "name": "digest.Object.digest_conf",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "digest.Object"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

@@ -1,0 +1,521 @@
+{
+  "net-ftp.Net": [
+    {
+      "name": "net-ftp.Net.FTP",
+      "methods": [
+        {
+          "name": "net-ftp.Net.FTP.default_passive",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.Net::FTP.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.open",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.abort",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.acct",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.binary",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.chdir",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.close",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.closed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.connect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.debug_print",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.delete",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.dir",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.features",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.get",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.getbinaryfile",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.getdir",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.gettextfile",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.help",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.list",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.login",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.ls",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.mdtm",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.mkdir",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.mlsd",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.mlst",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.mtime",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.nlst",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.noop",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.option",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.put",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.putbinaryfile",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.puttextfile",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.pwd",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.quit",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.read_timeout",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.rename",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.retrbinary",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.retrlines",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.rmdir",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.sendcmd",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.set_socket",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.site",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.status",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.storbinary",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.storlines",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.system",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.voidcmd",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "net-ftp.Net.FTP": [
+    {
+      "name": "net-ftp.Net.FTP.MLSxEntry",
+      "methods": [
+        {
+          "name": "net-ftp.Net.FTP.MLSxEntry.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP.MLSxEntry"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.MLSxEntry.appendable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP.MLSxEntry"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.MLSxEntry.creatable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP.MLSxEntry"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.MLSxEntry.deletable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP.MLSxEntry"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.MLSxEntry.directory",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP.MLSxEntry"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.MLSxEntry.directory_makable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP.MLSxEntry"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.MLSxEntry.enterable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP.MLSxEntry"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.MLSxEntry.file",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP.MLSxEntry"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.MLSxEntry.listable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP.MLSxEntry"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.MLSxEntry.purgeable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP.MLSxEntry"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.MLSxEntry.readable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP.MLSxEntry"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.MLSxEntry.renamable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP.MLSxEntry"
+          ]
+        },
+        {
+          "name": "net-ftp.Net.FTP.MLSxEntry.writable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-ftp.Net.FTP.MLSxEntry"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "net-ftp": [
+    {
+      "name": "net-ftp.Net",
+      "methods": [],
+      "fields": []
+    }
+  ]
+}

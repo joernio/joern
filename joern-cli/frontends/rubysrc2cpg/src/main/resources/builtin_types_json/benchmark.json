@@ -1,0 +1,138 @@
+{
+  "benchmark.Benchmark": [
+    {
+      "name": "benchmark.Benchmark.Tms",
+      "methods": [
+        {
+          "name": "benchmark.Benchmark.Tms.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "benchmark.Benchmark.Tms"
+          ]
+        },
+        {
+          "name": "benchmark.Benchmark.Tms.*",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "benchmark.Benchmark.Tms"
+          ]
+        },
+        {
+          "name": "benchmark.Benchmark.Tms.+",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "benchmark.Benchmark.Tms"
+          ]
+        },
+        {
+          "name": "benchmark.Benchmark.Tms.-",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "benchmark.Benchmark.Tms"
+          ]
+        },
+        {
+          "name": "benchmark.Benchmark.Tms./",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "benchmark.Benchmark.Tms"
+          ]
+        },
+        {
+          "name": "benchmark.Benchmark.Tms.add",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "benchmark.Benchmark.Tms"
+          ]
+        },
+        {
+          "name": "benchmark.Benchmark.Tms.format",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "benchmark.Benchmark.Tms"
+          ]
+        },
+        {
+          "name": "benchmark.Benchmark.Tms.to_a",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "benchmark.Benchmark.Tms"
+          ]
+        },
+        {
+          "name": "benchmark.Benchmark.Tms.to_h",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "benchmark.Benchmark.Tms"
+          ]
+        },
+        {
+          "name": "benchmark.Benchmark.Tms.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "benchmark.Benchmark.Tms"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "benchmark": [
+    {
+      "name": "benchmark.Benchmark",
+      "methods": [
+        {
+          "name": "benchmark.Benchmark.benchmark",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "benchmark.Benchmark"
+          ]
+        },
+        {
+          "name": "benchmark.Benchmark.bm",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "benchmark.Benchmark"
+          ]
+        },
+        {
+          "name": "benchmark.Benchmark.bmbm",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "benchmark.Benchmark"
+          ]
+        },
+        {
+          "name": "benchmark.Benchmark.measure",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "benchmark.Benchmark"
+          ]
+        },
+        {
+          "name": "benchmark.Benchmark.realtime",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "benchmark.Benchmark"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

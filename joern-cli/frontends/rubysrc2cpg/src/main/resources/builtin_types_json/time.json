@@ -1,0 +1,74 @@
+{
+  "time": [
+    {
+      "name": "time.Time",
+      "methods": [
+        {
+          "name": "time.Time.httpdate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "time.Time"
+          ]
+        },
+        {
+          "name": "time.Time.iso8601",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "time.Time"
+          ]
+        },
+        {
+          "name": "time.Time.parse",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "time.Time"
+          ]
+        },
+        {
+          "name": "time.Time.rfc2822",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "time.Time"
+          ]
+        },
+        {
+          "name": "time.Time.rfc822",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "time.Time"
+          ]
+        },
+        {
+          "name": "time.Time.strptime",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "time.Time"
+          ]
+        },
+        {
+          "name": "time.Time.xmlschema",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "time.Time"
+          ]
+        },
+        {
+          "name": "time.Time.zone_offset",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "time.Time"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

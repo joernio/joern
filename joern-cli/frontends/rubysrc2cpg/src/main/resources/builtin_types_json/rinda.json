@@ -1,0 +1,699 @@
+{
+  "rinda": [
+    {
+      "name": "rinda.Rinda",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rinda.Rinda.TupleBag": [
+    {
+      "name": "rinda.Rinda.TupleBag.TupleBin",
+      "methods": [
+        {
+          "name": "rinda.Rinda.TupleBag.TupleBin.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleBag.TupleBin"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.TupleBag.TupleBin.add",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleBag.TupleBin"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.TupleBag.TupleBin.delete",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleBag.TupleBin"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.TupleBag.TupleBin.find",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleBag.TupleBin"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rinda.Rinda": [
+    {
+      "name": "rinda.Rinda.DRbObjectTemplate",
+      "methods": [
+        {
+          "name": "rinda.Rinda.DRbObjectTemplate.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.DRbObjectTemplate"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rinda.Rinda.InvalidHashTupleKey",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rinda.Rinda.NotifyTemplateEntry",
+      "methods": [
+        {
+          "name": "rinda.Rinda.NotifyTemplateEntry.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.NotifyTemplateEntry"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.NotifyTemplateEntry.each",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.NotifyTemplateEntry"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.NotifyTemplateEntry.notify",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.NotifyTemplateEntry"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.NotifyTemplateEntry.pop",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.NotifyTemplateEntry"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rinda.Rinda.RequestCanceledError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rinda.Rinda.RequestExpiredError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rinda.Rinda.RindaError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rinda.Rinda.RingFinger",
+      "methods": [
+        {
+          "name": "rinda.Rinda.RingFinger.finger",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.RingFinger"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.RingFinger.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.RingFinger"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.RingFinger.primary",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.RingFinger"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.RingFinger.to_a",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.RingFinger"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.RingFinger.each",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.RingFinger"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.RingFinger.lookup_ring",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.RingFinger"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.RingFinger.lookup_ring_any",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.RingFinger"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rinda.Rinda.RingProvider",
+      "methods": [
+        {
+          "name": "rinda.Rinda.RingProvider.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.RingProvider"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.RingProvider.provide",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.RingProvider"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rinda.Rinda.RingServer",
+      "methods": [
+        {
+          "name": "rinda.Rinda.RingServer.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.RingServer"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.RingServer.do_reply",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.RingServer"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.RingServer.do_write",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.RingServer"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.RingServer.make_socket",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.RingServer"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.RingServer.reply_service",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.RingServer"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.RingServer.shutdown",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.RingServer"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.RingServer.write_services",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.RingServer"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rinda.Rinda.SimpleRenewer",
+      "methods": [
+        {
+          "name": "rinda.Rinda.SimpleRenewer.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.SimpleRenewer"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.SimpleRenewer.renew",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.SimpleRenewer"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rinda.Rinda.Template",
+      "methods": [
+        {
+          "name": "rinda.Rinda.Template.match",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.Template"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rinda.Rinda.TemplateEntry",
+      "methods": [
+        {
+          "name": "rinda.Rinda.TemplateEntry.match",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TemplateEntry"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rinda.Rinda.Tuple",
+      "methods": [
+        {
+          "name": "rinda.Rinda.Tuple.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.Tuple"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.Tuple.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.Tuple"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.Tuple.each",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.Tuple"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.Tuple.fetch",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.Tuple"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.Tuple.size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.Tuple"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.Tuple.value",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.Tuple"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rinda.Rinda.TupleBag",
+      "methods": [
+        {
+          "name": "rinda.Rinda.TupleBag.delete",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleBag"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.TupleBag.delete_unless_alive",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleBag"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.TupleBag.find",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleBag"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.TupleBag.find_all",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleBag"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.TupleBag.find_all_template",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleBag"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.TupleBag.has_expires",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleBag"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.TupleBag.push",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleBag"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rinda.Rinda.TupleEntry",
+      "methods": [
+        {
+          "name": "rinda.Rinda.TupleEntry.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleEntry"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.TupleEntry.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleEntry"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.TupleEntry.alive",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleEntry"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.TupleEntry.cancel",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleEntry"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.TupleEntry.canceled",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleEntry"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.TupleEntry.expired",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleEntry"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.TupleEntry.fetch",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleEntry"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.TupleEntry.make_expires",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleEntry"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.TupleEntry.make_tuple",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleEntry"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.TupleEntry.renew",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleEntry"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.TupleEntry.size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleEntry"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.TupleEntry.value",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleEntry"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rinda.Rinda.TupleSpace",
+      "methods": [
+        {
+          "name": "rinda.Rinda.TupleSpace.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleSpace"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.TupleSpace.move",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleSpace"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.TupleSpace.notify",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleSpace"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.TupleSpace.read",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleSpace"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.TupleSpace.read_all",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleSpace"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.TupleSpace.take",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleSpace"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.TupleSpace.write",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleSpace"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rinda.Rinda.TupleSpaceProxy",
+      "methods": [
+        {
+          "name": "rinda.Rinda.TupleSpaceProxy.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleSpaceProxy"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.TupleSpaceProxy.notify",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleSpaceProxy"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.TupleSpaceProxy.read",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleSpaceProxy"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.TupleSpaceProxy.read_all",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleSpaceProxy"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.TupleSpaceProxy.take",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleSpaceProxy"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.TupleSpaceProxy.write",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.TupleSpaceProxy"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rinda.Rinda.WaitTemplateEntry",
+      "methods": [
+        {
+          "name": "rinda.Rinda.WaitTemplateEntry.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.WaitTemplateEntry"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.WaitTemplateEntry.cancel",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.WaitTemplateEntry"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.WaitTemplateEntry.read",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.WaitTemplateEntry"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.WaitTemplateEntry.signal",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.WaitTemplateEntry"
+          ]
+        },
+        {
+          "name": "rinda.Rinda.WaitTemplateEntry.wait",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rinda.Rinda.WaitTemplateEntry"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

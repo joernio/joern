@@ -1,0 +1,81 @@
+{
+  "random": [
+    {
+      "name": "random.Random",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "random.Random": [
+    {
+      "name": "random.Random.Formatter",
+      "methods": [
+        {
+          "name": "random.Random.Formatter.alphanumeric",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "random.Random.Formatter"
+          ]
+        },
+        {
+          "name": "random.Random.Formatter.base64",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "random.Random.Formatter"
+          ]
+        },
+        {
+          "name": "random.Random.Formatter.hex",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "random.Random.Formatter"
+          ]
+        },
+        {
+          "name": "random.Random.Formatter.random_bytes",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "random.Random.Formatter"
+          ]
+        },
+        {
+          "name": "random.Random.Formatter.urlsafe_base64",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "random.Random.Formatter"
+          ]
+        },
+        {
+          "name": "random.Random.Formatter.uuid",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "random.Random.Formatter"
+          ]
+        },
+        {
+          "name": "random.Random.Formatter.uuid_v4",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "random.Random.Formatter"
+          ]
+        },
+        {
+          "name": "random.Random.Formatter.uuid_v7",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "random.Random.Formatter"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

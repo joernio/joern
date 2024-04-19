@@ -1,0 +1,898 @@
+{
+  "cgi": [
+    {
+      "name": "cgi.CGI",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "cgi.CGI",
+      "methods": [
+        {
+          "name": "cgi.CGI.accept_charset",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI"
+          ]
+        },
+        {
+          "name": "cgi.CGI.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI"
+          ]
+        },
+        {
+          "name": "cgi.CGI.parse",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI"
+          ]
+        },
+        {
+          "name": "cgi.CGI.header",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI"
+          ]
+        },
+        {
+          "name": "cgi.CGI.http_header",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI"
+          ]
+        },
+        {
+          "name": "cgi.CGI.out",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI"
+          ]
+        },
+        {
+          "name": "cgi.CGI.print",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "cgi.CGI": [
+    {
+      "name": "cgi.CGI.Escape",
+      "methods": [
+        {
+          "name": "cgi.CGI.Escape.escape",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Escape"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Escape.escapeHTML",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Escape"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Escape.escapeURIComponent",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Escape"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Escape.escape_uri_component",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Escape"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Escape.unescape",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Escape"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Escape.unescapeHTML",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Escape"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Escape.unescapeURIComponent",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Escape"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Escape.unescape_uri_component",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Escape"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "cgi.CGI.Util",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "cgi.CGI.Cookie",
+      "methods": [
+        {
+          "name": "cgi.CGI.Cookie.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Cookie"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Cookie.parse",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Cookie"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Cookie.domain",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Cookie"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Cookie.httponly",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Cookie"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Cookie.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Cookie"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Cookie.name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Cookie"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Cookie.path",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Cookie"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Cookie.secure",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Cookie"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Cookie.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Cookie"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Cookie.value",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Cookie"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "cgi.CGI.HTML3",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "cgi.CGI.HTML4",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "cgi.CGI.HTML4Fr",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "cgi.CGI.HTML4Tr",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "cgi.CGI.HTML5",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "cgi.CGI.HtmlExtension",
+      "methods": [
+        {
+          "name": "cgi.CGI.HtmlExtension.a",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.HtmlExtension"
+          ]
+        },
+        {
+          "name": "cgi.CGI.HtmlExtension.base",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.HtmlExtension"
+          ]
+        },
+        {
+          "name": "cgi.CGI.HtmlExtension.blockquote",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.HtmlExtension"
+          ]
+        },
+        {
+          "name": "cgi.CGI.HtmlExtension.caption",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.HtmlExtension"
+          ]
+        },
+        {
+          "name": "cgi.CGI.HtmlExtension.checkbox",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.HtmlExtension"
+          ]
+        },
+        {
+          "name": "cgi.CGI.HtmlExtension.checkbox_group",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.HtmlExtension"
+          ]
+        },
+        {
+          "name": "cgi.CGI.HtmlExtension.file_field",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.HtmlExtension"
+          ]
+        },
+        {
+          "name": "cgi.CGI.HtmlExtension.form",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.HtmlExtension"
+          ]
+        },
+        {
+          "name": "cgi.CGI.HtmlExtension.hidden",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.HtmlExtension"
+          ]
+        },
+        {
+          "name": "cgi.CGI.HtmlExtension.html",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.HtmlExtension"
+          ]
+        },
+        {
+          "name": "cgi.CGI.HtmlExtension.image_button",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.HtmlExtension"
+          ]
+        },
+        {
+          "name": "cgi.CGI.HtmlExtension.img",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.HtmlExtension"
+          ]
+        },
+        {
+          "name": "cgi.CGI.HtmlExtension.multipart_form",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.HtmlExtension"
+          ]
+        },
+        {
+          "name": "cgi.CGI.HtmlExtension.password_field",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.HtmlExtension"
+          ]
+        },
+        {
+          "name": "cgi.CGI.HtmlExtension.popup_menu",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.HtmlExtension"
+          ]
+        },
+        {
+          "name": "cgi.CGI.HtmlExtension.radio_button",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.HtmlExtension"
+          ]
+        },
+        {
+          "name": "cgi.CGI.HtmlExtension.radio_group",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.HtmlExtension"
+          ]
+        },
+        {
+          "name": "cgi.CGI.HtmlExtension.reset",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.HtmlExtension"
+          ]
+        },
+        {
+          "name": "cgi.CGI.HtmlExtension.scrolling_list",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.HtmlExtension"
+          ]
+        },
+        {
+          "name": "cgi.CGI.HtmlExtension.submit",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.HtmlExtension"
+          ]
+        },
+        {
+          "name": "cgi.CGI.HtmlExtension.text_field",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.HtmlExtension"
+          ]
+        },
+        {
+          "name": "cgi.CGI.HtmlExtension.textarea",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.HtmlExtension"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "cgi.CGI.InvalidEncoding",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "cgi.CGI.QueryExtension",
+      "methods": [
+        {
+          "name": "cgi.CGI.QueryExtension.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.QueryExtension"
+          ]
+        },
+        {
+          "name": "cgi.CGI.QueryExtension.has_key",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.QueryExtension"
+          ]
+        },
+        {
+          "name": "cgi.CGI.QueryExtension.include",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.QueryExtension"
+          ]
+        },
+        {
+          "name": "cgi.CGI.QueryExtension.key",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.QueryExtension"
+          ]
+        },
+        {
+          "name": "cgi.CGI.QueryExtension.keys",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.QueryExtension"
+          ]
+        },
+        {
+          "name": "cgi.CGI.QueryExtension.multipart",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.QueryExtension"
+          ]
+        },
+        {
+          "name": "cgi.CGI.QueryExtension.params",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.QueryExtension"
+          ]
+        },
+        {
+          "name": "cgi.CGI.QueryExtension.raw_cookie",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.QueryExtension"
+          ]
+        },
+        {
+          "name": "cgi.CGI.QueryExtension.raw_cookie2",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.QueryExtension"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "cgi.CGI.Session",
+      "methods": [
+        {
+          "name": "cgi.CGI.Session.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Session"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Session.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Session"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Session.close",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Session"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Session.delete",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Session"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Session.update",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Session"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "cgi.CGI.Util",
+      "methods": [
+        {
+          "name": "cgi.CGI.Util.escape",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Util"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Util.escapeElement",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Util"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Util.escapeHTML",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Util"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Util.escapeURIComponent",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Util"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Util.escape_element",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Util"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Util.escape_html",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Util"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Util.escape_uri_component",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Util"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Util.h",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Util"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Util.pretty",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Util"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Util.rfc1123_date",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Util"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Util.unescape",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Util"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Util.unescapeElement",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Util"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Util.unescapeHTML",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Util"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Util.unescapeURIComponent",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Util"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Util.unescape_element",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Util"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Util.unescape_html",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Util"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Util.unescape_uri_component",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Util"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "cgi.CGI.Session": [
+    {
+      "name": "cgi.CGI.Session.FileStore",
+      "methods": [
+        {
+          "name": "cgi.CGI.Session.FileStore.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Session.FileStore"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Session.FileStore.close",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Session.FileStore"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Session.FileStore.delete",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Session.FileStore"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Session.FileStore.restore",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Session.FileStore"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Session.FileStore.update",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Session.FileStore"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "cgi.CGI.Session.MemoryStore",
+      "methods": [
+        {
+          "name": "cgi.CGI.Session.MemoryStore.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Session.MemoryStore"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Session.MemoryStore.close",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Session.MemoryStore"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Session.MemoryStore.delete",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Session.MemoryStore"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Session.MemoryStore.restore",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Session.MemoryStore"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Session.MemoryStore.update",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Session.MemoryStore"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "cgi.CGI.Session.NullStore",
+      "methods": [
+        {
+          "name": "cgi.CGI.Session.NullStore.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Session.NullStore"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Session.NullStore.close",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Session.NullStore"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Session.NullStore.delete",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Session.NullStore"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Session.NullStore.restore",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Session.NullStore"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Session.NullStore.update",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Session.NullStore"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "cgi.CGI.Session.PStore",
+      "methods": [
+        {
+          "name": "cgi.CGI.Session.PStore.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Session.PStore"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Session.PStore.close",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Session.PStore"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Session.PStore.delete",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Session.PStore"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Session.PStore.restore",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Session.PStore"
+          ]
+        },
+        {
+          "name": "cgi.CGI.Session.PStore.update",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "cgi.CGI.Session.PStore"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

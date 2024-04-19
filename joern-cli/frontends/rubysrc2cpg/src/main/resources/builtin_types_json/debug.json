@@ -1,0 +1,4550 @@
+{
+  "debug.IRB": [
+    {
+      "name": "debug.IRB.Color",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "debug": [
+    {
+      "name": "debug.BasicObject",
+      "methods": [
+        {
+          "name": "debug.BasicObject.singleton_method_added",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.BasicObject"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.Binding",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.add_catch_breakpoint",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.add_line_breakpoint",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.check_dir_authority",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.check_loglevel",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.commands",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.compare_path",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.create_unix_domain_socket_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.create_unix_domain_socket_name_prefix",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.debug",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.help",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.helps",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.info",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.load_rc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.log",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.open",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.open_tcp",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.open_unix",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.parse_help",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.require_location",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.safe_inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.setup_initial_suspend",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.skip",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.skip_all",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.start",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.step_in",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.unix_domain_socket_dir",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.unix_domain_socket_homedir",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.unix_domain_socket_tmpdir",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.warn",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.IRB",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "debug.Kernel",
+      "methods": [
+        {
+          "name": "debug.Kernel.bb",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.Kernel"
+          ]
+        },
+        {
+          "name": "debug.Kernel.debugger",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.Kernel"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.Module",
+      "methods": [
+        {
+          "name": "debug.Module.method_added",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.Module"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.Object",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "debug.Process",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "debug.RubyVM",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "debug.Signal",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "debug.Thread",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "debug.UnboundMethod",
+      "methods": [
+        {
+          "name": "debug.UnboundMethod.bind_call",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.UnboundMethod"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "debug.DEBUGGER__.ThreadClient": [
+    {
+      "name": "debug.DEBUGGER__.ThreadClient.Output",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.Output.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient.Output"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.Output.dump",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient.Output"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.ThreadClient.Recorder",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.Recorder.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient.Recorder"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.Recorder.append",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient.Recorder"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.Recorder.can_step_back",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient.Recorder"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.Recorder.current_frame",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient.Recorder"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.Recorder.current_position",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient.Recorder"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.Recorder.disable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient.Recorder"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.Recorder.enable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient.Recorder"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.Recorder.enabled",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient.Recorder"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.Recorder.log_index",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient.Recorder"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.Recorder.replaying",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient.Recorder"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.Recorder.step_back",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient.Recorder"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.Recorder.step_forward",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient.Recorder"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.Recorder.step_reset",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient.Recorder"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.ThreadClient.SuspendReplay",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "debug.RubyVM": [
+    {
+      "name": "debug.RubyVM.InstructionSequence",
+      "methods": [
+        {
+          "name": "debug.RubyVM.InstructionSequence.first_line",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.RubyVM.InstructionSequence"
+          ]
+        },
+        {
+          "name": "debug.RubyVM.InstructionSequence.last_line",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.RubyVM.InstructionSequence"
+          ]
+        },
+        {
+          "name": "debug.RubyVM.InstructionSequence.parameters_symbols",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.RubyVM.InstructionSequence"
+          ]
+        },
+        {
+          "name": "debug.RubyVM.InstructionSequence.traceable_lines_norec",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.RubyVM.InstructionSequence"
+          ]
+        },
+        {
+          "name": "debug.RubyVM.InstructionSequence.traceable_lines_rec",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.RubyVM.InstructionSequence"
+          ]
+        },
+        {
+          "name": "debug.RubyVM.InstructionSequence.type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.RubyVM.InstructionSequence"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "debug.DEBUGGER__.UI_CDP": [
+    {
+      "name": "debug.DEBUGGER__.UI_CDP.Detach",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.UI_CDP.NotFoundChromeEndpointError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.UI_CDP.UnsupportedError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.UI_CDP.WebSocketClient",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.UI_CDP.WebSocketClient.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_CDP.WebSocketClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_CDP.WebSocketClient.extract_data",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_CDP.WebSocketClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_CDP.WebSocketClient.handshake",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_CDP.WebSocketClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_CDP.WebSocketClient.send",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_CDP.WebSocketClient"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.UI_CDP.WebSocketServer",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.UI_CDP.WebSocketServer.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_CDP.WebSocketServer"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_CDP.WebSocketServer.extract_data",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_CDP.WebSocketServer"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_CDP.WebSocketServer.handshake",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_CDP.WebSocketServer"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_CDP.WebSocketServer.send",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_CDP.WebSocketServer"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.UI_CDP.WebSocketUtils",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.UI_CDP.WebSocketUtils.show_protocol",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_CDP.WebSocketUtils"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "debug.DEBUGGER__.UI_CDP.WebSocketUtils": [
+    {
+      "name": "debug.DEBUGGER__.UI_CDP.WebSocketUtils.Frame",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.UI_CDP.WebSocketUtils.Frame.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_CDP.WebSocketUtils.Frame"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_CDP.WebSocketUtils.Frame.<<",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_CDP.WebSocketUtils.Frame"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_CDP.WebSocketUtils.Frame.char",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_CDP.WebSocketUtils.Frame"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_CDP.WebSocketUtils.Frame.uint16",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_CDP.WebSocketUtils.Frame"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_CDP.WebSocketUtils.Frame.ulonglong",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_CDP.WebSocketUtils.Frame"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "debug.DEBUGGER__": [
+    {
+      "name": "debug.DEBUGGER__.AbbrevCommand",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.AbbrevCommand.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.AbbrevCommand"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.AbbrevCommand.search",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.AbbrevCommand"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.Breakpoint",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.Breakpoint.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Breakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Breakpoint.delete",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Breakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Breakpoint.deleted",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Breakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Breakpoint.description",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Breakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Breakpoint.disable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Breakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Breakpoint.duplicable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Breakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Breakpoint.enable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Breakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Breakpoint.enabled",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Breakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Breakpoint.generate_label",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Breakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Breakpoint.oneshot",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Breakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Breakpoint.safe_eval",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Breakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Breakpoint.setup",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Breakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Breakpoint.skip_path",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Breakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Breakpoint.suspend",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Breakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Breakpoint.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Breakpoint"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.CallTracer",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.CallTracer.setup",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.CallTracer"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.CallTracer.skip_with_pattern",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.CallTracer"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.CatchBreakpoint",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.CatchBreakpoint.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.CatchBreakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.CatchBreakpoint.description",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.CatchBreakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.CatchBreakpoint.setup",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.CatchBreakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.CatchBreakpoint.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.CatchBreakpoint"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.CheckBreakpoint",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.CheckBreakpoint.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.CheckBreakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.CheckBreakpoint.setup",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.CheckBreakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.CheckBreakpoint.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.CheckBreakpoint"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.Client",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.Client.cleanup_unix_domain_sockets",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Client"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Client.list_connections",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Client"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Client.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Client"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Client.setup_autoload",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Client"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Client.util",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Client"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Client.working_shell_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Client"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Client.connect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Client"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Client.connect_tcp",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Client"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Client.connect_unix",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Client"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Client.deactivate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Client"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Client.readline",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Client"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Client.send",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Client"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.Color",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.Color.color_pp",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Color"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Color.colored_inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Color"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Color.colorize",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Color"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Color.colorize_blue",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Color"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Color.colorize_code",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Color"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Color.colorize_cyan",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Color"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Color.colorize_dim",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Color"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Color.colorize_magenta",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Color"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Color.irb_colorize",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Color"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Color.with_inspection_error_guard",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Color"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.CommandLineOptionError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.Config",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.Config.config",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Config"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Config.config_to_env_hash",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Config"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Config.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Config"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Config.parse_argv",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Config"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Config.parse_config_value",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Config"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Config.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Config"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Config.append_config",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Config"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Config.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Config"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Config.set_config",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Config"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Config.update",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Config"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.Console",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.Console.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Console"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Console.deactivate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Console"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Console.get_command",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Console"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Console.history",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Console"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Console.history_file",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Console"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Console.load_history",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Console"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Console.load_history_if_not_loaded",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Console"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Console.parse_input",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Console"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Console.read_history_file",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Console"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Console.readline",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Console"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Console.readline_setup",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Console"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.DAP_TraceInspector",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.ExceptionTracer",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.ExceptionTracer.setup",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ExceptionTracer"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ExceptionTracer.skip_with_pattern",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ExceptionTracer"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.ForkInterceptor",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.ForkInterceptor._fork",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ForkInterceptor"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ForkInterceptor.fork",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ForkInterceptor"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.FrameInfo",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.FrameInfo.pretty_path",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.FrameInfo"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.FrameInfo.block_identifier",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.FrameInfo"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.FrameInfo.c_identifier",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.FrameInfo"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.FrameInfo.callee",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.FrameInfo"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.FrameInfo.eval_binding",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.FrameInfo"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.FrameInfo.file_lines",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.FrameInfo"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.FrameInfo.frame_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.FrameInfo"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.FrameInfo.iseq_parameters_info",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.FrameInfo"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.FrameInfo.local_variables",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.FrameInfo"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.FrameInfo.location_str",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.FrameInfo"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.FrameInfo.matchable_location",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.FrameInfo"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.FrameInfo.method_identifier",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.FrameInfo"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.FrameInfo.name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.FrameInfo"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.FrameInfo.other_identifier",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.FrameInfo"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.FrameInfo.parameters_info",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.FrameInfo"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.FrameInfo.path",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.FrameInfo"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.FrameInfo.realpath",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.FrameInfo"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.FrameInfo.return_str",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.FrameInfo"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.GlobalVariablesHelper",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.GlobalVariablesHelper.safe_global_variables",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.GlobalVariablesHelper"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.ISeqBreakpoint",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.ISeqBreakpoint.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ISeqBreakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ISeqBreakpoint.enable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ISeqBreakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ISeqBreakpoint.setup",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ISeqBreakpoint"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.IrbPatch",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.IrbPatch.evaluate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.IrbPatch"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.LimitedPP",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.LimitedPP.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.LimitedPP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.LimitedPP.pp",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.LimitedPP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.LimitedPP.<<",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.LimitedPP"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.LineBreakpoint",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.LineBreakpoint.copy",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.LineBreakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.LineBreakpoint.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.LineBreakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.LineBreakpoint.activate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.LineBreakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.LineBreakpoint.activate_exact",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.LineBreakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.LineBreakpoint.duplicable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.LineBreakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.LineBreakpoint.enable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.LineBreakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.LineBreakpoint.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.LineBreakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.LineBreakpoint.iterate_iseq",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.LineBreakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.LineBreakpoint.path_is",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.LineBreakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.LineBreakpoint.setup",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.LineBreakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.LineBreakpoint.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.LineBreakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.LineBreakpoint.try_activate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.LineBreakpoint"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.LineTracer",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.LineTracer.setup",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.LineTracer"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.MethodBreakpoint",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.MethodBreakpoint.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.MethodBreakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.MethodBreakpoint.enable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.MethodBreakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.MethodBreakpoint.eval_class_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.MethodBreakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.MethodBreakpoint.override",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.MethodBreakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.MethodBreakpoint.search_method",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.MethodBreakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.MethodBreakpoint.setup",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.MethodBreakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.MethodBreakpoint.sig",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.MethodBreakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.MethodBreakpoint.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.MethodBreakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.MethodBreakpoint.try_enable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.MethodBreakpoint"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.MultiProcessGroup",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.MultiProcessGroup.after_fork",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.MultiProcessGroup"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.MultiProcessGroup.info",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.MultiProcessGroup"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.MultiProcessGroup.lock",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.MultiProcessGroup"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.MultiProcessGroup.locked",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.MultiProcessGroup"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.MultiProcessGroup.multi_process",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.MultiProcessGroup"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.MultiProcessGroup.sync",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.MultiProcessGroup"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.MultiProcessGroup.unlock",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.MultiProcessGroup"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.NaiveString",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.NaiveString.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.NaiveString"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.ObjectTracer",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.ObjectTracer.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ObjectTracer"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ObjectTracer.colorized_obj_inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ObjectTracer"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ObjectTracer.description",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ObjectTracer"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ObjectTracer.setup",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ObjectTracer"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.PostmortemError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.ProcessGroup",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.ProcessGroup.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ProcessGroup"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ProcessGroup.after_fork",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ProcessGroup"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ProcessGroup.lock",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ProcessGroup"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ProcessGroup.locked",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ProcessGroup"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ProcessGroup.multi",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ProcessGroup"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ProcessGroup.multi_process",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ProcessGroup"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ProcessGroup.sync",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ProcessGroup"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ProcessGroup.trylock",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ProcessGroup"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ProcessGroup.unlock",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ProcessGroup"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.Session",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.Session.activate_method_added_trackers",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.create_method_added_tracker",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.deactivate_method_added_trackers",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.activate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.active",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.add_bp",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.add_catch_breakpoint",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.add_check_breakpoint",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.add_iseq_breakpoint",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.add_line_breakpoint",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.add_preset_commands",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.add_tracer",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.after_fork_parent",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.ask",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.before_fork",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.bp_index",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.cancel_auto_continue",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.capture_exception_frames",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.check_postmortem",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.check_unsafe",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.clean_bps",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.clear_all_breakpoints",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.clear_breakpoints",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.clear_catch_breakpoints",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.clear_line_breakpoints",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.config_command",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.config_set",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.config_show",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.deactivate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.delete_bp",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.enter_postmortem_session",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.extend_feature",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.fail_response",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.find_waiting_tc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.get_thread_client",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.get_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.in_subsession",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.intercept_trap_sigint",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.intercept_trap_sigint_end",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.intercept_trap_sigint_start",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.iterate_bps",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.managed_thread_clients",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.method_added",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.on_load",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.on_thread_begin",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.pop_event",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.postmortem",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.process_command",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.process_event",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.process_info",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.process_protocol_request",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.process_protocol_result",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.prompt",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.register_default_command",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.register_var",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.register_vars",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.rehash_bps",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.remote",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.repl_add_breakpoint",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.repl_add_catch_breakpoint",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.repl_add_watch_breakpoint",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.request_eval",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.request_tc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.request_tc_with_restarted_threads",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.reset_ui",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.resolve_path",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.save_int_trap",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.session_server_main",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.set_no_sigint_hook",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.setup_threads",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.show_bps",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.show_help",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.source",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.step_command",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.stop_stepping",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.switch_thread",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.thread_list",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.update_thread_list",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.wait_command",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.wait_command_loop",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Session.width",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Session"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.SkipPathHelper",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.SkipPathHelper.skip_config_skip_path",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.SkipPathHelper"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.SkipPathHelper.skip_internal_path",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.SkipPathHelper"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.SkipPathHelper.skip_location",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.SkipPathHelper"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.SkipPathHelper.skip_path",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.SkipPathHelper"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.SourceRepository",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.SourceRepository.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.SourceRepository"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.SourceRepository.add",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.SourceRepository"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.SourceRepository.add_iseq",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.SourceRepository"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.SourceRepository.add_path",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.SourceRepository"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.SourceRepository.all_iseq",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.SourceRepository"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.SourceRepository.file_src",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.SourceRepository"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.SourceRepository.get",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.SourceRepository"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.SourceRepository.get_colored",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.SourceRepository"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.SourceRepository.get_si",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.SourceRepository"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.SourceRepository.orig_src",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.SourceRepository"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.ThreadClient",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.current",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.<<",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.activate_irb_integration",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.assemble_arguments",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.class_method_map",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.close",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.collect_locals",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.constant_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.current_frame",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.dap_eval",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.deactivate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.debug_cmd",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.debug_event",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.debug_mode",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.debug_suspend",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.default_frame_formatter",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.evaluate_result",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.event",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.exceptionDetails",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.fiber_blocking",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.frame_eval",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.frame_eval_core",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.frame_str",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.generate_info",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.get_consts",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.get_frame",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.get_src",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.internalProperty",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.iter_consts",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.location",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.make_breakpoint",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.management",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.mark_as_management",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.on_breakpoint",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.on_init",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.on_load",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.on_pause",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.on_trace",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.on_trap",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.outline_method",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.preview",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.preview_",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.process_cdp",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.process_dap",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.propertyDescriptor",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.propertyDescriptor_",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.puts",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.puts_variable_info",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.replay_suspend",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.running",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.search_const",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.set_mode",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.show_by_editor",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.show_consts",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.show_frame",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.show_frames",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.show_globals",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.show_ivars",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.show_locals",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.show_outline",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.show_src",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.special_local_variables",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.step_tp",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.suspend",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.tp_allow_reentry",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.truncate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.type_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.value_inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.variable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.variable_",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.wait_next_action",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.wait_next_action_",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.wait_reply",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.ThreadClient.waiting",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ThreadClient"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.Tracer",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.Tracer.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Tracer"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Tracer.colorize",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Tracer"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Tracer.description",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Tracer"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Tracer.disable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Tracer"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Tracer.enable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Tracer"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Tracer.enabled",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Tracer"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Tracer.header",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Tracer"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Tracer.minfo",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Tracer"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Tracer.out",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Tracer"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Tracer.skip",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Tracer"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Tracer.skip_with_pattern",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Tracer"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.Tracer.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.Tracer"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.TrapInterceptor",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.TrapInterceptor.trap",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.TrapInterceptor"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.UI_Base",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.UI_Base.event",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_Base"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_Base.flush",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_Base"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_Base.ignore_output_on_suspend",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_Base"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.UI_CDP",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.UI_CDP.get_chrome_path",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_CDP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_CDP.get_devtools_endpoint",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_CDP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_CDP.run_new_chrome",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_CDP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_CDP.setup_chrome",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_CDP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_CDP.activate_bp",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_CDP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_CDP.add_line_breakpoint",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_CDP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_CDP.cleanup_reader",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_CDP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_CDP.deactivate_bp",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_CDP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_CDP.del_bp",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_CDP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_CDP.fire_event",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_CDP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_CDP.get_source_code",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_CDP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_CDP.process",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_CDP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_CDP.puts",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_CDP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_CDP.respond",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_CDP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_CDP.respond_fail",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_CDP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_CDP.send_chrome_response",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_CDP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_CDP.send_event",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_CDP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_CDP.send_fail_response",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_CDP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_CDP.send_http_res",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_CDP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_CDP.send_response",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_CDP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_CDP.sock",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_CDP"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.UI_DAP",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.UI_DAP.local_fs_map_set",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_DAP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_DAP.local_to_remote_path",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_DAP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_DAP.remote_to_local_path",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_DAP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_DAP.setup",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_DAP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_DAP.dap_setup",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_DAP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_DAP.event",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_DAP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_DAP.ignore_output_on_suspend",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_DAP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_DAP.load_extensions",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_DAP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_DAP.process",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_DAP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_DAP.process_request",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_DAP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_DAP.puts",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_DAP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_DAP.recv_request",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_DAP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_DAP.respond",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_DAP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_DAP.send",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_DAP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_DAP.send_event",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_DAP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_DAP.send_response",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_DAP"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_DAP.show_protocol",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_DAP"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.UI_LocalConsole",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.UI_LocalConsole.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_LocalConsole"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_LocalConsole.activate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_LocalConsole"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_LocalConsole.activate_sigint",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_LocalConsole"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_LocalConsole.after_fork_parent",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_LocalConsole"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_LocalConsole.ask",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_LocalConsole"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_LocalConsole.deactivate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_LocalConsole"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_LocalConsole.deactivate_sigint",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_LocalConsole"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_LocalConsole.puts",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_LocalConsole"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_LocalConsole.quit",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_LocalConsole"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_LocalConsole.readline",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_LocalConsole"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_LocalConsole.remote",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_LocalConsole"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_LocalConsole.setup_interrupt",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_LocalConsole"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_LocalConsole.width",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_LocalConsole"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.UI_ServerBase",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.UI_ServerBase.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_ServerBase"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_ServerBase.accept",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_ServerBase"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_ServerBase.activate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_ServerBase"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_ServerBase.after_fork_parent",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_ServerBase"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_ServerBase.ask",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_ServerBase"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_ServerBase.check_cookie",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_ServerBase"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_ServerBase.cleanup_reader",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_ServerBase"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_ServerBase.deactivate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_ServerBase"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_ServerBase.greeting",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_ServerBase"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_ServerBase.parse_option",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_ServerBase"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_ServerBase.pause",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_ServerBase"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_ServerBase.process",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_ServerBase"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_ServerBase.puts",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_ServerBase"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_ServerBase.quit",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_ServerBase"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_ServerBase.readline",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_ServerBase"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_ServerBase.remote",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_ServerBase"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_ServerBase.setup_interrupt",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_ServerBase"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_ServerBase.sigurg_overridden",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_ServerBase"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_ServerBase.sock",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_ServerBase"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_ServerBase.vscode_setup",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_ServerBase"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_ServerBase.width",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_ServerBase"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.UI_TcpServer",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.UI_TcpServer.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_TcpServer"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_TcpServer.accept",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_TcpServer"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_TcpServer.chrome_setup",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_TcpServer"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.UI_UnixDomainServer",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.UI_UnixDomainServer.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_UnixDomainServer"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.UI_UnixDomainServer.accept",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.UI_UnixDomainServer"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.WatchIVarBreakpoint",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.WatchIVarBreakpoint.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.WatchIVarBreakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.WatchIVarBreakpoint.setup",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.WatchIVarBreakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.WatchIVarBreakpoint.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.WatchIVarBreakpoint"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.WatchIVarBreakpoint.watch_eval",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.WatchIVarBreakpoint"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "debug.DEBUGGER__.ForkInterceptor": [
+    {
+      "name": "debug.DEBUGGER__.ForkInterceptor.DaemonInterceptor",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.ForkInterceptor.DaemonInterceptor.daemon",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.ForkInterceptor.DaemonInterceptor"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "debug.DEBUGGER__.DAP_TraceInspector": [
+    {
+      "name": "debug.DEBUGGER__.DAP_TraceInspector.Custom_Recorder",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.DAP_TraceInspector.Custom_Recorder.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.DAP_TraceInspector.Custom_Recorder"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.DAP_TraceInspector.Custom_Recorder.append",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.DAP_TraceInspector.Custom_Recorder"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.DAP_TraceInspector.Custom_Session",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.DAP_TraceInspector.Custom_Session.custom_dap_request_event_rdbgTraceInspector",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.DAP_TraceInspector.Custom_Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.DAP_TraceInspector.Custom_Session.custom_dap_request_rdbgTraceInspector",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.DAP_TraceInspector.Custom_Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.DAP_TraceInspector.Custom_Session.find_multi_trace",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.DAP_TraceInspector.Custom_Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.DAP_TraceInspector.Custom_Session.process_event_record_cmd",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.DAP_TraceInspector.Custom_Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.DAP_TraceInspector.Custom_Session.process_record_cmd",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.DAP_TraceInspector.Custom_Session"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.DAP_TraceInspector.Custom_Session.process_trace_cmd",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.DAP_TraceInspector.Custom_Session"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.DAP_TraceInspector.Custom_ThreadClient",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.DAP_TraceInspector.Custom_ThreadClient.custom_dap_request_rdbgTraceInspector",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.DAP_TraceInspector.Custom_ThreadClient"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.DAP_TraceInspector.Custom_ThreadClient.process_record_cmd",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.DAP_TraceInspector.Custom_ThreadClient"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.DAP_TraceInspector.Custom_UI_DAP",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.DAP_TraceInspector.Custom_UI_DAP.custom_dap_request_rdbgTraceInspector",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.DAP_TraceInspector.Custom_UI_DAP"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.DAP_TraceInspector.MultiTracer",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.DAP_TraceInspector.MultiTracer.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.DAP_TraceInspector.MultiTracer"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.DAP_TraceInspector.MultiTracer.append",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.DAP_TraceInspector.MultiTracer"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.DAP_TraceInspector.MultiTracer.call_identifier_str",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.DAP_TraceInspector.MultiTracer"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.DAP_TraceInspector.MultiTracer.call_trace_log",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.DAP_TraceInspector.MultiTracer"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.DAP_TraceInspector.MultiTracer.line_trace_log",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.DAP_TraceInspector.MultiTracer"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.DAP_TraceInspector.MultiTracer.parameters_info",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.DAP_TraceInspector.MultiTracer"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.DAP_TraceInspector.MultiTracer.setup",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.DAP_TraceInspector.MultiTracer"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.DAP_TraceInspector.MultiTracer.skip",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.DAP_TraceInspector.MultiTracer"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.DAP_TraceInspector.MultiTracer.skip_with_pattern",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.DAP_TraceInspector.MultiTracer"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "debug.DEBUGGER__.UI_ServerBase": [
+    {
+      "name": "debug.DEBUGGER__.UI_ServerBase.GreetingError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.UI_ServerBase.NoRemoteError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.UI_ServerBase.RetryConnection",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "debug.DEBUGGER__.UI_ServerBase.Terminate",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "debug.DEBUGGER__.UI_DAP": [
+    {
+      "name": "debug.DEBUGGER__.UI_DAP.RetryBecauseCantRead",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "debug.DEBUGGER__.AbbrevCommand": [
+    {
+      "name": "debug.DEBUGGER__.AbbrevCommand.TrieNode",
+      "methods": [
+        {
+          "name": "debug.DEBUGGER__.AbbrevCommand.TrieNode.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.AbbrevCommand.TrieNode"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.AbbrevCommand.TrieNode.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.AbbrevCommand.TrieNode"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.AbbrevCommand.TrieNode.add_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.AbbrevCommand.TrieNode"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.AbbrevCommand.TrieNode.append",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.AbbrevCommand.TrieNode"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.AbbrevCommand.TrieNode.candidates",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.AbbrevCommand.TrieNode"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.AbbrevCommand.TrieNode.type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.AbbrevCommand.TrieNode"
+          ]
+        },
+        {
+          "name": "debug.DEBUGGER__.AbbrevCommand.TrieNode.types",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "debug.DEBUGGER__.AbbrevCommand.TrieNode"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

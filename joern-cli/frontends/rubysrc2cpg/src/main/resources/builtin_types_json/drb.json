@@ -1,0 +1,958 @@
+{
+  "drb.ACL": [
+    {
+      "name": "drb.ACL.ACLEntry",
+      "methods": [
+        {
+          "name": "drb.ACL.ACLEntry.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.ACL.ACLEntry"
+          ]
+        },
+        {
+          "name": "drb.ACL.ACLEntry.match",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.ACL.ACLEntry"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "drb.ACL.ACLList",
+      "methods": [
+        {
+          "name": "drb.ACL.ACLList.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.ACL.ACLList"
+          ]
+        },
+        {
+          "name": "drb.ACL.ACLList.add",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.ACL.ACLList"
+          ]
+        },
+        {
+          "name": "drb.ACL.ACLList.match",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.ACL.ACLList"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "drb.DRb.TimerIdConv.TimerHolder2": [
+    {
+      "name": "drb.DRb.TimerIdConv.TimerHolder2.InvalidIndexError",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "drb": [
+    {
+      "name": "drb.ACL",
+      "methods": [
+        {
+          "name": "drb.ACL.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.ACL"
+          ]
+        },
+        {
+          "name": "drb.ACL.allow_addr",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.ACL"
+          ]
+        },
+        {
+          "name": "drb.ACL.allow_socket",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.ACL"
+          ]
+        },
+        {
+          "name": "drb.ACL.install_list",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.ACL"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "drb.DRb",
+      "methods": [
+        {
+          "name": "drb.DRb.config",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb"
+          ]
+        },
+        {
+          "name": "drb.DRb.current_server",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb"
+          ]
+        },
+        {
+          "name": "drb.DRb.fetch_server",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb"
+          ]
+        },
+        {
+          "name": "drb.DRb.front",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb"
+          ]
+        },
+        {
+          "name": "drb.DRb.here",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb"
+          ]
+        },
+        {
+          "name": "drb.DRb.install_acl",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb"
+          ]
+        },
+        {
+          "name": "drb.DRb.install_id_conv",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb"
+          ]
+        },
+        {
+          "name": "drb.DRb.regist_server",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb"
+          ]
+        },
+        {
+          "name": "drb.DRb.remove_server",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb"
+          ]
+        },
+        {
+          "name": "drb.DRb.start_service",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb"
+          ]
+        },
+        {
+          "name": "drb.DRb.stop_service",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb"
+          ]
+        },
+        {
+          "name": "drb.DRb.thread",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb"
+          ]
+        },
+        {
+          "name": "drb.DRb.to_id",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb"
+          ]
+        },
+        {
+          "name": "drb.DRb.to_obj",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb"
+          ]
+        },
+        {
+          "name": "drb.DRb.uri",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "drb.Object",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "drb.DRb.TimerIdConv": [
+    {
+      "name": "drb.DRb.TimerIdConv.TimerHolder2",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "drb.DRb": [
+    {
+      "name": "drb.DRb.DRbArray",
+      "methods": [
+        {
+          "name": "drb.DRb.DRbArray.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbArray"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "drb.DRb.DRbBadScheme",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "drb.DRb.DRbBadURI",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "drb.DRb.DRbConn",
+      "methods": [
+        {
+          "name": "drb.DRb.DRbConn.make_pool",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbConn"
+          ]
+        },
+        {
+          "name": "drb.DRb.DRbConn.stop_pool",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbConn"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "drb.DRb.DRbConnError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "drb.DRb.DRbError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "drb.DRb.DRbIdConv",
+      "methods": [
+        {
+          "name": "drb.DRb.DRbIdConv.to_id",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbIdConv"
+          ]
+        },
+        {
+          "name": "drb.DRb.DRbIdConv.to_obj",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbIdConv"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "drb.DRb.DRbIdConv",
+      "methods": [
+        {
+          "name": "drb.DRb.DRbIdConv.to_id",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbIdConv"
+          ]
+        },
+        {
+          "name": "drb.DRb.DRbIdConv.to_obj",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbIdConv"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "drb.DRb.DRbMessage",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "drb.DRb.DRbObject",
+      "methods": [
+        {
+          "name": "drb.DRb.DRbObject._load",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbObject"
+          ]
+        },
+        {
+          "name": "drb.DRb.DRbObject.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbObject"
+          ]
+        },
+        {
+          "name": "drb.DRb.DRbObject.new_with",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbObject"
+          ]
+        },
+        {
+          "name": "drb.DRb.DRbObject.new_with_uri",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbObject"
+          ]
+        },
+        {
+          "name": "drb.DRb.DRbObject.__drbref",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbObject"
+          ]
+        },
+        {
+          "name": "drb.DRb.DRbObject.__drburi",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbObject"
+          ]
+        },
+        {
+          "name": "drb.DRb.DRbObject._dump",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbObject"
+          ]
+        },
+        {
+          "name": "drb.DRb.DRbObject.method_missing",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbObject"
+          ]
+        },
+        {
+          "name": "drb.DRb.DRbObject.respond_to",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbObject"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "drb.DRb.DRbObject",
+      "methods": [
+        {
+          "name": "drb.DRb.DRbObject._load",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbObject"
+          ]
+        },
+        {
+          "name": "drb.DRb.DRbObject.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbObject"
+          ]
+        },
+        {
+          "name": "drb.DRb.DRbObject.new_with",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbObject"
+          ]
+        },
+        {
+          "name": "drb.DRb.DRbObject.new_with_uri",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbObject"
+          ]
+        },
+        {
+          "name": "drb.DRb.DRbObject.__drbref",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbObject"
+          ]
+        },
+        {
+          "name": "drb.DRb.DRbObject.__drburi",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbObject"
+          ]
+        },
+        {
+          "name": "drb.DRb.DRbObject._dump",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbObject"
+          ]
+        },
+        {
+          "name": "drb.DRb.DRbObject.method_missing",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbObject"
+          ]
+        },
+        {
+          "name": "drb.DRb.DRbObject.respond_to",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbObject"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "drb.DRb.DRbObservable",
+      "methods": [
+        {
+          "name": "drb.DRb.DRbObservable.notify_observers",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbObservable"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "drb.DRb.DRbProtocol",
+      "methods": [
+        {
+          "name": "drb.DRb.DRbProtocol.add_protocol",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbProtocol"
+          ]
+        },
+        {
+          "name": "drb.DRb.DRbProtocol.open",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbProtocol"
+          ]
+        },
+        {
+          "name": "drb.DRb.DRbProtocol.open_server",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbProtocol"
+          ]
+        },
+        {
+          "name": "drb.DRb.DRbProtocol.uri_option",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbProtocol"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "drb.DRb.DRbRemoteError",
+      "methods": [
+        {
+          "name": "drb.DRb.DRbRemoteError.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbRemoteError"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "drb.DRb.DRbSSLSocket",
+      "methods": [
+        {
+          "name": "drb.DRb.DRbSSLSocket.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbSSLSocket"
+          ]
+        },
+        {
+          "name": "drb.DRb.DRbSSLSocket.open",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbSSLSocket"
+          ]
+        },
+        {
+          "name": "drb.DRb.DRbSSLSocket.open_server",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbSSLSocket"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "drb.DRb.DRbServerNotFound",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "drb.DRb.DRbTCPSocket",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "drb.DRb.DRbUNIXSocket",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "drb.DRb.DRbUndumped",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "drb.DRb.DRbUndumped",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "drb.DRb.DRbUnknown",
+      "methods": [
+        {
+          "name": "drb.DRb.DRbUnknown.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbUnknown"
+          ]
+        },
+        {
+          "name": "drb.DRb.DRbUnknown.exception",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbUnknown"
+          ]
+        },
+        {
+          "name": "drb.DRb.DRbUnknown.reload",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbUnknown"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "drb.DRb.DRbUnknownError",
+      "methods": [
+        {
+          "name": "drb.DRb.DRbUnknownError.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbUnknownError"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "drb.DRb.ExtServ",
+      "methods": [
+        {
+          "name": "drb.DRb.ExtServ.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.ExtServ"
+          ]
+        },
+        {
+          "name": "drb.DRb.ExtServ.alive",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.ExtServ"
+          ]
+        },
+        {
+          "name": "drb.DRb.ExtServ.front",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.ExtServ"
+          ]
+        },
+        {
+          "name": "drb.DRb.ExtServ.stop_service",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.ExtServ"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "drb.DRb.ExtServManager",
+      "methods": [
+        {
+          "name": "drb.DRb.ExtServManager.command",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.ExtServManager"
+          ]
+        },
+        {
+          "name": "drb.DRb.ExtServManager.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.ExtServManager"
+          ]
+        },
+        {
+          "name": "drb.DRb.ExtServManager.regist",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.ExtServManager"
+          ]
+        },
+        {
+          "name": "drb.DRb.ExtServManager.register",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.ExtServManager"
+          ]
+        },
+        {
+          "name": "drb.DRb.ExtServManager.service",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.ExtServManager"
+          ]
+        },
+        {
+          "name": "drb.DRb.ExtServManager.unregist",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.ExtServManager"
+          ]
+        },
+        {
+          "name": "drb.DRb.ExtServManager.unregister",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.ExtServManager"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "drb.DRb.GW",
+      "methods": [
+        {
+          "name": "drb.DRb.GW.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.GW"
+          ]
+        },
+        {
+          "name": "drb.DRb.GW.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.GW"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "drb.DRb.GWIdConv",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "drb.DRb.ThreadObject",
+      "methods": [
+        {
+          "name": "drb.DRb.ThreadObject.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.ThreadObject"
+          ]
+        },
+        {
+          "name": "drb.DRb.ThreadObject._execute",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.ThreadObject"
+          ]
+        },
+        {
+          "name": "drb.DRb.ThreadObject.alive",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.ThreadObject"
+          ]
+        },
+        {
+          "name": "drb.DRb.ThreadObject.kill",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.ThreadObject"
+          ]
+        },
+        {
+          "name": "drb.DRb.ThreadObject.method_missing",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.ThreadObject"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "drb.DRb.TimerIdConv",
+      "methods": [
+        {
+          "name": "drb.DRb.TimerIdConv.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.TimerIdConv"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "drb.DRb.WeakIdConv",
+      "methods": [
+        {
+          "name": "drb.DRb.WeakIdConv.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.WeakIdConv"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "drb.DRb.DRbSSLSocket": [
+    {
+      "name": "drb.DRb.DRbSSLSocket.SSLConfig",
+      "methods": [
+        {
+          "name": "drb.DRb.DRbSSLSocket.SSLConfig.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbSSLSocket.SSLConfig"
+          ]
+        },
+        {
+          "name": "drb.DRb.DRbSSLSocket.SSLConfig.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbSSLSocket.SSLConfig"
+          ]
+        },
+        {
+          "name": "drb.DRb.DRbSSLSocket.SSLConfig.accept",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbSSLSocket.SSLConfig"
+          ]
+        },
+        {
+          "name": "drb.DRb.DRbSSLSocket.SSLConfig.connect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbSSLSocket.SSLConfig"
+          ]
+        },
+        {
+          "name": "drb.DRb.DRbSSLSocket.SSLConfig.setup_certificate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbSSLSocket.SSLConfig"
+          ]
+        },
+        {
+          "name": "drb.DRb.DRbSSLSocket.SSLConfig.setup_ssl_context",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.DRbSSLSocket.SSLConfig"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "drb.DRb.WeakIdConv": [
+    {
+      "name": "drb.DRb.WeakIdConv.WeakSet",
+      "methods": [
+        {
+          "name": "drb.DRb.WeakIdConv.WeakSet.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.WeakIdConv.WeakSet"
+          ]
+        },
+        {
+          "name": "drb.DRb.WeakIdConv.WeakSet.add",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.WeakIdConv.WeakSet"
+          ]
+        },
+        {
+          "name": "drb.DRb.WeakIdConv.WeakSet.fetch",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "drb.DRb.WeakIdConv.WeakSet"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

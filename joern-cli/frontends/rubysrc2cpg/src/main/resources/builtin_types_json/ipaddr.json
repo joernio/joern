@@ -1,0 +1,331 @@
+{
+  "ipaddr.IPAddr": [
+    {
+      "name": "ipaddr.IPAddr.AddressFamilyError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "ipaddr.IPAddr.Error",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "ipaddr.IPAddr.InvalidAddressError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "ipaddr.IPAddr.InvalidPrefixError",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "ipaddr": [
+    {
+      "name": "ipaddr.IPAddr",
+      "methods": [
+        {
+          "name": "ipaddr.IPAddr.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPAddr"
+          ]
+        },
+        {
+          "name": "ipaddr.IPAddr.new_ntoh",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPAddr"
+          ]
+        },
+        {
+          "name": "ipaddr.IPAddr.ntop",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPAddr"
+          ]
+        },
+        {
+          "name": "ipaddr.IPAddr.&",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPAddr"
+          ]
+        },
+        {
+          "name": "ipaddr.IPAddr.<<",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPAddr"
+          ]
+        },
+        {
+          "name": "ipaddr.IPAddr.<>",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPAddr"
+          ]
+        },
+        {
+          "name": "ipaddr.IPAddr.>>",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPAddr"
+          ]
+        },
+        {
+          "name": "ipaddr.IPAddr.eql",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPAddr"
+          ]
+        },
+        {
+          "name": "ipaddr.IPAddr.hash",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPAddr"
+          ]
+        },
+        {
+          "name": "ipaddr.IPAddr.hton",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPAddr"
+          ]
+        },
+        {
+          "name": "ipaddr.IPAddr.include",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPAddr"
+          ]
+        },
+        {
+          "name": "ipaddr.IPAddr.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPAddr"
+          ]
+        },
+        {
+          "name": "ipaddr.IPAddr.ip6_arpa",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPAddr"
+          ]
+        },
+        {
+          "name": "ipaddr.IPAddr.ip6_int",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPAddr"
+          ]
+        },
+        {
+          "name": "ipaddr.IPAddr.ipv4",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPAddr"
+          ]
+        },
+        {
+          "name": "ipaddr.IPAddr.ipv4_compat",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPAddr"
+          ]
+        },
+        {
+          "name": "ipaddr.IPAddr.ipv4_mapped",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPAddr"
+          ]
+        },
+        {
+          "name": "ipaddr.IPAddr.ipv6",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPAddr"
+          ]
+        },
+        {
+          "name": "ipaddr.IPAddr.link_local",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPAddr"
+          ]
+        },
+        {
+          "name": "ipaddr.IPAddr.loopback",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPAddr"
+          ]
+        },
+        {
+          "name": "ipaddr.IPAddr.mask",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPAddr"
+          ]
+        },
+        {
+          "name": "ipaddr.IPAddr.native",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPAddr"
+          ]
+        },
+        {
+          "name": "ipaddr.IPAddr.netmask",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPAddr"
+          ]
+        },
+        {
+          "name": "ipaddr.IPAddr.prefix",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPAddr"
+          ]
+        },
+        {
+          "name": "ipaddr.IPAddr.private",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPAddr"
+          ]
+        },
+        {
+          "name": "ipaddr.IPAddr.reverse",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPAddr"
+          ]
+        },
+        {
+          "name": "ipaddr.IPAddr.succ",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPAddr"
+          ]
+        },
+        {
+          "name": "ipaddr.IPAddr.to_i",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPAddr"
+          ]
+        },
+        {
+          "name": "ipaddr.IPAddr.to_range",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPAddr"
+          ]
+        },
+        {
+          "name": "ipaddr.IPAddr.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPAddr"
+          ]
+        },
+        {
+          "name": "ipaddr.IPAddr.to_string",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPAddr"
+          ]
+        },
+        {
+          "name": "ipaddr.IPAddr.zone_id",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPAddr"
+          ]
+        },
+        {
+          "name": "ipaddr.IPAddr.|",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPAddr"
+          ]
+        },
+        {
+          "name": "ipaddr.IPAddr.~",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPAddr"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "ipaddr.IPSocket",
+      "methods": [
+        {
+          "name": "ipaddr.IPSocket.getaddress",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPSocket"
+          ]
+        },
+        {
+          "name": "ipaddr.IPSocket.getaddress_orig",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ipaddr.IPSocket"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "ipaddr.Socket",
+      "methods": [],
+      "fields": []
+    }
+  ]
+}

@@ -1,0 +1,236 @@
+{
+  "etc": [
+    {
+      "name": "etc.Etc",
+      "methods": [
+        {
+          "name": "etc.Etc.confstr",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "etc.Etc"
+          ]
+        },
+        {
+          "name": "etc.Etc.endgrent",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "etc.Etc"
+          ]
+        },
+        {
+          "name": "etc.Etc.endpwent",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "etc.Etc"
+          ]
+        },
+        {
+          "name": "etc.Etc.getgrent",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "etc.Etc"
+          ]
+        },
+        {
+          "name": "etc.Etc.getgrgid",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "etc.Etc"
+          ]
+        },
+        {
+          "name": "etc.Etc.getgrnam",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "etc.Etc"
+          ]
+        },
+        {
+          "name": "etc.Etc.getlogin",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "etc.Etc"
+          ]
+        },
+        {
+          "name": "etc.Etc.getpwent",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "etc.Etc"
+          ]
+        },
+        {
+          "name": "etc.Etc.getpwnam",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "etc.Etc"
+          ]
+        },
+        {
+          "name": "etc.Etc.getpwuid",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "etc.Etc"
+          ]
+        },
+        {
+          "name": "etc.Etc.group",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "etc.Etc"
+          ]
+        },
+        {
+          "name": "etc.Etc.nprocessors",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "etc.Etc"
+          ]
+        },
+        {
+          "name": "etc.Etc.passwd",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "etc.Etc"
+          ]
+        },
+        {
+          "name": "etc.Etc.setgrent",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "etc.Etc"
+          ]
+        },
+        {
+          "name": "etc.Etc.setpwent",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "etc.Etc"
+          ]
+        },
+        {
+          "name": "etc.Etc.sysconf",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "etc.Etc"
+          ]
+        },
+        {
+          "name": "etc.Etc.sysconfdir",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "etc.Etc"
+          ]
+        },
+        {
+          "name": "etc.Etc.systmpdir",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "etc.Etc"
+          ]
+        },
+        {
+          "name": "etc.Etc.uname",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "etc.Etc"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "etc.IO",
+      "methods": [
+        {
+          "name": "etc.IO.pathconf",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "etc.IO"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "etc.Object",
+      "methods": [
+        {
+          "name": "etc.Object.c_str",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "etc.Object"
+          ]
+        },
+        {
+          "name": "etc.Object.each_const",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "etc.Object"
+          ]
+        },
+        {
+          "name": "etc.Object.each_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "etc.Object"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "etc.Etc": [
+    {
+      "name": "etc.Etc.Group",
+      "methods": [
+        {
+          "name": "etc.Etc.Group.Etc::Group.each",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "etc.Etc.Group"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "etc.Etc.Passwd",
+      "methods": [
+        {
+          "name": "etc.Etc.Passwd.Etc::Passwd.each",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "etc.Etc.Passwd"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

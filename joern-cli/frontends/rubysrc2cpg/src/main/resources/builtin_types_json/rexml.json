@@ -1,0 +1,4503 @@
+{
+  "rexml.REXML.Light": [
+    {
+      "name": "rexml.REXML.Light.Node",
+      "methods": [
+        {
+          "name": "rexml.REXML.Light.Node.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Light.Node"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Light.Node.<<",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Light.Node"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Light.Node.~",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Light.Node"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Light.Node.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Light.Node"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Light.Node.children",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Light.Node"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Light.Node.each",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Light.Node"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Light.Node.has_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Light.Node"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Light.Node.local_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Light.Node"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Light.Node.name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Light.Node"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Light.Node.namespace",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Light.Node"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Light.Node.node_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Light.Node"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Light.Node.parent",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Light.Node"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Light.Node.prefix",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Light.Node"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Light.Node.root",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Light.Node"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Light.Node.size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Light.Node"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Light.Node.text",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Light.Node"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Light.Node.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Light.Node"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rexml": [
+    {
+      "name": "rexml.REXML",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rexml.REXML": [
+    {
+      "name": "rexml.REXML.AttlistDecl",
+      "methods": [
+        {
+          "name": "rexml.REXML.AttlistDecl.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.AttlistDecl"
+          ]
+        },
+        {
+          "name": "rexml.REXML.AttlistDecl.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.AttlistDecl"
+          ]
+        },
+        {
+          "name": "rexml.REXML.AttlistDecl.each",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.AttlistDecl"
+          ]
+        },
+        {
+          "name": "rexml.REXML.AttlistDecl.include",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.AttlistDecl"
+          ]
+        },
+        {
+          "name": "rexml.REXML.AttlistDecl.node_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.AttlistDecl"
+          ]
+        },
+        {
+          "name": "rexml.REXML.AttlistDecl.write",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.AttlistDecl"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Attribute",
+      "methods": [
+        {
+          "name": "rexml.REXML.Attribute.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Attribute"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Attribute.clone",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Attribute"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Attribute.doctype",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Attribute"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Attribute.element",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Attribute"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Attribute.hash",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Attribute"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Attribute.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Attribute"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Attribute.namespace",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Attribute"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Attribute.node_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Attribute"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Attribute.normalized",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Attribute"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Attribute.prefix",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Attribute"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Attribute.remove",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Attribute"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Attribute.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Attribute"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Attribute.to_string",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Attribute"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Attribute.value",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Attribute"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Attribute.write",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Attribute"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Attribute.xpath",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Attribute"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Attributes",
+      "methods": [
+        {
+          "name": "rexml.REXML.Attributes.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Attributes"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Attributes.<<",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Attributes"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Attributes.[name]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Attributes"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Attributes.add",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Attributes"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Attributes.delete",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Attributes"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Attributes.delete_all",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Attributes"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Attributes.each",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Attributes"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Attributes.each_attribute",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Attributes"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Attributes.get_attribute",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Attributes"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Attributes.get_attribute_ns",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Attributes"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Attributes.length",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Attributes"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Attributes.namespaces",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Attributes"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Attributes.prefixes",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Attributes"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Attributes.size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Attributes"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Attributes.to_a",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Attributes"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.CData",
+      "methods": [
+        {
+          "name": "rexml.REXML.CData.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.CData"
+          ]
+        },
+        {
+          "name": "rexml.REXML.CData.clone",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.CData"
+          ]
+        },
+        {
+          "name": "rexml.REXML.CData.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.CData"
+          ]
+        },
+        {
+          "name": "rexml.REXML.CData.value",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.CData"
+          ]
+        },
+        {
+          "name": "rexml.REXML.CData.write",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.CData"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Child",
+      "methods": [
+        {
+          "name": "rexml.REXML.Child.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Child"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Child.bytes",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Child"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Child.document",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Child"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Child.next_sibling",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Child"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Child.parent",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Child"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Child.previous_sibling",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Child"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Child.remove",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Child"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Child.replace_with",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Child"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Comment",
+      "methods": [
+        {
+          "name": "rexml.REXML.Comment.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Comment"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Comment.<>",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Comment"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Comment.clone",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Comment"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Comment.node_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Comment"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Comment.write",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Comment"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.DClonable",
+      "methods": [
+        {
+          "name": "rexml.REXML.DClonable.dclone",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.DClonable"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.DTD",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Declaration",
+      "methods": [
+        {
+          "name": "rexml.REXML.Declaration.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Declaration"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Declaration.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Declaration"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Declaration.write",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Declaration"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.DocType",
+      "methods": [
+        {
+          "name": "rexml.REXML.DocType.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.DocType"
+          ]
+        },
+        {
+          "name": "rexml.REXML.DocType.add",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.DocType"
+          ]
+        },
+        {
+          "name": "rexml.REXML.DocType.attribute_of",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.DocType"
+          ]
+        },
+        {
+          "name": "rexml.REXML.DocType.attributes_of",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.DocType"
+          ]
+        },
+        {
+          "name": "rexml.REXML.DocType.clone",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.DocType"
+          ]
+        },
+        {
+          "name": "rexml.REXML.DocType.context",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.DocType"
+          ]
+        },
+        {
+          "name": "rexml.REXML.DocType.entity",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.DocType"
+          ]
+        },
+        {
+          "name": "rexml.REXML.DocType.node_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.DocType"
+          ]
+        },
+        {
+          "name": "rexml.REXML.DocType.notation",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.DocType"
+          ]
+        },
+        {
+          "name": "rexml.REXML.DocType.notations",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.DocType"
+          ]
+        },
+        {
+          "name": "rexml.REXML.DocType.public",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.DocType"
+          ]
+        },
+        {
+          "name": "rexml.REXML.DocType.system",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.DocType"
+          ]
+        },
+        {
+          "name": "rexml.REXML.DocType.write",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.DocType"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Document",
+      "methods": [
+        {
+          "name": "rexml.REXML.Document.entity_expansion_limit",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Document"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Document.entity_expansion_text_limit",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Document"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Document.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Document"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Document.parse_stream",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Document"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Document.<<",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Document"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Document.add",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Document"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Document.add_element",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Document"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Document.clone",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Document"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Document.doctype",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Document"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Document.document",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Document"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Document.encoding",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Document"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Document.expanded_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Document"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Document.name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Document"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Document.node_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Document"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Document.record_entity_expansion",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Document"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Document.root",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Document"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Document.stand_alone",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Document"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Document.version",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Document"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Document.write",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Document"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Document.xml_decl",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Document"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Element",
+      "methods": [
+        {
+          "name": "rexml.REXML.Element.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.[index]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.[attr_name]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.[attr_sym]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.add_attribute",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.add_attributes",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.add_element",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.add_namespace",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.add_text",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.attribute",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.cdatas",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.clone",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.comments",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.delete_attribute",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.delete_element",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.delete_namespace",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.document",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.each_element",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.each_element_with_attribute",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.each_element_with_text",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.get_elements",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.get_text",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.has_attributes",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.has_elements",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.has_text",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.ignore_whitespace_nodes",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.instructions",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.namespace",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.namespaces",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.next_element",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.node_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.prefixes",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.previous_element",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.raw",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.root",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.root_node",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.text",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.texts",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.whitespace",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.write",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Element.xpath",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Element"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.ElementDecl",
+      "methods": [
+        {
+          "name": "rexml.REXML.ElementDecl.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.ElementDecl"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Elements",
+      "methods": [
+        {
+          "name": "rexml.REXML.Elements.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Elements"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Elements.<<",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Elements"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Elements.elements[index]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Elements"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Elements.elements[xpath]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Elements"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Elements.elements[n,",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Elements"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Elements.elements[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Elements"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Elements.add",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Elements"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Elements.collect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Elements"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Elements.delete",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Elements"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Elements.delete_all",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Elements"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Elements.each",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Elements"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Elements.empty",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Elements"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Elements.index",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Elements"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Elements.inject",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Elements"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Elements.parent",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Elements"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Elements.size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Elements"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Elements.to_a",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Elements"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Encoding",
+      "methods": [
+        {
+          "name": "rexml.REXML.Encoding.decode",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Encoding"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Encoding.encode",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Encoding"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Encoding.encoding",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Encoding"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Entity",
+      "methods": [
+        {
+          "name": "rexml.REXML.Entity.matches",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Entity"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Entity.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Entity"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Entity.normalized",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Entity"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Entity.parent",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Entity"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Entity.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Entity"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Entity.unnormalized",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Entity"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Entity.value",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Entity"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Entity.write",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Entity"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.EntityConst",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.ExternalEntity",
+      "methods": [
+        {
+          "name": "rexml.REXML.ExternalEntity.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.ExternalEntity"
+          ]
+        },
+        {
+          "name": "rexml.REXML.ExternalEntity.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.ExternalEntity"
+          ]
+        },
+        {
+          "name": "rexml.REXML.ExternalEntity.write",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.ExternalEntity"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Formatters",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Functions",
+      "methods": [
+        {
+          "name": "rexml.REXML.Functions.boolean",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.ceiling",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.compare_language",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.concat",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.contains",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.context",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.count",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.false",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.floor",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.get_namespace",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.id",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.lang",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.last",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.local_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.namespace_context",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.namespace_uri",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.normalize_space",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.not",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.number",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.position",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.processing_instruction",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.round",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.send",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.singleton_method_added",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.starts_with",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.string",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.string_length",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.string_value",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.substring",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.substring_after",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.substring_before",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.sum",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.text",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.translate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.true",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Functions.variables",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Functions"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.IOSource",
+      "methods": [
+        {
+          "name": "rexml.REXML.IOSource.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.IOSource"
+          ]
+        },
+        {
+          "name": "rexml.REXML.IOSource.consume",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.IOSource"
+          ]
+        },
+        {
+          "name": "rexml.REXML.IOSource.current_line",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.IOSource"
+          ]
+        },
+        {
+          "name": "rexml.REXML.IOSource.empty",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.IOSource"
+          ]
+        },
+        {
+          "name": "rexml.REXML.IOSource.match",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.IOSource"
+          ]
+        },
+        {
+          "name": "rexml.REXML.IOSource.position",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.IOSource"
+          ]
+        },
+        {
+          "name": "rexml.REXML.IOSource.read",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.IOSource"
+          ]
+        },
+        {
+          "name": "rexml.REXML.IOSource.scan",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.IOSource"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Instruction",
+      "methods": [
+        {
+          "name": "rexml.REXML.Instruction.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Instruction"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Instruction.clone",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Instruction"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Instruction.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Instruction"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Instruction.node_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Instruction"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Instruction.write",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Instruction"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Light",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Namespace",
+      "methods": [
+        {
+          "name": "rexml.REXML.Namespace.fully_expanded_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Namespace"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Namespace.has_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Namespace"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Namespace.name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Namespace"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Node",
+      "methods": [
+        {
+          "name": "rexml.REXML.Node.each_recursive",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Node"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Node.find_first_recursive",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Node"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Node.indent",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Node"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Node.index_in_parent",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Node"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Node.next_sibling_node",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Node"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Node.parent",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Node"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Node.previous_sibling_node",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Node"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Node.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Node"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.NotationDecl",
+      "methods": [
+        {
+          "name": "rexml.REXML.NotationDecl.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.NotationDecl"
+          ]
+        },
+        {
+          "name": "rexml.REXML.NotationDecl.name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.NotationDecl"
+          ]
+        },
+        {
+          "name": "rexml.REXML.NotationDecl.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.NotationDecl"
+          ]
+        },
+        {
+          "name": "rexml.REXML.NotationDecl.write",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.NotationDecl"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Output",
+      "methods": [
+        {
+          "name": "rexml.REXML.Output.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Output"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Output.<<",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Output"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Output.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Output"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Parent",
+      "methods": [
+        {
+          "name": "rexml.REXML.Parent.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parent.<<",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parent.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parent.add",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parent.children",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parent.deep_clone",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parent.delete",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parent.delete_at",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parent.delete_if",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parent.each",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parent.each_child",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parent.each_index",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parent.index",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parent.insert_after",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parent.insert_before",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parent.length",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parent.parent",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parent.push",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parent.replace_child",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parent.size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parent.to_a",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parent.unshift",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parent"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.ParseException",
+      "methods": [
+        {
+          "name": "rexml.REXML.ParseException.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.ParseException"
+          ]
+        },
+        {
+          "name": "rexml.REXML.ParseException.context",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.ParseException"
+          ]
+        },
+        {
+          "name": "rexml.REXML.ParseException.line",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.ParseException"
+          ]
+        },
+        {
+          "name": "rexml.REXML.ParseException.position",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.ParseException"
+          ]
+        },
+        {
+          "name": "rexml.REXML.ParseException.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.ParseException"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Parsers",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.QuickPath",
+      "methods": [
+        {
+          "name": "rexml.REXML.QuickPath.attribute",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.QuickPath"
+          ]
+        },
+        {
+          "name": "rexml.REXML.QuickPath.axe",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.QuickPath"
+          ]
+        },
+        {
+          "name": "rexml.REXML.QuickPath.each",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.QuickPath"
+          ]
+        },
+        {
+          "name": "rexml.REXML.QuickPath.filter",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.QuickPath"
+          ]
+        },
+        {
+          "name": "rexml.REXML.QuickPath.first",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.QuickPath"
+          ]
+        },
+        {
+          "name": "rexml.REXML.QuickPath.function",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.QuickPath"
+          ]
+        },
+        {
+          "name": "rexml.REXML.QuickPath.match",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.QuickPath"
+          ]
+        },
+        {
+          "name": "rexml.REXML.QuickPath.method_missing",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.QuickPath"
+          ]
+        },
+        {
+          "name": "rexml.REXML.QuickPath.name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.QuickPath"
+          ]
+        },
+        {
+          "name": "rexml.REXML.QuickPath.parse_args",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.QuickPath"
+          ]
+        },
+        {
+          "name": "rexml.REXML.QuickPath.predicate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.QuickPath"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.ReferenceWriter",
+      "methods": [
+        {
+          "name": "rexml.REXML.ReferenceWriter.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.ReferenceWriter"
+          ]
+        },
+        {
+          "name": "rexml.REXML.ReferenceWriter.write",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.ReferenceWriter"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.SAX2Listener",
+      "methods": [
+        {
+          "name": "rexml.REXML.SAX2Listener.attlistdecl",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.SAX2Listener"
+          ]
+        },
+        {
+          "name": "rexml.REXML.SAX2Listener.cdata",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.SAX2Listener"
+          ]
+        },
+        {
+          "name": "rexml.REXML.SAX2Listener.characters",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.SAX2Listener"
+          ]
+        },
+        {
+          "name": "rexml.REXML.SAX2Listener.comment",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.SAX2Listener"
+          ]
+        },
+        {
+          "name": "rexml.REXML.SAX2Listener.doctype",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.SAX2Listener"
+          ]
+        },
+        {
+          "name": "rexml.REXML.SAX2Listener.elementdecl",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.SAX2Listener"
+          ]
+        },
+        {
+          "name": "rexml.REXML.SAX2Listener.end_document",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.SAX2Listener"
+          ]
+        },
+        {
+          "name": "rexml.REXML.SAX2Listener.end_element",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.SAX2Listener"
+          ]
+        },
+        {
+          "name": "rexml.REXML.SAX2Listener.end_prefix_mapping",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.SAX2Listener"
+          ]
+        },
+        {
+          "name": "rexml.REXML.SAX2Listener.entitydecl",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.SAX2Listener"
+          ]
+        },
+        {
+          "name": "rexml.REXML.SAX2Listener.notationdecl",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.SAX2Listener"
+          ]
+        },
+        {
+          "name": "rexml.REXML.SAX2Listener.processing_instruction",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.SAX2Listener"
+          ]
+        },
+        {
+          "name": "rexml.REXML.SAX2Listener.progress",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.SAX2Listener"
+          ]
+        },
+        {
+          "name": "rexml.REXML.SAX2Listener.start_document",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.SAX2Listener"
+          ]
+        },
+        {
+          "name": "rexml.REXML.SAX2Listener.start_element",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.SAX2Listener"
+          ]
+        },
+        {
+          "name": "rexml.REXML.SAX2Listener.start_prefix_mapping",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.SAX2Listener"
+          ]
+        },
+        {
+          "name": "rexml.REXML.SAX2Listener.xmldecl",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.SAX2Listener"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Security",
+      "methods": [
+        {
+          "name": "rexml.REXML.Security.entity_expansion_limit",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Security"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Security.entity_expansion_text_limit",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Security"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Source",
+      "methods": [
+        {
+          "name": "rexml.REXML.Source.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Source"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Source.consume",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Source"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Source.current_line",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Source"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Source.empty",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Source"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Source.encoding",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Source"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Source.match",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Source"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Source.match_to",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Source"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Source.match_to_consume",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Source"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Source.position",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Source"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Source.read",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Source"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Source.scan",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Source"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.SourceFactory",
+      "methods": [
+        {
+          "name": "rexml.REXML.SourceFactory.create_from",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.SourceFactory"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.StreamListener",
+      "methods": [
+        {
+          "name": "rexml.REXML.StreamListener.attlistdecl",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.StreamListener"
+          ]
+        },
+        {
+          "name": "rexml.REXML.StreamListener.cdata",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.StreamListener"
+          ]
+        },
+        {
+          "name": "rexml.REXML.StreamListener.comment",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.StreamListener"
+          ]
+        },
+        {
+          "name": "rexml.REXML.StreamListener.doctype",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.StreamListener"
+          ]
+        },
+        {
+          "name": "rexml.REXML.StreamListener.doctype_end",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.StreamListener"
+          ]
+        },
+        {
+          "name": "rexml.REXML.StreamListener.elementdecl",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.StreamListener"
+          ]
+        },
+        {
+          "name": "rexml.REXML.StreamListener.entity",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.StreamListener"
+          ]
+        },
+        {
+          "name": "rexml.REXML.StreamListener.entitydecl",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.StreamListener"
+          ]
+        },
+        {
+          "name": "rexml.REXML.StreamListener.instruction",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.StreamListener"
+          ]
+        },
+        {
+          "name": "rexml.REXML.StreamListener.notationdecl",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.StreamListener"
+          ]
+        },
+        {
+          "name": "rexml.REXML.StreamListener.tag_end",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.StreamListener"
+          ]
+        },
+        {
+          "name": "rexml.REXML.StreamListener.tag_start",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.StreamListener"
+          ]
+        },
+        {
+          "name": "rexml.REXML.StreamListener.text",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.StreamListener"
+          ]
+        },
+        {
+          "name": "rexml.REXML.StreamListener.xmldecl",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.StreamListener"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Text",
+      "methods": [
+        {
+          "name": "rexml.REXML.Text.check",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Text"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Text.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Text"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Text.<<",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Text"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Text.<>",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Text"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Text.clone",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Text"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Text.doctype",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Text"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Text.empty",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Text"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Text.indent_text",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Text"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Text.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Text"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Text.node_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Text"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Text.parent",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Text"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Text.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Text"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Text.value",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Text"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Text.wrap",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Text"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Text.write",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Text"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Text.write_with_substitution",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Text"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Text.xpath",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Text"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.UndefinedNamespaceException",
+      "methods": [
+        {
+          "name": "rexml.REXML.UndefinedNamespaceException.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.UndefinedNamespaceException"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Validation",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.XMLDecl",
+      "methods": [
+        {
+          "name": "rexml.REXML.XMLDecl.default",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.XMLDecl"
+          ]
+        },
+        {
+          "name": "rexml.REXML.XMLDecl.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.XMLDecl"
+          ]
+        },
+        {
+          "name": "rexml.REXML.XMLDecl.clone",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.XMLDecl"
+          ]
+        },
+        {
+          "name": "rexml.REXML.XMLDecl.dowrite",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.XMLDecl"
+          ]
+        },
+        {
+          "name": "rexml.REXML.XMLDecl.encoding",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.XMLDecl"
+          ]
+        },
+        {
+          "name": "rexml.REXML.XMLDecl.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.XMLDecl"
+          ]
+        },
+        {
+          "name": "rexml.REXML.XMLDecl.node_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.XMLDecl"
+          ]
+        },
+        {
+          "name": "rexml.REXML.XMLDecl.nowrite",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.XMLDecl"
+          ]
+        },
+        {
+          "name": "rexml.REXML.XMLDecl.old_enc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.XMLDecl"
+          ]
+        },
+        {
+          "name": "rexml.REXML.XMLDecl.write",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.XMLDecl"
+          ]
+        },
+        {
+          "name": "rexml.REXML.XMLDecl.xmldecl",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.XMLDecl"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.XMLTokens",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.XPath",
+      "methods": [
+        {
+          "name": "rexml.REXML.XPath.each",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.XPath"
+          ]
+        },
+        {
+          "name": "rexml.REXML.XPath.first",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.XPath"
+          ]
+        },
+        {
+          "name": "rexml.REXML.XPath.match",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.XPath"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.XPathNode",
+      "methods": [
+        {
+          "name": "rexml.REXML.XPathNode.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.XPathNode"
+          ]
+        },
+        {
+          "name": "rexml.REXML.XPathNode.position",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.XPathNode"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.XPathParser",
+      "methods": [
+        {
+          "name": "rexml.REXML.XPathParser.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.XPathParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.XPathParser.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.XPathParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.XPathParser.first",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.XPathParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.XPathParser.get_first",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.XPathParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.XPathParser.match",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.XPathParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.XPathParser.namespaces",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.XPathParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.XPathParser.parse",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.XPathParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.XPathParser.predicate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.XPathParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.XPathParser.variables",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.XPathParser"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rexml.REXML.Formatters": [
+    {
+      "name": "rexml.REXML.Formatters.Default",
+      "methods": [
+        {
+          "name": "rexml.REXML.Formatters.Default.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Formatters.Default"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Formatters.Default.write",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Formatters.Default"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Formatters.Pretty",
+      "methods": [
+        {
+          "name": "rexml.REXML.Formatters.Pretty.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Formatters.Pretty"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Formatters.Transitive",
+      "methods": [
+        {
+          "name": "rexml.REXML.Formatters.Transitive.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Formatters.Transitive"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rexml.REXML.Validation": [
+    {
+      "name": "rexml.REXML.Validation.Choice",
+      "methods": [
+        {
+          "name": "rexml.REXML.Validation.Choice.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.Choice"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.Choice.<<",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.Choice"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.Choice.expected",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.Choice"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.Choice.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.Choice"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.Choice.matches",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.Choice"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.Choice.next",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.Choice"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.Choice.reset",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.Choice"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Validation.Event",
+      "methods": [
+        {
+          "name": "rexml.REXML.Validation.Event.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.Event"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.Event.done",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.Event"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.Event.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.Event"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.Event.matches",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.Event"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.Event.single",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.Event"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.Event.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.Event"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Validation.Interleave",
+      "methods": [
+        {
+          "name": "rexml.REXML.Validation.Interleave.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.Interleave"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.Interleave.expected",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.Interleave"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.Interleave.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.Interleave"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.Interleave.matches",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.Interleave"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.Interleave.next",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.Interleave"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.Interleave.next_current",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.Interleave"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.Interleave.reset",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.Interleave"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Validation.OneOrMore",
+      "methods": [
+        {
+          "name": "rexml.REXML.Validation.OneOrMore.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.OneOrMore"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.OneOrMore.expected",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.OneOrMore"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.OneOrMore.matches",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.OneOrMore"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.OneOrMore.next",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.OneOrMore"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.OneOrMore.reset",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.OneOrMore"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Validation.Optional",
+      "methods": [
+        {
+          "name": "rexml.REXML.Validation.Optional.expected",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.Optional"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.Optional.matches",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.Optional"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.Optional.next",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.Optional"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Validation.Ref",
+      "methods": [
+        {
+          "name": "rexml.REXML.Validation.Ref.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.Ref"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.Ref.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.Ref"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.Ref.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.Ref"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Validation.RelaxNG",
+      "methods": [
+        {
+          "name": "rexml.REXML.Validation.RelaxNG.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.RelaxNG"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.RelaxNG.receive",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.RelaxNG"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Validation.Sequence",
+      "methods": [
+        {
+          "name": "rexml.REXML.Validation.Sequence.matches",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.Sequence"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Validation.State",
+      "methods": [
+        {
+          "name": "rexml.REXML.Validation.State.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.State"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.State.<<",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.State"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.State.expected",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.State"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.State.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.State"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.State.next",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.State"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.State.previous",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.State"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.State.reset",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.State"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.State.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.State"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Validation.ValidationException",
+      "methods": [
+        {
+          "name": "rexml.REXML.Validation.ValidationException.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.ValidationException"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Validation.Validator",
+      "methods": [
+        {
+          "name": "rexml.REXML.Validation.Validator.dump",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.Validator"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.Validator.reset",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.Validator"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.Validator.validate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.Validator"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Validation.ZeroOrMore",
+      "methods": [
+        {
+          "name": "rexml.REXML.Validation.ZeroOrMore.expected",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.ZeroOrMore"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Validation.ZeroOrMore.next",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Validation.ZeroOrMore"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rexml.REXML.DTD": [
+    {
+      "name": "rexml.REXML.DTD.AttlistDecl",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.DTD.ElementDecl",
+      "methods": [
+        {
+          "name": "rexml.REXML.DTD.ElementDecl.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.DTD.ElementDecl"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.DTD.EntityDecl",
+      "methods": [
+        {
+          "name": "rexml.REXML.DTD.EntityDecl.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.DTD.EntityDecl"
+          ]
+        },
+        {
+          "name": "rexml.REXML.DTD.EntityDecl.parse_source",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.DTD.EntityDecl"
+          ]
+        },
+        {
+          "name": "rexml.REXML.DTD.EntityDecl.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.DTD.EntityDecl"
+          ]
+        },
+        {
+          "name": "rexml.REXML.DTD.EntityDecl.write",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.DTD.EntityDecl"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.DTD.NotationDecl",
+      "methods": [
+        {
+          "name": "rexml.REXML.DTD.NotationDecl.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.DTD.NotationDecl"
+          ]
+        },
+        {
+          "name": "rexml.REXML.DTD.NotationDecl.parse_source",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.DTD.NotationDecl"
+          ]
+        },
+        {
+          "name": "rexml.REXML.DTD.NotationDecl.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.DTD.NotationDecl"
+          ]
+        },
+        {
+          "name": "rexml.REXML.DTD.NotationDecl.write",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.DTD.NotationDecl"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.DTD.Parser",
+      "methods": [
+        {
+          "name": "rexml.REXML.DTD.Parser.parse",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.DTD.Parser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.DTD.Parser.parse_helper",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.DTD.Parser"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rexml.REXML.Parsers": [
+    {
+      "name": "rexml.REXML.Parsers.BaseParser",
+      "methods": [
+        {
+          "name": "rexml.REXML.Parsers.BaseParser.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.BaseParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.BaseParser.add_listener",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.BaseParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.BaseParser.empty",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.BaseParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.BaseParser.entity",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.BaseParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.BaseParser.has_next",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.BaseParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.BaseParser.normalize",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.BaseParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.BaseParser.peek",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.BaseParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.BaseParser.position",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.BaseParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.BaseParser.pull",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.BaseParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.BaseParser.stream",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.BaseParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.BaseParser.unnormalize",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.BaseParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.BaseParser.unshift",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.BaseParser"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Parsers.LightParser",
+      "methods": [
+        {
+          "name": "rexml.REXML.Parsers.LightParser.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.LightParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.LightParser.add_listener",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.LightParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.LightParser.parse",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.LightParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.LightParser.rewind",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.LightParser"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Parsers.PullEvent",
+      "methods": [
+        {
+          "name": "rexml.REXML.Parsers.PullEvent.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.PullEvent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.PullEvent.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.PullEvent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.PullEvent.attlistdecl",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.PullEvent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.PullEvent.cdata",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.PullEvent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.PullEvent.comment",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.PullEvent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.PullEvent.doctype",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.PullEvent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.PullEvent.elementdecl",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.PullEvent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.PullEvent.end_element",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.PullEvent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.PullEvent.entity",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.PullEvent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.PullEvent.entitydecl",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.PullEvent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.PullEvent.error",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.PullEvent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.PullEvent.event_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.PullEvent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.PullEvent.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.PullEvent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.PullEvent.instruction",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.PullEvent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.PullEvent.notationdecl",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.PullEvent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.PullEvent.start_element",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.PullEvent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.PullEvent.text",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.PullEvent"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.PullEvent.xmldecl",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.PullEvent"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Parsers.PullParser",
+      "methods": [
+        {
+          "name": "rexml.REXML.Parsers.PullParser.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.PullParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.PullParser.add_listener",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.PullParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.PullParser.each",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.PullParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.PullParser.peek",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.PullParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.PullParser.pull",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.PullParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.PullParser.unshift",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.PullParser"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Parsers.SAX2Parser",
+      "methods": [
+        {
+          "name": "rexml.REXML.Parsers.SAX2Parser.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.SAX2Parser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.SAX2Parser.add_listener",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.SAX2Parser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.SAX2Parser.deafen",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.SAX2Parser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.SAX2Parser.listen",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.SAX2Parser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.SAX2Parser.parse",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.SAX2Parser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.SAX2Parser.source",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.SAX2Parser"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Parsers.StreamParser",
+      "methods": [
+        {
+          "name": "rexml.REXML.Parsers.StreamParser.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.StreamParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.StreamParser.add_listener",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.StreamParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.StreamParser.parse",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.StreamParser"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Parsers.TreeParser",
+      "methods": [
+        {
+          "name": "rexml.REXML.Parsers.TreeParser.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.TreeParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.TreeParser.add_listener",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.TreeParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.TreeParser.parse",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.TreeParser"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Parsers.UltraLightParser",
+      "methods": [
+        {
+          "name": "rexml.REXML.Parsers.UltraLightParser.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.UltraLightParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.UltraLightParser.add_listener",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.UltraLightParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.UltraLightParser.parse",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.UltraLightParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.UltraLightParser.rewind",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.UltraLightParser"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rexml.REXML.Parsers.XPathParser",
+      "methods": [
+        {
+          "name": "rexml.REXML.Parsers.XPathParser.abbreviate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.XPathParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.XPathParser.expand",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.XPathParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.XPathParser.namespaces",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.XPathParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.XPathParser.parse",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.XPathParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.XPathParser.preciate_to_string",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.XPathParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.XPathParser.predicate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.XPathParser"
+          ]
+        },
+        {
+          "name": "rexml.REXML.Parsers.XPathParser.predicate_to_path",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rexml.REXML.Parsers.XPathParser"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

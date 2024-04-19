@@ -1,0 +1,50 @@
+{
+  "singleton": [
+    {
+      "name": "singleton.Singleton",
+      "methods": [
+        {
+          "name": "singleton.Singleton._load",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "singleton.Singleton"
+          ]
+        },
+        {
+          "name": "singleton.Singleton.instance",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "singleton.Singleton"
+          ]
+        },
+        {
+          "name": "singleton.Singleton._dump",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "singleton.Singleton"
+          ]
+        },
+        {
+          "name": "singleton.Singleton.clone",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "singleton.Singleton"
+          ]
+        },
+        {
+          "name": "singleton.Singleton.dup",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "singleton.Singleton"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

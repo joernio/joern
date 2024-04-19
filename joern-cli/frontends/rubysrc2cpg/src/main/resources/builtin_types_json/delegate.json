@@ -1,0 +1,158 @@
+{
+  "delegate": [
+    {
+      "name": "delegate.Delegator",
+      "methods": [
+        {
+          "name": "delegate.Delegator.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "delegate.Delegator"
+          ]
+        },
+        {
+          "name": "delegate.Delegator.__getobj__",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "delegate.Delegator"
+          ]
+        },
+        {
+          "name": "delegate.Delegator.__raise__",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "delegate.Delegator"
+          ]
+        },
+        {
+          "name": "delegate.Delegator.__setobj__",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "delegate.Delegator"
+          ]
+        },
+        {
+          "name": "delegate.Delegator.eql",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "delegate.Delegator"
+          ]
+        },
+        {
+          "name": "delegate.Delegator.freeze",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "delegate.Delegator"
+          ]
+        },
+        {
+          "name": "delegate.Delegator.marshal_dump",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "delegate.Delegator"
+          ]
+        },
+        {
+          "name": "delegate.Delegator.marshal_load",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "delegate.Delegator"
+          ]
+        },
+        {
+          "name": "delegate.Delegator.method_missing",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "delegate.Delegator"
+          ]
+        },
+        {
+          "name": "delegate.Delegator.methods",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "delegate.Delegator"
+          ]
+        },
+        {
+          "name": "delegate.Delegator.protected_methods",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "delegate.Delegator"
+          ]
+        },
+        {
+          "name": "delegate.Delegator.public_methods",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "delegate.Delegator"
+          ]
+        },
+        {
+          "name": "delegate.Delegator.raise",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "delegate.Delegator"
+          ]
+        },
+        {
+          "name": "delegate.Delegator.respond_to_missing",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "delegate.Delegator"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "delegate.Object",
+      "methods": [
+        {
+          "name": "delegate.Object.DelegateClass",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "delegate.Object"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "delegate.SimpleDelegator",
+      "methods": [
+        {
+          "name": "delegate.SimpleDelegator.__getobj__",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "delegate.SimpleDelegator"
+          ]
+        },
+        {
+          "name": "delegate.SimpleDelegator.__setobj__",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "delegate.SimpleDelegator"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

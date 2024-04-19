@@ -1,0 +1,2574 @@
+{
+  "reline.Reline.LineEditor": [
+    {
+      "name": "reline.Reline.LineEditor.CompletionState",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "reline.Reline.LineEditor.Dialog",
+      "methods": [
+        {
+          "name": "reline.Reline.LineEditor.Dialog.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor.Dialog"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.Dialog.call",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor.Dialog"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.Dialog.contents",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor.Dialog"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.Dialog.set_cursor_pos",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor.Dialog"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.Dialog.width",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor.Dialog"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "reline.Reline.LineEditor.DialogProcScope",
+      "methods": [
+        {
+          "name": "reline.Reline.LineEditor.DialogProcScope.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor.DialogProcScope"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.DialogProcScope.call",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor.DialogProcScope"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.DialogProcScope.call_completion_proc_with_checking_args",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor.DialogProcScope"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.DialogProcScope.completion_journey_data",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor.DialogProcScope"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.DialogProcScope.config",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor.DialogProcScope"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.DialogProcScope.context",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor.DialogProcScope"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.DialogProcScope.cursor_pos",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor.DialogProcScope"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.DialogProcScope.dialog",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor.DialogProcScope"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.DialogProcScope.just_cursor_moving",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor.DialogProcScope"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.DialogProcScope.key",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor.DialogProcScope"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.DialogProcScope.preferred_dialog_height",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor.DialogProcScope"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.DialogProcScope.retrieve_completion_block",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor.DialogProcScope"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.DialogProcScope.screen_height",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor.DialogProcScope"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.DialogProcScope.screen_width",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor.DialogProcScope"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.DialogProcScope.set_cursor_pos",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor.DialogProcScope"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.DialogProcScope.set_dialog",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor.DialogProcScope"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.DialogProcScope.set_key",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor.DialogProcScope"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "reline.Reline.Config": [
+    {
+      "name": "reline.Reline.Config.InvalidInputrc",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "reline.Reline.KillRing": [
+    {
+      "name": "reline.Reline.KillRing.RingBuffer",
+      "methods": [
+        {
+          "name": "reline.Reline.KillRing.RingBuffer.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.KillRing.RingBuffer"
+          ]
+        },
+        {
+          "name": "reline.Reline.KillRing.RingBuffer.<<",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.KillRing.RingBuffer"
+          ]
+        },
+        {
+          "name": "reline.Reline.KillRing.RingBuffer.empty",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.KillRing.RingBuffer"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "reline.Reline.KillRing.State",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "reline.Reline": [
+    {
+      "name": "reline.Reline.ANSI",
+      "methods": [
+        {
+          "name": "reline.Reline.ANSI.clear_screen",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.ANSI"
+          ]
+        },
+        {
+          "name": "reline.Reline.ANSI.cursor_pos",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.ANSI"
+          ]
+        },
+        {
+          "name": "reline.Reline.ANSI.deprep",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.ANSI"
+          ]
+        },
+        {
+          "name": "reline.Reline.ANSI.empty_buffer",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.ANSI"
+          ]
+        },
+        {
+          "name": "reline.Reline.ANSI.encoding",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.ANSI"
+          ]
+        },
+        {
+          "name": "reline.Reline.ANSI.erase_after_cursor",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.ANSI"
+          ]
+        },
+        {
+          "name": "reline.Reline.ANSI.get_screen_size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.ANSI"
+          ]
+        },
+        {
+          "name": "reline.Reline.ANSI.getc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.ANSI"
+          ]
+        },
+        {
+          "name": "reline.Reline.ANSI.getc_with_bracketed_paste",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.ANSI"
+          ]
+        },
+        {
+          "name": "reline.Reline.ANSI.hide_cursor",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.ANSI"
+          ]
+        },
+        {
+          "name": "reline.Reline.ANSI.in_pasting",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.ANSI"
+          ]
+        },
+        {
+          "name": "reline.Reline.ANSI.inner_getc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.ANSI"
+          ]
+        },
+        {
+          "name": "reline.Reline.ANSI.input",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.ANSI"
+          ]
+        },
+        {
+          "name": "reline.Reline.ANSI.move_cursor_column",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.ANSI"
+          ]
+        },
+        {
+          "name": "reline.Reline.ANSI.move_cursor_down",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.ANSI"
+          ]
+        },
+        {
+          "name": "reline.Reline.ANSI.move_cursor_up",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.ANSI"
+          ]
+        },
+        {
+          "name": "reline.Reline.ANSI.output",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.ANSI"
+          ]
+        },
+        {
+          "name": "reline.Reline.ANSI.prep",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.ANSI"
+          ]
+        },
+        {
+          "name": "reline.Reline.ANSI.retrieve_keybuffer",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.ANSI"
+          ]
+        },
+        {
+          "name": "reline.Reline.ANSI.scroll_down",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.ANSI"
+          ]
+        },
+        {
+          "name": "reline.Reline.ANSI.set_default_key_bindings",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.ANSI"
+          ]
+        },
+        {
+          "name": "reline.Reline.ANSI.set_default_key_bindings_ansi_cursor",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.ANSI"
+          ]
+        },
+        {
+          "name": "reline.Reline.ANSI.set_default_key_bindings_comprehensive_list",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.ANSI"
+          ]
+        },
+        {
+          "name": "reline.Reline.ANSI.set_default_key_bindings_terminfo",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.ANSI"
+          ]
+        },
+        {
+          "name": "reline.Reline.ANSI.set_screen_size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.ANSI"
+          ]
+        },
+        {
+          "name": "reline.Reline.ANSI.set_winch_handler",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.ANSI"
+          ]
+        },
+        {
+          "name": "reline.Reline.ANSI.show_cursor",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.ANSI"
+          ]
+        },
+        {
+          "name": "reline.Reline.ANSI.ungetc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.ANSI"
+          ]
+        },
+        {
+          "name": "reline.Reline.ANSI.win",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.ANSI"
+          ]
+        },
+        {
+          "name": "reline.Reline.ANSI.with_raw_input",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.ANSI"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "reline.Reline.Config",
+      "methods": [
+        {
+          "name": "reline.Reline.Config.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Config"
+          ]
+        },
+        {
+          "name": "reline.Reline.Config.add_default_key_binding",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Config"
+          ]
+        },
+        {
+          "name": "reline.Reline.Config.add_default_key_binding_by_keymap",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Config"
+          ]
+        },
+        {
+          "name": "reline.Reline.Config.add_oneshot_key_binding",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Config"
+          ]
+        },
+        {
+          "name": "reline.Reline.Config.bind_key",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Config"
+          ]
+        },
+        {
+          "name": "reline.Reline.Config.bind_variable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Config"
+          ]
+        },
+        {
+          "name": "reline.Reline.Config.editing_mode",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Config"
+          ]
+        },
+        {
+          "name": "reline.Reline.Config.editing_mode_is",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Config"
+          ]
+        },
+        {
+          "name": "reline.Reline.Config.handle_directive",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Config"
+          ]
+        },
+        {
+          "name": "reline.Reline.Config.inputrc_path",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Config"
+          ]
+        },
+        {
+          "name": "reline.Reline.Config.key_bindings",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Config"
+          ]
+        },
+        {
+          "name": "reline.Reline.Config.key_notation_to_code",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Config"
+          ]
+        },
+        {
+          "name": "reline.Reline.Config.keymap",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Config"
+          ]
+        },
+        {
+          "name": "reline.Reline.Config.parse_keyseq",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Config"
+          ]
+        },
+        {
+          "name": "reline.Reline.Config.read",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Config"
+          ]
+        },
+        {
+          "name": "reline.Reline.Config.read_lines",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Config"
+          ]
+        },
+        {
+          "name": "reline.Reline.Config.reset",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Config"
+          ]
+        },
+        {
+          "name": "reline.Reline.Config.reset_default_key_bindings",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Config"
+          ]
+        },
+        {
+          "name": "reline.Reline.Config.reset_oneshot_key_bindings",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Config"
+          ]
+        },
+        {
+          "name": "reline.Reline.Config.retrieve_string",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Config"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "reline.Reline.ConfigEncodingConversionError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "reline.Reline.Core",
+      "methods": [
+        {
+          "name": "reline.Reline.Core.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Core"
+          ]
+        },
+        {
+          "name": "reline.Reline.Core.add_dialog_proc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Core"
+          ]
+        },
+        {
+          "name": "reline.Reline.Core.ambiguous_width",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Core"
+          ]
+        },
+        {
+          "name": "reline.Reline.Core.auto_indent_proc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Core"
+          ]
+        },
+        {
+          "name": "reline.Reline.Core.basic_quote_characters",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Core"
+          ]
+        },
+        {
+          "name": "reline.Reline.Core.basic_word_break_characters",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Core"
+          ]
+        },
+        {
+          "name": "reline.Reline.Core.completer_quote_characters",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Core"
+          ]
+        },
+        {
+          "name": "reline.Reline.Core.completer_word_break_characters",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Core"
+          ]
+        },
+        {
+          "name": "reline.Reline.Core.completion_append_character",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Core"
+          ]
+        },
+        {
+          "name": "reline.Reline.Core.completion_case_fold",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Core"
+          ]
+        },
+        {
+          "name": "reline.Reline.Core.completion_proc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Core"
+          ]
+        },
+        {
+          "name": "reline.Reline.Core.completion_quote_character",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Core"
+          ]
+        },
+        {
+          "name": "reline.Reline.Core.dialog_proc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Core"
+          ]
+        },
+        {
+          "name": "reline.Reline.Core.dig_perfect_match_proc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Core"
+          ]
+        },
+        {
+          "name": "reline.Reline.Core.emacs_editing_mode",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Core"
+          ]
+        },
+        {
+          "name": "reline.Reline.Core.encoding",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Core"
+          ]
+        },
+        {
+          "name": "reline.Reline.Core.filename_quote_characters",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Core"
+          ]
+        },
+        {
+          "name": "reline.Reline.Core.get_screen_size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Core"
+          ]
+        },
+        {
+          "name": "reline.Reline.Core.input",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Core"
+          ]
+        },
+        {
+          "name": "reline.Reline.Core.io_gate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Core"
+          ]
+        },
+        {
+          "name": "reline.Reline.Core.output",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Core"
+          ]
+        },
+        {
+          "name": "reline.Reline.Core.output_modifier_proc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Core"
+          ]
+        },
+        {
+          "name": "reline.Reline.Core.pre_input_hook",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Core"
+          ]
+        },
+        {
+          "name": "reline.Reline.Core.prompt_proc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Core"
+          ]
+        },
+        {
+          "name": "reline.Reline.Core.readline",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Core"
+          ]
+        },
+        {
+          "name": "reline.Reline.Core.readmultiline",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Core"
+          ]
+        },
+        {
+          "name": "reline.Reline.Core.special_prefixes",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Core"
+          ]
+        },
+        {
+          "name": "reline.Reline.Core.vi_editing_mode",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Core"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "reline.Reline.Face",
+      "methods": [
+        {
+          "name": "reline.Reline.Face.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Face"
+          ]
+        },
+        {
+          "name": "reline.Reline.Face.config",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Face"
+          ]
+        },
+        {
+          "name": "reline.Reline.Face.configs",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Face"
+          ]
+        },
+        {
+          "name": "reline.Reline.Face.force_truecolor",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Face"
+          ]
+        },
+        {
+          "name": "reline.Reline.Face.load_initial_configs",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Face"
+          ]
+        },
+        {
+          "name": "reline.Reline.Face.reset_to_initial_configs",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Face"
+          ]
+        },
+        {
+          "name": "reline.Reline.Face.truecolor",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Face"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "reline.Reline.GeneralIO",
+      "methods": [
+        {
+          "name": "reline.Reline.GeneralIO.clear_screen",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.GeneralIO"
+          ]
+        },
+        {
+          "name": "reline.Reline.GeneralIO.cursor_pos",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.GeneralIO"
+          ]
+        },
+        {
+          "name": "reline.Reline.GeneralIO.deprep",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.GeneralIO"
+          ]
+        },
+        {
+          "name": "reline.Reline.GeneralIO.encoding",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.GeneralIO"
+          ]
+        },
+        {
+          "name": "reline.Reline.GeneralIO.erase_after_cursor",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.GeneralIO"
+          ]
+        },
+        {
+          "name": "reline.Reline.GeneralIO.finish_pasting",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.GeneralIO"
+          ]
+        },
+        {
+          "name": "reline.Reline.GeneralIO.get_screen_size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.GeneralIO"
+          ]
+        },
+        {
+          "name": "reline.Reline.GeneralIO.getc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.GeneralIO"
+          ]
+        },
+        {
+          "name": "reline.Reline.GeneralIO.hide_cursor",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.GeneralIO"
+          ]
+        },
+        {
+          "name": "reline.Reline.GeneralIO.in_pasting",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.GeneralIO"
+          ]
+        },
+        {
+          "name": "reline.Reline.GeneralIO.input",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.GeneralIO"
+          ]
+        },
+        {
+          "name": "reline.Reline.GeneralIO.move_cursor_column",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.GeneralIO"
+          ]
+        },
+        {
+          "name": "reline.Reline.GeneralIO.move_cursor_down",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.GeneralIO"
+          ]
+        },
+        {
+          "name": "reline.Reline.GeneralIO.move_cursor_up",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.GeneralIO"
+          ]
+        },
+        {
+          "name": "reline.Reline.GeneralIO.prep",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.GeneralIO"
+          ]
+        },
+        {
+          "name": "reline.Reline.GeneralIO.reset",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.GeneralIO"
+          ]
+        },
+        {
+          "name": "reline.Reline.GeneralIO.scroll_down",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.GeneralIO"
+          ]
+        },
+        {
+          "name": "reline.Reline.GeneralIO.set_default_key_bindings",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.GeneralIO"
+          ]
+        },
+        {
+          "name": "reline.Reline.GeneralIO.set_screen_size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.GeneralIO"
+          ]
+        },
+        {
+          "name": "reline.Reline.GeneralIO.set_winch_handler",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.GeneralIO"
+          ]
+        },
+        {
+          "name": "reline.Reline.GeneralIO.show_cursor",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.GeneralIO"
+          ]
+        },
+        {
+          "name": "reline.Reline.GeneralIO.start_pasting",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.GeneralIO"
+          ]
+        },
+        {
+          "name": "reline.Reline.GeneralIO.ungetc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.GeneralIO"
+          ]
+        },
+        {
+          "name": "reline.Reline.GeneralIO.win",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.GeneralIO"
+          ]
+        },
+        {
+          "name": "reline.Reline.GeneralIO.with_raw_input",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.GeneralIO"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "reline.Reline.History",
+      "methods": [
+        {
+          "name": "reline.Reline.History.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.History"
+          ]
+        },
+        {
+          "name": "reline.Reline.History.<<",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.History"
+          ]
+        },
+        {
+          "name": "reline.Reline.History.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.History"
+          ]
+        },
+        {
+          "name": "reline.Reline.History.concat",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.History"
+          ]
+        },
+        {
+          "name": "reline.Reline.History.delete_at",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.History"
+          ]
+        },
+        {
+          "name": "reline.Reline.History.push",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.History"
+          ]
+        },
+        {
+          "name": "reline.Reline.History.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.History"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "reline.Reline.KeyActor",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "reline.Reline.KeyStroke",
+      "methods": [
+        {
+          "name": "reline.Reline.KeyStroke.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.KeyStroke"
+          ]
+        },
+        {
+          "name": "reline.Reline.KeyStroke.compress_meta_key",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.KeyStroke"
+          ]
+        },
+        {
+          "name": "reline.Reline.KeyStroke.equal",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.KeyStroke"
+          ]
+        },
+        {
+          "name": "reline.Reline.KeyStroke.expand",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.KeyStroke"
+          ]
+        },
+        {
+          "name": "reline.Reline.KeyStroke.match_status",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.KeyStroke"
+          ]
+        },
+        {
+          "name": "reline.Reline.KeyStroke.start_with",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.KeyStroke"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "reline.Reline.KillRing",
+      "methods": [
+        {
+          "name": "reline.Reline.KillRing.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.KillRing"
+          ]
+        },
+        {
+          "name": "reline.Reline.KillRing.append",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.KillRing"
+          ]
+        },
+        {
+          "name": "reline.Reline.KillRing.each",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.KillRing"
+          ]
+        },
+        {
+          "name": "reline.Reline.KillRing.process",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.KillRing"
+          ]
+        },
+        {
+          "name": "reline.Reline.KillRing.yank",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.KillRing"
+          ]
+        },
+        {
+          "name": "reline.Reline.KillRing.yank_pop",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.KillRing"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "reline.Reline.LineEditor",
+      "methods": [
+        {
+          "name": "reline.Reline.LineEditor.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.add_dialog_proc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.backward_char",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.backward_delete_char",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.backward_kill_word",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.backward_word",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.beginning_of_line",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.byte_pointer",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.call_completion_proc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.call_completion_proc_with_checking_args",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.capitalize_word",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.clear_screen",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.confirm_multiline_termination",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.delete_char",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.delete_char_or_list",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.delete_text",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.downcase_word",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.ed_digit",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.editing_mode",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.end_of_line",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.eof",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.exchange_point_and_mark",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.finalize",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.finish",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.finished",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.forward_char",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.forward_search_history",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.forward_word",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.history_search_backward",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.history_search_forward",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.input_key",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.insert_text",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.io_gate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.just_move_cursor",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.kill_line",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.kill_whole_line",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.kill_word",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.multiline_off",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.multiline_on",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.next_history",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.previous_history",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.quoted_insert",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.rerender",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.rerender_all",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.reset",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.reset_line",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.reset_variables",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.resize",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.retrieve_completion_block",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.reverse_search_history",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.self_insert",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.set_mark",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.set_pasting_state",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.set_signal_handlers",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.simplified_rendering",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.transpose_chars",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.transpose_words",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.unix_line_discard",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.unix_word_rubout",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.upcase_word",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.vi_end_of_transmission",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.vi_eof_maybe",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.vi_movement_mode",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.whole_buffer",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.whole_lines",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.wrap_method_call",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.yank",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        },
+        {
+          "name": "reline.Reline.LineEditor.yank_pop",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.LineEditor"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "reline.Reline.Terminfo",
+      "methods": [
+        {
+          "name": "reline.Reline.Terminfo.curses_dl",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Terminfo"
+          ]
+        },
+        {
+          "name": "reline.Reline.Terminfo.curses_dl_files",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Terminfo"
+          ]
+        },
+        {
+          "name": "reline.Reline.Terminfo.enabled",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Terminfo"
+          ]
+        },
+        {
+          "name": "reline.Reline.Terminfo.setupterm",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Terminfo"
+          ]
+        },
+        {
+          "name": "reline.Reline.Terminfo.tigetflag",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Terminfo"
+          ]
+        },
+        {
+          "name": "reline.Reline.Terminfo.tigetnum",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Terminfo"
+          ]
+        },
+        {
+          "name": "reline.Reline.Terminfo.tigetstr",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Terminfo"
+          ]
+        },
+        {
+          "name": "reline.Reline.Terminfo.tiparm",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Terminfo"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "reline.Reline.Unicode",
+      "methods": [
+        {
+          "name": "reline.Reline.Unicode.calculate_width",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Unicode"
+          ]
+        },
+        {
+          "name": "reline.Reline.Unicode.ed_transpose_words",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Unicode"
+          ]
+        },
+        {
+          "name": "reline.Reline.Unicode.em_backward_word",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Unicode"
+          ]
+        },
+        {
+          "name": "reline.Reline.Unicode.em_big_backward_word",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Unicode"
+          ]
+        },
+        {
+          "name": "reline.Reline.Unicode.em_forward_word",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Unicode"
+          ]
+        },
+        {
+          "name": "reline.Reline.Unicode.em_forward_word_with_capitalization",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Unicode"
+          ]
+        },
+        {
+          "name": "reline.Reline.Unicode.escape_for_print",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Unicode"
+          ]
+        },
+        {
+          "name": "reline.Reline.Unicode.get_mbchar_width",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Unicode"
+          ]
+        },
+        {
+          "name": "reline.Reline.Unicode.get_next_mbchar_size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Unicode"
+          ]
+        },
+        {
+          "name": "reline.Reline.Unicode.get_prev_mbchar_size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Unicode"
+          ]
+        },
+        {
+          "name": "reline.Reline.Unicode.split_by_width",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Unicode"
+          ]
+        },
+        {
+          "name": "reline.Reline.Unicode.take_range",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Unicode"
+          ]
+        },
+        {
+          "name": "reline.Reline.Unicode.vi_backward_word",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Unicode"
+          ]
+        },
+        {
+          "name": "reline.Reline.Unicode.vi_big_backward_word",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Unicode"
+          ]
+        },
+        {
+          "name": "reline.Reline.Unicode.vi_big_forward_end_word",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Unicode"
+          ]
+        },
+        {
+          "name": "reline.Reline.Unicode.vi_big_forward_word",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Unicode"
+          ]
+        },
+        {
+          "name": "reline.Reline.Unicode.vi_first_print",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Unicode"
+          ]
+        },
+        {
+          "name": "reline.Reline.Unicode.vi_forward_end_word",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Unicode"
+          ]
+        },
+        {
+          "name": "reline.Reline.Unicode.vi_forward_word",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Unicode"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "reline.Reline.Windows",
+      "methods": [
+        {
+          "name": "reline.Reline.Windows.check_input_event",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Windows"
+          ]
+        },
+        {
+          "name": "reline.Reline.Windows.clear_screen",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Windows"
+          ]
+        },
+        {
+          "name": "reline.Reline.Windows.cursor_pos",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Windows"
+          ]
+        },
+        {
+          "name": "reline.Reline.Windows.deprep",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Windows"
+          ]
+        },
+        {
+          "name": "reline.Reline.Windows.empty_buffer",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Windows"
+          ]
+        },
+        {
+          "name": "reline.Reline.Windows.encoding",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Windows"
+          ]
+        },
+        {
+          "name": "reline.Reline.Windows.erase_after_cursor",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Windows"
+          ]
+        },
+        {
+          "name": "reline.Reline.Windows.get_console_screen_buffer_info",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Windows"
+          ]
+        },
+        {
+          "name": "reline.Reline.Windows.get_screen_size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Windows"
+          ]
+        },
+        {
+          "name": "reline.Reline.Windows.getc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Windows"
+          ]
+        },
+        {
+          "name": "reline.Reline.Windows.hide_cursor",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Windows"
+          ]
+        },
+        {
+          "name": "reline.Reline.Windows.in_pasting",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Windows"
+          ]
+        },
+        {
+          "name": "reline.Reline.Windows.move_cursor_column",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Windows"
+          ]
+        },
+        {
+          "name": "reline.Reline.Windows.move_cursor_down",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Windows"
+          ]
+        },
+        {
+          "name": "reline.Reline.Windows.move_cursor_up",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Windows"
+          ]
+        },
+        {
+          "name": "reline.Reline.Windows.msys_tty",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Windows"
+          ]
+        },
+        {
+          "name": "reline.Reline.Windows.prep",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Windows"
+          ]
+        },
+        {
+          "name": "reline.Reline.Windows.process_key_event",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Windows"
+          ]
+        },
+        {
+          "name": "reline.Reline.Windows.scroll_down",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Windows"
+          ]
+        },
+        {
+          "name": "reline.Reline.Windows.set_default_key_bindings",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Windows"
+          ]
+        },
+        {
+          "name": "reline.Reline.Windows.set_screen_size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Windows"
+          ]
+        },
+        {
+          "name": "reline.Reline.Windows.set_winch_handler",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Windows"
+          ]
+        },
+        {
+          "name": "reline.Reline.Windows.show_cursor",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Windows"
+          ]
+        },
+        {
+          "name": "reline.Reline.Windows.ungetc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Windows"
+          ]
+        },
+        {
+          "name": "reline.Reline.Windows.win",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Windows"
+          ]
+        },
+        {
+          "name": "reline.Reline.Windows.win_legacy_console",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Windows"
+          ]
+        },
+        {
+          "name": "reline.Reline.Windows.with_raw_input",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Windows"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "reline.Reline.Terminfo": [
+    {
+      "name": "reline.Reline.Terminfo.StringWithTiparm",
+      "methods": [
+        {
+          "name": "reline.Reline.Terminfo.StringWithTiparm.tiparm",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Terminfo.StringWithTiparm"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "reline.Reline.Terminfo.TerminfoError",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "reline.Reline.Unicode": [
+    {
+      "name": "reline.Reline.Unicode.EastAsianWidth",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "reline": [
+    {
+      "name": "reline.Reline",
+      "methods": [
+        {
+          "name": "reline.Reline.core",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline"
+          ]
+        },
+        {
+          "name": "reline.Reline.encoding_system_needs",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline"
+          ]
+        },
+        {
+          "name": "reline.Reline.insert_text",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline"
+          ]
+        },
+        {
+          "name": "reline.Reline.line_editor",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline"
+          ]
+        },
+        {
+          "name": "reline.Reline.ungetc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline"
+          ]
+        },
+        {
+          "name": "reline.Reline.update_iogate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "reline.Reline.Face": [
+    {
+      "name": "reline.Reline.Face.Config",
+      "methods": [
+        {
+          "name": "reline.Reline.Face.Config.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Face.Config"
+          ]
+        },
+        {
+          "name": "reline.Reline.Face.Config.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Face.Config"
+          ]
+        },
+        {
+          "name": "reline.Reline.Face.Config.define",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Face.Config"
+          ]
+        },
+        {
+          "name": "reline.Reline.Face.Config.reconfigure",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Face.Config"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "reline.Reline.KeyActor": [
+    {
+      "name": "reline.Reline.KeyActor.Base",
+      "methods": [
+        {
+          "name": "reline.Reline.KeyActor.Base.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.KeyActor.Base"
+          ]
+        },
+        {
+          "name": "reline.Reline.KeyActor.Base.default_key_bindings",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.KeyActor.Base"
+          ]
+        },
+        {
+          "name": "reline.Reline.KeyActor.Base.get_method",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.KeyActor.Base"
+          ]
+        },
+        {
+          "name": "reline.Reline.KeyActor.Base.reset_default_key_bindings",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.KeyActor.Base"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "reline.Reline.KeyActor.Emacs",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "reline.Reline.KeyActor.ViCommand",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "reline.Reline.KeyActor.ViInsert",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "reline.Reline.Windows": [
+    {
+      "name": "reline.Reline.Windows.KeyEventRecord",
+      "methods": [
+        {
+          "name": "reline.Reline.Windows.KeyEventRecord.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Windows.KeyEventRecord"
+          ]
+        },
+        {
+          "name": "reline.Reline.Windows.KeyEventRecord.char",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Windows.KeyEventRecord"
+          ]
+        },
+        {
+          "name": "reline.Reline.Windows.KeyEventRecord.enhanced",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Windows.KeyEventRecord"
+          ]
+        },
+        {
+          "name": "reline.Reline.Windows.KeyEventRecord.matches",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Windows.KeyEventRecord"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "reline.Reline.Windows.Win32API",
+      "methods": [
+        {
+          "name": "reline.Reline.Windows.Win32API.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Windows.Win32API"
+          ]
+        },
+        {
+          "name": "reline.Reline.Windows.Win32API.call",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "reline.Reline.Windows.Win32API"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

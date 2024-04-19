@@ -1,0 +1,112 @@
+{
+  "forwardable": [
+    {
+      "name": "forwardable.Forwardable",
+      "methods": [
+        {
+          "name": "forwardable.Forwardable.def_delegator",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "forwardable.Forwardable"
+          ]
+        },
+        {
+          "name": "forwardable.Forwardable.def_delegators",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "forwardable.Forwardable"
+          ]
+        },
+        {
+          "name": "forwardable.Forwardable.def_instance_delegator",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "forwardable.Forwardable"
+          ]
+        },
+        {
+          "name": "forwardable.Forwardable.def_instance_delegators",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "forwardable.Forwardable"
+          ]
+        },
+        {
+          "name": "forwardable.Forwardable.delegate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "forwardable.Forwardable"
+          ]
+        },
+        {
+          "name": "forwardable.Forwardable.instance_delegate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "forwardable.Forwardable"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "forwardable.SingleForwardable",
+      "methods": [
+        {
+          "name": "forwardable.SingleForwardable.def_delegator",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "forwardable.SingleForwardable"
+          ]
+        },
+        {
+          "name": "forwardable.SingleForwardable.def_delegators",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "forwardable.SingleForwardable"
+          ]
+        },
+        {
+          "name": "forwardable.SingleForwardable.def_single_delegator",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "forwardable.SingleForwardable"
+          ]
+        },
+        {
+          "name": "forwardable.SingleForwardable.def_single_delegators",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "forwardable.SingleForwardable"
+          ]
+        },
+        {
+          "name": "forwardable.SingleForwardable.delegate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "forwardable.SingleForwardable"
+          ]
+        },
+        {
+          "name": "forwardable.SingleForwardable.single_delegate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "forwardable.SingleForwardable"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

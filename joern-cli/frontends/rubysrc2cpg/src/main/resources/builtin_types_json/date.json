@@ -1,0 +1,957 @@
+{
+  "date": [
+    {
+      "name": "date.Date",
+      "methods": [
+        {
+          "name": "date.Date._httpdate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date._iso8601",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date._jisx0301",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date._parse",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date._rfc2822",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date._rfc3339",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date._strptime",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date._xmlschema",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.civil",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.commercial",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.gregorian_leap",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.httpdate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.iso8601",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.jd",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.jisx0301",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.julian_leap",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.ordinal",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.parse",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.rfc2822",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.rfc3339",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.strptime",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.today",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.valid_civil",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.valid_commercial",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.valid_jd",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.valid_ordinal",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.xmlschema",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.d",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.self",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.ajd",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.amjd",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.asctime",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.ctime",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.cwday",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.cweek",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.cwyear",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.day",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.day_fraction",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.deconstruct_keys",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.downto",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.england",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.friday",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.gregorian",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.infinite",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.italy",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.julian",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.ld",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.leap",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.mday",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.mjd",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.mon",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.monday",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.month",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.new_start",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.next",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.next_day",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.next_month",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.next_year",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.prev_day",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.prev_month",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.prev_year",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.rfc822",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.saturday",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.start",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.step",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.strftime",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.succ",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.sunday",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.thursday",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.to_date",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.to_datetime",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.to_time",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.tuesday",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.upto",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.wday",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.wednesday",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.yday",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        },
+        {
+          "name": "date.Date.year",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Date"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "date.DateTime",
+      "methods": [
+        {
+          "name": "date.DateTime._strptime",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.DateTime"
+          ]
+        },
+        {
+          "name": "date.DateTime.civil",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.DateTime"
+          ]
+        },
+        {
+          "name": "date.DateTime.commercial",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.DateTime"
+          ]
+        },
+        {
+          "name": "date.DateTime.httpdate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.DateTime"
+          ]
+        },
+        {
+          "name": "date.DateTime.iso8601",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.DateTime"
+          ]
+        },
+        {
+          "name": "date.DateTime.jd",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.DateTime"
+          ]
+        },
+        {
+          "name": "date.DateTime.jisx0301",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.DateTime"
+          ]
+        },
+        {
+          "name": "date.DateTime.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.DateTime"
+          ]
+        },
+        {
+          "name": "date.DateTime.now",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.DateTime"
+          ]
+        },
+        {
+          "name": "date.DateTime.ordinal",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.DateTime"
+          ]
+        },
+        {
+          "name": "date.DateTime.parse",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.DateTime"
+          ]
+        },
+        {
+          "name": "date.DateTime.rfc2822",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.DateTime"
+          ]
+        },
+        {
+          "name": "date.DateTime.rfc822",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.DateTime"
+          ]
+        },
+        {
+          "name": "date.DateTime.rfc3339",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.DateTime"
+          ]
+        },
+        {
+          "name": "date.DateTime.strptime",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.DateTime"
+          ]
+        },
+        {
+          "name": "date.DateTime.xmlschema",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.DateTime"
+          ]
+        },
+        {
+          "name": "date.DateTime.deconstruct_keys",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.DateTime"
+          ]
+        },
+        {
+          "name": "date.DateTime.hour",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.DateTime"
+          ]
+        },
+        {
+          "name": "date.DateTime.min",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.DateTime"
+          ]
+        },
+        {
+          "name": "date.DateTime.minute",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.DateTime"
+          ]
+        },
+        {
+          "name": "date.DateTime.new_offset",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.DateTime"
+          ]
+        },
+        {
+          "name": "date.DateTime.offset",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.DateTime"
+          ]
+        },
+        {
+          "name": "date.DateTime.sec",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.DateTime"
+          ]
+        },
+        {
+          "name": "date.DateTime.sec_fraction",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.DateTime"
+          ]
+        },
+        {
+          "name": "date.DateTime.second",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.DateTime"
+          ]
+        },
+        {
+          "name": "date.DateTime.second_fraction",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.DateTime"
+          ]
+        },
+        {
+          "name": "date.DateTime.strftime",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.DateTime"
+          ]
+        },
+        {
+          "name": "date.DateTime.to_date",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.DateTime"
+          ]
+        },
+        {
+          "name": "date.DateTime.to_datetime",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.DateTime"
+          ]
+        },
+        {
+          "name": "date.DateTime.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.DateTime"
+          ]
+        },
+        {
+          "name": "date.DateTime.to_time",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.DateTime"
+          ]
+        },
+        {
+          "name": "date.DateTime.zone",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.DateTime"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "date.Time",
+      "methods": [
+        {
+          "name": "date.Time.to_date",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Time"
+          ]
+        },
+        {
+          "name": "date.Time.to_datetime",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Time"
+          ]
+        },
+        {
+          "name": "date.Time.to_time",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "date.Time"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "date.Date": [
+    {
+      "name": "date.Date.Error",
+      "methods": [],
+      "fields": []
+    }
+  ]
+}

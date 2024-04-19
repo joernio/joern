@@ -1,0 +1,196 @@
+{
+  "pp": [
+    {
+      "name": "pp.Kernel",
+      "methods": [
+        {
+          "name": "pp.Kernel.pp",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "pp.Kernel"
+          ]
+        },
+        {
+          "name": "pp.Kernel.pretty_inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "pp.Kernel"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "pp.PP",
+      "methods": [
+        {
+          "name": "pp.PP.pp",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "pp.PP"
+          ]
+        },
+        {
+          "name": "pp.PP.sharing_detection",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "pp.PP"
+          ]
+        },
+        {
+          "name": "pp.PP.singleline_pp",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "pp.PP"
+          ]
+        },
+        {
+          "name": "pp.PP.width_for",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "pp.PP"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "pp.RubyVM",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "pp.RubyVM": [
+    {
+      "name": "pp.RubyVM.AbstractSyntaxTree",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "pp.PP": [
+    {
+      "name": "pp.PP.PPMethods",
+      "methods": [
+        {
+          "name": "pp.PP.PPMethods.check_inspect_key",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "pp.PP.PPMethods"
+          ]
+        },
+        {
+          "name": "pp.PP.PPMethods.comma_breakable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "pp.PP.PPMethods"
+          ]
+        },
+        {
+          "name": "pp.PP.PPMethods.guard_inspect_key",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "pp.PP.PPMethods"
+          ]
+        },
+        {
+          "name": "pp.PP.PPMethods.object_address_group",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "pp.PP.PPMethods"
+          ]
+        },
+        {
+          "name": "pp.PP.PPMethods.object_group",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "pp.PP.PPMethods"
+          ]
+        },
+        {
+          "name": "pp.PP.PPMethods.pop_inspect_key",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "pp.PP.PPMethods"
+          ]
+        },
+        {
+          "name": "pp.PP.PPMethods.pp",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "pp.PP.PPMethods"
+          ]
+        },
+        {
+          "name": "pp.PP.PPMethods.pp_hash",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "pp.PP.PPMethods"
+          ]
+        },
+        {
+          "name": "pp.PP.PPMethods.pp_object",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "pp.PP.PPMethods"
+          ]
+        },
+        {
+          "name": "pp.PP.PPMethods.push_inspect_key",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "pp.PP.PPMethods"
+          ]
+        },
+        {
+          "name": "pp.PP.PPMethods.seplist",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "pp.PP.PPMethods"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "pp.RubyVM.AbstractSyntaxTree": [
+    {
+      "name": "pp.RubyVM.AbstractSyntaxTree.Node",
+      "methods": [
+        {
+          "name": "pp.RubyVM.AbstractSyntaxTree.Node.pretty_print",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "pp.RubyVM.AbstractSyntaxTree.Node"
+          ]
+        },
+        {
+          "name": "pp.RubyVM.AbstractSyntaxTree.Node.pretty_print_children",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "pp.RubyVM.AbstractSyntaxTree.Node"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

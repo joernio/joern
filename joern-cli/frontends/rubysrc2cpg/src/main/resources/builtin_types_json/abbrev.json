@@ -1,0 +1,32 @@
+{
+  "abbrev": [
+    {
+      "name": "abbrev.Abbrev",
+      "methods": [
+        {
+          "name": "abbrev.Abbrev.abbrev",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "abbrev.Abbrev"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "abbrev.Array",
+      "methods": [
+        {
+          "name": "abbrev.Array.abbrev",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "abbrev.Array"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

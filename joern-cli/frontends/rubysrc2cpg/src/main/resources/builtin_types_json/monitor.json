@@ -1,0 +1,272 @@
+{
+  "monitor.MonitorMixin": [
+    {
+      "name": "monitor.MonitorMixin.ConditionVariable",
+      "methods": [
+        {
+          "name": "monitor.MonitorMixin.ConditionVariable.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "monitor.MonitorMixin.ConditionVariable"
+          ]
+        },
+        {
+          "name": "monitor.MonitorMixin.ConditionVariable.broadcast",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "monitor.MonitorMixin.ConditionVariable"
+          ]
+        },
+        {
+          "name": "monitor.MonitorMixin.ConditionVariable.signal",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "monitor.MonitorMixin.ConditionVariable"
+          ]
+        },
+        {
+          "name": "monitor.MonitorMixin.ConditionVariable.wait",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "monitor.MonitorMixin.ConditionVariable"
+          ]
+        },
+        {
+          "name": "monitor.MonitorMixin.ConditionVariable.wait_until",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "monitor.MonitorMixin.ConditionVariable"
+          ]
+        },
+        {
+          "name": "monitor.MonitorMixin.ConditionVariable.wait_while",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "monitor.MonitorMixin.ConditionVariable"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "monitor": [
+    {
+      "name": "monitor.Monitor",
+      "methods": [
+        {
+          "name": "monitor.Monitor.enter",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "monitor.Monitor"
+          ]
+        },
+        {
+          "name": "monitor.Monitor.exit",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "monitor.Monitor"
+          ]
+        },
+        {
+          "name": "monitor.Monitor.mon_check_owner",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "monitor.Monitor"
+          ]
+        },
+        {
+          "name": "monitor.Monitor.mon_enter",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "monitor.Monitor"
+          ]
+        },
+        {
+          "name": "monitor.Monitor.mon_exit",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "monitor.Monitor"
+          ]
+        },
+        {
+          "name": "monitor.Monitor.mon_locked",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "monitor.Monitor"
+          ]
+        },
+        {
+          "name": "monitor.Monitor.mon_owned",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "monitor.Monitor"
+          ]
+        },
+        {
+          "name": "monitor.Monitor.mon_synchronize",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "monitor.Monitor"
+          ]
+        },
+        {
+          "name": "monitor.Monitor.mon_try_enter",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "monitor.Monitor"
+          ]
+        },
+        {
+          "name": "monitor.Monitor.new_cond",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "monitor.Monitor"
+          ]
+        },
+        {
+          "name": "monitor.Monitor.synchronize",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "monitor.Monitor"
+          ]
+        },
+        {
+          "name": "monitor.Monitor.try_enter",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "monitor.Monitor"
+          ]
+        },
+        {
+          "name": "monitor.Monitor.try_mon_enter",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "monitor.Monitor"
+          ]
+        },
+        {
+          "name": "monitor.Monitor.wait_for_cond",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "monitor.Monitor"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "monitor.MonitorMixin",
+      "methods": [
+        {
+          "name": "monitor.MonitorMixin.extend_object",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "monitor.MonitorMixin"
+          ]
+        },
+        {
+          "name": "monitor.MonitorMixin.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "monitor.MonitorMixin"
+          ]
+        },
+        {
+          "name": "monitor.MonitorMixin.mon_enter",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "monitor.MonitorMixin"
+          ]
+        },
+        {
+          "name": "monitor.MonitorMixin.mon_exit",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "monitor.MonitorMixin"
+          ]
+        },
+        {
+          "name": "monitor.MonitorMixin.mon_locked",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "monitor.MonitorMixin"
+          ]
+        },
+        {
+          "name": "monitor.MonitorMixin.mon_owned",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "monitor.MonitorMixin"
+          ]
+        },
+        {
+          "name": "monitor.MonitorMixin.mon_synchronize",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "monitor.MonitorMixin"
+          ]
+        },
+        {
+          "name": "monitor.MonitorMixin.mon_try_enter",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "monitor.MonitorMixin"
+          ]
+        },
+        {
+          "name": "monitor.MonitorMixin.new_cond",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "monitor.MonitorMixin"
+          ]
+        },
+        {
+          "name": "monitor.MonitorMixin.synchronize",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "monitor.MonitorMixin"
+          ]
+        },
+        {
+          "name": "monitor.MonitorMixin.try_mon_enter",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "monitor.MonitorMixin"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

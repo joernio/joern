@@ -1,0 +1,1529 @@
+{
+  "syntax_suggest": [
+    {
+      "name": "syntax_suggest.Kernel",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "syntax_suggest.SyntaxSuggest",
+      "methods": [
+        {
+          "name": "syntax_suggest.SyntaxSuggest.call",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.handle_error",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.invalid",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.module_for_detailed_message",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.record_dir",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.use_prism_parser",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.valid",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.valid_without",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.detailed_message",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "syntax_suggest.SyntaxSuggest.Capture": [
+    {
+      "name": "syntax_suggest.SyntaxSuggest.Capture.BeforeAfterKeywordEnds",
+      "methods": [
+        {
+          "name": "syntax_suggest.SyntaxSuggest.Capture.BeforeAfterKeywordEnds.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.Capture.BeforeAfterKeywordEnds"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.Capture.BeforeAfterKeywordEnds.call",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.Capture.BeforeAfterKeywordEnds"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "syntax_suggest.SyntaxSuggest.Capture.FallingIndentLines",
+      "methods": [
+        {
+          "name": "syntax_suggest.SyntaxSuggest.Capture.FallingIndentLines.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.Capture.FallingIndentLines"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.Capture.FallingIndentLines.call",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.Capture.FallingIndentLines"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "syntax_suggest.SyntaxSuggest": [
+    {
+      "name": "syntax_suggest.SyntaxSuggest.AroundBlockScan",
+      "methods": [
+        {
+          "name": "syntax_suggest.SyntaxSuggest.AroundBlockScan.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.AroundBlockScan"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.AroundBlockScan.code_block",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.AroundBlockScan"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.AroundBlockScan.force_add_empty",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.AroundBlockScan"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.AroundBlockScan.force_add_hidden",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.AroundBlockScan"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.AroundBlockScan.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.AroundBlockScan"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.AroundBlockScan.lines",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.AroundBlockScan"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.AroundBlockScan.lookahead_balance_one_line",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.AroundBlockScan"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.AroundBlockScan.scan_adjacent_indent",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.AroundBlockScan"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.AroundBlockScan.scan_neighbors_not_empty",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.AroundBlockScan"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.AroundBlockScan.scan_while",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.AroundBlockScan"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.AroundBlockScan.stop_after_kw",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.AroundBlockScan"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "syntax_suggest.SyntaxSuggest.BlockExpand",
+      "methods": [
+        {
+          "name": "syntax_suggest.SyntaxSuggest.BlockExpand.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.BlockExpand"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.BlockExpand.call",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.BlockExpand"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.BlockExpand.expand_indent",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.BlockExpand"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.BlockExpand.expand_neighbors",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.BlockExpand"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.BlockExpand.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.BlockExpand"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "syntax_suggest.SyntaxSuggest.Capture",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "syntax_suggest.SyntaxSuggest.CaptureCodeContext",
+      "methods": [
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CaptureCodeContext.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CaptureCodeContext"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CaptureCodeContext.call",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CaptureCodeContext"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CaptureCodeContext.capture_before_after_kws",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CaptureCodeContext"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CaptureCodeContext.capture_falling_indent",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CaptureCodeContext"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CaptureCodeContext.capture_first_kw_end_same_indent",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CaptureCodeContext"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CaptureCodeContext.capture_last_end_same_indent",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CaptureCodeContext"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CaptureCodeContext.sorted_lines",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CaptureCodeContext"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "syntax_suggest.SyntaxSuggest.CleanDocument",
+      "methods": [
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CleanDocument.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CleanDocument"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CleanDocument.call",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CleanDocument"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CleanDocument.clean_sweep",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CleanDocument"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CleanDocument.join_consecutive",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CleanDocument"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CleanDocument.join_groups",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CleanDocument"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CleanDocument.join_heredoc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CleanDocument"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CleanDocument.join_trailing_slash",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CleanDocument"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CleanDocument.lines",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CleanDocument"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CleanDocument.take_while_including",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CleanDocument"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CleanDocument.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CleanDocument"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "syntax_suggest.SyntaxSuggest.Cli",
+      "methods": [
+        {
+          "name": "syntax_suggest.SyntaxSuggest.Cli.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.Cli"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.Cli.call",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.Cli"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.Cli.parse",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.Cli"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.Cli.parser",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.Cli"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "syntax_suggest.SyntaxSuggest.CodeBlock",
+      "methods": [
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeBlock.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeBlock"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeBlock.<>",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeBlock"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeBlock.current_indent",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeBlock"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeBlock.delete",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeBlock"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeBlock.deleted",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeBlock"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeBlock.hidden",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeBlock"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeBlock.invalid",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeBlock"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeBlock.is_end",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeBlock"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeBlock.mark_invisible",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeBlock"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeBlock.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeBlock"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeBlock.valid",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeBlock"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeBlock.visible_lines",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeBlock"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "syntax_suggest.SyntaxSuggest.CodeFrontier",
+      "methods": [
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeFrontier.combination",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeFrontier"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeFrontier.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeFrontier"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeFrontier.<<",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeFrontier"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeFrontier.count",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeFrontier"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeFrontier.detect_invalid_blocks",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeFrontier"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeFrontier.expand",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeFrontier"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeFrontier.holds_all_syntax_errors",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeFrontier"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeFrontier.next_indent_line",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeFrontier"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeFrontier.pop",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeFrontier"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeFrontier.register_engulf_block",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeFrontier"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeFrontier.register_indent_block",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeFrontier"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "syntax_suggest.SyntaxSuggest.CodeLine",
+      "methods": [
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeLine.from_source",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeLine"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeLine.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeLine"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeLine.<>",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeLine"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeLine.empty",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeLine"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeLine.hidden",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeLine"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeLine.ignore_newline_not_beg",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeLine"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeLine.indent_index",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeLine"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeLine.is_end",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeLine"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeLine.is_kw",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeLine"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeLine.mark_invisible",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeLine"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeLine.not_empty",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeLine"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeLine.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeLine"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeLine.trailing_slash",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeLine"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeLine.visible",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeLine"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "syntax_suggest.SyntaxSuggest.CodeSearch",
+      "methods": [
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeSearch.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeSearch"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeSearch.call",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeSearch"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeSearch.create_blocks_from_untracked_lines",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeSearch"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeSearch.expand_existing",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeSearch"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeSearch.push",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeSearch"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.CodeSearch.record",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.CodeSearch"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "syntax_suggest.SyntaxSuggest.DisplayCodeWithLineNumbers",
+      "methods": [
+        {
+          "name": "syntax_suggest.SyntaxSuggest.DisplayCodeWithLineNumbers.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.DisplayCodeWithLineNumbers"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.DisplayCodeWithLineNumbers.call",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.DisplayCodeWithLineNumbers"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "syntax_suggest.SyntaxSuggest.DisplayInvalidBlocks",
+      "methods": [
+        {
+          "name": "syntax_suggest.SyntaxSuggest.DisplayInvalidBlocks.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.DisplayInvalidBlocks"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.DisplayInvalidBlocks.call",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.DisplayInvalidBlocks"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.DisplayInvalidBlocks.document_ok",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.DisplayInvalidBlocks"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "syntax_suggest.SyntaxSuggest.Error",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "syntax_suggest.SyntaxSuggest.ExplainSyntax",
+      "methods": [
+        {
+          "name": "syntax_suggest.SyntaxSuggest.ExplainSyntax.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.ExplainSyntax"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.ExplainSyntax.call",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.ExplainSyntax"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.ExplainSyntax.errors",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.ExplainSyntax"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.ExplainSyntax.missing",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.ExplainSyntax"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.ExplainSyntax.why",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.ExplainSyntax"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "syntax_suggest.SyntaxSuggest.GetParseErrors",
+      "methods": [
+        {
+          "name": "syntax_suggest.SyntaxSuggest.GetParseErrors.errors",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.GetParseErrors"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "syntax_suggest.SyntaxSuggest.LeftRightLexCount",
+      "methods": [
+        {
+          "name": "syntax_suggest.SyntaxSuggest.LeftRightLexCount.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.LeftRightLexCount"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.LeftRightLexCount.count_end",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.LeftRightLexCount"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.LeftRightLexCount.count_for_char",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.LeftRightLexCount"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.LeftRightLexCount.count_kw",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.LeftRightLexCount"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.LeftRightLexCount.count_lex",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.LeftRightLexCount"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.LeftRightLexCount.missing",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.LeftRightLexCount"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "syntax_suggest.SyntaxSuggest.LexAll",
+      "methods": [
+        {
+          "name": "syntax_suggest.SyntaxSuggest.LexAll.lex",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.LexAll"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.LexAll.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.LexAll"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.LexAll.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.LexAll"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.LexAll.each",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.LexAll"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.LexAll.last",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.LexAll"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.LexAll.to_a",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.LexAll"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "syntax_suggest.SyntaxSuggest.LexValue",
+      "methods": [
+        {
+          "name": "syntax_suggest.SyntaxSuggest.LexValue.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.LexValue"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.LexValue.expr_beg",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.LexValue"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.LexValue.expr_label",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.LexValue"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.LexValue.fname",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.LexValue"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.LexValue.ignore_newline",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.LexValue"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.LexValue.is_end",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.LexValue"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.LexValue.is_kw",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.LexValue"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "syntax_suggest.SyntaxSuggest.MiniStringIO",
+      "methods": [
+        {
+          "name": "syntax_suggest.SyntaxSuggest.MiniStringIO.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.MiniStringIO"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.MiniStringIO.puts",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.MiniStringIO"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "syntax_suggest.SyntaxSuggest.ParseBlocksFromIndentLine",
+      "methods": [
+        {
+          "name": "syntax_suggest.SyntaxSuggest.ParseBlocksFromIndentLine.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.ParseBlocksFromIndentLine"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.ParseBlocksFromIndentLine.each_neighbor_block",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.ParseBlocksFromIndentLine"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "syntax_suggest.SyntaxSuggest.PathnameFromMessage",
+      "methods": [
+        {
+          "name": "syntax_suggest.SyntaxSuggest.PathnameFromMessage.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.PathnameFromMessage"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.PathnameFromMessage.call",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.PathnameFromMessage"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.PathnameFromMessage.skip_missing_file_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.PathnameFromMessage"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.PathnameFromMessage.stop",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.PathnameFromMessage"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "syntax_suggest.SyntaxSuggest.PriorityEngulfQueue",
+      "methods": [
+        {
+          "name": "syntax_suggest.SyntaxSuggest.PriorityEngulfQueue.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.PriorityEngulfQueue"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.PriorityEngulfQueue.empty",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.PriorityEngulfQueue"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.PriorityEngulfQueue.length",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.PriorityEngulfQueue"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.PriorityEngulfQueue.peek",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.PriorityEngulfQueue"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.PriorityEngulfQueue.pop",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.PriorityEngulfQueue"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.PriorityEngulfQueue.push",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.PriorityEngulfQueue"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.PriorityEngulfQueue.to_a",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.PriorityEngulfQueue"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "syntax_suggest.SyntaxSuggest.PriorityQueue",
+      "methods": [
+        {
+          "name": "syntax_suggest.SyntaxSuggest.PriorityQueue.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.PriorityQueue"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.PriorityQueue.<<",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.PriorityQueue"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.PriorityQueue.empty",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.PriorityQueue"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.PriorityQueue.exchange",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.PriorityQueue"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.PriorityQueue.length",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.PriorityQueue"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.PriorityQueue.peek",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.PriorityQueue"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.PriorityQueue.pop",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.PriorityQueue"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.PriorityQueue.sorted",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.PriorityQueue"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.PriorityQueue.to_a",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.PriorityQueue"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "syntax_suggest.SyntaxSuggest.RipperErrors",
+      "methods": [
+        {
+          "name": "syntax_suggest.SyntaxSuggest.RipperErrors.call",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.RipperErrors"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.RipperErrors.compile_error",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.RipperErrors"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.RipperErrors.on_alias_error",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.RipperErrors"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.RipperErrors.on_assign_error",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.RipperErrors"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.RipperErrors.on_class_name_error",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.RipperErrors"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.RipperErrors.on_param_error",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.RipperErrors"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.RipperErrors.on_parse_error",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.RipperErrors"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "syntax_suggest.SyntaxSuggest.ScanHistory",
+      "methods": [
+        {
+          "name": "syntax_suggest.SyntaxSuggest.ScanHistory.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.ScanHistory"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.ScanHistory.changed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.ScanHistory"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.ScanHistory.commit_if_changed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.ScanHistory"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.ScanHistory.lines",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.ScanHistory"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.ScanHistory.next_down",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.ScanHistory"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.ScanHistory.next_up",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.ScanHistory"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.ScanHistory.revert_last_commit",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.ScanHistory"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.ScanHistory.scan",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.ScanHistory"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.ScanHistory.stash_changes",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.ScanHistory"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "syntax_suggest.SyntaxSuggest.UnvisitedLines",
+      "methods": [
+        {
+          "name": "syntax_suggest.SyntaxSuggest.UnvisitedLines.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.UnvisitedLines"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.UnvisitedLines.empty",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.UnvisitedLines"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.UnvisitedLines.peek",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.UnvisitedLines"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.UnvisitedLines.pop",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.UnvisitedLines"
+          ]
+        },
+        {
+          "name": "syntax_suggest.SyntaxSuggest.UnvisitedLines.visit_block",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "syntax_suggest.SyntaxSuggest.UnvisitedLines"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

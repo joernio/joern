@@ -1,0 +1,26 @@
+{
+  "tmpdir": [
+    {
+      "name": "tmpdir.Dir",
+      "methods": [
+        {
+          "name": "tmpdir.Dir.mktmpdir",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "tmpdir.Dir"
+          ]
+        },
+        {
+          "name": "tmpdir.Dir.tmpdir",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "tmpdir.Dir"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

@@ -1,0 +1,1615 @@
+{
+  "minitest.Minitest.Parallel": [
+    {
+      "name": "minitest.Minitest.Parallel.Executor",
+      "methods": [
+        {
+          "name": "minitest.Minitest.Parallel.Executor.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Parallel.Executor"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Parallel.Executor.<<",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Parallel.Executor"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Parallel.Executor.shutdown",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Parallel.Executor"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Parallel.Executor.start",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Parallel.Executor"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "minitest.Minitest.Spec.DSL": [
+    {
+      "name": "minitest.Minitest.Spec.DSL.InstanceMethods",
+      "methods": [
+        {
+          "name": "minitest.Minitest.Spec.DSL.InstanceMethods._",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Spec.DSL.InstanceMethods"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Spec.DSL.InstanceMethods.expect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Spec.DSL.InstanceMethods"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Spec.DSL.InstanceMethods.value",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Spec.DSL.InstanceMethods"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "minitest.Minitest.Test": [
+    {
+      "name": "minitest.Minitest.Test.LifecycleHooks",
+      "methods": [
+        {
+          "name": "minitest.Minitest.Test.LifecycleHooks.after_setup",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Test.LifecycleHooks"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Test.LifecycleHooks.after_teardown",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Test.LifecycleHooks"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Test.LifecycleHooks.before_setup",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Test.LifecycleHooks"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Test.LifecycleHooks.before_teardown",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Test.LifecycleHooks"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Test.LifecycleHooks.setup",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Test.LifecycleHooks"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Test.LifecycleHooks.teardown",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Test.LifecycleHooks"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "minitest": [
+    {
+      "name": "minitest.Kernel",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "minitest.Minitest",
+      "methods": [
+        {
+          "name": "minitest.Minitest.__run",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.after_run",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.autorun",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.run",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.backtrace_filter",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.extensions",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.info_signal",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.parallel_executor",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.reporter",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.seed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "minitest.Object",
+      "methods": [
+        {
+          "name": "minitest.Object.stub",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Object"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "minitest.SubThingySpec",
+      "methods": [
+        {
+          "name": "minitest.SubThingySpec.setup",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.SubThingySpec"
+          ]
+        },
+        {
+          "name": "minitest.SubThingySpec.test_should_do_the_second_thing",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.SubThingySpec"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "minitest.ThingySpec",
+      "methods": [
+        {
+          "name": "minitest.ThingySpec.setup",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.ThingySpec"
+          ]
+        },
+        {
+          "name": "minitest.ThingySpec.test_should_do_the_first_thing",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.ThingySpec"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "minitest.Minitest": [
+    {
+      "name": "minitest.Minitest.AbstractReporter",
+      "methods": [
+        {
+          "name": "minitest.Minitest.AbstractReporter.passed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.AbstractReporter"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.AbstractReporter.prerecord",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.AbstractReporter"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.AbstractReporter.record",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.AbstractReporter"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.AbstractReporter.report",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.AbstractReporter"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.AbstractReporter.start",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.AbstractReporter"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "minitest.Minitest.Assertion",
+      "methods": [
+        {
+          "name": "minitest.Minitest.Assertion.location",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertion"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "minitest.Minitest.Assertions",
+      "methods": [
+        {
+          "name": "minitest.Minitest.Assertions.diff",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.assert",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.assert_empty",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.assert_equal",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.assert_in_delta",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.assert_in_epsilon",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.assert_includes",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.assert_instance_of",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.assert_kind_of",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.assert_match",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.assert_mock",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.assert_nil",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.assert_operator",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.assert_output",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.assert_path_exists",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.assert_pattern",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.assert_predicate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.assert_raises",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.assert_respond_to",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.assert_same",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.assert_send",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.assert_silent",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.assert_throws",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.capture_io",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.capture_subprocess_io",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.exception_details",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.fail_after",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.flunk",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.message",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.mu_pp",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.mu_pp_for_diff",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.pass",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.refute",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.refute_empty",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.refute_equal",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.refute_in_delta",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.refute_in_epsilon",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.refute_includes",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.refute_instance_of",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.refute_kind_of",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.refute_match",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.refute_nil",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.refute_operator",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.refute_path_exists",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.refute_pattern",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.refute_predicate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.refute_respond_to",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.refute_same",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.skip",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.skip_until",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.skipped",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Assertions.things_to_diff",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Assertions"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "minitest.Minitest.BacktraceFilter",
+      "methods": [
+        {
+          "name": "minitest.Minitest.BacktraceFilter.filter",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.BacktraceFilter"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "minitest.Minitest.BenchSpec",
+      "methods": [
+        {
+          "name": "minitest.Minitest.BenchSpec.bench",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.BenchSpec"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.BenchSpec.bench_performance_constant",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.BenchSpec"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.BenchSpec.bench_performance_exponential",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.BenchSpec"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.BenchSpec.bench_performance_linear",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.BenchSpec"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.BenchSpec.bench_performance_logarithmic",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.BenchSpec"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.BenchSpec.bench_performance_power",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.BenchSpec"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.BenchSpec.bench_range",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.BenchSpec"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "minitest.Minitest.Benchmark",
+      "methods": [
+        {
+          "name": "minitest.Minitest.Benchmark.bench_exp",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Benchmark"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Benchmark.bench_linear",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Benchmark"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Benchmark.bench_range",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Benchmark"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Benchmark.assert_performance",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Benchmark"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Benchmark.assert_performance_constant",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Benchmark"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Benchmark.assert_performance_exponential",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Benchmark"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Benchmark.assert_performance_linear",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Benchmark"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Benchmark.assert_performance_logarithmic",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Benchmark"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Benchmark.assert_performance_power",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Benchmark"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Benchmark.fit_error",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Benchmark"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Benchmark.fit_exponential",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Benchmark"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Benchmark.fit_linear",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Benchmark"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Benchmark.fit_logarithmic",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Benchmark"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Benchmark.fit_power",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Benchmark"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Benchmark.sigma",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Benchmark"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Benchmark.validation_for_fit",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Benchmark"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "minitest.Minitest.CompositeReporter",
+      "methods": [
+        {
+          "name": "minitest.Minitest.CompositeReporter.<<",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.CompositeReporter"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "minitest.Minitest.Expectations",
+      "methods": [
+        {
+          "name": "minitest.Minitest.Expectations.must_be",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Expectations"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Expectations.must_be_close_to",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Expectations"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Expectations.must_be_empty",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Expectations"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Expectations.must_be_instance_of",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Expectations"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Expectations.must_be_kind_of",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Expectations"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Expectations.must_be_nil",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Expectations"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Expectations.must_be_same_as",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Expectations"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Expectations.must_be_silent",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Expectations"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Expectations.must_be_within_epsilon",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Expectations"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Expectations.must_equal",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Expectations"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Expectations.must_include",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Expectations"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Expectations.must_match",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Expectations"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Expectations.must_output",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Expectations"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Expectations.must_pattern_match",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Expectations"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Expectations.must_raise",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Expectations"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Expectations.must_respond_to",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Expectations"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Expectations.must_throw",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Expectations"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Expectations.path_must_exist",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Expectations"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Expectations.path_wont_exist",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Expectations"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Expectations.wont_be",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Expectations"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Expectations.wont_be_close_to",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Expectations"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Expectations.wont_be_empty",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Expectations"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Expectations.wont_be_instance_of",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Expectations"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Expectations.wont_be_kind_of",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Expectations"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Expectations.wont_be_nil",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Expectations"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Expectations.wont_be_same_as",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Expectations"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Expectations.wont_be_within_epsilon",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Expectations"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Expectations.wont_equal",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Expectations"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Expectations.wont_include",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Expectations"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Expectations.wont_match",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Expectations"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Expectations.wont_pattern_match",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Expectations"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Expectations.wont_respond_to",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Expectations"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "minitest.Minitest.Guard",
+      "methods": [
+        {
+          "name": "minitest.Minitest.Guard.jruby",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Guard"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Guard.maglev",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Guard"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Guard.mri",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Guard"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Guard.osx",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Guard"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Guard.rubinius",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Guard"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Guard.windows",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Guard"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "minitest.Minitest.Mock",
+      "methods": [
+        {
+          "name": "minitest.Minitest.Mock.expect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Mock"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Mock.verify",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Mock"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "minitest.Minitest.Parallel",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "minitest.Minitest.PrideIO",
+      "methods": [
+        {
+          "name": "minitest.Minitest.PrideIO.pride",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.PrideIO"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.PrideIO.print",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.PrideIO"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "minitest.Minitest.PrideLOL",
+      "methods": [
+        {
+          "name": "minitest.Minitest.PrideLOL.pride",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.PrideLOL"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "minitest.Minitest.ProgressReporter",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "minitest.Minitest.Reportable",
+      "methods": [
+        {
+          "name": "minitest.Minitest.Reportable.error",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Reportable"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Reportable.location",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Reportable"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Reportable.passed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Reportable"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Reportable.result_code",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Reportable"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Reportable.skipped",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Reportable"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "minitest.Minitest.Result",
+      "methods": [
+        {
+          "name": "minitest.Minitest.Result.from",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Result"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "minitest.Minitest.Skip",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "minitest.Minitest.Spec",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "minitest.Minitest.StatisticsReporter",
+      "methods": [
+        {
+          "name": "minitest.Minitest.StatisticsReporter.report",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.StatisticsReporter"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "minitest.Minitest.SummaryReporter",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "minitest.Minitest.Test",
+      "methods": [
+        {
+          "name": "minitest.Minitest.Test.i_suck_and_my_tests_are_order_dependent",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Test"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Test.make_my_diffs_pretty",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Test"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Test.parallelize_me",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Test"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Test.runnable_methods",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Test"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Test.run",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Test"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "minitest.Minitest.TestTask",
+      "methods": [
+        {
+          "name": "minitest.Minitest.TestTask.create",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.TestTask"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.TestTask.make_test_cmd",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.TestTask"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.TestTask.process_env",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.TestTask"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "minitest.Minitest.UnexpectedError",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "minitest.Minitest.Spec": [
+    {
+      "name": "minitest.Minitest.Spec.DSL",
+      "methods": [
+        {
+          "name": "minitest.Minitest.Spec.DSL.after",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Spec.DSL"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Spec.DSL.before",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Spec.DSL"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Spec.DSL.it",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Spec.DSL"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Spec.DSL.let",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Spec.DSL"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Spec.DSL.register_spec_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Spec.DSL"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Spec.DSL.spec_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Spec.DSL"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Spec.DSL.specify",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Spec.DSL"
+          ]
+        },
+        {
+          "name": "minitest.Minitest.Spec.DSL.subject",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "minitest.Minitest.Spec.DSL"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

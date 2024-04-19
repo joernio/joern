@@ -1,0 +1,72 @@
+{
+  "pty": [
+    {
+      "name": "pty.IO",
+      "methods": [
+        {
+          "name": "pty.IO.IO#expect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "pty.IO"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "pty.PTY",
+      "methods": [
+        {
+          "name": "pty.PTY.check",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "pty.PTY"
+          ]
+        },
+        {
+          "name": "pty.PTY.getpty",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "pty.PTY"
+          ]
+        },
+        {
+          "name": "pty.PTY.open",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "pty.PTY"
+          ]
+        },
+        {
+          "name": "pty.PTY.spawn",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "pty.PTY"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "pty.PTY": [
+    {
+      "name": "pty.PTY.ChildExited",
+      "methods": [
+        {
+          "name": "pty.PTY.ChildExited.status",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "pty.PTY.ChildExited"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

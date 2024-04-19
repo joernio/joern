@@ -1,0 +1,369 @@
+{
+  "strscan.StringScanner": [
+    {
+      "name": "strscan.StringScanner.Error",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "strscan": [
+    {
+      "name": "strscan.StringScanner",
+      "methods": [
+        {
+          "name": "strscan.StringScanner.must_C_version",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.<<",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.beginning_of_line",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.captures",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.charpos",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.check",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.check_until",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.clear",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.concat",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.empty",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.eos",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.exist",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.fixed_anchor",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.get_byte",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.getbyte",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.getch",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.match",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.matched",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.matched_size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.named_captures",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.peek",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.peep",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.pointer",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.pos",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.post_match",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.pre_match",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.reset",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.rest",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.rest_size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.restsize",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.scan",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.scan_full",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.scan_until",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.search_full",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.skip",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.skip_until",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.string",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.terminate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.unscan",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        },
+        {
+          "name": "strscan.StringScanner.values_at",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "strscan.StringScanner"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

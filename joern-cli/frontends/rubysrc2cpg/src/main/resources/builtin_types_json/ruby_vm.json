@@ -1,0 +1,1871 @@
+{
+  "ruby_vm.RubyVM.RJIT": [
+    {
+      "name": "ruby_vm.RubyVM.RJIT.Assembler",
+      "methods": [
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.add",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.and",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.assemble",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.block",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.call",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.cmove",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.cmovg",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.cmovge",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.cmovl",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.cmovle",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.cmovne",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.cmovnz",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.cmovz",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.cmp",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.comment",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.incr_counter",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.jbe",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.je",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.jl",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.jmp",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.jne",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.jnz",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.jo",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.jz",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.lea",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.mov",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.new_label",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.or",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.pop",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.pos_marker",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.push",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.ret",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.sar",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.stub",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.sub",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.test",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.write_label",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Assembler.xor",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Assembler"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "ruby_vm.RubyVM.RJIT.Block",
+      "methods": [
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Block.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Block"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "ruby_vm.RubyVM.RJIT.BranchStub",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "ruby_vm.RubyVM.RJIT.BranchTarget",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "ruby_vm.RubyVM.RJIT.BytePtr",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "ruby_vm.RubyVM.RJIT.CPointer",
+      "methods": [
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CPointer.with_class_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CPointer"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "ruby_vm.RubyVM.RJIT.CType",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "ruby_vm.RubyVM.RJIT.CodeBlock",
+      "methods": [
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CodeBlock.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CodeBlock"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CodeBlock.dump_disasm",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CodeBlock"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CodeBlock.include",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CodeBlock"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CodeBlock.set_write_addr",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CodeBlock"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CodeBlock.with_write_addr",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CodeBlock"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CodeBlock.write",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CodeBlock"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CodeBlock.write_addr",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CodeBlock"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "ruby_vm.RubyVM.RJIT.Compiler",
+      "methods": [
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Compiler.decode_insn",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Compiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Compiler.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Compiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Compiler.branch_stub_hit",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Compiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Compiler.compile",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Compiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Compiler.entry_stub_hit",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Compiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Compiler.invalidate_block",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Compiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Compiler.invalidate_blocks",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Compiler"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "ruby_vm.RubyVM.RJIT.Context",
+      "methods": [
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Context.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Context"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Context.assert",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Context"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Context.clear_local_types",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Context"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Context.diff",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Context"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Context.dup",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Context"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Context.get_local_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Context"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Context.get_opnd_mapping",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Context"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Context.get_opnd_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Context"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Context.set_local_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Context"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Context.set_opnd_mapping",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Context"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Context.shift_stack",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Context"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Context.sp_opnd",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Context"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Context.stack_opnd",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Context"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Context.stack_pop",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Context"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Context.stack_push",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Context"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Context.stack_push_local",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Context"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Context.stack_push_mapping",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Context"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Context.stack_push_self",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Context"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Context.upgrade_opnd_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Context"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Context.with_stack_size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Context"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "ruby_vm.RubyVM.RJIT.DwordPtr",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "ruby_vm.RubyVM.RJIT.EntryStub",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "ruby_vm.RubyVM.RJIT.ExitCompiler",
+      "methods": [
+        {
+          "name": "ruby_vm.RubyVM.RJIT.ExitCompiler.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.ExitCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.ExitCompiler.compile_branch_stub",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.ExitCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.ExitCompiler.compile_entry_exit",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.ExitCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.ExitCompiler.compile_entry_stub",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.ExitCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.ExitCompiler.compile_full_cfunc_return",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.ExitCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.ExitCompiler.compile_leave_exit",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.ExitCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.ExitCompiler.compile_side_exit",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.ExitCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.ExitCompiler.count_insn_exit",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.ExitCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.ExitCompiler.iseq_lineno",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.ExitCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.ExitCompiler.pc_to_insn",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.ExitCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.ExitCompiler.save_pc_and_sp",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.ExitCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.ExitCompiler.to_value",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.ExitCompiler"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "ruby_vm.RubyVM.RJIT.InsnCompiler",
+      "methods": [
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.assert",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.assert_equal",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.build_calling",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.builtin_function",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.c_method_tracing_currently_enabled",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.compile_jit_direct_jump",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.compile_jit_return",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.counted_exit",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.def_iseq_ptr",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.defer_compilation",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.dynamic_symbol",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.fixnum",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.flonum",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.full_cfunc_return",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.guard_block_arg",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.handle_opt_send_shift_stack",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.jit_array_len",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.jit_array_ptr",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.jit_call_alias",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.jit_call_attrset",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.jit_call_bmethod",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.jit_call_cfunc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.jit_call_general",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.jit_call_iseq",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.jit_call_ivar",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.jit_call_method",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.jit_call_method_each_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.jit_call_opt_call",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.jit_call_opt_send",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.jit_call_opt_struct_aref",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.jit_call_optimized",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.jit_call_symbol",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.jit_caller_setup_arg",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.jit_direct_jump",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.jit_get_ep",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.jit_get_lep",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.jit_getivar",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.jit_leaf_builtin_func",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.jit_protected_callee_ancestry_guard",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.jit_push_frame",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.jit_search_method",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.jit_write_iv",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.move_rest_args_to_stack",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.push_splat_args",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.shape_too_complex",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.side_exit",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.static_symbol",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.symbol",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.InsnCompiler.to_value",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.InsnCompiler"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "ruby_vm.RubyVM.RJIT.Invariants",
+      "methods": [
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Invariants.assume_bop_not_redefined",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Invariants"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Invariants.assume_method_basic_definition",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Invariants"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Invariants.assume_method_lookup_stable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Invariants"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Invariants.assume_stable_constant_names",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Invariants"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Invariants.ensure_block_entry_exit",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Invariants"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Invariants.initialize",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Invariants"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Invariants.on_cme_invalidate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Invariants"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Invariants.on_constant_ic_update",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Invariants"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Invariants.on_constant_state_changed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Invariants"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Invariants.on_tracing_invalidate_all",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Invariants"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Invariants.on_update_references",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Invariants"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Invariants.record_global_inval_patch",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Invariants"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "ruby_vm.RubyVM.RJIT.JITState",
+      "methods": [
+        {
+          "name": "ruby_vm.RubyVM.RJIT.JITState.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.JITState"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.JITState.at_current_insn",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.JITState"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.JITState.ep_at_level",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.JITState"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.JITState.insn",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.JITState"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.JITState.operand",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.JITState"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.JITState.peek_at_block_handler",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.JITState"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.JITState.peek_at_local",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.JITState"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.JITState.peek_at_self",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.JITState"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.JITState.peek_at_stack",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.JITState"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "ruby_vm.RubyVM.RJIT.OperandMatcher",
+      "methods": [
+        {
+          "name": "ruby_vm.RubyVM.RJIT.OperandMatcher.extended_reg",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.OperandMatcher"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.OperandMatcher.imm32",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.OperandMatcher"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.OperandMatcher.imm64",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.OperandMatcher"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.OperandMatcher.imm8",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.OperandMatcher"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.OperandMatcher.r32",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.OperandMatcher"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.OperandMatcher.r64",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.OperandMatcher"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.OperandMatcher.reg_code_extended",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.OperandMatcher"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "ruby_vm.RubyVM.RJIT.Type",
+      "methods": [
+        {
+          "name": "ruby_vm.RubyVM.RJIT.Type.from",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.Type"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "ruby_vm.RubyVM.RJIT.TypeDiff",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "ruby_vm.RubyVM.RJIT.CPointer": [
+    {
+      "name": "ruby_vm.RubyVM.RJIT.CPointer.Array",
+      "methods": [
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CPointer.Array.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CPointer.Array"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CPointer.Array.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CPointer.Array"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "ruby_vm.RubyVM.RJIT.CPointer.BitField",
+      "methods": [
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CPointer.BitField.define",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CPointer.BitField"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CPointer.BitField.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CPointer.BitField"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CPointer.BitField.*",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CPointer.BitField"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "ruby_vm.RubyVM.RJIT.CPointer.Bool",
+      "methods": [
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CPointer.Bool.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CPointer.Bool"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CPointer.Bool.*",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CPointer.Bool"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "ruby_vm.RubyVM.RJIT.CPointer.Immediate",
+      "methods": [
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CPointer.Immediate.define",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CPointer.Immediate"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CPointer.Immediate.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CPointer.Immediate"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CPointer.Immediate.*",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CPointer.Immediate"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CPointer.Immediate.+",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CPointer.Immediate"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CPointer.Immediate.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CPointer.Immediate"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CPointer.Immediate.to_i",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CPointer.Immediate"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CPointer.Immediate.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CPointer.Immediate"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "ruby_vm.RubyVM.RJIT.CPointer.Pointer",
+      "methods": [
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CPointer.Pointer.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CPointer.Pointer"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CPointer.Pointer.*",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CPointer.Pointer"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CPointer.Pointer.+",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CPointer.Pointer"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CPointer.Pointer.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CPointer.Pointer"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CPointer.Pointer.to_i",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CPointer.Pointer"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "ruby_vm.RubyVM.RJIT.CPointer.Struct",
+      "methods": [
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CPointer.Struct.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CPointer.Struct"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CPointer.Struct.-",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CPointer.Struct"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CPointer.Struct.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CPointer.Struct"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CPointer.Struct.to_i",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CPointer.Struct"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CPointer.Struct.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CPointer.Struct"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "ruby_vm.RubyVM.RJIT.CPointer.Union",
+      "methods": [
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CPointer.Union.define",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CPointer.Union"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CPointer.Union.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CPointer.Union"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CPointer.Union.+",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CPointer.Union"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CPointer.Union.-",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CPointer.Union"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CPointer.Union.to_i",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CPointer.Union"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "ruby_vm.RubyVM.RJIT.Assembler": [
+    {
+      "name": "ruby_vm.RubyVM.RJIT.Assembler.Label",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "ruby_vm.RubyVM.RJIT.Assembler.ModRM",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "ruby_vm.RubyVM.RJIT.Assembler.Rel32",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "ruby_vm.RubyVM": [
+    {
+      "name": "ruby_vm.RubyVM.RJIT",
+      "methods": [
+        {
+          "name": "ruby_vm.RubyVM.RJIT.runtime_stats",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "ruby_vm": [
+    {
+      "name": "ruby_vm.RubyVM",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "ruby_vm.RubyVM.RJIT.CType": [
+    {
+      "name": "ruby_vm.RubyVM.RJIT.CType.Array",
+      "methods": [
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CType.Array.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CType.Array"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "ruby_vm.RubyVM.RJIT.CType.BitField",
+      "methods": [
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CType.BitField.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CType.BitField"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "ruby_vm.RubyVM.RJIT.CType.Bool",
+      "methods": [
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CType.Bool.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CType.Bool"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "ruby_vm.RubyVM.RJIT.CType.Immediate",
+      "methods": [
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CType.Immediate.find",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CType.Immediate"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CType.Immediate.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CType.Immediate"
+          ]
+        },
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CType.Immediate.parse",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CType.Immediate"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "ruby_vm.RubyVM.RJIT.CType.Pointer",
+      "methods": [
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CType.Pointer.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CType.Pointer"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "ruby_vm.RubyVM.RJIT.CType.Struct",
+      "methods": [
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CType.Struct.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CType.Struct"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "ruby_vm.RubyVM.RJIT.CType.Union",
+      "methods": [
+        {
+          "name": "ruby_vm.RubyVM.RJIT.CType.Union.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ruby_vm.RubyVM.RJIT.CType.Union"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

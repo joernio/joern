@@ -1,0 +1,6847 @@
+{
+  "rss.RSS.Maker.RSS20.Channel.Categories": [
+    {
+      "name": "rss.RSS.Maker.RSS20.Channel.Categories.Category",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS20.Channel.Categories.Category.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS20.Channel.Categories.Category"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS09.Items.Item.Source": [
+    {
+      "name": "rss.RSS.Maker.RSS09.Items.Item.Source.Authors",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Items.Item.Source.Authors.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Items.Item.Source.Authors"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS09.Items.Item.Source.Categories",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Items.Item.Source.Categories.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Items.Item.Source.Categories"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS09.Items.Item.Source.Contributors",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Items.Item.Source.Contributors.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Items.Item.Source.Contributors"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS09.Items.Item.Source.Generator",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Items.Item.Source.Generator.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Items.Item.Source.Generator"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS09.Items.Item.Source.Icon",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Items.Item.Source.Icon.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Items.Item.Source.Icon"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS09.Items.Item.Source.Links",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Items.Item.Source.Links.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Items.Item.Source.Links"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS09.Items.Item.Source.Logo",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Items.Item.Source.Logo.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Items.Item.Source.Logo"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS09.Items.Item.Source.Rights",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Items.Item.Source.Rights.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Items.Item.Source.Rights"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS09.Items.Item.Source.Subtitle",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Items.Item.Source.Subtitle.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Items.Item.Source.Subtitle"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS09.Items.Item.Source.Title",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Items.Item.Source.Title.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Items.Item.Source.Title"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.XMLEncoding_ja": [
+    {
+      "name": "rss.XMLEncoding_ja.SJISHandler",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.Atom.Feed.Channel.Links": [
+    {
+      "name": "rss.RSS.Maker.Atom.Feed.Channel.Links.Link",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.Atom.Feed.Channel.Links.Link.not_set_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Atom.Feed.Channel.Links.Link"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS20": [
+    {
+      "name": "rss.RSS.Maker.RSS20.Channel",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS20.Image",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS20.Items",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS20.Textinput",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Rss.Channel.SkipDays": [
+    {
+      "name": "rss.RSS.Rss.Channel.SkipDays.Day",
+      "methods": [
+        {
+          "name": "rss.RSS.Rss.Channel.SkipDays.Day.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Rss.Channel.SkipDays.Day"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.ItemsBase.ItemBase": [
+    {
+      "name": "rss.RSS.Maker.ItemsBase.ItemBase.ContentBase",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.ItemsBase.ItemBase.ContentBase.inline_html",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ItemsBase.ItemBase.ContentBase"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.ItemsBase.ItemBase.ContentBase.inline_other",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ItemsBase.ItemBase.ContentBase"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.ItemsBase.ItemBase.ContentBase.inline_other_base64",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ItemsBase.ItemBase.ContentBase"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.ItemsBase.ItemBase.ContentBase.inline_other_text",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ItemsBase.ItemBase.ContentBase"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.ItemsBase.ItemBase.ContentBase.inline_other_xml",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ItemsBase.ItemBase.ContentBase"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.ItemsBase.ItemBase.ContentBase.inline_text",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ItemsBase.ItemBase.ContentBase"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.ItemsBase.ItemBase.ContentBase.inline_xhtml",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ItemsBase.ItemBase.ContentBase"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.ItemsBase.ItemBase.ContentBase.out_of_line",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ItemsBase.ItemBase.ContentBase"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.ItemsBase.ItemBase.ContentBase.xml",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ItemsBase.ItemBase.ContentBase"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.ItemsBase.ItemBase.ContentBase.xml_content",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ItemsBase.ItemBase.ContentBase"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ItemsBase.ItemBase.DescriptionBase",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ItemsBase.ItemBase.EnclosureBase",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ItemsBase.ItemBase.GuidBase",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.ItemsBase.ItemBase.GuidBase.permanent_link",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ItemsBase.ItemBase.GuidBase"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ItemsBase.ItemBase.ITunesDuration",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ItemsBase.ItemBase.ITunesImage",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ItemsBase.ItemBase.RightsBase",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ItemsBase.ItemBase.SourceBase",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.ItemsBase.ItemBase.SourceBase.date",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ItemsBase.ItemBase.SourceBase"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.ItemsBase.ItemBase.SourceBase.updated",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ItemsBase.ItemBase.SourceBase"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ItemsBase.ItemBase.TitleBase",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS10.Items.Item.Categories": [
+    {
+      "name": "rss.RSS.Maker.RSS10.Items.Item.Categories.Category",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.Atom.Feed.Items.Item.Source.Links": [
+    {
+      "name": "rss.RSS.Maker.Atom.Feed.Items.Item.Source.Links.Link",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.Atom.Feed.Items.Item.Source.Links.Link.not_set_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Atom.Feed.Items.Item.Source.Links.Link"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.TaxonomyTopicsModel": [
+    {
+      "name": "rss.RSS.TaxonomyTopicsModel.TaxonomyTopics",
+      "methods": [
+        {
+          "name": "rss.RSS.TaxonomyTopicsModel.TaxonomyTopics.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.TaxonomyTopicsModel.TaxonomyTopics"
+          ]
+        },
+        {
+          "name": "rss.RSS.TaxonomyTopicsModel.TaxonomyTopics.required_prefix",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.TaxonomyTopicsModel.TaxonomyTopics"
+          ]
+        },
+        {
+          "name": "rss.RSS.TaxonomyTopicsModel.TaxonomyTopics.required_uri",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.TaxonomyTopicsModel.TaxonomyTopics"
+          ]
+        },
+        {
+          "name": "rss.RSS.TaxonomyTopicsModel.TaxonomyTopics.full_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.TaxonomyTopicsModel.TaxonomyTopics"
+          ]
+        },
+        {
+          "name": "rss.RSS.TaxonomyTopicsModel.TaxonomyTopics.maker_target",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.TaxonomyTopicsModel.TaxonomyTopics"
+          ]
+        },
+        {
+          "name": "rss.RSS.TaxonomyTopicsModel.TaxonomyTopics.resources",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.TaxonomyTopicsModel.TaxonomyTopics"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS10.Items.Item.Source": [
+    {
+      "name": "rss.RSS.Maker.RSS10.Items.Item.Source.Authors",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Items.Item.Source.Authors.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Items.Item.Source.Authors"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS10.Items.Item.Source.Categories",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Items.Item.Source.Categories.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Items.Item.Source.Categories"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS10.Items.Item.Source.Contributors",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Items.Item.Source.Contributors.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Items.Item.Source.Contributors"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS10.Items.Item.Source.Generator",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Items.Item.Source.Generator.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Items.Item.Source.Generator"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS10.Items.Item.Source.Icon",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Items.Item.Source.Icon.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Items.Item.Source.Icon"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS10.Items.Item.Source.Links",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Items.Item.Source.Links.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Items.Item.Source.Links"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS10.Items.Item.Source.Logo",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Items.Item.Source.Logo.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Items.Item.Source.Logo"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS10.Items.Item.Source.Rights",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Items.Item.Source.Rights.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Items.Item.Source.Rights"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS10.Items.Item.Source.Subtitle",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Items.Item.Source.Subtitle.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Items.Item.Source.Subtitle"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS10.Items.Item.Source.Title",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Items.Item.Source.Title.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Items.Item.Source.Title"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.ChannelBase.AuthorsBase": [
+    {
+      "name": "rss.RSS.Maker.ChannelBase.AuthorsBase.AuthorBase",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS10.Channel.Contributors": [
+    {
+      "name": "rss.RSS.Maker.RSS10.Channel.Contributors.Contributor",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS10.Channel.Authors": [
+    {
+      "name": "rss.RSS.Maker.RSS10.Channel.Authors.Author",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Channel.Authors.Author.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Channel.Authors.Author"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS10.Items.Item.Links": [
+    {
+      "name": "rss.RSS.Maker.RSS10.Items.Item.Links.Link",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.ITunesChannelModel": [
+    {
+      "name": "rss.RSS.ITunesChannelModel.ITunesCategory",
+      "methods": [
+        {
+          "name": "rss.RSS.ITunesChannelModel.ITunesCategory.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ITunesChannelModel.ITunesCategory"
+          ]
+        },
+        {
+          "name": "rss.RSS.ITunesChannelModel.ITunesCategory.required_prefix",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ITunesChannelModel.ITunesCategory"
+          ]
+        },
+        {
+          "name": "rss.RSS.ITunesChannelModel.ITunesCategory.required_uri",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ITunesChannelModel.ITunesCategory"
+          ]
+        },
+        {
+          "name": "rss.RSS.ITunesChannelModel.ITunesCategory.full_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ITunesChannelModel.ITunesCategory"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.ITunesChannelModel.ITunesImage",
+      "methods": [
+        {
+          "name": "rss.RSS.ITunesChannelModel.ITunesImage.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ITunesChannelModel.ITunesImage"
+          ]
+        },
+        {
+          "name": "rss.RSS.ITunesChannelModel.ITunesImage.required_prefix",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ITunesChannelModel.ITunesImage"
+          ]
+        },
+        {
+          "name": "rss.RSS.ITunesChannelModel.ITunesImage.required_uri",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ITunesChannelModel.ITunesImage"
+          ]
+        },
+        {
+          "name": "rss.RSS.ITunesChannelModel.ITunesImage.full_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ITunesChannelModel.ITunesImage"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.ITunesChannelModel.ITunesOwner",
+      "methods": [
+        {
+          "name": "rss.RSS.ITunesChannelModel.ITunesOwner.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ITunesChannelModel.ITunesOwner"
+          ]
+        },
+        {
+          "name": "rss.RSS.ITunesChannelModel.ITunesOwner.required_prefix",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ITunesChannelModel.ITunesOwner"
+          ]
+        },
+        {
+          "name": "rss.RSS.ITunesChannelModel.ITunesOwner.required_uri",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ITunesChannelModel.ITunesOwner"
+          ]
+        },
+        {
+          "name": "rss.RSS.ITunesChannelModel.ITunesOwner.full_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ITunesChannelModel.ITunesOwner"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS091.Items": [
+    {
+      "name": "rss.RSS.Maker.RSS091.Items.Item",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.ChannelBase.ContributorsBase": [
+    {
+      "name": "rss.RSS.Maker.ChannelBase.ContributorsBase.ContributorBase",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.Atom.Entry": [
+    {
+      "name": "rss.RSS.Maker.Atom.Entry.Channel",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.Atom.Entry.Image",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.Atom.Entry.Items",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.Atom.Entry.Items.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Atom.Entry.Items"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.Atom.Entry.Textinput",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.ItemsBase": [
+    {
+      "name": "rss.RSS.Maker.ItemsBase.ItemBase",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.ItemsBase.ItemBase.<>",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ItemsBase.ItemBase"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.ItemsBase.ItemBase.date",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ItemsBase.ItemBase"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.ItemsBase.ItemBase.pubDate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ItemsBase.ItemBase"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.ItemsBase.ItemBase.updated",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ItemsBase.ItemBase"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.ChannelBase": [
+    {
+      "name": "rss.RSS.Maker.ChannelBase.AuthorsBase",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ChannelBase.CategoriesBase",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ChannelBase.CloudBase",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ChannelBase.ContributorsBase",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ChannelBase.CopyrightBase",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ChannelBase.DescriptionBase",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ChannelBase.GeneratorBase",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ChannelBase.ITunesCategories",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ChannelBase.ITunesImage",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ChannelBase.ITunesOwner",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ChannelBase.LinksBase",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ChannelBase.SkipDaysBase",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ChannelBase.SkipHoursBase",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ChannelBase.TitleBase",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Atom.PersonConstruct": [
+    {
+      "name": "rss.RSS.Atom.PersonConstruct.Email",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Atom.PersonConstruct.Name",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Atom.PersonConstruct.Uri",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Utils": [
+    {
+      "name": "rss.RSS.Utils.CSV",
+      "methods": [
+        {
+          "name": "rss.RSS.Utils.CSV.parse",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Utils.CSV"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Utils.ExplicitCleanOther",
+      "methods": [
+        {
+          "name": "rss.RSS.Utils.ExplicitCleanOther.parse",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Utils.ExplicitCleanOther"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Utils.InheritedReader",
+      "methods": [
+        {
+          "name": "rss.RSS.Utils.InheritedReader.inherited_array_reader",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Utils.InheritedReader"
+          ]
+        },
+        {
+          "name": "rss.RSS.Utils.InheritedReader.inherited_hash_reader",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Utils.InheritedReader"
+          ]
+        },
+        {
+          "name": "rss.RSS.Utils.InheritedReader.inherited_reader",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Utils.InheritedReader"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Utils.YesOther",
+      "methods": [
+        {
+          "name": "rss.RSS.Utils.YesOther.parse",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Utils.YesOther"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS091": [
+    {
+      "name": "rss.RSS.Maker.RSS091.Channel",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS091.Image",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS091.Items",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS091.Textinput",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS09.Items": [
+    {
+      "name": "rss.RSS.Maker.RSS09.Items.Item",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Items.Item.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Items.Item"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS092": [
+    {
+      "name": "rss.RSS.Maker.RSS092.Channel",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS092.Image",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS092.Items",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS092.Textinput",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS10.Channel.SkipHours": [
+    {
+      "name": "rss.RSS.Maker.RSS10.Channel.SkipHours.Hour",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS20.Channel.SkipHours": [
+    {
+      "name": "rss.RSS.Maker.RSS20.Channel.SkipHours.Hour",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.TaxonomyTopicsModel.TaxonomyTopics": [
+    {
+      "name": "rss.RSS.TaxonomyTopicsModel.TaxonomyTopics.Bag",
+      "methods": [
+        {
+          "name": "rss.RSS.TaxonomyTopicsModel.TaxonomyTopics.Bag.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.TaxonomyTopicsModel.TaxonomyTopics.Bag"
+          ]
+        },
+        {
+          "name": "rss.RSS.TaxonomyTopicsModel.TaxonomyTopics.Bag.required_uri",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.TaxonomyTopicsModel.TaxonomyTopics.Bag"
+          ]
+        },
+        {
+          "name": "rss.RSS.TaxonomyTopicsModel.TaxonomyTopics.Bag.full_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.TaxonomyTopicsModel.TaxonomyTopics.Bag"
+          ]
+        },
+        {
+          "name": "rss.RSS.TaxonomyTopicsModel.TaxonomyTopics.Bag.setup_maker",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.TaxonomyTopicsModel.TaxonomyTopics.Bag"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.TaxonomyTopicsModel.TaxonomyTopics.Bag",
+      "methods": [
+        {
+          "name": "rss.RSS.TaxonomyTopicsModel.TaxonomyTopics.Bag.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.TaxonomyTopicsModel.TaxonomyTopics.Bag"
+          ]
+        },
+        {
+          "name": "rss.RSS.TaxonomyTopicsModel.TaxonomyTopics.Bag.required_uri",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.TaxonomyTopicsModel.TaxonomyTopics.Bag"
+          ]
+        },
+        {
+          "name": "rss.RSS.TaxonomyTopicsModel.TaxonomyTopics.Bag.full_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.TaxonomyTopicsModel.TaxonomyTopics.Bag"
+          ]
+        },
+        {
+          "name": "rss.RSS.TaxonomyTopicsModel.TaxonomyTopics.Bag.setup_maker",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.TaxonomyTopicsModel.TaxonomyTopics.Bag"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.Atom.Feed.Channel.SkipDays": [
+    {
+      "name": "rss.RSS.Maker.Atom.Feed.Channel.SkipDays.Day",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.Atom.Entry.Items": [
+    {
+      "name": "rss.RSS.Maker.Atom.Entry.Items.Item",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.Atom.Entry.Items.Item.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Atom.Entry.Items.Item"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.ITunesChannelModel": [
+    {
+      "name": "rss.RSS.Maker.ITunesChannelModel.ITunesCategoriesBase",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ITunesChannelModel.ITunesImageBase",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.ITunesChannelModel.ITunesImageBase.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ITunesChannelModel.ITunesImageBase"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ITunesChannelModel.ITunesOwnerBase",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.ITunesChannelModel.ITunesOwnerBase.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ITunesChannelModel.ITunesOwnerBase"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS10.Items.Item.Contributors": [
+    {
+      "name": "rss.RSS.Maker.RSS10.Items.Item.Contributors.Contributor",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.RDF.Channel": [
+    {
+      "name": "rss.RSS.RDF.Channel.Image",
+      "methods": [
+        {
+          "name": "rss.RSS.RDF.Channel.Image.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RDF.Channel.Image"
+          ]
+        },
+        {
+          "name": "rss.RSS.RDF.Channel.Image.required_uri",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RDF.Channel.Image"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.RDF.Channel.Items",
+      "methods": [
+        {
+          "name": "rss.RSS.RDF.Channel.Items.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RDF.Channel.Items"
+          ]
+        },
+        {
+          "name": "rss.RSS.RDF.Channel.Items.required_uri",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RDF.Channel.Items"
+          ]
+        },
+        {
+          "name": "rss.RSS.RDF.Channel.Items.resources",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RDF.Channel.Items"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.RDF.Channel.Textinput",
+      "methods": [
+        {
+          "name": "rss.RSS.RDF.Channel.Textinput.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RDF.Channel.Textinput"
+          ]
+        },
+        {
+          "name": "rss.RSS.RDF.Channel.Textinput.required_uri",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RDF.Channel.Textinput"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS09.Items.Item.Source.Authors": [
+    {
+      "name": "rss.RSS.Maker.RSS09.Items.Item.Source.Authors.Author",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Atom.Feed.Entry": [
+    {
+      "name": "rss.RSS.Atom.Feed.Entry.Content",
+      "methods": [
+        {
+          "name": "rss.RSS.Atom.Feed.Entry.Content.xml_getter",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.Feed.Entry.Content"
+          ]
+        },
+        {
+          "name": "rss.RSS.Atom.Feed.Entry.Content.xml_setter",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.Feed.Entry.Content"
+          ]
+        },
+        {
+          "name": "rss.RSS.Atom.Feed.Entry.Content.atom_validate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.Feed.Entry.Content"
+          ]
+        },
+        {
+          "name": "rss.RSS.Atom.Feed.Entry.Content.have_xml_content",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.Feed.Entry.Content"
+          ]
+        },
+        {
+          "name": "rss.RSS.Atom.Feed.Entry.Content.inline_html",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.Feed.Entry.Content"
+          ]
+        },
+        {
+          "name": "rss.RSS.Atom.Feed.Entry.Content.inline_other",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.Feed.Entry.Content"
+          ]
+        },
+        {
+          "name": "rss.RSS.Atom.Feed.Entry.Content.inline_other_base64",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.Feed.Entry.Content"
+          ]
+        },
+        {
+          "name": "rss.RSS.Atom.Feed.Entry.Content.inline_other_text",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.Feed.Entry.Content"
+          ]
+        },
+        {
+          "name": "rss.RSS.Atom.Feed.Entry.Content.inline_other_xml",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.Feed.Entry.Content"
+          ]
+        },
+        {
+          "name": "rss.RSS.Atom.Feed.Entry.Content.inline_text",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.Feed.Entry.Content"
+          ]
+        },
+        {
+          "name": "rss.RSS.Atom.Feed.Entry.Content.inline_xhtml",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.Feed.Entry.Content"
+          ]
+        },
+        {
+          "name": "rss.RSS.Atom.Feed.Entry.Content.mime_split",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.Feed.Entry.Content"
+          ]
+        },
+        {
+          "name": "rss.RSS.Atom.Feed.Entry.Content.need_base64_encode",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.Feed.Entry.Content"
+          ]
+        },
+        {
+          "name": "rss.RSS.Atom.Feed.Entry.Content.out_of_line",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.Feed.Entry.Content"
+          ]
+        },
+        {
+          "name": "rss.RSS.Atom.Feed.Entry.Content.xhtml",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.Feed.Entry.Content"
+          ]
+        },
+        {
+          "name": "rss.RSS.Atom.Feed.Entry.Content.xml",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.Feed.Entry.Content"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Atom.Feed.Entry.Published",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Atom.Feed.Entry.Source",
+      "methods": [
+        {
+          "name": "rss.RSS.Atom.Feed.Entry.Source.have_author",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.Feed.Entry.Source"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Atom.Feed.Entry.Summary",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS20.Items.Item.Source.Links": [
+    {
+      "name": "rss.RSS.Maker.RSS20.Items.Item.Source.Links.Link",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS20.Items.Item.Source.Links.Link.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS20.Items.Item.Source.Links.Link"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.AtomTextConstructBase": [
+    {
+      "name": "rss.RSS.Maker.AtomTextConstructBase.EnsureXMLContent",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.AtomTextConstructBase.EnsureXMLContent.included",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.AtomTextConstructBase.EnsureXMLContent"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.AtomTextConstructBase.EnsureXMLContent.ensure_xml_content",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.AtomTextConstructBase.EnsureXMLContent"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.AtomTextConstructBase.EnsureXMLContent.xhtml",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.AtomTextConstructBase.EnsureXMLContent"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.AtomTextConstructBase.EnsureXMLContent.xml_content",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.AtomTextConstructBase.EnsureXMLContent"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss": [
+    {
+      "name": "rss.RSS",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.Time",
+      "methods": [
+        {
+          "name": "rss.Time.w3cdtf",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.Time"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.XML",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.XMLEncoding_ja",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS09.Channel.Categories": [
+    {
+      "name": "rss.RSS.Maker.RSS09.Channel.Categories.Category",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.ITunesItemModel": [
+    {
+      "name": "rss.RSS.ITunesItemModel.ITunesDuration",
+      "methods": [
+        {
+          "name": "rss.RSS.ITunesItemModel.ITunesDuration.construct",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ITunesItemModel.ITunesDuration"
+          ]
+        },
+        {
+          "name": "rss.RSS.ITunesItemModel.ITunesDuration.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ITunesItemModel.ITunesDuration"
+          ]
+        },
+        {
+          "name": "rss.RSS.ITunesItemModel.ITunesDuration.parse",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ITunesItemModel.ITunesDuration"
+          ]
+        },
+        {
+          "name": "rss.RSS.ITunesItemModel.ITunesDuration.required_prefix",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ITunesItemModel.ITunesDuration"
+          ]
+        },
+        {
+          "name": "rss.RSS.ITunesItemModel.ITunesDuration.required_uri",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ITunesItemModel.ITunesDuration"
+          ]
+        },
+        {
+          "name": "rss.RSS.ITunesItemModel.ITunesDuration.content",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ITunesItemModel.ITunesDuration"
+          ]
+        },
+        {
+          "name": "rss.RSS.ITunesItemModel.ITunesDuration.full_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ITunesItemModel.ITunesDuration"
+          ]
+        },
+        {
+          "name": "rss.RSS.ITunesItemModel.ITunesDuration.hour",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ITunesItemModel.ITunesDuration"
+          ]
+        },
+        {
+          "name": "rss.RSS.ITunesItemModel.ITunesDuration.minute",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ITunesItemModel.ITunesDuration"
+          ]
+        },
+        {
+          "name": "rss.RSS.ITunesItemModel.ITunesDuration.second",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ITunesItemModel.ITunesDuration"
+          ]
+        },
+        {
+          "name": "rss.RSS.ITunesItemModel.ITunesDuration.value",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ITunesItemModel.ITunesDuration"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.ITunesItemModel.ITunesImage",
+      "methods": [
+        {
+          "name": "rss.RSS.ITunesItemModel.ITunesImage.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ITunesItemModel.ITunesImage"
+          ]
+        },
+        {
+          "name": "rss.RSS.ITunesItemModel.ITunesImage.required_prefix",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ITunesItemModel.ITunesImage"
+          ]
+        },
+        {
+          "name": "rss.RSS.ITunesItemModel.ITunesImage.required_uri",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ITunesItemModel.ITunesImage"
+          ]
+        },
+        {
+          "name": "rss.RSS.ITunesItemModel.ITunesImage.full_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ITunesItemModel.ITunesImage"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS09.Items.Item.Authors": [
+    {
+      "name": "rss.RSS.Maker.RSS09.Items.Item.Authors.Author",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS09": [
+    {
+      "name": "rss.RSS.Maker.RSS09.Channel",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Channel.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Channel"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS09.Image",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Image.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Image"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS09.Items",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Items.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Items"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS09.Textinput",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Textinput.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Textinput"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.ChannelBase.SkipHoursBase": [
+    {
+      "name": "rss.RSS.Maker.ChannelBase.SkipHoursBase.HourBase",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS10.Items.Item.Source.Contributors": [
+    {
+      "name": "rss.RSS.Maker.RSS10.Items.Item.Source.Contributors.Contributor",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS10.Channel.SkipDays": [
+    {
+      "name": "rss.RSS.Maker.RSS10.Channel.SkipDays.Day",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker": [
+    {
+      "name": "rss.RSS.Maker.Atom",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.AtomCategory",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.AtomCategory.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.AtomCategory"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.AtomGenerator",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.AtomGenerator.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.AtomGenerator"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.AtomLink",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.AtomLink.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.AtomLink"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.AtomLogo",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.AtomLogo.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.AtomLogo"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.AtomPersonConstructBase",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.AtomPersonConstructBase.append_features",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.AtomPersonConstructBase"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.AtomPersons",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.AtomPersons.def_atom_persons",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.AtomPersons"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.AtomTextConstruct",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.AtomTextConstruct.def_atom_text_construct",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.AtomTextConstruct"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.AtomTextConstructBase",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.AtomTextConstructBase.append_features",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.AtomTextConstructBase"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.Base",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.Base.add_need_initialize_variable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Base"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.Base.add_other_element",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Base"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.Base.def_array_element",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Base"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.Base.def_classed_element",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Base"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.Base.def_classed_element_without_accessor",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Base"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.Base.def_classed_elements",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Base"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.Base.def_csv_element",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Base"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.Base.def_other_element",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Base"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.Base.def_other_element_without_accessor",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Base"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.Base.inherited",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Base"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.Base.inherited_base",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Base"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.Base.need_initialize_variables",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Base"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.Base.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Base"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.Base.other_elements",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Base"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.Base.have_required_values",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Base"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.Base.variable_is_set",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Base"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ChannelBase",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.ChannelBase.date",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ChannelBase"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.ChannelBase.icon",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ChannelBase"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.ChannelBase.lastBuildDate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ChannelBase"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.ChannelBase.logo",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ChannelBase"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.ChannelBase.pubDate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ChannelBase"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.ChannelBase.updated",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ChannelBase"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ContentModel",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.ContentModel.append_features",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ContentModel"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.DublinCoreModel",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.DublinCoreModel.append_features",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.DublinCoreModel"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.DublinCoreModel.install_dublin_core",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.DublinCoreModel"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ITunesBaseModel",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.ITunesBaseModel.def_class_accessor",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ITunesBaseModel"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.ITunesBaseModel.def_csv_accessor",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ITunesBaseModel"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.ITunesBaseModel.def_elements_class_accessor",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ITunesBaseModel"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.ITunesBaseModel.def_explicit_clean_other_accessor",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ITunesBaseModel"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.ITunesBaseModel.def_yes_other_accessor",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ITunesBaseModel"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ITunesChannelModel",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.ITunesChannelModel.append_features",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ITunesChannelModel"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ITunesItemModel",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.ITunesItemModel.append_features",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ITunesItemModel"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ImageBase",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.ImageBase.link",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ImageBase"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ImageFaviconModel",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.ImageFaviconModel.append_features",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ImageFaviconModel"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.ImageFaviconModel.install_image_favicon",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ImageFaviconModel"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ImageItemModel",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.ImageItemModel.append_features",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ImageItemModel"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.ImageItemModel.install_image_item",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ImageItemModel"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ItemsBase",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.ItemsBase.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ItemsBase"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.ItemsBase.normalize",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ItemsBase"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS09",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS091",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS091.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS091"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS092",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS092.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS092"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS10",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS20",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS20.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS20"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSSBase",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSSBase.make",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSSBase"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.RSSBase.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSSBase"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.RSSBase.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSSBase"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.SetupDefaultDate",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.SetupDefaultLanguage",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.SlashModel",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.SlashModel.append_features",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.SlashModel"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.SyndicationModel",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.SyndicationModel.append_features",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.SyndicationModel"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.TaxonomyTopicModel",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.TaxonomyTopicModel.append_features",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.TaxonomyTopicModel"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.TaxonomyTopicModel.install_taxo_topic",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.TaxonomyTopicModel"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.TaxonomyTopicsModel",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.TaxonomyTopicsModel.append_features",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.TaxonomyTopicsModel"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.TaxonomyTopicsModel.install_taxo_topics",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.TaxonomyTopicsModel"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.TextinputBase",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.TrackBackModel",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.TrackBackModel.append_features",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.TrackBackModel"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.XMLStyleSheets",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS10.Items.Item.Source.Categories": [
+    {
+      "name": "rss.RSS.Maker.RSS10.Items.Item.Source.Categories.Category",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.Atom.Entry.Channel.SkipDays": [
+    {
+      "name": "rss.RSS.Maker.Atom.Entry.Channel.SkipDays.Day",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS20.Items": [
+    {
+      "name": "rss.RSS.Maker.RSS20.Items.Item",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS10.Channel.Categories": [
+    {
+      "name": "rss.RSS.Maker.RSS10.Channel.Categories.Category",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS10": [
+    {
+      "name": "rss.RSS.Maker.RSS10.Channel",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Channel.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Channel"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS10.Image",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Image.have_required_values",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Image"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.RSS10.Image.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Image"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS10.Items",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Items.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Items"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS10.Textinput",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Textinput.have_required_values",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Textinput"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.RSS10.Textinput.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Textinput"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.Atom.Feed.Channel.SkipHours": [
+    {
+      "name": "rss.RSS.Maker.Atom.Feed.Channel.SkipHours.Hour",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Atom.ContentModel": [
+    {
+      "name": "rss.RSS.Atom.ContentModel.ClassMethods",
+      "methods": [
+        {
+          "name": "rss.RSS.Atom.ContentModel.ClassMethods.content_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.ContentModel.ClassMethods"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.ImageItemModel": [
+    {
+      "name": "rss.RSS.ImageItemModel.ImageItem",
+      "methods": [
+        {
+          "name": "rss.RSS.ImageItemModel.ImageItem.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ImageItemModel.ImageItem"
+          ]
+        },
+        {
+          "name": "rss.RSS.ImageItemModel.ImageItem.required_prefix",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ImageItemModel.ImageItem"
+          ]
+        },
+        {
+          "name": "rss.RSS.ImageItemModel.ImageItem.required_uri",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ImageItemModel.ImageItem"
+          ]
+        },
+        {
+          "name": "rss.RSS.ImageItemModel.ImageItem.full_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ImageItemModel.ImageItem"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.XML": [
+    {
+      "name": "rss.XML.Parser",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.Atom.Feed.Channel.Categories": [
+    {
+      "name": "rss.RSS.Maker.Atom.Feed.Channel.Categories.Category",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.Atom.Feed.Channel.Categories.Category.not_set_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Atom.Feed.Channel.Categories.Category"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.Atom.Feed.Channel": [
+    {
+      "name": "rss.RSS.Maker.Atom.Feed.Channel.Categories",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.Atom.Feed.Channel.Cloud",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.Atom.Feed.Channel.Cloud.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Atom.Feed.Channel.Cloud"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.Atom.Feed.Channel.Generator",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.Atom.Feed.Channel.Generator.not_set_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Atom.Feed.Channel.Generator"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.Atom.Feed.Channel.Links",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.Atom.Feed.Channel.SkipDays",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.Atom.Feed.Channel.SkipDays.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Atom.Feed.Channel.SkipDays"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.Atom.Feed.Channel.SkipHours",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.Atom.Feed.Channel.SkipHours.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Atom.Feed.Channel.SkipHours"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS09.Channel.Links": [
+    {
+      "name": "rss.RSS.Maker.RSS09.Channel.Links.Link",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Channel.Links.Link.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Channel.Links.Link"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS09.Channel.SkipHours": [
+    {
+      "name": "rss.RSS.Maker.RSS09.Channel.SkipHours.Hour",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Channel.SkipHours.Hour.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Channel.SkipHours.Hour"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS09.Channel.SkipDays": [
+    {
+      "name": "rss.RSS.Maker.RSS09.Channel.SkipDays.Day",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Channel.SkipDays.Day.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Channel.SkipDays.Day"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.ChannelBase.SkipDaysBase": [
+    {
+      "name": "rss.RSS.Maker.ChannelBase.SkipDaysBase.DayBase",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS10.Items.Item.Authors": [
+    {
+      "name": "rss.RSS.Maker.RSS10.Items.Item.Authors.Author",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.XML": [
+    {
+      "name": "rss.RSS.XML.Element",
+      "methods": [
+        {
+          "name": "rss.RSS.XML.Element.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.XML.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.XML.Element.<<",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.XML.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.XML.Element.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.XML.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.XML.Element.each",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.XML.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.XML.Element.full_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.XML.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.XML.Element.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.XML.Element"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS10.Items.Item": [
+    {
+      "name": "rss.RSS.Maker.RSS10.Items.Item.Authors",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Items.Item.Authors.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Items.Item.Authors"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS10.Items.Item.Categories",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Items.Item.Categories.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Items.Item.Categories"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS10.Items.Item.Content",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Items.Item.Content.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Items.Item.Content"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS10.Items.Item.Contributors",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Items.Item.Contributors.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Items.Item.Contributors"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS10.Items.Item.Description",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Items.Item.Description.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Items.Item.Description"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS10.Items.Item.Enclosure",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Items.Item.Enclosure.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Items.Item.Enclosure"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS10.Items.Item.Guid",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Items.Item.Guid.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Items.Item.Guid"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS10.Items.Item.Links",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Items.Item.Links.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Items.Item.Links"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS10.Items.Item.Rights",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Items.Item.Rights.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Items.Item.Rights"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS10.Items.Item.Source",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Items.Item.Source.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Items.Item.Source"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS10.Items.Item.Title",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Items.Item.Title.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Items.Item.Title"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS20.Items.Item": [
+    {
+      "name": "rss.RSS.Maker.RSS20.Items.Item.Authors",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS20.Items.Item.Authors.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS20.Items.Item.Authors"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS20.Items.Item.Categories",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS20.Items.Item.Categories.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS20.Items.Item.Categories"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS20.Items.Item.Enclosure",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS20.Items.Item.Enclosure.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS20.Items.Item.Enclosure"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS20.Items.Item.Guid",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS20.Items.Item.Guid.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS20.Items.Item.Guid"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS20.Items.Item.Source",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS20.Items.Item.Source.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS20.Items.Item.Source"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.TrackBackModel": [
+    {
+      "name": "rss.RSS.Maker.TrackBackModel.TrackBackAboutsBase",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.ChannelBase.LinksBase": [
+    {
+      "name": "rss.RSS.Maker.ChannelBase.LinksBase.LinkBase",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.Atom.Feed": [
+    {
+      "name": "rss.RSS.Maker.Atom.Feed.Channel",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.Atom.Feed.Channel.have_required_values",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Atom.Feed.Channel"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.Atom.Feed.Channel.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Atom.Feed.Channel"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.Atom.Feed.Image",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.Atom.Feed.Image.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Atom.Feed.Image"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.Atom.Feed.Items",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.Atom.Feed.Items.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Atom.Feed.Items"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.Atom.Feed.Textinput",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS09.Items.Item": [
+    {
+      "name": "rss.RSS.Maker.RSS09.Items.Item.Authors",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Items.Item.Authors.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Items.Item.Authors"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS09.Items.Item.Categories",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Items.Item.Categories.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Items.Item.Categories"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS09.Items.Item.Content",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Items.Item.Content.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Items.Item.Content"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS09.Items.Item.Contributors",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Items.Item.Contributors.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Items.Item.Contributors"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS09.Items.Item.Description",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Items.Item.Description.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Items.Item.Description"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS09.Items.Item.Enclosure",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Items.Item.Enclosure.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Items.Item.Enclosure"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS09.Items.Item.Guid",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Items.Item.Guid.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Items.Item.Guid"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS09.Items.Item.Links",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Items.Item.Links.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Items.Item.Links"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS09.Items.Item.Rights",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Items.Item.Rights.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Items.Item.Rights"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS09.Items.Item.Source",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Items.Item.Source.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Items.Item.Source"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS09.Items.Item.Title",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Items.Item.Title.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Items.Item.Title"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS10.Items.Item.Source.Links": [
+    {
+      "name": "rss.RSS.Maker.RSS10.Items.Item.Source.Links.Link",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.Atom.Feed.Items.Item.Categories": [
+    {
+      "name": "rss.RSS.Maker.Atom.Feed.Items.Item.Categories.Category",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.Atom.Feed.Items.Item.Categories.Category.not_set_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Atom.Feed.Items.Item.Categories.Category"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.Atom.Feed.Items.Item.Source.Categories": [
+    {
+      "name": "rss.RSS.Maker.Atom.Feed.Items.Item.Source.Categories.Category",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.Atom.Feed.Items.Item.Source.Categories.Category.not_set_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Atom.Feed.Items.Item.Source.Categories.Category"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS20.Channel": [
+    {
+      "name": "rss.RSS.Maker.RSS20.Channel.Categories",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS20.Channel.Categories.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS20.Channel.Categories"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS20.Channel.Cloud",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS20.Channel.Cloud.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS20.Channel.Cloud"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS20.Channel.Generator",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS20.Channel.Generator.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS20.Channel.Generator"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS20.Channel.SkipDays",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS20.Channel.SkipHours",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS10.Items.Item.Source.Authors": [
+    {
+      "name": "rss.RSS.Maker.RSS10.Items.Item.Source.Authors.Author",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS092.Items": [
+    {
+      "name": "rss.RSS.Maker.RSS092.Items.Item",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS09.Items.Item.Source.Links": [
+    {
+      "name": "rss.RSS.Maker.RSS09.Items.Item.Source.Links.Link",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.ChannelBase.CategoriesBase": [
+    {
+      "name": "rss.RSS.Maker.ChannelBase.CategoriesBase.CategoryBase",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Atom.Feed": [
+    {
+      "name": "rss.RSS.Atom.Feed.Author",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Atom.Feed.Category",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Atom.Feed.Contributor",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Atom.Feed.Entry",
+      "methods": [
+        {
+          "name": "rss.RSS.Atom.Feed.Entry.have_author",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.Feed.Entry"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Atom.Feed.Generator",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Atom.Feed.Icon",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Atom.Feed.Id",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Atom.Feed.Link",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Atom.Feed.Logo",
+      "methods": [
+        {
+          "name": "rss.RSS.Atom.Feed.Logo.maker_target",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.Feed.Logo"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Atom.Feed.Rights",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Atom.Feed.Subtitle",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Atom.Feed.Title",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Atom.Feed.Updated",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS10.Items": [
+    {
+      "name": "rss.RSS.Maker.RSS10.Items.Item",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Items.Item.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Items.Item"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS09.Items.Item.Categories": [
+    {
+      "name": "rss.RSS.Maker.RSS09.Items.Item.Categories.Category",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS09.Channel.Authors": [
+    {
+      "name": "rss.RSS.Maker.RSS09.Channel.Authors.Author",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Channel.Authors.Author.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Channel.Authors.Author"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS09.Items.Item.Contributors": [
+    {
+      "name": "rss.RSS.Maker.RSS09.Items.Item.Contributors.Contributor",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.TaxonomyTopicModel": [
+    {
+      "name": "rss.RSS.TaxonomyTopicModel.TaxonomyTopic",
+      "methods": [
+        {
+          "name": "rss.RSS.TaxonomyTopicModel.TaxonomyTopic.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.TaxonomyTopicModel.TaxonomyTopic"
+          ]
+        },
+        {
+          "name": "rss.RSS.TaxonomyTopicModel.TaxonomyTopic.required_prefix",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.TaxonomyTopicModel.TaxonomyTopic"
+          ]
+        },
+        {
+          "name": "rss.RSS.TaxonomyTopicModel.TaxonomyTopic.required_uri",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.TaxonomyTopicModel.TaxonomyTopic"
+          ]
+        },
+        {
+          "name": "rss.RSS.TaxonomyTopicModel.TaxonomyTopic.full_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.TaxonomyTopicModel.TaxonomyTopic"
+          ]
+        },
+        {
+          "name": "rss.RSS.TaxonomyTopicModel.TaxonomyTopic.maker_target",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.TaxonomyTopicModel.TaxonomyTopic"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.XMLStyleSheets": [
+    {
+      "name": "rss.RSS.Maker.XMLStyleSheets.XMLStyleSheet",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.XMLStyleSheets.XMLStyleSheet.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.XMLStyleSheets.XMLStyleSheet"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS10.Channel": [
+    {
+      "name": "rss.RSS.Maker.RSS10.Channel.Authors",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Channel.Authors.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Channel.Authors"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS10.Channel.Categories",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Channel.Categories.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Channel.Categories"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS10.Channel.Cloud",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Channel.Cloud.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Channel.Cloud"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS10.Channel.Contributors",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Channel.Contributors.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Channel.Contributors"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS10.Channel.Copyright",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Channel.Copyright.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Channel.Copyright"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS10.Channel.Description",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Channel.Description.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Channel.Description"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS10.Channel.Generator",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Channel.Generator.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Channel.Generator"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS10.Channel.Links",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Channel.Links.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Channel.Links"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS10.Channel.SkipDays",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Channel.SkipDays.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Channel.SkipDays"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS10.Channel.SkipHours",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Channel.SkipHours.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Channel.SkipHours"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS10.Channel.Title",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Channel.Title.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Channel.Title"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS20.Items.Item.Authors": [
+    {
+      "name": "rss.RSS.Maker.RSS20.Items.Item.Authors.Author",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS20.Items.Item.Authors.Author.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS20.Items.Item.Authors.Author"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.ITunesItemModel": [
+    {
+      "name": "rss.RSS.Maker.ITunesItemModel.ITunesDurationBase",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.ITunesItemModel.ITunesDurationBase.content",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ITunesItemModel.ITunesDurationBase"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.ITunesItemModel.ITunesDurationBase.hour",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ITunesItemModel.ITunesDurationBase"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.ITunesItemModel.ITunesDurationBase.minute",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ITunesItemModel.ITunesDurationBase"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.ITunesItemModel.ITunesDurationBase.second",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ITunesItemModel.ITunesDurationBase"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.ITunesItemModel.ITunesDurationBase.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ITunesItemModel.ITunesDurationBase"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ITunesItemModel.ITunesImageBase",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.ITunesItemModel.ITunesImageBase.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ITunesItemModel.ITunesImageBase"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.ITunesChannelModel.ITunesCategoriesBase": [
+    {
+      "name": "rss.RSS.Maker.ITunesChannelModel.ITunesCategoriesBase.ITunesCategoryBase",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.ITunesChannelModel.ITunesCategoriesBase.ITunesCategoryBase.have_required_values",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ITunesChannelModel.ITunesCategoriesBase.ITunesCategoryBase"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.ITunesChannelModel.ITunesCategoriesBase.ITunesCategoryBase.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ITunesChannelModel.ITunesCategoriesBase.ITunesCategoryBase"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.ITunesChannelModel.ITunesCategoriesBase.ITunesCategoryBase.to_feed_for_categories",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ITunesChannelModel.ITunesCategoriesBase.ITunesCategoryBase"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS": [
+    {
+      "name": "rss.RSS.Atom",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.BaseDublinCoreModel",
+      "methods": [
+        {
+          "name": "rss.RSS.BaseDublinCoreModel.append_features",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.BaseDublinCoreModel"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.BaseListener",
+      "methods": [
+        {
+          "name": "rss.RSS.BaseListener.available_tags",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.BaseListener"
+          ]
+        },
+        {
+          "name": "rss.RSS.BaseListener.class_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.BaseListener"
+          ]
+        },
+        {
+          "name": "rss.RSS.BaseListener.getter",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.BaseListener"
+          ]
+        },
+        {
+          "name": "rss.RSS.BaseListener.install_class_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.BaseListener"
+          ]
+        },
+        {
+          "name": "rss.RSS.BaseListener.install_get_text_element",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.BaseListener"
+          ]
+        },
+        {
+          "name": "rss.RSS.BaseListener.raise_for_undefined_entity",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.BaseListener"
+          ]
+        },
+        {
+          "name": "rss.RSS.BaseListener.register_uri",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.BaseListener"
+          ]
+        },
+        {
+          "name": "rss.RSS.BaseListener.setter",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.BaseListener"
+          ]
+        },
+        {
+          "name": "rss.RSS.BaseListener.uri_registered",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.BaseListener"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.BaseModel",
+      "methods": [
+        {
+          "name": "rss.RSS.BaseModel.install_date_element",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.BaseModel"
+          ]
+        },
+        {
+          "name": "rss.RSS.BaseModel.install_have_attribute_element",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.BaseModel"
+          ]
+        },
+        {
+          "name": "rss.RSS.BaseModel.install_have_child_element",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.BaseModel"
+          ]
+        },
+        {
+          "name": "rss.RSS.BaseModel.install_have_children_element",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.BaseModel"
+          ]
+        },
+        {
+          "name": "rss.RSS.BaseModel.install_text_element",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.BaseModel"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.BaseParser",
+      "methods": [
+        {
+          "name": "rss.RSS.BaseParser.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.BaseParser"
+          ]
+        },
+        {
+          "name": "rss.RSS.BaseParser.raise_for_undefined_entity",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.BaseParser"
+          ]
+        },
+        {
+          "name": "rss.RSS.BaseParser.do_validate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.BaseParser"
+          ]
+        },
+        {
+          "name": "rss.RSS.BaseParser.ignore_unknown_element",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.BaseParser"
+          ]
+        },
+        {
+          "name": "rss.RSS.BaseParser.parse",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.BaseParser"
+          ]
+        },
+        {
+          "name": "rss.RSS.BaseParser.rss",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.BaseParser"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.ContentModel",
+      "methods": [
+        {
+          "name": "rss.RSS.ContentModel.append_features",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ContentModel"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.ConversionError",
+      "methods": [
+        {
+          "name": "rss.RSS.ConversionError.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ConversionError"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Converter",
+      "methods": [
+        {
+          "name": "rss.RSS.Converter.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Converter"
+          ]
+        },
+        {
+          "name": "rss.RSS.Converter.convert",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Converter"
+          ]
+        },
+        {
+          "name": "rss.RSS.Converter.def_convert",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Converter"
+          ]
+        },
+        {
+          "name": "rss.RSS.Converter.def_else_enc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Converter"
+          ]
+        },
+        {
+          "name": "rss.RSS.Converter.def_iconv_convert",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Converter"
+          ]
+        },
+        {
+          "name": "rss.RSS.Converter.def_same_enc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Converter"
+          ]
+        },
+        {
+          "name": "rss.RSS.Converter.def_to_euc_jp_from_iso_2022_jp",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Converter"
+          ]
+        },
+        {
+          "name": "rss.RSS.Converter.def_to_euc_jp_from_shift_jis",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Converter"
+          ]
+        },
+        {
+          "name": "rss.RSS.Converter.def_to_euc_jp_from_utf_8",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Converter"
+          ]
+        },
+        {
+          "name": "rss.RSS.Converter.def_to_iso_2022_jp_from_euc_jp",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Converter"
+          ]
+        },
+        {
+          "name": "rss.RSS.Converter.def_to_iso_8859_1_from_utf_8",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Converter"
+          ]
+        },
+        {
+          "name": "rss.RSS.Converter.def_to_shift_jis_from_euc_jp",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Converter"
+          ]
+        },
+        {
+          "name": "rss.RSS.Converter.def_to_shift_jis_from_utf_8",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Converter"
+          ]
+        },
+        {
+          "name": "rss.RSS.Converter.def_to_utf_8_from_euc_jp",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Converter"
+          ]
+        },
+        {
+          "name": "rss.RSS.Converter.def_to_utf_8_from_iso_8859_1",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Converter"
+          ]
+        },
+        {
+          "name": "rss.RSS.Converter.def_to_utf_8_from_shift_jis",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Converter"
+          ]
+        },
+        {
+          "name": "rss.RSS.Converter.def_uconv_convert_if_can",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Converter"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.DublincoreModel",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.DublincoreModel",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Element",
+      "methods": [
+        {
+          "name": "rss.RSS.Element.add_have_children_element",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.Element.add_need_initialize_variable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.Element.add_plural_form",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.Element.add_to_element_method",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.Element.content_setup",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.Element.def_corresponded_attr_reader",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.Element.def_corresponded_attr_writer",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.Element.get_attributes",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.Element.have_children_elements",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.Element.have_content",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.Element.inherited",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.Element.inherited_base",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.Element.install_get_attribute",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.Element.install_model",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.Element.install_must_call_validator",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.Element.install_ns",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.Element.models",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.Element.must_call_validators",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.Element.need_initialize_variables",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.Element.need_parent",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.Element.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.Element.plural_forms",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.Element.required_prefix",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.Element.required_uri",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.Element.tag_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.Element.to_element_methods",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.Element.convert",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.Element.converter",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.Element.full_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.Element.have_xml_content",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.Element.need_base64_encode",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.Element.set_next_element",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.Element.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.Element.valid",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.Element.validate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        },
+        {
+          "name": "rss.RSS.Element.validate_for_stream",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Element"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Error",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.ITunesBaseModel",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.ITunesChannelModel",
+      "methods": [
+        {
+          "name": "rss.RSS.ITunesChannelModel.append_features",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ITunesChannelModel"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.ITunesItemModel",
+      "methods": [
+        {
+          "name": "rss.RSS.ITunesItemModel.append_features",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ITunesItemModel"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.ITunesModelUtils",
+      "methods": [
+        {
+          "name": "rss.RSS.ITunesModelUtils.def_class_accessor",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ITunesModelUtils"
+          ]
+        },
+        {
+          "name": "rss.RSS.ITunesModelUtils.def_element_class_accessor",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ITunesModelUtils"
+          ]
+        },
+        {
+          "name": "rss.RSS.ITunesModelUtils.def_elements_class_accessor",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ITunesModelUtils"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.ImageFaviconModel",
+      "methods": [
+        {
+          "name": "rss.RSS.ImageFaviconModel.append_features",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ImageFaviconModel"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.ImageItemModel",
+      "methods": [
+        {
+          "name": "rss.RSS.ImageItemModel.append_features",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ImageItemModel"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.ImageModelUtils",
+      "methods": [
+        {
+          "name": "rss.RSS.ImageModelUtils.validate_one_tag_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ImageModelUtils"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.InvalidRSSError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.ListenerMixin",
+      "methods": [
+        {
+          "name": "rss.RSS.ListenerMixin.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ListenerMixin"
+          ]
+        },
+        {
+          "name": "rss.RSS.ListenerMixin.instruction",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ListenerMixin"
+          ]
+        },
+        {
+          "name": "rss.RSS.ListenerMixin.tag_end",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ListenerMixin"
+          ]
+        },
+        {
+          "name": "rss.RSS.ListenerMixin.tag_start",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ListenerMixin"
+          ]
+        },
+        {
+          "name": "rss.RSS.ListenerMixin.text",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ListenerMixin"
+          ]
+        },
+        {
+          "name": "rss.RSS.ListenerMixin.xmldecl",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ListenerMixin"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.add_maker",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.make",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.makers",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.supported",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.versions",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.MissingAttributeError",
+      "methods": [
+        {
+          "name": "rss.RSS.MissingAttributeError.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.MissingAttributeError"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.MissingTagError",
+      "methods": [
+        {
+          "name": "rss.RSS.MissingTagError.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.MissingTagError"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.NSError",
+      "methods": [
+        {
+          "name": "rss.RSS.NSError.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.NSError"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.NotAvailableValueError",
+      "methods": [
+        {
+          "name": "rss.RSS.NotAvailableValueError.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.NotAvailableValueError"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.NotExpectedTagError",
+      "methods": [
+        {
+          "name": "rss.RSS.NotExpectedTagError.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.NotExpectedTagError"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.NotSetError",
+      "methods": [
+        {
+          "name": "rss.RSS.NotSetError.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.NotSetError"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.NotValidXMLParser",
+      "methods": [
+        {
+          "name": "rss.RSS.NotValidXMLParser.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.NotValidXMLParser"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.NotWellFormedError",
+      "methods": [
+        {
+          "name": "rss.RSS.NotWellFormedError.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.NotWellFormedError"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.OverlappedPrefixError",
+      "methods": [
+        {
+          "name": "rss.RSS.OverlappedPrefixError.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.OverlappedPrefixError"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Parser",
+      "methods": [
+        {
+          "name": "rss.RSS.Parser.default_parser",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Parser"
+          ]
+        },
+        {
+          "name": "rss.RSS.Parser.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Parser"
+          ]
+        },
+        {
+          "name": "rss.RSS.Parser.parse",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Parser"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.REXMLLikeXMLParser",
+      "methods": [
+        {
+          "name": "rss.RSS.REXMLLikeXMLParser.character",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.REXMLLikeXMLParser"
+          ]
+        },
+        {
+          "name": "rss.RSS.REXMLLikeXMLParser.endElement",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.REXMLLikeXMLParser"
+          ]
+        },
+        {
+          "name": "rss.RSS.REXMLLikeXMLParser.listener",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.REXMLLikeXMLParser"
+          ]
+        },
+        {
+          "name": "rss.RSS.REXMLLikeXMLParser.processingInstruction",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.REXMLLikeXMLParser"
+          ]
+        },
+        {
+          "name": "rss.RSS.REXMLLikeXMLParser.startElement",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.REXMLLikeXMLParser"
+          ]
+        },
+        {
+          "name": "rss.RSS.REXMLLikeXMLParser.xmlDecl",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.REXMLLikeXMLParser"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.REXMLListener",
+      "methods": [
+        {
+          "name": "rss.RSS.REXMLListener.raise_for_undefined_entity",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.REXMLListener"
+          ]
+        },
+        {
+          "name": "rss.RSS.REXMLListener.xmldecl",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.REXMLListener"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.REXMLParser",
+      "methods": [
+        {
+          "name": "rss.RSS.REXMLParser.listener",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.REXMLParser"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.RSS09",
+      "methods": [
+        {
+          "name": "rss.RSS.RSS09.append_features",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RSS09"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.RSS10",
+      "methods": [
+        {
+          "name": "rss.RSS.RSS10.append_features",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RSS10"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.RootElementMixin",
+      "methods": [
+        {
+          "name": "rss.RSS.RootElementMixin.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RootElementMixin"
+          ]
+        },
+        {
+          "name": "rss.RSS.RootElementMixin.feed_info",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RootElementMixin"
+          ]
+        },
+        {
+          "name": "rss.RSS.RootElementMixin.output_encoding",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RootElementMixin"
+          ]
+        },
+        {
+          "name": "rss.RSS.RootElementMixin.setup_maker",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RootElementMixin"
+          ]
+        },
+        {
+          "name": "rss.RSS.RootElementMixin.to_atom",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RootElementMixin"
+          ]
+        },
+        {
+          "name": "rss.RSS.RootElementMixin.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RootElementMixin"
+          ]
+        },
+        {
+          "name": "rss.RSS.RootElementMixin.to_rss",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RootElementMixin"
+          ]
+        },
+        {
+          "name": "rss.RSS.RootElementMixin.to_xml",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RootElementMixin"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.SetupMaker",
+      "methods": [
+        {
+          "name": "rss.RSS.SetupMaker.setup_maker",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.SetupMaker"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.SlashModel",
+      "methods": [
+        {
+          "name": "rss.RSS.SlashModel.append_features",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.SlashModel"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.SyndicationModel",
+      "methods": [
+        {
+          "name": "rss.RSS.SyndicationModel.append_features",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.SyndicationModel"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.TaxonomyTopicModel",
+      "methods": [
+        {
+          "name": "rss.RSS.TaxonomyTopicModel.append_features",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.TaxonomyTopicModel"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.TaxonomyTopicsModel",
+      "methods": [
+        {
+          "name": "rss.RSS.TaxonomyTopicsModel.append_features",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.TaxonomyTopicsModel"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.TooMuchTagError",
+      "methods": [
+        {
+          "name": "rss.RSS.TooMuchTagError.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.TooMuchTagError"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.UnknownConversionMethodError",
+      "methods": [
+        {
+          "name": "rss.RSS.UnknownConversionMethodError.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.UnknownConversionMethodError"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.UnknownTagError",
+      "methods": [
+        {
+          "name": "rss.RSS.UnknownTagError.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.UnknownTagError"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.UnsupportedMakerVersionError",
+      "methods": [
+        {
+          "name": "rss.RSS.UnsupportedMakerVersionError.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.UnsupportedMakerVersionError"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Utils",
+      "methods": [
+        {
+          "name": "rss.RSS.Utils.element_initialize_arguments",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Utils"
+          ]
+        },
+        {
+          "name": "rss.RSS.Utils.get_file_and_line_from_caller",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Utils"
+          ]
+        },
+        {
+          "name": "rss.RSS.Utils.new_with_value_if_need",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Utils"
+          ]
+        },
+        {
+          "name": "rss.RSS.Utils.to_class_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Utils"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.XML",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.XMLParserListener",
+      "methods": [
+        {
+          "name": "rss.RSS.XMLParserListener.xmldecl",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.XMLParserListener"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.XMLParserNotFound",
+      "methods": [
+        {
+          "name": "rss.RSS.XMLParserNotFound.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.XMLParserNotFound"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.XMLParserParser",
+      "methods": [
+        {
+          "name": "rss.RSS.XMLParserParser.listener",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.XMLParserParser"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.XMLScanListener",
+      "methods": [
+        {
+          "name": "rss.RSS.XMLScanListener.on_attr_charref",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.XMLScanListener"
+          ]
+        },
+        {
+          "name": "rss.RSS.XMLScanListener.on_attr_charref_hex",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.XMLScanListener"
+          ]
+        },
+        {
+          "name": "rss.RSS.XMLScanListener.on_attr_entityref",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.XMLScanListener"
+          ]
+        },
+        {
+          "name": "rss.RSS.XMLScanListener.on_attr_value",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.XMLScanListener"
+          ]
+        },
+        {
+          "name": "rss.RSS.XMLScanListener.on_attribute",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.XMLScanListener"
+          ]
+        },
+        {
+          "name": "rss.RSS.XMLScanListener.on_charref",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.XMLScanListener"
+          ]
+        },
+        {
+          "name": "rss.RSS.XMLScanListener.on_charref_hex",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.XMLScanListener"
+          ]
+        },
+        {
+          "name": "rss.RSS.XMLScanListener.on_entityref",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.XMLScanListener"
+          ]
+        },
+        {
+          "name": "rss.RSS.XMLScanListener.on_etag",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.XMLScanListener"
+          ]
+        },
+        {
+          "name": "rss.RSS.XMLScanListener.on_stag",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.XMLScanListener"
+          ]
+        },
+        {
+          "name": "rss.RSS.XMLScanListener.on_stag_end",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.XMLScanListener"
+          ]
+        },
+        {
+          "name": "rss.RSS.XMLScanListener.on_stag_end_empty",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.XMLScanListener"
+          ]
+        },
+        {
+          "name": "rss.RSS.XMLScanListener.on_xmldecl_encoding",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.XMLScanListener"
+          ]
+        },
+        {
+          "name": "rss.RSS.XMLScanListener.on_xmldecl_end",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.XMLScanListener"
+          ]
+        },
+        {
+          "name": "rss.RSS.XMLScanListener.on_xmldecl_standalone",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.XMLScanListener"
+          ]
+        },
+        {
+          "name": "rss.RSS.XMLScanListener.on_xmldecl_version",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.XMLScanListener"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.XMLScanParser",
+      "methods": [
+        {
+          "name": "rss.RSS.XMLScanParser.listener",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.XMLScanParser"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.XMLStyleSheet",
+      "methods": [
+        {
+          "name": "rss.RSS.XMLStyleSheet.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.XMLStyleSheet"
+          ]
+        },
+        {
+          "name": "rss.RSS.XMLStyleSheet.alternate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.XMLStyleSheet"
+          ]
+        },
+        {
+          "name": "rss.RSS.XMLStyleSheet.href",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.XMLStyleSheet"
+          ]
+        },
+        {
+          "name": "rss.RSS.XMLStyleSheet.setup_maker",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.XMLStyleSheet"
+          ]
+        },
+        {
+          "name": "rss.RSS.XMLStyleSheet.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.XMLStyleSheet"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.XMLStyleSheetMixin",
+      "methods": [
+        {
+          "name": "rss.RSS.XMLStyleSheetMixin.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.XMLStyleSheetMixin"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.ImageFaviconModel": [
+    {
+      "name": "rss.RSS.ImageFaviconModel.ImageFavicon",
+      "methods": [
+        {
+          "name": "rss.RSS.ImageFaviconModel.ImageFavicon.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ImageFaviconModel.ImageFavicon"
+          ]
+        },
+        {
+          "name": "rss.RSS.ImageFaviconModel.ImageFavicon.required_prefix",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ImageFaviconModel.ImageFavicon"
+          ]
+        },
+        {
+          "name": "rss.RSS.ImageFaviconModel.ImageFavicon.required_uri",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ImageFaviconModel.ImageFavicon"
+          ]
+        },
+        {
+          "name": "rss.RSS.ImageFaviconModel.ImageFavicon.full_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ImageFaviconModel.ImageFavicon"
+          ]
+        },
+        {
+          "name": "rss.RSS.ImageFaviconModel.ImageFavicon.image_size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ImageFaviconModel.ImageFavicon"
+          ]
+        },
+        {
+          "name": "rss.RSS.ImageFaviconModel.ImageFavicon.set_size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ImageFaviconModel.ImageFavicon"
+          ]
+        },
+        {
+          "name": "rss.RSS.ImageFaviconModel.ImageFavicon.size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.ImageFaviconModel.ImageFavicon"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.Atom.Entry.Channel.SkipHours": [
+    {
+      "name": "rss.RSS.Maker.Atom.Entry.Channel.SkipHours.Hour",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.Atom.Feed.Items": [
+    {
+      "name": "rss.RSS.Maker.Atom.Feed.Items.Item",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.Atom.Feed.Items.Item.have_required_values",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Atom.Feed.Items.Item"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.Atom.Feed.Items.Item.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Atom.Feed.Items.Item"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS09.Channel": [
+    {
+      "name": "rss.RSS.Maker.RSS09.Channel.Authors",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Channel.Authors.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Channel.Authors"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS09.Channel.Categories",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Channel.Categories.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Channel.Categories"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS09.Channel.Cloud",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Channel.Cloud.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Channel.Cloud"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS09.Channel.Contributors",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Channel.Contributors.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Channel.Contributors"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS09.Channel.Copyright",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Channel.Copyright.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Channel.Copyright"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS09.Channel.Description",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Channel.Description.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Channel.Description"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS09.Channel.Generator",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Channel.Generator.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Channel.Generator"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS09.Channel.Links",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Channel.Links.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Channel.Links"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS09.Channel.SkipDays",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Channel.SkipDays.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Channel.SkipDays"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS09.Channel.SkipHours",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Channel.SkipHours.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Channel.SkipHours"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.RSS09.Channel.Title",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Channel.Title.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Channel.Title"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.TrackBackModel.TrackBackAboutsBase": [
+    {
+      "name": "rss.RSS.Maker.TrackBackModel.TrackBackAboutsBase.TrackBackAboutBase",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.TrackBackModel.TrackBackAboutsBase.TrackBackAboutBase.have_required_values",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.TrackBackModel.TrackBackAboutsBase.TrackBackAboutBase"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.TrackBackModel.TrackBackAboutsBase.TrackBackAboutBase.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.TrackBackModel.TrackBackAboutsBase.TrackBackAboutBase"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.ImageItemModel": [
+    {
+      "name": "rss.RSS.Maker.ImageItemModel.ImageItemBase",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.ImageItemModel.ImageItemBase.have_required_values",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ImageItemModel.ImageItemBase"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.ImageItemModel.ImageItemBase.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ImageItemModel.ImageItemBase"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.RDF.Seq": [
+    {
+      "name": "rss.RSS.RDF.Seq.Li",
+      "methods": [
+        {
+          "name": "rss.RSS.RDF.Seq.Li.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RDF.Seq.Li"
+          ]
+        },
+        {
+          "name": "rss.RSS.RDF.Seq.Li.required_uri",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RDF.Seq.Li"
+          ]
+        },
+        {
+          "name": "rss.RSS.RDF.Seq.Li.full_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RDF.Seq.Li"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.RDF.Seq.Li",
+      "methods": [
+        {
+          "name": "rss.RSS.RDF.Seq.Li.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RDF.Seq.Li"
+          ]
+        },
+        {
+          "name": "rss.RSS.RDF.Seq.Li.required_uri",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RDF.Seq.Li"
+          ]
+        },
+        {
+          "name": "rss.RSS.RDF.Seq.Li.full_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RDF.Seq.Li"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.RDF.Seq.Li",
+      "methods": [
+        {
+          "name": "rss.RSS.RDF.Seq.Li.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RDF.Seq.Li"
+          ]
+        },
+        {
+          "name": "rss.RSS.RDF.Seq.Li.required_uri",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RDF.Seq.Li"
+          ]
+        },
+        {
+          "name": "rss.RSS.RDF.Seq.Li.full_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RDF.Seq.Li"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.Atom": [
+    {
+      "name": "rss.RSS.Maker.Atom.Entry",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.Atom.Entry.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Atom.Entry"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.Atom.Feed",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.Atom.Feed.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Atom.Feed"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS20.Channel.SkipDays": [
+    {
+      "name": "rss.RSS.Maker.RSS20.Channel.SkipDays.Day",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS09.Items.Item.Links": [
+    {
+      "name": "rss.RSS.Maker.RSS09.Items.Item.Links.Link",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS09.Items.Item.Links.Link.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS09.Items.Item.Links.Link"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS20.Items.Item.Categories": [
+    {
+      "name": "rss.RSS.Maker.RSS20.Items.Item.Categories.Category",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS20.Items.Item.Categories.Category.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS20.Items.Item.Categories.Category"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.Atom.Entry.Channel": [
+    {
+      "name": "rss.RSS.Maker.Atom.Entry.Channel.Cloud",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.Atom.Entry.Channel.Description",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.Atom.Entry.Channel.Generator",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.Atom.Entry.Channel.Generator.not_set_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Atom.Entry.Channel.Generator"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.Atom.Entry.Channel.SkipDays",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.Atom.Entry.Channel.SkipHours",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.Atom.Feed.Items.Item": [
+    {
+      "name": "rss.RSS.Maker.Atom.Feed.Items.Item.Categories",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.Atom.Feed.Items.Item.Content",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.Atom.Feed.Items.Item.Content.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Atom.Feed.Items.Item.Content"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.Atom.Feed.Items.Item.Enclosure",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.Atom.Feed.Items.Item.Enclosure.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Atom.Feed.Items.Item.Enclosure"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.Atom.Feed.Items.Item.Guid",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.Atom.Feed.Items.Item.Guid.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Atom.Feed.Items.Item.Guid"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.Atom.Feed.Items.Item.Links",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.Atom.Feed.Items.Item.Source",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.Atom.Feed.Items.Item.Source.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Atom.Feed.Items.Item.Source"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS10.Channel.Links": [
+    {
+      "name": "rss.RSS.Maker.RSS10.Channel.Links.Link",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS10.Channel.Links.Link.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS10.Channel.Links.Link"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS09.Items.Item.Source.Contributors": [
+    {
+      "name": "rss.RSS.Maker.RSS09.Items.Item.Source.Contributors.Contributor",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.TaxonomyTopicModel": [
+    {
+      "name": "rss.RSS.Maker.TaxonomyTopicModel.TaxonomyTopicsBase",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.Atom.Feed.Items.Item.Links": [
+    {
+      "name": "rss.RSS.Maker.Atom.Feed.Items.Item.Links.Link",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.Atom.Feed.Items.Item.Links.Link.not_set_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Atom.Feed.Items.Item.Links.Link"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.ChannelBase.ITunesCategories": [
+    {
+      "name": "rss.RSS.Maker.ChannelBase.ITunesCategories.ITunesCategory",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS20.Items.Item.Source": [
+    {
+      "name": "rss.RSS.Maker.RSS20.Items.Item.Source.Links",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.RSS20.Items.Item.Source.Links.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.RSS20.Items.Item.Source.Links"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS09.Items.Item.Source.Categories": [
+    {
+      "name": "rss.RSS.Maker.RSS09.Items.Item.Source.Categories.Category",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.ItemsBase.ItemBase.SourceBase": [
+    {
+      "name": "rss.RSS.Maker.ItemsBase.ItemBase.SourceBase.IconBase",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ItemsBase.ItemBase.SourceBase.LogoBase",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ItemsBase.ItemBase.SourceBase.RightsBase",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ItemsBase.ItemBase.SourceBase.SubtitleBase",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.ItemsBase.ItemBase.SourceBase.TitleBase",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Rss.Channel.SkipHours": [
+    {
+      "name": "rss.RSS.Rss.Channel.SkipHours.Hour",
+      "methods": [
+        {
+          "name": "rss.RSS.Rss.Channel.SkipHours.Hour.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Rss.Channel.SkipHours.Hour"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Rss.Channel.Item": [
+    {
+      "name": "rss.RSS.Rss.Channel.Item.Category",
+      "methods": [
+        {
+          "name": "rss.RSS.Rss.Channel.Item.Category.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Rss.Channel.Item.Category"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Rss.Channel.Item.Enclosure",
+      "methods": [
+        {
+          "name": "rss.RSS.Rss.Channel.Item.Enclosure.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Rss.Channel.Item.Enclosure"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Rss.Channel.Item.Guid",
+      "methods": [
+        {
+          "name": "rss.RSS.Rss.Channel.Item.Guid.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Rss.Channel.Item.Guid"
+          ]
+        },
+        {
+          "name": "rss.RSS.Rss.Channel.Item.Guid.PermaLink",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Rss.Channel.Item.Guid"
+          ]
+        },
+        {
+          "name": "rss.RSS.Rss.Channel.Item.Guid._PermaLink",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Rss.Channel.Item.Guid"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Rss.Channel.Item.Source",
+      "methods": [
+        {
+          "name": "rss.RSS.Rss.Channel.Item.Source.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Rss.Channel.Item.Source"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.RDF": [
+    {
+      "name": "rss.RSS.RDF.Channel",
+      "methods": [
+        {
+          "name": "rss.RSS.RDF.Channel.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RDF.Channel"
+          ]
+        },
+        {
+          "name": "rss.RSS.RDF.Channel.required_uri",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RDF.Channel"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.RDF.Seq",
+      "methods": [
+        {
+          "name": "rss.RSS.RDF.Seq.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RDF.Seq"
+          ]
+        },
+        {
+          "name": "rss.RSS.RDF.Seq.required_uri",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RDF.Seq"
+          ]
+        },
+        {
+          "name": "rss.RSS.RDF.Seq.full_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RDF.Seq"
+          ]
+        },
+        {
+          "name": "rss.RSS.RDF.Seq.setup_maker",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RDF.Seq"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.RDF.Image",
+      "methods": [
+        {
+          "name": "rss.RSS.RDF.Image.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RDF.Image"
+          ]
+        },
+        {
+          "name": "rss.RSS.RDF.Image.required_uri",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RDF.Image"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.RDF.Seq",
+      "methods": [
+        {
+          "name": "rss.RSS.RDF.Seq.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RDF.Seq"
+          ]
+        },
+        {
+          "name": "rss.RSS.RDF.Seq.required_uri",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RDF.Seq"
+          ]
+        },
+        {
+          "name": "rss.RSS.RDF.Seq.full_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RDF.Seq"
+          ]
+        },
+        {
+          "name": "rss.RSS.RDF.Seq.setup_maker",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RDF.Seq"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.RDF.Textinput",
+      "methods": [
+        {
+          "name": "rss.RSS.RDF.Textinput.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RDF.Textinput"
+          ]
+        },
+        {
+          "name": "rss.RSS.RDF.Textinput.required_uri",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.RDF.Textinput"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.TaxonomyTopicsModel": [
+    {
+      "name": "rss.RSS.Maker.TaxonomyTopicsModel.TaxonomyTopicsBase",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.Atom.Feed.Items.Item.Source": [
+    {
+      "name": "rss.RSS.Maker.Atom.Feed.Items.Item.Source.Categories",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.Atom.Feed.Items.Item.Source.Generator",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.Atom.Feed.Items.Item.Source.Generator.not_set_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Atom.Feed.Items.Item.Source.Generator"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.Atom.Feed.Items.Item.Source.Icon",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.Atom.Feed.Items.Item.Source.Icon.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Atom.Feed.Items.Item.Source.Icon"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.Atom.Feed.Items.Item.Source.Links",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Maker.Atom.Feed.Items.Item.Source.Logo",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.Atom.Feed.Items.Item.Source.Logo.not_set_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.Atom.Feed.Items.Item.Source.Logo"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Rss.Channel": [
+    {
+      "name": "rss.RSS.Rss.Channel.Cloud",
+      "methods": [
+        {
+          "name": "rss.RSS.Rss.Channel.Cloud.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Rss.Channel.Cloud"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Rss.Channel.Image",
+      "methods": [
+        {
+          "name": "rss.RSS.Rss.Channel.Image.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Rss.Channel.Image"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Rss.Channel.SkipDays",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Rss.Channel.SkipHours",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Rss.Channel.TextInput",
+      "methods": [
+        {
+          "name": "rss.RSS.Rss.Channel.TextInput.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Rss.Channel.TextInput"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.TaxonomyTopicModel.TaxonomyTopicsBase": [
+    {
+      "name": "rss.RSS.Maker.TaxonomyTopicModel.TaxonomyTopicsBase.TaxonomyTopicBase",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.TaxonomyTopicModel.TaxonomyTopicsBase.TaxonomyTopicBase.have_required_values",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.TaxonomyTopicModel.TaxonomyTopicsBase.TaxonomyTopicBase"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Atom": [
+    {
+      "name": "rss.RSS.Atom.CommonModel",
+      "methods": [
+        {
+          "name": "rss.RSS.Atom.CommonModel.append_features",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.CommonModel"
+          ]
+        },
+        {
+          "name": "rss.RSS.Atom.CommonModel.need_parent",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.CommonModel"
+          ]
+        },
+        {
+          "name": "rss.RSS.Atom.CommonModel.required_uri",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.CommonModel"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Atom.ContentModel",
+      "methods": [
+        {
+          "name": "rss.RSS.Atom.ContentModel.append_features",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.ContentModel"
+          ]
+        },
+        {
+          "name": "rss.RSS.Atom.ContentModel.maker_target",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.ContentModel"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Atom.DateConstruct",
+      "methods": [
+        {
+          "name": "rss.RSS.Atom.DateConstruct.append_features",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.DateConstruct"
+          ]
+        },
+        {
+          "name": "rss.RSS.Atom.DateConstruct.atom_validate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.DateConstruct"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Atom.DuplicateLinkChecker",
+      "methods": [
+        {
+          "name": "rss.RSS.Atom.DuplicateLinkChecker.validate_duplicate_links",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.DuplicateLinkChecker"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Atom.Entry",
+      "methods": [
+        {
+          "name": "rss.RSS.Atom.Entry.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.Entry"
+          ]
+        },
+        {
+          "name": "rss.RSS.Atom.Entry.have_author",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.Entry"
+          ]
+        },
+        {
+          "name": "rss.RSS.Atom.Entry.items",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.Entry"
+          ]
+        },
+        {
+          "name": "rss.RSS.Atom.Entry.setup_maker",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.Entry"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Atom.Feed",
+      "methods": [
+        {
+          "name": "rss.RSS.Atom.Feed.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.Feed"
+          ]
+        },
+        {
+          "name": "rss.RSS.Atom.Feed.have_author",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.Feed"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Atom.PersonConstruct",
+      "methods": [
+        {
+          "name": "rss.RSS.Atom.PersonConstruct.append_features",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.PersonConstruct"
+          ]
+        },
+        {
+          "name": "rss.RSS.Atom.PersonConstruct.maker_target",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.PersonConstruct"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Atom.TextConstruct",
+      "methods": [
+        {
+          "name": "rss.RSS.Atom.TextConstruct.append_features",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.TextConstruct"
+          ]
+        },
+        {
+          "name": "rss.RSS.Atom.TextConstruct.xml_getter",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.TextConstruct"
+          ]
+        },
+        {
+          "name": "rss.RSS.Atom.TextConstruct.xml_setter",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.TextConstruct"
+          ]
+        },
+        {
+          "name": "rss.RSS.Atom.TextConstruct.atom_validate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.TextConstruct"
+          ]
+        },
+        {
+          "name": "rss.RSS.Atom.TextConstruct.have_xml_content",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.TextConstruct"
+          ]
+        },
+        {
+          "name": "rss.RSS.Atom.TextConstruct.xhtml",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.TextConstruct"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "rss.RSS.Atom.URIContentModel",
+      "methods": [
+        {
+          "name": "rss.RSS.Atom.URIContentModel.append_features",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Atom.URIContentModel"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.RSS09.Channel.Contributors": [
+    {
+      "name": "rss.RSS.Maker.RSS09.Channel.Contributors.Contributor",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "rss.RSS.Maker.ImageFaviconModel": [
+    {
+      "name": "rss.RSS.Maker.ImageFaviconModel.ImageFaviconBase",
+      "methods": [
+        {
+          "name": "rss.RSS.Maker.ImageFaviconModel.ImageFaviconBase.have_required_values",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ImageFaviconModel.ImageFaviconBase"
+          ]
+        },
+        {
+          "name": "rss.RSS.Maker.ImageFaviconModel.ImageFaviconBase.to_feed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "rss.RSS.Maker.ImageFaviconModel.ImageFaviconBase"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

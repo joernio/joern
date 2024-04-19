@@ -1,0 +1,521 @@
+{
+  "ripper": [
+    {
+      "name": "ripper.DSL",
+      "methods": [
+        {
+          "name": "ripper.DSL.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.DSL"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "ripper.Object",
+      "methods": [
+        {
+          "name": "ripper.Object.const_missing",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Object"
+          ]
+        },
+        {
+          "name": "ripper.Object.add_event",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Object"
+          ]
+        },
+        {
+          "name": "ripper.Object.check_arity",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Object"
+          ]
+        },
+        {
+          "name": "ripper.Object.generate_eventids1",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Object"
+          ]
+        },
+        {
+          "name": "ripper.Object.generate_eventids1_h",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Object"
+          ]
+        },
+        {
+          "name": "ripper.Object.generate_eventids2_table",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Object"
+          ]
+        },
+        {
+          "name": "ripper.Object.grammar",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Object"
+          ]
+        },
+        {
+          "name": "ripper.Object.main",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Object"
+          ]
+        },
+        {
+          "name": "ripper.Object.method_missing",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Object"
+          ]
+        },
+        {
+          "name": "ripper.Object.new_var",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Object"
+          ]
+        },
+        {
+          "name": "ripper.Object.opt_event",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Object"
+          ]
+        },
+        {
+          "name": "ripper.Object.prelude",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Object"
+          ]
+        },
+        {
+          "name": "ripper.Object.process",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Object"
+          ]
+        },
+        {
+          "name": "ripper.Object.read_ids1",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Object"
+          ]
+        },
+        {
+          "name": "ripper.Object.read_ids1_with_locations",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Object"
+          ]
+        },
+        {
+          "name": "ripper.Object.read_ids2",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Object"
+          ]
+        },
+        {
+          "name": "ripper.Object.strip_locations",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Object"
+          ]
+        },
+        {
+          "name": "ripper.Object.usage",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Object"
+          ]
+        },
+        {
+          "name": "ripper.Object.usercode",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Object"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "ripper.Ripper",
+      "methods": [
+        {
+          "name": "ripper.Ripper.dedent_string",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper"
+          ]
+        },
+        {
+          "name": "ripper.Ripper.lex",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper"
+          ]
+        },
+        {
+          "name": "ripper.Ripper.lex_state_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper"
+          ]
+        },
+        {
+          "name": "ripper.Ripper.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper"
+          ]
+        },
+        {
+          "name": "ripper.Ripper.parse",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper"
+          ]
+        },
+        {
+          "name": "ripper.Ripper.sexp",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper"
+          ]
+        },
+        {
+          "name": "ripper.Ripper.sexp_raw",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper"
+          ]
+        },
+        {
+          "name": "ripper.Ripper.slice",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper"
+          ]
+        },
+        {
+          "name": "ripper.Ripper.tokenize",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper"
+          ]
+        },
+        {
+          "name": "ripper.Ripper.column",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper"
+          ]
+        },
+        {
+          "name": "ripper.Ripper.debug_output",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper"
+          ]
+        },
+        {
+          "name": "ripper.Ripper.encoding",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper"
+          ]
+        },
+        {
+          "name": "ripper.Ripper.end_seen",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper"
+          ]
+        },
+        {
+          "name": "ripper.Ripper.error",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper"
+          ]
+        },
+        {
+          "name": "ripper.Ripper.filename",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper"
+          ]
+        },
+        {
+          "name": "ripper.Ripper.lineno",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper"
+          ]
+        },
+        {
+          "name": "ripper.Ripper.state",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper"
+          ]
+        },
+        {
+          "name": "ripper.Ripper.token",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper"
+          ]
+        },
+        {
+          "name": "ripper.Ripper.yydebug",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "ripper.Ripper.Lexer": [
+    {
+      "name": "ripper.Ripper.Lexer.Elem",
+      "methods": [
+        {
+          "name": "ripper.Ripper.Lexer.Elem.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper.Lexer.Elem"
+          ]
+        },
+        {
+          "name": "ripper.Ripper.Lexer.Elem.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper.Lexer.Elem"
+          ]
+        },
+        {
+          "name": "ripper.Ripper.Lexer.Elem.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper.Lexer.Elem"
+          ]
+        },
+        {
+          "name": "ripper.Ripper.Lexer.Elem.pretty_print",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper.Lexer.Elem"
+          ]
+        },
+        {
+          "name": "ripper.Ripper.Lexer.Elem.to_a",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper.Lexer.Elem"
+          ]
+        },
+        {
+          "name": "ripper.Ripper.Lexer.Elem.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper.Lexer.Elem"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "ripper.Ripper.Lexer.State",
+      "methods": [
+        {
+          "name": "ripper.Ripper.Lexer.State.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper.Lexer.State"
+          ]
+        },
+        {
+          "name": "ripper.Ripper.Lexer.State.&",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper.Lexer.State"
+          ]
+        },
+        {
+          "name": "ripper.Ripper.Lexer.State.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper.Lexer.State"
+          ]
+        },
+        {
+          "name": "ripper.Ripper.Lexer.State.allbits",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper.Lexer.State"
+          ]
+        },
+        {
+          "name": "ripper.Ripper.Lexer.State.anybits",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper.Lexer.State"
+          ]
+        },
+        {
+          "name": "ripper.Ripper.Lexer.State.nobits",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper.Lexer.State"
+          ]
+        },
+        {
+          "name": "ripper.Ripper.Lexer.State.pretty_print",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper.Lexer.State"
+          ]
+        },
+        {
+          "name": "ripper.Ripper.Lexer.State.|",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper.Lexer.State"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "ripper.Ripper": [
+    {
+      "name": "ripper.Ripper.Filter",
+      "methods": [
+        {
+          "name": "ripper.Ripper.Filter.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper.Filter"
+          ]
+        },
+        {
+          "name": "ripper.Ripper.Filter.column",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper.Filter"
+          ]
+        },
+        {
+          "name": "ripper.Ripper.Filter.filename",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper.Filter"
+          ]
+        },
+        {
+          "name": "ripper.Ripper.Filter.lineno",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper.Filter"
+          ]
+        },
+        {
+          "name": "ripper.Ripper.Filter.parse",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper.Filter"
+          ]
+        },
+        {
+          "name": "ripper.Ripper.Filter.state",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "ripper.Ripper.Filter"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "ripper.Ripper.Lexer",
+      "methods": [],
+      "fields": []
+    }
+  ]
+}

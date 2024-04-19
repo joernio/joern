@@ -1,0 +1,837 @@
+{
+  "optparse.OptionParser.Switch": [
+    {
+      "name": "optparse.OptionParser.Switch.NoArgument",
+      "methods": [
+        {
+          "name": "optparse.OptionParser.Switch.NoArgument.incompatible_argument_styles",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.Switch.NoArgument"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.Switch.NoArgument.pattern",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.Switch.NoArgument"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.Switch.NoArgument.parse",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.Switch.NoArgument"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "optparse.OptionParser.Switch.OptionalArgument",
+      "methods": [
+        {
+          "name": "optparse.OptionParser.Switch.OptionalArgument.parse",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.Switch.OptionalArgument"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "optparse.OptionParser.Switch.PlacedArgument",
+      "methods": [
+        {
+          "name": "optparse.OptionParser.Switch.PlacedArgument.parse",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.Switch.PlacedArgument"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "optparse.OptionParser.Switch.RequiredArgument",
+      "methods": [
+        {
+          "name": "optparse.OptionParser.Switch.RequiredArgument.parse",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.Switch.RequiredArgument"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "optparse": [
+    {
+      "name": "optparse.Object",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "optparse.OptionParser",
+      "methods": [
+        {
+          "name": "optparse.OptionParser.accept",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.each_const",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.getopts",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.inc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.reject",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.search_const",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.show_version",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.terminate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.top",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.with",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.abort",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.additional_message",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.banner",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.base",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.candidate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.def_head_option",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.def_option",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.def_tail_option",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.define",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.define_by_keywords",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.define_head",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.define_tail",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.environment",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.help",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.load",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.make_switch",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.on",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.on_head",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.on_tail",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.order",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.parse",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.permute",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.program_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.release",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.remove",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.separator",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.summarize",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.to_a",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.ver",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.version",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.warn",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "optparse.OptionParser": [
+    {
+      "name": "optparse.OptionParser.AC",
+      "methods": [
+        {
+          "name": "optparse.OptionParser.AC.ac_arg_disable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.AC"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.AC.ac_arg_enable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.AC"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.AC.ac_arg_with",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.AC"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "optparse.OptionParser.Acceptables",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "optparse.OptionParser.AmbiguousArgument",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "optparse.OptionParser.AmbiguousOption",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "optparse.OptionParser.Arguable",
+      "methods": [
+        {
+          "name": "optparse.OptionParser.Arguable.extend_object",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.Arguable"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.Arguable.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.Arguable"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.Arguable.getopts",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.Arguable"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.Arguable.options",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.Arguable"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.Arguable.order",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.Arguable"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.Arguable.parse",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.Arguable"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.Arguable.permute",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.Arguable"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "optparse.OptionParser.CompletingHash",
+      "methods": [
+        {
+          "name": "optparse.OptionParser.CompletingHash.match",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.CompletingHash"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "optparse.OptionParser.Completion",
+      "methods": [
+        {
+          "name": "optparse.OptionParser.Completion.candidate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.Completion"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.Completion.regexp",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.Completion"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.Completion.complete",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.Completion"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.Completion.convert",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.Completion"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "optparse.OptionParser.InvalidArgument",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "optparse.OptionParser.InvalidOption",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "optparse.OptionParser.List",
+      "methods": [
+        {
+          "name": "optparse.OptionParser.List.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.List"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.List.accept",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.List"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.List.append",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.List"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.List.complete",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.List"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.List.each_option",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.List"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.List.get_candidates",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.List"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.List.prepend",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.List"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.List.reject",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.List"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.List.search",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.List"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.List.summarize",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.List"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "optparse.OptionParser.MissingArgument",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "optparse.OptionParser.NeedlessArgument",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "optparse.OptionParser.OptionMap",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "optparse.OptionParser.ParseError",
+      "methods": [
+        {
+          "name": "optparse.OptionParser.ParseError.filter_backtrace",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.ParseError"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.ParseError.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.ParseError"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.ParseError.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.ParseError"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.ParseError.message",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.ParseError"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.ParseError.reason",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.ParseError"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.ParseError.recover",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.ParseError"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.ParseError.set_backtrace",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.ParseError"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.ParseError.set_option",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.ParseError"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.ParseError.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.ParseError"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "optparse.OptionParser.Switch",
+      "methods": [
+        {
+          "name": "optparse.OptionParser.Switch.guess",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.Switch"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.Switch.incompatible_argument_styles",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.Switch"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.Switch.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.Switch"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.Switch.pattern",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.Switch"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.Switch.summarize",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.Switch"
+          ]
+        },
+        {
+          "name": "optparse.OptionParser.Switch.switch_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "optparse.OptionParser.Switch"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

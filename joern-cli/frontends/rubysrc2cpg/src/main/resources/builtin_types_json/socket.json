@@ -1,0 +1,1680 @@
+{
+  "socket.Socket": [
+    {
+      "name": "socket.Socket.AncillaryData",
+      "methods": [
+        {
+          "name": "socket.Socket.AncillaryData.Socket::AncillaryData.int",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.AncillaryData"
+          ]
+        },
+        {
+          "name": "socket.Socket.AncillaryData.Socket::AncillaryData.ip_pktinfo",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.AncillaryData"
+          ]
+        },
+        {
+          "name": "socket.Socket.AncillaryData.Socket::AncillaryData.ipv6_pktinfo",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.AncillaryData"
+          ]
+        },
+        {
+          "name": "socket.Socket.AncillaryData.Socket::AncillaryData.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.AncillaryData"
+          ]
+        },
+        {
+          "name": "socket.Socket.AncillaryData.Socket::AncillaryData.unix_rights",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.AncillaryData"
+          ]
+        },
+        {
+          "name": "socket.Socket.AncillaryData.cmsg_is",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.AncillaryData"
+          ]
+        },
+        {
+          "name": "socket.Socket.AncillaryData.data",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.AncillaryData"
+          ]
+        },
+        {
+          "name": "socket.Socket.AncillaryData.family",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.AncillaryData"
+          ]
+        },
+        {
+          "name": "socket.Socket.AncillaryData.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.AncillaryData"
+          ]
+        },
+        {
+          "name": "socket.Socket.AncillaryData.int",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.AncillaryData"
+          ]
+        },
+        {
+          "name": "socket.Socket.AncillaryData.ip_pktinfo",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.AncillaryData"
+          ]
+        },
+        {
+          "name": "socket.Socket.AncillaryData.ipv6_pktinfo",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.AncillaryData"
+          ]
+        },
+        {
+          "name": "socket.Socket.AncillaryData.ipv6_pktinfo_addr",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.AncillaryData"
+          ]
+        },
+        {
+          "name": "socket.Socket.AncillaryData.ipv6_pktinfo_ifindex",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.AncillaryData"
+          ]
+        },
+        {
+          "name": "socket.Socket.AncillaryData.level",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.AncillaryData"
+          ]
+        },
+        {
+          "name": "socket.Socket.AncillaryData.timestamp",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.AncillaryData"
+          ]
+        },
+        {
+          "name": "socket.Socket.AncillaryData.type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.AncillaryData"
+          ]
+        },
+        {
+          "name": "socket.Socket.AncillaryData.unix_rights",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.AncillaryData"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "socket.Socket.Constants",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "socket.Socket.Ifaddr",
+      "methods": [
+        {
+          "name": "socket.Socket.Ifaddr.addr",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.Ifaddr"
+          ]
+        },
+        {
+          "name": "socket.Socket.Ifaddr.broadaddr",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.Ifaddr"
+          ]
+        },
+        {
+          "name": "socket.Socket.Ifaddr.dstaddr",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.Ifaddr"
+          ]
+        },
+        {
+          "name": "socket.Socket.Ifaddr.flags",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.Ifaddr"
+          ]
+        },
+        {
+          "name": "socket.Socket.Ifaddr.ifindex",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.Ifaddr"
+          ]
+        },
+        {
+          "name": "socket.Socket.Ifaddr.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.Ifaddr"
+          ]
+        },
+        {
+          "name": "socket.Socket.Ifaddr.name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.Ifaddr"
+          ]
+        },
+        {
+          "name": "socket.Socket.Ifaddr.netmask",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.Ifaddr"
+          ]
+        },
+        {
+          "name": "socket.Socket.Ifaddr.vhid",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.Ifaddr"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "socket.Socket.Option",
+      "methods": [
+        {
+          "name": "socket.Socket.Option.Socket::Option.bool",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.Option"
+          ]
+        },
+        {
+          "name": "socket.Socket.Option.Socket::Option.byte",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.Option"
+          ]
+        },
+        {
+          "name": "socket.Socket.Option.Socket::Option.int",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.Option"
+          ]
+        },
+        {
+          "name": "socket.Socket.Option.Socket::Option.ipv4_multicast_loop",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.Option"
+          ]
+        },
+        {
+          "name": "socket.Socket.Option.Socket::Option.ipv4_multicast_ttl",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.Option"
+          ]
+        },
+        {
+          "name": "socket.Socket.Option.Socket::Option.linger",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.Option"
+          ]
+        },
+        {
+          "name": "socket.Socket.Option.Socket::Option.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.Option"
+          ]
+        },
+        {
+          "name": "socket.Socket.Option.bool",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.Option"
+          ]
+        },
+        {
+          "name": "socket.Socket.Option.byte",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.Option"
+          ]
+        },
+        {
+          "name": "socket.Socket.Option.data",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.Option"
+          ]
+        },
+        {
+          "name": "socket.Socket.Option.family",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.Option"
+          ]
+        },
+        {
+          "name": "socket.Socket.Option.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.Option"
+          ]
+        },
+        {
+          "name": "socket.Socket.Option.int",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.Option"
+          ]
+        },
+        {
+          "name": "socket.Socket.Option.ipv4_multicast_loop",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.Option"
+          ]
+        },
+        {
+          "name": "socket.Socket.Option.ipv4_multicast_ttl",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.Option"
+          ]
+        },
+        {
+          "name": "socket.Socket.Option.level",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.Option"
+          ]
+        },
+        {
+          "name": "socket.Socket.Option.linger",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.Option"
+          ]
+        },
+        {
+          "name": "socket.Socket.Option.optname",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.Option"
+          ]
+        },
+        {
+          "name": "socket.Socket.Option.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.Option"
+          ]
+        },
+        {
+          "name": "socket.Socket.Option.unpack",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.Option"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "socket.Socket.ResolutionError",
+      "methods": [
+        {
+          "name": "socket.Socket.ResolutionError.error_code",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.ResolutionError"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "socket.Socket.UDPSource",
+      "methods": [
+        {
+          "name": "socket.Socket.UDPSource.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.UDPSource"
+          ]
+        },
+        {
+          "name": "socket.Socket.UDPSource.reply",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket.UDPSource"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "socket": [
+    {
+      "name": "socket.Addrinfo",
+      "methods": [
+        {
+          "name": "socket.Addrinfo.foreach",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.getaddrinfo",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.ip",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.tcp",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.udp",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.unix",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.afamily",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.bind",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.canonname",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.connect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.connect_from",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.connect_to",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.family_addrinfo",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.getnameinfo",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.inspect_sockaddr",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.ip_address",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.ip_port",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.ip_unpack",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.ipv4",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.ipv4_loopback",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.ipv4_multicast",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.ipv4_private",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.ipv6",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.ipv6_linklocal",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.ipv6_loopback",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.ipv6_mc_global",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.ipv6_mc_linklocal",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.ipv6_mc_nodelocal",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.ipv6_mc_orglocal",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.ipv6_mc_sitelocal",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.ipv6_multicast",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.ipv6_sitelocal",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.ipv6_to_ipv4",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.ipv6_unique_local",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.ipv6_unspecified",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.ipv6_v4compat",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.ipv6_v4mapped",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.listen",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.pfamily",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.protocol",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.socktype",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.to_sockaddr",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        },
+        {
+          "name": "socket.Addrinfo.unix_path",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Addrinfo"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "socket.BasicSocket",
+      "methods": [
+        {
+          "name": "socket.BasicSocket.do_not_reverse_lookup",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.BasicSocket"
+          ]
+        },
+        {
+          "name": "socket.BasicSocket.for_fd",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.BasicSocket"
+          ]
+        },
+        {
+          "name": "socket.BasicSocket.close_read",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.BasicSocket"
+          ]
+        },
+        {
+          "name": "socket.BasicSocket.close_write",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.BasicSocket"
+          ]
+        },
+        {
+          "name": "socket.BasicSocket.connect_address",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.BasicSocket"
+          ]
+        },
+        {
+          "name": "socket.BasicSocket.getpeereid",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.BasicSocket"
+          ]
+        },
+        {
+          "name": "socket.BasicSocket.getpeername",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.BasicSocket"
+          ]
+        },
+        {
+          "name": "socket.BasicSocket.getsockname",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.BasicSocket"
+          ]
+        },
+        {
+          "name": "socket.BasicSocket.getsockopt",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.BasicSocket"
+          ]
+        },
+        {
+          "name": "socket.BasicSocket.local_address",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.BasicSocket"
+          ]
+        },
+        {
+          "name": "socket.BasicSocket.recv",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.BasicSocket"
+          ]
+        },
+        {
+          "name": "socket.BasicSocket.recv_nonblock",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.BasicSocket"
+          ]
+        },
+        {
+          "name": "socket.BasicSocket.recvmsg",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.BasicSocket"
+          ]
+        },
+        {
+          "name": "socket.BasicSocket.recvmsg_nonblock",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.BasicSocket"
+          ]
+        },
+        {
+          "name": "socket.BasicSocket.remote_address",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.BasicSocket"
+          ]
+        },
+        {
+          "name": "socket.BasicSocket.send",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.BasicSocket"
+          ]
+        },
+        {
+          "name": "socket.BasicSocket.sendmsg",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.BasicSocket"
+          ]
+        },
+        {
+          "name": "socket.BasicSocket.sendmsg_nonblock",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.BasicSocket"
+          ]
+        },
+        {
+          "name": "socket.BasicSocket.setsockopt",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.BasicSocket"
+          ]
+        },
+        {
+          "name": "socket.BasicSocket.shutdown",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.BasicSocket"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "socket.IPSocket",
+      "methods": [
+        {
+          "name": "socket.IPSocket.getaddress",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.IPSocket"
+          ]
+        },
+        {
+          "name": "socket.IPSocket.addr",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.IPSocket"
+          ]
+        },
+        {
+          "name": "socket.IPSocket.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.IPSocket"
+          ]
+        },
+        {
+          "name": "socket.IPSocket.peeraddr",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.IPSocket"
+          ]
+        },
+        {
+          "name": "socket.IPSocket.recvfrom",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.IPSocket"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "socket.Object",
+      "methods": [
+        {
+          "name": "socket.Object.c_str",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Object"
+          ]
+        },
+        {
+          "name": "socket.Object.def_intern",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Object"
+          ]
+        },
+        {
+          "name": "socket.Object.def_name_to_int",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Object"
+          ]
+        },
+        {
+          "name": "socket.Object.each_const",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Object"
+          ]
+        },
+        {
+          "name": "socket.Object.each_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Object"
+          ]
+        },
+        {
+          "name": "socket.Object.each_names_with_len",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Object"
+          ]
+        },
+        {
+          "name": "socket.Object.reverse_each_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Object"
+          ]
+        },
+        {
+          "name": "socket.Object.reverse_each_name_with_prefix_optional",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Object"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "socket.SOCKSSocket",
+      "methods": [
+        {
+          "name": "socket.SOCKSSocket.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.SOCKSSocket"
+          ]
+        },
+        {
+          "name": "socket.SOCKSSocket.close",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.SOCKSSocket"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "socket.Socket",
+      "methods": [
+        {
+          "name": "socket.Socket.accept_loop",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.getaddrinfo",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.gethostbyaddr",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.gethostbyname",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.gethostname",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.getifaddrs",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.getnameinfo",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.getservbyname",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.getservbyport",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.ip_address_list",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.sockaddr_in",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.pack_sockaddr_in",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.sockaddr_un",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.pack_sockaddr_un",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.pair",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.socketpair",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.tcp",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.tcp_server_loop",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.tcp_server_sockets",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.udp_server_loop",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.udp_server_loop_on",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.udp_server_recv",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.udp_server_sockets",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.unix",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.unix_server_loop",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.unix_server_socket",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.unpack_sockaddr_in",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.unpack_sockaddr_un",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.accept",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.accept_nonblock",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.bind",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.connect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.connect_nonblock",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.ipv6only",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.listen",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.recvfrom",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.recvfrom_nonblock",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        },
+        {
+          "name": "socket.Socket.sysaccept",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.Socket"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "socket.SocketError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "socket.TCPServer",
+      "methods": [
+        {
+          "name": "socket.TCPServer.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.TCPServer"
+          ]
+        },
+        {
+          "name": "socket.TCPServer.accept",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.TCPServer"
+          ]
+        },
+        {
+          "name": "socket.TCPServer.accept_nonblock",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.TCPServer"
+          ]
+        },
+        {
+          "name": "socket.TCPServer.listen",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.TCPServer"
+          ]
+        },
+        {
+          "name": "socket.TCPServer.sysaccept",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.TCPServer"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "socket.TCPSocket",
+      "methods": [
+        {
+          "name": "socket.TCPSocket.gethostbyname",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.TCPSocket"
+          ]
+        },
+        {
+          "name": "socket.TCPSocket.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.TCPSocket"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "socket.UDPSocket",
+      "methods": [
+        {
+          "name": "socket.UDPSocket.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.UDPSocket"
+          ]
+        },
+        {
+          "name": "socket.UDPSocket.bind",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.UDPSocket"
+          ]
+        },
+        {
+          "name": "socket.UDPSocket.connect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.UDPSocket"
+          ]
+        },
+        {
+          "name": "socket.UDPSocket.recvfrom_nonblock",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.UDPSocket"
+          ]
+        },
+        {
+          "name": "socket.UDPSocket.send",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.UDPSocket"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "socket.UNIXServer",
+      "methods": [
+        {
+          "name": "socket.UNIXServer.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.UNIXServer"
+          ]
+        },
+        {
+          "name": "socket.UNIXServer.accept",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.UNIXServer"
+          ]
+        },
+        {
+          "name": "socket.UNIXServer.accept_nonblock",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.UNIXServer"
+          ]
+        },
+        {
+          "name": "socket.UNIXServer.listen",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.UNIXServer"
+          ]
+        },
+        {
+          "name": "socket.UNIXServer.sysaccept",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.UNIXServer"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "socket.UNIXSocket",
+      "methods": [
+        {
+          "name": "socket.UNIXSocket.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.UNIXSocket"
+          ]
+        },
+        {
+          "name": "socket.UNIXSocket.pair",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.UNIXSocket"
+          ]
+        },
+        {
+          "name": "socket.UNIXSocket.socketpair",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.UNIXSocket"
+          ]
+        },
+        {
+          "name": "socket.UNIXSocket.addr",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.UNIXSocket"
+          ]
+        },
+        {
+          "name": "socket.UNIXSocket.path",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.UNIXSocket"
+          ]
+        },
+        {
+          "name": "socket.UNIXSocket.peeraddr",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.UNIXSocket"
+          ]
+        },
+        {
+          "name": "socket.UNIXSocket.recv_io",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.UNIXSocket"
+          ]
+        },
+        {
+          "name": "socket.UNIXSocket.recvfrom",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.UNIXSocket"
+          ]
+        },
+        {
+          "name": "socket.UNIXSocket.send_io",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "socket.UNIXSocket"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

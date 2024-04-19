@@ -1,0 +1,892 @@
+{
+  "zlib": [
+    {
+      "name": "zlib.Zlib",
+      "methods": [
+        {
+          "name": "zlib.Zlib.adler32",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.adler32_combine",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.crc32",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.crc32_combine",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.crc_table",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.deflate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.Zlib::Deflate.deflate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.gunzip",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.gzip",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.inflate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.Zlib::Inflate.inflate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.zlib_version",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "zlib.Zlib": [
+    {
+      "name": "zlib.Zlib.BufError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "zlib.Zlib.DataError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "zlib.Zlib.Deflate",
+      "methods": [
+        {
+          "name": "zlib.Zlib.Deflate.deflate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.Deflate"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.Deflate.Zlib::Deflate.deflate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.Deflate"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.Deflate.Zlib::Deflate.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.Deflate"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.Deflate.<<",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.Deflate"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.Deflate.flush",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.Deflate"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.Deflate.initialize_copy",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.Deflate"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.Deflate.params",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.Deflate"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.Deflate.set_dictionary",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.Deflate"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "zlib.Zlib.Error",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "zlib.Zlib.GzipFile",
+      "methods": [
+        {
+          "name": "zlib.Zlib.GzipFile.Zlib::GzipReader.wrap",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipFile"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipFile.Zlib::GzipWriter.wrap",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipFile"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipFile.close",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipFile"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipFile.closed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipFile"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipFile.comment",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipFile"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipFile.crc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipFile"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipFile.finish",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipFile"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipFile.level",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipFile"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipFile.mtime",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipFile"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipFile.orig_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipFile"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipFile.os_code",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipFile"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipFile.sync",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipFile"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipFile.to_io",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipFile"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "zlib.Zlib.GzipReader",
+      "methods": [
+        {
+          "name": "zlib.Zlib.GzipReader.Zlib::GzipReader.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipReader"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipReader.Zlib::GzipReader.open",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipReader"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipReader.Zlib::GzipReader.zcat",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipReader"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipReader.each",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipReader"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipReader.each_byte",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipReader"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipReader.each_char",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipReader"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipReader.each_line",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipReader"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipReader.eof",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipReader"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipReader.external_encoding",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipReader"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipReader.getbyte",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipReader"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipReader.getc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipReader"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipReader.gets",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipReader"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipReader.lineno",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipReader"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipReader.pos",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipReader"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipReader.read",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipReader"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipReader.readbyte",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipReader"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipReader.readchar",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipReader"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipReader.readline",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipReader"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipReader.readlines",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipReader"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipReader.readpartial",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipReader"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipReader.rewind",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipReader"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipReader.tell",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipReader"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipReader.ungetbyte",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipReader"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipReader.ungetc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipReader"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipReader.unused",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipReader"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "zlib.Zlib.GzipWriter",
+      "methods": [
+        {
+          "name": "zlib.Zlib.GzipWriter.Zlib::GzipWriter.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipWriter"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipWriter.Zlib::GzipWriter.open",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipWriter"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipWriter.<<",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipWriter"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipWriter.comment",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipWriter"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipWriter.flush",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipWriter"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipWriter.mtime",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipWriter"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipWriter.orig_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipWriter"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipWriter.pos",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipWriter"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipWriter.print",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipWriter"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipWriter.printf",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipWriter"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipWriter.putc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipWriter"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipWriter.puts",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipWriter"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipWriter.tell",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipWriter"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.GzipWriter.write",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipWriter"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "zlib.Zlib.InProgressError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "zlib.Zlib.Inflate",
+      "methods": [
+        {
+          "name": "zlib.Zlib.Inflate.inflate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.Inflate"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.Inflate.Zlib::Inflate.inflate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.Inflate"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.Inflate.Zlib::Inflate.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.Inflate"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.Inflate.<<",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.Inflate"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.Inflate.add_dictionary",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.Inflate"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.Inflate.set_dictionary",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.Inflate"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.Inflate.sync",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.Inflate"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.Inflate.sync_point",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.Inflate"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "zlib.Zlib.MemError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "zlib.Zlib.NeedDict",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "zlib.Zlib.StreamEnd",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "zlib.Zlib.StreamError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "zlib.Zlib.VersionError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "zlib.Zlib.ZStream",
+      "methods": [
+        {
+          "name": "zlib.Zlib.ZStream.adler",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.ZStream"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.ZStream.avail_in",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.ZStream"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.ZStream.avail_out",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.ZStream"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.ZStream.close",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.ZStream"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.ZStream.closed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.ZStream"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.ZStream.data_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.ZStream"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.ZStream.end",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.ZStream"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.ZStream.ended",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.ZStream"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.ZStream.finish",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.ZStream"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.ZStream.finished",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.ZStream"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.ZStream.flush_next_in",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.ZStream"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.ZStream.flush_next_out",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.ZStream"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.ZStream.reset",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.ZStream"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.ZStream.stream_end",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.ZStream"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.ZStream.total_in",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.ZStream"
+          ]
+        },
+        {
+          "name": "zlib.Zlib.ZStream.total_out",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.ZStream"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "zlib.Zlib.GzipFile": [
+    {
+      "name": "zlib.Zlib.GzipFile.CRCError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "zlib.Zlib.GzipFile.Error",
+      "methods": [
+        {
+          "name": "zlib.Zlib.GzipFile.Error.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "zlib.Zlib.GzipFile.Error"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "zlib.Zlib.GzipFile.LengthError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "zlib.Zlib.GzipFile.NoFooter",
+      "methods": [],
+      "fields": []
+    }
+  ]
+}

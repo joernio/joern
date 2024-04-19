@@ -1,0 +1,493 @@
+{
+  "stringio": [
+    {
+      "name": "stringio.IO",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "stringio.StringIO",
+      "methods": [
+        {
+          "name": "stringio.StringIO.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.open",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.binmode",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.close",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.close_read",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.close_write",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.closed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.closed_read",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.closed_write",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.each",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.each_byte",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.each_char",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.each_codepoint",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.each_line",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.eof",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.external_encoding",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.fcntl",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.fileno",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.flush",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.fsync",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.getbyte",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.getc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.gets",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.internal_encoding",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.isatty",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.length",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.lineno",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.pid",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.pos",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.pread",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.putc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.read",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.readlines",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.reopen",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.rewind",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.seek",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.set_encoding",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.set_encoding_by_bom",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.string",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.sync",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.truncate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.tty",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.ungetbyte",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.ungetc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.write",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        },
+        {
+          "name": "stringio.StringIO.syswrite",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.StringIO"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "stringio.IO": [
+    {
+      "name": "stringio.IO.generic_readable",
+      "methods": [
+        {
+          "name": "stringio.IO.generic_readable.read_nonblock",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.IO.generic_readable"
+          ]
+        },
+        {
+          "name": "stringio.IO.generic_readable.readbyte",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.IO.generic_readable"
+          ]
+        },
+        {
+          "name": "stringio.IO.generic_readable.readchar",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.IO.generic_readable"
+          ]
+        },
+        {
+          "name": "stringio.IO.generic_readable.readline",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.IO.generic_readable"
+          ]
+        },
+        {
+          "name": "stringio.IO.generic_readable.readpartial",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.IO.generic_readable"
+          ]
+        },
+        {
+          "name": "stringio.IO.generic_readable.sysread",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.IO.generic_readable"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "stringio.IO.generic_writable",
+      "methods": [
+        {
+          "name": "stringio.IO.generic_writable.strio",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.IO.generic_writable"
+          ]
+        },
+        {
+          "name": "stringio.IO.generic_writable.print",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.IO.generic_writable"
+          ]
+        },
+        {
+          "name": "stringio.IO.generic_writable.printf",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.IO.generic_writable"
+          ]
+        },
+        {
+          "name": "stringio.IO.generic_writable.puts",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.IO.generic_writable"
+          ]
+        },
+        {
+          "name": "stringio.IO.generic_writable.write_nonblock",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "stringio.IO.generic_writable"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

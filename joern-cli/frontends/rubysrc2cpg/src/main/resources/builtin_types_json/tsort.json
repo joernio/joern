@@ -1,0 +1,73 @@
+{
+  "tsort": [
+    {
+      "name": "tsort.TSort",
+      "methods": [
+        {
+          "name": "tsort.TSort.each_strongly_connected_component",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "tsort.TSort"
+          ]
+        },
+        {
+          "name": "tsort.TSort.each_strongly_connected_component_from",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "tsort.TSort"
+          ]
+        },
+        {
+          "name": "tsort.TSort.strongly_connected_components",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "tsort.TSort"
+          ]
+        },
+        {
+          "name": "tsort.TSort.tsort",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "tsort.TSort"
+          ]
+        },
+        {
+          "name": "tsort.TSort.tsort_each",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "tsort.TSort"
+          ]
+        },
+        {
+          "name": "tsort.TSort.tsort_each_child",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "tsort.TSort"
+          ]
+        },
+        {
+          "name": "tsort.TSort.tsort_each_node",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "tsort.TSort"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "tsort.TSort": [
+    {
+      "name": "tsort.TSort.Cyclic",
+      "methods": [],
+      "fields": []
+    }
+  ]
+}

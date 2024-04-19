@@ -1,0 +1,236 @@
+{
+  "logger.Logger": [
+    {
+      "name": "logger.Logger.Formatter",
+      "methods": [
+        {
+          "name": "logger.Logger.Formatter.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "logger.Logger.Formatter"
+          ]
+        },
+        {
+          "name": "logger.Logger.Formatter.call",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "logger.Logger.Formatter"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "logger.Logger.LogDevice",
+      "methods": [
+        {
+          "name": "logger.Logger.LogDevice.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "logger.Logger.LogDevice"
+          ]
+        },
+        {
+          "name": "logger.Logger.LogDevice.close",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "logger.Logger.LogDevice"
+          ]
+        },
+        {
+          "name": "logger.Logger.LogDevice.reopen",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "logger.Logger.LogDevice"
+          ]
+        },
+        {
+          "name": "logger.Logger.LogDevice.write",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "logger.Logger.LogDevice"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "logger.Logger.Period",
+      "methods": [
+        {
+          "name": "logger.Logger.Period.next_rotate_time",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "logger.Logger.Period"
+          ]
+        },
+        {
+          "name": "logger.Logger.Period.previous_period_end",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "logger.Logger.Period"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "logger.Logger.Severity",
+      "methods": [
+        {
+          "name": "logger.Logger.Severity.coerce",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "logger.Logger.Severity"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "logger": [
+    {
+      "name": "logger.Logger",
+      "methods": [
+        {
+          "name": "logger.Logger.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "logger.Logger"
+          ]
+        },
+        {
+          "name": "logger.Logger.<<",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "logger.Logger"
+          ]
+        },
+        {
+          "name": "logger.Logger.add",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "logger.Logger"
+          ]
+        },
+        {
+          "name": "logger.Logger.close",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "logger.Logger"
+          ]
+        },
+        {
+          "name": "logger.Logger.datetime_format",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "logger.Logger"
+          ]
+        },
+        {
+          "name": "logger.Logger.debug",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "logger.Logger"
+          ]
+        },
+        {
+          "name": "logger.Logger.error",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "logger.Logger"
+          ]
+        },
+        {
+          "name": "logger.Logger.fatal",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "logger.Logger"
+          ]
+        },
+        {
+          "name": "logger.Logger.info",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "logger.Logger"
+          ]
+        },
+        {
+          "name": "logger.Logger.level",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "logger.Logger"
+          ]
+        },
+        {
+          "name": "logger.Logger.log",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "logger.Logger"
+          ]
+        },
+        {
+          "name": "logger.Logger.reopen",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "logger.Logger"
+          ]
+        },
+        {
+          "name": "logger.Logger.sev_threshold",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "logger.Logger"
+          ]
+        },
+        {
+          "name": "logger.Logger.unknown",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "logger.Logger"
+          ]
+        },
+        {
+          "name": "logger.Logger.warn",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "logger.Logger"
+          ]
+        },
+        {
+          "name": "logger.Logger.with_level",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "logger.Logger"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

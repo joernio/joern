@@ -1,0 +1,238 @@
+{
+  "nkf": [
+    {
+      "name": "nkf.Kconv",
+      "methods": [
+        {
+          "name": "nkf.Kconv.guess",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "nkf.Kconv"
+          ]
+        },
+        {
+          "name": "nkf.Kconv.iseuc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "nkf.Kconv"
+          ]
+        },
+        {
+          "name": "nkf.Kconv.isjis",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "nkf.Kconv"
+          ]
+        },
+        {
+          "name": "nkf.Kconv.issjis",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "nkf.Kconv"
+          ]
+        },
+        {
+          "name": "nkf.Kconv.isutf8",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "nkf.Kconv"
+          ]
+        },
+        {
+          "name": "nkf.Kconv.kconv",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "nkf.Kconv"
+          ]
+        },
+        {
+          "name": "nkf.Kconv.toeuc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "nkf.Kconv"
+          ]
+        },
+        {
+          "name": "nkf.Kconv.tojis",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "nkf.Kconv"
+          ]
+        },
+        {
+          "name": "nkf.Kconv.tolocale",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "nkf.Kconv"
+          ]
+        },
+        {
+          "name": "nkf.Kconv.tosjis",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "nkf.Kconv"
+          ]
+        },
+        {
+          "name": "nkf.Kconv.toutf16",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "nkf.Kconv"
+          ]
+        },
+        {
+          "name": "nkf.Kconv.toutf32",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "nkf.Kconv"
+          ]
+        },
+        {
+          "name": "nkf.Kconv.toutf8",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "nkf.Kconv"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "nkf.NKF",
+      "methods": [
+        {
+          "name": "nkf.NKF.guess",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "nkf.NKF"
+          ]
+        },
+        {
+          "name": "nkf.NKF.nkf",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "nkf.NKF"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "nkf.String",
+      "methods": [
+        {
+          "name": "nkf.String.String#iseuc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "nkf.String"
+          ]
+        },
+        {
+          "name": "nkf.String.String#isjis",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "nkf.String"
+          ]
+        },
+        {
+          "name": "nkf.String.String#issjis",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "nkf.String"
+          ]
+        },
+        {
+          "name": "nkf.String.String#isutf8",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "nkf.String"
+          ]
+        },
+        {
+          "name": "nkf.String.String#kconv",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "nkf.String"
+          ]
+        },
+        {
+          "name": "nkf.String.String#toeuc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "nkf.String"
+          ]
+        },
+        {
+          "name": "nkf.String.String#tojis",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "nkf.String"
+          ]
+        },
+        {
+          "name": "nkf.String.String#tolocale",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "nkf.String"
+          ]
+        },
+        {
+          "name": "nkf.String.String#tosjis",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "nkf.String"
+          ]
+        },
+        {
+          "name": "nkf.String.String#toutf16",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "nkf.String"
+          ]
+        },
+        {
+          "name": "nkf.String.String#toutf32",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "nkf.String"
+          ]
+        },
+        {
+          "name": "nkf.String.String#toutf8",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "nkf.String"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

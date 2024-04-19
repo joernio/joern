@@ -1,0 +1,1108 @@
+{
+  "fiddle.Fiddle.Closure": [
+    {
+      "name": "fiddle.Fiddle.Closure.BlockCaller",
+      "methods": [
+        {
+          "name": "fiddle.Fiddle.Closure.BlockCaller.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Closure.BlockCaller"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Closure.BlockCaller.call",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Closure.BlockCaller"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "fiddle": [
+    {
+      "name": "fiddle.Fiddle",
+      "methods": [
+        {
+          "name": "fiddle.Fiddle.dlopen",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.dlunwrap",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.dlwrap",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.free",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.last_error",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.malloc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.realloc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.win32_last_error",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.win32_last_socket_error",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "fiddle.Fiddle": [
+    {
+      "name": "fiddle.Fiddle.BasicTypes",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "fiddle.Fiddle.CParser",
+      "methods": [
+        {
+          "name": "fiddle.Fiddle.CParser.parse_ctype",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.CParser"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.CParser.parse_signature",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.CParser"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.CParser.parse_struct_signature",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.CParser"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "fiddle.Fiddle.CStruct",
+      "methods": [
+        {
+          "name": "fiddle.Fiddle.CStruct.entity_class",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.CStruct"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.CStruct.each",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.CStruct"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.CStruct.each_pair",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.CStruct"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.CStruct.replace",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.CStruct"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.CStruct.to_h",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.CStruct"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "fiddle.Fiddle.CStructBuilder",
+      "methods": [
+        {
+          "name": "fiddle.Fiddle.CStructBuilder.create",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.CStructBuilder"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "fiddle.Fiddle.CStructEntity",
+      "methods": [
+        {
+          "name": "fiddle.Fiddle.CStructEntity.alignment",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.CStructEntity"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.CStructEntity.malloc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.CStructEntity"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.CStructEntity.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.CStructEntity"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.CStructEntity.size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.CStructEntity"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.CStructEntity.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.CStructEntity"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.CStructEntity.assign_names",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.CStructEntity"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.CStructEntity.set_ctypes",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.CStructEntity"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "fiddle.Fiddle.CUnion",
+      "methods": [
+        {
+          "name": "fiddle.Fiddle.CUnion.entity_class",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.CUnion"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "fiddle.Fiddle.CUnionEntity",
+      "methods": [
+        {
+          "name": "fiddle.Fiddle.CUnionEntity.size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.CUnionEntity"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.CUnionEntity.set_ctypes",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.CUnionEntity"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "fiddle.Fiddle.ClearedReferenceError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "fiddle.Fiddle.Closure",
+      "methods": [
+        {
+          "name": "fiddle.Fiddle.Closure.create",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Closure"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Closure.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Closure"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Closure.free",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Closure"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Closure.freed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Closure"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Closure.to_i",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Closure"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "fiddle.Fiddle.CompositeHandler",
+      "methods": [
+        {
+          "name": "fiddle.Fiddle.CompositeHandler.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.CompositeHandler"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.CompositeHandler.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.CompositeHandler"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.CompositeHandler.handlers",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.CompositeHandler"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.CompositeHandler.sym",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.CompositeHandler"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "fiddle.Fiddle.DLError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "fiddle.Fiddle.Error",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "fiddle.Fiddle.Function",
+      "methods": [
+        {
+          "name": "fiddle.Fiddle.Function.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Function"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Function.args,",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Function"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Function.ret_type,",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Function"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Function.abi",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Function"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Function.name:",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Function"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Function.need_gvl:",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Function"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Function.call",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Function"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Function.need_gvl",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Function"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Function.to_i",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Function"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Function.to_proc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Function"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "fiddle.Fiddle.Handle",
+      "methods": [
+        {
+          "name": "fiddle.Fiddle.Handle.sym",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Handle"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Handle.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Handle"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Handle.sym_defined",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Handle"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Handle.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Handle"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Handle.close",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Handle"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Handle.close_enabled",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Handle"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Handle.disable_close",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Handle"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Handle.enable_close",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Handle"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Handle.file_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Handle"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Handle.to_i",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Handle"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Handle.to_ptr",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Handle"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "fiddle.Fiddle.Importer",
+      "methods": [
+        {
+          "name": "fiddle.Fiddle.Importer.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Importer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Importer.bind",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Importer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Importer.bind_function",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Importer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Importer.create_value",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Importer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Importer.dlload",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Importer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Importer.extern",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Importer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Importer.handler",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Importer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Importer.import_function",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Importer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Importer.import_symbol",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Importer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Importer.import_value",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Importer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Importer.sizeof",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Importer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Importer.struct",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Importer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Importer.typealias",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Importer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Importer.union",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Importer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Importer.value",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Importer"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "fiddle.Fiddle.MemoryView",
+      "methods": [
+        {
+          "name": "fiddle.Fiddle.MemoryView.export",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.MemoryView"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.MemoryView.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.MemoryView"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.MemoryView.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.MemoryView"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.MemoryView.byte_size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.MemoryView"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.MemoryView.format",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.MemoryView"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.MemoryView.item_size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.MemoryView"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.MemoryView.ndim",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.MemoryView"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.MemoryView.obj",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.MemoryView"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.MemoryView.readonly",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.MemoryView"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.MemoryView.release",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.MemoryView"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.MemoryView.shape",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.MemoryView"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.MemoryView.strides",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.MemoryView"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.MemoryView.sub_offsets",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.MemoryView"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.MemoryView.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.MemoryView"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "fiddle.Fiddle.Pinned",
+      "methods": [
+        {
+          "name": "fiddle.Fiddle.Pinned.Fiddle::Pinned.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Pinned"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Pinned.clear",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Pinned"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Pinned.cleared",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Pinned"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Pinned.ref",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Pinned"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "fiddle.Fiddle.Pointer",
+      "methods": [
+        {
+          "name": "fiddle.Fiddle.Pointer.Fiddle::Pointer[val]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Pointer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Pointer.to_ptr",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Pointer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Pointer.Fiddle::Pointer.malloc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Pointer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Pointer.Fiddle::Pointer.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Pointer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Pointer.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Pointer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Pointer.Fiddle::Pointer.read",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Pointer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Pointer.Fiddle::Pointer.write",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Pointer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Pointer.ptr",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Pointer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Pointer.+@",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Pointer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Pointer.-@",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Pointer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Pointer.ptr[index]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Pointer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Pointer.ptr[start,",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Pointer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Pointer.call_free",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Pointer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Pointer.eql",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Pointer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Pointer.free",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Pointer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Pointer.freed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Pointer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Pointer.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Pointer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Pointer.null",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Pointer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Pointer.ref",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Pointer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Pointer.size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Pointer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Pointer.to_i",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Pointer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Pointer.to_int",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Pointer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Pointer.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Pointer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Pointer.to_str",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Pointer"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.Pointer.to_value",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.Pointer"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "fiddle.Fiddle.StructArray",
+      "methods": [
+        {
+          "name": "fiddle.Fiddle.StructArray.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.StructArray"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.StructArray.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.StructArray"
+          ]
+        },
+        {
+          "name": "fiddle.Fiddle.StructArray.to_ptr",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "fiddle.Fiddle.StructArray"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "fiddle.Fiddle.Types",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "fiddle.Fiddle.Win32Types",
+      "methods": [],
+      "fields": []
+    }
+  ]
+}

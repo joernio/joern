@@ -1,0 +1,650 @@
+{
+  "io.IO": [
+    {
+      "name": "io.IO.generic_readable",
+      "methods": [
+        {
+          "name": "io.IO.generic_readable.getch",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO.generic_readable"
+          ]
+        },
+        {
+          "name": "io.IO.generic_readable.getpass",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO.generic_readable"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "io.IO.generic_readable",
+      "methods": [
+        {
+          "name": "io.IO.generic_readable.getch",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO.generic_readable"
+          ]
+        },
+        {
+          "name": "io.IO.generic_readable.getpass",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO.generic_readable"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "io": [
+    {
+      "name": "io.IO",
+      "methods": [
+        {
+          "name": "io.IO.console",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.console_size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.default_console_size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.beep",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.check_winsize_changed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.clear_screen",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.console_mode",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.cooked",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.cursor",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.cursor_down",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.cursor_left",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.cursor_right",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.cursor_up",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.echo",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.erase_line",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.erase_screen",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.getch",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.getpass",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.goto",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.goto_column",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.iflush",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.ioflush",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.noecho",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.nonblock",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.nread",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.oflush",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.pressed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.raw",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.ready",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.scroll_backward",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.scroll_forward",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.wait",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.wait_priority",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.wait_readable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.wait_writable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.winsize",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "io.IO",
+      "methods": [
+        {
+          "name": "io.IO.console",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.console_size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.default_console_size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.beep",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.check_winsize_changed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.clear_screen",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.console_mode",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.cooked",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.cursor",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.cursor_down",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.cursor_left",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.cursor_right",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.cursor_up",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.echo",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.erase_line",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.erase_screen",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.getch",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.getpass",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.goto",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.goto_column",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.iflush",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.ioflush",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.noecho",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.oflush",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.pressed",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.raw",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.scroll_backward",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.scroll_forward",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.winsize",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "io.IO",
+      "methods": [
+        {
+          "name": "io.IO.nonblock",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "io.IO",
+      "methods": [
+        {
+          "name": "io.IO.nread",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.ready",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.wait",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.wait_priority",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.wait_readable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        },
+        {
+          "name": "io.IO.wait_writable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "io.IO"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

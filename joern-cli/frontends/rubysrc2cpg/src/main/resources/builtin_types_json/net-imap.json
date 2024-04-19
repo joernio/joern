@@ -1,0 +1,4020 @@
+{
+  "net-imap.Net.IMAP.StringPrep": [
+    {
+      "name": "net-imap.Net.IMAP.StringPrep.BidiStringError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.StringPrep.NamePrep",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.StringPrep.NamePrep.nameprep",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.StringPrep.NamePrep"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.StringPrep.ProhibitedCodepoint",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.StringPrep.ProhibitedCodepoint.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.StringPrep.ProhibitedCodepoint"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.StringPrep.SASLprep",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.StringPrep.SASLprep.saslprep",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.StringPrep.SASLprep"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.StringPrep.StringPrepError",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.StringPrep.StringPrepError.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.StringPrep.StringPrepError"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.StringPrep.Tables",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.StringPrep.Trace",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.StringPrep.Trace.stringprep_trace",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.StringPrep.Trace"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "net-imap.Net": [
+    {
+      "name": "net-imap.Net.IMAP",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.debug",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.decode_date",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.decode_datetime",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.decode_time",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.decode_utf7",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.default_imap_port",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.default_imaps_port",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.default_port",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.default_ssl_port",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.default_tls_port",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.encode_date",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.encode_datetime",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.encode_time",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.encode_utf7",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.format_date",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.format_datetime",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.format_time",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.parse_date",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.parse_datetime",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.parse_time",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.add_response_handler",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.append",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.auth_capable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.auth_mechanisms",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.authenticate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.capabilities",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.capabilities_cached",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.capability",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.capable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.check",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.clear_cached_capabilities",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.clear_responses",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.close",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.copy",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.create",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.delete",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.disconnect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.disconnected",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.enable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.examine",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.expunge",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.fetch",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.getacl",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.getquota",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.getquotaroot",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.id",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.idle",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.idle_done",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.list",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.login",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.logout",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.lsub",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.move",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.namespace",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.noop",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.remove_response_handler",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.rename",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.response_handlers",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.responses",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.search",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.select",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.setacl",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.setquota",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.sort",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.starttls",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.status",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.store",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.subscribe",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.thread",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.tls_verified",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.uid_copy",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.uid_expunge",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.uid_fetch",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.uid_move",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.uid_search",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.uid_sort",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.uid_store",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.uid_thread",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.unselect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.unsubscribe",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.xlist",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "net-imap.Net.IMAP.SASL.ProtocolAdapters": [
+    {
+      "name": "net-imap.Net.IMAP.SASL.ProtocolAdapters.Generic",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.SASL.ProtocolAdapters.Generic.cancel_response",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ProtocolAdapters.Generic"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.ProtocolAdapters.Generic.command_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ProtocolAdapters.Generic"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.ProtocolAdapters.Generic.decode",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ProtocolAdapters.Generic"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.ProtocolAdapters.Generic.encode",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ProtocolAdapters.Generic"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.ProtocolAdapters.Generic.encode_ir",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ProtocolAdapters.Generic"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.ProtocolAdapters.Generic.host",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ProtocolAdapters.Generic"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.ProtocolAdapters.Generic.port",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ProtocolAdapters.Generic"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.ProtocolAdapters.Generic.service",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ProtocolAdapters.Generic"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.SASL.ProtocolAdapters.IMAP",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.SASL.ProtocolAdapters.IMAP.service",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ProtocolAdapters.IMAP"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.SASL.ProtocolAdapters.POP",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.SASL.ProtocolAdapters.POP.command_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ProtocolAdapters.POP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.ProtocolAdapters.POP.service",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ProtocolAdapters.POP"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.SASL.ProtocolAdapters.SMTP",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.SASL.ProtocolAdapters.SMTP.command_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ProtocolAdapters.SMTP"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.ProtocolAdapters.SMTP.service",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ProtocolAdapters.SMTP"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "net-imap": [
+    {
+      "name": "net-imap.Net",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net-imap.StringPrepTablesGenerator",
+      "methods": [
+        {
+          "name": "net-imap.StringPrepTablesGenerator.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.StringPrepTablesGenerator"
+          ]
+        },
+        {
+          "name": "net-imap.StringPrepTablesGenerator.arrays",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.StringPrepTablesGenerator"
+          ]
+        },
+        {
+          "name": "net-imap.StringPrepTablesGenerator.asgn_regexps",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.StringPrepTablesGenerator"
+          ]
+        },
+        {
+          "name": "net-imap.StringPrepTablesGenerator.clean_deps",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.StringPrepTablesGenerator"
+          ]
+        },
+        {
+          "name": "net-imap.StringPrepTablesGenerator.generate_json_data_file",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.StringPrepTablesGenerator"
+          ]
+        },
+        {
+          "name": "net-imap.StringPrepTablesGenerator.json_deps",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.StringPrepTablesGenerator"
+          ]
+        },
+        {
+          "name": "net-imap.StringPrepTablesGenerator.merged_tables_regex",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.StringPrepTablesGenerator"
+          ]
+        },
+        {
+          "name": "net-imap.StringPrepTablesGenerator.ranges",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.StringPrepTablesGenerator"
+          ]
+        },
+        {
+          "name": "net-imap.StringPrepTablesGenerator.rb_deps",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.StringPrepTablesGenerator"
+          ]
+        },
+        {
+          "name": "net-imap.StringPrepTablesGenerator.regexp_for",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.StringPrepTablesGenerator"
+          ]
+        },
+        {
+          "name": "net-imap.StringPrepTablesGenerator.regexps",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.StringPrepTablesGenerator"
+          ]
+        },
+        {
+          "name": "net-imap.StringPrepTablesGenerator.saslprep_rb",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.StringPrepTablesGenerator"
+          ]
+        },
+        {
+          "name": "net-imap.StringPrepTablesGenerator.sets",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.StringPrepTablesGenerator"
+          ]
+        },
+        {
+          "name": "net-imap.StringPrepTablesGenerator.stringprep_rb",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.StringPrepTablesGenerator"
+          ]
+        },
+        {
+          "name": "net-imap.StringPrepTablesGenerator.table_regexps_rb",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.StringPrepTablesGenerator"
+          ]
+        },
+        {
+          "name": "net-imap.StringPrepTablesGenerator.table_titles_rb",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.StringPrepTablesGenerator"
+          ]
+        },
+        {
+          "name": "net-imap.StringPrepTablesGenerator.tables",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.StringPrepTablesGenerator"
+          ]
+        },
+        {
+          "name": "net-imap.StringPrepTablesGenerator.titles",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.StringPrepTablesGenerator"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "net-imap.Net.IMAP": [
+    {
+      "name": "net-imap.Net.IMAP.Address",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.Address.host",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.Address"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.Address.mailbox",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.Address"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.Address.name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.Address"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.Address.route",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.Address"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.Authenticators",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.Authenticators.add_authenticator",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.Authenticators"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.Authenticators.authenticator",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.Authenticators"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.BadResponseError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.BodyStructure",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.BodyTypeAttachment",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.BodyTypeAttachment.dsp_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.BodyTypeAttachment"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.BodyTypeAttachment.media_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.BodyTypeAttachment"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.BodyTypeAttachment.multipart",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.BodyTypeAttachment"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.BodyTypeAttachment.param",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.BodyTypeAttachment"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.BodyTypeAttachment.subtype",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.BodyTypeAttachment"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.BodyTypeBasic",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.BodyTypeBasic.content_id",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.BodyTypeBasic"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.BodyTypeBasic.description",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.BodyTypeBasic"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.BodyTypeBasic.disposition",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.BodyTypeBasic"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.BodyTypeBasic.encoding",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.BodyTypeBasic"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.BodyTypeBasic.extension",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.BodyTypeBasic"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.BodyTypeBasic.language",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.BodyTypeBasic"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.BodyTypeBasic.md5",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.BodyTypeBasic"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.BodyTypeBasic.media_subtype",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.BodyTypeBasic"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.BodyTypeBasic.media_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.BodyTypeBasic"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.BodyTypeBasic.multipart",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.BodyTypeBasic"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.BodyTypeBasic.param",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.BodyTypeBasic"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.BodyTypeBasic.size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.BodyTypeBasic"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.BodyTypeBasic.subtype",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.BodyTypeBasic"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.BodyTypeExtension",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.BodyTypeExtension.multipart",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.BodyTypeExtension"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.BodyTypeMessage",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.BodyTypeMessage.body",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.BodyTypeMessage"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.BodyTypeMessage.envelope",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.BodyTypeMessage"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.BodyTypeMessage.media_subtype",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.BodyTypeMessage"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.BodyTypeMessage.multipart",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.BodyTypeMessage"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.BodyTypeMultipart",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.BodyTypeMultipart.disposition",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.BodyTypeMultipart"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.BodyTypeMultipart.extension",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.BodyTypeMultipart"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.BodyTypeMultipart.language",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.BodyTypeMultipart"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.BodyTypeMultipart.media_subtype",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.BodyTypeMultipart"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.BodyTypeMultipart.media_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.BodyTypeMultipart"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.BodyTypeMultipart.multipart",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.BodyTypeMultipart"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.BodyTypeMultipart.param",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.BodyTypeMultipart"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.BodyTypeMultipart.parts",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.BodyTypeMultipart"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.BodyTypeMultipart.subtype",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.BodyTypeMultipart"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.BodyTypeText",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.BodyTypeText.lines",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.BodyTypeText"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.BodyTypeText.media_subtype",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.BodyTypeText"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.BodyTypeText.multipart",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.BodyTypeText"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.ByeResponseError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.ContentDisposition",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.ContentDisposition.dsp_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.ContentDisposition"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.ContentDisposition.param",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.ContentDisposition"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.ContinuationRequest",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.ContinuationRequest.data",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.ContinuationRequest"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.ContinuationRequest.raw_data",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.ContinuationRequest"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.DataFormatError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.DeprecatedClientOptions",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.DeprecatedClientOptions.Net::IMAP.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.DeprecatedClientOptions"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.DeprecatedClientOptions.starttls",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.DeprecatedClientOptions"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.Envelope",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.Envelope.bcc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.Envelope"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.Envelope.cc",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.Envelope"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.Envelope.date",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.Envelope"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.Envelope.from",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.Envelope"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.Envelope.in_reply_to",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.Envelope"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.Envelope.message_id",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.Envelope"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.Envelope.reply_to",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.Envelope"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.Envelope.sender",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.Envelope"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.Envelope.subject",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.Envelope"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.Envelope.to",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.Envelope"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.Error",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.ExtensionData",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.ExtensionData.data",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.ExtensionData"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.FetchData",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.FetchData.attr",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.FetchData"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.FetchData.attr_upcase",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.FetchData"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.FetchData.binary",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.FetchData"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.FetchData.binary_size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.FetchData"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.FetchData.body",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.FetchData"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.FetchData.body_structure",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.FetchData"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.FetchData.bodystructure",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.FetchData"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.FetchData.emailid",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.FetchData"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.FetchData.envelope",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.FetchData"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.FetchData.flags",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.FetchData"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.FetchData.header",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.FetchData"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.FetchData.header_fields",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.FetchData"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.FetchData.header_fields_not",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.FetchData"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.FetchData.internal_date",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.FetchData"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.FetchData.internaldate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.FetchData"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.FetchData.message",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.FetchData"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.FetchData.mime",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.FetchData"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.FetchData.modseq",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.FetchData"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.FetchData.part",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.FetchData"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.FetchData.rfc822",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.FetchData"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.FetchData.rfc822_header",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.FetchData"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.FetchData.rfc822_size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.FetchData"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.FetchData.rfc822_text",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.FetchData"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.FetchData.seqno",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.FetchData"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.FetchData.size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.FetchData"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.FetchData.text",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.FetchData"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.FetchData.threadid",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.FetchData"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.FetchData.uid",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.FetchData"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.IgnoredResponse",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.InvalidResponseError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.MailboxACLItem",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.MailboxACLItem.mailbox",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.MailboxACLItem"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.MailboxACLItem.rights",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.MailboxACLItem"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.MailboxACLItem.user",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.MailboxACLItem"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.MailboxList",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.MailboxList.attr",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.MailboxList"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.MailboxList.delim",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.MailboxList"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.MailboxList.name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.MailboxList"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.MailboxQuota",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.MailboxQuota.mailbox",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.MailboxQuota"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.MailboxQuota.quota",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.MailboxQuota"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.MailboxQuota.usage",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.MailboxQuota"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.MailboxQuotaRoot",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.MailboxQuotaRoot.mailbox",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.MailboxQuotaRoot"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.Namespace",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.Namespace.delim",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.Namespace"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.Namespace.extensions",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.Namespace"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.Namespace.prefix",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.Namespace"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.Namespaces",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.Namespaces.other",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.Namespaces"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.Namespaces.personal",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.Namespaces"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.Namespaces.shared",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.Namespaces"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.NoResponseError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.NumValidator",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.NumValidator.ensure_mod_sequence_value",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.NumValidator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.NumValidator.ensure_number",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.NumValidator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.NumValidator.ensure_nz_number",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.NumValidator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.NumValidator.valid_mod_sequence_value",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.NumValidator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.NumValidator.valid_number",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.NumValidator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.NumValidator.valid_nz_number",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.NumValidator"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.ResponseCode",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.ResponseCode.data",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.ResponseCode"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.ResponseCode.name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.ResponseCode"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.ResponseError",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.ResponseError.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.ResponseError"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.ResponseParseError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.ResponseParser",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.ResponseParser.Net::IMAP::ResponseParser.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.ResponseParser"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.ResponseParser.parse",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.ResponseParser"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.ResponseText",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.ResponseText.code",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.ResponseText"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.ResponseText.text",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.ResponseText"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.SASL",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.SASL.add_authenticator",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.authenticator",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.authenticators",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.saslprep",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.SASLAdapter",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.SASLAdapter.auth_capable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASLAdapter"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASLAdapter.drop_connection",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASLAdapter"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASLAdapter.response_errors",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASLAdapter"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASLAdapter.sasl_ir_capable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASLAdapter"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.SearchResult",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.SearchResult.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SearchResult"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SearchResult.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SearchResult"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SearchResult.eql",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SearchResult"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SearchResult.hash",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SearchResult"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SearchResult.initialize_copy",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SearchResult"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SearchResult.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SearchResult"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SearchResult.pretty_print",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SearchResult"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SearchResult.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SearchResult"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SearchResult.to_sequence_set",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SearchResult"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.SequenceSet",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.SequenceSet[*values]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.empty",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.full",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.try_convert",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.self",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.seqset[index]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.slice",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.seqset[start,",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.seqset[range]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.add",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.append",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.at",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.clear",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.complement",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.count",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.cover",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.delete",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.delete_at",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.difference",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.disjoint",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.each_element",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.each_entry",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.each_number",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.each_range",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.each_tuple_with_index",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.elements",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.entries",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.eql",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.find_index",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.freeze",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.from_tuple_int",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.hash",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.include",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.include_star",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.include_tuple",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.initialize_clone",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.initialize_dup",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.input_to_tuple",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.input_to_tuples",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.input_try_convert",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.intersect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.intersect_tuple",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.intersection",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.limit",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.max",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.member",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.merge",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.min",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.minmax",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.normalize",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.normalized_string",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.numbers",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.nz_number",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.overlap",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.range_gte_to",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.range_to_tuple",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.ranges",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.remain_frozen",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.replace",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.reverse_each_tuple_with_index",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.slice_length",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.slice_range",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.str_to_tuple",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.str_to_tuples",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.string",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.subtract",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.to_a",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.to_set",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.to_tuple_int",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.tuple_add",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.tuple_coalesce",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.tuple_gte_with_index",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.tuple_subtract",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.tuple_to_entry",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.tuple_to_str",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.tuple_trim_or_split",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.tuples_add",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.tuples_subtract",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.tuples_trim_or_delete",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.union",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.valid",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.valid_string",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.xor",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SequenceSet.~",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SequenceSet"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.StatusData",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.StatusData.attr",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.StatusData"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.StatusData.mailbox",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.StatusData"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.StringFormatter",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.StringFormatter.nstring",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.StringFormatter"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.StringFormatter.string",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.StringFormatter"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.StringFormatter.valid_nstring",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.StringFormatter"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.StringFormatter.valid_string",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.StringFormatter"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.StringPrep",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.StringPrep.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.StringPrep"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.StringPrep.check_bidi",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.StringPrep"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.StringPrep.check_prohibited",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.StringPrep"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.StringPrep.map_tables",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.StringPrep"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.StringPrep.stringprep",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.StringPrep"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.TaggedResponse",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.TaggedResponse.data",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.TaggedResponse"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.TaggedResponse.name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.TaggedResponse"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.TaggedResponse.raw_data",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.TaggedResponse"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.TaggedResponse.tag",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.TaggedResponse"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.ThreadMember",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.ThreadMember.children",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.ThreadMember"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.ThreadMember.seqno",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.ThreadMember"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.ThreadMember.to_sequence_set",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.ThreadMember"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.UIDPlusData",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.UIDPlusData.assigned_uids",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.UIDPlusData"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.UIDPlusData.source_uids",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.UIDPlusData"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.UIDPlusData.uid_mapping",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.UIDPlusData"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.UIDPlusData.uidvalidity",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.UIDPlusData"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.UnknownResponseError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.UnparsedData",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.UnparsedData.unparsed_data",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.UnparsedData"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.UnparsedNumericResponseData",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.UnparsedNumericResponseData.number",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.UnparsedNumericResponseData"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.UnparsedNumericResponseData.unparsed_data",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.UnparsedNumericResponseData"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.UntaggedResponse",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.UntaggedResponse.data",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.UntaggedResponse"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.UntaggedResponse.name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.UntaggedResponse"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.UntaggedResponse.raw_data",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.UntaggedResponse"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "net-imap.Net.IMAP.SASL": [
+    {
+      "name": "net-imap.Net.IMAP.SASL.AnonymousAuthenticator",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.SASL.AnonymousAuthenticator.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.AnonymousAuthenticator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.AnonymousAuthenticator.done",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.AnonymousAuthenticator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.AnonymousAuthenticator.initial_response",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.AnonymousAuthenticator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.AnonymousAuthenticator.process",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.AnonymousAuthenticator"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.SASL.AuthenticationExchange",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.SASL.AuthenticationExchange.authenticate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.AuthenticationExchange"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.AuthenticationExchange.build",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.AuthenticationExchange"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.AuthenticationExchange.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.AuthenticationExchange"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.AuthenticationExchange.done",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.AuthenticationExchange"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.AuthenticationExchange.send_initial_response",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.AuthenticationExchange"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.SASL.AuthenticationIncomplete",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.SASL.AuthenticationIncomplete.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.AuthenticationIncomplete"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.SASL.Authenticators",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.SASL.Authenticators.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.Authenticators"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.Authenticators.add_authenticator",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.Authenticators"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.Authenticators.authenticator",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.Authenticators"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.Authenticators.mechanism",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.Authenticators"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.Authenticators.names",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.Authenticators"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.Authenticators.remove_authenticator",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.Authenticators"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.SASL.ClientAdapter",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.SASL.ClientAdapter.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ClientAdapter"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.ClientAdapter.auth_capable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ClientAdapter"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.ClientAdapter.authenticate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ClientAdapter"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.ClientAdapter.drop_connection",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ClientAdapter"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.ClientAdapter.response_errors",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ClientAdapter"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.ClientAdapter.run_command",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ClientAdapter"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.ClientAdapter.sasl_ir_capable",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ClientAdapter"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.SASL.CramMD5Authenticator",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.SASL.CramMD5Authenticator.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.CramMD5Authenticator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.CramMD5Authenticator.done",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.CramMD5Authenticator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.CramMD5Authenticator.initial_response",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.CramMD5Authenticator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.CramMD5Authenticator.process",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.CramMD5Authenticator"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.SASL.DigestMD5Authenticator",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.SASL.DigestMD5Authenticator.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.DigestMD5Authenticator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.DigestMD5Authenticator.done",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.DigestMD5Authenticator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.DigestMD5Authenticator.initial_response",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.DigestMD5Authenticator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.DigestMD5Authenticator.process",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.DigestMD5Authenticator"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.SASL.ExternalAuthenticator",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.SASL.ExternalAuthenticator.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ExternalAuthenticator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.ExternalAuthenticator.done",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ExternalAuthenticator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.ExternalAuthenticator.initial_response",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ExternalAuthenticator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.ExternalAuthenticator.process",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ExternalAuthenticator"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.SASL.GS2Header",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.SASL.GS2Header.gs2_authzid",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.GS2Header"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.GS2Header.gs2_cb_flag",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.GS2Header"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.GS2Header.gs2_header",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.GS2Header"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.GS2Header.gs2_saslname_encode",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.GS2Header"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.SASL.LoginAuthenticator",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.SASL.LoginAuthenticator.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.LoginAuthenticator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.LoginAuthenticator.done",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.LoginAuthenticator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.LoginAuthenticator.initial_response",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.LoginAuthenticator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.LoginAuthenticator.process",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.LoginAuthenticator"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.SASL.OAuthAuthenticator",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.SASL.OAuthAuthenticator.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.OAuthAuthenticator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.OAuthAuthenticator.authorization",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.OAuthAuthenticator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.OAuthAuthenticator.done",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.OAuthAuthenticator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.OAuthAuthenticator.initial_client_response",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.OAuthAuthenticator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.OAuthAuthenticator.process",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.OAuthAuthenticator"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.SASL.OAuthBearerAuthenticator",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.SASL.OAuthBearerAuthenticator.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.OAuthBearerAuthenticator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.OAuthBearerAuthenticator.authorization",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.OAuthBearerAuthenticator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.OAuthBearerAuthenticator.initial_response",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.OAuthBearerAuthenticator"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.SASL.PlainAuthenticator",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.SASL.PlainAuthenticator.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.PlainAuthenticator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.PlainAuthenticator.done",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.PlainAuthenticator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.PlainAuthenticator.initial_response",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.PlainAuthenticator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.PlainAuthenticator.process",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.PlainAuthenticator"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.SASL.ProtocolAdapters",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.SASL.ScramAlgorithm",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.SASL.ScramAlgorithm.H",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ScramAlgorithm"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.ScramAlgorithm.HMAC",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ScramAlgorithm"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.ScramAlgorithm.Hi",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ScramAlgorithm"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.ScramAlgorithm.Normalize",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ScramAlgorithm"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.ScramAlgorithm.XOR",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ScramAlgorithm"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.ScramAlgorithm.auth_message",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ScramAlgorithm"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.ScramAlgorithm.client_key",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ScramAlgorithm"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.ScramAlgorithm.client_proof",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ScramAlgorithm"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.ScramAlgorithm.client_signature",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ScramAlgorithm"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.ScramAlgorithm.salted_password",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ScramAlgorithm"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.ScramAlgorithm.server_key",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ScramAlgorithm"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.ScramAlgorithm.server_signature",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ScramAlgorithm"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.ScramAlgorithm.stored_key",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ScramAlgorithm"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.SASL.ScramAuthenticator",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.SASL.ScramAuthenticator.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ScramAuthenticator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.ScramAuthenticator.digest",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ScramAuthenticator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.ScramAuthenticator.done",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ScramAuthenticator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.ScramAuthenticator.initial_client_response",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ScramAuthenticator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.ScramAuthenticator.process",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.ScramAuthenticator"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.SASL.ScramSHA1Authenticator",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.SASL.ScramSHA256Authenticator",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net-imap.Net.IMAP.SASL.XOAuth2Authenticator",
+      "methods": [
+        {
+          "name": "net-imap.Net.IMAP.SASL.XOAuth2Authenticator.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.XOAuth2Authenticator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.XOAuth2Authenticator.done",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.XOAuth2Authenticator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.XOAuth2Authenticator.initial_response",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.XOAuth2Authenticator"
+          ]
+        },
+        {
+          "name": "net-imap.Net.IMAP.SASL.XOAuth2Authenticator.process",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net-imap.Net.IMAP.SASL.XOAuth2Authenticator"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

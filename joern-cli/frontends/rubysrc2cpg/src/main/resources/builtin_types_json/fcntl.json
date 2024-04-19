@@ -1,0 +1,9 @@
+{
+  "fcntl": [
+    {
+      "name": "fcntl.Fcntl",
+      "methods": [],
+      "fields": []
+    }
+  ]
+}

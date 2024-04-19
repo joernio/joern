@@ -1,0 +1,1274 @@
+{
+  "csv.CSV": [
+    {
+      "name": "csv.CSV.FieldsConverter",
+      "methods": [
+        {
+          "name": "csv.CSV.FieldsConverter.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.FieldsConverter"
+          ]
+        },
+        {
+          "name": "csv.CSV.FieldsConverter.add_converter",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.FieldsConverter"
+          ]
+        },
+        {
+          "name": "csv.CSV.FieldsConverter.convert",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.FieldsConverter"
+          ]
+        },
+        {
+          "name": "csv.CSV.FieldsConverter.each",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.FieldsConverter"
+          ]
+        },
+        {
+          "name": "csv.CSV.FieldsConverter.empty",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.FieldsConverter"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "csv.CSV.InputRecordSeparator",
+      "methods": [
+        {
+          "name": "csv.CSV.InputRecordSeparator.value",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.InputRecordSeparator"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "csv.CSV.InvalidEncodingError",
+      "methods": [
+        {
+          "name": "csv.CSV.InvalidEncodingError.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.InvalidEncodingError"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "csv.CSV.MalformedCSVError",
+      "methods": [
+        {
+          "name": "csv.CSV.MalformedCSVError.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.MalformedCSVError"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "csv.CSV.Parser",
+      "methods": [
+        {
+          "name": "csv.CSV.Parser.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Parser"
+          ]
+        },
+        {
+          "name": "csv.CSV.Parser.column_separator",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Parser"
+          ]
+        },
+        {
+          "name": "csv.CSV.Parser.field_size_limit",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Parser"
+          ]
+        },
+        {
+          "name": "csv.CSV.Parser.header_row",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Parser"
+          ]
+        },
+        {
+          "name": "csv.CSV.Parser.headers",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Parser"
+          ]
+        },
+        {
+          "name": "csv.CSV.Parser.liberal_parsing",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Parser"
+          ]
+        },
+        {
+          "name": "csv.CSV.Parser.line",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Parser"
+          ]
+        },
+        {
+          "name": "csv.CSV.Parser.lineno",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Parser"
+          ]
+        },
+        {
+          "name": "csv.CSV.Parser.max_field_size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Parser"
+          ]
+        },
+        {
+          "name": "csv.CSV.Parser.parse",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Parser"
+          ]
+        },
+        {
+          "name": "csv.CSV.Parser.quote_character",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Parser"
+          ]
+        },
+        {
+          "name": "csv.CSV.Parser.return_headers",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Parser"
+          ]
+        },
+        {
+          "name": "csv.CSV.Parser.row_separator",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Parser"
+          ]
+        },
+        {
+          "name": "csv.CSV.Parser.skip_blanks",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Parser"
+          ]
+        },
+        {
+          "name": "csv.CSV.Parser.skip_lines",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Parser"
+          ]
+        },
+        {
+          "name": "csv.CSV.Parser.unconverted_fields",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Parser"
+          ]
+        },
+        {
+          "name": "csv.CSV.Parser.use_headers",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Parser"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "csv.CSV.Row",
+      "methods": [
+        {
+          "name": "csv.CSV.Row.CSV::Row.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Row"
+          ]
+        },
+        {
+          "name": "csv.CSV.Row.row",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Row"
+          ]
+        },
+        {
+          "name": "csv.CSV.Row.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Row"
+          ]
+        },
+        {
+          "name": "csv.CSV.Row.row[index]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Row"
+          ]
+        },
+        {
+          "name": "csv.CSV.Row.row[header,",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Row"
+          ]
+        },
+        {
+          "name": "csv.CSV.Row.row[header]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Row"
+          ]
+        },
+        {
+          "name": "csv.CSV.Row.deconstruct",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Row"
+          ]
+        },
+        {
+          "name": "csv.CSV.Row.deconstruct_keys",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Row"
+          ]
+        },
+        {
+          "name": "csv.CSV.Row.delete",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Row"
+          ]
+        },
+        {
+          "name": "csv.CSV.Row.delete_if",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Row"
+          ]
+        },
+        {
+          "name": "csv.CSV.Row.dig",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Row"
+          ]
+        },
+        {
+          "name": "csv.CSV.Row.each",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Row"
+          ]
+        },
+        {
+          "name": "csv.CSV.Row.each_pair",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Row"
+          ]
+        },
+        {
+          "name": "csv.CSV.Row.fetch",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Row"
+          ]
+        },
+        {
+          "name": "csv.CSV.Row.field",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Row"
+          ]
+        },
+        {
+          "name": "csv.CSV.Row.field_row",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Row"
+          ]
+        },
+        {
+          "name": "csv.CSV.Row.fields",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Row"
+          ]
+        },
+        {
+          "name": "csv.CSV.Row.has_key",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Row"
+          ]
+        },
+        {
+          "name": "csv.CSV.Row.header",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Row"
+          ]
+        },
+        {
+          "name": "csv.CSV.Row.header_row",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Row"
+          ]
+        },
+        {
+          "name": "csv.CSV.Row.headers",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Row"
+          ]
+        },
+        {
+          "name": "csv.CSV.Row.include",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Row"
+          ]
+        },
+        {
+          "name": "csv.CSV.Row.index",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Row"
+          ]
+        },
+        {
+          "name": "csv.CSV.Row.initialize_copy",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Row"
+          ]
+        },
+        {
+          "name": "csv.CSV.Row.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Row"
+          ]
+        },
+        {
+          "name": "csv.CSV.Row.key",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Row"
+          ]
+        },
+        {
+          "name": "csv.CSV.Row.member",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Row"
+          ]
+        },
+        {
+          "name": "csv.CSV.Row.push",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Row"
+          ]
+        },
+        {
+          "name": "csv.CSV.Row.to_csv",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Row"
+          ]
+        },
+        {
+          "name": "csv.CSV.Row.to_h",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Row"
+          ]
+        },
+        {
+          "name": "csv.CSV.Row.to_hash",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Row"
+          ]
+        },
+        {
+          "name": "csv.CSV.Row.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Row"
+          ]
+        },
+        {
+          "name": "csv.CSV.Row.values_at",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Row"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "csv.CSV.Table",
+      "methods": [
+        {
+          "name": "csv.CSV.Table.CSV::Table.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Table"
+          ]
+        },
+        {
+          "name": "csv.CSV.Table.table",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Table"
+          ]
+        },
+        {
+          "name": "csv.CSV.Table.table[n]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Table"
+          ]
+        },
+        {
+          "name": "csv.CSV.Table.table[range]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Table"
+          ]
+        },
+        {
+          "name": "csv.CSV.Table.table[header]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Table"
+          ]
+        },
+        {
+          "name": "csv.CSV.Table.by_col",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Table"
+          ]
+        },
+        {
+          "name": "csv.CSV.Table.by_col_or_row",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Table"
+          ]
+        },
+        {
+          "name": "csv.CSV.Table.by_row",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Table"
+          ]
+        },
+        {
+          "name": "csv.CSV.Table.delete",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Table"
+          ]
+        },
+        {
+          "name": "csv.CSV.Table.delete_if",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Table"
+          ]
+        },
+        {
+          "name": "csv.CSV.Table.dig",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Table"
+          ]
+        },
+        {
+          "name": "csv.CSV.Table.each",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Table"
+          ]
+        },
+        {
+          "name": "csv.CSV.Table.headers",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Table"
+          ]
+        },
+        {
+          "name": "csv.CSV.Table.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Table"
+          ]
+        },
+        {
+          "name": "csv.CSV.Table.push",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Table"
+          ]
+        },
+        {
+          "name": "csv.CSV.Table.to_a",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Table"
+          ]
+        },
+        {
+          "name": "csv.CSV.Table.to_csv",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Table"
+          ]
+        },
+        {
+          "name": "csv.CSV.Table.to_s",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Table"
+          ]
+        },
+        {
+          "name": "csv.CSV.Table.values_at",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Table"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "csv.CSV.Writer",
+      "methods": [
+        {
+          "name": "csv.CSV.Writer.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Writer"
+          ]
+        },
+        {
+          "name": "csv.CSV.Writer.<<",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Writer"
+          ]
+        },
+        {
+          "name": "csv.CSV.Writer.rewind",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Writer"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "csv": [
+    {
+      "name": "csv.CSV",
+      "methods": [
+        {
+          "name": "csv.CSV.filter",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.foreach",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.generate",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.generate_line",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.generate_lines",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.instance",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.open",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.parse",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.parse_line",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.read",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.readlines",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.table",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.csv",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.add_row",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.binmode",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.col_sep",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.convert",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.converters",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.each",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.eof",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.field_size_limit",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.flock",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.force_quotes",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.gets",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.header_convert",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.header_converters",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.header_row",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.headers",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.ioctl",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.liberal_parsing",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.line",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.line_no",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.max_field_size",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.path",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.puts",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.quote_char",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.readline",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.return_headers",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.rewind",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.row_sep",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.shift",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.skip_blanks",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.skip_lines",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.stat",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.to_i",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.to_io",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.unconverted_fields",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        },
+        {
+          "name": "csv.CSV.write_headers",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "csv.Object",
+      "methods": [
+        {
+          "name": "csv.Object.CSV",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.Object"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "csv.CSV.Parser": [
+    {
+      "name": "csv.CSV.Parser.InputsScanner",
+      "methods": [
+        {
+          "name": "csv.CSV.Parser.InputsScanner.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Parser.InputsScanner"
+          ]
+        },
+        {
+          "name": "csv.CSV.Parser.InputsScanner.check",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Parser.InputsScanner"
+          ]
+        },
+        {
+          "name": "csv.CSV.Parser.InputsScanner.each_line",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Parser.InputsScanner"
+          ]
+        },
+        {
+          "name": "csv.CSV.Parser.InputsScanner.eos",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Parser.InputsScanner"
+          ]
+        },
+        {
+          "name": "csv.CSV.Parser.InputsScanner.keep_back",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Parser.InputsScanner"
+          ]
+        },
+        {
+          "name": "csv.CSV.Parser.InputsScanner.keep_drop",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Parser.InputsScanner"
+          ]
+        },
+        {
+          "name": "csv.CSV.Parser.InputsScanner.keep_end",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Parser.InputsScanner"
+          ]
+        },
+        {
+          "name": "csv.CSV.Parser.InputsScanner.keep_start",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Parser.InputsScanner"
+          ]
+        },
+        {
+          "name": "csv.CSV.Parser.InputsScanner.rest",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Parser.InputsScanner"
+          ]
+        },
+        {
+          "name": "csv.CSV.Parser.InputsScanner.scan",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Parser.InputsScanner"
+          ]
+        },
+        {
+          "name": "csv.CSV.Parser.InputsScanner.scan_all",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Parser.InputsScanner"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "csv.CSV.Parser.InvalidEncoding",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "csv.CSV.Parser.Scanner",
+      "methods": [
+        {
+          "name": "csv.CSV.Parser.Scanner.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Parser.Scanner"
+          ]
+        },
+        {
+          "name": "csv.CSV.Parser.Scanner.each_line",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Parser.Scanner"
+          ]
+        },
+        {
+          "name": "csv.CSV.Parser.Scanner.keep_back",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Parser.Scanner"
+          ]
+        },
+        {
+          "name": "csv.CSV.Parser.Scanner.keep_drop",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Parser.Scanner"
+          ]
+        },
+        {
+          "name": "csv.CSV.Parser.Scanner.keep_end",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Parser.Scanner"
+          ]
+        },
+        {
+          "name": "csv.CSV.Parser.Scanner.keep_start",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "csv.CSV.Parser.Scanner"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "csv.CSV.Parser.UnexpectedError",
+      "methods": [],
+      "fields": []
+    }
+  ]
+}

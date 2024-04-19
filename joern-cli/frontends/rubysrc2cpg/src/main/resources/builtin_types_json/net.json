@@ -1,0 +1,3031 @@
+{
+  "net.Net": [
+    {
+      "name": "net.Net.HTTP",
+      "methods": [
+        {
+          "name": "net.Net.HTTP.default_port",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.Net::HTTP.get",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.Net::HTTP:get",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.Net::HTTP.get_print",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.Net::HTTP:get_print",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.Net::HTTP.get_response",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.Net::HTTP:get_response",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.http_default_port",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.https_default_port",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.is_version_1_2",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.newobj",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.post",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.post_form",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.proxy_class",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.start",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.version_1_2",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.active",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.continue_timeout",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.copy",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.delete",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.finish",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.get",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.get2",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.head",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.head2",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.ipaddr",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.lock",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.max_retries",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.mkcol",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.move",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.options",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.patch",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.peer_cert",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.post2",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.propfind",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.proppatch",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.proxy",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.proxy_address",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.proxy_from_env",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.proxy_pass",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.proxy_port",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.proxy_user",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.proxyaddr",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.proxyport",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.put",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.read_timeout",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.request",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.request_get",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.request_head",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.request_post",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.response_body_encoding",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.send_request",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.set_debug_output",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.started",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.trace",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.unlock",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.use_ssl",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.write_timeout",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPAccepted",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPAlreadyReported",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPBadGateway",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPBadRequest",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPClientError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPClientException",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPConflict",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPContinue",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPCreated",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPEarlyHints",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPExceptions",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPExpectationFailed",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPFailedDependency",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPFatalError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPForbidden",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPMovedTemporarily",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPGatewayTimeout",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPGatewayTimeout",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPGenericRequest",
+      "methods": [
+        {
+          "name": "net.Net.HTTPGenericRequest.body",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPGenericRequest"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPGenericRequest.body_stream",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPGenericRequest"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPGenericRequest.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPGenericRequest"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPGenericRequest.request_body_permitted",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPGenericRequest"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPGenericRequest.response_body_permitted",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPGenericRequest"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPGone",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPHeader",
+      "methods": [
+        {
+          "name": "net.Net.HTTPHeader.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.add_field",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.basic_auth",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.canonical_each",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.chunked",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.connection_close",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.connection_keep_alive",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.content_length",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.content_range",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.content_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.delete",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.each",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.each_capitalized",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.each_capitalized_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.each_header",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.each_key",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.each_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.each_value",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.fetch",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.form_data",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.get_fields",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.key",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.main_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.proxy_basic_auth",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.range",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.range_length",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.set_content_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.set_form",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.set_form_data",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.set_range",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.sub_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.to_hash",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.type_params",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPIMUsed",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPInformation",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPInsufficientStorage",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPInternalServerError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPLengthRequired",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPLocked",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPLoopDetected",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPMethodNotAllowed",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPMisdirectedRequest",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPMovedPermanently",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPMovedTemporarily",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPMultiStatus",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPMultipleChoices",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPMultipleChoices",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPNetworkAuthenticationRequired",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPNoContent",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPNonAuthoritativeInformation",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPNotAcceptable",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPNotExtended",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPNotFound",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPNotImplemented",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPNotModified",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPOK",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPPartialContent",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPRequestEntityTooLarge",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPPaymentRequired",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPPermanentRedirect",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPPreconditionFailed",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPPreconditionRequired",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPProcessing",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPProxyAuthenticationRequired",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPRequestedRangeNotSatisfiable",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPRedirection",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPRequest",
+      "methods": [
+        {
+          "name": "net.Net.HTTPRequest.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPRequest"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPRequestEntityTooLarge",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPRequestHeaderFieldsTooLarge",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPRequestTimeout",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPRequestTimeout",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPRequestURITooLarge",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPURITooLong",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPRequestedRangeNotSatisfiable",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPResetContent",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPResponse",
+      "methods": [
+        {
+          "name": "net.Net.HTTPResponse.body_permitted",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPResponse"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPResponse.body",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPResponse"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPResponse.body_encoding",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPResponse"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPResponse.entity",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPResponse"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPResponse.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPResponse"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPResponse.read_body",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPResponse"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPResponse.value",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPResponse"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPRetriableError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPSeeOther",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPServerError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPServiceUnavailable",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPSuccess",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPSwitchProtocol",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPTemporaryRedirect",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPTooManyRequests",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPURITooLong",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPUnauthorized",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPUnavailableForLegalReasons",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPUnknownResponse",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPUnprocessableEntity",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPUnsupportedMediaType",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPUpgradeRequired",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPUseProxy",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPVariantAlsoNegotiates",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPVersionNotSupported",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.OpenTimeout",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.ProtoAuthError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.ProtoCommandError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.ProtoFatalError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.ProtoRetriableError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.ProtoServerError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.ProtoSyntaxError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.ProtoUnknownError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.ProtocRetryError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.ProtocolError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.ReadTimeout",
+      "methods": [
+        {
+          "name": "net.Net.ReadTimeout.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.ReadTimeout"
+          ]
+        },
+        {
+          "name": "net.Net.ReadTimeout.message",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.ReadTimeout"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net.Net.WriteAdapter",
+      "methods": [
+        {
+          "name": "net.Net.WriteAdapter.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.WriteAdapter"
+          ]
+        },
+        {
+          "name": "net.Net.WriteAdapter.<<",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.WriteAdapter"
+          ]
+        },
+        {
+          "name": "net.Net.WriteAdapter.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.WriteAdapter"
+          ]
+        },
+        {
+          "name": "net.Net.WriteAdapter.print",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.WriteAdapter"
+          ]
+        },
+        {
+          "name": "net.Net.WriteAdapter.printf",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.WriteAdapter"
+          ]
+        },
+        {
+          "name": "net.Net.WriteAdapter.puts",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.WriteAdapter"
+          ]
+        },
+        {
+          "name": "net.Net.WriteAdapter.write",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.WriteAdapter"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net.Net.WriteTimeout",
+      "methods": [
+        {
+          "name": "net.Net.WriteTimeout.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.WriteTimeout"
+          ]
+        },
+        {
+          "name": "net.Net.WriteTimeout.message",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.WriteTimeout"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTP",
+      "methods": [
+        {
+          "name": "net.Net.HTTP.default_port",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.Net::HTTP.get",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.Net::HTTP:get",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.Net::HTTP.get_print",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.Net::HTTP:get_print",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.Net::HTTP.get_response",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.Net::HTTP:get_response",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.http_default_port",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.https_default_port",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.is_version_1_2",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.newobj",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.post",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.post_form",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.proxy_class",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.start",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.version_1_2",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.active",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.continue_timeout",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.copy",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.delete",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.finish",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.get",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.get2",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.head",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.head2",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.ipaddr",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.lock",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.max_retries",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.mkcol",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.move",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.options",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.patch",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.peer_cert",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.post2",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.propfind",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.proppatch",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.proxy",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.proxy_address",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.proxy_from_env",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.proxy_pass",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.proxy_port",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.proxy_user",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.proxyaddr",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.proxyport",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.put",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.read_timeout",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.request",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.request_get",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.request_head",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.request_post",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.response_body_encoding",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.send_request",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.set_debug_output",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.started",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.trace",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.unlock",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.use_ssl",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        },
+        {
+          "name": "net.Net.HTTP.write_timeout",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTP"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPAccepted",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPAlreadyReported",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPBadGateway",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPBadRequest",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPClientError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPClientException",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPConflict",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPContinue",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPCreated",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPEarlyHints",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPExceptions",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPExpectationFailed",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPFailedDependency",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPFatalError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPForbidden",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPMovedTemporarily",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPGatewayTimeout",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPGatewayTimeout",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPGenericRequest",
+      "methods": [
+        {
+          "name": "net.Net.HTTPGenericRequest.body",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPGenericRequest"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPGenericRequest.body_stream",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPGenericRequest"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPGenericRequest.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPGenericRequest"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPGenericRequest.request_body_permitted",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPGenericRequest"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPGenericRequest.response_body_permitted",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPGenericRequest"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPGone",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPHeader",
+      "methods": [
+        {
+          "name": "net.Net.HTTPHeader.[]",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.add_field",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.basic_auth",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.canonical_each",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.chunked",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.connection_close",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.connection_keep_alive",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.content_length",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.content_range",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.content_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.delete",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.each",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.each_capitalized",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.each_capitalized_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.each_header",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.each_key",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.each_name",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.each_value",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.fetch",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.form_data",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.get_fields",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.key",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.main_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.proxy_basic_auth",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.range",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.range_length",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.set_content_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.set_form",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.set_form_data",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.set_range",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.sub_type",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.to_hash",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPHeader.type_params",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPHeader"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPIMUsed",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPInformation",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPInsufficientStorage",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPInternalServerError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPLengthRequired",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPLocked",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPLoopDetected",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPMethodNotAllowed",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPMisdirectedRequest",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPMovedPermanently",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPMovedTemporarily",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPMultiStatus",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPMultipleChoices",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPMultipleChoices",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPNetworkAuthenticationRequired",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPNoContent",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPNonAuthoritativeInformation",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPNotAcceptable",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPNotExtended",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPNotFound",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPNotImplemented",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPNotModified",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPOK",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPPartialContent",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPRequestEntityTooLarge",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPPaymentRequired",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPPermanentRedirect",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPPreconditionFailed",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPPreconditionRequired",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPProcessing",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPProxyAuthenticationRequired",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPRequestedRangeNotSatisfiable",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPRedirection",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPRequest",
+      "methods": [
+        {
+          "name": "net.Net.HTTPRequest.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPRequest"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPRequestEntityTooLarge",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPRequestHeaderFieldsTooLarge",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPRequestTimeout",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPRequestTimeout",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPRequestURITooLarge",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPURITooLong",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPRequestedRangeNotSatisfiable",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPResetContent",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPResponse",
+      "methods": [
+        {
+          "name": "net.Net.HTTPResponse.body_permitted",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPResponse"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPResponse.body",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPResponse"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPResponse.body_encoding",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPResponse"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPResponse.entity",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPResponse"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPResponse.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPResponse"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPResponse.read_body",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPResponse"
+          ]
+        },
+        {
+          "name": "net.Net.HTTPResponse.value",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.HTTPResponse"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPRetriableError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPSeeOther",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPServerError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPServiceUnavailable",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPSuccess",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPSwitchProtocol",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPTemporaryRedirect",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPTooManyRequests",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPURITooLong",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPUnauthorized",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPUnavailableForLegalReasons",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPUnknownResponse",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPUnprocessableEntity",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPUnsupportedMediaType",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPUpgradeRequired",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPUseProxy",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPVariantAlsoNegotiates",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTPVersionNotSupported",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.OpenTimeout",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.ProtoAuthError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.ProtoCommandError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.ProtoFatalError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.ProtoRetriableError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.ProtoServerError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.ProtoSyntaxError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.ProtoUnknownError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.ProtocRetryError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.ProtocolError",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.ReadTimeout",
+      "methods": [
+        {
+          "name": "net.Net.ReadTimeout.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.ReadTimeout"
+          ]
+        },
+        {
+          "name": "net.Net.ReadTimeout.message",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.ReadTimeout"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net.Net.WriteAdapter",
+      "methods": [
+        {
+          "name": "net.Net.WriteAdapter.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.WriteAdapter"
+          ]
+        },
+        {
+          "name": "net.Net.WriteAdapter.<<",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.WriteAdapter"
+          ]
+        },
+        {
+          "name": "net.Net.WriteAdapter.inspect",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.WriteAdapter"
+          ]
+        },
+        {
+          "name": "net.Net.WriteAdapter.print",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.WriteAdapter"
+          ]
+        },
+        {
+          "name": "net.Net.WriteAdapter.printf",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.WriteAdapter"
+          ]
+        },
+        {
+          "name": "net.Net.WriteAdapter.puts",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.WriteAdapter"
+          ]
+        },
+        {
+          "name": "net.Net.WriteAdapter.write",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.WriteAdapter"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "net.Net.WriteTimeout",
+      "methods": [
+        {
+          "name": "net.Net.WriteTimeout.new",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.WriteTimeout"
+          ]
+        },
+        {
+          "name": "net.Net.WriteTimeout.message",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "net.Net.WriteTimeout"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "net.Net.HTTP": [
+    {
+      "name": "net.Net.HTTP.Copy",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTP.Delete",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTP.Get",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTP.Head",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTP.Lock",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTP.Mkcol",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTP.Move",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTP.Options",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTP.Patch",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTP.Post",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTP.Propfind",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTP.Proppatch",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTP.Put",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTP.Trace",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTP.Unlock",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTP.Copy",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTP.Delete",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTP.Get",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTP.Head",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTP.Lock",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTP.Mkcol",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTP.Move",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTP.Options",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTP.Patch",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTP.Post",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTP.Propfind",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTP.Proppatch",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTP.Put",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTP.Trace",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net.HTTP.Unlock",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "net": [
+    {
+      "name": "net.Net",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "net.Net",
+      "methods": [],
+      "fields": []
+    }
+  ]
+}

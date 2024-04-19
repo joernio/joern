@@ -1,0 +1,48 @@
+{
+  "timeout.Timeout": [
+    {
+      "name": "timeout.Timeout.Error",
+      "methods": [
+        {
+          "name": "timeout.Timeout.Error.handle_timeout",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "timeout.Timeout.Error"
+          ]
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "timeout.Timeout.ExitException",
+      "methods": [
+        {
+          "name": "timeout.Timeout.ExitException.exception",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "timeout.Timeout.ExitException"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "timeout": [
+    {
+      "name": "timeout.Timeout",
+      "methods": [
+        {
+          "name": "timeout.Timeout.timeout",
+          "parameterTypes": [],
+          "returnType": "ANY",
+          "baseTypeFullName": [
+            "timeout.Timeout"
+          ]
+        }
+      ],
+      "fields": []
+    }
+  ]
+}
