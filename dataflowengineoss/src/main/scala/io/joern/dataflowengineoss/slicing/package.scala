@@ -5,6 +5,7 @@ import io.shiftleft.codepropertygraph.generated.{PropertyKeys, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
+import upickle.default.*
 
 import java.util.concurrent.{ExecutorService, Executors}
 import java.util.regex.Pattern
