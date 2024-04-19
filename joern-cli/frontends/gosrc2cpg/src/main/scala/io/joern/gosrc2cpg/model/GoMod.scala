@@ -69,25 +69,67 @@ case class GoMod(
   @upickle.implicits.key("dependencies") dependencies: List[GoModDependency] = List.empty
 ) derives ReadWriter
 
+implicit val goModModuleRw: ReadWriter[GoModModule] = readwriter[ujson.Value].bimap[GoModModule](
+  x =>
+    ujson.Obj(
+      "Name"             -> x.name,
+      "node_line_no"     -> x.lineNo.getOrElse(-1),
+      "node_col_no"      -> x.colNo.getOrElse(-1),
+      "node_line_no_end" -> x.endLineNo.getOrElse(-1),
+      "node_col_no_end"  -> x.endColNo.getOrElse(-1)
+    ),
+  json =>
+    GoModModule(
+      name = json("Name").strOpt.getOrElse(""),
+      lineNo = json("node_line_no").numOpt.map(_.toInt),
+      colNo = json("node_col_no").numOpt.map(_.toInt),
+      endLineNo = json("node_line_no_end").numOpt.map(_.toInt),
+      endColNo = json("node_col_no_end").numOpt.map(_.toInt)
+    )
+)
+
 case class GoModModule(
-  @upickle.implicits.key("Name") name: String,
-  @upickle.implicits.key("node_line_no") lineNo: Option[Int] = None,
-  @upickle.implicits.key("node_col_no") colNo: Option[Int] = None,
-  @upickle.implicits.key("node_line_no_end") endLineNo: Option[Int] = None,
-  @upickle.implicits.key("node_col_no_end") endColNo: Option[Int] = None
-) derives ReadWriter
+  name: String,
+  lineNo: Option[Int] = None,
+  colNo: Option[Int] = None,
+  endLineNo: Option[Int] = None,
+  endColNo: Option[Int] = None
+)
+
+implicit val goModDependencyRw: ReadWriter[GoModDependency] = readwriter[ujson.Value].bimap[GoModDependency](
+  x =>
+    ujson.Obj(
+      "Module"           -> x.module,
+      "Version"          -> x.version,
+      "Indirect"         -> x.indirect,
+      "node_line_no"     -> x.lineNo.getOrElse(-1),
+      "node_col_no"      -> x.colNo.getOrElse(-1),
+      "node_line_no_end" -> x.endLineNo.getOrElse(-1),
+      "node_col_no_end"  -> x.endColNo.getOrElse(-1)
+    ),
+  json =>
+    GoModDependency(
+      module = json("Module").strOpt.getOrElse(""),
+      version = json("Version").strOpt.getOrElse(""),
+      indirect = json("Indirect").boolOpt.getOrElse(false),
+      lineNo = json("node_line_no").numOpt.map(_.toInt),
+      colNo = json("node_col_no").numOpt.map(_.toInt),
+      endLineNo = json("node_line_no_end").numOpt.map(_.toInt),
+      endColNo = json("node_col_no_end").numOpt.map(_.toInt)
+    )
+)
 
 case class GoModDependency(
-  @upickle.implicits.key("Module") module: String,
-  @upickle.implicits.key("Version") version: String,
-  @upickle.implicits.key("Indirect") indirect: Boolean = false,
+  module: String,
+  version: String,
+  indirect: Boolean = false,
   var beingUsed: Boolean = false,
-  @upickle.implicits.key("node_line_no") lineNo: Option[Int] = None,
-  @upickle.implicits.key("node_col_no") colNo: Option[Int] = None,
-  @upickle.implicits.key("node_line_no_end") endLineNo: Option[Int] = None,
-  @upickle.implicits.key("node_col_no_end") endColNo: Option[Int] = None,
+  lineNo: Option[Int] = None,
+  colNo: Option[Int] = None,
+  endLineNo: Option[Int] = None,
+  endColNo: Option[Int] = None,
   usedPackages: util.Set[String] = new ConcurrentSkipListSet[String]()
-) derives ReadWriter
+)
 
 implicit val javaSetRw: ReadWriter[util.Set[String]] = {
   import scala.jdk.CollectionConverters.*
