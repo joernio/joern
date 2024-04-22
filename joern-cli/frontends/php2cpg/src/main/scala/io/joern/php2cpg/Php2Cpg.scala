@@ -56,10 +56,8 @@ class Php2Cpg extends X2CpgFrontend[Config] {
         new DependencyPass(cpg, buildFiles(config)).createAndApply()
         if (config.downloadDependencies) {
           val dependencyDir = DependencyDownloader(cpg, config).download()
-          val dependencyConfig =
-            Config().withInputPath(dependencyDir.pathAsString).withOutputPath(dependencyDir.pathAsString)
           // Parse dependencies and add high-level nodes to the CPG
-          new AstCreationPass(dependencyConfig, cpg, parser.get, AS_EXTERNAL)(config.schemaValidation).createAndApply()
+          new DependencySymbolsPass(cpg, dependencyDir).createAndApply()
         }
         new AstCreationPass(config, cpg, parser.get)(config.schemaValidation).createAndApply()
         new AstParentInfoPass(cpg).createAndApply()

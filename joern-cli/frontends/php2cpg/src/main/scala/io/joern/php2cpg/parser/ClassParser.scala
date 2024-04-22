@@ -40,6 +40,7 @@ class ClassParser(targetDir: File) {
     json =>
       ClassParserClass(
         name = json("name").str,
+        file = File(json("filename").str),
         modifiers = read[List[String]](json("modifiers")),
         functions = read[Map[String, ClassParserFunction]](json("functions")).map { case (name, func) =>
           func.copy(name = name)
@@ -47,7 +48,7 @@ class ClassParser(targetDir: File) {
       )
   )
 
-  case class ClassParserClass(name: String, modifiers: List[String], functions: List[ClassParserFunction])
+  case class ClassParserClass(name: String, file: File, modifiers: List[String], functions: List[ClassParserFunction])
 
   case class ClassParserFunction(name: String = "", modifiers: List[String]) derives ReadWriter
 
