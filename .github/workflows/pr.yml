@@ -26,7 +26,7 @@ jobs:
           go-version: 1.18
       - name: Set up Swift
         if: matrix.os == 'windows-latest'
-        uses: SwiftyLab/setup-swift@latest
+        uses: SwiftyLab/setup-swift@1.6.0
         with:
           swift-version: "5.9"
       - name: Install Bundler
