@@ -4,6 +4,7 @@ import io.joern.x2cpg.Defines as XDefines
 import io.joern.x2cpg.datastructures.{FieldLike, MethodLike, ProgramSummary, TypeLike}
 
 import scala.annotation.targetName
+import upickle.default.ReadWriter
 
 class RubyProgramSummary(
   initialNamespaceMap: Map[String, Set[RubyType]] = Map.empty,
@@ -28,12 +29,12 @@ case class RubyMethod(
   parameterTypes: List[(String, String)],
   returnType: String,
   baseTypeFullName: Option[String]
-) extends MethodLike
+) extends MethodLike derives ReadWriter
 
-case class RubyField(name: String, typeName: String) extends FieldLike
+case class RubyField(name: String, typeName: String) extends FieldLike derives ReadWriter
 
 case class RubyType(name: String, methods: List[RubyMethod], fields: List[RubyField])
-    extends TypeLike[RubyMethod, RubyField] {
+    extends TypeLike[RubyMethod, RubyField] derives ReadWriter {
 
   @targetName("add")
   override def +(o: TypeLike[RubyMethod, RubyField]): TypeLike[RubyMethod, RubyField] = {
