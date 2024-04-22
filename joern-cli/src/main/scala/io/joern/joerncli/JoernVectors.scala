@@ -150,11 +150,9 @@ object JoernVectors {
         traversalToJson(embedding.vectors, generator.vectorToString)
         println(",\"edges\":")
         traversalToJson(
-          ???,
-          // TODO reimplement
-//          cpg.graph.edges().map { x =>
-//            Map("src" -> x.outNode().id(), "dst" -> x.inNode().id(), "label" -> x.label())
-//          },
+          cpg.graph.allEdges.map { edge =>
+            Map("src" -> edge.src.id, "dst" -> edge.dst.id, "label" -> edge.label)
+          },
           generator.defaultToString
         )
         println("}")
