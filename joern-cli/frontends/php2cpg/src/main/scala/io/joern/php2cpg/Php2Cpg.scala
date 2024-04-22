@@ -2,7 +2,6 @@ package io.joern.php2cpg
 
 import io.joern.php2cpg.parser.PhpParser
 import io.joern.php2cpg.passes.*
-import io.joern.php2cpg.passes.AstParseLevel.AS_EXTERNAL
 import io.joern.php2cpg.utils.DependencyDownloader
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass, XTypeRecoveryConfig, XTypeStubsParserConfig}

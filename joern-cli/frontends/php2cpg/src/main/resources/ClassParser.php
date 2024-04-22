@@ -38,7 +38,7 @@ class ClassParser
     return $extenders;
   }
 
-  public function parse($file)
+  public function parse($file, $parent_dir)
   {
     $file = realpath($file);
     $tokens = token_get_all(file_get_contents($file));
@@ -118,7 +118,8 @@ class ClassParser
     }
 
     foreach ($classes as $class) {
-      $class['file'] = $file;
+      $class['file'] = ltrim(str_replace($parent_dir, "", $file), "\\/");
+      $class['namespace'] = implode("\\", array_filter(explode(DIRECTORY_SEPARATOR, ltrim(str_replace($parent_dir, "", dirname($file)), "\\/")), fn ($value) => $value !== ""));
       $this->classes[$class['name']] = $class;
 
       if (!empty($class['implements'])) {
@@ -154,18 +155,19 @@ if ($argc != 2 || in_array($argv[1], array('--help', '-help', '-h', '-?'))) {
 
     <?php
   } else {
-    if (!is_dir($argv[1])) {
-      echo $argv[1] . " is an invalid directory!";
+    $target_dir = realpath($argv[1]);
+    if (!is_dir($target_dir)) {
+      echo $target_dir . " is an invalid directory!";
     }
     $cp = new ClassParser();
-    $it = new RecursiveDirectoryIterator($argv[1]);
+    $it = new RecursiveDirectoryIterator($target_dir);
 
     // Loop through files
     foreach (new RecursiveIteratorIterator($it) as $file) {
       if ($file->getExtension() === 'php') {
-        $cp->parse($file);
+        $cp->parse($file, $target_dir);
       }
     }
     echo json_encode($cp->getClasses());
   }
-?>
+    ?>

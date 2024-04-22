@@ -4,7 +4,6 @@ import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants, op
 import io.joern.php2cpg.datastructures.ArrayIndexTracker
 import io.joern.php2cpg.parser.Domain.*
 import io.joern.php2cpg.parser.Domain.PhpModifiers.containsAccessModifier
-import io.joern.php2cpg.passes.AstParseLevel
 import io.joern.php2cpg.utils.Scope
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.Defines.{StaticInitMethodName, UnresolvedNamespace, UnresolvedSignature}
@@ -18,14 +17,9 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
-class AstCreator(
-  filename: String,
-  phpAst: PhpFile,
-  fileContent: Option[String],
-  disableFileContent: Boolean,
-  parserLevel: AstParseLevel = AstParseLevel.AS_INTERNAL
-)(implicit withSchemaValidation: ValidationMode)
-    extends AstCreatorBase(filename)
+class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String], disableFileContent: Boolean)(implicit
+  withSchemaValidation: ValidationMode
+) extends AstCreatorBase(filename)
     with AstNodeBuilder[PhpNode, AstCreator] {
 
   private val logger          = LoggerFactory.getLogger(AstCreator.getClass)
@@ -241,20 +235,11 @@ class AstCreator(
 
     val returnType = decl.returnType.map(_.name).getOrElse(TypeConstants.Any)
 
-    lazy val methodBodyStmts = bodyPrefixAsts ++ decl.stmts.flatMap(astsForStmt)
-    val methodReturn         = newMethodReturnNode(returnType, line = line(decl), column = None)
+    val methodBodyStmts = bodyPrefixAsts ++ decl.stmts.flatMap(astsForStmt)
+    val methodReturn    = newMethodReturnNode(returnType, line = line(decl), column = None)
 
     val attributeAsts = decl.attributeGroups.flatMap(astForAttributeGroup)
-    val methodBody = parserLevel match {
-      case AstParseLevel.AS_EXTERNAL =>
-        method.isExternal(true)
-        val stmts =
-          if methodName == globalNamespace.name || decl.isClassMethod then methodBodyStmts
-          else Nil
-        blockAst(blockNode(decl), stmts)
-      case AstParseLevel.AS_INTERNAL =>
-        blockAst(blockNode(decl), methodBodyStmts)
-    }
+    val methodBody    = blockAst(blockNode(decl), methodBodyStmts)
 
     scope.popScope()
     methodAstWithAnnotations(method, parameters, methodBody, methodReturn, modifiers, attributeAsts)
@@ -759,11 +744,7 @@ class AstCreator(
         prependNamespacePrefix(name.name)
       }
 
-    val typeDecl = typeDeclNode(stmt, name.name, fullName, filename, code, inherits = inheritsFrom)
-    parserLevel match {
-      case AstParseLevel.AS_EXTERNAL => typeDecl.isExternal(true)
-      case _                         => // do nothing
-    }
+    val typeDecl                 = typeDeclNode(stmt, name.name, fullName, filename, code, inherits = inheritsFrom)
     val createDefaultConstructor = stmt.hasConstructor
 
     scope.pushNewScope(typeDecl)
@@ -849,13 +830,7 @@ class AstCreator(
 
     val method = methodNode(originNode, ConstructorMethodName, fullName, fullName, Some(signature), filename)
 
-    val methodBody = parserLevel match {
-      case AstParseLevel.AS_EXTERNAL =>
-        method.isExternal(true)
-        blockAst(blockNode(originNode))
-      case AstParseLevel.AS_INTERNAL =>
-        blockAst(blockNode(originNode), scope.getFieldInits)
-    }
+    val methodBody = blockAst(blockNode(originNode), scope.getFieldInits)
 
     val methodReturn = newMethodReturnNode(TypeConstants.Any, line = None, column = None)
 
@@ -1424,8 +1399,6 @@ class AstCreator(
   }
 
   private def astForClosureExpr(closureExpr: PhpClosureExpr): Ast = {
-    if (parserLevel == AstParseLevel.AS_EXTERNAL) return Ast()
-
     val methodName = scope.getScopedClosureName
     val methodRef  = methodRefNode(closureExpr, methodName, methodName, TypeConstants.Any)
 
