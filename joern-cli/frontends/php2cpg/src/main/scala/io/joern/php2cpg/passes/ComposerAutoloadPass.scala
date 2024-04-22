@@ -2,7 +2,7 @@ package io.joern.php2cpg.passes
 
 import io.joern.x2cpg.{Defines, X2Cpg}
 import io.shiftleft.codepropertygraph.generated.{Cpg, PropertyNames}
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Method}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Method, TypeDecl}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language.*
 
@@ -32,7 +32,18 @@ class ComposerAutoloadPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg
     .map(X2Cpg.stripQuotes)
     .contains("vendor/autoload.php")
 
-  override def generateParts(): Array[Method] = cpg.method.isModule.filter(isAutoloaded).toArray
+  /** Collects methods within a module.
+    */
+  private def findMethods(module: Method): Iterator[Method] = {
+    Iterator(module) ++ module.containsOut.flatMap {
+      case x: TypeDecl => x.method.flatMap(findMethods)
+      case x: Method   => Iterator(x) ++ x.containsOut.collectAll[Method].flatMap(findMethods)
+      case _           => Iterator.empty
+    }
+  }
+
+  override def generateParts(): Array[Method] =
+    cpg.method.isModule.filter(isAutoloaded).flatMap(findMethods).toArray
 
   override def runOnPart(builder: DiffGraphBuilder, part: Method): Unit = {
     part._containsOut.foreach {
