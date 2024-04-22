@@ -24,12 +24,6 @@ jobs:
         with:
           cache: false
           go-version: 1.18
-      - name: Set up Swift
-        if: matrix.os == 'windows-latest'
-        uses: SwiftyLab/setup-swift@latest
-        with:
-          swift-version: "5.9"
-          cache-snapshot: false
       - name: Install Bundler
         run: gem install bundler -v 2.4.22
       - name: Delete `.rustup` directory
