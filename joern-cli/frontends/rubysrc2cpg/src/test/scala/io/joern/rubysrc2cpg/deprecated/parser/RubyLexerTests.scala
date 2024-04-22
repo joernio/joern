@@ -12,7 +12,7 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
   class RubySyntaxErrorListener extends BaseErrorListener {
     var errors = 0
     override def syntaxError(
-      recognizer: Recognizer[_, _],
+      recognizer: Recognizer[?, ?],
       offendingSymbol: Any,
       line: Int,
       charPositionInLine: Int,

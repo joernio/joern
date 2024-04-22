@@ -2,14 +2,15 @@ package io.joern.console.scan
 
 import io.joern.console.Query
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.CpgPass
 
-class ScanPass(cpg: Cpg, queries: List[Query]) extends ConcurrentWriterCpgPass[Query](cpg) {
+/** Each query runs the data-flow engine, which is already parallelized. Another layer of parallelism causes undefined
+  * behaviour on the underlying database. This is why we use `CpgPass` instead of `ConcurrentWriterCpgPass` or similar.
+  */
+class ScanPass(cpg: Cpg, queries: List[Query]) extends CpgPass(cpg) {
 
-  override def generateParts(): Array[Query] = queries.toArray
-
-  override def runOnPart(diffGraph: DiffGraphBuilder, query: Query): Unit = {
-    query(cpg).foreach(diffGraph.addNode)
+  override def run(diffGraph: DiffGraphBuilder): Unit = {
+    queries.flatMap(_.apply(cpg)).foreach(diffGraph.addNode)
   }
 
 }
