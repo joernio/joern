@@ -5,8 +5,10 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.immutable.LazyList.from
 import scala.io.Source
-import scala.util.{Try, Using, Success, Failure}
+import scala.util.{Failure, Success, Try, Using}
 import upickle.default.*
+
+import scala.collection.mutable
 
 /** Parses the high-level symbol information of a project.
   */
@@ -51,7 +53,11 @@ object ClassParser {
         modifiers = json.obj.get("modifiers").map(read[List[String]](_)).getOrElse(Nil),
         functions = json.obj.get("functions") match {
           case Some(jsonFuncs) =>
-            read[Map[String, ClassParserFunction]](jsonFuncs).map { case (name, func) =>
+            val functionMap = read[mutable.Map[String, ClassParserFunction]](jsonFuncs)
+            if (!functionMap.contains("__construct")) {
+              functionMap.put("__construct", ClassParserFunction("", "public" :: Nil))
+            }
+            functionMap.map { case (name, func) =>
               func.copy(name = name)
             }.toList
           case None => Nil

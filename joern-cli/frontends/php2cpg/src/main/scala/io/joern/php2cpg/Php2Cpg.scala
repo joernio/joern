@@ -100,9 +100,9 @@ object Php2Cpg {
     val setKnownTypesConfig = config
       .map(c => XTypeStubsParserConfig(c.typeStubsFilePath))
       .getOrElse(XTypeStubsParserConfig())
-    List(new PhpTypeStubsParserPass(cpg, setKnownTypesConfig)) ++ new PhpTypeRecoveryPassGenerator(
-      cpg,
-      typeRecoveryConfig
-    ).generate() :+ PhpTypeHintCallLinker(cpg)
+    List(
+      new ComposerAutoloadPass(cpg),
+      new PhpTypeStubsParserPass(cpg, setKnownTypesConfig)
+    ) ++ new PhpTypeRecoveryPassGenerator(cpg, typeRecoveryConfig).generate() :+ PhpTypeHintCallLinker(cpg)
   }
 }

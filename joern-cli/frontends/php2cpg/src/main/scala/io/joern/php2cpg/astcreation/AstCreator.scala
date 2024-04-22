@@ -57,7 +57,7 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
   }
 
   private def globalMethodDeclStmt(file: PhpFile, bodyStmts: List[PhpStmt]): PhpMethodDecl = {
-    val modifiersList = List(ModifierTypes.VIRTUAL, ModifierTypes.PUBLIC, ModifierTypes.STATIC)
+    val modifiersList = List(ModifierTypes.VIRTUAL, ModifierTypes.PUBLIC, ModifierTypes.STATIC, ModifierTypes.MODULE)
     PhpMethodDecl(
       name = PhpNameExpr(NamespaceTraversal.globalNamespaceName, file.attributes),
       params = Nil,
