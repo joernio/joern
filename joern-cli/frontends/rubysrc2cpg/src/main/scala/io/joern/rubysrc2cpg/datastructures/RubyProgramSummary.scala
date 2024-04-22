@@ -29,7 +29,8 @@ case class RubyMethod(
   parameterTypes: List[(String, String)],
   returnType: String,
   baseTypeFullName: Option[String]
-) extends MethodLike derives ReadWriter
+) extends MethodLike
+    derives ReadWriter
 
 case class RubyField(name: String, typeName: String) extends FieldLike derives ReadWriter
 
