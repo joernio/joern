@@ -38,10 +38,9 @@ class CallTraversal(val traversal: Iterator[Call]) extends AnyVal {
 
   /** To formal method return parameter
     */
-  // TODO reimplement
-//  def toMethodReturn(implicit callResolver: ICallResolver): Iterator[MethodReturn] =
-//    traversal
-//      .flatMap(callResolver.getCalledMethodsAsTraversal)
-//      .flatMap(_.methodReturn)
+  def toMethodReturn(implicit callResolver: ICallResolver): Iterator[MethodReturn] =
+    traversal
+      .flatMap(callResolver.getCalledMethodsAsTraversal)
+      .flatMap(_.methodReturn)
 
 }
