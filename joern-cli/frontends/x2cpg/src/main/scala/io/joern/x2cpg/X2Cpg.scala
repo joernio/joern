@@ -11,7 +11,7 @@ import scopt.OParser
 import java.io.PrintWriter
 import java.nio.file.{Files, Path, Paths}
 import scala.util.matching.Regex
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success, Try, Using}
 
 object X2CpgConfig {
   def defaultOutputPath: String = "cpg.bin"
@@ -309,18 +309,9 @@ object X2Cpg {
     */
   def withNewEmptyCpg[T <: X2CpgConfig[?]](outPath: String, config: T)(applyPasses: (Cpg, T) => Unit): Try[Cpg] = {
     val outputPath = if (outPath != "") Some(outPath) else None
-    Try {
-      val cpg = newEmptyCpg(outputPath)
-      Try {
-        applyPasses(cpg, config)
-      } match {
-        case Success(_) => cpg
-        case Failure(exception) =>
-          // TODO discuss with Bernhard, implement AutoClosable, Config etc.
-          // TODO replace with scala.util.Using
-          cpg.close()
-          throw exception
-      }
+    Using(newEmptyCpg(outputPath)) { cpg =>
+      applyPasses(cpg, config)
+      cpg
     }
   }
 
