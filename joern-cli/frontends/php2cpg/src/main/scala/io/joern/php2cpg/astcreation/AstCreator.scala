@@ -249,10 +249,8 @@ class AstCreator(
       case AstParseLevel.AS_EXTERNAL =>
         method.isExternal(true)
         val stmts =
-          if methodName == globalNamespace.name || decl.isClassMethod then
-            methodBodyStmts
-          else 
-            Nil
+          if methodName == globalNamespace.name || decl.isClassMethod then methodBodyStmts
+          else Nil
         blockAst(blockNode(decl), stmts)
       case AstParseLevel.AS_INTERNAL =>
         blockAst(blockNode(decl), methodBodyStmts)
