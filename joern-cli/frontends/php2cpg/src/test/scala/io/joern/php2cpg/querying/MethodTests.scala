@@ -135,7 +135,8 @@ class MethodTests extends PhpCode2CpgFixture {
   "methods with unicode characters in source" should {
     val cpg = code("""<?php
         |function foo() {
-        |  $x = "🙂🙂🙂🙂🙂🙂";
+        |  // ⦝
+        |  $x = "🙂⨌🙂𐇐🙂🙂🙂🙂";
         |}""".stripMargin).withConfig(Config().withDisableFileContent(false))
 
     "set the content field correctly" in {
@@ -144,7 +145,8 @@ class MethodTests extends PhpCode2CpgFixture {
         val offsetEnd   = fooMethod.offsetEnd.get
         fooMethod.file.head.content.substring(offsetStart, offsetEnd) shouldBe
           """function foo() {
-            |  $x = "🙂🙂🙂🙂🙂🙂";
+            |  // ⦝
+            |  $x = "🙂⨌🙂𐇐🙂🙂🙂🙂";
             |}""".stripMargin
       }
     }
