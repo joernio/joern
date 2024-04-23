@@ -51,7 +51,11 @@ class ImplicitRequirePass(cpg: Cpg, programSummary: RubyProgramSummary) extends 
       .foreach { case (identifier, rubyTypes) =>
         val requireCalls = rubyTypes.flatMap { rubyType =>
           typeToPath.get(rubyType.name) match {
-            case Some(path) if rubyType.name.startsWith(identifier.file.name.headOption.getOrElse("")) =>
+            case Some(path)
+                if identifier.file.name
+                  .map(_.replace("\\", java.io.File.separator))
+                  .headOption
+                  .exists(x => rubyType.name.startsWith(x)) =>
               None // do not add an import to a file that defines the type
             case Some(path) => Option(createRequireCall(builder, rubyType, path))
             case None       => None
