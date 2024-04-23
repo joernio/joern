@@ -145,7 +145,7 @@ class DependencyDownloader(cpg: Cpg, config: Config) {
 
     def moveDir(targetNamespace: String, pathPrefix: String): Unit = {
       val fullTargetNamespace = (targetDir / targetNamespace
-        .replaceAll(Matcher.quoteReplacement("\\"), java.io.File.separator))
+        .replaceAll(Matcher.quoteReplacement("\\\\"), java.io.File.separator))
         .createDirectoryIfNotExists(createParents = true)
       val fullPathPrefix = targetDir / pathPrefix.replaceAll("/", java.io.File.separator)
       fullPathPrefix.list.foreach(_.moveToDirectory(fullTargetNamespace))
