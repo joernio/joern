@@ -24,7 +24,6 @@ class RubyProgramSummary(
 
 }
 
-
 case class RubyMethod(
   name: String,
   parameterTypes: List[(String, String)],
@@ -34,9 +33,7 @@ case class RubyMethod(
 
 object RubyMethod {
   implicit val rubyMethodRwJson: ReadWriter[RubyMethod] = readwriter[ujson.Value].bimap[RubyMethod](
-    x => ujson.Obj(
-      "name" -> x.name,
-    ),
+    x => ujson.Obj("name" -> x.name),
     json => RubyMethod(json("name").str, List.empty, "", Option.empty)
   )
 }
