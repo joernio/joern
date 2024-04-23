@@ -6,7 +6,13 @@ import io.joern.rubysrc2cpg.datastructures.RubyProgramSummary
 import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser
 import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser.*
 import io.joern.rubysrc2cpg.parser.RubyParser
-import io.joern.rubysrc2cpg.passes.{AstCreationPass, ConfigFileCreationPass, DependencyPass, ImportsPass}
+import io.joern.rubysrc2cpg.passes.{
+  AstCreationPass,
+  ConfigFileCreationPass,
+  DependencyPass,
+  ImplicitRequirePass,
+  ImportsPass
+}
 import io.joern.rubysrc2cpg.utils.DependencyDownloader
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.passes.base.AstLinkerPass
@@ -65,10 +71,9 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
         internalProgramSummary
       }
 
-      val astCreationPass = new AstCreationPass(cpg, astCreators.map(_.withSummary(programSummary)))
-      astCreationPass.createAndApply()
-      val importsPass = new ImportsPass(cpg)
-      importsPass.createAndApply()
+      AstCreationPass(cpg, astCreators.map(_.withSummary(programSummary))).createAndApply()
+      ImplicitRequirePass(cpg, programSummary).createAndApply()
+      ImportsPass(cpg).createAndApply()
       TypeNodePass.withTypesFromCpg(cpg).createAndApply()
     }
   }
