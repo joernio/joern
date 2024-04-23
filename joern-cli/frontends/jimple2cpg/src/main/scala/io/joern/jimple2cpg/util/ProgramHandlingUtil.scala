@@ -6,8 +6,8 @@ import org.objectweb.asm.{ClassReader, ClassVisitor, Opcodes}
 import org.slf4j.LoggerFactory
 
 import java.io.InputStream
-import java.util.zip.ZipEntry
-import scala.util.{Failure, Left, Success, Try, boundary}
+import java.util.zip.{ZipEntry, ZipFile, ZipInputStream}
+import scala.util.{Failure, Left, Success, Try, Using}
 
 /** Responsible for handling JAR unpacking and handling the temporary build directory.
   */
@@ -18,10 +18,10 @@ object ProgramHandlingUtil {
   /** Common properties of a File and ZipEntry, used to determine whether a file in a directory or an entry in an
     * archive is worth emitting/extracting
     */
-  sealed class Entry(entry: Either[File, ZipEntry]) {
+  sealed class Entry(entry: Either[File, ZipEntry], parentArchive: Option[ZipFile] = None) {
 
     def this(file: File) = this(Left(file))
-    def this(entry: ZipEntry) = this(Right(entry))
+    def this(entry: ZipEntry, parentArchive: ZipFile) = this(Right(entry), Option(parentArchive))
     private def file: File          = entry.fold(identity, e => File(e.getName))
     def name: String                = file.name
     def extension: Option[String]   = file.extension
@@ -35,6 +35,45 @@ object ProgramHandlingUtil {
     // Note that we consider either type of path separator as although the spec say that only
     // unix separators are to be used, zip files in the wild may vary.
     def isZipSlip: Boolean = entry.fold(_ => false, _.getName.split("[/\\\\]").contains(".."))
+
+    def isZipFile: Boolean = entry match {
+      case Left(file: File) => isValidZipFile(file)
+      case Right(zipEntry: ZipEntry) if !isZipSlip =>
+        parentArchive.exists { f =>
+          Using.resource(f.getInputStream(zipEntry)) { is =>
+            File.temporaryFile("jimple2cpg-", ".zip").apply { f =>
+              f.writeBytes(is.readAllBytes().iterator)
+              isValidZipFile(f.newZipInputStream)
+            }
+          }
+        }
+      case _ => false
+    }
+
+    private def isValidZipFile(zis: ZipInputStream): Boolean = Try {
+      var ze = Option(zis.getNextEntry)
+      Option(zis.getNextEntry) match {
+        case None => throw new Exception()
+        case _    => // do nothing
+      }
+      while (ze.isDefined) {
+        // A corrupted ZIP may throw an exception on these
+        ze.foreach(_.getCrc)
+        ze.foreach(_.getCompressedSize)
+        ze.foreach(_.getName)
+        ze = Option(zis.getNextEntry)
+      }
+    }.isSuccess
+
+    /** Determines if the given file is a valid and uncorrupted zip file by reading through the whole archive until the
+      * end.
+      * @param f
+      *   the file to read.
+      * @return
+      *   true if the file is a valid and uncorrupted zip file, false if otherwise.
+      */
+    private def isValidZipFile(f: File): Boolean =
+      f.zipInputStream.apply { zis => isValidZipFile(zis) }
   }
 
   /** Process files that may lead to more files to process or to emit a resulting value of [[A]]
@@ -113,7 +152,7 @@ object ProgramHandlingUtil {
           Right(Map(false -> files))
         case f if isArchive(Entry(f)) && (f == src || (src.isDirectory() && subOfSrc.contains(f)) || recurse) =>
           val xTmp = File.newTemporaryDirectory("extract-archive-", parent = Some(tmpDir))
-          val unzipDirs = Try(f.unzipTo(xTmp, e => shouldExtract(Entry(e)))) match {
+          val unzipDirs = Try(f.unzipTo(xTmp, e => shouldExtract(Entry(e, new ZipFile(f.toJava))))) match {
             case Success(dir) => List(dir)
             case Failure(e) =>
               logger.warn(s"Failed to extract archive", e)

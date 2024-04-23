@@ -35,7 +35,7 @@ private class RecoverForSwiftFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder,
 
   import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
 
-  override protected val pathSep = ':'
+  override protected val pathSep = ":"
 
   /** A heuristic method to determine if a call is a constructor or not.
     */

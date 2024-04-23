@@ -35,7 +35,7 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
     "anonymous constructor of anonymous class full name" in {
       val cpg = code("var x = class { constructor(y) {} };")
       cpg.method.fullName.toSetMutable should contain(
-        s"Test0.js::program:_anon_cdecl:${io.joern.x2cpg.Defines.ConstructorMethodName}"
+        s"Test0.js::program:<anon-class>0:${io.joern.x2cpg.Defines.ConstructorMethodName}"
       )
     }
   }

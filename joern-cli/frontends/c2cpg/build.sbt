@@ -7,12 +7,12 @@ dependsOn(
 )
 
 libraryDependencies ++= Seq(
-  "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
-  "org.eclipse.platform"    % "org.eclipse.core.resources" % "3.20.0",
-  "org.eclipse.platform"    % "org.eclipse.text"           % "3.13.100",
+  "org.scala-lang.modules" %% "scala-parallel-collections" % Versions.scalaParallel,
+  "org.eclipse.platform"    % "org.eclipse.core.resources" % Versions.eclipseCore,
+  "org.eclipse.platform"    % "org.eclipse.text"           % Versions.eclipseText,
   // see note in readme re self-publishing cdt-core
-  "io.joern"                % "eclipse-cdt-core"           % "8.4.0.202401242025",
-  "org.scalatest"          %% "scalatest"                  % Versions.scalatest % Test
+  "io.joern"       % "eclipse-cdt-core" % Versions.eclipseCdt,
+  "org.scalatest" %% "scalatest"        % Versions.scalatest % Test
 )
 
 dependencyOverrides ++= Seq(

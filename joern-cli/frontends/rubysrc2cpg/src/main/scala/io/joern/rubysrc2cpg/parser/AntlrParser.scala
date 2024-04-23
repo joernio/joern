@@ -25,7 +25,7 @@ class AntlrParser(filename: String) {
     parser.removeErrorListeners()
     parser.addErrorListener(new ANTLRErrorListener {
       override def syntaxError(
-        recognizer: Recognizer[_, _],
+        recognizer: Recognizer[?, ?],
         offendingSymbol: Any,
         line: Int,
         charPositionInLine: Int,

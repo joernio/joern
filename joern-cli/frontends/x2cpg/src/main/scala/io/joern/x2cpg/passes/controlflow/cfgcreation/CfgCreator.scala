@@ -548,7 +548,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
       maybeFinallyBodyCfg.headOption.getOrElse(Cfg.empty)
     } else {
       Cfg
-        .from(Seq(tryBodyCfg) ++ catchBodyCfgs ++ maybeFinallyBodyCfg: _*)
+        .from(Seq(tryBodyCfg) ++ catchBodyCfgs ++ maybeFinallyBodyCfg*)
         .copy(
           entryNode = tryBodyCfg.entryNode,
           edges =
@@ -599,7 +599,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     val breakFringe    = takeCurrentLevel(bodyCfgs.flatMap(_.breaks)).map((_, AlwaysEdge))
 
     Cfg
-      .from(conditionCfg :: bodyCfgs: _*)
+      .from(conditionCfg :: bodyCfgs*)
       .copy(
         entryNode = conditionCfg.entryNode,
         edges = caseEdges ++ conditionCfg.edges ++ bodyCfgs.flatMap(_.edges),

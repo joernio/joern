@@ -9,12 +9,17 @@ import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies}
 import io.shiftleft.codepropertygraph.generated.nodes.File.PropertyDefaults
+import io.shiftleft.passes.IntervalKeyPool
 import ujson.Value
 
 import scala.collection.{mutable, SortedMap}
 import scala.util.{Success, Try}
 
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
+
+  private val anonClassKeyPool = new IntervalKeyPool(first = 0, last = Long.MaxValue)
+
+  protected def nextAnonClassName(): String = s"<anon-class>${anonClassKeyPool.next}"
 
   protected def createBabelNodeInfo(json: Value): BabelNodeInfo = {
     val c     = code(json)
@@ -211,21 +216,16 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     */
   private def calcTypeName(classNode: BabelNodeInfo): String =
     if (hasKey(classNode.json, "id") && !classNode.json("id").isNull) code(classNode.json("id"))
-    else "_anon_cdecl"
+    else nextAnonClassName()
 
   protected def calcTypeNameAndFullName(
     classNode: BabelNodeInfo,
     preCalculatedName: Option[String] = None
   ): (String, String) = {
-    val name             = preCalculatedName.getOrElse(calcTypeName(classNode))
-    val fullNamePrefix   = s"${parserResult.filename}:${computeScopePath(scope.getScopeHead)}:"
-    val intendedFullName = s"$fullNamePrefix$name"
-    val postfix          = typeFullNameToPostfix.getOrElse(intendedFullName, 0)
-    val resultingFullName =
-      if (postfix == 0) intendedFullName
-      else s"$intendedFullName$postfix"
-    typeFullNameToPostfix.put(intendedFullName, postfix + 1)
-    (name, resultingFullName)
+    val name           = preCalculatedName.getOrElse(calcTypeName(classNode))
+    val fullNamePrefix = s"${parserResult.filename}:${computeScopePath(scope.getScopeHead)}:"
+    val fullName       = s"$fullNamePrefix$name"
+    (name, fullName)
   }
 
   protected def createVariableReferenceLinks(): Unit = {

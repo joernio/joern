@@ -81,6 +81,16 @@ object DotNetJsonAst {
 
   object ParenthesizedLambdaExpression extends BaseLambdaExpression
 
+  sealed trait PatternExpr extends BaseExpr
+
+  object IsPatternExpression extends PatternExpr
+
+  object DeclarationPattern extends PatternExpr
+
+  object SingleVariableDesignation extends PatternExpr
+
+  object Designation extends PatternExpr
+
   sealed trait ClauseExpr extends BaseExpr
 
   object EqualsValueClause extends ClauseExpr
@@ -160,6 +170,8 @@ object DotNetJsonAst {
 
   object ArgumentList extends BaseExpr
 
+  object BracketedArgumentList extends BaseExpr
+
   trait MemberAccessExpr extends BaseExpr
 
   object SimpleMemberAccessExpression extends MemberAccessExpr
@@ -228,6 +240,8 @@ object DotNetJsonAst {
 
   object ArrayInitializerExpression extends BaseExpr
 
+  object ElementAccessExpression extends BaseExpr
+
   object CollectionExpression extends BaseExpr
 
   object ExpressionElement extends BaseExpr
@@ -264,64 +278,66 @@ object DotNetJsonAst {
   */
 object ParserKeys {
 
-  val AstRoot           = "AstRoot"
-  val Arguments         = "Arguments"
-  val ArgumentList      = "ArgumentList"
-  val AttributeLists    = "AttributeLists"
-  val Attributes        = "Attributes"
-  val BaseList          = "BaseList"
-  val Body              = "Body"
-  val Block             = "Block"
-  val Catches           = "Catches"
-  val Code              = "Code"
-  val ColumnStart       = "ColumnStart"
-  val ColumnEnd         = "ColumnEnd"
-  val Condition         = "Condition"
-  val Contents          = "Contents"
-  val Declaration       = "Declaration"
-  val Elements          = "Elements"
-  val ElementType       = "ElementType"
-  val Else              = "Else"
-  val Expression        = "Expression"
-  val ExpressionElement = "ExpressionElement"
-  val Expressions       = "Expressions"
-  val ExpressionBody    = "ExpressionBody"
-  val Finally           = "Finally"
-  val FileName          = "FileName"
-  val Identifier        = "Identifier"
-  val Incrementors      = "Incrementors"
-  val Initializer       = "Initializer"
-  val Initializers      = "Initializers"
-  val Keyword           = "Keyword"
-  val Kind              = "Kind"
-  val Labels            = "Labels"
-  val Left              = "Left"
-  val LineStart         = "LineStart"
-  val LineEnd           = "LineEnd"
-  val MetaData          = "MetaData"
-  val Members           = "Members"
-  val Modifiers         = "Modifiers"
-  val Name              = "Name"
-  val NameEquals        = "NameEquals"
-  val Operand           = "Operand"
-  val OperatorToken     = "OperatorToken"
-  val Parameter         = "Parameter"
-  val Parameters        = "Parameters"
-  val ParameterList     = "ParameterList"
-  val Pattern           = "Pattern"
-  val Sections          = "Sections"
-  val Statement         = "Statement"
-  val Statements        = "Statements"
-  val ReturnType        = "ReturnType"
-  val Right             = "Right"
-  val TextToken         = "TextToken"
-  val Type              = "Type"
-  val TypeArgumentList  = "TypeArgumentList"
-  val Types             = "Types"
-  val Usings            = "Usings"
-  val Value             = "Value"
-  val Variables         = "Variables"
-  val WhenFalse         = "WhenFalse"
-  val WhenNotNull       = "WhenNotNull"
-  val WhenTrue          = "WhenTrue"
+  val AstRoot                   = "AstRoot"
+  val Arguments                 = "Arguments"
+  val ArgumentList              = "ArgumentList"
+  val AttributeLists            = "AttributeLists"
+  val Attributes                = "Attributes"
+  val BaseList                  = "BaseList"
+  val Body                      = "Body"
+  val Block                     = "Block"
+  val Catches                   = "Catches"
+  val Code                      = "Code"
+  val ColumnStart               = "ColumnStart"
+  val ColumnEnd                 = "ColumnEnd"
+  val Condition                 = "Condition"
+  val Contents                  = "Contents"
+  val Declaration               = "Declaration"
+  val Designation               = "Designation"
+  val Elements                  = "Elements"
+  val ElementType               = "ElementType"
+  val Else                      = "Else"
+  val Expression                = "Expression"
+  val ExpressionElement         = "ExpressionElement"
+  val Expressions               = "Expressions"
+  val ExpressionBody            = "ExpressionBody"
+  val Finally                   = "Finally"
+  val FileName                  = "FileName"
+  val Identifier                = "Identifier"
+  val Incrementors              = "Incrementors"
+  val Initializer               = "Initializer"
+  val Initializers              = "Initializers"
+  val Keyword                   = "Keyword"
+  val Kind                      = "Kind"
+  val Labels                    = "Labels"
+  val Left                      = "Left"
+  val LineStart                 = "LineStart"
+  val LineEnd                   = "LineEnd"
+  val MetaData                  = "MetaData"
+  val Members                   = "Members"
+  val Modifiers                 = "Modifiers"
+  val Name                      = "Name"
+  val NameEquals                = "NameEquals"
+  val Operand                   = "Operand"
+  val OperatorToken             = "OperatorToken"
+  val Parameter                 = "Parameter"
+  val Parameters                = "Parameters"
+  val ParameterList             = "ParameterList"
+  val Pattern                   = "Pattern"
+  val Sections                  = "Sections"
+  val SingleVariableDesignation = "SingleVariableDesignation"
+  val Statement                 = "Statement"
+  val Statements                = "Statements"
+  val ReturnType                = "ReturnType"
+  val Right                     = "Right"
+  val TextToken                 = "TextToken"
+  val Type                      = "Type"
+  val TypeArgumentList          = "TypeArgumentList"
+  val Types                     = "Types"
+  val Usings                    = "Usings"
+  val Value                     = "Value"
+  val Variables                 = "Variables"
+  val WhenFalse                 = "WhenFalse"
+  val WhenNotNull               = "WhenNotNull"
+  val WhenTrue                  = "WhenTrue"
 }

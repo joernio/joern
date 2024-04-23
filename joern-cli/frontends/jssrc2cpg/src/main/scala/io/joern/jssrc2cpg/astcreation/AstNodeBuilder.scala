@@ -11,7 +11,10 @@ import io.shiftleft.codepropertygraph.generated.Operators
 
 trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
   protected def createMethodReturnNode(func: BabelNodeInfo): NewMethodReturn = {
-    newMethodReturnNode(typeFor(func), line = func.lineNumber, column = func.columnNumber)
+    val tpe           = typeFor(func)
+    val possibleTypes = Seq(tpe)
+    val typeFullName  = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
+    newMethodReturnNode(typeFullName, line = func.lineNumber, column = func.columnNumber).possibleTypes(possibleTypes)
   }
 
   protected def setOrderExplicitly(ast: Ast, order: Int): Unit = {
@@ -133,7 +136,7 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     val fullName =
       if (dispatchType == DispatchTypes.STATIC_DISPATCH) name
       else x2cpg.Defines.DynamicCallUnknownFullName
-    callNode(node, code, name, fullName, dispatchType, None, Some(Defines.Any))
+    callNode(node, code, name, fullName, dispatchType, None, Option(Defines.Any))
   }
 
   private def createCallNode(
@@ -171,8 +174,8 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
 
   protected def literalNode(node: BabelNodeInfo, code: String, dynamicTypeOption: Option[String]): NewLiteral = {
     val typeFullName = dynamicTypeOption match {
-      case Some(value) if Defines.JsTypes.contains(value) => value
-      case _                                              => Defines.Any
+      case Some(value) if Defines.isBuiltinType(value) => value
+      case _                                           => Defines.Any
     }
     literalNode(node, code, typeFullName, dynamicTypeOption.toList)
   }

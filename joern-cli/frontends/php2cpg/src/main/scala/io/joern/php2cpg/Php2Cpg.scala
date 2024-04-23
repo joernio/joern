@@ -6,12 +6,14 @@ import io.joern.php2cpg.passes.{
   AstCreationPass,
   AstParentInfoPass,
   ClosureRefPass,
+  DependencyPass,
   LocalCreationPass,
-  PhpTypeStubsParserPass,
-  PhpTypeRecoveryPassGenerator
+  PhpTypeHintCallLinker,
+  PhpTypeRecoveryPassGenerator,
+  PhpTypeStubsParserPass
 }
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
-import io.joern.x2cpg.X2CpgFrontend
+import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass, XTypeRecoveryConfig, XTypeStubsParserConfig}
 import io.joern.x2cpg.utils.ExternalCommand
 import io.shiftleft.codepropertygraph.Cpg
@@ -59,6 +61,7 @@ class Php2Cpg extends X2CpgFrontend[Config] {
     if (errorMessages.isEmpty) {
       withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
         new MetaDataPass(cpg, Languages.PHP, config.inputPath).createAndApply()
+        new DependencyPass(cpg, buildFiles(config)).createAndApply()
         new AstCreationPass(config, cpg, parser.get)(config.schemaValidation).createAndApply()
         new AstParentInfoPass(cpg).createAndApply()
         new AnyTypePass(cpg).createAndApply()
@@ -78,6 +81,18 @@ class Php2Cpg extends X2CpgFrontend[Config] {
     }
 
   }
+
+  private def buildFiles(config: Config): List[String] = {
+    SourceFiles
+      .determine(
+        config.inputPath,
+        Set(".json"),
+        Option(config.defaultIgnoredFilesRegex),
+        Option(config.ignoredFilesRegex),
+        Option(config.ignoredFiles)
+      )
+      .filter(_.endsWith("composer.json"))
+  }
 }
 
 object Php2Cpg {
@@ -92,6 +107,6 @@ object Php2Cpg {
     List(new PhpTypeStubsParserPass(cpg, setKnownTypesConfig)) ++ new PhpTypeRecoveryPassGenerator(
       cpg,
       typeRecoveryConfig
-    ).generate()
+    ).generate() :+ PhpTypeHintCallLinker(cpg)
   }
 }

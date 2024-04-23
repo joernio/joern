@@ -29,7 +29,7 @@ class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.cur
   def config: ConsoleConfig = _config
   def console: Console[T]   = this
 
-  protected var workspaceManager: WorkspaceManager[T] = _
+  protected var workspaceManager: WorkspaceManager[T] = scala.compiletime.uninitialized
   switchWorkspace(baseDir.path.resolve("workspace").toString)
   protected def workspacePathName: String = workspaceManager.getPath
 
@@ -411,7 +411,7 @@ class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.cur
     val appliedOverlays = io.shiftleft.semanticcpg.Overlays.appliedOverlays(cpg)
     if (appliedOverlays.isEmpty) {
       report("Adding default overlays to base CPG")
-      _runAnalyzer(defaultOverlayCreators(): _*)
+      _runAnalyzer(defaultOverlayCreators()*)
     }
     cpg
   }

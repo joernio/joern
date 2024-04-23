@@ -19,9 +19,9 @@ class TypealiasTests extends AstSwiftSrc2CpgSuite {
         |  var foo: String
         |}
         |""".stripMargin)
-      val expectedTypeAliasFullName = "Test0.swift:<global>:_anon_cdecl_0"
+      val expectedTypeAliasFullName = "Test0.swift:<global>:<anon-class>0"
       val List(tupleTypeDecl)       = cpg.typeDecl.fullNameExact(expectedTypeAliasFullName).l
-      tupleTypeDecl.name shouldBe "_anon_cdecl_0"
+      tupleTypeDecl.name shouldBe "<anon-class>0"
       tupleTypeDecl.code shouldBe "(Int, Int)"
 
       val List(intPair) = cpg.typeDecl.nameExact("IntPair").l
@@ -38,9 +38,9 @@ class TypealiasTests extends AstSwiftSrc2CpgSuite {
         |}
         |typealias IntPair = (Int, Int)
         |""".stripMargin)
-      val expectedTypeAliasFullName = "Test0.swift:<global>:_anon_cdecl_0"
+      val expectedTypeAliasFullName = "Test0.swift:<global>:<anon-class>0"
       val List(tupleTypeDecl)       = cpg.typeDecl.fullNameExact(expectedTypeAliasFullName).l
-      tupleTypeDecl.name shouldBe "_anon_cdecl_0"
+      tupleTypeDecl.name shouldBe "<anon-class>0"
       tupleTypeDecl.code shouldBe "(Int, Int)"
 
       val List(intPair) = cpg.typeDecl.nameExact("IntPair").l
@@ -52,9 +52,9 @@ class TypealiasTests extends AstSwiftSrc2CpgSuite {
 
     "testTypealias2b" in {
       val cpg                       = code("typealias IntTriple = (Int, Int, Int)")
-      val expectedTypeAliasFullName = "Test0.swift:<global>:_anon_cdecl_0"
+      val expectedTypeAliasFullName = "Test0.swift:<global>:<anon-class>0"
       val List(tupleTypeDecl)       = cpg.typeDecl.fullNameExact(expectedTypeAliasFullName).l
-      tupleTypeDecl.name shouldBe "_anon_cdecl_0"
+      tupleTypeDecl.name shouldBe "<anon-class>0"
       tupleTypeDecl.code shouldBe "(Int, Int, Int)"
 
       val List(intTriple) = cpg.typeDecl.nameExact("IntTriple").l

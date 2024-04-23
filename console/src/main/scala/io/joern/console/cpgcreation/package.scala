@@ -5,6 +5,7 @@ import io.shiftleft.codepropertygraph.generated.Languages
 
 import java.nio.file.Path
 import scala.collection.mutable
+import scala.util.Try
 
 package object cpgcreation {
 
@@ -108,6 +109,14 @@ package object cpgcreation {
       case f if isCFile(f)           => Some(Languages.NEWC)
       case _                         => None
     }
+  }
+
+  def withFileInTmpFile(inputPath: String)(f: File => Try[String]): Try[String] = {
+    val dir = File.newTemporaryDirectory("cpgcreation")
+    File(inputPath).copyToDirectory(dir)
+    val result = f(dir)
+    dir.deleteOnExit(swallowIOExceptions = true)
+    result
   }
 
 }

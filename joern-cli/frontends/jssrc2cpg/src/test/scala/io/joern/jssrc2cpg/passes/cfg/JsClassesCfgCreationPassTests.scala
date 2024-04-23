@@ -100,8 +100,8 @@ class JsClassesCfgCreationPassTests extends CfgTestFixture(() => new JsSrcCfgTes
     "be correct for outer method of anonymous class declaration" in {
       implicit val cpg: Cpg = code("var a = class {}")
       succOf(":program") shouldBe expected(("a", AlwaysEdge))
-      succOf("a") shouldBe expected(("class _anon_cdecl", AlwaysEdge))
-      succOf("class _anon_cdecl") shouldBe expected(("var a = class {}", AlwaysEdge))
+      succOf("a") shouldBe expected(("class <anon-class>0", AlwaysEdge))
+      succOf("class <anon-class>0") shouldBe expected(("var a = class {}", AlwaysEdge))
       succOf("var a = class {}") shouldBe expected(("RET", AlwaysEdge))
     }
   }

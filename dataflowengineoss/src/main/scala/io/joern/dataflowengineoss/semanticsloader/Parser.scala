@@ -68,7 +68,7 @@ case class FlowSemantic(methodFullName: String, mappings: List[FlowPath] = List.
 
 object FlowSemantic {
 
-  def from(methodFullName: String, mappings: List[_], regex: Boolean = false): FlowSemantic = {
+  def from(methodFullName: String, mappings: List[?], regex: Boolean = false): FlowSemantic = {
     FlowSemantic(
       methodFullName,
       mappings.map {

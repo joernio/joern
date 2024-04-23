@@ -190,7 +190,7 @@ object AstCreatorHelper {
   def nameFromNode(node: DotNetNodeInfo): String = {
     node.node match
       case NamespaceDeclaration | UsingDirective | FileScopedNamespaceDeclaration => nameFromNamespaceDeclaration(node)
-      case IdentifierName | Parameter | _: DeclarationExpr | GenericName =>
+      case IdentifierName | Parameter | _: DeclarationExpr | GenericName | SingleVariableDesignation =>
         nameFromIdentifier(node)
       case QualifiedName => nameFromQualifiedName(node)
       case SimpleMemberAccessExpression | MemberBindingExpression | SuppressNullableWarningExpression | Attribute =>

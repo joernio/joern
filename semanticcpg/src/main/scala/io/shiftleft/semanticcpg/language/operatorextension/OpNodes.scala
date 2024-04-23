@@ -7,8 +7,8 @@ trait ArithmeticT
 trait ArrayAccessT
 trait FieldAccessT
 object OpNodes {
-  type Assignment  = Call with StaticType[AssignmentT]
-  type Arithmetic  = Call with StaticType[ArithmeticT]
-  type ArrayAccess = Call with StaticType[ArrayAccessT]
-  type FieldAccess = Call with StaticType[FieldAccessT]
+  type Assignment  = Call & StaticType[AssignmentT]
+  type Arithmetic  = Call & StaticType[ArithmeticT]
+  type ArrayAccess = Call & StaticType[ArrayAccessT]
+  type FieldAccess = Call & StaticType[FieldAccessT]
 }

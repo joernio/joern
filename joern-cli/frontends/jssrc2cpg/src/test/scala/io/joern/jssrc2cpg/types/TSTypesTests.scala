@@ -29,7 +29,7 @@ class TSTypesTests extends AstJsSrc2CpgSuite {
   "have correct types for empty method with rest parameter" in {
     val cpg          = code("function method(x, ...args) {}").withConfig(Config().withTsTypes(true))
     val List(method) = cpg.method.nameExact("method").l
-    method.methodReturn.typeFullName shouldBe "void"
+    method.methodReturn.typeFullName shouldBe Defines.Any
 
     val List(t, x, args) = method.parameter.l
     t.index shouldBe 0
@@ -48,7 +48,8 @@ class TSTypesTests extends AstJsSrc2CpgSuite {
   "have return types for arrow functions" in {
     val cpg       = code("const foo = () => 42;").withConfig(Config().withTsTypes(true))
     val List(foo) = cpg.identifier("foo").l
-    foo.typeFullName shouldBe s"() => ${Defines.Number}"
+    foo.typeFullName shouldBe Defines.Any
+    foo.possibleTypes shouldBe Seq(s"() => ${Defines.Number}")
     val List(ret) = cpg.method("<lambda>0").methodReturn.l
     ret.typeFullName shouldBe Defines.Number
   }
@@ -56,7 +57,7 @@ class TSTypesTests extends AstJsSrc2CpgSuite {
   "have correct types for empty method" in {
     val cpg          = code("function method(x) {}").withConfig(Config().withTsTypes(true))
     val List(method) = cpg.method.nameExact("method").l
-    method.methodReturn.typeFullName shouldBe "void"
+    method.methodReturn.typeFullName shouldBe Defines.Any
   }
 
   "have types for identifiers with type inference" in {
@@ -74,7 +75,8 @@ class TSTypesTests extends AstJsSrc2CpgSuite {
       |var y = new Foo();
       |""".stripMargin).withConfig(Config().withTsTypes(true))
     val List(y) = cpg.identifier("y").l
-    y.typeFullName shouldBe "Foo"
+    y.typeFullName shouldBe Defines.Any
+    y.possibleTypes shouldBe Seq("Foo")
   }
 
   "have types for parameters" in {
@@ -89,14 +91,17 @@ class TSTypesTests extends AstJsSrc2CpgSuite {
       "Test0.ts"
     ).withConfig(Config().withTsTypes(true))
     val List(y1, y2) = cpg.identifier("y").l
-    y1.typeFullName shouldBe "Foo"
-    y2.typeFullName shouldBe "Foo"
+    y1.typeFullName shouldBe Defines.Any
+    y1.possibleTypes shouldBe Seq("Foo")
+    y2.typeFullName shouldBe Defines.Any
+    y2.possibleTypes shouldBe Seq("Foo")
     val List(p1) = cpg.parameter("p1").l
     p1.typeFullName shouldBe Defines.Number
     val List(p2) = cpg.parameter("p2").l
     p2.typeFullName shouldBe Defines.String
     val List(barRet) = cpg.method("bar").methodReturn.l
-    barRet.typeFullName shouldBe "Foo"
+    barRet.typeFullName shouldBe Defines.Any
+    barRet.possibleTypes shouldBe Seq("Foo")
     cpg.typ.name.sorted.l shouldBe List(
       ":program",
       io.joern.x2cpg.Defines.ConstructorMethodName,
@@ -133,7 +138,8 @@ class TSTypesTests extends AstJsSrc2CpgSuite {
       idX.typeFullName shouldBe Defines.String
       idY.name shouldBe "y"
       idY.code shouldBe "y"
-      idY.typeFullName shouldBe "Foo"
+      idY.typeFullName shouldBe Defines.Any
+      idY.possibleTypes shouldBe Seq("Foo")
     }
   }
 
@@ -166,7 +172,8 @@ class TSTypesTests extends AstJsSrc2CpgSuite {
       paramA.typeFullName shouldBe Defines.String
       paramB.name shouldBe "b"
       paramB.code shouldBe "b: Foo"
-      paramB.typeFullName shouldBe "Foo"
+      paramB.typeFullName shouldBe Defines.Any
+      paramB.possibleTypes shouldBe Seq("Foo")
     }
   }
 
@@ -292,8 +299,8 @@ class TSTypesTests extends AstJsSrc2CpgSuite {
     }
     cpg.local("x").typeFullName.l shouldBe List(Defines.String)
     cpg.identifier("x").typeFullName.l shouldBe List(Defines.String)
-    cpg.local("y").typeFullName.l shouldBe List("int")
-    cpg.identifier("y").typeFullName.l shouldBe List("int")
+    cpg.local("y").typeFullName.l shouldBe List(Defines.Number)
+    cpg.identifier("y").typeFullName.l shouldBe List(Defines.Number)
     cpg.local("z").typeFullName.l shouldBe List(Defines.Boolean)
     cpg.identifier("z").typeFullName.l shouldBe List(Defines.Boolean)
   }
@@ -365,6 +372,16 @@ class TSTypesTests extends AstJsSrc2CpgSuite {
     ).withConfig(Config().withTsTypes(true))
     val List(x) = cpg.identifier("x").l
     x.typeFullName shouldBe Defines.String
+  }
+
+  "have correct types various array types" in {
+    val cpg = code(
+      """
+        |function foo(a: string[], b: Bar[], c: (() => string)[], d: { x: string, y: number }[]) {}
+        |""".stripMargin,
+      "Main.ts"
+    ).withConfig(Config().withTsTypes(true))
+    cpg.method.nameExact("foo").parameter.indexNot(0).typeFullName.sorted.distinct.l shouldBe List(Defines.Array)
   }
 
 }

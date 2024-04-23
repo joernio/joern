@@ -14,8 +14,8 @@ import org.slf4j.{Logger, LoggerFactory}
 class MethodDecoratorPass(cpg: Cpg) extends CpgPass(cpg) {
   import MethodDecoratorPass.logger
 
-  private[this] var loggedDeprecatedWarning   = false
-  private[this] var loggedMissingTypeFullName = false
+  private var loggedDeprecatedWarning   = false
+  private var loggedMissingTypeFullName = false
 
   override def run(dstGraph: DiffGraphBuilder): Unit = {
     cpg.parameter.foreach { parameterIn =>

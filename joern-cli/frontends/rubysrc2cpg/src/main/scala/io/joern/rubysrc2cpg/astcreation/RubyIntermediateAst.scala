@@ -62,7 +62,7 @@ object RubyIntermediateAst {
     name: RubyNode,
     baseClass: Option[RubyNode],
     body: RubyNode,
-    fields: List[RubyNode with RubyFieldIdentifier]
+    fields: List[RubyNode & RubyFieldIdentifier]
   )(span: TextSpan)
       extends RubyNode(span)
       with TypeDeclaration
@@ -318,7 +318,7 @@ object RubyIntermediateAst {
 
     def block: Block
 
-    def withoutBlock: RubyNode with C
+    def withoutBlock: RubyNode & C
   }
 
   final case class SimpleCallWithBlock(target: RubyNode, arguments: List[RubyNode], block: Block)(span: TextSpan)
@@ -373,7 +373,10 @@ object RubyIntermediateAst {
   /** Represents a `do` or `{ .. }` (braces) block. */
   final case class Block(parameters: List[RubyNode], body: RubyNode)(span: TextSpan) extends RubyNode(span) {
 
-    def toMethodDeclaration(name: String): MethodDeclaration = MethodDeclaration(name, parameters, body)(span)
+    def toMethodDeclaration(name: String, parameters: Option[List[RubyNode]]): MethodDeclaration = parameters match {
+      case Some(givenParameters) => MethodDeclaration(name, givenParameters, body)(span)
+      case None                  => MethodDeclaration(name, this.parameters, body)(span)
+    }
 
   }
 
