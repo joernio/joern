@@ -28,7 +28,8 @@ jobs:
         if: matrix.os == 'windows-latest'
         uses: SwiftyLab/setup-swift@latest
         with:
-          swift-version: "5.9"
+          development: true
+          swift-version: "5.10"
       - name: Install Bundler
         run: gem install bundler -v 2.4.22
       - name: Delete `.rustup` directory
