@@ -4,7 +4,7 @@ import io.joern.x2cpg.Defines as XDefines
 import io.joern.x2cpg.datastructures.{FieldLike, MethodLike, ProgramSummary, TypeLike}
 
 import scala.annotation.targetName
-import upickle.default.ReadWriter
+import upickle.default.*
 
 class RubyProgramSummary(
   initialNamespaceMap: Map[String, Set[RubyType]] = Map.empty,
@@ -24,13 +24,22 @@ class RubyProgramSummary(
 
 }
 
+
 case class RubyMethod(
   name: String,
   parameterTypes: List[(String, String)],
   returnType: String,
   baseTypeFullName: Option[String]
 ) extends MethodLike
-    derives ReadWriter
+
+object RubyMethod {
+  implicit val rubyMethodRwJson: ReadWriter[RubyMethod] = readwriter[ujson.Value].bimap[RubyMethod](
+    x => ujson.Obj(
+      "name" -> x.name,
+    ),
+    json => RubyMethod(json("name").str, List.empty, "", Option.empty)
+  )
+}
 
 case class RubyField(name: String, typeName: String) extends FieldLike derives ReadWriter
 
