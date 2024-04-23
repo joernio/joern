@@ -10,6 +10,7 @@ import org.eclipse.cdt.core.model.ILanguage
 import org.eclipse.cdt.core.parser.{DefaultLogService, ScannerInfo}
 import org.eclipse.cdt.core.parser.FileContent
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.CPPVisitor
+import org.eclipse.cdt.internal.core.parser.scanner.InternalFileContent
 import org.slf4j.LoggerFactory
 
 import java.nio.file.{NoSuchFileException, Path}
@@ -53,8 +54,18 @@ class CdtParser(config: Config) extends ParseProblemsLogger with PreprocessorSta
   // performance optimization, allows the parser not to create image-locations
   if (config.noImageLocations) opts |= ILanguage.OPTION_NO_IMAGE_LOCATIONS
 
-  private def createParseLanguage(file: Path): ILanguage = {
-    if (FileDefaults.isCPPFile(file.toString)) {
+  private def preprocessedFileIsFromCPPFile(file: Path, code: String): Boolean = {
+    if (config.withPreprocessedFiles && file.toString.endsWith(FileDefaults.PREPROCESSED_EXT)) {
+      val fileWithoutExt  = file.toString.stripSuffix(FileDefaults.PREPROCESSED_EXT)
+      val filesWithCPPExt = FileDefaults.CPP_FILE_EXTENSIONS.map(ext => File(s"$fileWithoutExt$ext").name)
+      code.linesIterator.exists(line => filesWithCPPExt.exists(f => line.contains(s"\"$f\"")))
+    } else {
+      false
+    }
+  }
+
+  private def createParseLanguage(file: Path, code: String): ILanguage = {
+    if (FileDefaults.isCPPFile(file.toString) || preprocessedFileIsFromCPPFile(file, code)) {
       GPPLanguage.getDefault
     } else {
       GCCLanguage.getDefault
@@ -71,7 +82,7 @@ class CdtParser(config: Config) extends ParseProblemsLogger with PreprocessorSta
   private def parseInternal(code: String, inFile: File): IASTTranslationUnit = {
     val fileContent         = FileContent.create(inFile.toString, true, code.toCharArray)
     val fileContentProvider = new CustomFileContentProvider(headerFileFinder)
-    val lang                = createParseLanguage(inFile.path)
+    val lang                = createParseLanguage(inFile.path, code)
     val scannerInfo         = createScannerInfo(inFile.path)
     val translationUnit     = lang.getASTTranslationUnit(fileContent, scannerInfo, fileContentProvider, null, opts, log)
     val problems            = CPPVisitor.getProblems(translationUnit)
@@ -86,8 +97,8 @@ class CdtParser(config: Config) extends ParseProblemsLogger with PreprocessorSta
       try {
         val fileContent         = readFileAsFileContent(realPath.path)
         val fileContentProvider = new CustomFileContentProvider(headerFileFinder)
-        val lang                = createParseLanguage(realPath.path)
-        val scannerInfo         = createScannerInfo(realPath.path)
+        val lang            = createParseLanguage(realPath.path, fileContent.asInstanceOf[InternalFileContent].toString)
+        val scannerInfo     = createScannerInfo(realPath.path)
         val translationUnit = lang.getASTTranslationUnit(fileContent, scannerInfo, fileContentProvider, null, opts, log)
         val problems        = CPPVisitor.getProblems(translationUnit)
         if (parserConfig.logProblems) logProblems(problems.toList)
