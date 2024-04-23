@@ -145,9 +145,9 @@ class DependencyDownloader(cpg: Cpg, config: Config) {
 
     def moveDir(targetNamespace: String, pathPrefix: String): Unit = {
       val fullTargetNamespace = (targetDir / targetNamespace
-        .replaceAll(Matcher.quoteReplacement("\\\\"), java.io.File.separator))
+        .replace("\\", java.io.File.separator))
         .createDirectoryIfNotExists(createParents = true)
-      val fullPathPrefix = targetDir / pathPrefix.replaceAll("/", java.io.File.separator)
+      val fullPathPrefix = targetDir / pathPrefix.replace("/", java.io.File.separator)
       fullPathPrefix.list.foreach(_.moveToDirectory(fullTargetNamespace))
       fullPathPrefix.delete(swallowIOExceptions = true)
     }
@@ -157,7 +157,7 @@ class DependencyDownloader(cpg: Cpg, config: Config) {
       pkg.delete(swallowIOExceptions = true)
       // This is usually unpacked to some dir and not directly
       targetDir.list
-        .filter(f => f.isDirectory && f.name.startsWith(vendor.replaceAll("\\\\", "-")))
+        .filter(f => f.isDirectory && f.name.startsWith(vendor.replace("\\", "-")))
         .foreach { unpackedDest =>
           unpackedDest.list.foreach { x => x.moveToDirectory(targetDir) }
           unpackedDest.delete(swallowIOExceptions = true)
