@@ -141,7 +141,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         val name           = calcMethodName(func)
         val fullNamePrefix = s"${parserResult.filename}:${computeScopePath(scope.getScopeHead)}:"
         val fullName       = s"$fullNamePrefix$name"
-        functionNodeToNameAndFullName(func) = (name, fullName)
         (name, fullName)
     }
   }
