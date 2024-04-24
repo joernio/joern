@@ -201,7 +201,7 @@ class DependencyDownloader(
   private def summarizeDependencies(targetDir: File): CSharpProgramSummary = {
     val astGenRunner       = new DotNetAstGenRunner(config.withInputPath(targetDir.pathAsString))
     val astGenRunnerResult = astGenRunner.execute(targetDir)
-    val mappings = astGenRunnerResult.parsedFiles.map(x => File(x)).flatMap { f =>
+    val summaries = astGenRunnerResult.parsedFiles.map(x => File(x)).flatMap { f =>
       Using.resource(f.newFileInputStream) { fis =>
         CSharpProgramSummary.jsonToInitialMapping(fis) match {
           case Failure(exception) =>
@@ -211,8 +211,8 @@ class DependencyDownloader(
             Option(parsedJson)
         }
       }
-    }
-    CSharpProgramSummary(mappings)
+    }.map(CSharpProgramSummary(_))
+    CSharpProgramSummary(summaries)
   }
 
 }
