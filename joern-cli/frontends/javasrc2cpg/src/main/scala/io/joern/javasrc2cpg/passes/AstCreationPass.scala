@@ -6,6 +6,7 @@ import com.github.javaparser.ParserConfiguration.LanguageLevel
 import com.github.javaparser.ast.CompilationUnit
 import com.github.javaparser.ast.Node.Parsedness
 import com.github.javaparser.symbolsolver.JavaSymbolSolver
+import com.github.javaparser.symbolsolver.javaparsermodel.JavaParserFacade
 import com.github.javaparser.symbolsolver.resolution.typesolvers.{
   ClassLoaderTypeSolver,
   JarTypeSolver,
@@ -56,6 +57,13 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
 
       case None => logger.warn(s"Skipping AST creation for $filename")
     }
+  }
+
+  /** Clear JavaParser caches. Should only be invoked after we no longer need JavaParser, e.g. as soon as we've built
+    * the AST layer for all files.
+    */
+  def clearJavaParserCaches(): Unit = {
+    JavaParserFacade.clearInstances()
   }
 
   private def initParserAndUtils(config: Config): (SourceParser, JavaSymbolSolver) = {
