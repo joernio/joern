@@ -53,7 +53,7 @@ class ImplicitRequirePass(cpg: Cpg, programSummary: RubyProgramSummary) extends 
           typeToPath.get(rubyType.name) match {
             case Some(path)
                 if identifier.file.name
-                  .map(_.replace("\\", java.io.File.separator))
+                  .map(_.replace("\\", "/"))
                   .headOption
                   .exists(x => rubyType.name.startsWith(x)) =>
               None // do not add an import to a file that defines the type
