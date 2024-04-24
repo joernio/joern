@@ -34,14 +34,14 @@ case class RubyMethod(
 object RubyMethod {
   implicit val rubyMethodRwJson: ReadWriter[RubyMethod] = readwriter[ujson.Value].bimap[RubyMethod](
     x => ujson.Obj("name" -> x.name),
-    json => RubyMethod(json("name").str, List.empty, "", Option.empty)
+    json => RubyMethod(json("name").str, List.empty, XDefines.Any, Option.empty)
   )
 }
 
 case class RubyField(name: String, typeName: String) extends FieldLike derives ReadWriter
 
 case class RubyType(name: String, methods: List[RubyMethod], fields: List[RubyField])
-    extends TypeLike[RubyMethod, RubyField] derives ReadWriter {
+    extends TypeLike[RubyMethod, RubyField] {
 
   @targetName("add")
   override def +(o: TypeLike[RubyMethod, RubyField]): TypeLike[RubyMethod, RubyField] = {
@@ -51,4 +51,33 @@ case class RubyType(name: String, methods: List[RubyMethod], fields: List[RubyFi
   def hasConstructor: Boolean = {
     methods.exists(_.name == XDefines.ConstructorMethodName)
   }
+}
+
+object RubyType {
+  implicit val rubyTypeRw: ReadWriter[RubyType] = readwriter[ujson.Value].bimap[RubyType](
+    x =>
+      ujson.Obj(
+        "name" -> x.name,
+        "methods" -> x.methods.map { method =>
+          ujson.Obj("name" -> method.name)
+        },
+        "fields" -> x.fields.map { field => write[RubyField](field) }
+      ),
+    json =>
+      RubyType(
+        name = json("name").str,
+        methods = json.obj.get("methods") match {
+          case Some(jsonMethods) =>
+            val methodsMap = read[collection.mutable.Map[String, RubyMethod]](jsonMethods)
+            methodsMap.map { case (name, func) =>
+              val splitName        = name.split("\\.")
+              val baseTypeFullName = splitName.dropRight(1).mkString(".")
+
+              func.copy(name = name, baseTypeFullName = Option(baseTypeFullName))
+            }.toList
+          case None => Nil
+        },
+        fields = json.obj.get("fields").map(read[List[RubyField]](_)).getOrElse(Nil)
+      )
+  )
 }
