@@ -34,7 +34,13 @@ case class RubyMethod(
 object RubyMethod {
   implicit val rubyMethodRwJson: ReadWriter[RubyMethod] = readwriter[ujson.Value].bimap[RubyMethod](
     x => ujson.Obj("name" -> x.name),
-    json => RubyMethod(json("name").str, List.empty, XDefines.Any, Option.empty)
+    json =>
+      RubyMethod(
+        name = json("name").str,
+        parameterTypes = List.empty,
+        returnType = XDefines.Any,
+        baseTypeFullName = Option(json("name").str.split("\\.").dropRight(1).mkString("."))
+      )
   )
 }
 
