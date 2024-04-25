@@ -13,6 +13,8 @@ import scala.util.Using
 import scala.jdk.CollectionConverters.*
 import upickle.default.*
 
+import java.nio.charset.StandardCharsets
+
 class RubyProgramSummary(
   initialNamespaceMap: Map[String, Set[RubyType]] = Map.empty,
   initialPathMap: Map[String, Set[RubyType]] = Map.empty
@@ -61,19 +63,17 @@ object RubyProgramSummary {
             .filter(_.endsWith(".zip"))
       }
     if (resourcePaths.isEmpty) {
-      logger.warn("No JSON files found.")
+      logger.warn("No ZIP files found.")
       InputStream.nullInputStream()
     } else {
-      resourcePaths.foreach{ file =>
-        val fisshy = classLoader.getResourceAsStream(file)
-        val zis = new ZipInputStream(fisshy)
-        LazyList.continually(zis.getNextEntry) .takeWhile(_ != null).foreach{ file2 =>
-          val fout = new FileOutputStream(file2.getName)
-          val buffer = new Array[Byte](1024)
-          LazyList.continually(zis.read(buffer)).takeWhile(_ != -1).foreach(fout.write(buffer, 0, _))
+      resourcePaths.foreach{ path =>
+        val fis = classLoader.getResourceAsStream(path)
+        val zis = new ZipInputStream(fis)
+
+        LazyList.continually(zis.getNextEntry).takeWhile(_ != null).foreach{ file =>
+          val method = upickle.default.readBinary[collection.mutable.Map[String, List[RubyType]]](zis.readAllBytes())
         }
       }
-      logger.warn("WE FOUND EM")
     }
   }
 }
@@ -129,12 +129,13 @@ object RubyType {
         name = json("name").str,
         methods = json.obj.get("methods") match {
           case Some(jsonMethods) =>
-            val methodsMap = read[collection.mutable.Map[String, RubyMethod]](jsonMethods)
-            methodsMap.map { case (name, func) =>
-              val splitName        = name.split("\\.")
+            val methodsList = read[List[RubyMethod]](jsonMethods)
+
+            methodsList.map { func =>
+              val splitName        = func.name.split("\\.")
               val baseTypeFullName = splitName.dropRight(1).mkString(".")
 
-              func.copy(name = name, baseTypeFullName = Option(baseTypeFullName))
+              func.copy(name = func.name, baseTypeFullName = Option(baseTypeFullName))
             }.toList
           case None => Nil
         },
