@@ -1,4 +1,3 @@
-import better.files
 import com.typesafe.config.{Config, ConfigFactory}
 
 name := "rubysrc2cpg"
@@ -33,7 +32,7 @@ joernTypeStubsDlUrl := s"https://github.com/joernio/joern-type-stubs/releases/do
 
 lazy val joernTypeStubsDlTask = taskKey[Unit]("Download joern-type-stubs")
 joernTypeStubsDlTask := {
-  val joernTypeStubsDir = baseDirectory.value / "src" / "main" / "resources"
+  val joernTypeStubsDir = (Compile / resourceDirectory).value / "builtin_types"
   val fileName = "rubysrc_builtin_types.zip"
   val shaFileName = s"${fileName}.sha512"
 
@@ -41,6 +40,16 @@ joernTypeStubsDlTask := {
 
   DownloadHelper.ensureIsAvailable(s"${joernTypeStubsDlUrl.value}$fileName", joernTypeStubsDir / fileName)
   DownloadHelper.ensureIsAvailable(s"${joernTypeStubsDlUrl.value}$shaFileName", joernTypeStubsDir / shaFileName)
+
+  val typeStubsFile = better.files.File(joernTypeStubsDir.getAbsolutePath) / fileName
+  val checksumFile = better.files.File(joernTypeStubsDir.getAbsolutePath)  / shaFileName
+
+  val distDir = (Universal / stagingDirectory).value / "builtin_types"
+  distDir.mkdirs()
+  IO.copyDirectory(joernTypeStubsDir, distDir)
 }
 
 Compile / compile := ((Compile / compile) dependsOn joernTypeStubsDlTask).value
+
+Universal / packageName := name.value
+Universal / topLevelDirectory := None
