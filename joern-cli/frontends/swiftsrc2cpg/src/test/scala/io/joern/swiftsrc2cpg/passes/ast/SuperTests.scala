@@ -4,11 +4,13 @@ package io.joern.swiftsrc2cpg.passes.ast
 
 import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
 
+import io.shiftleft.semanticcpg.language._
+
 class SuperTests extends AstSwiftSrc2CpgSuite {
 
   "SuperTests" should {
 
-    "testSuper2a" ignore {
+    "testSuper2a" in {
       val cpg = code("""
         |class D : B {
         |  override init() {
@@ -17,20 +19,25 @@ class SuperTests extends AstSwiftSrc2CpgSuite {
         |  }
         |}
         |""".stripMargin)
-      ???
+      cpg.typeDecl.nameExact("D").method.isConstructor.block.astChildren.isCall.code.sorted.l shouldBe List(
+        "super.init()",
+        "super.init(42)"
+      )
     }
 
-    "testSuper2c" ignore {
+    "testSuper2c" in {
       val cpg = code("""
         |class D : B {
         |  convenience init(y:Int) {
         |    let _: () -> D = self.init
         |  }
         |}""".stripMargin)
-      ???
+      cpg.typeDecl.nameExact("D").method.isConstructor.block.astChildren.isCall.code.sorted.l shouldBe List(
+        "let wildcard_0: () -> D = self.init"
+      )
     }
 
-    "testSuper2d" ignore {
+    "testSuper2d" in {
       val cpg = code("""
         |class D : B {
         |  init(z: Int) {
@@ -38,7 +45,9 @@ class SuperTests extends AstSwiftSrc2CpgSuite {
         |      .init(x: z)
         |  }
         |}""".stripMargin)
-      ???
+      cpg.typeDecl.nameExact("D").method.isConstructor.block.astChildren.isCall.code.sorted.l shouldBe List(
+        "super\n      .init(x: z)"
+      )
     }
 
   }
