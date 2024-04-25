@@ -15,6 +15,12 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '19'
+      - name: Install sbt
+        if: matrix.os == 'macos-latest'
+        run: brew install sbt
+      - name: Install php
+        if: matrix.os == 'macos-latest'
+        run: brew install php
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:

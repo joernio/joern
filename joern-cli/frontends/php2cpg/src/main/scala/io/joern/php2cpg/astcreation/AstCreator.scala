@@ -17,6 +17,8 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
+import java.nio.charset.StandardCharsets
+
 class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String], disableFileContent: Boolean)(implicit
   withSchemaValidation: ValidationMode
 ) extends AstCreatorBase(filename)
@@ -1727,7 +1729,11 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
 
   override protected def offset(phpNode: PhpNode): Option[(Int, Int)] = {
     Option.when(!disableFileContent) {
-      (phpNode.attributes.startFilePos, phpNode.attributes.endFilePos)
+      val startPos =
+        new String(fileContent.get.getBytes.slice(0, phpNode.attributes.startFilePos), StandardCharsets.UTF_8).length
+      val endPos =
+        new String(fileContent.get.getBytes.slice(0, phpNode.attributes.endFilePos), StandardCharsets.UTF_8).length
+      (startPos, endPos)
     }
   }
 }
