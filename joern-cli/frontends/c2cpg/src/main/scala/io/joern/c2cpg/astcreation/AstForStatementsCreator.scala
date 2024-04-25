@@ -133,8 +133,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   private def astForCatchHandler(catchHandler: ICPPASTCatchHandler, argIndex: Int): Ast = {
     val catchNode =
       controlStructureNode(catchHandler, ControlStructureTypes.CATCH, "catch").order(argIndex).argumentIndex(argIndex)
-    val declAst = astsForDeclaration(catchHandler.getDeclaration)
-    val bodyAst = astsForStatement(catchHandler.getCatchBody)
+    val declAst = nullSafeAst(catchHandler.getDeclaration)
+    val bodyAst = nullSafeAst(catchHandler.getCatchBody)
     Ast(catchNode).withChildren(declAst).withChildren(bodyAst)
   }
 
