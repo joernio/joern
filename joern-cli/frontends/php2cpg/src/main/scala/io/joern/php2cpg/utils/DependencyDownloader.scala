@@ -65,17 +65,32 @@ class DependencyDownloader(cpg: Cpg, config: Config) {
       case Failure(e) =>
         logger.error(s"Unable to handle package information `$vendor/$pack`, skipping...`", e)
         None
-      case Success(x) => x.packages.flatMap(_._2).collectFirst { case x if dependencyRange.valid(x.version) => x }
+      case Success(x) =>
+        x.packages.flatMap(_._2).find { x =>
+          Try(dependencyRange.valid(x.version)) match {
+            case Failure(exception) =>
+              logger.error(s"Unable to determine if $x is valid for given range $dependencyRange", exception)
+              false
+            case Success(value) => value
+          }
+        }
     }
 
-    dependencyName.split("/").toList match {
-      case vendor :: packName :: Nil =>
-        getCompatiblePackage(vendor, packName).foreach { pack =>
-          downloadPackage(targetDir, dependency, pack)
-          unzipDependency(targetDir, pack, vendor)
-        }
-      case xs =>
-        logger.warn(s"Ignoring package `${xs.mkString("\\")}` as vendor and package name cannot be distinguished")
+    val (vendor, packName) = dependencyName.split("/").toList match {
+      case vendor :: packName :: xs => (vendor, packName)
+      case packName :: Nil          => (packName, packName)
+      case _                        => (dependencyName, dependencyName)
+    }
+
+    Try {
+      getCompatiblePackage(vendor, packName).foreach { pack =>
+        downloadPackage(targetDir, dependency, pack)
+          .foreach(_ => unzipDependency(targetDir, pack, vendor))
+      }
+    } match {
+      case Failure(exception) =>
+        logger.error("Exception encountered while downloading and unzipping dependency.", exception)
+      case Success(_) => logger.info(s"Successfully downloaded $vendor/$packName")
     }
   }
 
@@ -87,9 +102,9 @@ class DependencyDownloader(cpg: Cpg, config: Config) {
     * @param pack
     *   the package info.
     * @return
-    *   the package version.
+    *   success if package was successfully downloaded, a failure if otherwise.
     */
-  private def downloadPackage(targetDir: File, dependency: Dependency, pack: Package): Unit = {
+  private def downloadPackage(targetDir: File, dependency: Dependency, pack: Package): Try[Unit] = Try {
     var connection: Option[HttpURLConnection] = None
     val url                                   = pack.dist.url
     try {
@@ -115,17 +130,21 @@ class DependencyDownloader(cpg: Cpg, config: Config) {
                 s"Exception occurred while downloading $fileName (${dependency.name}:${dependency.version})",
                 exception
               )
+              throw exception
             case Success(_) =>
               logger.info(s"Successfully downloaded dependency ${dependency.name}:${dependency.version}")
           }
         case Some(conn: HttpURLConnection) =>
           logger.error(s"Connection to $url responded with non-200 code ${conn.getResponseCode}")
+          throw new RuntimeException()
         case _ =>
           logger.error(s"Unknown URL connection made, aborting")
+          throw new RuntimeException()
       }
     } catch {
       case exception: Throwable =>
         logger.error(s"Unable to download dependency ${dependency.name}:${dependency.version}", exception)
+        throw exception
     } finally {
       connection.foreach(_.disconnect())
     }
@@ -152,7 +171,7 @@ class DependencyDownloader(cpg: Cpg, config: Config) {
       fullPathPrefix.delete(swallowIOExceptions = true)
     }
 
-    targetDir.list.foreach { pkg =>
+    targetDir.list.filterNot(_.isDirectory).foreach { pkg =>
       pkg.unzipTo(targetDir, zipFilter)
       pkg.delete(swallowIOExceptions = true)
       // This is usually unpacked to some dir and not directly
@@ -187,7 +206,7 @@ implicit val urlRw: ReadWriter[URL] = readwriter[ujson.Value]
   .bimap[URL](
     x => ujson.Str(x.toString),
     {
-      case json @ (j: ujson.Str) => URL(json.str)
+      case json @ (j: ujson.Str) => URI(json.str).toURL
       case x                     => throw JsonException(s"Unexpected value type for URL strings: ${x.getClass}")
     }
   )
@@ -196,7 +215,7 @@ implicit val semverRw: ReadWriter[SemVer] = readwriter[ujson.Value]
   .bimap[SemVer](
     x => ujson.Str(x.toString),
     {
-      case json @ (j: ujson.Str) => SemVer(json.str)
+      case json @ (j: ujson.Str) => SemVer(json.str.replaceAll("^[vV]", "")) // get rid of leading `v` if any
       case x                     => throw JsonException(s"Unexpected value type for URL strings: ${x.getClass}")
     }
   )

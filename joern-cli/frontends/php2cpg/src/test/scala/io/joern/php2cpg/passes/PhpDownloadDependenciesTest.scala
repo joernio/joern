@@ -7,14 +7,15 @@ import io.shiftleft.semanticcpg.language.*
 
 class PhpDownloadDependenciesTest extends PhpCode2CpgFixture() {
 
-  "a PHP project with downloading of dependencies enabled" should {
+  "a PHP project downloading the AWS SDK" should {
 
     val cpg = code(
       """
         |{
         |    "require": {
         |        "aws/aws-sdk-php": "3.304.4",
-        |        "php": ">=7.4.3"
+        |        "doctrine/orm": "v2.7.3",
+        |        "ext-json": "*"
         |    }
         |}
         |""".stripMargin,
