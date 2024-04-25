@@ -44,6 +44,21 @@ joernTypeStubsDlTask := {
   val typeStubsFile = better.files.File(joernTypeStubsDir.getAbsolutePath) / fileName
   val checksumFile = better.files.File(joernTypeStubsDir.getAbsolutePath)  / shaFileName
 
+  val typestubsSha = typeStubsFile.sha512
+
+  // Checksum file must contain exactly 1 line, if more or less we automatically fail.
+  if (checksumFile.lineIterator.size != 1) {
+    throw new IllegalStateException("Checksum File should only have 1 line")
+  }
+
+  // Checksum from terminal adds the filename to the line, so we split on whitespace to get the checksum
+  // separate from the filename
+  if (checksumFile.lineIterator.next().split("\\s+")(0).toUpperCase != typestubsSha) {
+    throw new Exception("Checksums do not match for type-stubs!")
+  }
+
+  checksumFile.delete()
+
   val distDir = (Universal / stagingDirectory).value / "builtin_types"
   distDir.mkdirs()
   IO.copyDirectory(joernTypeStubsDir, distDir)

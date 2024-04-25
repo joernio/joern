@@ -4,12 +4,13 @@ import io.joern.x2cpg.Defines as XDefines
 import io.joern.x2cpg.datastructures.{FieldLike, MethodLike, ProgramSummary, TypeLike}
 import org.slf4j.LoggerFactory
 
-import java.io.InputStream
+import java.io.{FileInputStream, FileOutputStream, InputStream}
 import scala.annotation.targetName
 import scala.io.Source
-
 import java.net.JarURLConnection
+import java.util.zip.ZipInputStream
 import scala.util.Using
+import scala.jdk.CollectionConverters.*
 
 class RubyProgramSummary(
   initialNamespaceMap: Map[String, Set[RubyType]] = Map.empty,
@@ -35,10 +36,6 @@ object RubyProgramSummary {
     val classLoader = getClass.getClassLoader
     val builtinDirectory = "builtin_types"
 
-    val foile = Source.fromFile("src/main/resources/builtin_types")
-    println(foile)
-
-
     val resourcePaths: List[String] =
       Option(getClass.getClassLoader.getResource(builtinDirectory)) match {
         case Some(url) if url.getProtocol == "jar" =>
@@ -49,28 +46,32 @@ object RubyProgramSummary {
               .map(_.getName)
               .filter(_.startsWith(builtinDirectory))
               .filter(!_.equals(builtinDirectory))
-              .filter(_.endsWith(".json"))
+              .filter(_.endsWith(".zip"))
           }
         case _ =>
           Source
             .fromResource(builtinDirectory)
             .getLines()
             .toList
-            .flatMap(u => {
+            .map(u => {
               val basePath = s"$builtinDirectory/$u"
-              Source
-                .fromResource(basePath)
-                .getLines()
-                .toList
-                .map(p => {
-                  s"$basePath/$p"
-                })
+              basePath
             })
+            .filter(_.endsWith(".zip"))
       }
     if (resourcePaths.isEmpty) {
       logger.warn("No JSON files found.")
       InputStream.nullInputStream()
     } else {
+      resourcePaths.foreach{ file =>
+        val fisshy = classLoader.getResourceAsStream(file)
+        val zis = new ZipInputStream(fisshy)
+        LazyList.continually(zis.getNextEntry) .takeWhile(_ != null).foreach{ file2 =>
+          val fout = new FileOutputStream(file2.getName)
+          val buffer = new Array[Byte](1024)
+          LazyList.continually(zis.read(buffer)).takeWhile(_ != -1).foreach(fout.write(buffer, 0, _))
+        }
+      }
       logger.warn("WE FOUND EM")
     }
   }
