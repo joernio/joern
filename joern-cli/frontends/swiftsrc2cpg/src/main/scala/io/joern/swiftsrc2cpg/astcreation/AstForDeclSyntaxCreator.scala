@@ -645,6 +645,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     }
     registerType(returnType)
     val methodFullNameAndSignature = s"$methodFullName:$signature"
+    functionNodeToNameAndFullName(node) = (methodName, methodFullNameAndSignature)
 
     val methodRefNode_ = if (!shouldCreateFunctionReference) {
       None
