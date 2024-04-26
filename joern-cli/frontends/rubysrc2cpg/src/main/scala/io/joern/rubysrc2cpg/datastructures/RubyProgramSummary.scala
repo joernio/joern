@@ -39,16 +39,16 @@ object RubyProgramSummary {
   private val logger = LoggerFactory.getLogger(getClass)
 
   def BuiltinTypes: NamespaceToTypeMap = {
-    mpkZipToinitialMapping(readme) match
+    mpkZipToInitialMapping(mergeBuiltinMpkZip) match
       case Failure(exception) => logger.warn("Unable to parse builtin types", exception); Map.empty
       case Success(mapping)   => mapping
   }
 
-  private def mpkZipToinitialMapping(inputStream: InputStream): Try[NamespaceToTypeMap] = {
+  private def mpkZipToInitialMapping(inputStream: InputStream): Try[NamespaceToTypeMap] = {
     Try(readBinary[NamespaceToTypeMap](inputStream.readAllBytes()))
   }
 
-  def readme: InputStream = {
+  def mergeBuiltinMpkZip: InputStream = {
     val classLoader      = getClass.getClassLoader
     val builtinDirectory = "builtin_types"
 

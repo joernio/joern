@@ -62,8 +62,7 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
           case Failure(exception) => logger.warn(s"Unable to pre-parse Ruby file, skipping - ", exception); None
           case Success(summary)   => Option(summary)
         }
-        .reduceOption((a, b) => a ++ b)
-        .getOrElse(RubyProgramSummary())
+        .foldLeft(RubyProgramSummary(RubyProgramSummary.BuiltinTypes))(_ ++ _)
 
       val programSummary = if (config.downloadDependencies) {
         DependencyDownloader(cpg, internalProgramSummary).download()
