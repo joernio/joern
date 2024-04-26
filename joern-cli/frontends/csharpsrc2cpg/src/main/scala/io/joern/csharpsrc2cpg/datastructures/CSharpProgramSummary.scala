@@ -10,7 +10,6 @@ import java.io.{ByteArrayInputStream, InputStream}
 import scala.annotation.targetName
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
-import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
 
 type NamespaceToTypeMap = Map[String, Set[CSharpType]]

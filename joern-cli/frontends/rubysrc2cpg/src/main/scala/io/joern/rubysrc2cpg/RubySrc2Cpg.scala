@@ -65,8 +65,6 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
         .reduceOption((a, b) => a ++ b)
         .getOrElse(RubyProgramSummary())
 
-      RubyProgramSummary.readme()
-
       val programSummary = if (config.downloadDependencies) {
         DependencyDownloader(cpg, internalProgramSummary).download()
       } else {

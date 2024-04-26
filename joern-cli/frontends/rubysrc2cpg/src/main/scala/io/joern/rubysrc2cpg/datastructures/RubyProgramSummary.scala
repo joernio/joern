@@ -3,21 +3,24 @@ package io.joern.rubysrc2cpg.datastructures
 import io.joern.x2cpg.Defines as XDefines
 import io.joern.x2cpg.datastructures.{FieldLike, MethodLike, ProgramSummary, TypeLike}
 import org.slf4j.LoggerFactory
+import upickle.core.LinkedHashMap
 
-import java.io.{FileInputStream, FileOutputStream, InputStream}
+import java.io.{ByteArrayInputStream, InputStream}
 import scala.annotation.targetName
 import scala.io.Source
 import java.net.JarURLConnection
 import java.util.zip.ZipInputStream
-import scala.util.Using
+import scala.util.{Failure, Success, Try, Using}
 import scala.jdk.CollectionConverters.*
 import upickle.default.*
 
-import java.nio.charset.StandardCharsets
+import scala.collection.mutable.ListBuffer
+
+type NamespaceToTypeMap = Map[String, Set[RubyType]]
 
 class RubyProgramSummary(
-  initialNamespaceMap: Map[String, Set[RubyType]] = Map.empty,
-  initialPathMap: Map[String, Set[RubyType]] = Map.empty
+  initialNamespaceMap: NamespaceToTypeMap = Map.empty,
+  initialPathMap: NamespaceToTypeMap = Map.empty
 ) extends ProgramSummary[RubyType] {
 
   override val namespaceToType: Map[String, Set[RubyType]] = initialNamespaceMap
@@ -35,8 +38,18 @@ class RubyProgramSummary(
 object RubyProgramSummary {
   private val logger = LoggerFactory.getLogger(getClass)
 
-  def readme(): Unit = {
-    val classLoader = getClass.getClassLoader
+  def BuiltinTypes: NamespaceToTypeMap = {
+    mpkZipToinitialMapping(readme) match
+      case Failure(exception) => logger.warn("Unable to parse builtin types", exception); Map.empty
+      case Success(mapping)   => mapping
+  }
+
+  private def mpkZipToinitialMapping(inputStream: InputStream): Try[NamespaceToTypeMap] = {
+    Try(readBinary[NamespaceToTypeMap](inputStream.readAllBytes()))
+  }
+
+  def readme: InputStream = {
+    val classLoader      = getClass.getClassLoader
     val builtinDirectory = "builtin_types"
 
     val resourcePaths: List[String] =
@@ -44,7 +57,9 @@ object RubyProgramSummary {
         case Some(url) if url.getProtocol == "jar" =>
           val connection = url.openConnection.asInstanceOf[JarURLConnection]
           Using.resource(connection.getJarFile) { jarFile =>
-            jarFile.entries().asScala
+            jarFile
+              .entries()
+              .asScala
               .toList
               .map(_.getName)
               .filter(_.startsWith(builtinDirectory))
@@ -66,18 +81,35 @@ object RubyProgramSummary {
       logger.warn("No ZIP files found.")
       InputStream.nullInputStream()
     } else {
-      resourcePaths.foreach{ path =>
+      val mergedMpksObj = ListBuffer[collection.mutable.Map[String, Set[RubyType]]]()
+      resourcePaths.foreach { path =>
         val fis = classLoader.getResourceAsStream(path)
         val zis = new ZipInputStream(fis)
 
-        LazyList.continually(zis.getNextEntry).takeWhile(_ != null).foreach{ file =>
-          val method = upickle.default.readBinary[collection.mutable.Map[String, List[RubyType]]](zis.readAllBytes())
+        LazyList.continually(zis.getNextEntry).takeWhile(_ != null).foreach { file =>
+          val mpkObj = upickle.default.readBinary[collection.mutable.Map[String, Set[RubyType]]](zis.readAllBytes())
+          mergedMpksObj.addOne(mpkObj)
         }
       }
+
+      val mergedMpks = mergedMpksObj
+        .reduceOption((prev, curr) => {
+          curr.keys.foreach(key => {
+            prev.updateWith(key) {
+              case Some(x) =>
+                Option(x ++ curr(key))
+              case None =>
+                Option(curr(key))
+            }
+          })
+          prev
+        })
+        .getOrElse(collection.mutable.Map[String, Set[RubyType]]())
+
+      new ByteArrayInputStream(upickle.default.writeBinary(mergedMpks))
     }
   }
 }
-
 
 case class RubyMethod(
   name: String,
@@ -136,7 +168,7 @@ object RubyType {
               val baseTypeFullName = splitName.dropRight(1).mkString(".")
 
               func.copy(name = func.name, baseTypeFullName = Option(baseTypeFullName))
-            }.toList
+            }
           case None => Nil
         },
         fields = json.obj.get("fields").map(read[List[RubyField]](_)).getOrElse(Nil)
