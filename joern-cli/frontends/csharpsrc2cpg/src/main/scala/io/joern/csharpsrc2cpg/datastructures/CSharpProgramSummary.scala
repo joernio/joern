@@ -70,7 +70,9 @@ object CSharpProgramSummary {
       case Some(url) if url.getProtocol == "jar" =>
         val connection = url.openConnection.asInstanceOf[JarURLConnection]
         Using.resource(connection.getJarFile) { jarFile =>
-          jarFile.entries().asScala
+          jarFile
+            .entries()
+            .asScala
             .toList
             .map(_.getName)
             .filter(_.startsWith(builtinDirectory))
