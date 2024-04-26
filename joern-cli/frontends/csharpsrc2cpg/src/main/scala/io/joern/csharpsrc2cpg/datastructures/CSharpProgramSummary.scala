@@ -12,6 +12,8 @@ import scala.collection.mutable.ListBuffer
 import scala.io.Source
 import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
+import java.net.JarURLConnection
+import scala.util.Using
 
 type NamespaceToTypeMap = Map[String, Set[CSharpType]]
 
@@ -64,22 +66,35 @@ object CSharpProgramSummary {
       Doing this because java actually cannot read directories from the classPath.
       We're assuming there's no further nesting in the builtin_types directory structure.
      */
-    val resourcePaths =
-      Source
-        .fromResource(builtinDirectory)
-        .getLines()
-        .toList
-        .flatMap(u => {
-          val basePath = s"$builtinDirectory/$u"
-          Source
-            .fromResource(basePath)
-            .getLines()
+    val resourcePaths: List[String] = Option(getClass.getClassLoader.getResource(builtinDirectory)) match {
+      case Some(url) if url.getProtocol == "jar" =>
+        val connection = url.openConnection.asInstanceOf[JarURLConnection]
+        Using.resource(connection.getJarFile) { jarFile =>
+          jarFile
+            .entries()
+            .asScala
             .toList
-            .map(p => {
-              s"$basePath/$p"
-            })
-        })
-
+            .map(_.getName)
+            .filter(_.startsWith(builtinDirectory))
+            .filter(!_.equals(builtinDirectory))
+            .filter(_.endsWith(".json"))
+        }
+      case _ =>
+        Source
+          .fromResource(builtinDirectory)
+          .getLines()
+          .toList
+          .flatMap(u => {
+            val basePath = s"$builtinDirectory/$u"
+            Source
+              .fromResource(basePath)
+              .getLines()
+              .toList
+              .map(p => {
+                s"$basePath/$p"
+              })
+          })
+    }
     if (resourcePaths.isEmpty) {
       logger.warn("No JSON files found.")
       InputStream.nullInputStream()
