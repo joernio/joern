@@ -1263,6 +1263,31 @@ class AstCreationPassTests extends AstC2CpgSuite {
       }
     }
 
+    "be correct for try with multiple catches and broken catch clause" in {
+      val cpg: Cpg = code(
+        """
+          |int main() {
+          |  try {}
+          |  catch (int a) {}
+          |  catch (...) {}
+          |}
+          |""".stripMargin,
+        "file.cpp"
+      )
+      inside(cpg.controlStructure.isTry.l) { case List(t) =>
+        val List(tryBlock) = t.astChildren.isBlock.l
+        tryBlock.order shouldBe 1
+        tryBlock.astChildren shouldBe empty
+        val List(catchA, catchB) = t.astChildren.isControlStructure.isCatch.l
+        catchA.order shouldBe 2
+        catchA.ast.isBlock.astChildren shouldBe empty
+        catchA.ast.isLocal.name.l shouldBe List("a")
+        catchB.order shouldBe 3
+        catchB.ast.isBlock.astChildren shouldBe empty
+        catchB.ast.isLocal shouldBe empty
+      }
+    }
+
     "be correct for constructor initializer" in {
       val cpg = code(
         """

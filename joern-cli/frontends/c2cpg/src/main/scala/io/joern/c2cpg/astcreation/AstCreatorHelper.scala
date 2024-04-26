@@ -246,6 +246,9 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def nullSafeAst(node: IASTExpression): Ast =
     Option(node).map(astForNode).getOrElse(Ast())
 
+  protected def nullSafeAst(node: IASTDeclaration): Seq[Ast] =
+    Option(node).map(astsForDeclaration).getOrElse(Seq.empty)
+
   protected def nullSafeAst(node: IASTStatement, argIndex: Int = -1): Seq[Ast] = {
     Option(node).map(astsForStatement(_, argIndex)).getOrElse(Seq.empty)
   }
