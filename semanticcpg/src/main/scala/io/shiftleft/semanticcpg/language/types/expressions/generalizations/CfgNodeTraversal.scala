@@ -86,16 +86,4 @@ class CfgNodeTraversal[A <: CfgNode](val traversal: Iterator[A]) extends AnyVal 
   def address: Iterator[Option[String]] =
     traversal.map(_.address)
 
-  @Doc(info = "Filters in paths that pass though the given traversal")
-  def passes(included: Iterator[CfgNode]): Iterator[CfgNode] = {
-    val in = included.toSet
-    traversal.flatMap(_.passes(in))
-  }
-
-  @Doc(info = "Filters out paths that pass though the given traversal")
-  def passesNot(excluded: Iterator[CfgNode]): Iterator[CfgNode] = {
-    val ex = excluded.toSet
-    traversal.flatMap(_.passesNot(ex))
-  }
-
 }
