@@ -100,13 +100,21 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
         Option(path)
       }
 
-    relativizedPath.iterator.flatMap(summary.pathToType.getOrElse(_, Set())).foreach { ty =>
-      addImportedTypeOrModule(ty.name)
+    relativizedPath.iterator.flatMap(summary.pathToType.getOrElse(_, Set())) match {
+      case x if x.nonEmpty =>
+        x.foreach { ty => addImportedTypeOrModule(ty.name) }
+      case _ =>
+        addRequireGem(path)
     }
   }
 
   def addInclude(typeOrModule: String): Unit = {
     addImportedMember(typeOrModule)
+  }
+
+  def addRequireGem(gemName: String): Unit = {
+    val matchingTypes = summary.namespaceToType.values.flatten.filter(_.name.startsWith(gemName))
+    typesInScope.addAll(matchingTypes)
   }
 
   /** @return
@@ -210,7 +218,6 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
 
   override def tryResolveTypeReference(typeName: String): Option[RubyType] = {
     val normalizedTypeName = typeName.replaceAll("::", ".")
-    val flatMapTypes       = summary.namespaceToType.flatMap(_._2).filter(x => x.name.toLowerCase.contains("csv"))
     // TODO: While we find better ways to understand how the implicit class loading works,
     //  we can approximate that all types are in scope in the mean time.
     super.tryResolveTypeReference(normalizedTypeName) match {

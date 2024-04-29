@@ -157,23 +157,16 @@ class ImportTests extends RubyCode2CpgFixture with Inspectors {
         |CSV.parse("")
         |CSV::Table.new()
         |PP.pp(obj)
-        |PP
         |""".stripMargin)
 
-    cpg.call.l.foreach(x => println(x.code))
-    "resolve CSV parse call" in {
-      inside(cpg.call.l) {
-        case requireCsvCall :: requirePpCall :: csvCall :: ppCall :: ppCallTwo :: ppCallC :: Nil =>
-          println(ppCall.name)
-          println(ppCall.methodFullName)
-          println(ppCall.code)
-
-          println(ppCallTwo.methodFullName)
-
-          csvCall.methodFullName shouldBe "csv.CSV:parse"
-        case xs => fail(s"Expected two calls, got [${xs.code.mkString(",")}] instead")
+    "resolve calls to builtin functions" in {
+      inside(cpg.call.methodFullName("(pp|csv).*").l) {
+        case csvParseCall :: csvTableInitCall :: ppCall :: Nil =>
+          csvParseCall.methodFullName shouldBe "csv.CSV:parse"
+          ppCall.methodFullName shouldBe "pp.PP:pp"
+          csvTableInitCall.methodFullName shouldBe "csv.CSV.Table:<init>"
+        case xs => fail(s"Expected three calls, got [${xs.code.mkString(",")}] instead")
       }
     }
   }
-
 }

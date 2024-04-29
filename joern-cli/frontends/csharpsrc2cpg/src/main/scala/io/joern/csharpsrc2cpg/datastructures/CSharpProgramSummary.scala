@@ -14,6 +14,8 @@ import scala.util.{Failure, Success, Try}
 import java.net.JarURLConnection
 import scala.util.Using
 
+import scala.jdk.CollectionConverters.*
+
 type NamespaceToTypeMap = Map[String, Set[CSharpType]]
 
 /** A mapping of type stubs of known types within the scope of the analysis.
@@ -64,6 +66,8 @@ object CSharpProgramSummary {
     /*
       Doing this because java actually cannot read directories from the classPath.
       We're assuming there's no further nesting in the builtin_types directory structure.
+      TODO: Once MessagePack types and compression is implemented for CSharp, the `resourcePaths` building can
+       be moved into `ProgramSummary` since all subclasses of it will need to do this to find builtin types
      */
     val resourcePaths: List[String] = Option(getClass.getClassLoader.getResource(builtinDirectory)) match {
       case Some(url) if url.getProtocol == "jar" =>
