@@ -42,7 +42,7 @@ class CSharpSrc2Cpg extends X2CpgFrontend[Config] {
             case Failure(exception) => logger.warn(s"Unable to pre-parse C# file, skipping - ", exception); None
             case Success(summary)   => Option(summary)
           }
-          .foldLeft(CSharpProgramSummary(imports=CSharpProgramSummary.initialImports))(_ ++ _)
+          .foldLeft(CSharpProgramSummary(imports = CSharpProgramSummary.initialImports))(_ ++ _)
 
         val builtinSummary = CSharpProgramSummary(
           CSharpProgramSummary.BuiltinTypes.view.filterKeys(internalProgramSummary.imports(_)).toMap

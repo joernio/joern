@@ -201,17 +201,20 @@ class DependencyDownloader(
   private def summarizeDependencies(targetDir: File): CSharpProgramSummary = {
     val astGenRunner       = new DotNetAstGenRunner(config.withInputPath(targetDir.pathAsString))
     val astGenRunnerResult = astGenRunner.execute(targetDir)
-    val summaries = astGenRunnerResult.parsedFiles.map(x => File(x)).flatMap { f =>
-      Using.resource(f.newFileInputStream) { fis =>
-        CSharpProgramSummary.jsonToInitialMapping(fis) match {
-          case Failure(exception) =>
-            logger.error(s"Unable to parse JSON program summary at $f", exception)
-            None
-          case Success(parsedJson) =>
-            Option(parsedJson)
+    val summaries = astGenRunnerResult.parsedFiles
+      .map(x => File(x))
+      .flatMap { f =>
+        Using.resource(f.newFileInputStream) { fis =>
+          CSharpProgramSummary.jsonToInitialMapping(fis) match {
+            case Failure(exception) =>
+              logger.error(s"Unable to parse JSON program summary at $f", exception)
+              None
+            case Success(parsedJson) =>
+              Option(parsedJson)
+          }
         }
       }
-    }.map(CSharpProgramSummary(_))
+      .map(CSharpProgramSummary(_))
     CSharpProgramSummary(summaries)
   }
 

@@ -167,7 +167,7 @@ class CallTests extends CSharpCode2CpgFixture {
     "resolve the ToLower call even without `using System`" ignore {
       inside(cpg.call.name("ToLower").methodFullName.l) {
         case x :: Nil => x shouldBe "System.String.ToLower:System.String()"
-        case _ => fail("Unexpected call node structure")
+        case _        => fail("Unexpected call node structure")
       }
     }
   }
@@ -189,7 +189,7 @@ class CallTests extends CSharpCode2CpgFixture {
     "resolve the ToLower call even without `using System`" ignore {
       inside(cpg.call.name("ToLower").methodFullName.l) {
         case x :: Nil => x shouldBe "System.String.ToLower:System.String()"
-        case _ => fail("Unexpected call node structure")
+        case _        => fail("Unexpected call node structure")
       }
     }
   }

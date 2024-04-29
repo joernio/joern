@@ -15,7 +15,6 @@ import scala.util.{Failure, Success, Try}
 
 type NamespaceToTypeMap = Map[String, Set[CSharpType]]
 
-
 /** A mapping of type stubs of known types within the scope of the analysis.
   *
   * @param namespaceToType
@@ -23,9 +22,10 @@ type NamespaceToTypeMap = Map[String, Set[CSharpType]]
   * @see
   *   [[CSharpProgramSummary.jsonToInitialMapping]] for generating initial mappings.
   */
-case class CSharpProgramSummary(val namespaceToType: NamespaceToTypeMap, val imports: Set[String]) extends ProgramSummary[CSharpType] {
+case class CSharpProgramSummary(val namespaceToType: NamespaceToTypeMap, val imports: Set[String])
+    extends ProgramSummary[CSharpType] {
 
-  def findGlobalTypes: Set[CSharpType]             = namespaceToType.getOrElse(Constants.Global, Set.empty)
+  def findGlobalTypes: Set[CSharpType] = namespaceToType.getOrElse(Constants.Global, Set.empty)
 
   @targetName("add")
   def ++(other: CSharpProgramSummary): CSharpProgramSummary = {
@@ -38,12 +38,13 @@ object CSharpProgramSummary {
 
   // Although System is not included by default
   // the types and their methods are exposed through autoboxing of primitives
-  def initialImports: Set[String] = Set("", "System") 
+  def initialImports: Set[String] = Set("", "System")
 
-  def apply(namespaceToType: NamespaceToTypeMap = Map.empty, imports: Set[String] = Set.empty): CSharpProgramSummary = 
+  def apply(namespaceToType: NamespaceToTypeMap = Map.empty, imports: Set[String] = Set.empty): CSharpProgramSummary =
     new CSharpProgramSummary(namespaceToType, imports)
 
-  def apply(summaries: Iterable[CSharpProgramSummary]): CSharpProgramSummary = summaries.foldLeft(CSharpProgramSummary())(_++_)
+  def apply(summaries: Iterable[CSharpProgramSummary]): CSharpProgramSummary =
+    summaries.foldLeft(CSharpProgramSummary())(_ ++ _)
 
   private val logger = LoggerFactory.getLogger(getClass)
 
