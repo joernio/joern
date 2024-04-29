@@ -22,7 +22,7 @@ final case class Config(
   skipTypeInfPass: Boolean = false,
   dumpJavaparserAsts: Boolean = false,
   cacheJdkTypeSolver: Boolean = false,
-  keepTypeArguments: Boolean = true
+  keepTypeArguments: Boolean = false
 ) extends X2CpgConfig[Config]
     with TypeRecoveryParserConfig[Config] {
   def withInferenceJarPaths(paths: Set[String]): Config = {
