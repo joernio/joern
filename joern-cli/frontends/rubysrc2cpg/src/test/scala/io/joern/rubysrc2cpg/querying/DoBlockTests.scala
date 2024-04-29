@@ -97,7 +97,11 @@ class DoBlockTests extends RubyCode2CpgFixture {
 
     "specify the closure reference as an argument to the member call with block" in {
       inside(cpg.call("each").argument.l) {
-        case (_: Call) :: (lambdaRef: MethodRef) :: Nil =>
+        case (myArray: Identifier) :: (lambdaRef: MethodRef) :: Nil =>
+          myArray.argumentIndex shouldBe 0
+          myArray.name shouldBe "my_array"
+
+          lambdaRef.argumentIndex shouldBe 1
           lambdaRef.methodFullName shouldBe "Test0.rb:<global>::program:<lambda>0"
         case xs =>
           fail(s"Expected `each` call to have call and method ref arguments, instead got [${xs.code.mkString(", ")}]")
@@ -157,7 +161,11 @@ class DoBlockTests extends RubyCode2CpgFixture {
 
     "specify the closure reference as an argument to the member call with block" in {
       inside(cpg.call("each").argument.l) {
-        case (_: Call) :: (lambdaRef: MethodRef) :: Nil =>
+        case (hash: Identifier) :: (lambdaRef: MethodRef) :: Nil =>
+          hash.argumentIndex shouldBe 0
+          hash.name shouldBe "hash"
+
+          lambdaRef.argumentIndex shouldBe 1
           lambdaRef.methodFullName shouldBe "Test0.rb:<global>::program:<lambda>0"
         case xs =>
           fail(s"Expected `each` call to have call and method ref arguments, instead got [${xs.code.mkString(", ")}]")
@@ -258,7 +266,23 @@ class DoBlockTests extends RubyCode2CpgFixture {
         case xs => fail(s"Unexpected `foo` assignment children [${xs.code.mkString(",")}]")
       }
     }
+  }
 
+  "Hash parameter for Do-block" should {
+    val cpg = code("""
+        |  define_method(name) do |**args| # <--- Parser error on this line
+        |          setting_type.fetch(sendgrid_client: sendgrid_client, name: name, query_params: args)
+        |        end
+        |""".stripMargin)
+
+    "Create correct parameter for args" in {
+      inside(cpg.parameter.name("args").l) {
+        case argParam :: Nil =>
+          argParam.name shouldBe "args"
+          argParam.code shouldBe "**args"
+        case _ => fail("Expected parameter `**args` to exist")
+      }
+    }
   }
 
 }

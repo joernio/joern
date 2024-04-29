@@ -116,14 +116,11 @@ object TypeDeclTraversal {
   private val maxAliasExpansions = 100
 
   private def contentOnSingle(typeDecl: TypeDecl): Option[String] = {
-    val contentOption   = typeDecl.file.content.headOption
-    val offsetOption    = typeDecl.offset
-    val offsetEndOption = typeDecl.offsetEnd
-
-    if (contentOption.isDefined && offsetOption.isDefined && offsetEndOption.isDefined) {
-      contentOption.map(_.substring(offsetOption.get, offsetEndOption.get))
-    } else {
-      None
-    }
+    for {
+      content <- typeDecl.file.content.headOption
+      if content != File.PropertyDefaults.Content
+      offset    <- typeDecl.offset
+      offsetEnd <- typeDecl.offsetEnd
+    } yield content.slice(offset, offsetEnd)
   }
 }

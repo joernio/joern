@@ -2,8 +2,10 @@ package io.joern.x2cpg.datastructures
 
 import io.shiftleft.codepropertygraph.generated.nodes.DeclarationNew
 
+import scala.annotation.targetName
 import scala.collection.immutable.Map
 import scala.collection.mutable
+import scala.reflect.ClassTag
 
 /** A hierarchical data-structure that stores the result of types and their respective members. These types can be
   * sourced from pre-parsing the application, or pre-computed stubs of common libraries.
@@ -13,7 +15,7 @@ import scala.collection.mutable
   * @tparam T
   *   the type/class meta data class.
   */
-trait ProgramSummary[T <: TypeLike[_, _]] {
+trait ProgramSummary[T <: TypeLike[?, ?]] {
 
   /** A mapping between a namespace/directory and the containing types.
     */
@@ -42,13 +44,21 @@ object ProgramSummary {
 
   /** Combines two namespace-to-type maps.
     */
-  def combine[T <: TypeLike[_, _]](a: Map[String, Set[T]], b: Map[String, Set[T]]): Map[String, Set[T]] = {
+  def combine[T <: TypeLike[M, F], M <: MethodLike, F <: FieldLike](
+    a: Map[String, Set[T]],
+    b: Map[String, Set[T]]
+  ): Map[String, Set[T]] = {
     val accumulator = mutable.HashMap.from(a)
 
-    b.keySet.foreach(k =>
-      accumulator.updateWith(k) {
-        case Some(existing) => Option(a.getOrElse(k, Set.empty) ++ b.getOrElse(k, Set.empty) ++ existing)
-        case None           => Option(a.getOrElse(k, Set.empty) ++ b.getOrElse(k, Set.empty))
+    b.keySet.foreach(namespace =>
+      accumulator.updateWith(namespace) {
+        case Some(existing) =>
+          val types = (existing.toList ++ b(namespace).toList)
+            .groupBy(_.name)
+            .map { case (_, ts) => ts.reduce((a, b) => (a + b).asInstanceOf[T]) }
+            .toSet
+          Option(types)
+        case None => b.get(namespace)
       }
     )
     accumulator.toMap
@@ -66,7 +76,7 @@ object ProgramSummary {
   *   the type/class meta data class.
   */
 trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: ProgramSummary[T]) {
-  this: Scope[_, _, TypedScopeElement] =>
+  this: Scope[?, ?, TypedScopeElement] =>
 
   /** Tracks the types that are visible to this scope.
     */
@@ -89,10 +99,10 @@ trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: 
     *   the type meta-data if found.
     */
   def tryResolveTypeReference(typeName: String): Option[T] = {
-    // TODO: Handle partially qualified names
     typesInScope
       .collectFirst {
-        case typ if typ.name.split("[.]").lastOption == typeName.split("[.]").lastOption  => typ
+        // Handle partially qualified names
+        case typ if typ.name.split("[.]").endsWith(typeName.split("[.]"))                 => typ
         case typ if aliasedTypes.contains(typeName) && typ.name == aliasedTypes(typeName) => typ
       }
   }
@@ -108,15 +118,14 @@ trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: 
     * @return
     *   the method meta data if found.
     */
-  def tryResolveMethodInvocation(
-    callName: String,
-    argTypes: List[String],
-    typeFullName: Option[String] = None
+  def tryResolveMethodInvocation(callName: String, argTypes: List[String], typeFullName: Option[String] = None)(implicit
+    tag: ClassTag[M]
   ): Option[M] = typeFullName match {
     case None =>
+      // This function uses the `implicit tag` (IntelliJ incorrectly marks it as unused)
+      def matchingM: PartialFunction[MemberLike, M] = { case m: M if m.name == callName => m }
       // TODO: The typesInScope part is to imprecisely solve the unimplemented polymorphism limitation
-      (membersInScope ++ typesInScope.flatMap(_.methods))
-        .collectFirst { case m: MethodLike if m.name == callName => m.asInstanceOf[M] }
+      membersInScope.collectFirst(matchingM).orElse { typesInScope.flatMap(_.methods).collectFirst(matchingM) }
     case Some(tfn) =>
       val methodsWithEqualArgs = tryResolveTypeReference(tfn).flatMap { t =>
         Option(
@@ -298,6 +307,38 @@ trait TypeLike[M <: MethodLike, F <: FieldLike] {
     *   the fields/properties declared directly under the type declaration.
     */
   def fields: List[F]
+
+  /** Adds the contents of the two types and produces a new type.
+    * @param o
+    *   the other type-like.
+    * @return
+    *   a type-like that is the combination of the two, with precedence to colliding contents to this type (LHS).
+    */
+  @targetName("add")
+  def +(o: TypeLike[M, F]): TypeLike[M, F]
+
+  /** Helper method for creating the sum of two type-like's methods, while preferring this types' methods on collisions.
+    * @param o
+    *   the other type-like.
+    * @return
+    *   the combination of the two type-like's methods.
+    */
+  protected def mergeMethods(o: TypeLike[M, ?]): List[M] = {
+    val methodNames = methods.map(_.name).toSet
+    methods ++ o.methods.filterNot(m => methodNames.contains(m.name))
+  }
+
+  /** Helper method for creating the sum of two type-like's fields, while preferring this types' fields on collisions.
+    *
+    * @param o
+    *   the other type-like.
+    * @return
+    *   the combination of the two type-like's fields.
+    */
+  protected def mergeFields(o: TypeLike[?, F]): List[F] = {
+    val fieldNames = fields.map(_.name).toSet
+    fields ++ o.fields.filterNot(f => fieldNames.contains(f.name))
+  }
 
 }
 

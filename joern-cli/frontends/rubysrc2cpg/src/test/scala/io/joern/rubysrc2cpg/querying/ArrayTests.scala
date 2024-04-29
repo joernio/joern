@@ -96,4 +96,28 @@ class ArrayTests extends RubyCode2CpgFixture {
     y.code shouldBe "y"
     y.typeFullName shouldBe "__builtin.Symbol"
   }
+
+  "an implicit array constructor (Array::[]) should be lowered to an array initializer" in {
+    val cpg = code("""
+        |x = Array [1, 2, 3]
+        |""".stripMargin)
+
+    inside(cpg.call.nameExact("[]").l) {
+      case bracketCall :: Nil =>
+        bracketCall.name shouldBe "[]"
+        bracketCall.methodFullName shouldBe "__builtin.Array:[]"
+        bracketCall.typeFullName shouldBe "__builtin.Array"
+
+        inside(bracketCall.argument.l) {
+          case _ :: one :: two :: three :: Nil =>
+            one.code shouldBe "1"
+            two.code shouldBe "2"
+            three.code shouldBe "3"
+          case xs => fail(s"Expected 3 literals under the array initializer, instead got [${xs.code.mkString(", ")}]")
+        }
+      case xs => fail(s"Expected a single array initializer call ([]), instead got [${xs.code.mkString(", ")}]")
+    }
+
+  }
+
 }

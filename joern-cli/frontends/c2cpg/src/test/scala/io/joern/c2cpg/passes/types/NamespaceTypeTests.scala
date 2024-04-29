@@ -1,7 +1,7 @@
 package io.joern.c2cpg.passes.types
 
 import io.joern.c2cpg.parser.FileDefaults
-import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
+import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.codepropertygraph.generated.nodes.FieldIdentifier
@@ -9,7 +9,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
-class NamespaceTypeTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
+class NamespaceTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
 
   "Namespaces" should {
 
@@ -122,9 +122,9 @@ class NamespaceTypeTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_E
         |  A::i++; // ok, increments ::A::(unique)::i
         |  j++;    // ok, increments ::A::(unique)::j
         |}""".stripMargin)
-      inside(cpg.namespaceBlock.nameNot("<global>").l) { case List(unnamed1, a, unnamed2) =>
+      inside(cpg.namespaceBlock.nameNot("<global>").l) { case List(unnamed1, namespaceA, unnamed2) =>
         unnamed1.fullName shouldBe "anonymous_namespace_0"
-        a.fullName shouldBe "A"
+        namespaceA.fullName shouldBe "A"
         unnamed2.fullName shouldBe "A.anonymous_namespace_1"
       }
 
@@ -159,9 +159,9 @@ class NamespaceTypeTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_E
         |  X::f(); // calls ::f
         |  X::g(); // calls A::g
         |}""".stripMargin)
-      inside(cpg.namespaceBlock.nameNot("<global>").l) { case List(a, x) =>
-        a.fullName shouldBe "A"
-        x.fullName shouldBe "X"
+      inside(cpg.namespaceBlock.nameNot("<global>").l) { case List(namespaceA, namespaceX) =>
+        namespaceA.fullName shouldBe "A"
+        namespaceX.fullName shouldBe "X"
       }
 
       inside(cpg.method.internal.nameNot("<global>").fullName.l) { case List(f, g, h) =>
@@ -256,12 +256,12 @@ class NamespaceTypeTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_E
         c1.code shouldBe "qux = 42"
         c2.code shouldBe "x = fbz::qux"
         c3.code shouldBe "fbz::qux"
-        inside(c3.ast.l) { case List(call: Call, x: Identifier, a: FieldIdentifier) =>
+        inside(c3.ast.l) { case List(call: Call, x: Identifier, fieldId: FieldIdentifier) =>
           call.name shouldBe Operators.fieldAccess
           x.order shouldBe 1
           x.name shouldBe "fbz"
-          a.order shouldBe 2
-          a.code shouldBe "qux"
+          fieldId.order shouldBe 2
+          fieldId.code shouldBe "qux"
         }
       }
     }

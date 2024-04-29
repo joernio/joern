@@ -1,6 +1,6 @@
 package io.joern.c2cpg.passes.ast
 
-import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
+import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.joern.x2cpg.layers.Base
 import io.joern.x2cpg.layers.CallGraph
 import io.joern.x2cpg.layers.ControlFlow
@@ -8,7 +8,7 @@ import io.joern.x2cpg.layers.TypeRelations
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language._
 
-class MetaDataTests extends CCodeToCpgSuite {
+class MetaDataTests extends C2CpgSuite {
 
   private val cpg = code("")
 

@@ -131,8 +131,8 @@ trait AstCreatorHelper { this: AstCreator =>
       .toMap
   }
 
-  protected def resolveAliasToFullName(alias: String, typeOrMethodName: String): String = {
-    s"${aliasToNameSpaceMapping.getOrElse(alias, goGlobal.aliasToNameSpaceMapping.getOrDefault(alias, s"${XDefines.Unknown}.<$alias>"))}.$typeOrMethodName"
+  protected def resolveAliasToFullName(alias: String): String = {
+    s"${aliasToNameSpaceMapping.getOrElse(alias, goGlobal.aliasToNameSpaceMapping.getOrDefault(alias, s"${XDefines.Unknown}.<$alias>"))}"
   }
   protected def generateTypeFullName(
     typeName: Option[String] = None,
@@ -156,7 +156,7 @@ trait AstCreatorHelper { this: AstCreator =>
               Defines.primitiveTypeMap.getOrElse(typname, s"$fullyQualifiedPackage.$typname")
             }
           case Some(alias) =>
-            resolveAliasToFullName(alias, typname)
+            s"${resolveAliasToFullName(alias)}.$typname"
 
   }
   private def internalTypeFullName(

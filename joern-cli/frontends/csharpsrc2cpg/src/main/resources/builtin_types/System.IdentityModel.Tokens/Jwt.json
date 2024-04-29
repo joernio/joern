@@ -1,0 +1,1035 @@
+{
+  "Microsoft.CodeAnalysis": [
+    {
+      "name": "Microsoft.CodeAnalysis.EmbeddedAttribute",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System.Runtime.CompilerServices": [
+    {
+      "name": "System.Runtime.CompilerServices.RefSafetyRulesAttribute",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System.IdentityModel.Tokens.Jwt": [
+    {
+      "name": "System.IdentityModel.Tokens.Jwt.JsonClaimValueTypes",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.IdentityModel.Tokens.Jwt.JwtConstants",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.IdentityModel.Tokens.Jwt.JwtHeader",
+      "methods": [
+        {
+          "name": "get_Alg",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Cty",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Enc",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_EncryptingCredentials",
+          "returnType": "Microsoft.IdentityModel.Tokens.EncryptingCredentials",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_IV",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Kid",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_SigningCredentials",
+          "returnType": "Microsoft.IdentityModel.Tokens.SigningCredentials",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Typ",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_X5t",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_X5c",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Zip",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Base64UrlDeserialize",
+          "returnType": "System.IdentityModel.Tokens.Jwt.JwtHeader",
+          "parameterTypes": [
+            [
+              "base64UrlEncodedJsonString",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Base64UrlEncode",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "SerializeToJson",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.IdentityModel.Tokens.Jwt.JwtHeaderParameterNames",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.IdentityModel.Tokens.Jwt.JwtPayload",
+      "methods": [
+        {
+          "name": "get_Actort",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Acr",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Amr",
+          "returnType": "System.Collections.Generic.IList`1<System.String>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_AuthTime",
+          "returnType": "System.Nullable`1<System.Int32>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Aud",
+          "returnType": "System.Collections.Generic.IList`1<System.String>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Azp",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_CHash",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Exp",
+          "returnType": "System.Nullable`1<System.Int32>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Expiration",
+          "returnType": "System.Nullable`1<System.Int64>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Jti",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Iat",
+          "returnType": "System.Nullable`1<System.Int32>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Iss",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Nbf",
+          "returnType": "System.Nullable`1<System.Int32>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Nonce",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_NotBefore",
+          "returnType": "System.Nullable`1<System.Int64>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Sub",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ValidFrom",
+          "returnType": "System.DateTime",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ValidTo",
+          "returnType": "System.DateTime",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_IssuedAt",
+          "returnType": "System.DateTime",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Claims",
+          "returnType": "System.Collections.Generic.IEnumerable`1<System.Security.Claims.Claim>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "AddClaim",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "claim",
+              "System.Security.Claims.Claim"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AddClaims",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "claims",
+              "System.Collections.Generic.IEnumerable`1<System.Security.Claims.Claim>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "SerializeToJson",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Base64UrlDeserialize",
+          "returnType": "System.IdentityModel.Tokens.Jwt.JwtPayload",
+          "parameterTypes": [
+            [
+              "base64UrlEncodedJsonString",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Base64UrlEncode",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Deserialize",
+          "returnType": "System.IdentityModel.Tokens.Jwt.JwtPayload",
+          "parameterTypes": [
+            [
+              "jsonString",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.IdentityModel.Tokens.Jwt.JwtSecurityToken",
+      "methods": [
+        {
+          "name": "get_Actor",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Audiences",
+          "returnType": "System.Collections.Generic.IEnumerable`1<System.String>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Claims",
+          "returnType": "System.Collections.Generic.IEnumerable`1<System.Security.Claims.Claim>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_EncodedHeader",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_EncodedPayload",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Header",
+          "returnType": "System.IdentityModel.Tokens.Jwt.JwtHeader",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Id",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Issuer",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Payload",
+          "returnType": "System.IdentityModel.Tokens.Jwt.JwtPayload",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_InnerToken",
+          "returnType": "System.IdentityModel.Tokens.Jwt.JwtSecurityToken",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_RawAuthenticationTag",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_RawCiphertext",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_RawData",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_RawEncryptedKey",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_RawInitializationVector",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_RawHeader",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_RawPayload",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_RawSignature",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_SecurityKey",
+          "returnType": "Microsoft.IdentityModel.Tokens.SecurityKey",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_SignatureAlgorithm",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_SigningCredentials",
+          "returnType": "Microsoft.IdentityModel.Tokens.SigningCredentials",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_EncryptingCredentials",
+          "returnType": "Microsoft.IdentityModel.Tokens.EncryptingCredentials",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_SigningKey",
+          "returnType": "Microsoft.IdentityModel.Tokens.SecurityKey",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_SigningKey",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.IdentityModel.Tokens.SecurityKey"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Subject",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ValidFrom",
+          "returnType": "System.DateTime",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ValidTo",
+          "returnType": "System.DateTime",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_IssuedAt",
+          "returnType": "System.DateTime",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "ToString",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "UnsafeToString",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.IdentityModel.Tokens.Jwt.JwtSecurityTokenConverter",
+      "methods": [
+        {
+          "name": "Convert",
+          "returnType": "System.IdentityModel.Tokens.Jwt.JwtSecurityToken",
+          "parameterTypes": [
+            [
+              "token",
+              "Microsoft.IdentityModel.JsonWebTokens.JsonWebToken"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler",
+      "methods": [
+        {
+          "name": "get_MapInboundClaims",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_MapInboundClaims",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_InboundClaimTypeMap",
+          "returnType": "System.Collections.Generic.IDictionary`2<System.String,System.String>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_InboundClaimTypeMap",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Collections.Generic.IDictionary`2<System.String,System.String>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_OutboundClaimTypeMap",
+          "returnType": "System.Collections.Generic.IDictionary`2<System.String,System.String>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_OutboundClaimTypeMap",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Collections.Generic.IDictionary`2<System.String,System.String>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_OutboundAlgorithmMap",
+          "returnType": "System.Collections.Generic.IDictionary`2<System.String,System.String>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_InboundClaimFilter",
+          "returnType": "System.Collections.Generic.ISet`1<System.String>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_InboundClaimFilter",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Collections.Generic.ISet`1<System.String>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ShortClaimTypeProperty",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "set_ShortClaimTypeProperty",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "get_JsonClaimTypeProperty",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "set_JsonClaimTypeProperty",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "get_CanValidateToken",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_CanWriteToken",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_TokenType",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "CanReadToken",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "token",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateEncodedJwt",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "tokenDescriptor",
+              "Microsoft.IdentityModel.Tokens.SecurityTokenDescriptor"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateEncodedJwt",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "issuer",
+              "System.String"
+            ],
+            [
+              "audience",
+              "System.String"
+            ],
+            [
+              "subject",
+              "System.Security.Claims.ClaimsIdentity"
+            ],
+            [
+              "notBefore",
+              "System.Nullable`1<System.DateTime>"
+            ],
+            [
+              "expires",
+              "System.Nullable`1<System.DateTime>"
+            ],
+            [
+              "issuedAt",
+              "System.Nullable`1<System.DateTime>"
+            ],
+            [
+              "signingCredentials",
+              "Microsoft.IdentityModel.Tokens.SigningCredentials"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateEncodedJwt",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "issuer",
+              "System.String"
+            ],
+            [
+              "audience",
+              "System.String"
+            ],
+            [
+              "subject",
+              "System.Security.Claims.ClaimsIdentity"
+            ],
+            [
+              "notBefore",
+              "System.Nullable`1<System.DateTime>"
+            ],
+            [
+              "expires",
+              "System.Nullable`1<System.DateTime>"
+            ],
+            [
+              "issuedAt",
+              "System.Nullable`1<System.DateTime>"
+            ],
+            [
+              "signingCredentials",
+              "Microsoft.IdentityModel.Tokens.SigningCredentials"
+            ],
+            [
+              "encryptingCredentials",
+              "Microsoft.IdentityModel.Tokens.EncryptingCredentials"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateEncodedJwt",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "issuer",
+              "System.String"
+            ],
+            [
+              "audience",
+              "System.String"
+            ],
+            [
+              "subject",
+              "System.Security.Claims.ClaimsIdentity"
+            ],
+            [
+              "notBefore",
+              "System.Nullable`1<System.DateTime>"
+            ],
+            [
+              "expires",
+              "System.Nullable`1<System.DateTime>"
+            ],
+            [
+              "issuedAt",
+              "System.Nullable`1<System.DateTime>"
+            ],
+            [
+              "signingCredentials",
+              "Microsoft.IdentityModel.Tokens.SigningCredentials"
+            ],
+            [
+              "encryptingCredentials",
+              "Microsoft.IdentityModel.Tokens.EncryptingCredentials"
+            ],
+            [
+              "claimCollection",
+              "System.Collections.Generic.IDictionary`2<System.String,System.Object>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateJwtSecurityToken",
+          "returnType": "System.IdentityModel.Tokens.Jwt.JwtSecurityToken",
+          "parameterTypes": [
+            [
+              "tokenDescriptor",
+              "Microsoft.IdentityModel.Tokens.SecurityTokenDescriptor"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateJwtSecurityToken",
+          "returnType": "System.IdentityModel.Tokens.Jwt.JwtSecurityToken",
+          "parameterTypes": [
+            [
+              "issuer",
+              "System.String"
+            ],
+            [
+              "audience",
+              "System.String"
+            ],
+            [
+              "subject",
+              "System.Security.Claims.ClaimsIdentity"
+            ],
+            [
+              "notBefore",
+              "System.Nullable`1<System.DateTime>"
+            ],
+            [
+              "expires",
+              "System.Nullable`1<System.DateTime>"
+            ],
+            [
+              "issuedAt",
+              "System.Nullable`1<System.DateTime>"
+            ],
+            [
+              "signingCredentials",
+              "Microsoft.IdentityModel.Tokens.SigningCredentials"
+            ],
+            [
+              "encryptingCredentials",
+              "Microsoft.IdentityModel.Tokens.EncryptingCredentials"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateJwtSecurityToken",
+          "returnType": "System.IdentityModel.Tokens.Jwt.JwtSecurityToken",
+          "parameterTypes": [
+            [
+              "issuer",
+              "System.String"
+            ],
+            [
+              "audience",
+              "System.String"
+            ],
+            [
+              "subject",
+              "System.Security.Claims.ClaimsIdentity"
+            ],
+            [
+              "notBefore",
+              "System.Nullable`1<System.DateTime>"
+            ],
+            [
+              "expires",
+              "System.Nullable`1<System.DateTime>"
+            ],
+            [
+              "issuedAt",
+              "System.Nullable`1<System.DateTime>"
+            ],
+            [
+              "signingCredentials",
+              "Microsoft.IdentityModel.Tokens.SigningCredentials"
+            ],
+            [
+              "encryptingCredentials",
+              "Microsoft.IdentityModel.Tokens.EncryptingCredentials"
+            ],
+            [
+              "claimCollection",
+              "System.Collections.Generic.IDictionary`2<System.String,System.Object>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateJwtSecurityToken",
+          "returnType": "System.IdentityModel.Tokens.Jwt.JwtSecurityToken",
+          "parameterTypes": [
+            [
+              "issuer",
+              "System.String"
+            ],
+            [
+              "audience",
+              "System.String"
+            ],
+            [
+              "subject",
+              "System.Security.Claims.ClaimsIdentity"
+            ],
+            [
+              "notBefore",
+              "System.Nullable`1<System.DateTime>"
+            ],
+            [
+              "expires",
+              "System.Nullable`1<System.DateTime>"
+            ],
+            [
+              "issuedAt",
+              "System.Nullable`1<System.DateTime>"
+            ],
+            [
+              "signingCredentials",
+              "Microsoft.IdentityModel.Tokens.SigningCredentials"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateToken",
+          "returnType": "Microsoft.IdentityModel.Tokens.SecurityToken",
+          "parameterTypes": [
+            [
+              "tokenDescriptor",
+              "Microsoft.IdentityModel.Tokens.SecurityTokenDescriptor"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ReadJwtToken",
+          "returnType": "System.IdentityModel.Tokens.Jwt.JwtSecurityToken",
+          "parameterTypes": [
+            [
+              "token",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ReadToken",
+          "returnType": "Microsoft.IdentityModel.Tokens.SecurityToken",
+          "parameterTypes": [
+            [
+              "token",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ReadToken",
+          "returnType": "Microsoft.IdentityModel.Tokens.SecurityToken",
+          "parameterTypes": [
+            [
+              "reader",
+              "System.Xml.XmlReader"
+            ],
+            [
+              "validationParameters",
+              "Microsoft.IdentityModel.Tokens.TokenValidationParameters"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ValidateToken",
+          "returnType": "System.Security.Claims.ClaimsPrincipal",
+          "parameterTypes": [
+            [
+              "token",
+              "System.String"
+            ],
+            [
+              "validationParameters",
+              "Microsoft.IdentityModel.Tokens.TokenValidationParameters"
+            ],
+            [
+              "validatedToken",
+              "Microsoft.IdentityModel.Tokens.SecurityToken&"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "WriteToken",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "token",
+              "Microsoft.IdentityModel.Tokens.SecurityToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "WriteToken",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "writer",
+              "System.Xml.XmlWriter"
+            ],
+            [
+              "token",
+              "Microsoft.IdentityModel.Tokens.SecurityToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ValidateTokenAsync",
+          "returnType": "System.Threading.Tasks.Task`1<Microsoft.IdentityModel.Tokens.TokenValidationResult>",
+          "parameterTypes": [
+            [
+              "token",
+              "System.String"
+            ],
+            [
+              "validationParameters",
+              "Microsoft.IdentityModel.Tokens.TokenValidationParameters"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.IdentityModel.Tokens.Jwt.LogMessages",
+      "methods": [],
+      "fields": []
+    }
+  ]
+}

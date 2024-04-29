@@ -1,10 +1,10 @@
 package io.joern.c2cpg.passes.types
 
-import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
+import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language._
 
-class StructTypeTests extends CCodeToCpgSuite {
+class StructTypeTests extends C2CpgSuite {
 
   "Typedef struct with member" should {
     val cpg = code("""

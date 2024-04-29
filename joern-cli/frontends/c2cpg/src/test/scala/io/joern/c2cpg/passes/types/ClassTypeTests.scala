@@ -1,11 +1,11 @@
 package io.joern.c2cpg.passes.types
 
 import io.joern.c2cpg.parser.FileDefaults
-import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
+import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
-class ClassTypeTests extends CCodeToCpgSuite(FileDefaults.CPP_EXT) {
+class ClassTypeTests extends C2CpgSuite(FileDefaults.CPP_EXT) {
 
   "handling C++ classes (code example 1)" should {
     val cpg = code("""
@@ -87,7 +87,7 @@ class ClassTypeTests extends CCodeToCpgSuite(FileDefaults.CPP_EXT) {
       x.fullName shouldBe "mytype"
       x.isExternal shouldBe false
       x.inheritsFromTypeFullName shouldBe List()
-      x.aliasTypeFullName shouldBe Some("int")
+      x.aliasTypeFullName shouldBe Option("int")
       x.code shouldBe "typedef int mytype;"
       x.order shouldBe 2
       x.filename shouldBe "Test0.cpp"

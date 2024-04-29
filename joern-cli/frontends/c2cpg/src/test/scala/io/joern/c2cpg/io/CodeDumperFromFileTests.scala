@@ -1,13 +1,13 @@
 package io.joern.c2cpg.io
 
 import better.files.File
-import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
+import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.shiftleft.semanticcpg.codedumper.CodeDumper
 import io.shiftleft.semanticcpg.language._
 
 import java.util.regex.Pattern
 
-class CodeDumperFromFileTests extends CCodeToCpgSuite {
+class CodeDumperFromFileTests extends C2CpgSuite {
 
   implicit val finder: NodeExtensionFinder = DefaultNodeExtensionFinder
 
@@ -24,7 +24,7 @@ class CodeDumperFromFileTests extends CCodeToCpgSuite {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    // we have to restore the input file because CPG creation in CCodeToCpgSuite
+    // we have to restore the input file because CPG creation in C2CpgSuite
     // deletes it right after the CPG is ready.
     path.createFileIfNotExists(createParents = true)
     path.writeText(codeString)

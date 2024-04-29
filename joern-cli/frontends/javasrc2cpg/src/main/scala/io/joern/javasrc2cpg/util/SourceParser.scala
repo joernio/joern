@@ -1,30 +1,30 @@
 package io.joern.javasrc2cpg.util
 
 import better.files.File
-import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
-import io.joern.javasrc2cpg.util.Delombok.DelombokMode
-import io.joern.javasrc2cpg.util.Delombok.DelombokMode.*
 import com.github.javaparser.{JavaParser, ParserConfiguration}
 import com.github.javaparser.ParserConfiguration.LanguageLevel
 import com.github.javaparser.ast.CompilationUnit
-import com.github.javaparser.ast.Node.Parsedness
+import com.github.javaparser.ast.Node.{NODE_BY_BEGIN_POSITION, Parsedness}
+import io.joern.javasrc2cpg.util.Delombok.DelombokMode
+import io.joern.javasrc2cpg.util.SourceParser.fileIfExists
+import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 
-import scala.collection.mutable
+import java.nio.charset.{Charset, StandardCharsets}
+import java.nio.file.Path
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
-import java.nio.file.Path
-import java.nio.file.Paths
-import java.util.concurrent.ConcurrentHashMap
-import java.nio.charset.MalformedInputException
-import java.nio.charset.Charset
-import java.nio.charset.StandardCharsets
 import scala.util.Try
-import scala.util.Success
+import scala.util.matching.Regex
 
-class SourceParser private (originalInputPath: Path, analysisRoot: Path, typesRoot: Path) {
+class SourceParser(
+  val relativeFilenames: List[String],
+  analysisRoot: Path,
+  typesRoot: Path,
+  dirToDelete: Option[Path]
+) {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
@@ -32,6 +32,8 @@ class SourceParser private (originalInputPath: Path, analysisRoot: Path, typesRo
     *
     * @param relativeFilename
     *   path to the input file relative to the project root.
+    * @param saveFileContent
+    *   if true, the raw text for the file is returned as the second item in the tuple.
     */
   def parseAnalysisFile(
     relativeFilename: String,
@@ -65,22 +67,6 @@ class SourceParser private (originalInputPath: Path, analysisRoot: Path, typesRo
     fileIfExists(typesFilename).flatMap(parse(_, storeTokens = false))
   }
 
-  def fileIfExists(filename: String): Option[File] = {
-    val file = File(filename)
-
-    Option.when(file.exists)(file)
-  }
-
-  def getTypesFileLines(relativeFilename: String): Try[Iterable[String]] = {
-    val typesFilename = typesRoot.resolve(relativeFilename).toString
-    Try(File(typesFilename).lines(Charset.defaultCharset()))
-      .orElse(Try(File(typesFilename).lines(StandardCharsets.ISO_8859_1)))
-  }
-
-  def doesTypesFileExist(relativeFilename: String): Boolean = {
-    File(typesRoot.resolve(relativeFilename)).isRegularFile
-  }
-
   private def parse(file: File, storeTokens: Boolean): Option[CompilationUnit] = {
     val javaParserConfig =
       new ParserConfiguration()
@@ -104,50 +90,92 @@ class SourceParser private (originalInputPath: Path, analysisRoot: Path, typesRo
         None
     }
   }
+
+  def cleanupDelombokOutput(): Unit = {
+    dirToDelete.foreach(path => File(path).delete())
+  }
+
 }
 
 object SourceParser {
-  private val logger = LoggerFactory.getLogger(this.getClass)
+  case class FileInfo(relativePath: Path, packageName: Option[String], usesLombok: Boolean)
 
-  def apply(config: Config, hasLombokDependency: Boolean): SourceParser = {
-    val canonicalInputPath = File(config.inputPath).canonicalPath
-    val (analysisDir, typesDir) =
-      getAnalysisAndTypesDirs(canonicalInputPath, config.delombokJavaHome, config.delombokMode, hasLombokDependency)
+  object FileInfo {
 
-    new SourceParser(Path.of(canonicalInputPath), Path.of(analysisDir), Path.of(typesDir))
-  }
+    private val PackageNameRegex: Regex = raw"package\s+([a-zA-Z$$_.]+)\s*;".r
 
-  /** Implements the logic described in the option description for the "delombok-mode" option:
-    *   - no-delombok: do not run delombok.
-    *   - default: run delombok if a lombok dependency is found and analyse delomboked code.
-    *   - types-only: run delombok, but use it for type information only
-    *   - run-delombok: run delombok and analyse delomboked code
-    *
-    * @return
-    *   the tuple (analysisRoot, typesRoot) where analysisRoot is used to locate source files for creating the AST and
-    *   typesRoot is used for locating source files from which to extract type information.
-    */
-  private def getAnalysisAndTypesDirs(
-    originalDir: String,
-    delombokJavaHome: Option[String],
-    delombokMode: Option[String],
-    hasLombokDependency: Boolean
-  ): (String, String) = {
-    lazy val delombokDir = Delombok.run(originalDir, delombokJavaHome)
+    def getFileInfo(inputDir: Path, filename: String): Option[FileInfo] = {
+      fileIfExists(filename).map { file =>
+        val relativePath = inputDir.relativize(Path.of(filename))
+        val content      = file.contentAsString
 
-    Delombok.parseDelombokModeOption(delombokMode) match {
-      case Default if hasLombokDependency =>
-        logger.info(s"Analysing delomboked code as lombok dependency was found.")
-        (delombokDir, delombokDir)
+        val packageName = PackageNameRegex.findFirstMatchIn(content).map(_.group(1))
 
-      case Default => (originalDir, originalDir)
+        val usesLombok = content.contains("lombok")
 
-      case NoDelombok => (originalDir, originalDir)
-
-      case TypesOnly => (originalDir, delombokDir)
-
-      case RunDelombok => (delombokDir, delombokDir)
+        new FileInfo(relativePath, packageName, usesLombok)
+      }
     }
   }
 
+  private val logger = LoggerFactory.getLogger(this.getClass)
+
+  private def checkExists(file: File): Option[File] = {
+    if (file.exists) {
+      Option(file)
+    } else {
+      logger.warn(s"Attempting to open file, but it does not exist: ${file.pathAsString}")
+      None
+    }
+  }
+  private[util] def fileIfExists(path: Path): Option[File] = {
+    val file = File(path)
+    checkExists(file)
+  }
+
+  private[util] def fileIfExists(filename: String): Option[File] = {
+    val file = File(filename)
+    checkExists(file)
+  }
+
+  def apply(config: Config, filenamesOverride: Option[List[String]]): SourceParser = {
+    val inputPath = Path.of(config.inputPath)
+
+    val fileInfo = filenamesOverride
+      .getOrElse(
+        SourceFiles.determine(
+          config.inputPath,
+          JavaSrc2Cpg.sourceFileExtensions,
+          ignoredDefaultRegex = Option(JavaSrc2Cpg.DefaultIgnoredFilesRegex),
+          ignoredFilesRegex = Option(config.ignoredFilesRegex),
+          ignoredFilesPath = Option(config.ignoredFiles)
+        )
+      )
+      .flatMap(FileInfo.getFileInfo(inputPath, _))
+
+    val usesLombok = fileInfo.exists(_.usesLombok)
+
+    var dirToDelete: Option[Path] = None
+    lazy val delombokResult       = Delombok.run(inputPath, fileInfo, config.delombokJavaHome)
+    lazy val delombokDir = {
+      dirToDelete = Option.when(delombokResult.isDelombokedPath)(delombokResult.path)
+      delombokResult.path
+    }
+
+    val (analysisRoot, typesRoot) = Delombok.parseDelombokModeOption(config.delombokMode) match {
+      case DelombokMode.Default if usesLombok =>
+        logger.info(s"Analysing delomboked code as lombok dependency was found.")
+        (delombokDir, delombokDir)
+
+      case DelombokMode.Default => (inputPath, inputPath)
+
+      case DelombokMode.NoDelombok => (inputPath, inputPath)
+
+      case DelombokMode.TypesOnly => (inputPath, delombokDir)
+
+      case DelombokMode.RunDelombok => (delombokDir, delombokDir)
+    }
+
+    new SourceParser(fileInfo.map(_.relativePath.toString), analysisRoot, typesRoot, dirToDelete)
+  }
 }

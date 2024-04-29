@@ -11,8 +11,7 @@ import java.nio.file.Path
 
 object JavaParserAstPrinter {
   def printJpAsts(config: Config): Unit = {
-
-    val sourceParser = SourceParser(config, false)
+    val sourceParser = SourceParser(config, None)
     val printer      = new YamlPrinter(true)
 
     SourceFiles

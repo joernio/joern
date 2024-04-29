@@ -1,0 +1,1880 @@
+{
+  "Microsoft.CodeAnalysis": [
+    {
+      "name": "Microsoft.CodeAnalysis.EmbeddedAttribute",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System.Runtime.CompilerServices": [
+    {
+      "name": "System.Runtime.CompilerServices.IsReadOnlyAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.NullableAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.NullableContextAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.NullablePublicOnlyAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.RefSafetyRulesAttribute",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "FxResources.Microsoft.Extensions.DependencyInjection": [
+    {
+      "name": "FxResources.Microsoft.Extensions.DependencyInjection.SR",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System": [
+    {
+      "name": "System.SR",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System.Runtime.InteropServices": [
+    {
+      "name": "System.Runtime.InteropServices.LibraryImportAttribute",
+      "methods": [
+        {
+          "name": "get_LibraryName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_EntryPoint",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_EntryPoint",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_StringMarshalling",
+          "returnType": "System.Runtime.InteropServices.StringMarshalling",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_StringMarshalling",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Runtime.InteropServices.StringMarshalling"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_StringMarshallingCustomType",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_StringMarshallingCustomType",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Type"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_SetLastError",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_SetLastError",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.InteropServices.StringMarshalling",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System.Diagnostics.CodeAnalysis": [
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute",
+      "methods": [
+        {
+          "name": "get_MemberTypes",
+          "returnType": "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute",
+      "methods": [
+        {
+          "name": "get_Category",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_CheckId",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Scope",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Scope",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Target",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Target",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_MessageId",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_MessageId",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Justification",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Justification",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute",
+      "methods": [
+        {
+          "name": "get_Message",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Url",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Url",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.AllowNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DisallowNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MaybeNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.NotNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute",
+      "methods": [
+        {
+          "name": "get_ReturnValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.NotNullWhenAttribute",
+      "methods": [
+        {
+          "name": "get_ReturnValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute",
+      "methods": [
+        {
+          "name": "get_ParameterName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute",
+      "methods": [
+        {
+          "name": "get_ParameterValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MemberNotNullAttribute",
+      "methods": [
+        {
+          "name": "get_Members",
+          "returnType": "System.String[]",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute",
+      "methods": [
+        {
+          "name": "get_ReturnValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Members",
+          "returnType": "System.String[]",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.DependencyInjection": [
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.CallSiteJsonFormatter",
+      "methods": [
+        {
+          "name": "Format",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "callSite",
+              "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceCallSite"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.DefaultServiceProviderFactory",
+      "methods": [
+        {
+          "name": "CreateBuilder",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateServiceProvider",
+          "returnType": "System.IServiceProvider",
+          "parameterTypes": [
+            [
+              "containerBuilder",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.DependencyInjectionEventSource",
+      "methods": [
+        {
+          "name": "ServiceResolved",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "serviceType",
+              "System.String"
+            ],
+            [
+              "serviceProviderHashCode",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ExpressionTreeGenerated",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "serviceType",
+              "System.String"
+            ],
+            [
+              "nodeCount",
+              "System.Int32"
+            ],
+            [
+              "serviceProviderHashCode",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "DynamicMethodBuilt",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "serviceType",
+              "System.String"
+            ],
+            [
+              "methodSize",
+              "System.Int32"
+            ],
+            [
+              "serviceProviderHashCode",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ScopeDisposed",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "serviceProviderHashCode",
+              "System.Int32"
+            ],
+            [
+              "scopedServicesResolved",
+              "System.Int32"
+            ],
+            [
+              "disposableServices",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ServiceRealizationFailed",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "exceptionMessage",
+              "System.String"
+            ],
+            [
+              "serviceProviderHashCode",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ServiceResolved",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "provider",
+              "Microsoft.Extensions.DependencyInjection.ServiceProvider"
+            ],
+            [
+              "serviceType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CallSiteBuilt",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "provider",
+              "Microsoft.Extensions.DependencyInjection.ServiceProvider"
+            ],
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "callSite",
+              "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceCallSite"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "DynamicMethodBuilt",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "provider",
+              "Microsoft.Extensions.DependencyInjection.ServiceProvider"
+            ],
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "methodSize",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ServiceRealizationFailed",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "exception",
+              "System.Exception"
+            ],
+            [
+              "serviceProviderHashCode",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ServiceProviderBuilt",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "provider",
+              "Microsoft.Extensions.DependencyInjection.ServiceProvider"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ServiceProviderDisposed",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "provider",
+              "Microsoft.Extensions.DependencyInjection.ServiceProvider"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.DependencyInjectionEventSourceExtensions",
+      "methods": [
+        {
+          "name": "ExpressionTreeGenerated",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "source",
+              "Microsoft.Extensions.DependencyInjection.DependencyInjectionEventSource"
+            ],
+            [
+              "provider",
+              "Microsoft.Extensions.DependencyInjection.ServiceProvider"
+            ],
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "expression",
+              "System.Linq.Expressions.Expression"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceCollectionContainerBuilderExtensions",
+      "methods": [
+        {
+          "name": "BuildServiceProvider",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceProvider",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "BuildServiceProvider",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceProvider",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "validateScopes",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "BuildServiceProvider",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceProvider",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "options",
+              "Microsoft.Extensions.DependencyInjection.ServiceProviderOptions"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceProvider",
+      "methods": [
+        {
+          "name": "GetService",
+          "returnType": "System.Object",
+          "parameterTypes": [
+            [
+              "serviceType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetKeyedService",
+          "returnType": "System.Object",
+          "parameterTypes": [
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetRequiredKeyedService",
+          "returnType": "System.Object",
+          "parameterTypes": [
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Dispose",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "DisposeAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceProviderOptions",
+      "methods": [
+        {
+          "name": "get_ValidateScopes",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ValidateScopes",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ValidateOnBuild",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ValidateOnBuild",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.DependencyInjection.ServiceLookup": [
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteChain",
+      "methods": [
+        {
+          "name": "CheckCircularDependency",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "serviceIdentifier",
+              "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceIdentifier"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Remove",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "serviceIdentifier",
+              "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceIdentifier"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Add",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "serviceIdentifier",
+              "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceIdentifier"
+            ],
+            [
+              "implementationType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteFactory",
+      "methods": [
+        {
+          "name": "Add",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "serviceIdentifier",
+              "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceIdentifier"
+            ],
+            [
+              "serviceCallSite",
+              "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceCallSite"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "IsService",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "serviceType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "IsKeyedService",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "key",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteKind",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteResultCacheLocation",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteRuntimeResolver",
+      "methods": [
+        {
+          "name": "get_Instance",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteRuntimeResolver",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "Resolve",
+          "returnType": "System.Object",
+          "parameterTypes": [
+            [
+              "callSite",
+              "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceCallSite"
+            ],
+            [
+              "scope",
+              "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceProviderEngineScope"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceLookup.RuntimeResolverContext",
+      "methods": [
+        {
+          "name": "get_Scope",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceProviderEngineScope",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Scope",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceProviderEngineScope"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_AcquiredLocks",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceLookup.RuntimeResolverLock",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_AcquiredLocks",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.Extensions.DependencyInjection.ServiceLookup.RuntimeResolverLock"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceLookup.RuntimeResolverLock",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteValidator",
+      "methods": [
+        {
+          "name": "ValidateCallSite",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "callSite",
+              "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceCallSite"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ValidateResolution",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "callSite",
+              "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceCallSite"
+            ],
+            [
+              "scope",
+              "Microsoft.Extensions.DependencyInjection.IServiceScope"
+            ],
+            [
+              "rootScope",
+              "Microsoft.Extensions.DependencyInjection.IServiceScope"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteVisitor`2",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceLookup.CompiledServiceProviderEngine",
+      "methods": [
+        {
+          "name": "get_ResolverBuilder",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceLookup.ILEmitResolverBuilder",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "RealizeService",
+          "returnType": "System.Func`2<Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceProviderEngineScope,System.Object>",
+          "parameterTypes": [
+            [
+              "callSite",
+              "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceCallSite"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceLookup.ConstantCallSite",
+      "methods": [
+        {
+          "name": "get_ServiceType",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ImplementationType",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Kind",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteKind",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceLookup.ConstructorCallSite",
+      "methods": [
+        {
+          "name": "get_ServiceType",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ImplementationType",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Kind",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteKind",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceLookup.DynamicServiceProviderEngine",
+      "methods": [
+        {
+          "name": "RealizeService",
+          "returnType": "System.Func`2<Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceProviderEngineScope,System.Object>",
+          "parameterTypes": [
+            [
+              "callSite",
+              "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceCallSite"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceLookup.ExpressionResolverBuilder",
+      "methods": [
+        {
+          "name": "Build",
+          "returnType": "System.Func`2<Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceProviderEngineScope,System.Object>",
+          "parameterTypes": [
+            [
+              "callSite",
+              "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceCallSite"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "BuildNoCache",
+          "returnType": "System.Func`2<Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceProviderEngineScope,System.Object>",
+          "parameterTypes": [
+            [
+              "callSite",
+              "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceCallSite"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetCaptureDisposable",
+          "returnType": "System.Linq.Expressions.Expression",
+          "parameterTypes": [
+            [
+              "scope",
+              "System.Linq.Expressions.ParameterExpression"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceLookup.ExpressionsServiceProviderEngine",
+      "methods": [
+        {
+          "name": "RealizeService",
+          "returnType": "System.Func`2<Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceProviderEngineScope,System.Object>",
+          "parameterTypes": [
+            [
+              "callSite",
+              "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceCallSite"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceLookup.FactoryCallSite",
+      "methods": [
+        {
+          "name": "get_Factory",
+          "returnType": "System.Func`2<System.IServiceProvider,System.Object>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ServiceType",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ImplementationType",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Kind",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteKind",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceLookup.IEnumerableCallSite",
+      "methods": [
+        {
+          "name": "get_ServiceType",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ImplementationType",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Kind",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteKind",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceLookup.ResultCache",
+      "methods": [
+        {
+          "name": "None",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceLookup.ResultCache",
+          "parameterTypes": [
+            [
+              "serviceType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "get_Location",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteResultCacheLocation",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Location",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteResultCacheLocation"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Key",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceCacheKey",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Key",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceCacheKey"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceLookup.RuntimeServiceProviderEngine",
+      "methods": [
+        {
+          "name": "get_Instance",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceLookup.RuntimeServiceProviderEngine",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "RealizeService",
+          "returnType": "System.Func`2<Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceProviderEngineScope,System.Object>",
+          "parameterTypes": [
+            [
+              "callSite",
+              "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceCallSite"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceCacheKey",
+      "methods": [
+        {
+          "name": "get_ServiceIdentifier",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceIdentifier",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Slot",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Equals",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "other",
+              "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceCacheKey"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Equals",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "obj",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetHashCode",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceCallSite",
+      "methods": [
+        {
+          "name": "get_ServiceType",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ImplementationType",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Kind",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteKind",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Cache",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceLookup.ResultCache",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Value",
+          "returnType": "System.Object",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Value",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Key",
+          "returnType": "System.Object",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Key",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_CaptureDisposable",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceDescriptorExtensions",
+      "methods": [
+        {
+          "name": "HasImplementationInstance",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "serviceDescriptor",
+              "Microsoft.Extensions.DependencyInjection.ServiceDescriptor"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "HasImplementationFactory",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "serviceDescriptor",
+              "Microsoft.Extensions.DependencyInjection.ServiceDescriptor"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "HasImplementationType",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "serviceDescriptor",
+              "Microsoft.Extensions.DependencyInjection.ServiceDescriptor"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetImplementationInstance",
+          "returnType": "System.Object",
+          "parameterTypes": [
+            [
+              "serviceDescriptor",
+              "Microsoft.Extensions.DependencyInjection.ServiceDescriptor"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetImplementationFactory",
+          "returnType": "System.Object",
+          "parameterTypes": [
+            [
+              "serviceDescriptor",
+              "Microsoft.Extensions.DependencyInjection.ServiceDescriptor"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetImplementationType",
+          "returnType": "System.Type",
+          "parameterTypes": [
+            [
+              "serviceDescriptor",
+              "Microsoft.Extensions.DependencyInjection.ServiceDescriptor"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryGetImplementationType",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "serviceDescriptor",
+              "Microsoft.Extensions.DependencyInjection.ServiceDescriptor"
+            ],
+            [
+              "type",
+              "System.Type&"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceIdentifier",
+      "methods": [
+        {
+          "name": "get_ServiceKey",
+          "returnType": "System.Object",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ServiceType",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "FromDescriptor",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceIdentifier",
+          "parameterTypes": [
+            [
+              "serviceDescriptor",
+              "Microsoft.Extensions.DependencyInjection.ServiceDescriptor"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "FromServiceType",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceIdentifier",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Equals",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "other",
+              "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceIdentifier"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Equals",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "obj",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetHashCode",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_IsConstructedGenericType",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "GetGenericTypeDefinition",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceIdentifier",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "ToString",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceLookupHelpers",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceProviderCallSite",
+      "methods": [
+        {
+          "name": "get_ServiceType",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ImplementationType",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Kind",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteKind",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceProviderEngine",
+      "methods": [
+        {
+          "name": "RealizeService",
+          "returnType": "System.Func`2<Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceProviderEngineScope,System.Object>",
+          "parameterTypes": [
+            [
+              "callSite",
+              "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceCallSite"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceProviderEngineScope",
+      "methods": [
+        {
+          "name": "get_IsRootScope",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "GetService",
+          "returnType": "System.Object",
+          "parameterTypes": [
+            [
+              "serviceType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetKeyedService",
+          "returnType": "System.Object",
+          "parameterTypes": [
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetRequiredKeyedService",
+          "returnType": "System.Object",
+          "parameterTypes": [
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ServiceProvider",
+          "returnType": "System.IServiceProvider",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "CreateScope",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceScope",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Dispose",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "DisposeAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceLookup.StackGuard",
+      "methods": [
+        {
+          "name": "TryEnterOnCurrentStack",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "RunOnEmptyStack",
+          "returnType": "TR",
+          "parameterTypes": [
+            [
+              "action",
+              "System.Func`3<T1,T2,TR>"
+            ],
+            [
+              "arg1",
+              "T1"
+            ],
+            [
+              "arg2",
+              "T2"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceLookup.ThrowHelper",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceLookup.ILEmitResolverBuilder",
+      "methods": [
+        {
+          "name": "Build",
+          "returnType": "System.Func`2<Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceProviderEngineScope,System.Object>",
+          "parameterTypes": [
+            [
+              "callSite",
+              "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceCallSite"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceLookup.ILEmitResolverBuilderContext",
+      "methods": [
+        {
+          "name": "get_Generator",
+          "returnType": "System.Reflection.Emit.ILGenerator",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Constants",
+          "returnType": "System.Collections.Generic.List`1<System.Object>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Constants",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Collections.Generic.List`1<System.Object>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Factories",
+          "returnType": "System.Collections.Generic.List`1<System.Func`2<System.IServiceProvider,System.Object>>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Factories",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Collections.Generic.List`1<System.Func`2<System.IServiceProvider,System.Object>>"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceLookup.ILEmitServiceProviderEngine",
+      "methods": [
+        {
+          "name": "RealizeService",
+          "returnType": "System.Func`2<Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceProviderEngineScope,System.Object>",
+          "parameterTypes": [
+            [
+              "callSite",
+              "Microsoft.Extensions.DependencyInjection.ServiceLookup.ServiceCallSite"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.Internal": [
+    {
+      "name": "Microsoft.Extensions.Internal.ParameterDefaultValue",
+      "methods": [
+        {
+          "name": "CheckHasDefaultValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "parameter",
+              "System.Reflection.ParameterInfo"
+            ],
+            [
+              "tryToGetDefaultValue",
+              "System.Boolean&"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryGetDefaultValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "parameter",
+              "System.Reflection.ParameterInfo"
+            ],
+            [
+              "defaultValue",
+              "System.Object&"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Internal.TypeNameHelper",
+      "methods": [
+        {
+          "name": "GetTypeDisplayName",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "item",
+              "System.Object"
+            ],
+            [
+              "fullName",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetTypeDisplayName",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ],
+            [
+              "fullName",
+              "System.Boolean"
+            ],
+            [
+              "includeGenericParameterNames",
+              "System.Boolean"
+            ],
+            [
+              "includeGenericParameters",
+              "System.Boolean"
+            ],
+            [
+              "nestedTypeDelimiter",
+              "System.Char"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

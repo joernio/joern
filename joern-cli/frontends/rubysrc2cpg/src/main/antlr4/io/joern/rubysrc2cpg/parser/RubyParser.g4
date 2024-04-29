@@ -122,7 +122,7 @@ methodName
     ;
 
 methodOnlyIdentifier
-    :   (CONSTANT_IDENTIFIER | LOCAL_VARIABLE_IDENTIFIER | pseudoVariable) (EMARK | QMARK)
+    :   (CONSTANT_IDENTIFIER | LOCAL_VARIABLE_IDENTIFIER | pseudoVariable) (EMARK | QMARK | EQ)
     ;
     
 methodInvocationWithoutParentheses
@@ -282,9 +282,9 @@ primaryValue
         # assignmentWithRescue
         
         // Definitions
-    |   CLASS classPath (LT commandOrPrimaryValue)? (SEMI | NL) bodyStatement END
+    |   CLASS classPath (LT commandOrPrimaryValueClass)? (SEMI | NL) bodyStatement END
         # classDefinition
-    |   CLASS LT2 commandOrPrimaryValue (SEMI | NL) bodyStatement END
+    |   CLASS LT2 commandOrPrimaryValueClass (SEMI | NL) bodyStatement END
         # singletonClassDefinition
     |   MODULE classPath bodyStatement END
         # moduleDefinition
@@ -403,17 +403,31 @@ primaryValue
         # logicalOrExpression
     |   primaryValue rangeOperator          NL* primaryValue
         # rangeExpression
+    |   hereDoc
+        # hereDocs
+    ;
+
+// This is required to make chained calls work. For classes, we cannot move up the `primaryValue` due to the possible
+// presence of AMPDOT when inheriting (class Foo < Bar::Baz), but the command rule doesn't allow chained calls
+// in if statements to be created properly, and ends throwing away everything after the first call. Splitting these
+// allows us to have a rule for the class that parses properly, and a rule for everything else that allows us to move
+// up the `primaryValue` rule to the top.
+commandOrPrimaryValueClass
+    :   command
+        # commandCommandOrPrimaryValueClass
+    |   primaryValue
+        # primaryValueCommandOrPrimaryValueClass
     ;
 
 commandOrPrimaryValue
-    :   command
+    :   primaryValue
+        # primaryValueCommandOrPrimaryValue
+    |   command
         # commandCommandOrPrimaryValue
     |   NOT commandOrPrimaryValue
         # notCommandOrPrimaryValue
     |   commandOrPrimaryValue (AND|OR) NL* commandOrPrimaryValue
         # keywordAndOrCommandOrPrimaryValue
-    |   primaryValue
-        # primaryValueCommandOrPrimaryValue
     ;
 
 block
@@ -429,14 +443,7 @@ doBlock
 
 blockParameter
     :   BAR NL* BAR
-    |   BAR NL* blockParameterList NL* BAR
-    ;
-
-blockParameterList
-    :   leftHandSide
-        # singleElementBlockParameterList
-    |   multipleLeftHandSide
-        # multipleElementBlockParameterList
+    |   BAR NL* parameterList NL* BAR
     ;
 
 thenClause
@@ -668,6 +675,9 @@ symbol
         # doubleQuotedSymbolLiteral
     ;
 
+hereDoc
+    : HERE_DOC
+    ;
 
 // --------------------------------------------------------
 // Commons

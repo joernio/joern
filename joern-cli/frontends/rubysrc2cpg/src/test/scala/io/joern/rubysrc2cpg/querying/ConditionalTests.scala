@@ -4,6 +4,7 @@ import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Local}
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.codepropertygraph.generated.nodes.Call
 
 class ConditionalTests extends RubyCode2CpgFixture {
 
@@ -36,6 +37,40 @@ class ConditionalTests extends RubyCode2CpgFixture {
           case xs => fail(s"Expected exactly two blocks under the if-structure, got [${xs.code.mkString(",")}]")
         }
       case xs => fail(s"Expected exactly one control structure, got [${xs.code.mkString(",")}]")
+    }
+  }
+
+  "`f(x ? y : z)` is lowered into conditional operator" in {
+    val cpg = code("""
+                     |f(x ? y : z)
+                     |""".stripMargin)
+    inside(cpg.call(Operators.conditional).l) {
+      case cond :: Nil =>
+        inside(cond.argument.l) {
+          case x :: y :: z :: Nil => {
+            x.code shouldBe "x"
+            List(y, z).isBlock.astChildren.isIdentifier.code.l shouldBe List("y", "z")
+          }
+          case xs => fail(s"Expected exactly three arguments to conditional, got [${xs.code.mkString(",")}]")
+        }
+      case xs => fail(s"Expected exactly one conditional, got [${xs.code.mkString(",")}]")
+    }
+  }
+
+  "`f(unless x then y else z end)` is lowered into conditional operator" in {
+    val cpg = code("""
+                     |f(unless x then y else z end)
+                     |""".stripMargin)
+    inside(cpg.call(Operators.conditional).l) {
+      case cond :: Nil =>
+        inside(cond.argument.l) {
+          case x :: y :: z :: Nil => {
+            List(x).isCall.name(Operators.logicalNot).argument.code.l shouldBe List("x")
+            List(y, z).isBlock.astChildren.isIdentifier.code.l shouldBe List("y", "z")
+          }
+          case xs => fail(s"Expected exactly three arguments to conditional, got [${xs.code.mkString(",")}]")
+        }
+      case xs => fail(s"Expected exactly one conditional, got [${xs.code.mkString(",")}]")
     }
   }
 

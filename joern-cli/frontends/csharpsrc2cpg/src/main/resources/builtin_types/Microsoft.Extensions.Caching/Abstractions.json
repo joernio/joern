@@ -1,0 +1,1662 @@
+{
+  "Microsoft.CodeAnalysis": [
+    {
+      "name": "Microsoft.CodeAnalysis.EmbeddedAttribute",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System.Runtime.CompilerServices": [
+    {
+      "name": "System.Runtime.CompilerServices.NullableAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.NullableContextAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.NullablePublicOnlyAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.RefSafetyRulesAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.CallerArgumentExpressionAttribute",
+      "methods": [
+        {
+          "name": "get_ParameterName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.IsExternalInit",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System": [
+    {
+      "name": "System.ThrowHelper",
+      "methods": [
+        {
+          "name": "IfNullOrWhitespace",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "argument",
+              "System.String"
+            ],
+            [
+              "paramName",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "System.Diagnostics.CodeAnalysis": [
+    {
+      "name": "System.Diagnostics.CodeAnalysis.AllowNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DisallowNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MaybeNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.NotNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute",
+      "methods": [
+        {
+          "name": "get_ReturnValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.NotNullWhenAttribute",
+      "methods": [
+        {
+          "name": "get_ReturnValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute",
+      "methods": [
+        {
+          "name": "get_ParameterName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute",
+      "methods": [
+        {
+          "name": "get_ParameterValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MemberNotNullAttribute",
+      "methods": [
+        {
+          "name": "get_Members",
+          "returnType": "System.String[]",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute",
+      "methods": [
+        {
+          "name": "get_ReturnValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Members",
+          "returnType": "System.String[]",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "System.Runtime.InteropServices": [
+    {
+      "name": "System.Runtime.InteropServices.LibraryImportAttribute",
+      "methods": [
+        {
+          "name": "get_LibraryName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_EntryPoint",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_EntryPoint",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_StringMarshalling",
+          "returnType": "System.Runtime.InteropServices.StringMarshalling",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_StringMarshalling",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Runtime.InteropServices.StringMarshalling"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_StringMarshallingCustomType",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_StringMarshallingCustomType",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Type"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_SetLastError",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_SetLastError",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.InteropServices.StringMarshalling",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.Internal": [
+    {
+      "name": "Microsoft.Extensions.Internal.ISystemClock",
+      "methods": [
+        {
+          "name": "get_UtcNow",
+          "returnType": "System.DateTimeOffset",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Internal.SystemClock",
+      "methods": [
+        {
+          "name": "get_UtcNow",
+          "returnType": "System.DateTimeOffset",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.Caching.Distributed": [
+    {
+      "name": "Microsoft.Extensions.Caching.Distributed.DistributedCacheEntryExtensions",
+      "methods": [
+        {
+          "name": "SetAbsoluteExpiration",
+          "returnType": "Microsoft.Extensions.Caching.Distributed.DistributedCacheEntryOptions",
+          "parameterTypes": [
+            [
+              "options",
+              "Microsoft.Extensions.Caching.Distributed.DistributedCacheEntryOptions"
+            ],
+            [
+              "relative",
+              "System.TimeSpan"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "SetAbsoluteExpiration",
+          "returnType": "Microsoft.Extensions.Caching.Distributed.DistributedCacheEntryOptions",
+          "parameterTypes": [
+            [
+              "options",
+              "Microsoft.Extensions.Caching.Distributed.DistributedCacheEntryOptions"
+            ],
+            [
+              "absolute",
+              "System.DateTimeOffset"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "SetSlidingExpiration",
+          "returnType": "Microsoft.Extensions.Caching.Distributed.DistributedCacheEntryOptions",
+          "parameterTypes": [
+            [
+              "options",
+              "Microsoft.Extensions.Caching.Distributed.DistributedCacheEntryOptions"
+            ],
+            [
+              "offset",
+              "System.TimeSpan"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Caching.Distributed.DistributedCacheEntryOptions",
+      "methods": [
+        {
+          "name": "get_AbsoluteExpiration",
+          "returnType": "System.Nullable`1<System.DateTimeOffset>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_AbsoluteExpiration",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<System.DateTimeOffset>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_AbsoluteExpirationRelativeToNow",
+          "returnType": "System.Nullable`1<System.TimeSpan>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_AbsoluteExpirationRelativeToNow",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<System.TimeSpan>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_SlidingExpiration",
+          "returnType": "System.Nullable`1<System.TimeSpan>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_SlidingExpiration",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<System.TimeSpan>"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Caching.Distributed.DistributedCacheExtensions",
+      "methods": [
+        {
+          "name": "Set",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "cache",
+              "Microsoft.Extensions.Caching.Distributed.IDistributedCache"
+            ],
+            [
+              "key",
+              "System.String"
+            ],
+            [
+              "value",
+              "System.Byte[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "SetAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "cache",
+              "Microsoft.Extensions.Caching.Distributed.IDistributedCache"
+            ],
+            [
+              "key",
+              "System.String"
+            ],
+            [
+              "value",
+              "System.Byte[]"
+            ],
+            [
+              "token",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "SetString",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "cache",
+              "Microsoft.Extensions.Caching.Distributed.IDistributedCache"
+            ],
+            [
+              "key",
+              "System.String"
+            ],
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "SetString",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "cache",
+              "Microsoft.Extensions.Caching.Distributed.IDistributedCache"
+            ],
+            [
+              "key",
+              "System.String"
+            ],
+            [
+              "value",
+              "System.String"
+            ],
+            [
+              "options",
+              "Microsoft.Extensions.Caching.Distributed.DistributedCacheEntryOptions"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "SetStringAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "cache",
+              "Microsoft.Extensions.Caching.Distributed.IDistributedCache"
+            ],
+            [
+              "key",
+              "System.String"
+            ],
+            [
+              "value",
+              "System.String"
+            ],
+            [
+              "token",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "SetStringAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "cache",
+              "Microsoft.Extensions.Caching.Distributed.IDistributedCache"
+            ],
+            [
+              "key",
+              "System.String"
+            ],
+            [
+              "value",
+              "System.String"
+            ],
+            [
+              "options",
+              "Microsoft.Extensions.Caching.Distributed.DistributedCacheEntryOptions"
+            ],
+            [
+              "token",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetString",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "cache",
+              "Microsoft.Extensions.Caching.Distributed.IDistributedCache"
+            ],
+            [
+              "key",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetStringAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.String>",
+          "parameterTypes": [
+            [
+              "cache",
+              "Microsoft.Extensions.Caching.Distributed.IDistributedCache"
+            ],
+            [
+              "key",
+              "System.String"
+            ],
+            [
+              "token",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Caching.Distributed.IDistributedCache",
+      "methods": [
+        {
+          "name": "Get",
+          "returnType": "System.Byte[]",
+          "parameterTypes": [
+            [
+              "key",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Byte[]>",
+          "parameterTypes": [
+            [
+              "key",
+              "System.String"
+            ],
+            [
+              "token",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Set",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "key",
+              "System.String"
+            ],
+            [
+              "value",
+              "System.Byte[]"
+            ],
+            [
+              "options",
+              "Microsoft.Extensions.Caching.Distributed.DistributedCacheEntryOptions"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "SetAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "key",
+              "System.String"
+            ],
+            [
+              "value",
+              "System.Byte[]"
+            ],
+            [
+              "options",
+              "Microsoft.Extensions.Caching.Distributed.DistributedCacheEntryOptions"
+            ],
+            [
+              "token",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Refresh",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "key",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "RefreshAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "key",
+              "System.String"
+            ],
+            [
+              "token",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Remove",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "key",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "RemoveAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "key",
+              "System.String"
+            ],
+            [
+              "token",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.Caching.Memory": [
+    {
+      "name": "Microsoft.Extensions.Caching.Memory.CacheEntryExtensions",
+      "methods": [
+        {
+          "name": "SetPriority",
+          "returnType": "Microsoft.Extensions.Caching.Memory.ICacheEntry",
+          "parameterTypes": [
+            [
+              "entry",
+              "Microsoft.Extensions.Caching.Memory.ICacheEntry"
+            ],
+            [
+              "priority",
+              "Microsoft.Extensions.Caching.Memory.CacheItemPriority"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddExpirationToken",
+          "returnType": "Microsoft.Extensions.Caching.Memory.ICacheEntry",
+          "parameterTypes": [
+            [
+              "entry",
+              "Microsoft.Extensions.Caching.Memory.ICacheEntry"
+            ],
+            [
+              "expirationToken",
+              "Microsoft.Extensions.Primitives.IChangeToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "SetAbsoluteExpiration",
+          "returnType": "Microsoft.Extensions.Caching.Memory.ICacheEntry",
+          "parameterTypes": [
+            [
+              "entry",
+              "Microsoft.Extensions.Caching.Memory.ICacheEntry"
+            ],
+            [
+              "relative",
+              "System.TimeSpan"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "SetAbsoluteExpiration",
+          "returnType": "Microsoft.Extensions.Caching.Memory.ICacheEntry",
+          "parameterTypes": [
+            [
+              "entry",
+              "Microsoft.Extensions.Caching.Memory.ICacheEntry"
+            ],
+            [
+              "absolute",
+              "System.DateTimeOffset"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "SetSlidingExpiration",
+          "returnType": "Microsoft.Extensions.Caching.Memory.ICacheEntry",
+          "parameterTypes": [
+            [
+              "entry",
+              "Microsoft.Extensions.Caching.Memory.ICacheEntry"
+            ],
+            [
+              "offset",
+              "System.TimeSpan"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "RegisterPostEvictionCallback",
+          "returnType": "Microsoft.Extensions.Caching.Memory.ICacheEntry",
+          "parameterTypes": [
+            [
+              "entry",
+              "Microsoft.Extensions.Caching.Memory.ICacheEntry"
+            ],
+            [
+              "callback",
+              "Microsoft.Extensions.Caching.Memory.PostEvictionDelegate"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "RegisterPostEvictionCallback",
+          "returnType": "Microsoft.Extensions.Caching.Memory.ICacheEntry",
+          "parameterTypes": [
+            [
+              "entry",
+              "Microsoft.Extensions.Caching.Memory.ICacheEntry"
+            ],
+            [
+              "callback",
+              "Microsoft.Extensions.Caching.Memory.PostEvictionDelegate"
+            ],
+            [
+              "state",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "SetValue",
+          "returnType": "Microsoft.Extensions.Caching.Memory.ICacheEntry",
+          "parameterTypes": [
+            [
+              "entry",
+              "Microsoft.Extensions.Caching.Memory.ICacheEntry"
+            ],
+            [
+              "value",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "SetSize",
+          "returnType": "Microsoft.Extensions.Caching.Memory.ICacheEntry",
+          "parameterTypes": [
+            [
+              "entry",
+              "Microsoft.Extensions.Caching.Memory.ICacheEntry"
+            ],
+            [
+              "size",
+              "System.Int64"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "SetOptions",
+          "returnType": "Microsoft.Extensions.Caching.Memory.ICacheEntry",
+          "parameterTypes": [
+            [
+              "entry",
+              "Microsoft.Extensions.Caching.Memory.ICacheEntry"
+            ],
+            [
+              "options",
+              "Microsoft.Extensions.Caching.Memory.MemoryCacheEntryOptions"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Caching.Memory.CacheItemPriority",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Caching.Memory.EvictionReason",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Caching.Memory.ICacheEntry",
+      "methods": [
+        {
+          "name": "get_Key",
+          "returnType": "System.Object",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Value",
+          "returnType": "System.Object",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Value",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_AbsoluteExpiration",
+          "returnType": "System.Nullable`1<System.DateTimeOffset>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_AbsoluteExpiration",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<System.DateTimeOffset>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_AbsoluteExpirationRelativeToNow",
+          "returnType": "System.Nullable`1<System.TimeSpan>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_AbsoluteExpirationRelativeToNow",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<System.TimeSpan>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_SlidingExpiration",
+          "returnType": "System.Nullable`1<System.TimeSpan>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_SlidingExpiration",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<System.TimeSpan>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ExpirationTokens",
+          "returnType": "System.Collections.Generic.IList`1<Microsoft.Extensions.Primitives.IChangeToken>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_PostEvictionCallbacks",
+          "returnType": "System.Collections.Generic.IList`1<Microsoft.Extensions.Caching.Memory.PostEvictionCallbackRegistration>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Priority",
+          "returnType": "Microsoft.Extensions.Caching.Memory.CacheItemPriority",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Priority",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.Extensions.Caching.Memory.CacheItemPriority"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Size",
+          "returnType": "System.Nullable`1<System.Int64>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Size",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<System.Int64>"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Caching.Memory.IMemoryCache",
+      "methods": [
+        {
+          "name": "TryGetValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "key",
+              "System.Object"
+            ],
+            [
+              "value",
+              "System.Object&"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateEntry",
+          "returnType": "Microsoft.Extensions.Caching.Memory.ICacheEntry",
+          "parameterTypes": [
+            [
+              "key",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Remove",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "key",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Caching.Memory.MemoryCacheEntryExtensions",
+      "methods": [
+        {
+          "name": "SetPriority",
+          "returnType": "Microsoft.Extensions.Caching.Memory.MemoryCacheEntryOptions",
+          "parameterTypes": [
+            [
+              "options",
+              "Microsoft.Extensions.Caching.Memory.MemoryCacheEntryOptions"
+            ],
+            [
+              "priority",
+              "Microsoft.Extensions.Caching.Memory.CacheItemPriority"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "SetSize",
+          "returnType": "Microsoft.Extensions.Caching.Memory.MemoryCacheEntryOptions",
+          "parameterTypes": [
+            [
+              "options",
+              "Microsoft.Extensions.Caching.Memory.MemoryCacheEntryOptions"
+            ],
+            [
+              "size",
+              "System.Int64"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddExpirationToken",
+          "returnType": "Microsoft.Extensions.Caching.Memory.MemoryCacheEntryOptions",
+          "parameterTypes": [
+            [
+              "options",
+              "Microsoft.Extensions.Caching.Memory.MemoryCacheEntryOptions"
+            ],
+            [
+              "expirationToken",
+              "Microsoft.Extensions.Primitives.IChangeToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "SetAbsoluteExpiration",
+          "returnType": "Microsoft.Extensions.Caching.Memory.MemoryCacheEntryOptions",
+          "parameterTypes": [
+            [
+              "options",
+              "Microsoft.Extensions.Caching.Memory.MemoryCacheEntryOptions"
+            ],
+            [
+              "relative",
+              "System.TimeSpan"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "SetAbsoluteExpiration",
+          "returnType": "Microsoft.Extensions.Caching.Memory.MemoryCacheEntryOptions",
+          "parameterTypes": [
+            [
+              "options",
+              "Microsoft.Extensions.Caching.Memory.MemoryCacheEntryOptions"
+            ],
+            [
+              "absolute",
+              "System.DateTimeOffset"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "SetSlidingExpiration",
+          "returnType": "Microsoft.Extensions.Caching.Memory.MemoryCacheEntryOptions",
+          "parameterTypes": [
+            [
+              "options",
+              "Microsoft.Extensions.Caching.Memory.MemoryCacheEntryOptions"
+            ],
+            [
+              "offset",
+              "System.TimeSpan"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "RegisterPostEvictionCallback",
+          "returnType": "Microsoft.Extensions.Caching.Memory.MemoryCacheEntryOptions",
+          "parameterTypes": [
+            [
+              "options",
+              "Microsoft.Extensions.Caching.Memory.MemoryCacheEntryOptions"
+            ],
+            [
+              "callback",
+              "Microsoft.Extensions.Caching.Memory.PostEvictionDelegate"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "RegisterPostEvictionCallback",
+          "returnType": "Microsoft.Extensions.Caching.Memory.MemoryCacheEntryOptions",
+          "parameterTypes": [
+            [
+              "options",
+              "Microsoft.Extensions.Caching.Memory.MemoryCacheEntryOptions"
+            ],
+            [
+              "callback",
+              "Microsoft.Extensions.Caching.Memory.PostEvictionDelegate"
+            ],
+            [
+              "state",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Caching.Memory.MemoryCacheEntryOptions",
+      "methods": [
+        {
+          "name": "get_AbsoluteExpiration",
+          "returnType": "System.Nullable`1<System.DateTimeOffset>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_AbsoluteExpiration",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<System.DateTimeOffset>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_AbsoluteExpirationRelativeToNow",
+          "returnType": "System.Nullable`1<System.TimeSpan>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_AbsoluteExpirationRelativeToNow",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<System.TimeSpan>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_SlidingExpiration",
+          "returnType": "System.Nullable`1<System.TimeSpan>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_SlidingExpiration",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<System.TimeSpan>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ExpirationTokens",
+          "returnType": "System.Collections.Generic.IList`1<Microsoft.Extensions.Primitives.IChangeToken>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_PostEvictionCallbacks",
+          "returnType": "System.Collections.Generic.IList`1<Microsoft.Extensions.Caching.Memory.PostEvictionCallbackRegistration>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Priority",
+          "returnType": "Microsoft.Extensions.Caching.Memory.CacheItemPriority",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Priority",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.Extensions.Caching.Memory.CacheItemPriority"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Size",
+          "returnType": "System.Nullable`1<System.Int64>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Size",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<System.Int64>"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Caching.Memory.CacheExtensions",
+      "methods": [
+        {
+          "name": "Get",
+          "returnType": "System.Object",
+          "parameterTypes": [
+            [
+              "cache",
+              "Microsoft.Extensions.Caching.Memory.IMemoryCache"
+            ],
+            [
+              "key",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Get",
+          "returnType": "TItem",
+          "parameterTypes": [
+            [
+              "cache",
+              "Microsoft.Extensions.Caching.Memory.IMemoryCache"
+            ],
+            [
+              "key",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryGetValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "cache",
+              "Microsoft.Extensions.Caching.Memory.IMemoryCache"
+            ],
+            [
+              "key",
+              "System.Object"
+            ],
+            [
+              "value",
+              "TItem&"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Set",
+          "returnType": "TItem",
+          "parameterTypes": [
+            [
+              "cache",
+              "Microsoft.Extensions.Caching.Memory.IMemoryCache"
+            ],
+            [
+              "key",
+              "System.Object"
+            ],
+            [
+              "value",
+              "TItem"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Set",
+          "returnType": "TItem",
+          "parameterTypes": [
+            [
+              "cache",
+              "Microsoft.Extensions.Caching.Memory.IMemoryCache"
+            ],
+            [
+              "key",
+              "System.Object"
+            ],
+            [
+              "value",
+              "TItem"
+            ],
+            [
+              "absoluteExpiration",
+              "System.DateTimeOffset"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Set",
+          "returnType": "TItem",
+          "parameterTypes": [
+            [
+              "cache",
+              "Microsoft.Extensions.Caching.Memory.IMemoryCache"
+            ],
+            [
+              "key",
+              "System.Object"
+            ],
+            [
+              "value",
+              "TItem"
+            ],
+            [
+              "absoluteExpirationRelativeToNow",
+              "System.TimeSpan"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Set",
+          "returnType": "TItem",
+          "parameterTypes": [
+            [
+              "cache",
+              "Microsoft.Extensions.Caching.Memory.IMemoryCache"
+            ],
+            [
+              "key",
+              "System.Object"
+            ],
+            [
+              "value",
+              "TItem"
+            ],
+            [
+              "expirationToken",
+              "Microsoft.Extensions.Primitives.IChangeToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Set",
+          "returnType": "TItem",
+          "parameterTypes": [
+            [
+              "cache",
+              "Microsoft.Extensions.Caching.Memory.IMemoryCache"
+            ],
+            [
+              "key",
+              "System.Object"
+            ],
+            [
+              "value",
+              "TItem"
+            ],
+            [
+              "options",
+              "Microsoft.Extensions.Caching.Memory.MemoryCacheEntryOptions"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetOrCreate",
+          "returnType": "TItem",
+          "parameterTypes": [
+            [
+              "cache",
+              "Microsoft.Extensions.Caching.Memory.IMemoryCache"
+            ],
+            [
+              "key",
+              "System.Object"
+            ],
+            [
+              "factory",
+              "System.Func`2<Microsoft.Extensions.Caching.Memory.ICacheEntry,TItem>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetOrCreateAsync",
+          "returnType": "System.Threading.Tasks.Task`1<TItem>",
+          "parameterTypes": [
+            [
+              "cache",
+              "Microsoft.Extensions.Caching.Memory.IMemoryCache"
+            ],
+            [
+              "key",
+              "System.Object"
+            ],
+            [
+              "factory",
+              "System.Func`2<Microsoft.Extensions.Caching.Memory.ICacheEntry,System.Threading.Tasks.Task`1<TItem>>"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Caching.Memory.MemoryCacheStatistics",
+      "methods": [
+        {
+          "name": "get_CurrentEntryCount",
+          "returnType": "System.Int64",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_CurrentEntryCount",
+          "returnType": "System.Void modreq(System.Runtime.CompilerServices.IsExternalInit)",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Int64"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_CurrentEstimatedSize",
+          "returnType": "System.Nullable`1<System.Int64>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_CurrentEstimatedSize",
+          "returnType": "System.Void modreq(System.Runtime.CompilerServices.IsExternalInit)",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<System.Int64>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_TotalMisses",
+          "returnType": "System.Int64",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_TotalMisses",
+          "returnType": "System.Void modreq(System.Runtime.CompilerServices.IsExternalInit)",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Int64"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_TotalHits",
+          "returnType": "System.Int64",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_TotalHits",
+          "returnType": "System.Void modreq(System.Runtime.CompilerServices.IsExternalInit)",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Int64"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Caching.Memory.PostEvictionCallbackRegistration",
+      "methods": [
+        {
+          "name": "get_EvictionCallback",
+          "returnType": "Microsoft.Extensions.Caching.Memory.PostEvictionDelegate",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_EvictionCallback",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.Extensions.Caching.Memory.PostEvictionDelegate"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_State",
+          "returnType": "System.Object",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_State",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Caching.Memory.PostEvictionDelegate",
+      "methods": [
+        {
+          "name": "Invoke",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "key",
+              "System.Object"
+            ],
+            [
+              "value",
+              "System.Object"
+            ],
+            [
+              "reason",
+              "Microsoft.Extensions.Caching.Memory.EvictionReason"
+            ],
+            [
+              "state",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "BeginInvoke",
+          "returnType": "System.IAsyncResult",
+          "parameterTypes": [
+            [
+              "key",
+              "System.Object"
+            ],
+            [
+              "value",
+              "System.Object"
+            ],
+            [
+              "reason",
+              "Microsoft.Extensions.Caching.Memory.EvictionReason"
+            ],
+            [
+              "state",
+              "System.Object"
+            ],
+            [
+              "callback",
+              "System.AsyncCallback"
+            ],
+            [
+              "object",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "EndInvoke",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "result",
+              "System.IAsyncResult"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

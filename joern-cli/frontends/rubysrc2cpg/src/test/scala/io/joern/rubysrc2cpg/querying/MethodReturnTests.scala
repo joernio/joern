@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.querying
 import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Literal, Return}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Literal, Method, MethodRef, Return}
 import io.shiftleft.semanticcpg.language.*
 
 class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
@@ -138,7 +138,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
     r.code shouldBe "{x:0}"
     r.lineNumber shouldBe Some(2)
 
-    val List(c: Call) = r.astChildren.isBlock.astChildren.isCall.l
+    val List(c: Call) = r.astChildren.isBlock.astChildren.assignment.source.isCall.l
     c.methodFullName shouldBe RubyOperators.hashInitializer
   }
 
@@ -240,6 +240,47 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
     }
   }
 
+  "implicit return of nested control flow" in {
+    val cpg = code("""
+      | def f
+      |  if true
+      |   if true
+      |    1
+      |   else
+      |    2
+      |   end
+      |  else
+      |   if true
+      |    3
+      |   else
+      |    4
+      |   end
+      |  end
+      | end
+      |""".stripMargin)
+
+    inside(cpg.method.name("f").l) {
+      case f :: Nil =>
+        inside(cpg.methodReturn.toReturn.l) {
+          case return1 :: return2 :: return3 :: return4 :: Nil =>
+            return1.code shouldBe "1"
+            return1.lineNumber shouldBe Some(5)
+
+            return2.code shouldBe "2"
+            return2.lineNumber shouldBe Some(7)
+
+            return3.code shouldBe "3"
+            return3.lineNumber shouldBe Some(11)
+
+            return4.code shouldBe "4"
+            return4.lineNumber shouldBe Some(13)
+
+          case xs => fail(s"Expected 4 returns, instead got [${xs.code.mkString(",")}]")
+        }
+      case xs => fail(s"Expected exactly one method with the name `f`, instead got [${xs.code.mkString(",")}]")
+    }
+  }
+
   "implicit RETURN node for ternary expression" in {
     val cpg = code("""
         |def f(x) = x ? 20 : 40
@@ -271,11 +312,15 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
 
   "implicit RETURN node for MEMBER CALL" in {
     val cpg = code("""
-                     |def f(x)
-                     | puts(x)
+                     |class F
+                     |  def self.x(y)
+                     |   puts(y)
+                     |  end
                      |end
+                     |
                      |def j()
-                     | f.x(1)
+                     |  f = F.new
+                     |  f.x(1)
                      |end
                      |""".stripMargin)
 
@@ -286,7 +331,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
             retMemAccess.code shouldBe "f.x(1)"
 
             val List(call: Call) = retMemAccess.astChildren.l: @unchecked
-            call.methodFullName shouldBe "x"
+            call.name shouldBe "x"
           case xs => fail(s"Expected exactly one return nodes, instead got [${xs.code.mkString(",")}]")
         }
       case _ => fail("Only one method expected")
@@ -312,6 +357,64 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
           case xs => fail(s"Expected exactly one return nodes, instead got [${xs.code.mkString(",")}]")
         }
       case _ => fail("Only one method expected")
+    }
+  }
+
+  "implict RETURN node for RubyCallWithBlock" should {
+    val cpg = code("""
+                     | def foo &block
+                     |  puts block.call
+                     | end
+                     |
+                     | def bar
+                     |  foo do
+                     |   "hello"
+                     |  end
+                     | end
+                     |""".stripMargin)
+
+    "Create closureMethod and return structures" in {
+      inside(cpg.method.name("bar").l) {
+        case bar :: Nil =>
+          inside(bar.astChildren.collectAll[Method].l) {
+            case closureMethod :: Nil =>
+              closureMethod.name shouldBe "<lambda>0"
+              closureMethod.fullName shouldBe "Test0.rb:<global>::program:bar:<lambda>0"
+            case xs => fail(s"Expected closure method, but found ${xs.code.mkString(", ")} instead")
+          }
+
+          inside(bar.methodReturn.toReturn.l) {
+            case barReturn :: Nil =>
+              inside(barReturn.astChildren.l) {
+                case (returnCall: Call) :: Nil =>
+                  returnCall.code.replaceAll("\n", "") shouldBe "foo do   \"hello\"  end"
+
+                  returnCall.name shouldBe "foo"
+
+                  val List(_, arg: MethodRef) = returnCall.argument.l: @unchecked
+                  arg.methodFullName shouldBe "Test0.rb:<global>::program:bar:<lambda>0"
+                case xs => fail(s"Expected one call for return, but found ${xs.code.mkString(", ")} instead")
+              }
+
+            case xs => fail(s"Expected one return, but found ${xs.code.mkString(", ")} instead")
+          }
+        case xs => fail(s"Expected one method, but found ${xs.code.mkString(", ")} instead")
+      }
+    }
+
+    "have no parameters in the closure declaration" in {
+      inside(cpg.method("<lambda>0").parameter.l) {
+        case Nil => // pass
+        case xs  => fail(s"Expected the closure to have no parameters, instead got [${xs.code.mkString(", ")}]")
+      }
+    }
+
+    "have the return node under the closure (returning the literal)" in {
+      inside(cpg.method("<lambda>0").block.astChildren.l) {
+        case ret :: Nil =>
+          ret.code shouldBe "\"hello\""
+        case xs => fail(s"Expected the closure to have a single call, instead got [${xs.code.mkString(", ")}]")
+      }
     }
   }
 

@@ -21,7 +21,6 @@ astGenVersion := appProperties.value.getString("csharpsrc2cpg.dotnetastgen_versi
 
 libraryDependencies ++= Seq(
   "io.shiftleft"              %% "codepropertygraph" % Versions.cpg,
-  "com.fasterxml.jackson.core" % "jackson-databind"  % "2.15.2",
   "org.scalatest"             %% "scalatest"         % Versions.scalatest % Test
 )
 
@@ -34,7 +33,7 @@ enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 
 lazy val AstgenWin      = "dotnetastgen-win.exe"
 lazy val AstgenLinux    = "dotnetastgen-linux"
-lazy val AstgenLinuxArm = "dotnetastgen-linux-arm"
+lazy val AstgenLinuxArm = "dotnetastgen-linux-arm64"
 lazy val AstgenMac      = "dotnetastgen-macos"
 
 lazy val AllPlatforms = Seq(AstgenWin, AstgenLinux, AstgenLinuxArm, AstgenMac)

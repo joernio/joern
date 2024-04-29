@@ -1,34 +1,48 @@
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
 
-class PatternTests extends AbstractPassTest {
+class PatternTests extends AstSwiftSrc2CpgSuite {
 
   "PatternTests" should {
 
-    "testNonBinding1" ignore AstFixture("if case let E<Int>.e(y) = x {}") { cpg => ??? }
+    "testNonBinding1" ignore {
+      val cpg = code("if case let E<Int>.e(y) = x {}")
+      ???
+    }
 
-    "testNonBinding2" ignore AstFixture("""
+    "testNonBinding2" ignore {
+      val cpg = code("""
         |switch e {
         |  case let E<Int>.e(y):
         |    y
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testNonBinding3" ignore AstFixture("if case let (y[0], z) = x {}") { cpg => ??? }
+    "testNonBinding3" ignore {
+      val cpg = code("if case let (y[0], z) = x {}")
+      ???
+    }
 
-    "testNonBinding4" ignore AstFixture("""
+    "testNonBinding4" ignore {
+      val cpg = code("""
         |switch x {
         |  case let (y[0], z):
         |    z
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testNonBinding5" ignore AstFixture("if case let y[z] = x {}") { cpg => ??? }
+    "testNonBinding5" ignore {
+      val cpg = code("if case let y[z] = x {}")
+      ???
+    }
 
-    "testNonBinding6" ignore AstFixture("""
+    "testNonBinding6" ignore {
+      val cpg = code("""
         |switch 0 {
         |  case let y[z]:
         |    z
@@ -37,7 +51,9 @@ class PatternTests extends AbstractPassTest {
         |   default:
         |     0
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
   }
 

@@ -57,15 +57,29 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     }
   }
 
+  private def nameForJumpTarget(node: SwiftNode): String = {
+    node match {
+      case s: SwitchCaseSyntax => code(s.label).stripSuffix(":")
+      case other               => code(other).stripSuffix(":")
+    }
+  }
+
+  private def codeForJumpTarget(node: SwiftNode): String = {
+    node match {
+      case s: SwitchCaseSyntax => code(s.label)
+      case other               => code(other)
+    }
+  }
+
   protected def createJumpTarget(switchCase: SwitchCaseSyntax | IfConfigDeclSyntax): NewJumpTarget = {
     val (switchName, switchCode) = switchCase match {
       case s: SwitchCaseSyntax =>
-        val c = code(s.label)
-        (c.stripSuffix(":"), c)
+        (nameForJumpTarget(s), codeForJumpTarget(s))
       case i: IfConfigDeclSyntax =>
         val elements = jumpTargetFromIfConfigDeclSyntax(i)
-        val c        = elements.headOption.fold(code(i.clauses.children.head))(code)
-        (c.stripSuffix(":"), c)
+        val elemCode = elements.headOption.fold(codeForJumpTarget(i.clauses.children.head))(codeForJumpTarget)
+        val elemName = elements.headOption.fold(nameForJumpTarget(i.clauses.children.head))(nameForJumpTarget)
+        (elemName, elemCode)
     }
     NewJumpTarget()
       .parserTypeName(switchCase.toString)
@@ -173,10 +187,9 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     line: Option[Integer],
     column: Option[Integer]
   ): NewFieldIdentifier = {
-    val cleanedName = stripQuotes(name)
     NewFieldIdentifier()
-      .code(cleanedName)
-      .canonicalName(cleanedName)
+      .code(name)
+      .canonicalName(name)
       .lineNumber(line)
       .columnNumber(column)
   }

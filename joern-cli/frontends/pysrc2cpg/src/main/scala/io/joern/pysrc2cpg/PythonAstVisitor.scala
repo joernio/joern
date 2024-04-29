@@ -1,7 +1,8 @@
 package io.joern.pysrc2cpg
 
-import PythonAstVisitor.{builtinPrefix, logger, metaClassSuffix, noLineAndColumn}
+import PythonAstVisitor.{logger, metaClassSuffix, noLineAndColumn}
 import io.joern.pysrc2cpg.memop.*
+import io.joern.pysrc2cpg.Constants.builtinPrefix
 import io.joern.pythonparser.ast
 import io.joern.x2cpg.{AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
@@ -38,7 +39,7 @@ class PythonAstVisitor(
 
   protected val contextStack = new ContextStack()
 
-  private var memOpMap: AstNodeToMemoryOperationMap = _
+  private var memOpMap: AstNodeToMemoryOperationMap = scala.compiletime.uninitialized
 
   private val members = mutable.Map.empty[NewTypeDecl, List[String]]
 
@@ -179,7 +180,7 @@ class PythonAstVisitor(
     result
   }
 
-  private def unhandled(node: ast.iast with ast.iattributes): NewNode = {
+  private def unhandled(node: ast.iast & ast.iattributes): NewNode = {
     val unhandledAsUnknown = true
     if (unhandledAsUnknown) {
       nodeBuilder.unknownNode(node.toString, node.getClass.getName, lineAndColOf(node))
@@ -2087,7 +2088,6 @@ class PythonAstVisitor(
 object PythonAstVisitor {
   private val logger = LoggerFactory.getLogger(getClass)
 
-  val builtinPrefix   = "__builtin."
   val typingPrefix    = "typing."
   val metaClassSuffix = "<meta>"
 

@@ -1,23 +1,27 @@
 package io.joern.rubysrc2cpg.astcreation
 
-import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{Unknown, *}
+import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{Unknown, Block as RubyBlock, *}
 import io.joern.rubysrc2cpg.datastructures.BlockScope
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.{RubyOperators, getBuiltInType}
+import io.joern.rubysrc2cpg.utils.FreshNameGenerator
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{
   ControlStructureTypes,
-  DiffGraphBuilder,
   DispatchTypes,
+  EdgeTypes,
   Operators,
   PropertyNames
 }
 
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
+  val tmpGen = FreshNameGenerator(i => s"<tmp-$i>")
+
   protected def astForExpression(node: RubyNode): Ast = node match
     case node: StaticLiteral            => astForStaticLiteral(node)
+    case node: HereDocNode              => astForHereDoc(node)
     case node: DynamicLiteral           => astForDynamicLiteral(node)
     case node: UnaryExpression          => astForUnary(node)
     case node: BinaryExpression         => astForBinary(node)
@@ -27,13 +31,17 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case node: IndexAccess              => astForIndexAccess(node)
     case node: SingleAssignment         => astForSingleAssignment(node)
     case node: AttributeAssignment      => astForAttributeAssignment(node)
-    case node: SimpleIdentifier         => astForSimpleIdentifier(node)
+    case node: RubyIdentifier           => astForSimpleIdentifier(node)
     case node: SimpleCall               => astForSimpleCall(node)
+    case node: RequireCall              => astForRequireCall(node)
+    case node: IncludeCall              => astForIncludeCall(node)
+    case node: YieldExpr                => astForYield(node)
     case node: RangeExpression          => astForRange(node)
     case node: ArrayLiteral             => astForArrayLiteral(node)
     case node: HashLiteral              => astForHashLiteral(node)
     case node: Association              => astForAssociation(node)
     case node: IfExpression             => astForIfExpression(node)
+    case node: UnlessExpression         => astForUnlessExpression(node)
     case node: RescueExpression         => astForRescueExpression(node)
     case node: MandatoryParameter       => astForMandatoryParameter(node)
     case node: SplattingRubyNode        => astForSplattingRubyNode(node)
@@ -46,6 +54,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   protected def astForStaticLiteral(node: StaticLiteral): Ast = {
     Ast(literalNode(node, code(node), node.typeFullName))
+  }
+
+  protected def astForHereDoc(node: HereDocNode): Ast = {
+    Ast(literalNode(node, code(node), getBuiltInType("String")))
   }
 
   // Helper for nil literals to put in empty clauses
@@ -105,6 +117,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case None =>
         logger.warn(s"Unrecognized binary operator: ${code(node)} ($relativeFileName), skipping")
         astForUnknown(node)
+      case Some("=~") =>
+        astForMemberCall(MemberCall(node.lhs, ".", "=~", List(node.rhs))(node.span))
       case Some(op) =>
         val lhsAst = astForExpression(node.lhs)
         val rhsAst = astForExpression(node.rhs)
@@ -114,16 +128,25 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   // Member accesses are lowered as calls, i.e. `x.y` is the call of `y` of `x` without any arguments.
   protected def astForMemberAccess(node: MemberAccess): Ast = {
-    astForMemberCall(MemberCall(node.target, node.op, node.methodName, List.empty)(node.span))
+    astForMemberCall(MemberCall(node.target, node.op, node.memberName, List.empty)(node.span))
   }
 
   /** Attempts to extract a type from the base of a member call.
     */
   protected def typeFromCallTarget(baseNode: RubyNode): Option[String] = {
-    astForExpression(baseNode).nodes
-      .flatMap(_.properties.get(PropertyNames.TYPE_FULL_NAME).map(_.toString))
-      .filterNot(_ == XDefines.Any)
-      .headOption
+    scope.lookupVariable(baseNode.text) match {
+      // fixme: This should be under type recovery logic
+      case Some(decl: NewLocal) if decl.typeFullName != Defines.Any             => Option(decl.typeFullName)
+      case Some(decl: NewMethodParameterIn) if decl.typeFullName != Defines.Any => Option(decl.typeFullName)
+      case Some(decl: NewLocal) if decl.dynamicTypeHintFullName.nonEmpty => decl.dynamicTypeHintFullName.headOption
+      case Some(decl: NewMethodParameterIn) if decl.dynamicTypeHintFullName.nonEmpty =>
+        decl.dynamicTypeHintFullName.headOption
+      case _ =>
+        astForExpression(baseNode).nodes
+          .flatMap(_.properties.get(PropertyNames.TYPE_FULL_NAME).map(_.toString))
+          .filterNot(_ == XDefines.Any)
+          .headOption
+    }
   }
 
   protected def astForMemberCall(node: MemberCall): Ast = {
@@ -131,28 +154,50 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     // TODO: Type recovery should potentially resolve this
     val fullName = typeFromCallTarget(node.target)
       .map(x => s"$x:${node.methodName}")
-      .getOrElse(node.methodName)
-    val fieldAccessAst  = astForFieldAccess(MemberAccess(node.target, node.op, node.methodName)(node.span))
-    val argumentAsts    = node.arguments.map(astForMethodCallArgument)
+      .getOrElse(XDefines.DynamicCallUnknownFullName)
+
+    val receiver     = astForExpression(node.target)
+    val argumentAsts = node.arguments.map(astForMethodCallArgument)
+
+    receiver.root.collect { case x: NewCall => x.typeFullName(fullName) }
+
     val fieldAccessCall = callNode(node, code(node), node.methodName, fullName, DispatchTypes.DYNAMIC_DISPATCH)
-    callAst(fieldAccessCall, argumentAsts, Some(fieldAccessAst))
+
+    callAst(fieldAccessCall, argumentAsts, Option(receiver))
   }
 
   protected def astForIndexAccess(node: IndexAccess): Ast = {
-    val indexAsts = node.indices.map(astForExpression)
-    val targetAst = astForExpression(node.target)
-    val call = callNode(node, code(node), Operators.indexAccess, Operators.indexAccess, DispatchTypes.STATIC_DISPATCH)
-
-    callAst(call, targetAst +: indexAsts)
+    // Array::[] and Hash::[] looks like an index access to the parser, some other methods may have this name too
+    lazy val defaultBehaviour = {
+      val indexAsts = node.indices.map(astForExpression)
+      val targetAst = astForExpression(node.target)
+      val call =
+        callNode(node, code(node), Operators.indexAccess, Operators.indexAccess, DispatchTypes.STATIC_DISPATCH)
+      callAst(call, targetAst +: indexAsts)
+    }
+    scope.tryResolveTypeReference(node.target.text).map(_.name) match {
+      case Some(typeReference) =>
+        scope
+          .tryResolveMethodInvocation("[]", List.empty, Option(typeReference))
+          .map { m =>
+            val expr = astForExpression(MemberCall(node.target, "::", "[]", node.indices)(node.span))
+            expr.root.collect { case x: NewCall =>
+              x.methodFullName(s"$typeReference:${m.name}")
+              scope.tryResolveTypeReference(m.returnType).map(_.name).foreach(x.typeFullName(_))
+            }
+            expr
+          }
+          .getOrElse(defaultBehaviour)
+      case None => defaultBehaviour
+    }
   }
 
-  protected def astForObjectInstantiation(node: RubyNode with ObjectInstantiation): Ast = {
+  protected def astForObjectInstantiation(node: RubyNode & ObjectInstantiation): Ast = {
     val className  = node.target.text
     val methodName = XDefines.ConstructorMethodName
     val (receiverTypeFullName, fullName) = scope.tryResolveTypeReference(className) match {
       case Some(typeMetaData) => typeMetaData.name -> s"${typeMetaData.name}:$methodName"
-      case None =>
-        s"${XDefines.UnresolvedNamespace}.$className" -> s"${XDefines.UnresolvedNamespace}.$className:$methodName"
+      case None               => XDefines.Any      -> XDefines.DynamicCallUnknownFullName
     }
     /*
       Similarly to some other frontends, we lower the constructor into two operations, e.g.,
@@ -162,7 +207,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val block = blockNode(node)
     scope.pushNewScope(BlockScope(block))
 
-    val tmp = SimpleIdentifier(Option(className))(node.span.spanStart(freshVariableName))
+    val tmp = SimpleIdentifier(Option(className))(node.span.spanStart(tmpGen.fresh))
     def tmpIdentifier = {
       val tmpAst = astForSimpleIdentifier(tmp)
       tmpAst.root.collect { case x: NewIdentifier => x.typeFullName(receiverTypeFullName) }
@@ -192,7 +237,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         x.arguments.map(astForMethodCallArgument) :+ methodRef
     }
 
-    val constructorCall    = callNode(node, code(node), methodName, fullName, DispatchTypes.STATIC_DISPATCH)
+    val constructorCall    = callNode(node, code(node), methodName, fullName, DispatchTypes.DYNAMIC_DISPATCH)
     val constructorCallAst = callAst(constructorCall, argumentAsts, Option(tmpIdentifier))
     scope.popScope()
 
@@ -213,28 +258,55 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           case Some(op) =>
             node.rhs match {
               case cfNode: ControlFlowExpression =>
-                def elseAssignNil = Option {
+                def elseAssignNil(span: TextSpan) = Option {
                   ElseClause(
                     StatementList(
                       SingleAssignment(
                         node.lhs,
                         node.op,
-                        StaticLiteral(getBuiltInType(Defines.NilClass))(node.span.spanStart("nil"))
-                      )(node.span.spanStart(s"${node.lhs.span.text} ${node.op} nil")) :: Nil
-                    )(node.span.spanStart(s"${node.lhs.span.text} ${node.op} nil"))
-                  )(node.span.spanStart(s"else\n\t${node.lhs.span.text} ${node.op} nil\nend"))
+                        StaticLiteral(getBuiltInType(Defines.NilClass))(span.spanStart("nil"))
+                      )(span.spanStart(s"${node.lhs.span.text} ${node.op} nil")) :: Nil
+                    )(span.spanStart(s"${node.lhs.span.text} ${node.op} nil"))
+                  )(span.spanStart(s"else\n\t${node.lhs.span.text} ${node.op} nil\nend"))
                 }
 
-                astForExpression(
+                def transform(e: RubyNode & ControlFlowExpression): RubyNode =
                   transformLastRubyNodeInControlFlowExpressionBody(
-                    cfNode,
-                    x => reassign(node.lhs, node.op, x),
+                    e,
+                    x => reassign(node.lhs, node.op, x, transform),
                     elseAssignNil
                   )
-                )
+                astForExpression(transform(cfNode))
               case _ =>
-                val lhsAst = astForExpression(node.lhs)
+                // The if the LHS defines a new variable, put the local variable into scope
+                val lhsAst = node.lhs match {
+                  case x: SimpleIdentifier if scope.lookupVariable(code(x)).isEmpty =>
+                    val name  = code(x)
+                    val local = localNode(x, name, name, Defines.Any)
+                    scope.addToScope(name, local) match {
+                      case BlockScope(block) => diffGraph.addEdge(block, local, EdgeTypes.AST)
+                      case _                 =>
+                    }
+                    astForExpression(node.lhs)
+                  case _ => astForExpression(node.lhs)
+                }
                 val rhsAst = astForExpression(node.rhs)
+
+                // If this is a simple object instantiation assignment, we can give the LHS variable a type hint
+                if (node.rhs.isInstanceOf[ObjectInstantiation] && lhsAst.root.exists(_.isInstanceOf[NewIdentifier])) {
+                  rhsAst.nodes.collectFirst {
+                    case tmp: NewIdentifier if tmp.name.startsWith("<tmp") && tmp.typeFullName != Defines.Any =>
+                      lhsAst.root.collectFirst { case i: NewIdentifier =>
+                        scope.lookupVariable(i.name).foreach {
+                          case x: NewLocal =>
+                            x.dynamicTypeHintFullName(x.dynamicTypeHintFullName :+ tmp.typeFullName)
+                          case x: NewMethodParameterIn =>
+                            x.dynamicTypeHintFullName(x.dynamicTypeHintFullName :+ tmp.typeFullName)
+                        }
+                        i.dynamicTypeHintFullName(i.dynamicTypeHintFullName :+ tmp.typeFullName)
+                      }
+                  }
+                }
 
                 val call = callNode(node, code(node), op, op, DispatchTypes.STATIC_DISPATCH)
                 callAst(call, Seq(lhsAst, rhsAst))
@@ -243,30 +315,38 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     }
   }
 
-  private def reassign(lhs: RubyNode, op: String, rhs: RubyNode): RubyNode = {
+  private def reassign(
+    lhs: RubyNode,
+    op: String,
+    rhs: RubyNode,
+    transform: (RubyNode & ControlFlowExpression) => RubyNode
+  ): RubyNode = {
     def stmtListAssigningLastExpression(stmts: List[RubyNode]): List[RubyNode] = stmts match {
-      case (head: ControlFlowClause) :: Nil => clauseAssigningLastExpression(head) :: Nil
+      case (head: ControlFlowClause) :: Nil     => clauseAssigningLastExpression(head) :: Nil
+      case (head: ControlFlowExpression) :: Nil => transform(head) :: Nil
       case head :: Nil =>
-        SingleAssignment(lhs, op, head)(lhs.span.spanStart(s"${lhs.span.text} $op ${head.span.text}")) :: Nil
+        SingleAssignment(lhs, op, head)(rhs.span.spanStart(s"${lhs.span.text} $op ${head.span.text}")) :: Nil
       case Nil          => List.empty
       case head :: tail => head :: stmtListAssigningLastExpression(tail)
     }
 
-    def clauseAssigningLastExpression(x: RubyNode with ControlFlowClause): RubyNode = x match {
+    def clauseAssigningLastExpression(x: RubyNode & ControlFlowClause): RubyNode = x match {
       case RescueClause(exceptionClassList, assignment, thenClause) =>
-        RescueClause(exceptionClassList, assignment, reassign(lhs, op, thenClause))(x.span)
-      case EnsureClause(thenClause)           => EnsureClause(reassign(lhs, op, thenClause))(x.span)
-      case ElsIfClause(condition, thenClause) => ElsIfClause(condition, reassign(lhs, op, thenClause))(x.span)
-      case ElseClause(thenClause)             => ElseClause(reassign(lhs, op, thenClause))(x.span)
+        RescueClause(exceptionClassList, assignment, reassign(lhs, op, thenClause, transform))(x.span)
+      case EnsureClause(thenClause) => EnsureClause(reassign(lhs, op, thenClause, transform))(x.span)
+      case ElsIfClause(condition, thenClause) =>
+        ElsIfClause(condition, reassign(lhs, op, thenClause, transform))(x.span)
+      case ElseClause(thenClause) => ElseClause(reassign(lhs, op, thenClause, transform))(x.span)
       case WhenClause(matchExpressions, matchSplatExpression, thenClause) =>
-        WhenClause(matchExpressions, matchSplatExpression, reassign(lhs, op, thenClause))(x.span)
+        WhenClause(matchExpressions, matchSplatExpression, reassign(lhs, op, thenClause, transform))(x.span)
     }
 
     rhs match {
-      case StatementList(statements) => StatementList(stmtListAssigningLastExpression(statements))(rhs.span)
-      case clause: ControlFlowClause => clauseAssigningLastExpression(clause)
+      case StatementList(statements)   => StatementList(stmtListAssigningLastExpression(statements))(rhs.span)
+      case clause: ControlFlowClause   => clauseAssigningLastExpression(clause)
+      case expr: ControlFlowExpression => transform(expr)
       case _ =>
-        SingleAssignment(lhs, op, rhs)(lhs.span.spanStart(s"${lhs.span.text} $op ${rhs.span.text}"))
+        SingleAssignment(lhs, op, rhs)(rhs.span.spanStart(s"${lhs.span.text} $op ${rhs.span.text}"))
     }
   }
 
@@ -277,19 +357,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     astForMemberCallWithoutBlock(call, memberAccess)
   }
 
-  protected def astForSimpleIdentifier(node: SimpleIdentifier): Ast = {
+  protected def astForSimpleIdentifier(node: RubyNode & RubyIdentifier): Ast = {
     val name = code(node)
 
-    if (name.startsWith("@")) {
-      logger.warn(
-        s"Class (@@) and instance (@) variables are not handled as members yet, but are instead handled as simple identifier declarations. Found: $name"
-      )
-    }
-
     scope.lookupVariable(name) match {
+      case Some(_) => handleVariableOccurrence(node)
       case None if scope.tryResolveMethodInvocation(node.text, List.empty).isDefined =>
         astForSimpleCall(SimpleCall(node, List())(node.span))
-      case _ => handleVariableOccurrence(node)
+      case None => handleVariableOccurrence(node)
     }
   }
 
@@ -304,6 +379,43 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         astForUnknown(targetNode)
   }
 
+  protected def astForRequireCall(node: RequireCall): Ast = {
+    val pathOpt = node.argument match {
+      case arg: StaticLiteral if arg.isString => Option(arg.innerText)
+      case _                                  => None
+    }
+    pathOpt.foreach(path => scope.addRequire(path, node.isRelative))
+    astForSimpleCall(node.asSimpleCall)
+  }
+
+  protected def astForIncludeCall(node: IncludeCall): Ast = {
+    scope.addInclude(
+      node.argument.text.replaceAll("::", ".")
+    ) // Maybe generate ast and get name in a more structured approach instead
+    astForSimpleCall(node.asSimpleCall)
+  }
+
+  protected def astForYield(node: YieldExpr): Ast = {
+    scope.useProcParam match {
+      case Some(param) =>
+        val call = astForExpression(
+          SimpleCall(SimpleIdentifier()(node.span.spanStart(param)), node.arguments)(node.span)
+        )
+        val ret = returnAst(returnNode(node, code(node)))
+        val cond = astForExpression(
+          SimpleCall(SimpleIdentifier()(node.span.spanStart(tmpGen.fresh)), List())(node.span.spanStart("<nondet>"))
+        )
+        callAst(
+          callNode(node, code(node), Operators.conditional, Operators.conditional, DispatchTypes.STATIC_DISPATCH),
+          List(cond, call, ret)
+        )
+      case None =>
+        logger.warn(s"Yield expression outside of method scope: ${code(node)} ($relativeFileName), skipping")
+        astForUnknown(node)
+
+    }
+  }
+
   protected def astForRange(node: RangeExpression): Ast = {
     val lbAst = astForExpression(node.lowerBound)
     val ubAst = astForExpression(node.upperBound)
@@ -316,13 +428,18 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       logger.warn(s"Interpolated array literals are not supported yet: ${code(node)} ($relativeFileName), skipping")
       astForUnknown(node)
     } else {
-      val argumentsType = if (node.isStringArray) {
-        getBuiltInType(Defines.String)
+      val arguments = if (node.text.startsWith("%")) {
+        val argumentsType =
+          if (node.isStringArray) getBuiltInType(Defines.String)
+          else getBuiltInType(Defines.Symbol)
+        node.elements.map {
+          case element @ StaticLiteral(_) => StaticLiteral(argumentsType)(element.span)
+          case element                    => element
+        }
       } else {
-        getBuiltInType(Defines.Symbol)
+        node.elements
       }
-      val argumentLiterals = node.elements.map(element => StaticLiteral(argumentsType)(element.span))
-      val argumentAsts     = argumentLiterals.map(astForExpression)
+      val argumentAsts = arguments.map(astForExpression)
 
       val call =
         callNode(
@@ -337,10 +454,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   protected def astForHashLiteral(node: HashLiteral): Ast = {
+    val tmp = tmpGen.fresh
+
+    def tmpAst(tmpNode: Option[RubyNode] = None) = astForSimpleIdentifier(
+      SimpleIdentifier()(tmpNode.map(_.span).getOrElse(node.span).spanStart(tmp))
+    )
+
     val block = blockNode(node)
     scope.pushNewScope(BlockScope(block))
-
-    val tmp = freshVariableName
 
     val argumentAsts = node.elements.flatMap(elem =>
       elem match
@@ -349,19 +470,24 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           logger.warn(s"Could not represent element: ${code(node)} ($relativeFileName), skipping")
           astForUnknown(node) :: Nil
     )
-    val call = callNode(
+
+    val hashInitCall = callNode(
       node,
       code(node),
       RubyOperators.hashInitializer,
       RubyOperators.hashInitializer,
       DispatchTypes.STATIC_DISPATCH
     )
+
+    val assignment =
+      callNode(node, code(node), Operators.assignment, Operators.assignment, DispatchTypes.STATIC_DISPATCH)
+    val tmpAssignment = callAst(assignment, tmpAst() :: Ast(hashInitCall) :: Nil)
+
     scope.popScope()
-    blockAst(block, List(callAst(call, argumentAsts)))
+    blockAst(block, tmpAssignment +: argumentAsts :+ tmpAst(node.elements.lastOption))
   }
 
   protected def astForAssociationHash(node: Association, tmp: String): List[Ast] = {
-    val tmpAst = astForSimpleIdentifier(SimpleIdentifier()(node.span.spanStart(tmp)))
     node.key match {
       case rangeExpr: RangeExpression =>
         val expandedList = generateStaticLiteralsForRange(rangeExpr).map { x =>
@@ -369,12 +495,12 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         }
 
         if (expandedList.nonEmpty) {
-          expandedList :+ tmpAst
+          expandedList
         } else {
-          astForSingleKeyValue(node.key, node.value, tmp) :: tmpAst :: Nil
+          astForSingleKeyValue(node.key, node.value, tmp) :: Nil
         }
 
-      case _ => astForSingleKeyValue(node.key, node.value, tmp) :: tmpAst :: Nil
+      case _ => astForSingleKeyValue(node.key, node.value, tmp) :: Nil
     }
   }
 
@@ -465,6 +591,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     foldIfExpression(builder)(node)
   }
 
+  protected def astForUnlessExpression(node: UnlessExpression): Ast = {
+    val notConditionAst = UnaryExpression("!", node.condition)(node.condition.span)
+    astForExpression(IfExpression(notConditionAst, node.trueBranch, List(), node.falseBranch)(node.span))
+  }
+
   protected def astForRescueExpression(node: RescueExpression): Ast = {
     val tryAst = astForStatementList(node.body.asStatementList)
     val rescueAsts = node.rescueClauses
@@ -506,26 +637,31 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   private def astForMemberCallWithoutBlock(node: SimpleCall, memberAccess: MemberAccess): Ast = {
     val receiverAst = astForFieldAccess(memberAccess)
-    val methodName  = memberAccess.methodName
+    val methodName  = memberAccess.memberName
     // TODO: Type recovery should potentially resolve this
     val methodFullName = typeFromCallTarget(memberAccess.target)
       .map(x => s"$x:$methodName")
-      .getOrElse(methodName)
+      .getOrElse(XDefines.DynamicCallUnknownFullName)
     val argumentAsts = node.arguments.map(astForMethodCallArgument)
     val call         = callNode(node, code(node), methodName, methodFullName, DispatchTypes.DYNAMIC_DISPATCH)
-    callAst(call, argumentAsts, None, Some(receiverAst))
+
+    callAst(call, argumentAsts, Some(receiverAst))
   }
 
   private def astForMethodCallWithoutBlock(node: SimpleCall, methodIdentifier: SimpleIdentifier): Ast = {
-    val methodName           = methodIdentifier.text
-    lazy val defaultFullName = s"${XDefines.UnresolvedNamespace}:$methodName"
-    val methodFullName = scope.tryResolveMethodInvocation(methodName, List.empty) match {
-      case Some(m) => scope.typeForMethod(m).map(t => s"${t.name}:${m.name}").getOrElse(defaultFullName)
-      case None    => defaultFullName
+    val methodName = methodIdentifier.text
+
+    lazy val defaultResult = Defines.Any -> XDefines.DynamicCallUnknownFullName
+    val (receiverType, methodFullName) = scope.tryResolveMethodInvocation(methodName, List.empty) match {
+      case Some(m) =>
+        scope.typeForMethod(m).map(t => t.name -> s"${t.name}:${m.name}").getOrElse(defaultResult)
+      case None => defaultResult
     }
-    val argumentAst = node.arguments.map(astForMethodCallArgument)
-    val call        = callNode(node, code(node), methodName, methodFullName, DispatchTypes.STATIC_DISPATCH)
-    callAst(call, argumentAst, None, None)
+    val argumentAst      = node.arguments.map(astForMethodCallArgument)
+    val call             = callNode(node, code(node), methodName, methodFullName, DispatchTypes.DYNAMIC_DISPATCH)
+    val receiverCallName = identifierNode(node, call.name, call.name, receiverType)
+
+    callAst(call, argumentAst, Option(Ast(receiverCallName)))
   }
 
   private def astForProcOrLambdaExpr(node: ProcOrLambdaExpr): Ast = {
@@ -537,8 +673,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     methodRef
   }
 
-  private def astsForCallWithBlockInExpr[C <: RubyCall](node: RubyNode with RubyCallWithBlock[C]): Ast = {
-    val Seq(methodDecl, typeDecl, _, callWithLambdaArg) = astsForCallWithBlock(node): @unchecked
+  private def astsForCallWithBlockInExpr[C <: RubyCall](node: RubyNode & RubyCallWithBlock[C]): Ast = {
+    val Seq(methodDecl, typeDecl, callWithLambdaArg) = astsForCallWithBlock(node): @unchecked
 
     Ast.storeInDiffGraph(methodDecl, diffGraph)
     Ast.storeInDiffGraph(typeDecl, diffGraph)
@@ -550,7 +686,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     node match
       // Associations in method calls are keyword arguments
       case assoc: Association => astForKeywordArgument(assoc)
-      case _                  => astForExpression(node)
+      case block: RubyBlock =>
+        val Seq(methodDecl, typeDecl, _, methodRef) = astForDoBlock(block)
+        Ast.storeInDiffGraph(methodDecl, diffGraph)
+        Ast.storeInDiffGraph(typeDecl, diffGraph)
+
+        methodRef
+      case _ => astForExpression(node)
   }
 
   private def astForKeywordArgument(assoc: Association): Ast = {
@@ -566,10 +708,27 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   protected def astForFieldAccess(node: MemberAccess): Ast = {
-    val fieldIdentifierAst = Ast(fieldIdentifierNode(node, node.methodName, node.methodName))
+    val fieldIdentifierAst = Ast(fieldIdentifierNode(node, node.memberName, node.memberName))
     val targetAst          = astForExpression(node.target)
-    val code               = s"${node.target.text}${node.op}${node.methodName}"
-    val fieldAccess = callNode(node, code, Operators.fieldAccess, Operators.fieldAccess, DispatchTypes.STATIC_DISPATCH)
+    val code               = s"${node.target.text}${node.op}${node.memberName}"
+    val memberType = typeFromCallTarget(node.target)
+      .flatMap(scope.tryResolveTypeReference)
+      .map(_.fields)
+      .getOrElse(List.empty)
+      .collectFirst {
+        case x if x.name == node.memberName =>
+          scope.tryResolveTypeReference(x.typeName).map(_.name).getOrElse(Defines.Any)
+      }
+      .orElse(Option(Defines.Any))
+    val fieldAccess = callNode(
+      node,
+      code,
+      Operators.fieldAccess,
+      Operators.fieldAccess,
+      DispatchTypes.STATIC_DISPATCH,
+      signature = None,
+      typeFullName = memberType
+    )
     callAst(fieldAccess, Seq(targetAst, fieldIdentifierAst))
   }
 

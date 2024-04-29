@@ -11,6 +11,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import overflowdb.traversal.help.Table.{AvailableWidthProvider, ConstantWidth}
 
+import java.util.Optional
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 class StepsTest extends AnyWordSpec with Matchers {
@@ -57,7 +58,7 @@ class StepsTest extends AnyWordSpec with Matchers {
       "providing multiple" in {
         // find two arbitrary methods so we can find it again in the next step
         val methods               = cpg.method.toList.take(2)
-        val results: List[Method] = cpg.method.id(methods.map(_.id): _*).toList
+        val results: List[Method] = cpg.method.id(methods.map(_.id)*).toList
 
         results.size shouldBe 2
         results.toSet shouldBe methods.toSet
@@ -353,6 +354,37 @@ class StepsTest extends AnyWordSpec with Matchers {
     // if it compiles, :shipit:
     assertCompiles("cpg.id(1).out")
     assertDoesNotCompile("cpg.id(1).outV") // `.outV` is only available on Traversal[Edge]
+  }
+
+  "property accessors" in {
+    val cpg = MockCpg().withCustom { (diffGraph, _) =>
+      diffGraph
+        .addNode(NewCall())
+        .addNode(
+          NewCall()
+            .typeFullName("aa")                       // Cardinality.One
+            .argumentName("bb")                       // Cardinality.ZeroOrOne
+            .dynamicTypeHintFullName(Seq("cc", "dd")) // Cardinality.List
+        )
+    }.cpg
+
+    val (Seq(emptyCall), Seq(callWithProperties)) = cpg.call.l.partition(_.argumentName.isEmpty)
+
+    emptyCall.propertyOption(Properties.TYPE_FULL_NAME) shouldBe Optional.of("<empty>")
+    emptyCall.propertyOption(Properties.TYPE_FULL_NAME.name) shouldBe Optional.of("<empty>")
+    emptyCall.propertyOption(Properties.ARGUMENT_NAME) shouldBe Optional.empty
+    emptyCall.propertyOption(Properties.ARGUMENT_NAME.name) shouldBe Optional.empty
+    // these ones are rather a historic accident it'd be better and more consistent to return `None` here -
+    // we'll defer that change until after the flatgraph port though and just document it for now
+    emptyCall.propertyOption(Properties.DYNAMIC_TYPE_HINT_FULL_NAME) shouldBe Optional.of(Seq.empty)
+    emptyCall.propertyOption(Properties.DYNAMIC_TYPE_HINT_FULL_NAME.name) shouldBe Optional.of(Seq.empty)
+
+    callWithProperties.propertyOption(Properties.TYPE_FULL_NAME) shouldBe Optional.of("aa")
+    callWithProperties.propertyOption(Properties.TYPE_FULL_NAME.name) shouldBe Optional.of("aa")
+    callWithProperties.propertyOption(Properties.ARGUMENT_NAME) shouldBe Optional.of("bb")
+    callWithProperties.propertyOption(Properties.ARGUMENT_NAME.name) shouldBe Optional.of("bb")
+    callWithProperties.propertyOption(Properties.DYNAMIC_TYPE_HINT_FULL_NAME) shouldBe Optional.of(Seq("cc", "dd"))
+    callWithProperties.propertyOption(Properties.DYNAMIC_TYPE_HINT_FULL_NAME.name) shouldBe Optional.of(Seq("cc", "dd"))
   }
 
 }

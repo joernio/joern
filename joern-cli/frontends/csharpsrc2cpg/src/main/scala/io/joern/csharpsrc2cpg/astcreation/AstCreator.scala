@@ -1,6 +1,6 @@
 package io.joern.csharpsrc2cpg.astcreation
 
-import io.joern.csharpsrc2cpg.Constants
+import io.joern.csharpsrc2cpg.{CSharpDefines, Constants}
 import io.joern.csharpsrc2cpg.datastructures.{CSharpProgramSummary, CSharpScope}
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
@@ -8,6 +8,7 @@ import io.joern.x2cpg.astgen.{AstGenNodeBuilder, ParserResult}
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewTypeDecl}
+import io.shiftleft.passes.IntervalKeyPool
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import ujson.Value
@@ -26,7 +27,6 @@ class AstCreator(
     with AstForPrimitivesCreator
     with AstForExpressionsCreator
     with AstForStatementsCreator
-    with AstForControlStructuresCreator
     with AstSummaryVisitor
     with AstGenNodeBuilder[AstCreator] {
 
@@ -80,6 +80,7 @@ class AstCreator(
       case _: BaseStmt                                           => astForStatement(nodeInfo)
       case NamespaceDeclaration | FileScopedNamespaceDeclaration => astForNamespaceDeclaration(nodeInfo)
       case ClassDeclaration                                      => astForClassDeclaration(nodeInfo)
+      case AnonymousObjectCreationExpression                     => astForAnonymousObjectCreationExpression(nodeInfo)
       case InterfaceDeclaration                                  => astForClassDeclaration(nodeInfo)
       case StructDeclaration                                     => astForClassDeclaration(nodeInfo)
       case RecordDeclaration                                     => astForRecordDeclaration(nodeInfo)
@@ -101,7 +102,6 @@ class AstCreator(
       case CatchDeclaration                                      => astForCatchDeclaration(nodeInfo)
       case PropertyDeclaration                                   => astForPropertyDeclaration(nodeInfo)
       case ExpressionElement                                     => astForExpressionElement(nodeInfo)
-      case _: LiteralExpr                                        => astForLiteralExpression(nodeInfo)
       case _: BaseExpr                                           => astForExpression(nodeInfo)
       case _                                                     => notHandledYet(nodeInfo)
     }

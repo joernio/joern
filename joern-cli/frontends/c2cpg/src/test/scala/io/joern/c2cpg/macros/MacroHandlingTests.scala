@@ -1,6 +1,6 @@
 package io.joern.c2cpg.macros
 
-import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
+import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.joern.c2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.joern.dataflowengineoss.language._
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
@@ -10,7 +10,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.semanticcpg.language._
 
-class MacroHandlingTests extends CCodeToCpgSuite {
+class MacroHandlingTests extends C2CpgSuite {
 
   "MacroHandlingTests1" should {
     val cpg = code("""

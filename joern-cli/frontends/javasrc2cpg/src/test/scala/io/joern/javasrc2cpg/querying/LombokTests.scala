@@ -7,7 +7,84 @@ import io.shiftleft.semanticcpg.language._
 import io.joern.javasrc2cpg.Config
 
 class LombokTests extends JavaSrcCode2CpgFixture {
-  val config = Config().withDelombokMode("run-delombok")
+  private val config = Config().withDelombokMode("default")
+
+  "source in a mixed directory structure" should {
+    val cpg = code(
+      """
+        |package foo;
+        |import lombok.Getter;
+        |
+        |public class Foo {
+        |  @Getter private int value = 42;
+        |}
+        |""".stripMargin,
+      fileName = "src/main/java/foo/Foo.java"
+    ).moreCode(
+      """
+        |package bar;
+        |import lombok.Getter;
+        |
+        |public class Bar {
+        |  @Getter private int value = 42;
+        |}
+        |""".stripMargin,
+      fileName = "src/main/java/bar/Bar.java"
+    ).moreCode(
+      """
+        |package baz;
+        |import lombok.Getter;
+        |
+        |public class Baz {
+        |  @Getter private int value = 42;
+        |}
+        |""".stripMargin,
+      fileName = "Baz.java"
+    ).withConfig(config)
+
+    "generate all the getValue methods" in {
+      cpg.method.name("getValue").fullName.toSet shouldBe Set(
+        "foo.Foo.getValue:int()",
+        "bar.Bar.getValue:int()",
+        "baz.Baz.getValue:int()"
+      )
+    }
+
+    "not give the delomboked filenames" in {
+      List("Foo", "Bar", "Baz").foreach { declName =>
+        cpg.typeDecl.name(declName).filename.head.contains("lombok") shouldBe false
+      }
+    }
+  }
+
+  "source in the standard java directory structure" should {
+    val cpg = code(
+      """
+        |package foo;
+        |import lombok.Getter;
+        |
+        |public class Foo {
+        |  @Getter private int value = 42;
+        |}
+        |""".stripMargin,
+      fileName = "src/main/java/foo/Foo.java"
+    ).withConfig(config)
+
+    "delombok the source correctly" in {
+      cpg.method.name("getValue").l match {
+        case method :: Nil =>
+          method.fullName shouldBe "foo.Foo.getValue:int()"
+          method.body.astChildren.size shouldBe 1
+          method.filename.contains("delombok") shouldBe false
+
+        case result => fail(s"Expected single getValue method but got $result")
+      }
+    }
+
+    "not give the delomboked filename" in {
+      cpg.typeDecl.name("Foo").filename.head.contains("lombok") shouldBe false
+    }
+  }
 
   "basic source with lombok annotations" should {
     val cpg = code(

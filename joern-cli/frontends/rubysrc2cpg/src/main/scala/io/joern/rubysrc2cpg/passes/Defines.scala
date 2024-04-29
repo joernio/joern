@@ -21,8 +21,13 @@ object Defines {
   val Regexp: String     = "Regexp"
   val Lambda: String     = "lambda"
   val Proc: String       = "proc"
+  val This: String       = "this"
 
   val Program: String = ":program"
+
+  val Resolver: String = "<dependency-resolver>"
+
+  val AnonymousProcParameter = "<anonymous-proc-param>"
 
   def getBuiltInType(typeInString: String) = s"${GlobalTypes.builtinPrefix}.$typeInString"
 
@@ -30,5 +35,6 @@ object Defines {
     val hashInitializer = "<operator>.hashInitializer"
     val association     = "<operator>.association"
     val splat           = "<operator>.splat"
+    val regexpMatch     = "=~"
   }
 }

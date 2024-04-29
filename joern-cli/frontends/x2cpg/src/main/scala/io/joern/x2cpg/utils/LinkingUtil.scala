@@ -31,7 +31,7 @@ trait LinkingUtil {
   def namespaceBlockFullNameToNode(cpg: Cpg, x: String): Option[NamespaceBlock] =
     nodesWithFullName(cpg, x).collectFirst { case x: NamespaceBlock => x }
 
-  def nodesWithFullName(cpg: Cpg, x: String): mutable.Seq[NodeRef[_ <: NodeDb]] =
+  def nodesWithFullName(cpg: Cpg, x: String): mutable.Seq[NodeRef[? <: NodeDb]] =
     cpg.graph.indexManager.lookup(PropertyNames.FULL_NAME, x).asScala
 
   protected def getBatchSize(totalItems: Int): Int = {
@@ -117,7 +117,7 @@ trait LinkingUtil {
   ): Unit = {
     var loggedDeprecationWarning = false
     val dereference              = Dereference(cpg)
-    cpg.graph.nodes(srcLabels: _*).asScala.cast[SRC_NODE_TYPE].foreach { srcNode =>
+    cpg.graph.nodes(srcLabels*).asScala.cast[SRC_NODE_TYPE].foreach { srcNode =>
       if (!srcNode.outE(edgeType).hasNext) {
         getDstFullNames(srcNode).foreach { dstFullName =>
           val dereferenceDstFullName = dereference.dereferenceTypeFullName(dstFullName)

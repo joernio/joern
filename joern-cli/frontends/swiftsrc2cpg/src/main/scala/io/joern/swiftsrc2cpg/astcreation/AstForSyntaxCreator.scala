@@ -18,6 +18,8 @@ import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.File.PropertyDefaults
 
+import scala.annotation.unused
+
 trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   private def astForAccessorBlockSyntax(node: AccessorBlockSyntax): Ast = {
@@ -215,8 +217,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     // TODO: handle ellipsis
     // TODO: handle defaultValue
     val name = node.secondName.fold(code(node.firstName))(code)
-    val tpe  = code(node.`type`)
-    registerType(tpe)
+    val tpe  = handleTypeAliasInitializer(node.`type`)
     val parameterNode =
       parameterInNode(
         node,
@@ -274,7 +275,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForMatchingPatternConditionSyntax(node: MatchingPatternConditionSyntax): Ast = {
     val lhsAst    = astForNode(node.pattern)
     val rhsAst    = astForNode(node.initializer.value)
-    val callNode_ = callNode(node, code(node), Operators.assignment, DispatchTypes.STATIC_DISPATCH)
+    val callNode_ = callNode(node, code(node), Operators.equals, DispatchTypes.STATIC_DISPATCH)
     val argAsts   = List(lhsAst, rhsAst)
     callAst(callNode_, argAsts)
   }
@@ -289,42 +290,31 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     notHandledYet(node)
   private def astForOperatorPrecedenceAndTypesSyntax(node: OperatorPrecedenceAndTypesSyntax): Ast = notHandledYet(node)
 
-  private def astForOptionalBindingConditionSyntax(node: OptionalBindingConditionSyntax): Ast = {
+  private def localForOptionalBindingConditionSyntax(
+    node: OptionalBindingConditionSyntax,
+    name: String,
+    typeFullName: String
+  ): Unit = {
     val kind = code(node.bindingSpecifier)
     val scopeType = if (kind == "let") {
       BlockScope
     } else {
       MethodScope
     }
-
-    val name = node.pattern match {
-      case expr: ExpressionPatternSyntax if expr.expression.isInstanceOf[DiscardAssignmentExprSyntax] =>
-        generateUnusedVariableName(usedVariableNames, "discard")
-      case expr: ExpressionPatternSyntax =>
-        notHandledYet(expr)
-        code(expr)
-      case ident: IdentifierPatternSyntax =>
-        code(ident.identifier)
-      case isType: IsTypePatternSyntax =>
-        notHandledYet(isType)
-        code(isType)
-      case missing: MissingPatternSyntax =>
-        code(missing.placeholder)
-      case tuple: TuplePatternSyntax =>
-        notHandledYet(tuple)
-        code(tuple)
-      case valueBinding: ValueBindingPatternSyntax =>
-        notHandledYet(valueBinding)
-        code(valueBinding)
-      case wildcard: WildcardPatternSyntax =>
-        notHandledYet(wildcard)
-        generateUnusedVariableName(usedVariableNames, "wildcard")
-    }
-    val typeFullName = node.typeAnnotation.fold(Defines.Any)(t => code(t.`type`))
-    registerType(typeFullName)
     val nLocalNode = localNode(node, name, name, typeFullName).order(0)
+    registerType(typeFullName)
     scope.addVariable(name, nLocalNode, scopeType)
     diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)
+  }
+
+  private def astForOptionalBindingConditionSyntax(node: OptionalBindingConditionSyntax): Ast = {
+    val typeFullName = node.typeAnnotation.fold(Defines.Any)(t => code(t.`type`))
+
+    node.pattern match {
+      case ident: IdentifierPatternSyntax =>
+        localForOptionalBindingConditionSyntax(node, code(ident.identifier), typeFullName)
+      case _ => // do nothing
+    }
 
     val initAst = node.initializer.map(astForNode)
     if (initAst.isEmpty) {
@@ -388,9 +378,8 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForSwitchCaseLabelSyntax(node: SwitchCaseLabelSyntax): Ast = notHandledYet(node)
   private def astForSwitchCaseSyntax(node: SwitchCaseSyntax): Ast           = notHandledYet(node)
 
-  private def astForSwitchDefaultLabelSyntax(node: SwitchDefaultLabelSyntax): Ast = Ast()
+  private def astForSwitchDefaultLabelSyntax(@unused node: SwitchDefaultLabelSyntax): Ast = Ast()
 
-  private def astForThrownTypeClauseSyntax(node: ThrownTypeClauseSyntax): Ast           = notHandledYet(node)
   private def astForTuplePatternElementSyntax(node: TuplePatternElementSyntax): Ast     = notHandledYet(node)
   private def astForTupleTypeElementSyntax(node: TupleTypeElementSyntax): Ast           = notHandledYet(node)
   private def astForTypeAnnotationSyntax(node: TypeAnnotationSyntax): Ast               = notHandledYet(node)
@@ -514,7 +503,6 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     case node: SwitchCaseLabelSyntax                        => astForSwitchCaseLabelSyntax(node)
     case node: SwitchCaseSyntax                             => astForSwitchCaseSyntax(node)
     case node: SwitchDefaultLabelSyntax                     => astForSwitchDefaultLabelSyntax(node)
-    case node: ThrownTypeClauseSyntax                       => astForThrownTypeClauseSyntax(node)
     case node: TuplePatternElementSyntax                    => astForTuplePatternElementSyntax(node)
     case node: TupleTypeElementSyntax                       => astForTupleTypeElementSyntax(node)
     case node: TypeAnnotationSyntax                         => astForTypeAnnotationSyntax(node)

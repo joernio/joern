@@ -117,7 +117,12 @@ class ControlStructureTests extends RubyCode2CpgFixture(withPostProcessing = tru
     val sink   = cpg.method.name("puts").callIn.argument
     val flows  = sink.reachableByFlows(source)
     flows.map(flowToResultPairs).toSet shouldBe
-      Set(List(("t = 100", 2), ("t + 1", 4)), List(("t = 100", 2), ("t + 2", 6)))
+      Set(
+        List(("t = 100", 2), ("t + 1", 4), ("puts t + 1", 4)),
+        List(("t = 100", 2), ("t + 2", 6), ("puts t + 2", 6)),
+        List(("t = 100", 2), ("t + 2", 6)),
+        List(("t = 100", 2), ("t + 1", 4))
+      )
   }
 
   "flow through an `unless-end` statement" in {

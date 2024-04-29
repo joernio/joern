@@ -2,42 +2,53 @@
 
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
 import io.shiftleft.semanticcpg.language._
 
-class CopyExprTests extends AbstractPassTest {
+class CopyExprTests extends AstSwiftSrc2CpgSuite {
 
   "CopyExprTests" should {
 
-    "testGlobal" ignore AstFixture("""
+    "testGlobal" in {
+      val cpg = code("""
         |var global: Int = 5
         |func testGlobal() {
         |  let _ = copy global
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      cpg.call.code(".*copy global").argument(2).isIdentifier.name.l shouldBe List("global")
+    }
 
-    "testLet" ignore AstFixture("""
+    "testLet" in {
+      val cpg = code("""
         |func testLet() {
         |  let t = String()
         |  let _ = copy t
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      cpg.call.code(".*copy t").argument(2).isIdentifier.name.l shouldBe List("t")
+    }
 
-    "testVar" ignore AstFixture("""
+    "testVar" in {
+      val cpg = code("""
         |func testVar() {
         |  var t = String()
         |  t = String()
         |  let _ = copy t
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      cpg.call.code(".*copy t").argument(2).isIdentifier.name.l shouldBe List("t")
+    }
 
-    "testParseCanCopyClosureDollarIdentifier" ignore AstFixture("""
+    "testParseCanCopyClosureDollarIdentifier" in {
+      val cpg = code("""
         |class Klass {}
         |let f: (Klass) -> () = {
         |  let _ = copy $0
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      cpg.call.code(".*copy \\$0").argument(2).isIdentifier.name.l shouldBe List("$0")
+    }
   }
 
 }

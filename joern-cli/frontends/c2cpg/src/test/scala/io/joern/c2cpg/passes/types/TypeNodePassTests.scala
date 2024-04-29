@@ -1,11 +1,11 @@
 package io.joern.c2cpg.passes.types
 
-import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
+import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language._
 
-class TypeNodePassTests extends CCodeToCpgSuite {
+class TypeNodePassTests extends C2CpgSuite {
 
   "TypeNodePass" should {
 
@@ -16,8 +16,8 @@ class TypeNodePassTests extends CCodeToCpgSuite {
           |""".stripMargin)
       val List(foo) = cpg.typeDecl.nameExact("foo").l
       val List(bar) = cpg.typeDecl.nameExact("bar").l
-      foo.aliasTypeFullName shouldBe Some("char")
-      bar.aliasTypeFullName shouldBe Some("char")
+      foo.aliasTypeFullName shouldBe Option("char")
+      bar.aliasTypeFullName shouldBe Option("char")
     }
 
     "be correct for static decl assignment" in {

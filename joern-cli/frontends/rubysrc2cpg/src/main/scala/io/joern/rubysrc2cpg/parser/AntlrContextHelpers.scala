@@ -90,17 +90,7 @@ object AntlrContextHelpers {
   }
 
   sealed implicit class BlockParameterContextHelper(ctx: BlockParameterContext) {
-    def parameters: List[ParserRuleContext] = Option(ctx.blockParameterList()).map(_.parameters).getOrElse(List())
-  }
-
-  sealed implicit class BlockParameterListContextHelper(ctx: BlockParameterListContext) {
-    def parameters: List[ParserRuleContext] = ctx match
-      case ctx: SingleElementBlockParameterListContext => ctx.leftHandSide() :: Nil
-      case ctx: MultipleElementBlockParameterListContext =>
-        Option(ctx.multipleLeftHandSide()).map(_.multipleLeftHandSideItem()).map(_.asScala.toList).getOrElse(List.empty)
-      case ctx =>
-        logger.warn(s"Unsupported parameter type ${ctx.getClass}")
-        List()
+    def parameters: List[ParserRuleContext] = Option(ctx.parameterList()).map(_.parameters).getOrElse(List())
   }
 
   sealed implicit class CommandArgumentContextHelper(ctx: CommandArgumentContext) {
@@ -160,6 +150,7 @@ object AntlrContextHelpers {
       case ctx: CommandIndexingArgumentListContext => List(ctx.command())
       case ctx: OperatorExpressionListIndexingArgumentListContext =>
         ctx.operatorExpressionList().operatorExpression().asScala.toList
+      case ctx: AssociationListIndexingArgumentListContext => ctx.associationList().associations
       case ctx =>
         logger.warn(s"Unsupported argument type ${ctx.getClass}")
         List()

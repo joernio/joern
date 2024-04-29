@@ -2,15 +2,18 @@
 
 package io.joern.swiftsrc2cpg.passes.ast
 
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
+
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 
-class SwitchTests extends AbstractPassTest {
+class SwitchTests extends AstSwiftSrc2CpgSuite {
 
   "SwitchTests" should {
 
-    "testSwitch9" in AstFixture(" switch x {}") { cpg =>
+    "testSwitch9" in {
+      val cpg              = code(" switch x {}")
       val List(switchStmt) = cpg.switchBlock.l
       val List(switchExpr) = switchStmt.astChildren.isIdentifier.nameExact("x").l
       switchExpr.order shouldBe 1
@@ -19,7 +22,8 @@ class SwitchTests extends AbstractPassTest {
       switchBlock._jumpTargetViaAstOut shouldBe empty
     }
 
-    "testSwitch10" in AstFixture("""
+    "testSwitch10" in {
+      val cpg = code("""
         |switch x {
         |  case 0:
         |    x = 0
@@ -42,7 +46,7 @@ class SwitchTests extends AbstractPassTest {
         |  default:
         |    x = 9
         |}
-        |""".stripMargin) { cpg =>
+        |""".stripMargin)
       val List(switchStmt) = cpg.switchBlock.l
       val List(switchExpr) = switchStmt.astChildren.isIdentifier.nameExact("x").l
       switchExpr.order shouldBe 1
@@ -79,14 +83,15 @@ class SwitchTests extends AbstractPassTest {
       when19.whenTrue.code.l shouldBe List("continue")
     }
 
-    "testSwitch11" in AstFixture("""
+    "testSwitch11" in {
+      val cpg = code("""
         |// Multiple cases per case block
         |switch x {
         |  case 0:
         |  case 1:
         |    x = 0
         |}
-        |""".stripMargin) { cpg =>
+        |""".stripMargin)
       val List(switchStmt) = cpg.switchBlock.l
       val List(switchExpr) = switchStmt.astChildren.isIdentifier.nameExact("x").l
       switchExpr.order shouldBe 1
@@ -112,13 +117,14 @@ class SwitchTests extends AbstractPassTest {
       switchBlock.astChildren.isControlStructure.order(7).codeExact("break").size shouldBe 1
     }
 
-    "testSwitch12" in AstFixture("""
+    "testSwitch12" in {
+      val cpg = code("""
         |switch x {
         |  case 0:
         |  default:
         |    x = 0
         |}
-        |""".stripMargin) { cpg =>
+        |""".stripMargin)
       val List(switchStmt) = cpg.switchBlock.l
       val List(switchExpr) = switchStmt.astChildren.isIdentifier.nameExact("x").l
       switchExpr.order shouldBe 1
@@ -141,7 +147,8 @@ class SwitchTests extends AbstractPassTest {
       switchBlock.astChildren.isControlStructure.order(6).codeExact("break").size shouldBe 1
     }
 
-    "testSwitch28" in AstFixture("""
+    "testSwitch28" in {
+      val cpg = code("""
         |switch x {
         |  case 0:
         |    fallthrough
@@ -150,7 +157,7 @@ class SwitchTests extends AbstractPassTest {
         |  default:
         |    fallthrough
         |}
-        |""".stripMargin) { cpg =>
+        |""".stripMargin)
       val List(switchStmt) = cpg.switchBlock.l
       val List(switchExpr) = switchStmt.astChildren.isIdentifier.nameExact("x").l
       switchExpr.order shouldBe 1
@@ -190,7 +197,8 @@ class SwitchTests extends AbstractPassTest {
         .size shouldBe 1
     }
 
-    "testSwitch29" ignore AstFixture("""
+    "testSwitch29" ignore {
+      val cpg = code("""
         |// Fallthrough can transfer control anywhere within a case and can appear
         |// multiple times in the same case.
         |switch x {
@@ -200,9 +208,12 @@ class SwitchTests extends AbstractPassTest {
         |    x += 1
         |  default:
         |    x += 1
-        |}""".stripMargin) { cpg => ??? }
+        |}""".stripMargin)
+      ???
+    }
 
-    "testSwitch34" ignore AstFixture("""
+    "testSwitch34" ignore {
+      val cpg = code("""
         |// Fallthroughs can only transfer control into a case label with bindings if the previous case binds a superset of those vars.
         |switch t {
         |  case (1, 2):
@@ -210,9 +221,52 @@ class SwitchTests extends AbstractPassTest {
         |  case (var a, var b):
         |    t = (b, a)
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testSwitch36" ignore AstFixture("""
+    "testSwitch35" in {
+      val cpg = code("""
+        |switch x {
+        |  #if ios
+        |  default: foo()
+        |  #else
+        |  case (1, 2):
+        |    foo()
+        |  case (var a, var b):
+        |    t = (b, a)
+        |}
+        |""".stripMargin)
+      val List(switchStmt) = cpg.switchBlock.l
+      val List(switchExpr) = switchStmt.astChildren.isIdentifier.nameExact("x").l
+      switchExpr.order shouldBe 1
+      switchExpr.code shouldBe "x"
+
+      val List(switchBlock) = switchStmt.astChildren.isBlock.l
+      val List(elseBlock)   = switchBlock.astChildren.isBlock.l
+
+      val List(caseLabel1) = elseBlock._jumpTargetViaAstOut.codeExact("case (1, 2):").l
+      caseLabel1.order shouldBe 1
+
+      val List(child1CaseLabel1) = elseBlock.astChildren.isCall.codeExact("(1, 2)").l
+      child1CaseLabel1.order shouldBe 2
+      val List(child2CaseLabel1) = elseBlock.astChildren.isCall.codeExact("foo()").l
+      child2CaseLabel1.order shouldBe 3
+
+      val List(caseLabel2) = elseBlock._jumpTargetViaAstOut.codeExact("case (var a, var b):").l
+      caseLabel2.order shouldBe 5
+      val List(child1CaseLabel2) = elseBlock.astChildren.isCall.codeExact("(var a, var b)").l
+      child1CaseLabel2.order shouldBe 6
+      val List(child2CaseLabel2) = elseBlock.astChildren.isCall.codeExact("t = (b, a)").l
+      child2CaseLabel2.order shouldBe 7
+
+      val List(child3CaseLabel1, child3CaseLabel2) = elseBlock.astChildren.isControlStructure.codeExact("break").l
+      child3CaseLabel1.order shouldBe 4
+      child3CaseLabel2.order shouldBe 8
+    }
+
+    "testSwitch36" ignore {
+      val cpg = code("""
         |func patternVarDiffType(x: Int, y: Double) {
         |  switch (x, y) {
         |    case (1, let a):
@@ -220,77 +274,109 @@ class SwitchTests extends AbstractPassTest {
         |    case (let a, _):
         |  break
         |    }
-        |}""".stripMargin) { cpg => ??? }
+        |}""".stripMargin)
+      ???
+    }
 
-    "testSwitch38" ignore AstFixture("""
+    "testSwitch38" ignore {
+      val cpg = code("""
         |func test_label(x : Int) {
         |  Gronk:
         |  switch x {
         |    case 42: return
         |    }
         |  }
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testSwitch42" ignore AstFixture("""
+    "testSwitch42" ignore {
+      val cpg = code("""
         |switch Whatever.Thing {
         |  case .Thing:
         |  @unknown case _:
         |    x = 0
-        |}""".stripMargin) { cpg => ??? }
+        |}""".stripMargin)
+      ???
+    }
 
-    "testSwitch43" ignore AstFixture("""
+    "testSwitch43" ignore {
+      val cpg = code("""
         |switch Whatever.Thing {
         |  case .Thing:
         |  @unknown default:
         |    x = 0
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testSwitch54" ignore AstFixture("""
+    "testSwitch54" ignore {
+      val cpg = code("""
         |switch Whatever.Thing {
         |  @unknown case _, _, _:
         |    break
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testSwitch55" ignore AstFixture("""
+    "testSwitch55" ignore {
+      val cpg = code("""
         |switch Whatever.Thing {
         |  @unknown case let value:
         |    _ = value
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testSwitch56" ignore AstFixture("""
+    "testSwitch56" ignore {
+      val cpg = code("""
         |switch (Whatever.Thing, Whatever.Thing) {
         |  @unknown case (_, _):
         |    break
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testSwitch57" ignore AstFixture("""
+    "testSwitch57" ignore {
+      val cpg = code("""
        |switch Whatever.Thing {
        |  @unknown case is Whatever:
        |    break
        |}
-       |""".stripMargin) { cpg => ??? }
+       |""".stripMargin)
+      ???
+    }
 
-    "testSwitch58" ignore AstFixture("""
+    "testSwitch58" ignore {
+      val cpg = code("""
         |switch Whatever.Thing {
         |  @unknown case .Thing:
         |    break
-        |}""".stripMargin) { cpg => ??? }
+        |}""".stripMargin)
+      ???
+    }
 
-    "testSwitch59" ignore AstFixture("""
+    "testSwitch59" ignore {
+      val cpg = code("""
         |switch Whatever.Thing {
         |  @unknown case (_): // okay
         |    break
-        |}""".stripMargin) { cpg => ??? }
+        |}""".stripMargin)
+      ???
+    }
 
-    "testSwitch60" ignore AstFixture("""
+    "testSwitch60" ignore {
+      val cpg = code("""
         |switch Whatever.Thing {
         |  @unknown case _ where x == 0:
         |    break
-        |}""".stripMargin) { cpg => ??? }
+        |}""".stripMargin)
+      ???
+    }
 
   }
 

@@ -9,7 +9,7 @@ import java.nio.charset.StandardCharsets
 import scala.jdk.CollectionConverters._
 
 class PyParser {
-  private var pythonParser: PythonParser = _
+  private var pythonParser: PythonParser = scala.compiletime.uninitialized
 
   def parse(code: String): iast = {
     parse(new ByteArrayInputStream(code.getBytes(StandardCharsets.UTF_8)))

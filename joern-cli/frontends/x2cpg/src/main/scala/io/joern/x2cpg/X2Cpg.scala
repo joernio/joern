@@ -1,7 +1,6 @@
 package io.joern.x2cpg
 
 import better.files.File
-import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.X2Cpg.{applyDefaultOverlays, withErrorsToConsole}
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
 import io.shiftleft.codepropertygraph.Cpg
@@ -83,6 +82,26 @@ trait X2CpgConfig[R <: X2CpgConfig[R]] {
   }
 }
 
+/** Enables the configuration to specify if dependencies should be downloaded for additional symbol information.
+  */
+trait DependencyDownloadConfig[R <: X2CpgConfig[R]] { this: R =>
+
+  def withDownloadDependencies(value: Boolean): R
+
+}
+
+object DependencyDownloadConfig {
+  def parserOptions[R <: X2CpgConfig[R] & DependencyDownloadConfig[R]]: OParser[?, R] = {
+    val builder = OParser.builder[R]
+    import builder.*
+    OParser.sequence(
+      opt[Unit]("download-dependencies")
+        .text("Download the dependencies of the target project and use their symbols to resolve types.")
+        .action((_, c) => c.withDownloadDependencies(true))
+    )
+  }
+}
+
 /** Base class for `Main` classes of CPG frontends.
   *
   * Main classes that inherit from this base class parse the command line, exiting with an error code if this does not
@@ -94,7 +113,7 @@ trait X2CpgConfig[R <: X2CpgConfig[R]] {
   * @param frontend
   *   the frontend to use for CPG creation
   */
-abstract class X2CpgMain[T <: X2CpgConfig[T], X <: X2CpgFrontend[_]](val cmdLineParser: OParser[Unit, T], frontend: X)(
+abstract class X2CpgMain[T <: X2CpgConfig[T], X <: X2CpgFrontend[?]](val cmdLineParser: OParser[Unit, T], frontend: X)(
   implicit defaultConfig: T
 ) {
 
@@ -123,7 +142,7 @@ abstract class X2CpgMain[T <: X2CpgConfig[T], X <: X2CpgFrontend[_]](val cmdLine
 
 /** Trait that represents a CPG generator, where T is the frontend configuration class.
   */
-trait X2CpgFrontend[T <: X2CpgConfig[_]] {
+trait X2CpgFrontend[T <: X2CpgConfig[?]] {
 
   /** Create a CPG according to given configuration. Returns CPG wrapped in a `Try`, making it possible to detect and
     * inspect exceptions in CPG generation. To be provided by the frontend.
@@ -198,7 +217,7 @@ object X2Cpg {
     */
   def parseCommandLine[R <: X2CpgConfig[R]](
     args: Array[String],
-    frontendSpecific: OParser[_, R],
+    frontendSpecific: OParser[?, R],
     initialConf: R
   ): Option[R] = {
     val parser = commandLineParser(frontendSpecific)
@@ -207,7 +226,7 @@ object X2Cpg {
 
   /** Create a command line parser that can be extended to add options specific for the frontend.
     */
-  private def commandLineParser[R <: X2CpgConfig[R]](frontendSpecific: OParser[_, R]): OParser[_, R] = {
+  private def commandLineParser[R <: X2CpgConfig[R]](frontendSpecific: OParser[?, R]): OParser[?, R] = {
     val builder = OParser.builder[R]
     import builder.*
     OParser.sequence(
@@ -271,7 +290,7 @@ object X2Cpg {
   /** Apply function `applyPasses` to a newly created CPG. The CPG is wrapped in a `Try` and returned. On failure, the
     * CPG is ensured to be closed.
     */
-  def withNewEmptyCpg[T <: X2CpgConfig[_]](outPath: String, config: T)(applyPasses: (Cpg, T) => Unit): Try[Cpg] = {
+  def withNewEmptyCpg[T <: X2CpgConfig[?]](outPath: String, config: T)(applyPasses: (Cpg, T) => Unit): Try[Cpg] = {
     val outputPath = if (outPath != "") Some(outPath) else None
     Try {
       val cpg = newEmptyCpg(outputPath)
@@ -289,7 +308,7 @@ object X2Cpg {
   /** Given a function that receives a configuration and returns an arbitrary result type wrapped in a `Try`, evaluate
     * the function, printing errors to the console.
     */
-  def withErrorsToConsole[T <: X2CpgConfig[_]](config: T)(f: T => Try[_]): Try[_] = {
+  def withErrorsToConsole[T <: X2CpgConfig[?]](config: T)(f: T => Try[?]): Try[?] = {
     f(config) match {
       case Failure(exception) =>
         exception.printStackTrace()

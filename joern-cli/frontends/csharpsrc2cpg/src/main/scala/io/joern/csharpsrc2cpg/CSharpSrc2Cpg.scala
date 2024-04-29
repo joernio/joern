@@ -5,12 +5,12 @@ import io.joern.csharpsrc2cpg.astcreation.AstCreator
 import io.joern.csharpsrc2cpg.datastructures.CSharpProgramSummary
 import io.joern.csharpsrc2cpg.parser.DotNetJsonParser
 import io.joern.csharpsrc2cpg.passes.{AstCreationPass, DependencyPass}
-import io.joern.csharpsrc2cpg.utils.DotNetAstGenRunner
+import io.joern.csharpsrc2cpg.utils.{DependencyDownloader, DotNetAstGenRunner}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.astgen.AstGenRunner.AstGenRunnerResult
 import io.joern.x2cpg.astgen.ParserResult
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
-import io.joern.x2cpg.passes.frontend.MetaDataPass
+import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.joern.x2cpg.utils.{ConcurrentTaskUtil, Environment, HashUtil, Report}
 import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.Cpg
@@ -19,6 +19,7 @@ import io.shiftleft.passes.CpgPassBase
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths
+import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
@@ -35,7 +36,7 @@ class CSharpSrc2Cpg extends X2CpgFrontend[Config] {
         val astGenResult = new DotNetAstGenRunner(config).execute(tmpDir)
         val astCreators  = CSharpSrc2Cpg.processAstGenRunnerResults(astGenResult.parsedFiles, config)
         // Pre-parse the AST creators for high level structures
-        val programSummary = ConcurrentTaskUtil
+        val internalProgramSummary = ConcurrentTaskUtil
           .runUsingThreadPool(astCreators.map(x => () => x.summarize()).iterator)
           .flatMap {
             case Failure(exception) => logger.warn(s"Unable to pre-parse C# file, skipping - ", exception); None
@@ -45,9 +46,17 @@ class CSharpSrc2Cpg extends X2CpgFrontend[Config] {
 
         val hash = HashUtil.sha256(astCreators.map(_.parserResult).map(x => Paths.get(x.fullPath)))
         new MetaDataPass(cpg, Languages.CSHARPSRC, config.inputPath, Option(hash)).createAndApply()
-        new DependencyPass(cpg, buildFiles(config)).createAndApply()
-        // TODO: Enable download dependencies option
+
+        val packageIds = mutable.HashSet.empty[String]
+        new DependencyPass(cpg, buildFiles(config), packageIds.add).createAndApply()
+        // If "download dependencies" is enabled, then fetch dependencies and resolve their symbols for additional types
+        val programSummary = if (config.downloadDependencies) {
+          DependencyDownloader(cpg, config, internalProgramSummary, packageIds.toSet).download()
+        } else {
+          internalProgramSummary
+        }
         new AstCreationPass(cpg, astCreators.map(_.withSummary(programSummary)), report).createAndApply()
+        TypeNodePass.withTypesFromCpg(cpg).createAndApply()
         report.print()
       }
     }

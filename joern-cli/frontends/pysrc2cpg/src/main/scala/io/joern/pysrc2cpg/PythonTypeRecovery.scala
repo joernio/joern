@@ -100,11 +100,11 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
 
   override def visitIdentifierAssignedToOperator(i: Identifier, c: Call, operation: String): Set[String] = {
     operation match {
-      case "<operator>.listLiteral"  => associateTypes(i, Set(s"${PythonAstVisitor.builtinPrefix}list"))
-      case "<operator>.tupleLiteral" => associateTypes(i, Set(s"${PythonAstVisitor.builtinPrefix}tuple"))
-      case "<operator>.dictLiteral"  => associateTypes(i, Set(s"${PythonAstVisitor.builtinPrefix}dict"))
-      case "<operator>.setLiteral"   => associateTypes(i, Set(s"${PythonAstVisitor.builtinPrefix}set"))
-      case Operators.conditional     => associateTypes(i, Set(s"${PythonAstVisitor.builtinPrefix}bool"))
+      case "<operator>.listLiteral"  => associateTypes(i, Set(s"${Constants.builtinPrefix}list"))
+      case "<operator>.tupleLiteral" => associateTypes(i, Set(s"${Constants.builtinPrefix}tuple"))
+      case "<operator>.dictLiteral"  => associateTypes(i, Set(s"${Constants.builtinPrefix}dict"))
+      case "<operator>.setLiteral"   => associateTypes(i, Set(s"${Constants.builtinPrefix}set"))
+      case Operators.conditional     => associateTypes(i, Set(s"${Constants.builtinPrefix}bool"))
       case _                         => super.visitIdentifierAssignedToOperator(i, c, operation)
     }
   }
@@ -126,7 +126,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
     val fieldParents = getFieldParents(fa)
     fa.astChildren.l match {
       case List(base: Identifier, fi: FieldIdentifier) if base.name.equals("self") && fieldParents.nonEmpty =>
-        val referencedFields = cpg.typeDecl.fullNameExact(fieldParents.toSeq: _*).member.nameExact(fi.canonicalName)
+        val referencedFields = cpg.typeDecl.fullNameExact(fieldParents.toSeq*).member.nameExact(fi.canonicalName)
         val globalTypes =
           referencedFields.flatMap(m => m.typeFullName +: m.dynamicTypeHintFullName).filterNot(_ == Constants.ANY).toSet
         associateTypes(i, globalTypes)
@@ -135,10 +135,10 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
   }
 
   override def getTypesFromCall(c: Call): Set[String] = c.name match {
-    case "<operator>.listLiteral"  => Set(s"${PythonAstVisitor.builtinPrefix}list")
-    case "<operator>.tupleLiteral" => Set(s"${PythonAstVisitor.builtinPrefix}tuple")
-    case "<operator>.dictLiteral"  => Set(s"${PythonAstVisitor.builtinPrefix}dict")
-    case "<operator>.setLiteral"   => Set(s"${PythonAstVisitor.builtinPrefix}set")
+    case "<operator>.listLiteral"  => Set(s"${Constants.builtinPrefix}list")
+    case "<operator>.tupleLiteral" => Set(s"${Constants.builtinPrefix}tuple")
+    case "<operator>.dictLiteral"  => Set(s"${Constants.builtinPrefix}dict")
+    case "<operator>.setLiteral"   => Set(s"${Constants.builtinPrefix}set")
     case _                         => super.getTypesFromCall(c)
   }
 
@@ -147,7 +147,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
       Set(fa.method.fullName)
     } else if (fa.method.typeDecl.nonEmpty) {
       val parentTypes       = fa.method.typeDecl.fullName.toSet
-      val baseTypeFullNames = cpg.typeDecl.fullNameExact(parentTypes.toSeq: _*).inheritsFromTypeFullName.toSet
+      val baseTypeFullNames = cpg.typeDecl.fullNameExact(parentTypes.toSeq*).inheritsFromTypeFullName.toSet
       (parentTypes ++ baseTypeFullNames).filterNot(_.matches("(?i)(any|object)"))
     } else {
       super.getFieldParents(fa)
@@ -159,11 +159,11 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
 
   override def getLiteralType(l: Literal): Set[String] = {
     val literalTypes = (l.code match {
-      case code if code.toIntOption.isDefined                  => Some(s"${PythonAstVisitor.builtinPrefix}int")
-      case code if code.toDoubleOption.isDefined               => Some(s"${PythonAstVisitor.builtinPrefix}float")
-      case code if "True".equals(code) || "False".equals(code) => Some(s"${PythonAstVisitor.builtinPrefix}bool")
-      case code if code.equals("None")                         => Some(s"${PythonAstVisitor.builtinPrefix}None")
-      case code if isPyString(code)                            => Some(s"${PythonAstVisitor.builtinPrefix}str")
+      case code if code.toIntOption.isDefined                  => Some(s"${Constants.builtinPrefix}int")
+      case code if code.toDoubleOption.isDefined               => Some(s"${Constants.builtinPrefix}float")
+      case code if "True".equals(code) || "False".equals(code) => Some(s"${Constants.builtinPrefix}bool")
+      case code if code.equals("None")                         => Some(s"${Constants.builtinPrefix}None")
+      case code if isPyString(code)                            => Some(s"${Constants.builtinPrefix}str")
       case _                                                   => None
     }).toSet
     setTypes(l, literalTypes.toSeq)
@@ -177,7 +177,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
       case t if t.matches(".*\\.<(member|returnValue|indexAccess)>(\\(.*\\))?") =>
         super.createCallFromIdentifierTypeFullName(typeFullName, callName)
       case t if isConstructor(tName) =>
-        Seq(t, callName).mkString(pathSep.toString)
+        Seq(t, callName).mkString(pathSep)
       case _ => super.createCallFromIdentifierTypeFullName(typeFullName, callName)
     }
   }

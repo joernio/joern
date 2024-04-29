@@ -2,66 +2,87 @@
 
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
 
-class OperatorDeclTests extends AbstractPassTest {
+class OperatorDeclTests extends AstSwiftSrc2CpgSuite {
 
   "OperatorDeclTests" should {
 
-    "testOperatorDecl3" ignore AstFixture("prefix operator ++*++ : A") { cpg =>
+    "testOperatorDecl3" ignore {
+      val cpg = code("prefix operator ++*++ : A")
       ???
     }
 
-    "testOperatorDecl5" ignore AstFixture("postfix operator ++**+ : A") { cpg =>
+    "testOperatorDecl5" ignore {
+      val cpg = code("postfix operator ++**+ : A")
       ???
     }
 
-    "testOperatorDecl11a" ignore AstFixture("prefix operator ??") { cpg =>
+    "testOperatorDecl11a" ignore {
+      val cpg = code("prefix operator ??")
       ???
     }
 
-    "testOperatorDecl11b" ignore AstFixture("postfix operator ??") { cpg => ??? }
-
-    "testOperatorDecl11c" ignore AstFixture("prefix operator !!") { cpg =>
+    "testOperatorDecl11b" ignore {
+      val cpg = code("postfix operator ??")
       ???
     }
 
-    "testOperatorDecl11d" ignore AstFixture("postfix operator !!") { cpg =>
+    "testOperatorDecl11c" ignore {
+      val cpg = code("prefix operator !!")
       ???
     }
 
-    "testOperatorDecl16" ignore AstFixture("""
+    "testOperatorDecl11d" ignore {
+      val cpg = code("postfix operator !!")
+      ???
+    }
+
+    "testOperatorDecl16" ignore {
+      val cpg = code("""
         |precedencegroup F {
         |  higherThan: A, B, C
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testOperatorDecl17" ignore AstFixture("""
+    "testOperatorDecl17" ignore {
+      val cpg = code("""
         |precedencegroup BangBangBang {
         |  associativity: none
         |  associativity: left
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testOperatorDecl19" ignore AstFixture("""
+    "testOperatorDecl19" ignore {
+      val cpg = code("""
         |class Foo {
         |  infix operator |||
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testOperatorDecl20" ignore AstFixture("infix operator **<< : UndeclaredPrecedenceGroup") { cpg => ??? }
+    "testOperatorDecl20" ignore {
+      val cpg = code("infix operator **<< : UndeclaredPrecedenceGroup")
+      ???
+    }
 
-    "testOperatorDecl21" ignore AstFixture(
-      // Note: We should not allow specification of multiple precedence groups
-      """
+    "testOperatorDecl21" ignore {
+      val cpg = code("""
         |protocol Proto {}
         |infix operator *<*< : F, Proto
-        |""".stripMargin
-    ) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testRegexLikeOperator" ignore AstFixture("prefix operator /^/") { cpg => ??? }
+    "testRegexLikeOperator" ignore {
+      val cpg = code("prefix operator /^/")
+      ???
+    }
 
   }
 

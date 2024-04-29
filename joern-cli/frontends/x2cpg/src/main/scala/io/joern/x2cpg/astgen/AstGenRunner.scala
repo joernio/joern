@@ -80,7 +80,7 @@ object AstGenRunner {
 
 }
 
-trait AstGenRunnerBase(config: X2CpgConfig[_] with AstGenConfig[_]) {
+trait AstGenRunnerBase(config: X2CpgConfig[?] & AstGenConfig[?]) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 

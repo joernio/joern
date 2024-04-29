@@ -2,37 +2,53 @@
 
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
+
 import io.shiftleft.semanticcpg.language._
 
-class SuperTests extends AbstractPassTest {
+class SuperTests extends AstSwiftSrc2CpgSuite {
 
   "SuperTests" should {
 
-    "testSuper2a" ignore AstFixture("""
+    "testSuper2a" in {
+      val cpg = code("""
         |class D : B {
         |  override init() {
         |    super.init()
         |    super.init(42)
         |  }
         |}
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      cpg.typeDecl.nameExact("D").method.isConstructor.block.astChildren.isCall.code.sorted.l shouldBe List(
+        "super.init()",
+        "super.init(42)"
+      )
+    }
 
-    "testSuper2c" ignore AstFixture("""
+    "testSuper2c" in {
+      val cpg = code("""
         |class D : B {
         |  convenience init(y:Int) {
         |    let _: () -> D = self.init
         |  }
-        |}""".stripMargin) { cpg => ??? }
+        |}""".stripMargin)
+      cpg.typeDecl.nameExact("D").method.isConstructor.block.astChildren.isCall.code.sorted.l shouldBe List(
+        "let wildcard_0: () -> D = self.init"
+      )
+    }
 
-    "testSuper2d" ignore AstFixture("""
+    "testSuper2d" in {
+      val cpg = code("""
         |class D : B {
         |  init(z: Int) {
         |    super
         |      .init(x: z)
         |  }
-        |}""".stripMargin) { cpg => ??? }
+        |}""".stripMargin)
+      cpg.typeDecl.nameExact("D").method.isConstructor.block.astChildren.isCall.code.sorted.l shouldBe List(
+        "super\n      .init(x: z)"
+      )
+    }
 
   }
 

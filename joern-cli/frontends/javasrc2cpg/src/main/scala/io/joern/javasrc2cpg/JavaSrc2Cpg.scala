@@ -30,6 +30,8 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
       new MetaDataPass(cpg, language, config.inputPath).createAndApply()
       val astCreationPass = new AstCreationPass(config, cpg)
       astCreationPass.createAndApply()
+      astCreationPass.sourceParser.cleanupDelombokOutput()
+      astCreationPass.clearJavaParserCaches()
       new ConfigFileCreationPass(cpg).createAndApply()
       if (!config.skipTypeInfPass) {
         TypeNodePass.withRegisteredTypes(astCreationPass.global.usedTypes.keys().asScala.toList, cpg).createAndApply()
@@ -76,6 +78,11 @@ object JavaSrc2Cpg {
         extends JavaSrcEnvVar(
           "JAVASRC_JDK_PATH",
           "Path to the JDK home used for retrieving type information about builtin Java types."
+        )
+    case FetchDependencies
+        extends JavaSrcEnvVar(
+          "JAVASRC_FETCH_DEPENDENCIES",
+          "If set, javasrc2cpg will fetch dependencies regardless of the --fetch-dependencies flag."
         )
   }
 }

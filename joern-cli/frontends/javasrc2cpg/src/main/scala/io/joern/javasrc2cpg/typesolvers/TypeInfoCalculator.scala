@@ -7,19 +7,20 @@ import com.github.javaparser.resolution.declarations.{
   ResolvedTypeDeclaration,
   ResolvedTypeParameterDeclaration
 }
-import com.github.javaparser.resolution.types._
-import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
 import com.github.javaparser.resolution.logic.InferenceVariableType
 import com.github.javaparser.resolution.model.typesystem.{LazyType, NullType}
+import com.github.javaparser.resolution.types.*
+import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.{TypeConstants, TypeNameConstants}
 import io.joern.x2cpg.datastructures.Global
 import org.slf4j.LoggerFactory
 
-import scala.jdk.CollectionConverters._
+import scala.collection.mutable
+import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
 import scala.util.Try
 
-class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver) {
+class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver, keepTypeArguments: Boolean) {
   private val logger               = LoggerFactory.getLogger(this.getClass)
   private val emptyTypeParamValues = ResolvedTypeParametersMap.empty()
 
@@ -71,6 +72,12 @@ class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver) {
     fullyQualified: Boolean
   ): Option[String] = {
     typ match {
+      case refType: ResolvedReferenceType if keepTypeArguments =>
+        val typeParams = refType.getTypeParametersMap.asScala.map(_.b).map(fullName(_).getOrElse(TypeConstants.Object))
+        nameOrFullName(refType.getTypeDeclaration.get, fullyQualified).map {
+          case baseType if typeParams.isEmpty => baseType
+          case baseType                       => s"$baseType<${typeParams.mkString(",")}>"
+        }
       case refType: ResolvedReferenceType =>
         nameOrFullName(refType.getTypeDeclaration.get, fullyQualified)
       case lazyType: LazyType =>
@@ -289,7 +296,4 @@ object TypeInfoCalculator {
     "java.lang.Boolean"
   )
 
-  def apply(global: Global, symbolResolver: SymbolResolver): TypeInfoCalculator = {
-    new TypeInfoCalculator(global, symbolResolver)
-  }
 }

@@ -1,9 +1,9 @@
 package io.joern.c2cpg.querying
 
-import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
+import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.shiftleft.semanticcpg.language.{NoResolve, _}
 
-class CallGraphQueryTests extends CCodeToCpgSuite {
+class CallGraphQueryTests extends C2CpgSuite {
 
   private implicit val resolver: NoResolve.type = NoResolve
 

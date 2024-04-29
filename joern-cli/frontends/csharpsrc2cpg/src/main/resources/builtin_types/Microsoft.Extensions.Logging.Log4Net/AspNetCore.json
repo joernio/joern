@@ -1,0 +1,747 @@
+{
+  "Microsoft.Extensions.Logging": [
+    {
+      "name": "Microsoft.Extensions.Logging.ILog4NetLoggingEventFactory",
+      "methods": [
+        {
+          "name": "CreateLoggingEvent",
+          "returnType": "log4net.Core.LoggingEvent",
+          "parameterTypes": [
+            [
+              "messageCandidate",
+              "Microsoft.Extensions.Logging.Log4Net.AspNetCore.Entities.MessageCandidate`1<TState>& modreq(System.Runtime.InteropServices.InAttribute)"
+            ],
+            [
+              "logger",
+              "log4net.Core.ILogger"
+            ],
+            [
+              "options",
+              "Microsoft.Extensions.Logging.Log4NetProviderOptions"
+            ],
+            [
+              "scopeProvider",
+              "Microsoft.Extensions.Logging.IExternalScopeProvider"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.ILog4NetLogLevelTranslator",
+      "methods": [
+        {
+          "name": "TranslateLogLevel",
+          "returnType": "log4net.Core.Level",
+          "parameterTypes": [
+            [
+              "logLevel",
+              "Microsoft.Extensions.Logging.LogLevel"
+            ],
+            [
+              "options",
+              "Microsoft.Extensions.Logging.Log4NetProviderOptions"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.Log4NetExtensions",
+      "methods": [
+        {
+          "name": "AddLog4Net",
+          "returnType": "Microsoft.Extensions.Logging.ILoggerFactory",
+          "parameterTypes": [
+            [
+              "factory",
+              "Microsoft.Extensions.Logging.ILoggerFactory"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddLog4Net",
+          "returnType": "Microsoft.Extensions.Logging.ILoggerFactory",
+          "parameterTypes": [
+            [
+              "factory",
+              "Microsoft.Extensions.Logging.ILoggerFactory"
+            ],
+            [
+              "log4NetConfigFile",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddLog4Net",
+          "returnType": "Microsoft.Extensions.Logging.ILoggerFactory",
+          "parameterTypes": [
+            [
+              "factory",
+              "Microsoft.Extensions.Logging.ILoggerFactory"
+            ],
+            [
+              "log4NetConfigFile",
+              "System.String"
+            ],
+            [
+              "watch",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddLog4Net",
+          "returnType": "Microsoft.Extensions.Logging.ILoggerFactory",
+          "parameterTypes": [
+            [
+              "factory",
+              "Microsoft.Extensions.Logging.ILoggerFactory"
+            ],
+            [
+              "options",
+              "Microsoft.Extensions.Logging.Log4NetProviderOptions"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddLog4Net",
+          "returnType": "Microsoft.Extensions.Logging.ILoggingBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.Logging.ILoggingBuilder"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddLog4Net",
+          "returnType": "Microsoft.Extensions.Logging.ILoggingBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.Logging.ILoggingBuilder"
+            ],
+            [
+              "log4NetConfigFile",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddLog4Net",
+          "returnType": "Microsoft.Extensions.Logging.ILoggingBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.Logging.ILoggingBuilder"
+            ],
+            [
+              "log4NetConfigFile",
+              "System.String"
+            ],
+            [
+              "watch",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddLog4Net",
+          "returnType": "Microsoft.Extensions.Logging.ILoggingBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.Logging.ILoggingBuilder"
+            ],
+            [
+              "options",
+              "Microsoft.Extensions.Logging.Log4NetProviderOptions"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.Log4NetLogger",
+      "methods": [
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "BeginScope",
+          "returnType": "System.IDisposable",
+          "parameterTypes": [
+            [
+              "state",
+              "TState"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "IsEnabled",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "logLevel",
+              "Microsoft.Extensions.Logging.LogLevel"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Log",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logLevel",
+              "Microsoft.Extensions.Logging.LogLevel"
+            ],
+            [
+              "eventId",
+              "Microsoft.Extensions.Logging.EventId"
+            ],
+            [
+              "state",
+              "TState"
+            ],
+            [
+              "exception",
+              "System.Exception"
+            ],
+            [
+              "formatter",
+              "System.Func`3<TState,System.Exception,System.String>"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.Log4NetLoggingEventFactory",
+      "methods": [
+        {
+          "name": "CreateLoggingEvent",
+          "returnType": "log4net.Core.LoggingEvent",
+          "parameterTypes": [
+            [
+              "messageCandidate",
+              "Microsoft.Extensions.Logging.Log4Net.AspNetCore.Entities.MessageCandidate`1<TState>&"
+            ],
+            [
+              "logger",
+              "log4net.Core.ILogger"
+            ],
+            [
+              "options",
+              "Microsoft.Extensions.Logging.Log4NetProviderOptions"
+            ],
+            [
+              "scopeProvider",
+              "Microsoft.Extensions.Logging.IExternalScopeProvider"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.Log4NetLogLevelTranslator",
+      "methods": [
+        {
+          "name": "TranslateLogLevel",
+          "returnType": "log4net.Core.Level",
+          "parameterTypes": [
+            [
+              "logLevel",
+              "Microsoft.Extensions.Logging.LogLevel"
+            ],
+            [
+              "options",
+              "Microsoft.Extensions.Logging.Log4NetProviderOptions"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.Log4NetProvider",
+      "methods": [
+        {
+          "name": "get_ExternalScopeProvider",
+          "returnType": "Microsoft.Extensions.Logging.IExternalScopeProvider",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "CreateLogger",
+          "returnType": "Microsoft.Extensions.Logging.ILogger",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "CreateLogger",
+          "returnType": "Microsoft.Extensions.Logging.ILogger",
+          "parameterTypes": [
+            [
+              "categoryName",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Dispose",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "SetScopeProvider",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "scopeProvider",
+              "Microsoft.Extensions.Logging.IExternalScopeProvider"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.Log4NetProviderOptions",
+      "methods": [
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Name",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Log4NetConfigFileName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Log4NetConfigFileName",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_LoggerRepository",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_LoggerRepository",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_OverrideCriticalLevelWith",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_OverrideCriticalLevelWith",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_PropertyOverrides",
+          "returnType": "System.Collections.Generic.List`1<Microsoft.Extensions.Logging.Log4Net.AspNetCore.Entities.NodeInfo>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_PropertyOverrides",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Collections.Generic.List`1<Microsoft.Extensions.Logging.Log4Net.AspNetCore.Entities.NodeInfo>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Watch",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Watch",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ExternalConfigurationSetup",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ExternalConfigurationSetup",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_UseWebOrAppConfig",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_UseWebOrAppConfig",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_LoggingEventFactory",
+          "returnType": "Microsoft.Extensions.Logging.ILog4NetLoggingEventFactory",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_LoggingEventFactory",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.Extensions.Logging.ILog4NetLoggingEventFactory"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_LogLevelTranslator",
+          "returnType": "Microsoft.Extensions.Logging.ILog4NetLogLevelTranslator",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_LogLevelTranslator",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.Extensions.Logging.ILog4NetLogLevelTranslator"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.Logging.Extensions": [
+    {
+      "name": "Microsoft.Extensions.Logging.Extensions.Log4NetProviderExtensions",
+      "methods": [
+        {
+          "name": "CreateLogger",
+          "returnType": "Microsoft.Extensions.Logging.ILogger",
+          "parameterTypes": [
+            [
+              "self",
+              "Microsoft.Extensions.Logging.ILoggerProvider"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.Logging.Log4Net.AspNetCore.Scope": [
+    {
+      "name": "Microsoft.Extensions.Logging.Log4Net.AspNetCore.Scope.NullScope",
+      "methods": [
+        {
+          "name": "Dispose",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.Log4Net.AspNetCore.Scope.NullScopeProvider",
+      "methods": [
+        {
+          "name": "ForEachScope",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "callback",
+              "System.Action`2<System.Object,TState>"
+            ],
+            [
+              "state",
+              "TState"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Push",
+          "returnType": "System.IDisposable",
+          "parameterTypes": [
+            [
+              "state",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.Logging.Log4Net.AspNetCore.Extensions": [
+    {
+      "name": "Microsoft.Extensions.Logging.Log4Net.AspNetCore.Extensions.DocumentExtensions",
+      "methods": [
+        {
+          "name": "ToXDocument",
+          "returnType": "System.Xml.Linq.XDocument",
+          "parameterTypes": [
+            [
+              "xmlDocument",
+              "System.Xml.XmlDocument"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ToXmlDocument",
+          "returnType": "System.Xml.XmlDocument",
+          "parameterTypes": [
+            [
+              "xDocument",
+              "System.Xml.Linq.XDocument"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.Log4Net.AspNetCore.Extensions.LogExtensions",
+      "methods": [
+        {
+          "name": "Critical",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "log",
+              "log4net.ILog"
+            ],
+            [
+              "message",
+              "System.Object"
+            ],
+            [
+              "exception",
+              "System.Exception"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Trace",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "log",
+              "log4net.ILog"
+            ],
+            [
+              "message",
+              "System.Object"
+            ],
+            [
+              "exception",
+              "System.Exception"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.Logging.Log4Net.AspNetCore.Entities": [
+    {
+      "name": "Microsoft.Extensions.Logging.Log4Net.AspNetCore.Entities.MessageCandidate`1",
+      "methods": [
+        {
+          "name": "get_LogLevel",
+          "returnType": "Microsoft.Extensions.Logging.LogLevel",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_EventId",
+          "returnType": "Microsoft.Extensions.Logging.EventId",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_State",
+          "returnType": "TState",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Exception",
+          "returnType": "System.Exception",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Formatter",
+          "returnType": "System.Func`3<TState,System.Exception,System.String>",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Logging.Log4Net.AspNetCore.Entities.NodeInfo",
+      "methods": [
+        {
+          "name": "get_XPath",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_XPath",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_NodeContent",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_NodeContent",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Attributes",
+          "returnType": "System.Collections.Generic.Dictionary`2<System.String,System.String>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Attributes",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Collections.Generic.Dictionary`2<System.String,System.String>"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

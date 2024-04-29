@@ -14,21 +14,20 @@ import scala.jdk.OptionConverters.RichOptional
 import scala.util.Try
 
 class EagerSourceTypeSolver(
-  filenames: Array[String],
   sourceParser: SourceParser,
   combinedTypeSolver: SimpleCombinedTypeSolver,
   symbolSolver: JavaSymbolSolver
 ) extends TypeSolver {
 
   private val logger             = LoggerFactory.getLogger(this.getClass)
-  private var parent: TypeSolver = _
+  private var parent: TypeSolver = scala.compiletime.uninitialized
 
   private val foundTypes: Map[String, SymbolReference[ResolvedReferenceTypeDeclaration]] = {
-    filenames
+    sourceParser.relativeFilenames
       .flatMap(sourceParser.parseTypesFile)
       .flatMap { cu =>
         symbolSolver.inject(cu)
-        cu.findAll(classOf[TypeDeclaration[_]])
+        cu.findAll(classOf[TypeDeclaration[?]])
           .asScala
           .map { typeDeclaration =>
             val name = typeDeclaration.getFullyQualifiedName.toScala match {
@@ -75,11 +74,10 @@ class EagerSourceTypeSolver(
 
 object EagerSourceTypeSolver {
   def apply(
-    filenames: Array[String],
     sourceParser: SourceParser,
     combinedTypeSolver: SimpleCombinedTypeSolver,
     symbolSolver: JavaSymbolSolver
   ): EagerSourceTypeSolver = {
-    new EagerSourceTypeSolver(filenames, sourceParser, combinedTypeSolver, symbolSolver)
+    new EagerSourceTypeSolver(sourceParser, combinedTypeSolver, symbolSolver)
   }
 }

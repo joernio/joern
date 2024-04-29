@@ -2,8 +2,19 @@ package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Return}
+import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  Block,
+  Call,
+  FieldIdentifier,
+  Identifier,
+  Literal,
+  MethodRef,
+  Modifier,
+  Return
+}
 import io.shiftleft.semanticcpg.language.*
+import io.joern.rubysrc2cpg.passes.Defines as RubyDefines
 
 class ClassTests extends RubyCode2CpgFixture {
 
@@ -19,7 +30,7 @@ class ClassTests extends RubyCode2CpgFixture {
     classC.lineNumber shouldBe Some(2)
     classC.baseType.l shouldBe List()
     classC.member.l shouldBe List()
-    classC.method.name.l shouldBe List("<init>")
+    classC.method.name.l shouldBe List("<init>", "<clinit>")
   }
 
   "`class C < D` is represented by a TYPE_DECL node inheriting from `D`" in {
@@ -35,7 +46,7 @@ class ClassTests extends RubyCode2CpgFixture {
     classC.fullName shouldBe "Test0.rb:<global>::program.C"
     classC.lineNumber shouldBe Some(2)
     classC.member.l shouldBe List()
-    classC.method.name.l shouldBe List("<init>")
+    classC.method.name.l shouldBe List("<init>", "<clinit>")
 
     val List(typeD) = classC.baseType.l
     typeD.name shouldBe "D"
@@ -300,4 +311,379 @@ class ClassTests extends RubyCode2CpgFixture {
 
   }
 
+  "if: <val> as function param" should {
+    "Be treated as an SimpleIdentifier" in {
+      val cpg = code("""
+          | class User < ApplicationRecord
+          |   validates :password, presence: true,
+          |                        confirmation: true,
+          |                        length: {within: 6..40},
+          |                        on: :create,
+          |                        if: :password
+          |  end
+          |""".stripMargin)
+      inside(cpg.typeDecl.name("User").l) {
+        case userType :: Nil =>
+          inside(userType.method.name(Defines.ConstructorMethodName).l) {
+            case constructor :: Nil =>
+              inside(constructor.astChildren.isBlock.l) {
+                case methodBlock :: Nil =>
+                  val List(validateCall: Call) = methodBlock.astChildren.isCall.l: @unchecked
+
+                  inside(validateCall.argument.l) {
+                    case (identArg: Identifier) :: (passwordArg: Literal) :: (presenceArg: Literal) :: (confirmationArg: Literal) :: (lengthArg: Block) :: (onArg: Literal) :: (ifArg: Literal) :: Nil =>
+                      passwordArg.code shouldBe ":password"
+                      presenceArg.code shouldBe "true"
+                      confirmationArg.code shouldBe "true"
+                      onArg.code shouldBe ":create"
+                      ifArg.code shouldBe ":password"
+                    case xs => fail(s"Expected 7 arguments, got ${xs.code.mkString(", ")} instead")
+                  }
+                case xs => fail(s"Expected one block for method body, got ${xs.code.mkString(", ")} instead")
+              }
+            case xs => fail(s"Expected one constructor method, got ${xs.name.mkString(", ")} instead")
+          }
+        case _ => fail("Expected typeDecl for user, none found instead")
+      }
+    }
+
+    "Be treated as a SimpleIdentifier 2" in {
+      val cpg = code("""
+          | class AdminController < ApplicationController
+          |   before_action :administrative, if: :admin_param, except: [:get_user]
+          |    skip_before_action :has_info
+          |    layout false, only: [:get_all_users, :get_user]
+          | end
+          |""".stripMargin)
+
+      inside(cpg.typeDecl.name("AdminController").l) {
+        case adminTypeDecl :: Nil =>
+          inside(adminTypeDecl.method.name(Defines.ConstructorMethodName).l) {
+            case constructor :: Nil =>
+              inside(constructor.astChildren.isBlock.l) {
+                case methodBlock :: Nil =>
+                  inside(methodBlock.astChildren.isCall.l) {
+                    case beforeActionCall :: skipBeforeActionCall :: layoutCall :: Nil =>
+                      inside(beforeActionCall.argument.l) {
+                        case identArg :: adminArg :: ifArg :: exceptArg :: Nil =>
+                          adminArg.code shouldBe ":administrative"
+                          ifArg.code shouldBe ":admin_param"
+                          exceptArg.code shouldBe "[:get_user]"
+                        case xs => fail(s"Expected 4 args, instead found ${xs.code.mkString(", ")}")
+                      }
+                    case xs => fail(s"Expected 3 calls, instead found ${xs.code.mkString(", ")}")
+                  }
+                case xs => fail(s"Expected one block for method body, got ${xs.code.mkString(", ")} instead")
+              }
+            case xs => fail(s"Expected one constructor method, got ${xs.name.mkString(", ")} instead")
+          }
+
+        case _ => fail("Expected one typeDecl for AdminController")
+      }
+    }
+  }
+
+  "fully qualified base types" should {
+
+    val cpg = code("""require "rails/all"
+        |
+        |module Bar
+        | class Baz
+        | end
+        |end
+        |
+        |module Railsgoat
+        |  class Application < Rails::Application
+        |  end
+        |
+        |  class Foo < Bar::Baz
+        |  end
+        |end
+        |""".stripMargin)
+
+    "not confuse the internal `Application` with `Rails::Application` and leave the type unresolved" in {
+      inside(cpg.typeDecl("Application").headOption) {
+        case Some(app) =>
+          app.inheritsFromTypeFullName.head shouldBe "Rails.Application"
+        case None => fail("Expected a type decl for 'Application', instead got nothing")
+      }
+    }
+
+    "resolve the internal type being referenced" in {
+      inside(cpg.typeDecl("Foo").headOption) {
+        case Some(app) =>
+          app.inheritsFromTypeFullName.head shouldBe "Test0.rb:<global>::program.Bar.Baz"
+        case None => fail("Expected a type decl for 'Foo', instead got nothing")
+      }
+    }
+  }
+
+  "Instance variables in a class and method defs" should {
+    val cpg = code("""
+        |class Foo
+        | @a
+        |
+        | def foo
+        |   @b = 10
+        | end
+        |
+        | def foobar
+        |   @c = 20
+        |   @d = 40
+        | end
+        |
+        | def barfoo
+        |   puts @a
+        |   puts @c
+        |   @o = "a"
+        | end
+        |end
+        |""".stripMargin)
+
+    "create respective member nodes" in {
+      inside(cpg.typeDecl.name("Foo").l) {
+        case fooType :: Nil =>
+          inside(fooType.member.l) {
+            case aMember :: bMember :: cMember :: dMember :: oMember :: Nil =>
+              // Test that all members in class are present
+              aMember.code shouldBe "@a"
+              bMember.code shouldBe "@b"
+              cMember.code shouldBe "@c"
+              dMember.code shouldBe "@d"
+              oMember.code shouldBe "@o"
+            case _ => fail("Expected 5 members")
+          }
+        case xs => fail(s"Expected TypeDecl for Foo, instead got ${xs.name.mkString(", ")}")
+      }
+    }
+
+    "create nil assignments under the class initializer" in {
+      inside(cpg.typeDecl.name("Foo").l) {
+        case fooType :: Nil =>
+          inside(fooType.method.name(Defines.ConstructorMethodName).l) {
+            case initMethod :: Nil =>
+              inside(initMethod.block.astChildren.isCall.name(Operators.assignment).l) {
+                case aAssignment :: bAssignment :: cAssignment :: dAssignment :: oAssignment :: Nil =>
+                  aAssignment.code shouldBe "@a = nil"
+
+                  bAssignment.code shouldBe "@b = nil"
+                  cAssignment.code shouldBe "@c = nil"
+                  dAssignment.code shouldBe "@d = nil"
+                  oAssignment.code shouldBe "@o = nil"
+
+                  inside(aAssignment.argument.l) {
+                    case (lhs: Call) :: (rhs: Literal) :: Nil =>
+                      lhs.code shouldBe "this.@a"
+                      lhs.methodFullName shouldBe Operators.fieldAccess
+
+                      inside(lhs.argument.l) {
+                        case (identifier: Identifier) :: (fieldIdentifier: FieldIdentifier) :: Nil =>
+                          identifier.code shouldBe RubyDefines.This
+                          fieldIdentifier.code shouldBe "@a"
+                        case _ => fail("Expected identifier and fieldIdentifier for fieldAccess")
+                      }
+
+                      rhs.code shouldBe "nil"
+                    case _ => fail("Expected only LHS and RHS for assignment call")
+                  }
+                case _ => fail("")
+              }
+            case xs => fail(s"Expected one method for init, instead got ${xs.name.mkString(", ")}")
+          }
+        case xs => fail(s"Expected TypeDecl for Foo, instead got ${xs.name.mkString(", ")}")
+      }
+    }
+  }
+
+  "Class Variables in Class and Methods" should {
+    val cpg = code("""
+        |class Foo
+        | @@a
+        |
+        | def foo
+        |   @@b = 10
+        | end
+        |
+        | def foobar
+        |   @@c = 20
+        |   @@d = 40
+        | end
+        |
+        | def barfoo
+        |   puts @@a
+        |   puts @@c
+        |   @@o = "a"
+        | end
+        |end
+        |""".stripMargin)
+
+    "create respective member nodes" in {
+      inside(cpg.typeDecl.name("Foo").l) {
+        case fooType :: Nil =>
+          inside(fooType.member.l) {
+            case aMember :: bMember :: cMember :: dMember :: oMember :: Nil =>
+              // Test that all members in class are present
+              aMember.code shouldBe "@@a"
+              bMember.code shouldBe "@@b"
+              cMember.code shouldBe "@@c"
+              dMember.code shouldBe "@@d"
+              oMember.code shouldBe "@@o"
+            case _ => fail("Expected 5 members")
+          }
+        case xs => fail(s"Expected TypeDecl for Foo, instead got ${xs.name.mkString(", ")}")
+      }
+    }
+
+    "create nil assignments under the class initializer" in {
+      inside(cpg.typeDecl.name("Foo").l) {
+        case fooType :: Nil =>
+          inside(fooType.method.name(Defines.StaticInitMethodName).l) {
+            case clinitMethod :: Nil =>
+              inside(clinitMethod.block.astChildren.isCall.name(Operators.assignment).l) {
+                case aAssignment :: bAssignment :: cAssignment :: dAssignment :: oAssignment :: Nil =>
+                  aAssignment.code shouldBe "@@a = nil"
+
+                  bAssignment.code shouldBe "@@b = nil"
+                  cAssignment.code shouldBe "@@c = nil"
+                  dAssignment.code shouldBe "@@d = nil"
+                  oAssignment.code shouldBe "@@o = nil"
+
+                  inside(aAssignment.argument.l) {
+                    case (lhs: Call) :: (rhs: Literal) :: Nil =>
+                      lhs.code shouldBe "Foo.@@a"
+                      lhs.methodFullName shouldBe Operators.fieldAccess
+
+                      inside(lhs.argument.l) {
+                        case (identifier: Identifier) :: (fieldIdentifier: FieldIdentifier) :: Nil =>
+                          identifier.code shouldBe "Foo"
+                          fieldIdentifier.code shouldBe "@@a"
+                        case _ => fail("Expected identifier and fieldIdentifier for fieldAccess")
+                      }
+
+                      rhs.code shouldBe "nil"
+                    case _ => fail("Expected only LHS and RHS for assignment call")
+                  }
+                case _ => fail("")
+              }
+            case xs => fail(s"Expected one method for clinit, instead got ${xs.name.mkString(", ")}")
+          }
+        case xs => fail(s"Expected TypeDecl for Foo, instead got ${xs.name.mkString(", ")}")
+      }
+    }
+  }
+
+  "Bodies that aren't StatementList" should {
+    val cpg = code("""
+        |  class EventWebhook
+        |    # * *Args* :
+        |    #   - +public_key+ -> elliptic curve public key
+        |    #   - +payload+ -> event payload in the request body
+        |    #   - +signature+ -> signature value obtained from the 'X-Twilio-Email-Event-Webhook-Signature' header
+        |    #   - +timestamp+ -> timestamp value obtained from the 'X-Twilio-Email-Event-Webhook-Timestamp' header
+        |    def verify_signature(public_key, payload, signature, timestamp)
+        |      verify_engine
+        |      timestamped_playload = "#{timestamp}#{payload}"
+        |      payload_digest = Digest::SHA256.digest(timestamped_playload)
+        |      decoded_signature = Base64.decode64(signature)
+        |      public_key.dsa_verify_asn1(payload_digest, decoded_signature)
+        |    rescue StandardError
+        |      false
+        |    end
+        |  end
+        |""".stripMargin)
+    "not throw an execption" in {
+      inside(cpg.method.name("verify_signature").l) {
+        case verifySigMethod :: Nil => // Passing case
+        case _                      => fail("Expected method for verify_sginature")
+      }
+    }
+  }
+
+  "Scope call under TYPE DECL" should {
+    val cpg = code("""
+        |class Foo
+        | scope :published, -> { where(status: "Published") }
+        |  def bar
+        |    puts 1
+        |  end
+        |end
+        |""".stripMargin)
+
+    "be moved to <init> constructor method" in {
+      inside(cpg.typeDecl.name("Foo").l) {
+        case fooClass :: Nil =>
+          inside(fooClass.method.name(Defines.ConstructorMethodName).l) {
+            case initMethod :: Nil =>
+              inside(initMethod.astChildren.isBlock.astChildren.isCall.l) {
+                case scopeCall :: Nil =>
+                  scopeCall.code shouldBe "scope :published, -> { where(status: \"Published\") }"
+
+                  inside(scopeCall.argument.l) {
+                    case (scopeIdent: Identifier) :: (literalArg: Literal) :: unknownArg :: Nil =>
+                      scopeIdent.code shouldBe "scope"
+                      literalArg.code shouldBe ":published"
+                    case xs => fail(s"Expected three arguments, got ${xs.code.mkString(", ")} instead")
+                  }
+                case xs => fail(s"Expected one call under constructor, got ${xs.code.mkString(", ")} instead")
+              }
+            case xs => fail(s"Expected one init method, got ${xs.code.mkString(", ")} instead")
+          }
+        case xs => fail(s"Expected one class, got ${xs.code.mkString(", ")} instead")
+      }
+    }
+  }
+
+  "Scope call with Lambda Expression" should {
+    val cpg = code("""
+         |class Foo
+         |  scope :hits_by_ip, ->(ip, col = "*") { select("#{col}").where(ip_address: ip).order("id DESC") }
+         |  def bar
+         |    puts 1
+         |  end
+         |end
+         |""".stripMargin)
+
+    "correct method full name for method ref under call" in {
+      inside(cpg.typeDecl.name("Foo").l) {
+        case fooClass :: Nil =>
+          inside(fooClass.method.name(Defines.ConstructorMethodName).l) {
+            case initMethod :: Nil =>
+              inside(initMethod.astChildren.isBlock.l) {
+                case methodBlock :: Nil =>
+                  inside(methodBlock.astChildren.l) {
+                    case methodCall :: Nil =>
+                      inside(methodCall.astChildren.l) {
+                        case (identifier: Identifier) :: (literal: Literal) :: (methodRef: MethodRef) :: Nil =>
+                          identifier.code shouldBe "scope"
+                          literal.code shouldBe ":hits_by_ip"
+                          methodRef.methodFullName shouldBe "Test0.rb:<global>::program.Foo:<init>:<lambda>0"
+                          methodRef.referencedMethod.parameter.name.l shouldBe List("ip", "col")
+                        case xs => fail(s"Expected three children, got ${xs.code.mkString(", ")} instead")
+                      }
+                    case xs => fail(s"Expected one call, got ${xs.code.mkString(", ")} instead")
+                  }
+                case xs => fail(s"Expected one block under method, got ${xs.code.mkString(", ")} instead")
+              }
+            case xs => fail(s"Expected one init method, got ${xs.code.mkString(", ")} instead")
+          }
+        case xs => fail(s"Expected one class, got ${xs.code.mkString(", ")} instead")
+      }
+    }
+
+    "correct method def under <init> block" in {
+      inside(cpg.typeDecl.name("Foo").l) {
+        case fooClass :: Nil =>
+          inside(fooClass.method.name(Defines.ConstructorMethodName).l) {
+            case initMethod :: Nil =>
+              inside(initMethod.astChildren.isMethod.l) {
+                case lambdaMethod :: Nil =>
+                  lambdaMethod.fullName shouldBe "Test0.rb:<global>::program.Foo:<init>:<lambda>0"
+                case xs => fail(s"Expected method decl for lambda, got ${xs.code.mkString(", ")} instead")
+              }
+            case xs => fail(s"Expected one init method, got ${xs.code.mkString(", ")} instead")
+          }
+        case xs => fail(s"Expected one class, got ${xs.code.mkString(", ")} instead")
+      }
+    }
+  }
 }

@@ -6,6 +6,8 @@ import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Stack.*
 import io.shiftleft.codepropertygraph.generated.nodes.File.PropertyDefaults
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.Operators
 
 trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
@@ -99,6 +101,10 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
     astForListSyntaxChildren(node, node.children)
   }
 
+  private def astForLifetimeSpecifierArgumentListSyntax(node: LifetimeSpecifierArgumentListSyntax): Ast = {
+    astForListSyntaxChildren(node, node.children)
+  }
+
   private def astForMemberBlockItemListSyntax(node: MemberBlockItemListSyntax): Ast = notHandledYet(node)
 
   private def astForMultipleTrailingClosureElementListSyntax(node: MultipleTrailingClosureElementListSyntax): Ast = {
@@ -115,7 +121,14 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
   private def astForPrimaryAssociatedTypeListSyntax(node: PrimaryAssociatedTypeListSyntax): Ast = notHandledYet(node)
 
   private def astForSimpleStringLiteralSegmentListSyntax(node: SimpleStringLiteralSegmentListSyntax): Ast = {
-    astForListSyntaxChildren(node, node.children)
+    node.children match {
+      case child :: Nil => astForNodeWithFunctionReference(child)
+      case children =>
+        val stringFormatCall = callNode(node, code(node), Operators.formatString, DispatchTypes.STATIC_DISPATCH)
+        val childrenAsts     = children.map(astForNodeWithFunctionReference)
+        setArgumentIndices(childrenAsts)
+        callAst(stringFormatCall, childrenAsts)
+    }
   }
 
   private def astForSpecializeAttributeArgumentListSyntax(node: SpecializeAttributeArgumentListSyntax): Ast = {
@@ -123,13 +136,34 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
   }
 
   private def astForStringLiteralSegmentListSyntax(node: StringLiteralSegmentListSyntax): Ast = {
+    node.children match {
+      case child :: Nil => astForNodeWithFunctionReference(child)
+      case children =>
+        val stringFormatCall = callNode(node, code(node), Operators.formatString, DispatchTypes.STATIC_DISPATCH)
+        val childrenAsts     = children.map(astForNodeWithFunctionReference)
+        setArgumentIndices(childrenAsts)
+        callAst(stringFormatCall, childrenAsts)
+    }
+  }
+
+  private def astForSwitchCaseItemListSyntax(node: SwitchCaseItemListSyntax): Ast = {
     astForListSyntaxChildren(node, node.children)
   }
 
-  private def astForSwitchCaseItemListSyntax(node: SwitchCaseItemListSyntax): Ast           = notHandledYet(node)
-  private def astForSwitchCaseListSyntax(node: SwitchCaseListSyntax): Ast                   = notHandledYet(node)
+  private def astForSwitchCaseListSyntax(node: SwitchCaseListSyntax): Ast = {
+    val blockNode_ = blockNode(node, PropertyDefaults.Code, Defines.Any)
+    scope.pushNewBlockScope(blockNode_)
+    localAstParentStack.push(blockNode_)
+    val asts = node.children.toList.flatMap(astsForSwitchCase)
+    setArgumentIndices(asts)
+    localAstParentStack.pop()
+    scope.popScope()
+    blockAst(blockNode_, asts)
+  }
+
   private def astForTuplePatternElementListSyntax(node: TuplePatternElementListSyntax): Ast = notHandledYet(node)
   private def astForTupleTypeElementListSyntax(node: TupleTypeElementListSyntax): Ast       = notHandledYet(node)
+  private def astForTypeSpecifierListSyntax(node: TypeSpecifierListSyntax): Ast             = notHandledYet(node)
   private def astForUnexpectedNodesSyntax(node: UnexpectedNodesSyntax): Ast                 = notHandledYet(node)
   private def astForVersionComponentListSyntax(node: VersionComponentListSyntax): Ast       = notHandledYet(node)
   private def astForYieldedExpressionListSyntax(node: YieldedExpressionListSyntax): Ast     = notHandledYet(node)
@@ -166,6 +200,7 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
     case node: InheritedTypeListSyntax                  => astForInheritedTypeListSyntax(node)
     case node: KeyPathComponentListSyntax               => astForKeyPathComponentListSyntax(node)
     case node: LabeledExprListSyntax                    => astForLabeledExprListSyntax(node)
+    case node: LifetimeSpecifierArgumentListSyntax      => astForLifetimeSpecifierArgumentListSyntax(node)
     case node: MemberBlockItemListSyntax                => astForMemberBlockItemListSyntax(node)
     case node: MultipleTrailingClosureElementListSyntax => astForMultipleTrailingClosureElementListSyntax(node)
     case node: ObjCSelectorPieceListSyntax              => astForObjCSelectorPieceListSyntax(node)
@@ -181,6 +216,7 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
     case node: SwitchCaseListSyntax                     => astForSwitchCaseListSyntax(node)
     case node: TuplePatternElementListSyntax            => astForTuplePatternElementListSyntax(node)
     case node: TupleTypeElementListSyntax               => astForTupleTypeElementListSyntax(node)
+    case node: TypeSpecifierListSyntax                  => astForTypeSpecifierListSyntax(node)
     case node: UnexpectedNodesSyntax                    => astForUnexpectedNodesSyntax(node)
     case node: VersionComponentListSyntax               => astForVersionComponentListSyntax(node)
     case node: YieldedExpressionListSyntax              => astForYieldedExpressionListSyntax(node)

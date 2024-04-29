@@ -50,7 +50,6 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
   protected val dynamicInstanceTypeStack      = new Stack[String]
   protected val localAstParentStack           = new Stack[NewBlock]()
   protected val rootTypeDecl                  = new Stack[NewTypeDecl]()
-  protected val typeFullNameToPostfix         = mutable.HashMap.empty[String, Int]
   protected val functionNodeToNameAndFullName = mutable.HashMap.empty[BabelNodeInfo, (String, String)]
   protected val usedVariableNames             = mutable.HashMap.empty[String, Int]
   protected val seenAliasTypes                = mutable.HashSet.empty[NewTypeDecl]

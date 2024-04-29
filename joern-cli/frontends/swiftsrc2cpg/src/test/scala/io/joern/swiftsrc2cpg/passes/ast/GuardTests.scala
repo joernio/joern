@@ -2,20 +2,22 @@
 
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.shiftleft.codepropertygraph.generated
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
+
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
-class GuardTests extends AbstractPassTest {
+class GuardTests extends AstSwiftSrc2CpgSuite {
 
   "GuardTests" should {
 
-    "testGuard1" in AstFixture("""
+    "testGuard1" in {
+      val cpg = code("""
         |func noConditionNoElse() {
         |  guard {} else {}
         |}
-        |""".stripMargin) { cpg =>
+        |""".stripMargin)
       val List(methodBlock) = cpg.method.nameExact("noConditionNoElse").block.l
       val List(guardIf)     = methodBlock.astChildren.isControlStructure.l
       guardIf.argumentIndex shouldBe 1
@@ -26,7 +28,8 @@ class GuardTests extends AbstractPassTest {
       methodBlock.astChildren.isControlStructure.whenFalse.astChildren.code.l shouldBe empty
     }
 
-    "testGuard2" in AstFixture("""
+    "testGuard2" in {
+      val cpg = code("""
         |var i = 2
         |while (i <= 10) {
         |  guard i % 2 == 0 else {
@@ -36,7 +39,7 @@ class GuardTests extends AbstractPassTest {
         |  print(i)
         |  i = i + 1
         |} 
-        |""".stripMargin) { cpg =>
+        |""".stripMargin)
       val List(whileBlock) = cpg.controlStructure.controlStructureType(ControlStructureTypes.WHILE).whenTrue.l
       val List(guardIf)    = whileBlock.astChildren.isControlStructure.l
       guardIf.argumentIndex shouldBe 1
@@ -47,7 +50,8 @@ class GuardTests extends AbstractPassTest {
       whileBlock.astChildren.isControlStructure.whenFalse.astChildren.code.l shouldBe List("i = i + 1", "continue")
     }
 
-    "testGuard3" in AstFixture("""
+    "testGuard3" in {
+      val cpg = code("""
         |func checkOddEven() {
         |  var number = 24
         |  guard number % 2 == 0 else {
@@ -56,7 +60,7 @@ class GuardTests extends AbstractPassTest {
         |  }
         |  print("Even Number")
         |}
-        |""".stripMargin) { cpg =>
+        |""".stripMargin)
       val List(methodBlock) = cpg.method.nameExact("checkOddEven").block.l
       val List(call)        = methodBlock.astChildren.isCall.l
       call.argumentIndex shouldBe 1
@@ -73,7 +77,8 @@ class GuardTests extends AbstractPassTest {
       )
     }
 
-    "testGuard4" in AstFixture("""
+    "testGuard4" in {
+      val cpg = code("""
         |func checkJobEligibility() {
         |  var age = 33
         |  guard age >= 18, age <= 40 else {
@@ -82,7 +87,7 @@ class GuardTests extends AbstractPassTest {
         |  }
         |  print("You are eligible for this job")
         |}
-        |""".stripMargin) { cpg =>
+        |""".stripMargin)
       val List(methodBlock) = cpg.method.nameExact("checkJobEligibility").block.l
       val List(call)        = methodBlock.astChildren.isCall.l
       call.argumentIndex shouldBe 1
@@ -99,7 +104,8 @@ class GuardTests extends AbstractPassTest {
       )
     }
 
-    "testGuard5" in AstFixture("""
+    "testGuard5" in {
+      val cpg = code("""
         |func checkAge() {
         |  var age: Int? = 22
         |  guard let myAge = age else {
@@ -108,7 +114,7 @@ class GuardTests extends AbstractPassTest {
         |  }
         |  print("My age is \(myAge)")
         |}
-        |""".stripMargin) { cpg =>
+        |""".stripMargin)
       val List(methodBlock) = cpg.method.nameExact("checkAge").block.l
       methodBlock.local.name.l shouldBe List("myAge", "age", "this", "print")
       val List(call) = methodBlock.astChildren.isCall.l
@@ -126,7 +132,8 @@ class GuardTests extends AbstractPassTest {
       )
     }
 
-    "testGuard6" in AstFixture("""
+    "testGuard6" in {
+      val cpg = code("""
         |func multipleLinear() {
         |  var a = true
         |  var b = true
@@ -141,7 +148,7 @@ class GuardTests extends AbstractPassTest {
         |  }
         |  print("b")
         |}
-        |""".stripMargin) { cpg =>
+        |""".stripMargin)
       val List(methodBlock)  = cpg.method.nameExact("multipleLinear").block.l
       val List(callA, callB) = methodBlock.astChildren.isCall.l
       callA.argumentIndex shouldBe 1
@@ -163,7 +170,8 @@ class GuardTests extends AbstractPassTest {
       guardIfB.whenFalse.astChildren.code.l shouldBe List("print(\"else b\")", "return")
     }
 
-    "testGuard7" in AstFixture("""
+    "testGuard7" in {
+      val cpg = code("""
         |func multipleNested() {
         |  var a = true
         |  var b = true
@@ -178,7 +186,7 @@ class GuardTests extends AbstractPassTest {
         |  }
         |  print("a")
         |}
-        |""".stripMargin) { cpg =>
+        |""".stripMargin)
       val List(methodBlock)  = cpg.method.nameExact("multipleNested").block.l
       val List(callA, callB) = methodBlock.astChildren.isCall.l
       callA.argumentIndex shouldBe 1

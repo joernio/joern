@@ -15,7 +15,7 @@ class SootAstCreationPass(cpg: Cpg, config: Config) extends ConcurrentWriterCpgP
   val global: Global = new Global()
   private val logger = LoggerFactory.getLogger(classOf[AstCreationPass])
 
-  override def generateParts(): Array[_ <: AnyRef] = Scene.v().getApplicationClasses.toArray()
+  override def generateParts(): Array[? <: AnyRef] = Scene.v().getApplicationClasses.toArray()
 
   override def runOnPart(builder: DiffGraphBuilder, part: SootClass): Unit = {
     val jimpleFile = SourceLocator.v().getSourceForClass(part.getName)

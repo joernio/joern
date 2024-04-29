@@ -1,22 +1,23 @@
 package io.joern.c2cpg.querying
 
-import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
+import io.joern.c2cpg.testfixtures.C2CpgSuite
+import io.joern.c2cpg.Config
 import io.shiftleft.codepropertygraph.generated.{Languages, NodeTypes}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 /** The following tests show in detail how queries can be started. For all node types, for which it seems reasonable,
   * all nodes of that type can be used as a starting point, e.g., `cpg.method` starts at all methods while `cpg.local`
   * starts at all locals.
   */
-class NodeTypeStarterQueryTests extends CCodeToCpgSuite {
+class NodeTypeStarterQueryTests extends C2CpgSuite {
 
   private val cpg = code("""
       |/* A C comment */
       |// A C++ comment
       |int main(int argc, char **argv) { int mylocal; libfunc(1, argc); }
       |struct foo { int x; };
-    """.stripMargin)
+    """.stripMargin).withConfig(Config().withIncludeComments(true))
 
   "should allow retrieving files" in {
     atLeast(1, cpg.file.name.l) should endWith(".c")

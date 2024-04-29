@@ -98,18 +98,18 @@ class PythonImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
     *   the possible callee names
     */
   private def createPseudoImports(expEntity: String, alias: String): Set[EvaluatedImport] = {
-    val pathSep            = "."
-    val isMaybeConstructor = expEntity.split("\\.").lastOption.exists(s => s.nonEmpty && s.charAt(0).isUpper)
+    val pathSep            = '.'
+    val isMaybeConstructor = expEntity.split(pathSep).lastOption.exists(s => s.nonEmpty && s.charAt(0).isUpper)
 
     def toUnresolvedImport(pseudoPath: String): Set[EvaluatedImport] = {
       if (isMaybeConstructor) {
-        Set(UnknownMethod(Seq(pseudoPath, "__init__").mkString(pathSep), alias), UnknownTypeDecl(pseudoPath))
+        Set(UnknownMethod(Seq(pseudoPath, "__init__").mkString(pathSep.toString), alias), UnknownTypeDecl(pseudoPath))
       } else {
         Set(UnknownImport(pseudoPath))
       }
     }
 
-    expEntity.split("\\.").reverse.toList match
+    expEntity.split(pathSep).reverse.toList match
       case name :: Nil => toUnresolvedImport(s"$name.py:<module>")
       case name :: xs  => toUnresolvedImport(s"${xs.reverse.mkString(JFile.separator)}.py:<module>$pathSep$name")
       case Nil         => Set.empty

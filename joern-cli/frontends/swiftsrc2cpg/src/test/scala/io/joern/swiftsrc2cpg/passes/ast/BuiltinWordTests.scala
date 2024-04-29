@@ -2,78 +2,51 @@
 
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
 import io.shiftleft.semanticcpg.language._
 
-class BuiltinWordTests extends AbstractPassTest {
+class BuiltinWordTests extends AstSwiftSrc2CpgSuite {
 
   "BuiltinWordTests" should {
 
-    "testBuiltinWord1" ignore AstFixture("precedencegroup AssignmentPrecedence { assignment: true }") { cpg => ??? }
+    "testBuiltinWord1" in {
+      val cpg = code("precedencegroup AssignmentPrecedence { assignment: true }")
+      // precedencegroups cannot be expressed within the CPG and are of no value for us
+      cpg.literal.codeExact("AssignmentPrecedence") shouldBe empty
+    }
 
-    "testBuiltinWord2" ignore AstFixture("""
+    "testBuiltinWord2" in {
+      val cpg = code("""
       |var word: Builtin.Word
       |var i16: Builtin.Int16
       |var i32: Builtin.Int32
       |var i128: Builtin.Int128
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      val List(word, i16, i32, i128) = cpg.local.l
+      word.typeFullName shouldBe "Builtin.Word"
+      i16.typeFullName shouldBe "Builtin.Int16"
+      i32.typeFullName shouldBe "Builtin.Int32"
+      i128.typeFullName shouldBe "Builtin.Int128"
+    }
 
-    "testBuiltinWord4" ignore AstFixture("""
-        |word = Builtin.truncOrBitCast_Int128_Word(i128)
-        |word = Builtin.truncOrBitCast_Int64_Word(i64)
-        |word = Builtin.truncOrBitCast_Int32_Word(i32)
-        |word = Builtin.truncOrBitCast_Int16_Word(i16)
-        |""".stripMargin) { cpg => ??? }
+    "testBuiltinWord4" in {
+      val cpg = code("""
+        |word128 = Builtin.truncOrBitCast_Int128_Word(i128)
+        |word64 = Builtin.truncOrBitCast_Int64_Word(i64)
+        |word32 = Builtin.truncOrBitCast_Int32_Word(i32)
+        |word16 = Builtin.truncOrBitCast_Int16_Word(i16)
+        |""".stripMargin)
+      val List(word128, word64, word32, word16) = cpg.identifier.name("word.*").l
+      cpg.local.nameExact(word128.name).size shouldBe 1
+      cpg.local.nameExact(word64.name).size shouldBe 1
+      cpg.local.nameExact(word32.name).size shouldBe 1
+      cpg.local.nameExact(word16.name).size shouldBe 1
+      cpg.call.codeExact("Builtin.truncOrBitCast_Int128_Word(i128)").size shouldBe 1
+      cpg.call.codeExact("Builtin.truncOrBitCast_Int64_Word(i64)").size shouldBe 1
+      cpg.call.codeExact("Builtin.truncOrBitCast_Int32_Word(i32)").size shouldBe 1
+      cpg.call.codeExact("Builtin.truncOrBitCast_Int16_Word(i16)").size shouldBe 1
+    }
 
-    "testBuiltinWord5" ignore AstFixture("""
-        |i16 = Builtin.truncOrBitCast_Word_Int16(word)
-        |i32 = Builtin.truncOrBitCast_Word_Int32(word)
-        |i64 = Builtin.truncOrBitCast_Word_Int64(word)
-        |i128 = Builtin.truncOrBitCast_Word_Int128(word)
-        |""".stripMargin) { cpg => ??? }
-
-    "testBuiltinWord6" ignore AstFixture("""
-        |word = Builtin.zextOrBitCast_Int128_Word(i128)
-        |word = Builtin.zextOrBitCast_Int64_Word(i64)
-        |word = Builtin.zextOrBitCast_Int32_Word(i32)
-        |word = Builtin.zextOrBitCast_Int16_Word(i16)
-        |""".stripMargin) { cpg => ??? }
-
-    "testBuiltinWord7" ignore AstFixture("""
-        |i16 = Builtin.zextOrBitCast_Word_Int16(word)
-        |i32 = Builtin.zextOrBitCast_Word_Int32(word)
-        |i64 = Builtin.zextOrBitCast_Word_Int64(word)
-        |i128 = Builtin.zextOrBitCast_Word_Int128(word)
-        |""".stripMargin) { cpg => ??? }
-
-    "testBuiltinWord8" ignore AstFixture("""
-        |word = Builtin.trunc_Int128_Word(i128)
-        |word = Builtin.trunc_Int64_Word(i64)
-        |word = Builtin.trunc_Int32_Word(i32)
-        |word = Builtin.trunc_Int16_Word(i16)
-        |""".stripMargin) { cpg => ??? }
-
-    "testBuiltinWord9" ignore AstFixture("""
-        |i16 = Builtin.trunc_Word_Int16(word)
-        |i32 = Builtin.trunc_Word_Int32(word)
-        |i64 = Builtin.trunc_Word_Int64(word)
-        |i128 = Builtin.trunc_Word_Int128(word)
-        |""".stripMargin) { cpg => ??? }
-
-    "testBuiltinWord10" ignore AstFixture("""
-        |word = Builtin.zext_Int128_Word(i128)
-        |word = Builtin.zext_Int64_Word(i64)
-        |word = Builtin.zext_Int32_Word(i32)
-        |word = Builtin.zext_Int16_Word(i16)
-        |""".stripMargin) { cpg => ??? }
-
-    "testBuiltinWord11" ignore AstFixture(""",
-        |i16 = Builtin.zext_Word_Int16(word)
-        |i32 = Builtin.zext_Word_Int32(word)
-        |i64 = Builtin.zext_Word_Int64(word)
-        |i128 = Builtin.zext_Word_Int128(word)
-        |""".stripMargin) { cpg => ??? }
   }
 
 }

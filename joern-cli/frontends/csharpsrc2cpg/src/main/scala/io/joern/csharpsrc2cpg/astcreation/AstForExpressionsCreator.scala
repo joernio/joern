@@ -1,12 +1,12 @@
 package io.joern.csharpsrc2cpg.astcreation
 
-import io.joern.csharpsrc2cpg.CSharpOperators
 import io.joern.csharpsrc2cpg.datastructures.CSharpMethod
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
-import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode, newOperatorCallNode}
+import io.joern.csharpsrc2cpg.{CSharpOperators, Constants}
+import io.joern.x2cpg.utils.NodeBuilders.{newCallNode, newIdentifierNode, newOperatorCallNode}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewFieldIdentifier, NewLiteral}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewFieldIdentifier, NewLiteral, NewTypeRef}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import ujson.Value
 
@@ -20,18 +20,26 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   def astForExpression(expr: DotNetNodeInfo): Seq[Ast] = {
-    expr.node match
-      case _: UnaryExpr                 => astForUnaryExpression(expr)
-      case _: BinaryExpr                => astForBinaryExpression(expr)
-      case _: LiteralExpr               => astForLiteralExpression(expr)
-      case InvocationExpression         => astForInvocationExpression(expr)
-      case AwaitExpression              => astForAwaitExpression(expr)
-      case ObjectCreationExpression     => astForObjectCreationExpression(expr)
-      case SimpleMemberAccessExpression => astForSimpleMemberAccessExpression(expr)
-      case _: IdentifierNode            => astForIdentifier(expr) :: Nil
-      case ThisExpression               => astForThisReceiver(expr) :: Nil
-      case _: BaseLambdaExpression      => astForSimpleLambdaExpression(expr)
-      case _                            => notHandledYet(expr)
+    expr.node match {
+      case _: UnaryExpr                      => astForUnaryExpression(expr)
+      case _: BinaryExpr                     => astForBinaryExpression(expr)
+      case _: LiteralExpr                    => astForLiteralExpression(expr)
+      case InvocationExpression              => astForInvocationExpression(expr)
+      case AwaitExpression                   => astForAwaitExpression(expr)
+      case ObjectCreationExpression          => astForObjectCreationExpression(expr)
+      case SimpleMemberAccessExpression      => astForSimpleMemberAccessExpression(expr)
+      case ElementAccessExpression           => astForElementAccessExpression(expr)
+      case ImplicitArrayCreationExpression   => astForImplicitArrayCreationExpression(expr)
+      case ConditionalExpression             => astForConditionalExpression(expr)
+      case _: IdentifierNode                 => astForIdentifier(expr) :: Nil
+      case ThisExpression                    => astForThisReceiver(expr) :: Nil
+      case CastExpression                    => astForCastExpression(expr)
+      case InterpolatedStringExpression      => astForInterpolatedStringExpression(expr)
+      case ConditionalAccessExpression       => astForConditionalAccessExpression(expr)
+      case SuppressNullableWarningExpression => astForSuppressNullableWarningExpression(expr)
+      case _: BaseLambdaExpression           => astForSimpleLambdaExpression(expr)
+      case _                                 => notHandledYet(expr)
+    }
   }
 
   private def astForAwaitExpression(awaitExpr: DotNetNodeInfo): Seq[Ast] = {
@@ -123,7 +131,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     )
 
     val cNode =
-      createCallNodeForOperator(binaryExpr, operatorName, typeFullName = Some(getTypeFullNameFromAstNode(args)))
+      createCallNodeForOperator(
+        binaryExpr,
+        operatorName,
+        typeFullName = Some(fixedTypeOperators.getOrElse(operatorName, getTypeFullNameFromAstNode(args)))
+      )
     Seq(callAst(cNode, args))
   }
 
@@ -201,7 +213,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       methodMetaData: Option[CSharpMethod],
       arguments: Seq[Ast]
     ) = expression.node match {
-      case SimpleMemberAccessExpression =>
+      case SimpleMemberAccessExpression | SuppressNullableWarningExpression =>
         val baseNode = createDotNetNodeInfo(
           createDotNetNodeInfo(invocationExpr.json(ParserKeys.Expression)).json(ParserKeys.Expression)
         )
@@ -214,7 +226,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         val argTypes       = arguments.map(getTypeFullNameFromAstNode).toList
         val methodMetaData = scope.tryResolveMethodInvocation(callName, argTypes, baseTypeFullName)
         (receiverAst.headOption, baseTypeFullName, methodMetaData, arguments)
-      case IdentifierName =>
+      case IdentifierName | MemberBindingExpression =>
         // This is when a call is made directly, which could also be made from a static import
         val argTypes = astForArgumentList(argumentList).map(getTypeFullNameFromAstNode).toList
         scope
@@ -248,6 +260,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case Some(m) => s"${m.returnType}(${m.parameterTypes.filterNot(_._1 == "this").map(_._2).mkString(",")})"
       case None    => Defines.UnresolvedSignature
     }
+
     val methodFullName = baseTypeFullName match {
       case Some(typeFullName) =>
         s"$typeFullName.$callName:$methodSignature"
@@ -281,12 +294,42 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   protected def astForSimpleMemberAccessExpression(accessExpr: DotNetNodeInfo): Seq[Ast] = {
     val fieldIdentifierName = nameFromNode(accessExpr)
 
-    val fieldInScope = scope.findFieldInScope(fieldIdentifierName)
+    val (identifierName, typeFullName) = accessExpr.node match {
+      case SimpleMemberAccessExpression => {
+        createDotNetNodeInfo(accessExpr.json(ParserKeys.Expression)).node match
+          case SuppressNullableWarningExpression =>
+            val baseNode         = createDotNetNodeInfo(accessExpr.json(ParserKeys.Expression)(ParserKeys.Operand))
+            val baseAst          = astForNode(baseNode)
+            val baseTypeFullName = getTypeFullNameFromAstNode(baseAst)
 
-    val typeFullName = fieldInScope.map(_.typeFullName).getOrElse(Defines.Any)
-    val identifierName =
-      if (fieldInScope.nonEmpty && fieldInScope.get.isStatic) scope.surroundingTypeDeclFullName.getOrElse(Defines.Any)
-      else "this"
+            val fieldInScope = scope.tryResolveFieldAccess(fieldIdentifierName, typeFullName = Option(baseTypeFullName))
+
+            (
+              nameFromNode(baseNode),
+              fieldInScope
+                .map(_.typeName)
+                .getOrElse(Defines.Any)
+            )
+          case _ => {
+            val fieldInScope = scope.findFieldInScope(fieldIdentifierName)
+            val _identifierName =
+              if (fieldInScope.nonEmpty && fieldInScope.map(_.isStatic).contains(true))
+                scope.surroundingTypeDeclFullName.getOrElse(Defines.Any)
+              else Constants.This
+            val _typeFullName = fieldInScope.map(_.typeFullName).getOrElse(Defines.Any)
+            (_identifierName, _typeFullName)
+          }
+      }
+      case _ => {
+        val fieldInScope = scope.findFieldInScope(fieldIdentifierName)
+        val _identifierName =
+          if (fieldInScope.nonEmpty && fieldInScope.map(_.isStatic).contains(true))
+            scope.surroundingTypeDeclFullName.getOrElse(Defines.Any)
+          else Constants.This
+        val _typeFullName = fieldInScope.map(_.typeFullName).getOrElse(Defines.Any)
+        (_identifierName, _typeFullName)
+      }
+    }
 
     val identifier = newIdentifierNode(identifierName, typeFullName)
 
@@ -311,6 +354,27 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val fieldIdentAst = Ast(fieldIdentifier)
 
     Seq(callAst(fieldAccess, Seq(identifierAst, fieldIdentAst)))
+  }
+
+  protected def astForElementAccessExpression(elementAccessExpression: DotNetNodeInfo): Seq[Ast] = {
+    val exprAst = astForExpression(createDotNetNodeInfo(elementAccessExpression.json(ParserKeys.Expression)))
+
+    createDotNetNodeInfo(elementAccessExpression.json(ParserKeys.ArgumentList))
+      .json(ParserKeys.Arguments)
+      .arr
+      .map { x =>
+        val argDotNetInfo = createDotNetNodeInfo(x)
+        val argAst        = astForExpression(createDotNetNodeInfo(argDotNetInfo.json(ParserKeys.Expression)))
+        val callNode = newOperatorCallNode(
+          Operators.indexAccess,
+          code = elementAccessExpression.code,
+          line = line(elementAccessExpression),
+          column = column(elementAccessExpression)
+        )
+
+        callAst(callNode, exprAst ++ argAst)
+      }
+      .toSeq
   }
 
   def astForObjectCreationExpression(objectCreation: DotNetNodeInfo): Seq[Ast] = {
@@ -353,4 +417,235 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       )
       .toSeq
   }
+
+  private def astForConditionalExpression(condExpr: DotNetNodeInfo): Seq[Ast] = {
+    val conditionAst = astForNode(condExpr.json(ParserKeys.Condition))
+    val whenTrue     = astForNode(condExpr.json(ParserKeys.WhenTrue))
+    val whenFalse    = astForNode(condExpr.json(ParserKeys.WhenFalse))
+
+    val typeFullName =
+      Option(getTypeFullNameFromAstNode(whenTrue))
+        .orElse(Option(getTypeFullNameFromAstNode(whenFalse)))
+        .orElse(Option(Defines.Any))
+    val callNode =
+      newOperatorCallNode(Operators.conditional, code(condExpr), typeFullName, line(condExpr), column(condExpr))
+
+    Seq(callAst(callNode, conditionAst ++ whenTrue ++ whenFalse))
+  }
+
+  private def astForCastExpression(castExpr: DotNetNodeInfo): Seq[Ast] = {
+    val typeFullName = nodeTypeFullName(createDotNetNodeInfo(castExpr.json(ParserKeys.Type)))
+
+    val callNode = newOperatorCallNode(
+      Operators.cast,
+      code = castExpr.code,
+      typeFullName = Some(typeFullName),
+      line = line(castExpr),
+      column = column(castExpr)
+    )
+
+    val typeNode = NewTypeRef()
+      .code(nameFromNode(castExpr))
+      .lineNumber(line(castExpr))
+      .columnNumber(column(castExpr))
+      .typeFullName(typeFullName)
+    val typeAst = Ast(typeNode)
+
+    // We can guarantee that there is an expression on the RHS
+    val exprAst = astForExpression(createDotNetNodeInfo(castExpr.json(ParserKeys.Expression)))
+    Seq(callAst(callNode, Seq(typeAst) ++ exprAst))
+  }
+
+  private def astForImplicitArrayCreationExpression(implArrExpr: DotNetNodeInfo): Seq[Ast] = {
+    astForArrayInitializerExpression(createDotNetNodeInfo(implArrExpr.json(ParserKeys.Initializer)))
+  }
+
+  private def astForInterpolatedStringExpression(strExpr: DotNetNodeInfo): Seq[Ast] = {
+    val contentAsts = strExpr
+      .json(ParserKeys.Contents)
+      .arr
+      .map(createDotNetNodeInfo)
+      .flatMap { expr =>
+        expr.node match {
+          case InterpolatedStringText => astForInterpolatedStringText(expr)
+          case Interpolation          => astForInterpolation(expr)
+          case _                      => Nil
+        }
+      }
+      .toSeq
+
+    // Collect all the parts of the interpolated string, and concatenate them to form the full code
+    val code = strExpr
+      .json(ParserKeys.Contents)
+      .arr
+      .map(createDotNetNodeInfo)
+      .flatMap { node =>
+        node.node match {
+          case InterpolatedStringText =>
+            Try(
+              node
+                .json(ParserKeys.TextToken)(ParserKeys.Value)
+                .str
+            ).toOption // Accessing node.json directly because DotNetNodeInfo contains stripped code, and does not contain braces
+          case Interpolation => Try(node.json(ParserKeys.MetaData)(ParserKeys.Code).str).toOption
+          case _             => None
+        }
+      }
+      .mkString("")
+
+    val _callNode = newOperatorCallNode(
+      Operators.formatString,
+      s"$$\"$code\"",
+      Option(BuiltinTypes.DotNetTypeMap(BuiltinTypes.String)),
+      line(strExpr),
+      column(strExpr)
+    )
+
+    Seq(callAst(_callNode, contentAsts))
+  }
+
+  private def astForInterpolation(interpolationExpr: DotNetNodeInfo): Seq[Ast] = {
+    astForNode(interpolationExpr.json(ParserKeys.Expression))
+  }
+
+  private def astForInterpolatedStringText(interpolatedTextExpr: DotNetNodeInfo): Seq[Ast] = {
+    Seq(
+      Ast(
+        literalNode(interpolatedTextExpr, code(interpolatedTextExpr), BuiltinTypes.DotNetTypeMap(BuiltinTypes.String))
+      )
+    )
+  }
+
+  private def astForConditionalAccessExpression(
+    condAccExpr: DotNetNodeInfo,
+    baseType: Option[String] = None
+  ): Seq[Ast] = {
+    val baseNode = createDotNetNodeInfo(condAccExpr.json(ParserKeys.Expression))
+    val baseAst  = astForNode(baseNode)
+
+    val baseTypeFullName =
+      if (getTypeFullNameFromAstNode(baseAst).equals(Defines.Any)) baseType
+      else Option(getTypeFullNameFromAstNode(baseAst))
+
+    Try(createDotNetNodeInfo(condAccExpr.json(ParserKeys.WhenNotNull))).toOption match {
+      case Some(node) =>
+        node.node match {
+          case ConditionalAccessExpression =>
+            astForConditionalAccessExpression(node, baseTypeFullName)
+          case MemberBindingExpression => astForMemberBindingExpression(node, baseTypeFullName)
+          case InvocationExpression =>
+            astForInvocationExpression(node)
+          case _ => astForNode(node)
+        }
+      case None => Seq.empty[Ast]
+    }
+  }
+
+  private def astForSuppressNullableWarningExpression(suppressNullableExpr: DotNetNodeInfo): Seq[Ast] = {
+    val _identifierNode = createDotNetNodeInfo(suppressNullableExpr.json(ParserKeys.Operand))
+    Seq(astForIdentifier(_identifierNode))
+  }
+
+  private def astForMemberBindingExpression(
+    memberBindingExpr: DotNetNodeInfo,
+    baseTypeFullName: Option[String] = None
+  ): Seq[Ast] = {
+    val typ = scope
+      .tryResolveFieldAccess(nameFromNode(memberBindingExpr), baseTypeFullName)
+      .map(_.typeName)
+      .map(f => scope.tryResolveTypeReference(f).map(_.name).orElse(Option(f)))
+      .getOrElse(Option(Defines.Any))
+
+    val fieldIdentifier = fieldIdentifierNode(memberBindingExpr, memberBindingExpr.code, memberBindingExpr.code)
+
+    val identifier = newIdentifierNode(memberBindingExpr.code, baseTypeFullName.getOrElse(Defines.Any))
+    val fieldAccess =
+      newOperatorCallNode(
+        Operators.fieldAccess,
+        memberBindingExpr.code,
+        typ,
+        memberBindingExpr.lineNumber,
+        memberBindingExpr.columnNumber
+      )
+    val fieldIdentifierAst = Ast(fieldIdentifier)
+
+    Seq(callAst(fieldAccess, Seq(Ast(identifier)) ++ Seq(fieldIdentifierAst)))
+  }
+
+  protected def astForAttributeLists(attributeList: DotNetNodeInfo): Seq[Ast] = {
+    attributeList.json(ParserKeys.Attributes).arr.map(createDotNetNodeInfo).map(astForAttribute).toSeq
+  }
+
+  private def astForAttribute(attribute: DotNetNodeInfo): Ast = {
+    val attributeName = nameFromNode(attribute)
+    val fullName      = nodeTypeFullName(attribute)
+    val argumentAsts =
+      Try(astForArgumentList(createDotNetNodeInfo(attribute.json(ParserKeys.ArgumentList)))).getOrElse(Seq.empty[Ast])
+
+    val _annotationNode = annotationNode(attribute, attribute.code, attributeName, fullName)
+    annotationAst(_annotationNode, argumentAsts)
+  }
+
+  /** Lowers a pattern expression into a condition and then a declaration if one occurs.
+    * @param isPatternExpression
+    *   a pattern expression which may include a declaration.
+    * @return
+    *   a condition and then (potentially) declaration.
+    */
+  protected def astsForIsPatternExpression(isPatternExpression: DotNetNodeInfo): List[Ast] = {
+    val pattern = createDotNetNodeInfo(isPatternExpression.json(ParserKeys.Pattern))
+
+    val expressionNode = createDotNetNodeInfo(isPatternExpression.json(ParserKeys.Expression))
+    val expression     = astForExpression(expressionNode)
+
+    pattern.node match {
+      case DeclarationPattern =>
+        val designation = createDotNetNodeInfo(pattern.json(ParserKeys.Designation))
+        val typeInfo    = createDotNetNodeInfo(pattern.json(ParserKeys.Type))
+
+        val instanceOfCallNode = newOperatorCallNode(
+          Operators.instanceOf,
+          code(pattern),
+          Option(BuiltinTypes.Bool),
+          line(expressionNode),
+          column(expressionNode)
+        )
+
+        val assignmentAst = newOperatorCallNode(
+          Operators.assignment,
+          s"${typeInfo.code} ${designation.code} = ${expressionNode.code}",
+          Option(nodeTypeFullName(typeInfo)),
+          line(expressionNode),
+          column(expressionNode)
+        )
+
+        val designationAst = astForIdentifier(designation, nodeTypeFullName(typeInfo))
+
+        val typeNode = NewTypeRef()
+          .code(nodeTypeFullName(typeInfo))
+          .lineNumber(line(expressionNode))
+          .columnNumber(column(expressionNode))
+          .typeFullName(nodeTypeFullName(typeInfo))
+
+        val conditionAst      = callAst(instanceOfCallNode, expression :+ Ast(typeNode))
+        val assignmentCallAst = callAst(assignmentAst, designationAst +: expression)
+
+        List(conditionAst, assignmentCallAst)
+      case ConstantPattern =>
+        val expr    = createDotNetNodeInfo(pattern.json(ParserKeys.Expression))
+        val exprAst = astForExpression(expr)
+
+        val typeFullName = nodeTypeFullName(expr)
+
+        val equalCallNode =
+          newOperatorCallNode(Operators.equals, code(pattern), Option(BuiltinTypes.Bool), line(expr), column(expr))
+        val equalCallAst = callAst(equalCallNode, expression ++ exprAst)
+
+        List(equalCallAst)
+      case x =>
+        logger.warn(s"Unsupported pattern in pattern expression, $x")
+        astForExpression(pattern).toList
+    }
+  }
+
 }

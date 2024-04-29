@@ -26,16 +26,11 @@ class CallMethods(val node: Call) extends AnyVal with NodeExtension with HasLoca
       case expr: Expression if expr.argumentIndex == index => expr
     }
 
-  def macroExpansion: Iterator[Expression] =
-    Iterator
-      .single(node)
-      .dispatchTypeExact(DispatchTypes.INLINED)
-      .astChildren
-      .sortBy(_.order)
-      .reverseIterator
-      .isBlock
-      .astChildren
-      .isExpression
+  def macroExpansion: Iterator[Expression] = {
+    if (node.dispatchType != DispatchTypes.INLINED) return Iterator.empty
+
+    node.astChildren.isBlock.maxByOption(_.order).iterator.expressionDown
+  }
 
   override def location: NewLocation = {
     LocationCreator(node, node.code, node.label, node.lineNumber, node.method)

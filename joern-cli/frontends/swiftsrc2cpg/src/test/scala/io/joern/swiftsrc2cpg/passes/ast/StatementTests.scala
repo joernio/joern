@@ -1,19 +1,25 @@
 package io.joern.swiftsrc2cpg.passes.ast
 
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
+
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 
-class StatementTests extends AbstractPassTest {
+class StatementTests extends AstSwiftSrc2CpgSuite {
 
   "StatementTests" should {
 
-    "testIf" ignore AstFixture("""
+    "testIf" ignore {
+      val cpg = code("""
       |if let baz {}
       |if let self = self {}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testDoCatch" in AstFixture("""
+    "testDoCatch" in {
+      val cpg = code("""
       |do {
       |  try foo()
       |} catch {
@@ -21,35 +27,47 @@ class StatementTests extends AbstractPassTest {
       |}
       |do { try foo() }
       |catch where (error as NSError) == NSError() {}
-      |""".stripMargin) { cpg =>
+      |""".stripMargin)
       val List(doStructure1, doStructure2) =
         cpg.controlStructure.controlStructureType(ControlStructureTypes.TRY).code("do \\{.*").l
 
       val List(tryBlock1) = doStructure1.astChildren.order(1).l
       tryBlock1.astChildren.isCall.codeExact("foo()").size shouldBe 1
-      val List(catchBlock1) = doStructure1.astChildren.order(2).l
+      val List(catchBlock1) = doStructure1.astChildren.isControlStructure.isCatch.l
+      catchBlock1.order shouldBe 2
       catchBlock1.astChildren.isCall.codeExact("bar()").size shouldBe 1
 
       val List(tryBlock2) = doStructure2.astChildren.order(1).l
       tryBlock2.astChildren.isCall.codeExact("foo()").size shouldBe 1
-      val List(catchBlock2) = doStructure2.astChildren.order(2).l
+      val List(catchBlock2) = doStructure2.astChildren.isControlStructure.isCatch.l
+      catchBlock2.order shouldBe 2
       catchBlock2.astChildren.isCall.code.l shouldBe List("(error as NSError) == NSError()")
     }
 
-    "testReturn" ignore AstFixture("""
+    "testReturn" ignore {
+      val cpg = code("""
       |return actor
       |{ return 0 }
       |return
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testMissingIfClauseIntroducer" ignore AstFixture("if _ = 42 {}") { cpg => ??? }
+    "testMissingIfClauseIntroducer" ignore {
+      val cpg = code("if _ = 42 {}")
+      ???
+    }
 
-    "testIfHasSymbol" ignore AstFixture("""
+    "testIfHasSymbol" ignore {
+      val cpg = code("""
       |if #_hasSymbol(foo) {}
       |if #_hasSymbol(foo as () -> ()) {}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testYield" ignore AstFixture("""
+    "testYield" ignore {
+      val cpg = code("""
       |var x: Int {
       |  _read {
       |    yield &x
@@ -58,11 +76,19 @@ class StatementTests extends AbstractPassTest {
       |func f() -> Int {
       |  yield 5
       |}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin)
+      ???
+    }
 
-    "testTrailingClosureInIfCondition" ignore AstFixture("if test { $0 } {}") { cpg => ??? }
+    "testTrailingClosureInIfCondition" ignore {
+      val cpg = code("if test { $0 } {}")
+      ???
+    }
 
-    "testClosureInsideIfCondition" ignore AstFixture("if true, {x}() {}") { cpg => ??? }
+    "testClosureInsideIfCondition" ignore {
+      val cpg = code("if true, {x}() {}")
+      ???
+    }
 
   }
 

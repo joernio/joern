@@ -10,7 +10,7 @@ import scala.jdk.CollectionConverters._
 
 object Run {
 
-  def runCustomQuery(console: Console[_], query: HasStoreMethod): Unit = {
+  def runCustomQuery(console: Console[?], query: HasStoreMethod): Unit = {
     console._runAnalyzer(new LayerCreator {
       override val overlayName: String = "custom"
       override val description: String = "A custom pass"

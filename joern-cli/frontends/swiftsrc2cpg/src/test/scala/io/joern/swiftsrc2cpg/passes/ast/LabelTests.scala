@@ -1,19 +1,22 @@
 package io.joern.swiftsrc2cpg.passes.ast
 
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
+
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
-class LabelTests extends AbstractPassTest {
+class LabelTests extends AstSwiftSrc2CpgSuite {
 
   "LabelTests" should {
 
-    "testLabel1" in AstFixture("""
+    "testLabel1" in {
+      val cpg = code("""
         |loop: while foo() {
         |  if bar { continue loop }
         |  else { break loop }
         |}
-        |""".stripMargin) { cpg =>
+        |""".stripMargin)
       val List(jumpTarget) = cpg.method.block.astChildren.astChildren.code("loop:.*").l
       jumpTarget.order shouldBe 1
       val List(jumpTargetDirect) = cpg.jumpTarget.l

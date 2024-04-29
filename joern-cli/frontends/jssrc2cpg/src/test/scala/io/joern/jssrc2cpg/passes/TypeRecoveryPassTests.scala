@@ -28,7 +28,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
     "resolve 'z' types correctly" in {
       // The dictionary/object type is just considered "ANY" which is fine for now
-      cpg.identifier("z").typeFullName.toSet.headOption shouldBe Some("__ecma.Array")
+      cpg.identifier("z").typeFullName.toSet.headOption shouldBe Option("__ecma.Array")
     }
 
     "resolve 'z' identifier call correctly" in {
@@ -186,7 +186,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
       val List(d) = cpg.file.name(".*Bar.*").ast.isCall.name("createTable").l
       d.methodFullName shouldBe "flask_sqlalchemy:SQLAlchemy:createTable"
       d.dynamicTypeHintFullName shouldBe Seq()
-      d.callee(NoResolve).isExternal.headOption shouldBe Some(true)
+      d.callee(NoResolve).isExternal.headOption shouldBe Option(true)
     }
 
     "resolve a 'deleteTable' call directly from 'foo.db' field access correctly" in {
@@ -198,7 +198,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         .l
       d.methodFullName shouldBe "flask_sqlalchemy:SQLAlchemy:deleteTable"
       d.dynamicTypeHintFullName shouldBe empty
-      d.callee(NoResolve).isExternal.headOption shouldBe Some(true)
+      d.callee(NoResolve).isExternal.headOption shouldBe Option(true)
     }
 
   }
@@ -428,8 +428,8 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
     )
 
     "have their calls from a field access structure successfully recovered" in {
-      cpg.identifier("_tmp_2").typeFullName.headOption shouldBe Some("@angular/common/http:HttpClient")
-      cpg.call("post").methodFullName.headOption shouldBe Some("@angular/common/http:HttpClient:post")
+      cpg.identifier("_tmp_2").typeFullName.headOption shouldBe Option("@angular/common/http:HttpClient")
+      cpg.call("post").methodFullName.headOption shouldBe Option("@angular/common/http:HttpClient:post")
     }
 
   }
@@ -457,8 +457,8 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
     "have the type hint recovered and successfully propagated" in {
       val m = cpg.method.fullNameExact("foo.ts::program:SharedService:<init>").head
-      m.parameter.nameExact("http").typeFullName.headOption shouldBe Some("@angular/common/http:HttpClient")
-      cpg.call("post").methodFullName.headOption shouldBe Some("@angular/common/http:HttpClient:post")
+      m.parameter.nameExact("http").typeFullName.headOption shouldBe Option("@angular/common/http:HttpClient")
+      cpg.call("post").methodFullName.headOption shouldBe Option("@angular/common/http:HttpClient:post")
     }
 
   }

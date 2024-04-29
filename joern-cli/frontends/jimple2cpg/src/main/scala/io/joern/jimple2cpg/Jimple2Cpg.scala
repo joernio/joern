@@ -54,12 +54,11 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
     *   [[tmpDir]]
     */
   private def loadClassFiles(src: File, tmpDir: File, recurse: Boolean, depth: Int): List[ClassFile] = {
-    val archiveFileExtensions = Set(".jar", ".war", ".zip")
     extractClassesInPackageLayout(
       src,
       tmpDir,
       isClass = e => e.extension.contains(".class"),
-      isArchive = e => e.extension.exists(archiveFileExtensions.contains),
+      isArchive = e => e.isZipFile,
       recurse,
       depth
     )

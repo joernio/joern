@@ -16,7 +16,8 @@ final case class Config(
   printIfDefsOnly: Boolean = false,
   includePathsAutoDiscovery: Boolean = false,
   skipFunctionBodies: Boolean = false,
-  noImageLocations: Boolean = false
+  noImageLocations: Boolean = false,
+  withPreprocessedFiles: Boolean = false
 ) extends X2CpgConfig[Config] {
   def withIncludePaths(includePaths: Set[String]): Config = {
     this.copy(includePaths = includePaths).withInheritedFields(this)
@@ -52,6 +53,10 @@ final case class Config(
 
   def withNoImageLocations(value: Boolean): Config = {
     this.copy(noImageLocations = value).withInheritedFields(this)
+  }
+
+  def withPreprocessedFiles(value: Boolean): Config = {
+    this.copy(withPreprocessedFiles = value).withInheritedFields(this)
   }
 }
 
@@ -93,6 +98,9 @@ private object Frontend {
           "performance optimization, allows the parser not to create image-locations. An image location explains how a name made it into the translation unit. Eg: via macro expansion or preprocessor."
         )
         .action((_, c) => c.withNoImageLocations(true)),
+      opt[Unit]("with-preprocessed-files")
+        .text("includes *.i files and gives them priority over their unprocessed origin source files.")
+        .action((_, c) => c.withPreprocessedFiles(true)),
       opt[String]("define")
         .unbounded()
         .text("define a name")

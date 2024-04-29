@@ -11,7 +11,7 @@ import scala.collection.immutable.List
 
 trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  protected def astForClassDeclaration(node: RubyNode with TypeDeclaration): Ast = {
+  protected def astForClassDeclaration(node: RubyNode & TypeDeclaration): Ast = {
     node.name match
       case name: SimpleIdentifier => astForSimpleNamedClassDeclaration(node, name)
       case name =>
@@ -27,15 +27,22 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
           case Some(_) => Option(name) // in the case of singleton classes, we want to keep the variable name
           case None    => scope.tryResolveTypeReference(name).map(_.name).orElse(Option(name))
         }
-      case selfIdentifier: SelfIdentifier =>
+      case _: SelfIdentifier =>
         scope.surroundingTypeFullName
-      case _ =>
-        logger.warn(s"Qualified base class names are not supported yet: ${code(node)} ($relativeFileName), skipping")
+      case qualifiedBaseClass: MemberAccess =>
+        scope
+          .tryResolveTypeReference(qualifiedBaseClass.toString)
+          .map(_.name)
+          .orElse(Option(qualifiedBaseClass.toString))
+      case x =>
+        logger.warn(
+          s"Base class names of type ${x.getClass} are not supported yet: ${code(node)} ($relativeFileName), skipping"
+        )
         None
   }
 
   private def astForSimpleNamedClassDeclaration(
-    node: RubyNode with TypeDeclaration,
+    node: RubyNode & TypeDeclaration,
     nameIdentifier: SimpleIdentifier
   ): Ast = {
     val className     = nameIdentifier.text
@@ -55,13 +62,14 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     node match {
       case _: ModuleDeclaration => scope.pushNewScope(ModuleScope(classFullName))
-      case _: TypeDeclaration   => scope.pushNewScope(TypeScope(classFullName))
+      case _: TypeDeclaration   => scope.pushNewScope(TypeScope(classFullName, List.empty))
     }
 
     val classBody =
       node.body.asInstanceOf[StatementList] // for now (bodyStatement is a superset of stmtList)
+
     val classBodyAsts = classBody.statements.flatMap(astsForStatement) match {
-      case bodyAsts if scope.shouldGenerateDefaultConstructor && parseLevel == AstParseLevel.FULL_AST =>
+      case bodyAsts if scope.shouldGenerateDefaultConstructor && this.parseLevel == AstParseLevel.FULL_AST =>
         val bodyStart = classBody.span.spanStart()
         val initBody  = StatementList(List())(bodyStart)
         val methodDecl = astForMethodDeclaration(
@@ -70,9 +78,19 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         methodDecl ++ bodyAsts
       case bodyAsts => bodyAsts
     }
+
+    val fieldMemberNodes = node match {
+      case classDecl: ClassDeclaration =>
+        classDecl.fields.map { x =>
+          val name = code(x)
+          Ast(memberNode(x, name, name, Defines.Any))
+        }
+      case _ => Seq.empty
+    }
+
     scope.popScope()
 
-    Ast(typeDecl).withChildren(classBodyAsts)
+    Ast(typeDecl).withChildren(fieldMemberNodes).withChildren(classBodyAsts)
   }
 
   protected def astsForFieldDeclarations(node: FieldsDeclaration): Seq[Ast] = {
@@ -107,7 +125,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       astParentType = scope.surroundingAstLabel,
       astParentFullName = scope.surroundingScopeFullName
     )
-    scope.pushNewScope(MethodScope(fullName))
+    scope.pushNewScope(MethodScope(fullName, procParamGen.fresh))
     val block_ = blockNode(node)
     scope.pushNewScope(BlockScope(block_))
     // TODO: Should it be `return this.@abc`?
@@ -137,7 +155,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       astParentType = scope.surroundingAstLabel,
       astParentFullName = scope.surroundingScopeFullName
     )
-    scope.pushNewScope(MethodScope(fullName))
+    scope.pushNewScope(MethodScope(fullName, procParamGen.fresh))
     val parameter = parameterInNode(node, "x", "x", 1, false, EvaluationStrategies.BY_REFERENCE)
     val methodBody = {
       val block_ = blockNode(node)

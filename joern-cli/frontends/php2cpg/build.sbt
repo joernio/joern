@@ -4,7 +4,7 @@ import better.files.File
 
 name := "php2cpg"
 
-val phpParserVersion       = "4.15.7"
+val phpParserVersion       = "4.15.8"
 val upstreamParserBinName  = "php-parser.phar"
 val versionedParserBinName = s"php-parser-$phpParserVersion.phar"
 val phpParserDlUrl =
@@ -16,8 +16,8 @@ libraryDependencies ++= Seq(
   "com.lihaoyi"   %% "upickle"           % Versions.upickle,
   "com.lihaoyi"   %% "ujson"             % Versions.upickle,
   "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
-  "org.scalatest" %% "scalatest"         % Versions.scalatest % Test,
-  "io.circe"      %% "circe-core"        % Versions.circe
+  "com.github.sh4869" %% "semver-parser-scala" % Versions.semverParser,
+  "org.scalatest" %% "scalatest"         % Versions.scalatest % Test
 )
 
 lazy val phpParseInstallTask = taskKey[Unit]("Install PHP-Parse using PHP Composer")

@@ -14,29 +14,39 @@
 
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
 
-class RegexTests extends AbstractPassTest {
+class RegexTests extends AstSwiftSrc2CpgSuite {
 
   "RegexTests" should {
 
-    "testRegex1" ignore AstFixture("""
+    "testRegex1" ignore {
+      val cpg = code("""
         |_ = /abc/
         |_ = #/abc/#
         |_ = ##/abc/##
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
-    "testRegex3" ignore AstFixture("foo(/abc/, #/abc/#, ##/abc/##)") { cpg => ??? }
+    "testRegex3" ignore {
+      val cpg = code("foo(/abc/, #/abc/#, ##/abc/##)")
+      ???
+    }
 
-    "testRegex4" ignore AstFixture("let arr = [/abc/, #/abc/#, ##/abc/##]") { cpg => ??? }
+    "testRegex4" ignore {
+      val cpg = code("let arr = [/abc/, #/abc/#, ##/abc/##]")
+      ???
+    }
 
-    "testRegex5" ignore AstFixture("""
+    "testRegex5" ignore {
+      val cpg = code("""
         |_ = /\w+/.self
         |_ = #/\w+/#.self
         |_ = ##/\w+/##.self
-        |""".stripMargin) { cpg => ??? }
+        |""".stripMargin)
+      ???
+    }
 
   }
 

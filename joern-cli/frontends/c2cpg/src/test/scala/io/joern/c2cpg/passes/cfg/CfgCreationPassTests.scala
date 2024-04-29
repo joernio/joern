@@ -1,13 +1,12 @@
 package io.joern.c2cpg.passes.cfg
 
-import io.joern.c2cpg.testfixtures.C2CpgFrontend
-import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg._
-import io.joern.x2cpg.testfixtures.{CfgTestCpg, CfgTestFixture}
+import io.joern.c2cpg.parser.FileDefaults
+import io.joern.c2cpg.testfixtures.CCfgTestCpg
+import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg.*
+import io.joern.x2cpg.testfixtures.CfgTestFixture
 import io.shiftleft.codepropertygraph.Cpg
 
-class CCfgTestCpg(override val fileSuffix: String) extends CfgTestCpg with C2CpgFrontend
-
-class CfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg(".c")) {
+class CfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg) {
   override def code(code: String): CCfgTestCpg = {
     super.code(s"RET func() { $code }")
   }
@@ -508,7 +507,7 @@ class CfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg(".c")) {
   }
 }
 
-class CppCfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg(".cpp")) {
+class CppCfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg(FileDefaults.CPP_EXT)) {
   override def code(code: String): CCfgTestCpg = {
     super.code(s"RET func() { $code }")
   }
@@ -524,16 +523,16 @@ class CppCfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg(".cpp
 
     "be correct for try with multiple catches" in {
       implicit val cpg: Cpg = code("""
-                               |try {
-                               |  a;
-                               |} catch (short x) {
-                               |  b;
-                               |} catch (int y) {
-                               |  c;
-                               |} catch (long z) {
-                               |  d;
-                               |}
-                               |""".stripMargin)
+       |try {
+       |  a;
+       |} catch (short x) {
+       |  b;
+       |} catch (int y) {
+       |  c;
+       |} catch (long z) {
+       |  d;
+       |}
+       |""".stripMargin)
       succOf("func") shouldBe expected(("a", AlwaysEdge))
       // Try should have an edge to all catches and return
       succOf("a") shouldBe expected(("b", AlwaysEdge), ("c", AlwaysEdge), ("d", AlwaysEdge), ("RET", AlwaysEdge))

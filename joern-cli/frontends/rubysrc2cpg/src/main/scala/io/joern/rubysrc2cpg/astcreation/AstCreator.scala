@@ -13,6 +13,8 @@ import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
+import java.util.regex.Matcher
+
 class AstCreator(
   val fileName: String,
   protected val programCtx: RubyParser.ProgramContext,
@@ -25,20 +27,27 @@ class AstCreator(
     with AstForExpressionsCreator
     with AstForFunctionsCreator
     with AstForTypesCreator
-    with FreshVariableCreator
     with AstSummaryVisitor
     with AstNodeBuilder[RubyNode, AstCreator] {
 
   /* Used to track variable names and their LOCAL nodes.
    */
-  protected val scope: RubyScope = new RubyScope(programSummary)
+  protected val scope: RubyScope = new RubyScope(programSummary, projectRoot)
 
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
 
   protected var parseLevel: AstParseLevel = AstParseLevel.FULL_AST
 
   protected val relativeFileName: String =
-    projectRoot.map(fileName.stripPrefix).map(_.stripPrefix(java.io.File.separator)).getOrElse(fileName)
+    projectRoot
+      .map(fileName.stripPrefix)
+      .map(_.stripPrefix(java.io.File.separator))
+      .getOrElse(fileName)
+
+  /** The relative file name, in a unix path delimited format.
+    */
+  private def relativeUnixStyleFileName =
+    relativeFileName.replaceAll(Matcher.quoteReplacement(java.io.File.separator), "/")
 
   override def createAst(): BatchedUpdate.DiffGraphBuilder = {
     val rootNode = new RubyNodeCreator().visit(programCtx).asInstanceOf[StatementList]
@@ -53,7 +62,7 @@ class AstCreator(
    */
   protected def astForRubyFile(rootStatements: StatementList): Ast = {
     val fileNode = NewFile().name(relativeFileName)
-    val fullName = s"$relativeFileName:${NamespaceTraversal.globalNamespaceName}"
+    val fullName = s"$relativeUnixStyleFileName:${NamespaceTraversal.globalNamespaceName}"
     val namespaceBlock = NewNamespaceBlock()
       .filename(relativeFileName)
       .name(NamespaceTraversal.globalNamespaceName)

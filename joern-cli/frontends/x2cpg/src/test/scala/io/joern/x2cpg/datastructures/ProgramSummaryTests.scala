@@ -3,8 +3,11 @@ package io.joern.x2cpg.datastructures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import io.shiftleft.codepropertygraph.generated.nodes.DeclarationNew
+
 import scala.collection.mutable
 import org.scalatest.Inside
+
+import scala.annotation.targetName
 
 class ProgramSummaryTests extends AnyWordSpec with Matchers with Inside {
 
@@ -113,6 +116,11 @@ class ProgramSummaryTests extends AnyWordSpec with Matchers with Inside {
 
   case class Field(name: String, typeName: String) extends FieldLike
 
-  case class Typ(name: String, methods: List[Method], fields: List[Field]) extends TypeLike[Method, Field]
+  case class Typ(name: String, methods: List[Method], fields: List[Field]) extends TypeLike[Method, Field] {
+    @targetName("add")
+    override def +(o: TypeLike[Method, Field]): TypeLike[Method, Field] = {
+      this.copy(methods = mergeMethods(o), fields = mergeFields(o))
+    }
+  }
 
 }
