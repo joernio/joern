@@ -4,7 +4,6 @@ import better.files.File
 import io.joern.php2cpg.Config
 import io.joern.php2cpg.astcreation.AstCreator
 import io.joern.php2cpg.parser.PhpParser
-import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.{SourceFiles, ValidationMode}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass

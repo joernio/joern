@@ -59,7 +59,7 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
   }
 
   private def globalMethodDeclStmt(file: PhpFile, bodyStmts: List[PhpStmt]): PhpMethodDecl = {
-    val modifiersList = List(ModifierTypes.VIRTUAL, ModifierTypes.PUBLIC, ModifierTypes.STATIC)
+    val modifiersList = List(ModifierTypes.VIRTUAL, ModifierTypes.PUBLIC, ModifierTypes.STATIC, ModifierTypes.MODULE)
     PhpMethodDecl(
       name = PhpNameExpr(NamespaceTraversal.globalNamespaceName, file.attributes),
       params = Nil,
@@ -746,8 +746,7 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
         prependNamespacePrefix(name.name)
       }
 
-    val typeDecl = typeDeclNode(stmt, name.name, fullName, filename, code, inherits = inheritsFrom)
-
+    val typeDecl                 = typeDeclNode(stmt, name.name, fullName, filename, code, inherits = inheritsFrom)
     val createDefaultConstructor = stmt.hasConstructor
 
     scope.pushNewScope(typeDecl)
