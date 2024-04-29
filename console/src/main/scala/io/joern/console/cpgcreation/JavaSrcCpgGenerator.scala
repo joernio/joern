@@ -23,7 +23,7 @@ case class JavaSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends C
   }
 
   override def applyPostProcessingPasses(cpg: Cpg): Cpg = {
-    if (javaConfig.forall(_.enableTypeRecovery))
+    if (javaConfig.exists(_.enableTypeRecovery))
       JavaSrc2Cpg.typeRecoveryPasses(cpg, javaConfig).foreach(_.createAndApply())
     super.applyPostProcessingPasses(cpg)
   }
