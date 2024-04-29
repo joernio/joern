@@ -42,7 +42,13 @@ class CSharpSrc2Cpg extends X2CpgFrontend[Config] {
             case Failure(exception) => logger.warn(s"Unable to pre-parse C# file, skipping - ", exception); None
             case Success(summary)   => Option(summary)
           }
-          .foldLeft(CSharpProgramSummary(CSharpProgramSummary.BuiltinTypes :: Nil))(_ ++ _)
+          .foldLeft(CSharpProgramSummary(imports = CSharpProgramSummary.initialImports))(_ ++ _)
+
+        val builtinSummary = CSharpProgramSummary(
+          CSharpProgramSummary.BuiltinTypes.view.filterKeys(internalProgramSummary.imports(_)).toMap
+        )
+
+        val internalAndBuiltinSummary = internalProgramSummary ++ builtinSummary
 
         val hash = HashUtil.sha256(astCreators.map(_.parserResult).map(x => Paths.get(x.fullPath)))
         new MetaDataPass(cpg, Languages.CSHARPSRC, config.inputPath, Option(hash)).createAndApply()
@@ -51,9 +57,9 @@ class CSharpSrc2Cpg extends X2CpgFrontend[Config] {
         new DependencyPass(cpg, buildFiles(config), packageIds.add).createAndApply()
         // If "download dependencies" is enabled, then fetch dependencies and resolve their symbols for additional types
         val programSummary = if (config.downloadDependencies) {
-          DependencyDownloader(cpg, config, internalProgramSummary, packageIds.toSet).download()
+          DependencyDownloader(cpg, config, internalAndBuiltinSummary, packageIds.toSet).download()
         } else {
-          internalProgramSummary
+          internalAndBuiltinSummary
         }
         new AstCreationPass(cpg, astCreators.map(_.withSummary(programSummary)), report).createAndApply()
         TypeNodePass.withTypesFromCpg(cpg).createAndApply()
