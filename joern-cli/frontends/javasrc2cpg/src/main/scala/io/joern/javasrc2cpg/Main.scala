@@ -21,7 +21,8 @@ final case class Config(
   showEnv: Boolean = false,
   skipTypeInfPass: Boolean = false,
   dumpJavaparserAsts: Boolean = false,
-  cacheJdkTypeSolver: Boolean = false
+  cacheJdkTypeSolver: Boolean = false,
+  keepTypeArguments: Boolean = false
 ) extends X2CpgConfig[Config]
     with TypeRecoveryParserConfig[Config] {
   def withInferenceJarPaths(paths: Set[String]): Config = {
@@ -66,6 +67,10 @@ final case class Config(
 
   def withCacheJdkTypeSolver(value: Boolean): Config = {
     copy(cacheJdkTypeSolver = value).withInheritedFields(this)
+  }
+
+  def withKeepTypeArguments(value: Boolean): Config = {
+    copy(keepTypeArguments = value).withInheritedFields(this)
   }
 }
 
@@ -120,7 +125,11 @@ private object Frontend {
       opt[Unit]("cache-jdk-type-solver")
         .hidden()
         .action((_, c) => c.withCacheJdkTypeSolver(true))
-        .text("Re-use JDK type solver between scans.")
+        .text("Re-use JDK type solver between scans."),
+      opt[Unit]("keep-type-arguments")
+        .hidden()
+        .action((_, c) => c.withKeepTypeArguments(true))
+        .text("Type full names of variables keep their type arguments.")
     )
   }
 }

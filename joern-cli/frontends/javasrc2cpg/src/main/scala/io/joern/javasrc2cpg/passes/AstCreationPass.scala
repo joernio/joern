@@ -51,7 +51,9 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
         symbolSolver.inject(compilationUnit)
         val contentToUse = if (!config.disableFileContent) fileContent else None
         diffGraph.absorb(
-          new AstCreator(filename, compilationUnit, contentToUse, global, symbolSolver)(config.schemaValidation)
+          new AstCreator(filename, compilationUnit, contentToUse, global, symbolSolver, config.keepTypeArguments)(
+            config.schemaValidation
+          )
             .createAst()
         )
 

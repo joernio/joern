@@ -1,8 +1,9 @@
 package io.joern.javasrc2cpg.querying
 
+import io.joern.javasrc2cpg.Config
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Local}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class VarDeclTests extends JavaSrcCode2CpgFixture {
 
@@ -154,5 +155,32 @@ class VarDeclTests extends JavaSrcCode2CpgFixture {
 
     assigX.code shouldBe "x = 1"
     assigX.order shouldBe 6
+  }
+
+  "generics with 'keep type arguments' config" should {
+    val cpg = code("""
+        |import java.util.ArrayList;
+        |import java.util.List;
+        |import java.util.HashMap;
+        |
+        |public class Main {
+        |    public static void main(String[] args) {
+        |        // Create a List of Strings
+        |        List<String> stringList = new ArrayList<>();
+        |        var stringIntMap = new HashMap<String, Integer>();
+        |    }
+        |}
+        |
+        |""".stripMargin)
+      .withConfig(Config().withKeepTypeArguments(true))
+
+    "show the fully qualified type arguments for `List`" in {
+      cpg.identifier("stringList").typeFullName.head shouldBe "java.util.List<java.lang.String>"
+    }
+
+    "show the fully qualified type arguments for `Map`" in {
+      cpg.identifier("stringIntMap").typeFullName.head shouldBe "java.util.HashMap<java.lang.String,java.lang.Integer>"
+    }
+
   }
 }
