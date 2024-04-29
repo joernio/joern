@@ -210,6 +210,7 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
 
   override def tryResolveTypeReference(typeName: String): Option[RubyType] = {
     val normalizedTypeName = typeName.replaceAll("::", ".")
+    val flatMapTypes       = summary.namespaceToType.flatMap(_._2).filter(x => x.name.toLowerCase.contains("csv"))
     // TODO: While we find better ways to understand how the implicit class loading works,
     //  we can approximate that all types are in scope in the mean time.
     super.tryResolveTypeReference(normalizedTypeName) match {

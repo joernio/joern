@@ -3,7 +3,6 @@ package io.joern.rubysrc2cpg.datastructures
 import io.joern.x2cpg.Defines as XDefines
 import io.joern.x2cpg.datastructures.{FieldLike, MethodLike, ProgramSummary, TypeLike}
 import org.slf4j.LoggerFactory
-import upickle.core.LinkedHashMap
 
 import java.io.{ByteArrayInputStream, InputStream}
 import scala.annotation.targetName
