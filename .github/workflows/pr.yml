@@ -44,12 +44,12 @@ jobs:
       - name: Delete `.cargo` directory # to save disk space
         run: rm -rf /home/runner/.cargo
         if: runner.os == 'Linux'
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.sbt
-            ~/.coursier
-          key: ${{ runner.os }}-sbt-${{ hashfiles('**/build.sbt') }}
+#      - uses: actions/cache@v4
+#        with:
+#          path: |
+#            ~/.sbt
+#            ~/.coursier
+#          key: ${{ runner.os }}-sbt-${{ hashfiles('**/build.sbt') }}
       - name: Compile and run tests
         run: sbt clean test
   formatting:
