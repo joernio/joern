@@ -50,4 +50,44 @@ class DoBlockTests extends RubyCode2CpgFixture(withPostProcessing = true, withDa
     val sink   = cpg.call.name("puts").l
     sink.reachableByFlows(source).l.size shouldBe 1
   }
+
+  // Works in deprecated
+  "Data flow through argsAndDoBlockAndMethodIdCommandWithDoBlock" ignore {
+    val cpg = code("""
+                     |def foo (blockArg,&block)
+                     |block.call(blockArg)
+                     |end
+                     |
+                     |x = 10
+                     |foo :a_symbol do |arg|
+                     |  y = x + arg.length
+                     |  puts y
+                     |end
+                     |""".stripMargin)
+
+    val source = cpg.identifier.name("x").l
+    val sink   = cpg.call.name("puts").l
+    sink.reachableByFlows(source).size shouldBe 2
+  }
+
+  "Data flow through primaryMethodArgsDoBlockCommandWithDoBlock" in {
+    val cpg = code("""
+                     |module FooModule
+                     |def foo (blockArg,&block)
+                     |block.call(blockArg)
+                     |end
+                     |end
+                     |
+                     |x = 10
+                     |FooModule.foo :a_symbol do |arg|
+                     |  y = x + arg.length
+                     |  puts y
+                     |end
+                     |""".stripMargin)
+
+    val source = cpg.identifier.name("x").l
+    val sink   = cpg.call.name("puts").l
+    sink.reachableByFlows(source).size shouldBe 2
+  }
+
 }
