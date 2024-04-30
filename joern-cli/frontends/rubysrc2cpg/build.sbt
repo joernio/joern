@@ -32,9 +32,9 @@ joernTypeStubsDlUrl := s"https://github.com/joernio/joern-type-stubs/releases/do
 
 lazy val joernTypeStubsDlTask = taskKey[Unit]("Download joern-type-stubs")
 joernTypeStubsDlTask := {
-  val joernTypeStubsDir = (Compile / resourceDirectory).value / "builtin_types"
+  val joernTypeStubsDir = baseDirectory.value / "type_stubs"
   val fileName = "rubysrc_builtin_types.zip"
-  val shaFileName = s"${fileName}.sha512"
+  val shaFileName = s"$fileName.sha512"
 
   joernTypeStubsDir.mkdir()
 
@@ -54,12 +54,10 @@ joernTypeStubsDlTask := {
   // Checksum from terminal adds the filename to the line, so we split on whitespace to get the checksum
   // separate from the filename
   if (checksumFile.lineIterator.next().split("\\s+")(0).toUpperCase != typestubsSha) {
-    throw new Exception("Checksums do not match for type-stubs!")
+    throw new Exception("Checksums do not match for type stubs!")
   }
 
-  checksumFile.delete()
-
-  val distDir = (Universal / stagingDirectory).value / "builtin_types"
+  val distDir = (Universal / stagingDirectory).value / "type_stubs"
   distDir.mkdirs()
   IO.copyDirectory(joernTypeStubsDir, distDir)
 

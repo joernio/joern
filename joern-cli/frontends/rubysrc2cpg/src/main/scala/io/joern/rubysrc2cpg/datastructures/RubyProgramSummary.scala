@@ -1,7 +1,9 @@
 package io.joern.rubysrc2cpg.datastructures
 
+import better.files.File
 import io.joern.x2cpg.Defines as XDefines
 import io.joern.x2cpg.datastructures.{FieldLike, MethodLike, ProgramSummary, TypeLike}
+import io.joern.x2cpg.typestub.{TypeStubMetaData, TypeStubUtil}
 import org.slf4j.LoggerFactory
 
 import java.io.{ByteArrayInputStream, InputStream}
@@ -37,61 +39,44 @@ class RubyProgramSummary(
 object RubyProgramSummary {
   private val logger = LoggerFactory.getLogger(getClass)
 
-  def BuiltinTypes: NamespaceToTypeMap = {
-    mpkZipToInitialMapping(mergeBuiltinMpkZip) match
-      case Failure(exception) => logger.warn("Unable to parse builtin types", exception); Map.empty
-      case Success(mapping)   => mapping
+  def BuiltinTypes(implicit typeStubMetaData: TypeStubMetaData): NamespaceToTypeMap = {
+    if (typeStubMetaData.useTypeStubs) {
+      mpkZipToInitialMapping(mergeBuiltinMpkZip) match {
+        case Failure(exception) => logger.warn("Unable to parse builtin types", exception); Map.empty
+        case Success(mapping)   => mapping
+      }
+    } else {
+      Map.empty
+    }
   }
 
   private def mpkZipToInitialMapping(inputStream: InputStream): Try[NamespaceToTypeMap] = {
     Try(readBinary[NamespaceToTypeMap](inputStream.readAllBytes()))
   }
 
-  def mergeBuiltinMpkZip: InputStream = {
-    val classLoader      = getClass.getClassLoader
-    val builtinDirectory = "builtin_types"
+  private def mergeBuiltinMpkZip(implicit typeStubMetaData: TypeStubMetaData): InputStream = {
+    val classLoader = getClass.getClassLoader
+    val typeStubDir = TypeStubUtil.typeStubDir
 
-    val resourcePaths: List[String] =
-      val resourceOpt = getClass.getClassLoader.getResource(builtinDirectory)
-      logger.warn(resourceOpt.toString)
-      Option(getClass.getClassLoader.getResource(builtinDirectory)) match {
-        case Some(url) if url.getProtocol == "jar" =>
-          logger.warn("Reading from JAR")
-          val connection = url.openConnection.asInstanceOf[JarURLConnection]
-          Using.resource(connection.getJarFile) { jarFile =>
-            jarFile
-              .entries()
-              .asScala
-              .toList
-              .map(_.getName)
-              .filter(_.startsWith(builtinDirectory))
-              .filter(!_.equals(builtinDirectory))
-              .filter(_.endsWith(".zip"))
-          }
-        case _ =>
-          logger.warn("Reading from builtin_dir")
-          Source
-            .fromResource(builtinDirectory)
-            .getLines()
-            .toList
-            .map(u => {
-              val basePath = s"$builtinDirectory/$u"
-              basePath
-            })
-            .filter(_.endsWith(".zip"))
-      }
-    if (resourcePaths.isEmpty) {
+    val typeStubFiles: Seq[File] =
+      typeStubDir
+        .walk()
+        .filter(f => f.isRegularFile && f.name.startsWith("rubysrc") && f.`extension`.contains(".zip"))
+        .toSeq
+
+    if (typeStubFiles.isEmpty) {
       logger.warn("No ZIP files found.")
       InputStream.nullInputStream()
     } else {
       val mergedMpksObj = ListBuffer[collection.mutable.Map[String, Set[RubyType]]]()
-      resourcePaths.foreach { path =>
-        val fis = classLoader.getResourceAsStream(path)
-        val zis = new ZipInputStream(fis)
+      typeStubFiles.foreach { f =>
+        f.fileInputStream { fis =>
+          val zis = new ZipInputStream(fis)
 
-        LazyList.continually(zis.getNextEntry).takeWhile(_ != null).foreach { file =>
-          val mpkObj = upickle.default.readBinary[collection.mutable.Map[String, Set[RubyType]]](zis.readAllBytes())
-          mergedMpksObj.addOne(mpkObj)
+          LazyList.continually(zis.getNextEntry).takeWhile(_ != null).foreach { file =>
+            val mpkObj = upickle.default.readBinary[collection.mutable.Map[String, Set[RubyType]]](zis.readAllBytes())
+            mergedMpksObj.addOne(mpkObj)
+          }
         }
       }
 
