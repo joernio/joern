@@ -60,9 +60,6 @@ joernTypeStubsDlTask := {
   val distDir = (Universal / stagingDirectory).value / "type_stubs"
   distDir.mkdirs()
   IO.copyDirectory(joernTypeStubsDir, distDir)
-
-  println(s"Type Stubs DIR: ${joernTypeStubsDir.list().mkString("Array(", ", ", ")")}")
-  println(s"Type Stubs Files: ${joernTypeStubsDir.listFiles().mkString("Array(", ", ", ")")}")
 }
 
 Compile / compile := ((Compile / compile) dependsOn joernTypeStubsDlTask).value
