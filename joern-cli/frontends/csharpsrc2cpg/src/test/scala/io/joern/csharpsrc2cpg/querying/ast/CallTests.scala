@@ -149,6 +149,49 @@ class CallTests extends CSharpCode2CpgFixture {
         callNode.methodFullName shouldBe "Foo.Bar.Bar.SomeClass.SomeOtherMethod:System.Int32()"
       case _ => fail("No call for `SomeOtherMethod` found")
     }
-
   }
+
+  "builtin types" should {
+    val cpg = code("""
+        |namespace Baz
+        |{
+        |  class Foo
+        |  {
+        |    static void Bar()
+        |    {
+        |      "".ToLower();
+        |    }
+        |  }
+        |}
+        |""".stripMargin)
+    "resolve the ToLower call even without `using System`" ignore {
+      inside(cpg.call.name("ToLower").methodFullName.l) {
+        case x :: Nil => x shouldBe "System.String.ToLower:System.String()"
+        case _        => fail("Unexpected call node structure")
+      }
+    }
+  }
+
+  "fully qualified names" should {
+    val cpg = code("""
+        |namespace Baz
+        |{
+        |  class Foo
+        |  {
+        |    static void Bar()
+        |    {
+        |      System.String x;
+        |      x.ToLower();
+        |    }
+        |  }
+        |}
+        |""".stripMargin)
+    "resolve the ToLower call even without `using System`" ignore {
+      inside(cpg.call.name("ToLower").methodFullName.l) {
+        case x :: Nil => x shouldBe "System.String.ToLower:System.String()"
+        case _        => fail("Unexpected call node structure")
+      }
+    }
+  }
+
 }
