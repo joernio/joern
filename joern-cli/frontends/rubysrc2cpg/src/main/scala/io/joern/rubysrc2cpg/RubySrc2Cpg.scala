@@ -72,7 +72,7 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
       }
 
       AstCreationPass(cpg, astCreators.map(_.withSummary(programSummary))).createAndApply()
-      ImplicitRequirePass(cpg, programSummary).createAndApply()
+      if (cpg.dependency.name.contains("zeitwerk")) ImplicitRequirePass(cpg, programSummary).createAndApply()
       ImportsPass(cpg).createAndApply()
       TypeNodePass.withTypesFromCpg(cpg).createAndApply()
     }

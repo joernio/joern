@@ -9,7 +9,8 @@ import io.shiftleft.semanticcpg.language.*
 import scala.collection.mutable
 
 /** In some Ruby frameworks, it is common to have an autoloader library that implicitly loads requirements onto the
-  * stack. This pass makes these imports explicit.
+  * stack. This pass makes these imports explicit. The most popular one is <a
+  * href="https://github.com/fxn/zeitwerk">Zeitwerk</a> which we check in `Gemsfile.lock` to enable this pass.
   */
 class ImplicitRequirePass(cpg: Cpg, programSummary: RubyProgramSummary) extends ForkJoinParallelCpgPass[Method](cpg) {
 
