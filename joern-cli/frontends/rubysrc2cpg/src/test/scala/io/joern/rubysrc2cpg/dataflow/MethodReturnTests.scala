@@ -56,4 +56,68 @@ class MethodReturnTests extends RubyCode2CpgFixture(withPostProcessing = true, w
       Set(List(("f(x)", 2), ("y = x", 3), ("RET", 2)))
   }
 
+  // Works in deprecated
+  "Implicit return in if-else block" ignore {
+    val cpg = code("""
+                     |def foo(arg)
+                     |if arg > 1
+                     |        arg + 1
+                     |else
+                     |        arg + 10
+                     |end
+                     |end
+                     |
+                     |x = 1
+                     |y = foo x
+                     |puts y
+                     |""".stripMargin)
+
+    val src  = cpg.identifier.name("x").l
+    val sink = cpg.call.name("puts").l
+    sink.reachableByFlows(src).l.size shouldBe 2
+  }
+
+  // Works in deprecated
+  "Implicit return in if-else block and underlying function call" ignore {
+    val cpg = code("""
+                     |def add(arg)
+                     |arg + 100
+                     |end
+                     |
+                     |def foo(arg)
+                     |if arg > 1
+                     |        add(arg)
+                     |else
+                     |        add(arg)
+                     |end
+                     |end
+                     |
+                     |x = 1
+                     |y = foo x
+                     |puts y
+                     |
+                     |""".stripMargin)
+
+    val src  = cpg.identifier.name("x").l
+    val sink = cpg.call.name("puts").l
+    sink.reachableByFlows(src).l.size shouldBe 2
+  }
+
+  // Works in deprecated
+  "Return via call w/o initialization" ignore {
+    val cpg = code("""
+                     |def add(p)
+                     |q = p
+                     |return q
+                     |end
+                     |
+                     |n = 1
+                     |ret = add(n)
+                     |puts ret
+                     |""".stripMargin)
+
+    val src  = cpg.identifier.name("n").l
+    val sink = cpg.call.name("puts").l
+    sink.reachableByFlows(src).l.size shouldBe 2
+  }
 }
