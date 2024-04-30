@@ -52,9 +52,11 @@ object RubyProgramSummary {
     val builtinDirectory = "builtin_types"
 
     val resourcePaths: List[String] =
+      val resourceOpt = getClass.getClassLoader.getResource(builtinDirectory)
+      logger.warn(resourceOpt.toString)
       Option(getClass.getClassLoader.getResource(builtinDirectory)) match {
         case Some(url) if url.getProtocol == "jar" =>
-          logger.info("Reading from JAR")
+          logger.warn("Reading from JAR")
           val connection = url.openConnection.asInstanceOf[JarURLConnection]
           Using.resource(connection.getJarFile) { jarFile =>
             jarFile
@@ -67,7 +69,7 @@ object RubyProgramSummary {
               .filter(_.endsWith(".zip"))
           }
         case _ =>
-          logger.info("Reading from builtin_dir")
+          logger.warn("Reading from builtin_dir")
           Source
             .fromResource(builtinDirectory)
             .getLines()
