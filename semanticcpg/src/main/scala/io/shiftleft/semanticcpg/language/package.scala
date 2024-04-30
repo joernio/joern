@@ -180,7 +180,6 @@ package object language extends generated.Language
   implicit def toNewNodeTrav[NodeType <: NewNode](trav: Iterator[NodeType]): NewNodeSteps[NodeType] =
     new NewNodeSteps[NodeType](trav)
 
-  implicit def toGeneratedNodeStarters(cpg: Cpg): generated.CpgNodeStarters = new generated.CpgNodeStarters(cpg)
   implicit def toNodeTypeStarters(cpg: Cpg): NodeTypeStarters    = new NodeTypeStarters(cpg)
   implicit def toTagTraversal(trav: Iterator[Tag]): TagTraversal = new TagTraversal(trav)
 
