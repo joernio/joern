@@ -5,7 +5,7 @@ import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.semanticcpg.language.*
 
 class DataFlowTests
-    extends RubyCode2CpgFixture(withPostProcessing = true, withDataFlow = true, useDeprecatedFrontend = false) {
+    extends RubyCode2CpgFixture(withPostProcessing = true, withDataFlow = true, useDeprecatedFrontend = true) {
 
   "Data flow through if-elseif-else" should {
     val cpg = code("""
@@ -47,14 +47,8 @@ class DataFlowTests
 
     "be found" in {
       implicit val resolver: ICallResolver = NoResolve
-      cpg.method.name(":program").dotAst.l.foreach(println)
-      cpg.dotCallGraph.l.foreach(println)
-      cpg.method.name("print").dotDdg.l.foreach(println)
-      cpg.method.name("print").dotCdg.l.foreach(println)
-      cpg.method.name("print").dotCfg.l.foreach(println)
-      cpg.method.name("print").dotPdg.l.foreach(println)
-      val src  = cpg.identifier.name("n").where(_.inCall.name("print")).l
-      val sink = cpg.method.name("puts").callIn.argument(1).l
+      val src                              = cpg.identifier.name("n").where(_.inCall.name("print")).l
+      val sink                             = cpg.method.name("puts").callIn.argument(1).l
       sink.reachableByFlows(src).size shouldBe 1
     }
   }
