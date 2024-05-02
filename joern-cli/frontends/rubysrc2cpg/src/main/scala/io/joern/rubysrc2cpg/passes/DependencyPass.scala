@@ -6,7 +6,7 @@ import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language.*
 
 /** Parses the dependencies from the `Gemfile.lock` and `Gemfile` files. This pass uses a dependency node to store the
-  * Ruby Gems resolver with the `name`` as `Defines.Resolver` and `version` as the URL.
+  * Ruby Gems resolver with the `name` as `Defines.Resolver` and `version` as the URL.
   * @param cpg
   *   the graph.
   */

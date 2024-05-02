@@ -123,6 +123,15 @@ class ImportTests extends RubyCode2CpgFixture with Inspectors {
           |""".stripMargin,
         "Bar.rb"
       )
+      .moreCode(
+        """
+          |GEM
+          |  remote: https://rubygems.org/
+          |  specs:
+          |    zeitwerk (2.2.1)
+          |""".stripMargin,
+        "Gemfile.lock"
+      )
 
     "be explicitly detected and imported for a constructor type" in {
       inside(cpg.imports.where(_.call.file.name(".*Foo.*")).headOption) {

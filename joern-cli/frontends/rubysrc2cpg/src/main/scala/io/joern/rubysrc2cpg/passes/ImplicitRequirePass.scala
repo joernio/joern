@@ -5,11 +5,13 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{Cpg, DispatchTypes, EdgeTypes, Operators}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language.*
+import org.apache.commons.text.CaseUtils
 
 import scala.collection.mutable
 
 /** In some Ruby frameworks, it is common to have an autoloader library that implicitly loads requirements onto the
-  * stack. This pass makes these imports explicit.
+  * stack. This pass makes these imports explicit. The most popular one is <a
+  * href="https://github.com/fxn/zeitwerk">Zeitwerk</a> which we check in `Gemsfile.lock` to enable this pass.
   */
 class ImplicitRequirePass(cpg: Cpg, programSummary: RubyProgramSummary) extends ForkJoinParallelCpgPass[Method](cpg) {
 
@@ -17,9 +19,19 @@ class ImplicitRequirePass(cpg: Cpg, programSummary: RubyProgramSummary) extends 
   private val typeToPath             = mutable.Map.empty[String, String]
 
   override def init(): Unit = {
-    programSummary.pathToType.foreach { case (path, types) =>
-      types.foreach { typ => typeToPath.put(typ.name, path) }
-    }
+    programSummary.pathToType
+      .map { case (path, types) =>
+        // zeitwerk will match types that share the name of the path.
+        // This match is insensitive to camel case, i.e, foo_bar will match type FooBar.
+        val fileName = path.split('/').last
+        path -> types.filter { t =>
+          val typeName = t.name.split("[.]").last
+          typeName == fileName || typeName == CaseUtils.toCamelCase(fileName, true, '_', '-')
+        }
+      }
+      .foreach { case (path, types) =>
+        types.foreach { typ => typeToPath.put(typ.name, path) }
+      }
   }
 
   override def generateParts(): Array[Method] =
