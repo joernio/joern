@@ -419,7 +419,7 @@ class MethodTests extends RubyCode2CpgFixture {
   "break unless statement" should {
     val cpg = code("""
         |  def foo
-        |    loop do
+        |    bar do
         |      break unless 1 < 2
         |    end
         |  end

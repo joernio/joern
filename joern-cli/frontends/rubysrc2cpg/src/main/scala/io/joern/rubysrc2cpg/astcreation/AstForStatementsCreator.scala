@@ -386,8 +386,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           elseClause.map(transform).orElse(defaultElseBranch(node.span)),
           ensureClause
         )(node.span)
-      case WhileExpression(condition, body) => WhileExpression(condition, transform(body))(node.span)
-      case UntilExpression(condition, body) => UntilExpression(condition, transform(body))(node.span)
+      case WhileExpression(condition, body)   => WhileExpression(condition, transform(body))(node.span)
+      case DoWhileExpression(condition, body) => DoWhileExpression(condition, transform(body))(node.span)
+      case UntilExpression(condition, body)   => UntilExpression(condition, transform(body))(node.span)
       case IfExpression(condition, thenClause, elsifClauses, elseClause) =>
         IfExpression(
           condition,

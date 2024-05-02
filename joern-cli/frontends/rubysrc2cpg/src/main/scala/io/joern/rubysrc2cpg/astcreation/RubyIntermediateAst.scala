@@ -3,6 +3,8 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.passes.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 
+import scala.annotation.tailrec
+
 object RubyIntermediateAst {
 
   case class TextSpan(
