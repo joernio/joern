@@ -1,7 +1,11 @@
 package io.joern.kotlin2cpg.compiler
 
 import better.files.File
+import io.joern.kotlin2cpg.Config
 import io.joern.kotlin2cpg.DefaultContentRootJarPath
+import io.joern.kotlin2cpg.Kotlin2Cpg
+import io.joern.x2cpg.utils.ExternalCommand
+import io.joern.x2cpg.Defines
 import io.shiftleft.utils.ProjectRoot
 
 import java.nio.file.Paths
@@ -14,6 +18,7 @@ import org.jetbrains.kotlin.cli.jvm.compiler.KotlinToJVMBytecodeCompiler
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import org.slf4j.LoggerFactory
+import io.shiftleft.semanticcpg.language.*
 
 class CompilerAPITests extends AnyFreeSpec with Matchers {
 
@@ -65,5 +70,24 @@ class CompilerAPITests extends AnyFreeSpec with Matchers {
       KotlinToJVMBytecodeCompiler.INSTANCE.analyze(environment)
       messageCollector.hasErrors() shouldBe true
     }
+  }
+
+  "KotlinCoreEnvironment generation on springboot-kotlin-webgoat" - {
+    val projectDirPath =
+      ProjectRoot.relativise("joern-cli/frontends/kotlin2cpg/src/test/resources/code/springboot-kotlin-webgoat")
+    val projectDependenciesPath = Paths.get(projectDirPath, "build", "gatheredDependencies")
+
+    "should not contain methods with unresolved types/namespaces" in {
+      val command =
+        if (scala.util.Properties.isWin) "cmd.exe /C gradlew.bat gatherDependencies" else "./gradlew gatherDependencies"
+      ExternalCommand.run(command, projectDirPath) shouldBe Symbol("success")
+      val config = Config(classpath = Set(projectDependenciesPath.toString))
+      val cpg = new Kotlin2Cpg().createCpg(projectDirPath)(config).getOrElse {
+        fail("Could not create a CPG!")
+      }
+      cpg.method.fullName(s".*${Defines.UnresolvedNamespace}.*") shouldBe empty
+      cpg.method.signature(s".*${Defines.UnresolvedNamespace}.*") shouldBe empty
+    }
+
   }
 }

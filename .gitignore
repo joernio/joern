@@ -49,6 +49,8 @@ null
 **/*_builtin_types.zip.sha512
 slices.json
 **/.antlr
+**/.gradle
+**/build/gatheredDependencies
 /joern-cli/frontends/csharpsrc2cpg/bin
 /joern-cli/frontends/rubysrc2cpg/type_stubs
 
