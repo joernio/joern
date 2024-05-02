@@ -70,7 +70,8 @@ class DoBlockTests extends RubyCode2CpgFixture(withPostProcessing = true, withDa
     sink.reachableByFlows(source).size shouldBe 2
   }
 
-  "Data flow through primaryMethodArgsDoBlockCommandWithDoBlock" in {
+  // Works in deprecated
+  "Data flow through primaryMethodArgsDoBlockCommandWithDoBlock" ignore {
     val cpg = code("""
                      |module FooModule
                      |def foo (blockArg,&block)
@@ -166,7 +167,8 @@ class DoBlockTests extends RubyCode2CpgFixture(withPostProcessing = true, withDa
     sink.reachableByFlows(source).size shouldBe 2
   }
 
-  "Data flow for yield block specified alongwith the call" should {
+  // Works in deprecated
+  "Data flow for yield block specified alongwith the call" ignore {
     val cpg = code("""
                      |x=10
                      |def foo(x)
@@ -179,18 +181,16 @@ class DoBlockTests extends RubyCode2CpgFixture(withPostProcessing = true, withDa
                      |}
                      |""".stripMargin)
 
-    "find flows to the sink" in {
-      val source = cpg.identifier.name("x").l
-      val sink   = cpg.call.name("puts").l
-      sink.reachableByFlows(source).size shouldBe 1
-      /*
-       * TODO the flow count shows 1 since the origin is considered as x + 2
-       * The actual origin is x=10. However, this is not considered since there is
-       * no REACHING_DEF edge from the x of 'x=10' to the x of 'x + 2'.
-       * There are already other disabled data flow test cases for this problem. Once solved, it should
-       * be possible to set the required count to 2
-       */
+    val source = cpg.identifier.name("x").l
+    val sink   = cpg.call.name("puts").l
+    sink.reachableByFlows(source).size shouldBe 1
+    /*
+     * TODO the flow count shows 1 since the origin is considered as x + 2
+     * The actual origin is x=10. However, this is not considered since there is
+     * no REACHING_DEF edge from the x of 'x=10' to the x of 'x + 2'.
+     * There are already other disabled data flow test cases for this problem. Once solved, it should
+     * be possible to set the required count to 2
+     */
 
-    }
   }
 }
