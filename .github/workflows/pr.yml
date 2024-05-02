@@ -14,7 +14,13 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '19'
+          java-version: '21'
+      - name: Install sbt
+        if: matrix.os == 'macos-latest'
+        run: brew install sbt
+      - name: Install php
+        if: matrix.os == 'macos-latest'
+        run: brew install php
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
@@ -28,7 +34,8 @@ jobs:
         if: matrix.os == 'windows-latest'
         uses: SwiftyLab/setup-swift@latest
         with:
-          swift-version: "5.9"
+          development: true
+          swift-version: "5.10"
       - name: Install Bundler
         run: gem install bundler -v 2.4.22
       - name: Delete `.rustup` directory
@@ -55,7 +62,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '19'
+          java-version: '21'
       - uses: actions/cache@v4
         with:
           path: |
@@ -79,7 +86,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '19'
+          java-version: '21'
       - uses: actions/cache@v4
         with:
           path: |

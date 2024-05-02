@@ -100,13 +100,21 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
         Option(path)
       }
 
-    relativizedPath.iterator.flatMap(summary.pathToType.getOrElse(_, Set())).foreach { ty =>
-      addImportedTypeOrModule(ty.name)
+    relativizedPath.iterator.flatMap(summary.pathToType.getOrElse(_, Set())) match {
+      case x if x.nonEmpty =>
+        x.foreach { ty => addImportedTypeOrModule(ty.name) }
+      case _ =>
+        addRequireGem(path)
     }
   }
 
   def addInclude(typeOrModule: String): Unit = {
     addImportedMember(typeOrModule)
+  }
+
+  def addRequireGem(gemName: String): Unit = {
+    val matchingTypes = summary.namespaceToType.values.flatten.filter(_.name.startsWith(gemName))
+    typesInScope.addAll(matchingTypes)
   }
 
   /** @return

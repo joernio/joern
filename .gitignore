@@ -45,9 +45,12 @@ null
 **/dotnetastgen-win-arm.exe
 **/dotnetastgen-macos
 **/dotnetastgen-macos-arm
+**/*_builtin_types.zip
+**/*_builtin_types.zip.sha512
 slices.json
 **/.antlr
 /joern-cli/frontends/csharpsrc2cpg/bin
+/joern-cli/frontends/rubysrc2cpg/type_stubs
 
 ##############
 # Nix flakes #
@@ -74,3 +77,5 @@ flake.lock
 .bloop
 **/.DS_Store
 **/.bsp
+
+

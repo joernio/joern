@@ -1,29 +1,20 @@
 package io.joern.php2cpg
 
 import io.joern.php2cpg.parser.PhpParser
-import io.joern.php2cpg.passes.{
-  AnyTypePass,
-  AstCreationPass,
-  AstParentInfoPass,
-  ClosureRefPass,
-  DependencyPass,
-  LocalCreationPass,
-  PhpTypeHintCallLinker,
-  PhpTypeRecoveryPassGenerator,
-  PhpTypeStubsParserPass
-}
+import io.joern.php2cpg.passes.*
+import io.joern.php2cpg.utils.DependencyDownloader
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
-import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass, XTypeRecoveryConfig, XTypeStubsParserConfig}
 import io.joern.x2cpg.utils.ExternalCommand
+import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.passes.CpgPassBase
 import io.shiftleft.codepropertygraph.generated.Languages
+import io.shiftleft.passes.CpgPassBase
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
-import scala.util.{Failure, Success, Try}
 import scala.util.matching.Regex
+import scala.util.{Failure, Success, Try}
 
 class Php2Cpg extends X2CpgFrontend[Config] {
 
@@ -62,6 +53,11 @@ class Php2Cpg extends X2CpgFrontend[Config] {
       withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
         new MetaDataPass(cpg, Languages.PHP, config.inputPath).createAndApply()
         new DependencyPass(cpg, buildFiles(config)).createAndApply()
+        if (config.downloadDependencies) {
+          val dependencyDir = DependencyDownloader(cpg, config).download()
+          // Parse dependencies and add high-level nodes to the CPG
+          new DependencySymbolsPass(cpg, dependencyDir).createAndApply()
+        }
         new AstCreationPass(config, cpg, parser.get)(config.schemaValidation).createAndApply()
         new AstParentInfoPass(cpg).createAndApply()
         new AnyTypePass(cpg).createAndApply()
@@ -104,9 +100,9 @@ object Php2Cpg {
     val setKnownTypesConfig = config
       .map(c => XTypeStubsParserConfig(c.typeStubsFilePath))
       .getOrElse(XTypeStubsParserConfig())
-    List(new PhpTypeStubsParserPass(cpg, setKnownTypesConfig)) ++ new PhpTypeRecoveryPassGenerator(
-      cpg,
-      typeRecoveryConfig
-    ).generate() :+ PhpTypeHintCallLinker(cpg)
+    List(
+      new ComposerAutoloadPass(cpg),
+      new PhpTypeStubsParserPass(cpg, setKnownTypesConfig)
+    ) ++ new PhpTypeRecoveryPassGenerator(cpg, typeRecoveryConfig).generate() :+ PhpTypeHintCallLinker(cpg)
   }
 }

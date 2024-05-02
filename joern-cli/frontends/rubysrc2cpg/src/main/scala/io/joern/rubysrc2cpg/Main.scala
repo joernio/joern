@@ -2,16 +2,19 @@ package io.joern.rubysrc2cpg
 
 import io.joern.rubysrc2cpg.Frontend.*
 import io.joern.x2cpg.passes.frontend.{TypeRecoveryParserConfig, XTypeRecovery}
+import io.joern.x2cpg.typestub.TypeStubConfig
 import io.joern.x2cpg.{DependencyDownloadConfig, X2CpgConfig, X2CpgMain}
 import scopt.OParser
 
 final case class Config(
   antlrCacheMemLimit: Double = 0.6d,
   useDeprecatedFrontend: Boolean = false,
-  downloadDependencies: Boolean = false
+  downloadDependencies: Boolean = false,
+  useTypeStubs: Boolean = true
 ) extends X2CpgConfig[Config]
     with DependencyDownloadConfig[Config]
-    with TypeRecoveryParserConfig[Config] {
+    with TypeRecoveryParserConfig[Config]
+    with TypeStubConfig[Config] {
 
   this.defaultIgnoredFilesRegex = List("spec", "test").flatMap { directory =>
     List(s"(^|\\\\)$directory($$|\\\\)".r.unanchored, s"(^|/)$directory($$|/)".r.unanchored)
@@ -27,6 +30,10 @@ final case class Config(
 
   override def withDownloadDependencies(value: Boolean): Config = {
     copy(downloadDependencies = value).withInheritedFields(this)
+  }
+
+  override def withTypeStubs(value: Boolean): Config = {
+    copy(useTypeStubs = value).withInheritedFields(this)
   }
 }
 
@@ -55,7 +62,8 @@ private object Frontend {
         .action((_, c) => c.withUseDeprecatedFrontend(true))
         .text("uses the original (but deprecated) Ruby frontend (default false)"),
       DependencyDownloadConfig.parserOptions,
-      XTypeRecovery.parserOptions
+      XTypeRecovery.parserOptions,
+      TypeStubConfig.parserOptions
     )
   }
 }

@@ -10,31 +10,44 @@ import java.io.{ByteArrayInputStream, InputStream}
 import scala.annotation.targetName
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
-import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
+import java.net.JarURLConnection
+import scala.util.Using
+
+import scala.jdk.CollectionConverters.*
 
 type NamespaceToTypeMap = Map[String, Set[CSharpType]]
 
 /** A mapping of type stubs of known types within the scope of the analysis.
   *
-  * @param initialMappings
+  * @param namespaceToType
   *   mappings to create the scope from
   * @see
   *   [[CSharpProgramSummary.jsonToInitialMapping]] for generating initial mappings.
   */
-class CSharpProgramSummary(initialMappings: List[NamespaceToTypeMap] = List.empty) extends ProgramSummary[CSharpType] {
+case class CSharpProgramSummary(val namespaceToType: NamespaceToTypeMap, val imports: Set[String])
+    extends ProgramSummary[CSharpType] {
 
-  override val namespaceToType: NamespaceToTypeMap = initialMappings.reduceOption(_ ++ _).getOrElse(Map.empty)
-  def findGlobalTypes: Set[CSharpType]             = namespaceToType.getOrElse(Constants.Global, Set.empty)
+  def findGlobalTypes: Set[CSharpType] = namespaceToType.getOrElse(Constants.Global, Set.empty)
 
   @targetName("add")
   def ++(other: CSharpProgramSummary): CSharpProgramSummary = {
-    CSharpProgramSummary(ProgramSummary.combine(this.namespaceToType, other.namespaceToType) :: Nil)
+    new CSharpProgramSummary(ProgramSummary.combine(namespaceToType, other.namespaceToType), imports ++ other.imports)
   }
 
 }
 
 object CSharpProgramSummary {
+
+  // Although System is not included by default
+  // the types and their methods are exposed through autoboxing of primitives
+  def initialImports: Set[String] = Set("", "System")
+
+  def apply(namespaceToType: NamespaceToTypeMap = Map.empty, imports: Set[String] = Set.empty): CSharpProgramSummary =
+    new CSharpProgramSummary(namespaceToType, imports)
+
+  def apply(summaries: Iterable[CSharpProgramSummary]): CSharpProgramSummary =
+    summaries.foldLeft(CSharpProgramSummary())(_ ++ _)
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -63,23 +76,38 @@ object CSharpProgramSummary {
     /*
       Doing this because java actually cannot read directories from the classPath.
       We're assuming there's no further nesting in the builtin_types directory structure.
+      TODO: Once MessagePack types and compression is implemented for CSharp, the `resourcePaths` building can
+       be moved into `ProgramSummary` since all subclasses of it will need to do this to find builtin types
      */
-    val resourcePaths =
-      Source
-        .fromResource(builtinDirectory)
-        .getLines()
-        .toList
-        .flatMap(u => {
-          val basePath = s"$builtinDirectory/$u"
-          Source
-            .fromResource(basePath)
-            .getLines()
+    val resourcePaths: List[String] = Option(getClass.getClassLoader.getResource(builtinDirectory)) match {
+      case Some(url) if url.getProtocol == "jar" =>
+        val connection = url.openConnection.asInstanceOf[JarURLConnection]
+        Using.resource(connection.getJarFile) { jarFile =>
+          jarFile
+            .entries()
+            .asScala
             .toList
-            .map(p => {
-              s"$basePath/$p"
-            })
-        })
-
+            .map(_.getName)
+            .filter(_.startsWith(builtinDirectory))
+            .filter(!_.equals(builtinDirectory))
+            .filter(_.endsWith(".json"))
+        }
+      case _ =>
+        Source
+          .fromResource(builtinDirectory)
+          .getLines()
+          .toList
+          .flatMap(u => {
+            val basePath = s"$builtinDirectory/$u"
+            Source
+              .fromResource(basePath)
+              .getLines()
+              .toList
+              .map(p => {
+                s"$basePath/$p"
+              })
+          })
+    }
     if (resourcePaths.isEmpty) {
       logger.warn("No JSON files found.")
       InputStream.nullInputStream()

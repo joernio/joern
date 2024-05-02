@@ -33,9 +33,9 @@ class DependencyPass(cpg: Cpg, composerPaths: List[String]) extends ForkJoinPara
     }
     // For `autoload`, the version is the matcher path prefixed with `autoload`
     composer.autoload.`psr-4`.foreach {
-      case (namespace, StringOrArray(name: String)) =>
+      case (namespace, PsrString(name)) =>
         builder.addNode(NewDependency().name(namespace).version(s"${PhpOperators.autoload}$name"))
-      case (namespace, StringOrArray(array: Array[String])) =>
+      case (namespace, PsrArray(array)) =>
         array.foreach { name =>
           builder.addNode(NewDependency().name(namespace).version(s"${PhpOperators.autoload}$name"))
         }
@@ -44,29 +44,35 @@ class DependencyPass(cpg: Cpg, composerPaths: List[String]) extends ForkJoinPara
 
 }
 
-case class StringOrArray(obj: String | Array[String])
+sealed trait PsrStringOrArray {
+  def obj: String | Array[String]
+}
 
-object StringOrArray:
-  given ReadWriter[StringOrArray] = {
+case class PsrString(obj: String) extends PsrStringOrArray
+
+case class PsrArray(obj: Array[String]) extends PsrStringOrArray
+
+object PsrStringOrArray:
+  given ReadWriter[PsrStringOrArray] = {
     val logger = LoggerFactory.getLogger(getClass)
 
     readwriter[ujson.Value]
-      .bimap[StringOrArray](
+      .bimap[PsrStringOrArray](
         x =>
           x.obj match {
             case o: String        => ujson.Str(o)
             case o: Array[String] => ujson.Arr(o.map(ujson.Str.apply)*)
           },
         {
-          case json @ (j: ujson.Str) => StringOrArray(json.str)
-          case json @ (j: ujson.Arr) => StringOrArray(json.arr.map(_.str).toArray)
+          case json @ (j: ujson.Str) => PsrString(json.str)
+          case json @ (j: ujson.Arr) => PsrArray(json.arr.map(_.str).toArray)
           case x =>
             logger.warn(s"Unexpected value type for `autoload.psr-4`: ${x.getClass}")
-            StringOrArray("<unknown>")
+            PsrString("<unknown>")
         }
       )
   }
 
-case class Autoload(@targetName("psr4") `psr-4`: Map[String, StringOrArray] = Map.empty) derives ReadWriter
+case class Autoload(@targetName("psr4") `psr-4`: Map[String, PsrStringOrArray] = Map.empty) derives ReadWriter
 
 case class Composer(require: Map[String, String] = Map.empty, autoload: Autoload = Autoload()) derives ReadWriter

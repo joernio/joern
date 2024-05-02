@@ -31,6 +31,7 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
       val astCreationPass = new AstCreationPass(config, cpg)
       astCreationPass.createAndApply()
       astCreationPass.sourceParser.cleanupDelombokOutput()
+      astCreationPass.clearJavaParserCaches()
       new ConfigFileCreationPass(cpg).createAndApply()
       if (!config.skipTypeInfPass) {
         TypeNodePass.withRegisteredTypes(astCreationPass.global.usedTypes.keys().asScala.toList, cpg).createAndApply()

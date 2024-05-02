@@ -1,28 +1,31 @@
 package io.joern.php2cpg
 
-import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
-import io.joern.x2cpg.passes.frontend.{
-  TypeRecoveryParserConfig,
-  XTypeRecovery,
-  TypeStubsParserConfig,
-  XTypeStubsParser,
-  XTypeStubsParserConfig
-}
-import io.joern.php2cpg.Frontend._
+import io.joern.php2cpg.Frontend.*
+import io.joern.x2cpg.passes.frontend.*
+import io.joern.x2cpg.{DependencyDownloadConfig, X2CpgConfig, X2CpgMain}
 import scopt.OParser
 
 /** Command line configuration parameters
   */
-final case class Config(phpIni: Option[String] = None, phpParserBin: Option[String] = None)
-    extends X2CpgConfig[Config]
+final case class Config(
+  phpIni: Option[String] = None,
+  phpParserBin: Option[String] = None,
+  downloadDependencies: Boolean = false
+) extends X2CpgConfig[Config]
     with TypeRecoveryParserConfig[Config]
-    with TypeStubsParserConfig[Config] {
+    with TypeStubsParserConfig[Config]
+    with DependencyDownloadConfig[Config] {
+
   def withPhpIni(phpIni: String): Config = {
     copy(phpIni = Some(phpIni)).withInheritedFields(this)
   }
 
   def withPhpParserBin(phpParserBin: String): Config = {
     copy(phpParserBin = Some(phpParserBin)).withInheritedFields(this)
+  }
+
+  override def withDownloadDependencies(downloadDependencies: Boolean): Config = {
+    copy(downloadDependencies = downloadDependencies).withInheritedFields(this)
   }
 }
 
@@ -32,7 +35,7 @@ object Frontend {
 
   val cmdLineParser: OParser[Unit, Config] = {
     val builder = OParser.builder[Config]
-    import builder._
+    import builder.*
     OParser.sequence(
       programName("php2cpg"),
       opt[String]("php-ini")
@@ -42,7 +45,8 @@ object Frontend {
         .action((x, c) => c.withPhpParserBin(x))
         .text("path to php-parser.phar binary. Defaults to php-parser shipped with Joern."),
       XTypeRecovery.parserOptions,
-      XTypeStubsParser.parserOptions
+      XTypeStubsParser.parserOptions,
+      DependencyDownloadConfig.parserOptions
     )
   }
 }
