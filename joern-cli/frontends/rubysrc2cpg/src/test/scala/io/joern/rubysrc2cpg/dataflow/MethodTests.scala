@@ -25,8 +25,7 @@ class MethodTests extends RubyCode2CpgFixture(withPostProcessing = true, withDat
     sink.reachableByFlows(src).l.size shouldBe 2
   }
 
-  // Works in deprecated
-  "Data flow through do-while loop" ignore {
+  "Data flow through do-while loop" in {
     val cpg = code("""
                      |x = 0
                      |num = -1
@@ -42,7 +41,7 @@ class MethodTests extends RubyCode2CpgFixture(withPostProcessing = true, withDat
 
     val source = cpg.identifier.name("x").l
     val sink   = cpg.call.name("puts").l
-    sink.reachableByFlows(source).l.size shouldBe 2
+    sink.reachableByFlows(source).size shouldBe 5
   }
 
   "Data flow through methodOnlyIdentifier usage" in {

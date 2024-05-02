@@ -319,7 +319,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     returnAst(returnNode(node, code(node)), List(astForMemberCall(node)))
   }
 
-  private def astForBreakStatement(node: BreakStatement): Ast = {
+  protected def astForBreakStatement(node: BreakStatement): Ast = {
     val _node = NewControlStructure()
       .controlStructureType(ControlStructureTypes.BREAK)
       .lineNumber(line(node))
@@ -386,8 +386,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           elseClause.map(transform).orElse(defaultElseBranch(node.span)),
           ensureClause
         )(node.span)
-      case WhileExpression(condition, body) => WhileExpression(condition, transform(body))(node.span)
-      case UntilExpression(condition, body) => UntilExpression(condition, transform(body))(node.span)
+      case WhileExpression(condition, body)   => WhileExpression(condition, transform(body))(node.span)
+      case DoWhileExpression(condition, body) => DoWhileExpression(condition, transform(body))(node.span)
+      case UntilExpression(condition, body)   => UntilExpression(condition, transform(body))(node.span)
       case IfExpression(condition, thenClause, elsifClauses, elseClause) =>
         IfExpression(
           condition,

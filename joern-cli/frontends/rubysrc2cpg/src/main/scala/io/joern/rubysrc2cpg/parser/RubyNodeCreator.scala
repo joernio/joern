@@ -550,6 +550,19 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   override def visitMethodCallWithBlockExpression(ctx: RubyParser.MethodCallWithBlockExpressionContext): RubyNode = {
     ctx.methodIdentifier().getText match {
       case Defines.Proc | Defines.Lambda => ProcOrLambdaExpr(visit(ctx.block()).asInstanceOf[Block])(ctx.toTextSpan)
+      case Defines.Loop =>
+        DoWhileExpression(
+          SimpleIdentifier(Option(Defines.getBuiltInType(Defines.TrueClass)))(
+            ctx.methodIdentifier().toTextSpan.spanStart("true")
+          ),
+          ctx.block() match {
+            case b: RubyParser.DoBlockBlockContext =>
+              visit(b.doBlock().bodyStatement())
+            case y =>
+              logger.warn(s"Unexpected loop block body ${y.getClass}")
+              visit(ctx.block())
+          }
+        )(ctx.toTextSpan)
       case _ =>
         SimpleCallWithBlock(visit(ctx.methodIdentifier()), List(), visit(ctx.block()).asInstanceOf[Block])(
           ctx.toTextSpan
