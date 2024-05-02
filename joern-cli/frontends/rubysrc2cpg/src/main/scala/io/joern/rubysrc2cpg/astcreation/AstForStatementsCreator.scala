@@ -319,7 +319,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     returnAst(returnNode(node, code(node)), List(astForMemberCall(node)))
   }
 
-  private def astForBreakStatement(node: BreakStatement): Ast = {
+  protected def astForBreakStatement(node: BreakStatement): Ast = {
     val _node = NewControlStructure()
       .controlStructureType(ControlStructureTypes.BREAK)
       .lineNumber(line(node))

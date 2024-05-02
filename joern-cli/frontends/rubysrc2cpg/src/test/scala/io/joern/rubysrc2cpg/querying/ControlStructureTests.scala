@@ -76,6 +76,25 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     assignment.lineNumber shouldBe Some(4)
   }
 
+  "a break expression nested in a control structure should be represented" in {
+    val cpg = code("""
+        |x = 0
+        |num  = -1
+        |loop do
+        |  num = x + 1
+        |  x = x + 1
+        |  if x > 10
+        |    break
+        |  end
+        |end
+        |puts num
+        |""".stripMargin)
+
+    val List(breakNode) = cpg.break.l
+    breakNode.code shouldBe "break"
+    breakNode.lineNumber shouldBe Some(8)
+  }
+
   "`if-end` statement is represented by an `IF` CONTROL_STRUCTURE node" in {
     val cpg = code("""
         |if __LINE__ > 1 then
