@@ -12,6 +12,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   protected def astsForStatement(node: RubyNode): Seq[Ast] = node match
     case node: WhileExpression            => astForWhileStatement(node) :: Nil
+    case node: DoWhileExpression          => astForDoWhileStatement(node) :: Nil
     case node: UntilExpression            => astForUntilStatement(node) :: Nil
     case node: IfExpression               => astForIfStatement(node) :: Nil
     case node: UnlessExpression           => astForUnlessStatement(node) :: Nil
@@ -34,6 +35,12 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val conditionAst = astForExpression(node.condition)
     val bodyAsts     = astsForStatement(node.body)
     whileAst(Some(conditionAst), bodyAsts, Option(code(node)), line(node), column(node))
+  }
+
+  private def astForDoWhileStatement(node: DoWhileExpression): Ast = {
+    val conditionAst = astForExpression(node.condition)
+    val bodyAsts     = astsForStatement(node.body)
+    doWhileAst(Some(conditionAst), bodyAsts, Option(code(node)), line(node), column(node))
   }
 
   // `until T do B` is lowered as `while !T do B`

@@ -55,7 +55,7 @@ class ControlStructureTests extends RubyCode2CpgFixture(withPostProcessing = tru
   }
 
   // Works in deprecated - does not parse in new frontend
-  "flow in through until modifier" ignore {
+  "flow in through until modifier" in {
     val cpg = code("""
                      |i = 0
                      |num = 5
@@ -67,7 +67,7 @@ class ControlStructureTests extends RubyCode2CpgFixture(withPostProcessing = tru
 
     val src  = cpg.identifier.name("i").l
     val sink = cpg.call.name("puts").l
-    sink.reachableByFlows(src).l.size shouldBe 3
+    sink.reachableByFlows(src).size shouldBe 3
   }
 
   "flow through for loop" in {
