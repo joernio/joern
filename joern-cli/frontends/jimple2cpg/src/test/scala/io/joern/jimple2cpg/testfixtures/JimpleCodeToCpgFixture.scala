@@ -35,7 +35,7 @@ class JimpleTestCpg extends DefaultTestCpg with Jimple2CpgFrontend with Semantic
   }
 
   override protected def codeDirPreProcessing(rootFile: Path, codeFiles: List[Path]): Unit = {
-    val sourceFiles = codeFiles.filter(_.endsWith(".java")).map(_.toFile)
+    val sourceFiles = codeFiles.map(_.toFile).filter(_.getName.endsWith(".java"))
     if (sourceFiles.nonEmpty) JimpleCodeToCpgFixture.compileJava(rootFile, sourceFiles)
   }
 
