@@ -1,5 +1,6 @@
 package io.joern.rubysrc2cpg.querying
 
+import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
@@ -178,6 +179,21 @@ class CallTests extends RubyCode2CpgFixture {
 
     "get precedence over the method" in {
       cpg.call("foo").size shouldBe 0
+    }
+  }
+
+  "splatting argument for a call should be a single argument" in {
+    val cpg = code("""
+        |args = [1, 2]
+        |foo(*args)
+        |""".stripMargin)
+
+    inside(cpg.call("foo").argument.l) {
+      case _ :: (args: Call) :: Nil =>
+        args.methodFullName shouldBe RubyOperators.splat
+        args.code shouldBe "*args"
+        args.lineNumber shouldBe Some(3)
+      case xs => fail(s"Expected a single `*args` argument under `foo`, got [${xs.code.mkString(",")}]")
     }
   }
 
