@@ -156,7 +156,8 @@ object RubySrc2Cpg {
           new AstLinkerPass(cpg)
         )
     } else {
-      List()
+//      List(passes.RubyTypeRecoveryPassGenerator(cpg).generate())
+      passes.RubyTypeRecoveryPassGenerator(cpg).generate()
     }
   }
 
