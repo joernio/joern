@@ -85,7 +85,7 @@ class AstCreator(
   fileContent: Option[String],
   global: Global,
   val symbolSolver: JavaSymbolSolver,
-  keepTypeArguments: Boolean
+  protected val keepTypeArguments: Boolean
 )(implicit val withSchemaValidation: ValidationMode)
     extends AstCreatorBase(filename)
     with AstNodeBuilder[Node, AstCreator]

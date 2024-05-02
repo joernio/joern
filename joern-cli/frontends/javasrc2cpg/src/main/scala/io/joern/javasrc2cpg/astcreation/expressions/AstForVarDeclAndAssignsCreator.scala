@@ -1,6 +1,7 @@
 package io.joern.javasrc2cpg.astcreation.expressions
 
 import com.github.javaparser.ast.Node
+import com.github.javaparser.ast.`type`.ClassOrInterfaceType
 import com.github.javaparser.ast.body.VariableDeclarator
 import com.github.javaparser.ast.expr.AssignExpr.Operator
 import com.github.javaparser.ast.expr.{AssignExpr, Expression, ObjectCreationExpr, VariableDeclarationExpr}
@@ -11,14 +12,7 @@ import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.javasrc2cpg.util.NameConstants
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  AstNodeNew,
-  NewCall,
-  NewFieldIdentifier,
-  NewIdentifier,
-  NewMember,
-  NewUnknown
-}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNodeNew, NewCall, NewFieldIdentifier, NewIdentifier, NewMember, NewUnknown}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import org.slf4j.LoggerFactory
 
@@ -104,11 +98,26 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
   }
 
   def astsForVariableDeclarator(variableDeclarator: VariableDeclarator, originNode: Node): Seq[Ast] = {
+
+    val variableDeclaratorType = variableDeclarator.getType
+    // If generics are in the type name, we may be unable to resolve the type
+    val (variableTypeString, maybeTypeArgs) = variableDeclaratorType match {
+      case typ: ClassOrInterfaceType =>
+        val typeParams = typ.getTypeArguments.toScala.map(_.asScala.flatMap(typeInfoCalc.fullName))
+        (typ.getName.asString(), typeParams)
+      case _ => (variableDeclarator.getTypeAsString, None)
+    }
+
     val typeFullName = tryWithSafeStackOverflow(
       scope
-        .lookupType(variableDeclarator.getTypeAsString, includeWildcards = false)
+        .lookupType(variableTypeString, includeWildcards = false)
         .orElse(typeInfoCalc.fullName(variableDeclarator.getType))
-    ).toOption.flatten
+    ).toOption.flatten.map { typ =>
+      maybeTypeArgs match {
+        case Some(typeArgs) if keepTypeArguments => s"$typ<${typeArgs.mkString(",")}>"
+        case _ => typ
+      }
+    }
 
     val (correspondingNode, localAst): (NewVariableNode, Option[Ast]) =
       scope.lookupVariable(variableDeclarator.getNameAsString).variableNode.map((_, None)).getOrElse {
