@@ -185,6 +185,27 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     HereDocNode(ctx.hereDoc().getText)(ctx.toTextSpan)
   }
 
+  override def visitPrimaryOperatorExpression(ctx: RubyParser.PrimaryOperatorExpressionContext): RubyNode = {
+    super.visitPrimaryOperatorExpression(ctx) match {
+      case x: BinaryExpression if x.lhs.text.endsWith("=") && x.op == "*" =>
+        // fixme: This workaround handles a parser ambiguity with method identifiers having `=` and assignments with
+        //  splatting on the RHS. The Ruby parser gives precedence to assignments over methods called with this suffix
+        //  however
+        val newLhs = x.lhs match {
+          case call: SimpleCall => SimpleIdentifier(None)(call.span.spanStart(call.span.text.stripSuffix("=")))
+          case y =>
+            logger.warn(s"Unhandled class in repacking of primary operator expression ${y.getClass}")
+            y
+        }
+        val newRhs = {
+          val oldRhsSpan = x.rhs.span
+          SplattingRubyNode(x.rhs)(oldRhsSpan.spanStart(s"*${oldRhsSpan.text}"))
+        }
+        SingleAssignment(newLhs, "=", newRhs)(x.span)
+      case x => x
+    }
+  }
+
   override def visitPowerExpression(ctx: RubyParser.PowerExpressionContext): RubyNode = {
     BinaryExpression(visit(ctx.primaryValue(0)), ctx.powerOperator.getText, visit(ctx.primaryValue(1)))(ctx.toTextSpan)
   }
@@ -349,6 +370,14 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     SingleAssignment(lhs, op, rhs)(ctx.toTextSpan)
   }
 
+  private def flattenStatementLists(x: List[RubyNode]): List[RubyNode] = {
+    x match {
+      case (head: StatementList) :: xs => head.statements ++ flattenStatementLists(xs)
+      case head :: tail                => head +: flattenStatementLists(tail)
+      case Nil                         => Nil
+    }
+  }
+
   override def visitMultipleAssignmentStatement(ctx: RubyParser.MultipleAssignmentStatementContext): RubyNode = {
 
     /** Recursively expand and duplicate splatting nodes so that they line up with what they consume.
@@ -372,11 +401,13 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
           .map(node => SplattingRubyNode(node)(node.span.spanStart(s"*${node.span.text}")))
       )
       .getOrElse(defaultResult()) match {
-      case x: StatementList => x.statements
+      case x: StatementList => flattenStatementLists(x.statements)
       case x                => List(x)
     }
-    val rhsNodes = Option(ctx.multipleRightHandSide()).map(visit).getOrElse(defaultResult()) match {
-      case x: StatementList => x.statements
+    val rhsNodes = Option(ctx.multipleRightHandSide())
+      .map(visit)
+      .getOrElse(defaultResult()) match {
+      case x: StatementList => flattenStatementLists(x.statements)
       case x                => List(x)
     }
     val op = ctx.EQ().toString

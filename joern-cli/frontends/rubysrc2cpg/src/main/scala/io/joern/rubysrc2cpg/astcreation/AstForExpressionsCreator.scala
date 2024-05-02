@@ -50,6 +50,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case node: RubyCallWithBlock[_]     => astsForCallWithBlockInExpr(node)
     case node: SelfIdentifier           => astForSelfIdentifier(node)
     case node: BreakStatement           => astForBreakStatement(node)
+    case node: StatementList            => astForStatementList(node)
     case node: DummyNode                => Ast(node.node)
     case _                              => astForUnknown(node)
 
