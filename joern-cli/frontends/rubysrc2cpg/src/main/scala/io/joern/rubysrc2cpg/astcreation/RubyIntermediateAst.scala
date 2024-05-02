@@ -169,6 +169,10 @@ object RubyIntermediateAst {
       extends RubyNode(span)
       with ControlFlowExpression
 
+  final case class DoWhileExpression(condition: RubyNode, body: RubyNode)(span: TextSpan)
+      extends RubyNode(span)
+      with ControlFlowExpression
+
   final case class UntilExpression(condition: RubyNode, body: RubyNode)(span: TextSpan)
       extends RubyNode(span)
       with ControlFlowExpression

@@ -28,6 +28,30 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     assignment.lineNumber shouldBe Some(4)
   }
 
+  "begin-end-until should be lowered as a do-while loop" in {
+
+    val cpg = code("""
+        |i = 0
+        |num = 5
+        |begin
+        |  num = i + 3
+        |end until i < num
+        |puts num
+        |""".stripMargin)
+
+    val List(whileNode)  = cpg.doBlock.l
+    val List(whileCond)  = whileNode.condition.isCall.l
+    val List(assignment) = whileNode.astChildren.isBlock.assignment.l
+
+    whileCond.methodFullName shouldBe Operators.lessThan
+    whileCond.code shouldBe "i < num"
+    whileCond.lineNumber shouldBe Some(6)
+
+    assignment.code shouldBe "num = i + 3"
+    assignment.lineNumber shouldBe Some(5)
+
+  }
+
   "`until-end` statement is represented by a negated `WHILE` CONTROL_STRUCTURE node" in {
     val cpg = code("""
         |x = 1

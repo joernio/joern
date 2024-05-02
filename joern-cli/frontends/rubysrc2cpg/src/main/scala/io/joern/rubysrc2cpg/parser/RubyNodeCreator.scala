@@ -68,6 +68,10 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     UntilExpression(condition, body)(ctx.toTextSpan)
   }
 
+  override def visitBeginEndExpression(ctx: RubyParser.BeginEndExpressionContext): RubyNode = {
+    visit(ctx.bodyStatement())
+  }
+
   override def visitIfExpression(ctx: RubyParser.IfExpressionContext): RubyNode = {
     val condition = visit(ctx.commandOrPrimaryValue())
     val thenBody  = visit(ctx.thenClause())
@@ -120,7 +124,12 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
         val condition = visit(ctx.expressionOrCommand())
         val body      = visit(ctx.statement())
         WhileExpression(condition, body)(ctx.toTextSpan)
+      case "until" =>
+        val condition = visit(ctx.expressionOrCommand())
+        val body      = visit(ctx.statement())
+        DoWhileExpression(condition, body)(ctx.toTextSpan)
       case _ =>
+        logger.warn(s"Unhandled modifier statement ${ctx.getClass}")
         Unknown()(ctx.toTextSpan)
   }
 
