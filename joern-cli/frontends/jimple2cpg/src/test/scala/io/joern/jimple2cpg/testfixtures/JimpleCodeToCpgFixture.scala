@@ -34,8 +34,10 @@ class JimpleTestCpg extends DefaultTestCpg with Jimple2CpgFrontend with Semantic
     applyOssDataFlow()
   }
 
-  override protected def codeDirPreProcessing(rootFile: Path, codeFiles: List[Path]): Unit =
-    JimpleCodeToCpgFixture.compileJava(rootFile, codeFiles.map(_.toFile))
+  override protected def codeDirPreProcessing(rootFile: Path, codeFiles: List[Path]): Unit = {
+    val sourceFiles = codeFiles.filter(_.endsWith(".java")).map(_.toFile)
+    if (sourceFiles.nonEmpty) JimpleCodeToCpgFixture.compileJava(rootFile, sourceFiles)
+  }
 
 }
 
