@@ -12,9 +12,9 @@ import java.nio.file.Paths
 import scala.util.{Failure, Success, Try}
 
 /** Scans for and inserts configuration files into the CPG. Relies on the MetaData's `ROOT` property to provide the path
-  * to scan.
+  * to scan, but alternatively one can specify a directory on the `rootDir` parameter.
   */
-abstract class XConfigFileCreationPass(cpg: Cpg, private var rootDir: Option[String] = None)
+abstract class XConfigFileCreationPass(cpg: Cpg, private val rootDir: Option[String] = None)
     extends ConcurrentWriterCpgPass[File](cpg) {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -22,14 +22,8 @@ abstract class XConfigFileCreationPass(cpg: Cpg, private var rootDir: Option[Str
   // File filters to override by the implementing class
   protected val configFileFilters: List[File => Boolean]
 
-  override def init(): Unit = {
-    if (rootDir.isEmpty) {
-      rootDir = rootDir.orElse(cpg.metaData.root.headOption)
-    }
-  }
-
   override def generateParts(): Array[File] = {
-    rootDir match {
+    rootDir.orElse(cpg.metaData.root.headOption) match {
       case Some(root) =>
         Try(File(root)) match {
           case Success(file) if file.isDirectory =>
