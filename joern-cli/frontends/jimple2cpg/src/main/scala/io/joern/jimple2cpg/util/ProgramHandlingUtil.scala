@@ -76,7 +76,7 @@ object ProgramHandlingUtil {
       f.zipInputStream.apply { zis => isValidZipFile(zis) }
 
     def isConfigFile: Boolean = {
-      val configExt = Set(".xml", ".properties", ".yaml", ".yml", ".tf", ".tfvars", ".vm", ".jsp", ".conf", ".mf")
+      val configExt = Set(".xml", ".properties", ".yaml", ".yml", ".tf", ".tfvars", ".vm", ".json", ".conf", ".mf", ".html")
 
       def hasConfigExt(f: File): Boolean = configExt.exists(f.`extension`.map(_.toLowerCase).contains(_))
 
