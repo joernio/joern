@@ -145,4 +145,82 @@ class ClassTests extends RubyCode2CpgFixture(withPostProcessing = true, withData
     val sink   = cpg.call.name("puts").l
     sink.reachableByFlows(source).size shouldBe 2
   }
+
+  "Data flow using a keyword" in {
+    val cpg = code("""
+                     |class MyClass
+                     |end
+                     |
+                     |x = MyClass.new
+                     |y = x.class
+                     |puts y
+                     |""".stripMargin)
+
+    val source = cpg.identifier.name("x").l
+    val sink   = cpg.call.name("puts").l
+    sink.reachableByFlows(source).size shouldBe 2
+  }
+
+  // TODO:
+  "Flow for a global variable" ignore {
+    val cpg = code("""
+                     |$person_height = 6
+                     |class Person
+                     |    def height_in_cm
+                     |        puts $person_height * 30
+                     |    end
+                     |end
+                     |""".stripMargin)
+
+    val source = cpg.identifier.name("$person_height").l
+    val sink   = cpg.call.name("puts").l
+    sink.reachableByFlows(source).size shouldBe 2
+  }
+
+  "dataflow in method defined under class << self block" in {
+    val cpg = code("""
+       class MyClass
+                     |
+                     |  class << self
+                     |    def printPII
+                     |      firstName="somename"
+                     |      puts "log PII #{firstName}"
+                     |    end
+                     |  end
+                     |end
+                     |
+                     |MyClass.printPII""".stripMargin)
+
+    val source = cpg.identifier.name("firstName").l
+    val sink   = cpg.call.name("puts").l
+    sink.reachableByFlows(source).size shouldBe 2
+  }
+
+  // Test passes with warning: could not represent expression: def self.bar(x) x end (SingletonMethodDecl)
+  "flow through special prefix methods" in {
+    /* We only check private_class_method here. The mechanism is similar to others:
+     *     attr_reader
+     *     attr_writer
+     *     attr_accessor
+     *     remove_method
+     *     public_class_method
+     *     private
+     *     protected
+     */
+    val cpg = code("""
+                     |class Foo
+                     | z = 1
+                     | private_class_method def self.bar(x)
+                     |   x
+                     | end
+                     |
+                     | y = self.bar(z)
+                     | puts y
+                     |end
+                     |""".stripMargin)
+
+    val source = cpg.identifier.name("z").l
+    val sink   = cpg.call.name("puts").l
+    sink.reachableByFlows(source).size shouldBe 2
+  }
 }

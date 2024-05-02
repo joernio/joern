@@ -72,4 +72,16 @@ class SingleAssignmentTests extends RubyCode2CpgFixture(withPostProcessing = tru
     val sink   = cpg.call.name("puts").l
     sink.reachableByFlows(source).l.size shouldBe 2
   }
+
+  "Data flow for __LINE__ variable identifier" in {
+    val cpg = code("""
+        |x=1
+        |a=x+__LINE__
+        |puts a
+        |""".stripMargin)
+
+    val source = cpg.identifier.name("x").l
+    val sink   = cpg.call.name("puts").l
+    sink.reachableByFlows(source).size shouldBe 2
+  }
 }

@@ -585,4 +585,111 @@ class ControlStructureTests extends RubyCode2CpgFixture(withPostProcessing = tru
     }
   }
 
+  // TODO:
+  "Data flow through a global variable" ignore {
+    val cpg = code("""
+                     |def foo(arg)
+                     | loop do
+                     | arg += 1
+                     |  if arg > 3
+                     |        $y = arg
+                     |        return
+                     |  end
+                     | end
+                     |end
+                     |
+                     |x = 1
+                     |foo x
+                     |puts $y
+                     |
+                     |
+                     |""".stripMargin)
+
+    val source = cpg.identifier.name("x").l
+    val sink   = cpg.call.name("puts").l
+    sink.reachableByFlows(source).size shouldBe 2
+  }
+
+  // Works in deprecated
+  "Data flow through unless modifier" ignore {
+    val cpg = code("""
+                     |x = 1
+                     |
+                     |x += 2 unless x.zero?
+                     |    puts(x)
+                     |""".stripMargin)
+
+    val source = cpg.identifier.name("x").l
+    val sink   = cpg.call.name("puts").l
+    sink.reachableByFlows(source).size shouldBe 3
+  }
+
+  "Data flow through ensureClause" in {
+    val cpg = code("""
+                     |begin
+                     |    x = File.open("myFile.txt", "r")
+                     |    x << "#{content} \n"
+                     |rescue
+                     |  x = "pqr"
+                     |ensure
+                     |  x = "abc"
+                     |  y = x
+                     |end
+                     |
+                     |puts y
+                     |""".stripMargin)
+
+    val source = cpg.identifier.name("x").l
+    val sink   = cpg.call.name("puts").l
+    sink.reachableByFlows(source).size shouldBe 2 // flow through the rescue is not a flow
+  }
+
+  // Works in deprecated
+  "Data flow through begin-else" ignore {
+    val cpg = code("""
+                     |begin
+                     |    x = File.open("myFile.txt", "r")
+                     |    x << "#{content} \n"
+                     |rescue
+                     |  x = "pqr"
+                     |else
+                     |  y = x
+                     |ensure
+                     |  x = "abc"
+                     |end
+                     |
+                     |puts y
+                     |""".stripMargin).moreCode(
+      """
+        |My file
+        |""".stripMargin,
+      "myFile.txt"
+    )
+
+    val source = cpg.identifier.name("x").l
+    val sink   = cpg.call.name("puts").l
+    sink.reachableByFlows(source).size shouldBe 3
+  }
+
+  // Works in deprecated
+  "flow through conditional return statement" ignore {
+    val cpg = code("""
+                     |class Foo
+                     | def bar(value)
+                     |   j = 0
+                     |   return(value) unless j == 0
+                     | end
+                     |end
+                     |
+                     |x = 10
+                     |foo = Foo.new
+                     |y = foo.bar(x)
+                     |puts y
+                     |""".stripMargin)
+
+    val source = cpg.identifier.name("x").l
+    val sink   = cpg.call.name("puts").l
+    sink.reachableByFlows(source).size shouldBe 2
+  }
+
 }

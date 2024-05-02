@@ -114,4 +114,58 @@ class ArrayTests extends RubyCode2CpgFixture(withPostProcessing = true, withData
     sink.reachableByFlows(source).size shouldBe 2
   }
 
+  "flow through %w array" in {
+    val cpg = code("""
+                     |a = %w[b c]
+                     |puts a
+                     |""".stripMargin)
+
+    val source = cpg.literal.code("b").l
+    val sink   = cpg.call.name("puts").l
+    sink.reachableByFlows(source).size shouldBe 2
+  }
+
+  "flow through %i array" in {
+    val cpg = code("""
+                     |a = %i[b
+                     |    c]
+                     |puts a
+                     |""".stripMargin)
+
+    val source = cpg.literal.code("b").l
+    val sink   = cpg.call.name("puts").l
+    sink.reachableByFlows(source).size shouldBe 2
+  }
+
+  "flow through array constructor using []" in {
+    val cpg = code("""
+                     |x=1
+                     |y=x
+                     |z = Array[y,2]
+                     |puts "#{z}"
+                     |""".stripMargin)
+
+    val source = cpg.identifier.name("x").l
+    val sink   = cpg.call.name("puts").l
+    sink.reachableByFlows(source).size shouldBe 2
+  }
+
+  // Works in deprecated
+  "flow through array constructor using [] and command in []" ignore {
+    val cpg = code("""
+                     |def foo(arg)
+                     |return arg
+                     |end
+                     |
+                     |x=1
+                     |y=x
+                     |z = Array[foo y]
+                     |puts "#{z}"
+                     |""".stripMargin)
+
+    val source = cpg.identifier.name("x").l
+    val sink   = cpg.call.name("puts").l
+    sink.reachableByFlows(source).size shouldBe 2
+  }
+
 }

@@ -22,15 +22,17 @@ class HashTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataF
     sink.reachableByFlows(source).l.size shouldBe 2
   }
 
-  "Data flow through string interpolation" in {
+  // Works in deprecated - syntax error on new frontend
+  "flow through hash containing splatting literal" ignore {
     val cpg = code("""
-                     |x = 1
-                     |str = "The source is #{x}"
-                     |puts str
+                     |x={:y=>1}
+                     |z = {
+                     |**x
+                     |}
+                     |puts z
                      |""".stripMargin)
-
     val source = cpg.identifier.name("x").l
     val sink   = cpg.call.name("puts").l
-    sink.reachableByFlows(source).l.size shouldBe 2
+    sink.reachableByFlows(source).size shouldBe 2
   }
 }

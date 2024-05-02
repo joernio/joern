@@ -48,6 +48,7 @@ null
 slices.json
 **/.antlr
 /joern-cli/frontends/csharpsrc2cpg/bin
+/joern-cli/frontends/rubysrc2cpg/type_stubs
 
 ##############
 # Nix flakes #

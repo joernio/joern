@@ -19,4 +19,22 @@ class ConditionalTests extends RubyCode2CpgFixture(withPostProcessing = true, wi
     flows.map(flowToResultPairs).sortBy(_.headOption.map(_._1)).toSet shouldBe
       Set(List(("x = 1", 2), ("z = x", 4), ("puts z", 5)), List(("y = 2", 3), ("z = y", 4), ("puts z", 5)))
   }
+
+  // Works in deprecated
+  "flow through statement with ternary operator with multiple line" ignore {
+    val cpg = code("""
+                     |x = 2
+                     |y = 3
+                     |z = 4
+                     |
+                     |w = x == 2 ?
+                     | y
+                     | : z
+                     |puts y
+                     |""".stripMargin)
+
+    val source = cpg.identifier.name("y").l
+    val sink   = cpg.call.name("puts").l
+    sink.reachableByFlows(source).size shouldBe 2
+  }
 }
