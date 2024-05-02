@@ -150,4 +150,23 @@ class ImportTests extends RubyCode2CpgFixture with Inspectors {
 
   }
 
+  "Builtin Types type-map" should {
+    val cpg = code("""
+        |require 'csv'
+        |require 'pp'
+        |CSV.parse("")
+        |CSV::Table.new()
+        |PP.pp(obj)
+        |""".stripMargin)
+
+    "resolve calls to builtin functions" in {
+      inside(cpg.call.methodFullName("(pp|csv).*").l) {
+        case csvParseCall :: csvTableInitCall :: ppCall :: Nil =>
+          csvParseCall.methodFullName shouldBe "csv.CSV:parse"
+          ppCall.methodFullName shouldBe "pp.PP:pp"
+          csvTableInitCall.methodFullName shouldBe "csv.CSV.Table:<init>"
+        case xs => fail(s"Expected three calls, got [${xs.code.mkString(",")}] instead")
+      }
+    }
+  }
 }
