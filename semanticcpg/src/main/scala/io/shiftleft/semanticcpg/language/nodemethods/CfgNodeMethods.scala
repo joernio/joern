@@ -108,6 +108,7 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
     case _: MethodParameterIn | _: MethodParameterOut | _: MethodReturn =>
       walkUpAst(node)
     case _: CallRepr if !node.isInstanceOf[Call] => walkUpAst(node)
+    case _: Annotation | _: AnnotationLiteral    => node.inAst.collectAll[Method].head
     case _: Expression | _: JumpTarget           => walkUpContains(node)
   }
 
