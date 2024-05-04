@@ -9,9 +9,9 @@ import org.slf4j.LoggerFactory
 import scopt.OParser
 
 import java.io.PrintWriter
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.{Files, Paths}
 import scala.util.matching.Regex
-import scala.util.{Failure, Success, Try, Using}
+import scala.util.{Failure, Success, Try}
 
 object X2CpgConfig {
   def defaultOutputPath: String = "cpg.bin"
@@ -309,9 +309,16 @@ object X2Cpg {
     */
   def withNewEmptyCpg[T <: X2CpgConfig[?]](outPath: String, config: T)(applyPasses: (Cpg, T) => Unit): Try[Cpg] = {
     val outputPath = if (outPath != "") Some(outPath) else None
-    Using(newEmptyCpg(outputPath)) { cpg =>
-      applyPasses(cpg, config)
-      cpg
+    Try {
+      val cpg = newEmptyCpg(outputPath)
+      Try {
+        applyPasses(cpg, config)
+      } match {
+        case Success(_) => cpg
+        case Failure(exception) =>
+          cpg.close()
+          throw exception
+      }
     }
   }
 
