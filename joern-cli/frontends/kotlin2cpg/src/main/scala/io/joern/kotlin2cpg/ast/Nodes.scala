@@ -1,7 +1,7 @@
 package io.joern.kotlin2cpg.ast
 
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewJumpTarget, NewModifier, NewNamespaceBlock}
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewModifier, NewNamespaceBlock}
 
 object Nodes {
 

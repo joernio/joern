@@ -2,11 +2,9 @@ package io.joern.kotlin2cpg.validation
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.edges.Ast
 import io.shiftleft.codepropertygraph.generated.nodes.ClosureBinding
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.jIteratortoTraversal
+import io.shiftleft.semanticcpg.language.*
 
 class ValidationTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "CPG for code with lambdas with no params and one param" should {

@@ -2,11 +2,13 @@ package io.joern.kotlin2cpg.jar4import
 
 import com.squareup.tools.maven.resolution.ArtifactResolver
 import io.joern.kotlin2cpg.Kotlin2Cpg
+import org.slf4j.LoggerFactory
 
 import java.net.{MalformedURLException, URL}
 
-trait UsesService {
-  this: Kotlin2Cpg =>
+trait UsesService { this: Kotlin2Cpg =>
+
+  private val logger = LoggerFactory.getLogger(getClass)
 
   protected def reachableServiceMaybe(serviceUrl: String): Option[Service] = {
     try {
@@ -40,9 +42,9 @@ trait UsesService {
 
       val resolver = new ArtifactResolver()
       val artifacts = coordinates.map { coordinate =>
-        val strippedCoord = coordinate.stripPrefix("\"").stripSuffix("\"")
-        val result        = resolver.download(strippedCoord, true)
-        logger.debug(s"Downloaded artifact for coordinate `$strippedCoord`.")
+        val strippedCoordinate = coordinate.stripPrefix("\"").stripSuffix("\"")
+        val result             = resolver.download(strippedCoordinate, true)
+        logger.debug(s"Downloaded artifact for coordinate `$strippedCoordinate`.")
         result.component2().toAbsolutePath.toString
       }
       logger.info(s"Using `${artifacts.size}` dependencies.")

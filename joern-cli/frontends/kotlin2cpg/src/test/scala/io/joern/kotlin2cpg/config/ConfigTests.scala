@@ -35,9 +35,7 @@ class ConfigTests extends AnyWordSpec with Matchers with Inside {
       "--include-java-sources"
     )
 
-    def getSuffix(s: String, n: Int): String = {
-      s.reverse.take(n).reverse
-    }
+    def getSuffix(s: String, n: Int): String = s.takeRight(n)
 
     inside(X2Cpg.parseCommandLine(args, parser, Config())) { case Some(config) =>
       config.inputPath.endsWith("INPUT") shouldBe true

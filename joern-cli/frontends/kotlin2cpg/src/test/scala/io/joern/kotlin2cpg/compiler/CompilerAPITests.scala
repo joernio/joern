@@ -6,19 +6,17 @@ import io.joern.kotlin2cpg.DefaultContentRootJarPath
 import io.joern.kotlin2cpg.Kotlin2Cpg
 import io.joern.x2cpg.utils.ExternalCommand
 import io.joern.x2cpg.Defines
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.utils.ProjectRoot
-
-import java.nio.file.Paths
-import org.jetbrains.kotlin.cli.common.messages.{
-  CompilerMessageSeverity,
-  CompilerMessageSourceLocation,
-  MessageCollector
-}
+import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
+import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSourceLocation
+import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinToJVMBytecodeCompiler
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import org.slf4j.LoggerFactory
-import io.shiftleft.semanticcpg.language.*
+
+import java.nio.file.Paths
 
 class CompilerAPITests extends AnyFreeSpec with Matchers {
 
