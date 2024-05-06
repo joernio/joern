@@ -403,7 +403,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
     }
 
     "have no parameters in the closure declaration" in {
-      inside(cpg.method("<lambda>0").parameter.l) {
+      inside(cpg.method("<lambda>0").parameter.indexGt(0).l) {
         case Nil => // pass
         case xs  => fail(s"Expected the closure to have no parameters, instead got [${xs.code.mkString(", ")}]")
       }

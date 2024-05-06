@@ -45,7 +45,15 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     if (methodName == XDefines.ConstructorMethodName) scope.pushNewScope(ConstructorScope(fullName))
     else scope.pushNewScope(MethodScope(fullName, procParamGen.fresh))
 
-    val parameterAsts = astForParameters(node.parameters)
+    val thisParameterAst = Ast(
+      newThisParameterNode(
+        code = Defines.This,
+        typeFullName = scope.surroundingTypeFullName.getOrElse(Defines.Any),
+        line = method.lineNumber,
+        column = method.columnNumber
+      )
+    )
+    val parameterAsts = thisParameterAst :: astForParameters(node.parameters)
 
     val optionalStatementList = statementListForOptionalParams(node.parameters)
 
@@ -281,9 +289,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
                 scope.tryResolveTypeReference(baseType) match {
                   case Some(typ) =>
                     (Option(NodeTypes.TYPE_DECL), Option(typ.name), baseType, true)
-                  case None => (None, None, "", false)
+                  case None => (None, None, Defines.This, false)
                 }
-              case None => (None, None, "", false)
+              case None => (None, None, Defines.This, false)
             }
         }
 
@@ -308,7 +316,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           )
         )
 
-        val parameterAsts         = astForParameters(node.parameters, true)
+        val parameterAsts         = astForParameters(node.parameters)
         val optionalStatementList = statementListForOptionalParams(node.parameters)
         val stmtBlockAst          = astForMethodBody(node.body, optionalStatementList)
 
@@ -342,9 +350,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
   }
 
-  private def astForParameters(parameters: List[RubyNode], plusOne: Boolean = false): List[Ast] = {
+  private def astForParameters(parameters: List[RubyNode]): List[Ast] = {
     parameters.zipWithIndex.map { case (parameterNode, index) =>
-      astForParameter(parameterNode, if (plusOne) index + 1 else index)
+      astForParameter(parameterNode, index + 1)
     }
   }
 

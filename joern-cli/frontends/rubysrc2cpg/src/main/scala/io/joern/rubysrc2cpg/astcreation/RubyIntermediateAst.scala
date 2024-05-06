@@ -248,7 +248,7 @@ object RubyIntermediateAst {
     def isString: Boolean = text.startsWith("\"") || text.startsWith("'")
 
     def innerText: String = {
-      val strRegex = ":?['\"]([\\w\\d_-]+)['\"]".r
+      val strRegex = "[./:]?['\"]([\\w\\d_-]+)(?:\\.rb)?['\"]".r
       text match {
         case s":'$content'"                       => content
         case s":$symbol"                          => symbol
