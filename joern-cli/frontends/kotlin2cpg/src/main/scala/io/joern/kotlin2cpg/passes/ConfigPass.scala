@@ -15,12 +15,7 @@ class ConfigPass(fileContentsAtPath: Iterable[FileContentAtPath], cpg: Cpg)
     fileContentsAtPath.map { entry => entry.filename }.toArray
 
   override def runOnPart(diffGraph: DiffGraphBuilder, fileName: String): Unit = {
-    val contentsAtPath = fileContentsAtPath
-      .filter { entry =>
-        entry.filename == fileName
-      }
-      .toList
-      .headOption
+    val contentsAtPath = fileContentsAtPath.find(_.filename == fileName)
     contentsAtPath match {
       case Some(fm) =>
         val configNode = NewConfigFile().name(fm.relativizedPath).content(fm.content)

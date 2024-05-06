@@ -2,11 +2,17 @@ package io.joern.kotlin2cpg.ast
 
 import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.ast.Nodes.operatorCallNode
-import io.joern.kotlin2cpg.types.{CallKinds, TypeConstants, TypeInfoProvider}
-import io.joern.x2cpg.{Ast, Defines, ValidationMode}
+import io.joern.kotlin2cpg.types.CallKinds
+import io.joern.kotlin2cpg.types.TypeConstants
+import io.joern.kotlin2cpg.types.TypeInfoProvider
+import io.joern.x2cpg.Ast
+import io.joern.x2cpg.Defines
+import io.joern.x2cpg.ValidationMode
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethodRef
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
-import org.jetbrains.kotlin.lexer.{KtToken, KtTokens}
+import org.jetbrains.kotlin.lexer.KtToken
+import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
 
 import scala.jdk.CollectionConverters.*
@@ -63,7 +69,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         }
       case _ =>
         logger.warn(
-          s"Unhandled operator token type `${opRef.getOperationSignTokenType}` for expression `${expr.getText}` in this file `${relativizedPath}`."
+          s"Unhandled operator token type `${opRef.getOperationSignTokenType}` for expression `${expr.getText}` in this file `$relativizedPath`."
         )
         Some(Constants.unknownOperator)
     }
@@ -501,7 +507,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         (asts.dropRight(1), asts.lastOption.getOrElse(Ast(unknownNode(arg.getArgumentExpression, Constants.empty))))
       }
     val astsForTrails    = argAstsWithTrail.map(_._2)
-    val astsForNonTrails = argAstsWithTrail.map(_._1).flatten
+    val astsForNonTrails = argAstsWithTrail.flatMap(_._1)
 
     val (fullName, signature) = typeInfoProvider.fullNameWithSignature(expr, (TypeConstants.any, TypeConstants.any))
     registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
@@ -580,9 +586,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val typeFullName  = registerType(typeInfoProvider.expressionType(expression, TypeConstants.any))
     val identifier    = identifierNode(arrayExpr, arrayExpr.getText, arrayExpr.getText, typeFullName)
     val identifierAst = astWithRefEdgeMaybe(arrayExpr.getText, identifier)
-    val astsForIndexExpr = expression.getIndexExpressions.asScala.zipWithIndex.map { case (expr, idx) =>
+    val astsForIndexExpr = expression.getIndexExpressions.asScala.zipWithIndex.flatMap { case (expr, idx) =>
       astsForExpression(expr, Option(idx + 1))
-    }.flatten
+    }
     val callNode =
       operatorCallNode(
         Operators.indexAccess,

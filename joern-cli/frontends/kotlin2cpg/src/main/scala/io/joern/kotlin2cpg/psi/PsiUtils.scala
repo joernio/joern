@@ -18,8 +18,8 @@ object PsiUtils {
     expr.getEntries.asScala.filterNot(_.getText == underscore).toSeq
   }
 
-  def objectIdxMaybe(psiElem: PsiElement, containing: PsiElement) = {
-    class ForEachTreeVisitor(block: (KtElement) => Unit) extends KtTreeVisitorVoid {
+  def objectIdxMaybe(psiElem: PsiElement, containing: PsiElement): Option[Int] = {
+    class ForEachTreeVisitor(block: KtElement => Unit) extends KtTreeVisitorVoid {
       override def visitKtElement(element: KtElement): Unit = {
         if (element != null) {
           super.visitKtElement(element)
@@ -30,12 +30,9 @@ object PsiUtils {
 
     val buf = scala.collection.mutable.ListBuffer.empty[KtObjectDeclaration]
     val visitor =
-      new ForEachTreeVisitor({ elem =>
-        elem match {
-          case e: KtObjectDeclaration =>
-            buf.append(e)
-          case _ =>
-        }
+      new ForEachTreeVisitor({
+        case e: KtObjectDeclaration => buf.append(e)
+        case _                      =>
       })
     visitor.visitKtElement(containing.asInstanceOf[KtElement])
     var outIdx: Option[Int] = None

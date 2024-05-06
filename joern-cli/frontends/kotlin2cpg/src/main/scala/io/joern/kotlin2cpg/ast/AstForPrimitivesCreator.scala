@@ -1,36 +1,36 @@
 package io.joern.kotlin2cpg.ast
 
 import io.joern.kotlin2cpg.Constants
-import io.joern.kotlin2cpg.ast.Nodes.{namespaceBlockNode, operatorCallNode}
-import io.joern.kotlin2cpg.types.{TypeConstants, TypeInfoProvider}
-import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  NewAnnotation,
-  NewAnnotationLiteral,
-  NewImport,
-  NewLocal,
-  NewMember,
-  NewMethodParameterIn
-}
-import org.jetbrains.kotlin.psi.{
-  KtAnnotationEntry,
-  KtClassLiteralExpression,
-  KtConstantExpression,
-  KtImportDirective,
-  KtNameReferenceExpression,
-  KtStringTemplateExpression,
-  KtSuperExpression,
-  KtThisExpression,
-  KtTypeAlias,
-  KtTypeReference
-}
+import io.joern.kotlin2cpg.ast.Nodes.namespaceBlockNode
+import io.joern.kotlin2cpg.ast.Nodes.operatorCallNode
+import io.joern.kotlin2cpg.types.TypeConstants
+import io.joern.kotlin2cpg.types.TypeInfoProvider
+import io.joern.x2cpg.Ast
+import io.joern.x2cpg.Defines
+import io.joern.x2cpg.ValidationMode
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.NewAnnotation
+import io.shiftleft.codepropertygraph.generated.nodes.NewAnnotationLiteral
+import io.shiftleft.codepropertygraph.generated.nodes.NewImport
+import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
+import io.shiftleft.codepropertygraph.generated.nodes.NewMember
+import io.shiftleft.codepropertygraph.generated.nodes.NewMethodParameterIn
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
-
-import scala.jdk.CollectionConverters.*
+import org.jetbrains.kotlin.psi.KtAnnotationEntry
+import org.jetbrains.kotlin.psi.KtClassLiteralExpression
+import org.jetbrains.kotlin.psi.KtConstantExpression
+import org.jetbrains.kotlin.psi.KtImportDirective
+import org.jetbrains.kotlin.psi.KtNameReferenceExpression
+import org.jetbrains.kotlin.psi.KtStringTemplateExpression
+import org.jetbrains.kotlin.psi.KtSuperExpression
+import org.jetbrains.kotlin.psi.KtThisExpression
+import org.jetbrains.kotlin.psi.KtTypeAlias
+import org.jetbrains.kotlin.psi.KtTypeReference
 
 import scala.annotation.unused
+import scala.jdk.CollectionConverters.*
 import scala.util.Try
 
 trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
@@ -45,8 +45,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     val typeFullName   = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val node           = literalNode(expr, expr.getText, typeFullName)
     val annotationAsts = annotations.map(astForAnnotationEntry)
-    Ast(withArgumentName(withArgumentIndex(node, argIdx), argName))
-      .withChildren(annotationAsts)
+    Ast(withArgumentName(withArgumentIndex(node, argIdx), argName)).withChildren(annotationAsts)
   }
 
   def astForStringTemplate(
@@ -86,12 +85,10 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     argName: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val isReferencingMember =
-      scope.lookupVariable(expr.getIdentifier.getText) match {
-        case Some(_: NewMember) => true
-        case _                  => false
-      }
-
+    val isReferencingMember = scope.lookupVariable(expr.getIdentifier.getText) match {
+      case Some(_: NewMember) => true
+      case _                  => false
+    }
     val outAst =
       if (typeInfoProvider.isReferenceToClass(expr)) astForNameReferenceToType(expr, argIdx)
       else if (isReferencingMember) astForNameReferenceToMember(expr, argIdx)
@@ -255,7 +252,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     val children =
       entry.getValueArguments.asScala.flatMap { varg =>
         varg.getArgumentExpression match {
-          case ste: KtStringTemplateExpression if ste.getEntries.size == 1 =>
+          case ste: KtStringTemplateExpression if ste.getEntries.length == 1 =>
             val node = NewAnnotationLiteral().code(ste.getText)
             Some(Ast(node))
           case ce: KtConstantExpression =>
