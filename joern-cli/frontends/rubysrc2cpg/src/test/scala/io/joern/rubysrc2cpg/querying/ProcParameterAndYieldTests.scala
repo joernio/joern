@@ -41,11 +41,13 @@ class ProcParameterAndYieldTests extends RubyCode2CpgFixture with Inspectors {
         }
 
         "add a block argument" in {
-          forAll(cpgs.zipWithIndex) { (cpg, i) =>
-            val List(param) = cpg.method("foo").parameter.code("&.*").l
-            param.name shouldBe "<proc-param-0>"
-            param.index shouldBe i
-          }
+          val List(param1) = cpg1.method("foo").parameter.code("&.*").l
+          param1.name shouldBe "<proc-param-0>"
+          param1.index shouldBe 1
+
+          val List(param2) = cpg2.method("foo").parameter.code("&.*").l
+          param2.name shouldBe "<proc-param-0>"
+          param2.index shouldBe 1
         }
       }
 

@@ -43,7 +43,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
     }
 
     "have no parameters in the closure declaration" in {
-      inside(cpg.method("<lambda>0").parameter.l) {
+      inside(cpg.method("<lambda>0").parameter.indexGt(0).l) {
         case Nil => // pass
         case xs  => fail(s"Expected the closure to have no parameters, instead got [${xs.code.mkString(", ")}]")
       }
@@ -88,7 +88,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
     }
 
     "have the `item` parameter in the closure declaration" in {
-      inside(cpg.method("<lambda>0").parameter.l) {
+      inside(cpg.method("<lambda>0").parameter.indexGt(0).l) {
         case itemParam :: Nil =>
           itemParam.name shouldBe "item"
         case xs => fail(s"Expected the closure to have a single parameter, instead got [${xs.code.mkString(", ")}]")
@@ -151,7 +151,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
     }
 
     "have the `key` and `value` parameter in the closure declaration" in {
-      inside(cpg.method("<lambda>0").parameter.l) {
+      inside(cpg.method("<lambda>0").parameter.indexGt(0).l) {
         case keyParam :: valParam :: Nil =>
           keyParam.name shouldBe "key"
           valParam.name shouldBe "value"
