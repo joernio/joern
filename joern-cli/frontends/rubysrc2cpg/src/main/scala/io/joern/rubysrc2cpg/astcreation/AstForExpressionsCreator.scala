@@ -652,11 +652,22 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val methodName = methodIdentifier.text
 
     lazy val defaultResult = Defines.Any -> XDefines.DynamicCallUnknownFullName
-    val (receiverType, methodFullName) = scope.tryResolveMethodInvocation(methodName, List.empty) match {
-      case Some(m) =>
-        scope.typeForMethod(m).map(t => t.name -> s"${t.name}:${m.name}").getOrElse(defaultResult)
-      case None => defaultResult
-    }
+
+    val (receiverType, methodFullName) =
+      scope
+        .tryResolveMethodInvocation(
+          methodName,
+          Nil,
+          scope.surroundingTypeFullName
+        ) //  Check if this is a method invocation of a method define within this scope
+        .orElse(
+          scope.tryResolveMethodInvocation(methodName, Nil)
+        ) // Check if this is a method invocation of a member imported into scope
+      match {
+        case Some(m) =>
+          scope.typeForMethod(m).map(t => t.name -> s"${t.name}:${m.name}").getOrElse(defaultResult)
+        case None => defaultResult
+      }
     val argumentAst      = node.arguments.map(astForMethodCallArgument)
     val call             = callNode(node, code(node), methodName, methodFullName, DispatchTypes.DYNAMIC_DISPATCH)
     val receiverCallName = identifierNode(node, call.name, call.name, receiverType)

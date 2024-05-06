@@ -162,7 +162,7 @@ object RubySrc2Cpg {
         )
     } else {
 //      List(passes.RubyTypeRecoveryPassGenerator(cpg).generate())
-      passes.RubyTypeRecoveryPassGenerator(cpg).generate()
+      passes.RubyTypeRecoveryPassGenerator(cpg).generate() :+ passes.RubyTypeHintCallLinker(cpg) :+ NaiveCallLinker(cpg)
     }
   }
 

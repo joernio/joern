@@ -43,9 +43,6 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
 
   override val membersInScope: mutable.Set[MemberLike] = mutable.Set(builtinMethods*)
 
-  // Ruby does not have overloading, so this can be set to true
-  override protected def isOverloadedBy(method: RubyMethod, argTypes: List[String]): Boolean = true
-
   /** @return
     *   using the stack, will initialize a new module scope object.
     */
@@ -217,7 +214,9 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
   }
 
   override def tryResolveTypeReference(typeName: String): Option[RubyType] = {
-    val normalizedTypeName = typeName.replaceAll("::", ".")
+//    val normalizedTypeName = typeName.replaceAll("::", ".")
+    val normalizedTypeName = typeName
+
     // TODO: While we find better ways to understand how the implicit class loading works,
     //  we can approximate that all types are in scope in the mean time.
     super.tryResolveTypeReference(normalizedTypeName) match {
