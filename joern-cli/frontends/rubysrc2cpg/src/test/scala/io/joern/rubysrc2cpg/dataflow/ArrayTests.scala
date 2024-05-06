@@ -5,6 +5,7 @@ import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.semanticcpg.language.*
 
 class ArrayTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataFlow = true) {
+
   "Data flow through array constructor expressionsOnlyIndexingArguments" in {
     val cpg = code("""
                      |x = 1
@@ -12,17 +13,16 @@ class ArrayTests extends RubyCode2CpgFixture(withPostProcessing = true, withData
                      |puts x
                      |""".stripMargin)
 
-    val source = cpg.identifier.name("x").l
-    val sink   = cpg.call.name("puts").l
-    sink.reachableByFlows(source).l.size shouldBe 3
+    val source = cpg.literal.code("1").l
+    val sink   = cpg.call.name("puts").argument(1).l
+    sink.reachableByFlows(source).size shouldBe 1
   }
 
-  // Works in deprecated - unable to parse SplattingArgumentIndexingArgument
-  "Data flow through array constructor splattingOnlyIndexingArguments" ignore {
+  "Data flow through array constructor splattingOnlyIndexingArguments" in {
     val cpg = code("""
                      |def foo(*splat_args)
-                     |array = [*splat_args]
-                     |puts array
+                     |  array = [*splat_args]
+                     |  puts array
                      |end
                      |
                      |x = 1
@@ -30,61 +30,58 @@ class ArrayTests extends RubyCode2CpgFixture(withPostProcessing = true, withData
                      |y = foo(x,y)
                      |""".stripMargin)
 
-    val source = cpg.identifier.name("x").l
-    val sink   = cpg.call.name("puts").l
-    sink.reachableByFlows(source).l.size shouldBe 2
+    val source = cpg.literal.code("1").l
+    val sink   = cpg.call.name("puts").argument(1).l
+    sink.reachableByFlows(source).size shouldBe 1
   }
 
-  // Works in deprecated - unable to parse OperatorExpressionListWithSplattingArgumentIndexingArgumentList
-  "Data flow through array constructor expressionsAndSplattingIndexingArguments" ignore {
+  "Data flow through array constructor expressionsAndSplattingIndexingArguments" in {
     val cpg = code("""
                      |def foo(*splat_args)
-                     |array = [1,2,*splat_args]
-                     |puts array
+                     |  array = [1,2,*splat_args]
+                     |  puts array
                      |end
                      |
                      |x = 3
                      |foo(x)
                      |""".stripMargin)
 
-    val source = cpg.identifier.name("x").l
-    val sink   = cpg.call.name("puts").l
-    sink.reachableByFlows(source).l.size shouldBe 2
+    val source = cpg.literal.code("3").l
+    val sink   = cpg.call.name("puts").argument(1).l
+    sink.reachableByFlows(source).size shouldBe 1
   }
 
-  // Works in deprecated
-  "Data flow through array constructor associationsOnlyIndexingArguments" ignore {
+  "Data flow through array constructor associationsOnlyIndexingArguments" in {
     val cpg = code("""
                      |def foo(arg)
-                     |array = [1 => arg, 2 => arg]
-                     |puts array
+                     |  array = [1 => arg, 2 => arg]
+                     |  puts array
                      |end
                      |
                      |x = 3
                      |foo(x)
                      |""".stripMargin)
 
-    val source = cpg.identifier.name("x").l
-    val sink   = cpg.call.name("puts").l
-    sink.reachableByFlows(source).l.size shouldBe 2
+    val source = cpg.literal.code("3").l
+    val sink   = cpg.call.name("puts").argument(1).l
+    sink.reachableByFlows(source).size shouldBe 1
   }
 
-  // Works in deprecated
-  "Data flow through array constructor commandOnlyIndexingArguments" ignore {
+  "Data flow through array constructor commandOnlyIndexingArguments" in {
     val cpg = code("""
                      |def increment(arg)
-                     |return arg + 1
+                     |  return arg + 1
                      |end
                      |
                      |x = 1
-                     |array = [ increment(x), increment(x+1)]
+                     |array = [increment(x), increment(x+1)]
                      |puts array
                      |
                      |""".stripMargin)
 
-    val source = cpg.identifier.name("x").l
-    val sink   = cpg.call.name("puts").l
-    sink.reachableByFlows(source).l.size shouldBe 3
+    val source = cpg.literal.code("1").lineNumber(6).l
+    val sink   = cpg.call.name("puts").argument(1).l
+    sink.reachableByFlows(source).size shouldBe 1
   }
 
   "Data flow through indexingExpressionPrimary" in {
@@ -94,9 +91,9 @@ class ArrayTests extends RubyCode2CpgFixture(withPostProcessing = true, withData
                      |puts y
                      |""".stripMargin)
 
-    val source = cpg.identifier.name("x").l
-    val sink   = cpg.call.name("puts").l
-    sink.reachableByFlows(source).l.size shouldBe 2
+    val source = cpg.identifier.name("x").lineNumber(2).l
+    val sink   = cpg.call.name("puts").argument(1).l
+    sink.reachableByFlows(source).size shouldBe 1
   }
 
   // Works in deprecated
@@ -109,9 +106,9 @@ class ArrayTests extends RubyCode2CpgFixture(withPostProcessing = true, withData
                      |
                      |""".stripMargin)
 
-    val source = cpg.identifier.name("x").l
-    val sink   = cpg.call.name("puts").l
-    sink.reachableByFlows(source).size shouldBe 2
+    val source = cpg.literal.code("10").l
+    val sink   = cpg.call.name("puts").argument(1).l
+    sink.reachableByFlows(source).size shouldBe 1
   }
 
   "flow through %w array" in {
@@ -121,7 +118,7 @@ class ArrayTests extends RubyCode2CpgFixture(withPostProcessing = true, withData
                      |""".stripMargin)
 
     val source = cpg.literal.code("b").l
-    val sink   = cpg.call.name("puts").l
+    val sink   = cpg.call.name("puts").argument(1).l
     sink.reachableByFlows(source).size shouldBe 2
   }
 
@@ -133,7 +130,7 @@ class ArrayTests extends RubyCode2CpgFixture(withPostProcessing = true, withData
                      |""".stripMargin)
 
     val source = cpg.literal.code("b").l
-    val sink   = cpg.call.name("puts").l
+    val sink   = cpg.call.name("puts").argument(1).l
     sink.reachableByFlows(source).size shouldBe 2
   }
 
@@ -145,16 +142,15 @@ class ArrayTests extends RubyCode2CpgFixture(withPostProcessing = true, withData
                      |puts "#{z}"
                      |""".stripMargin)
 
-    val source = cpg.identifier.name("x").l
-    val sink   = cpg.call.name("puts").l
-    sink.reachableByFlows(source).size shouldBe 2
+    val source = cpg.literal.code("1").l
+    val sink   = cpg.call.name("puts").argument(1).l
+    sink.reachableByFlows(source).size shouldBe 1
   }
 
-  // Works in deprecated
-  "flow through array constructor using [] and command in []" ignore {
+  "flow through array constructor using [] and command in []" in {
     val cpg = code("""
                      |def foo(arg)
-                     |return arg
+                     |  return arg
                      |end
                      |
                      |x=1
@@ -163,9 +159,9 @@ class ArrayTests extends RubyCode2CpgFixture(withPostProcessing = true, withData
                      |puts "#{z}"
                      |""".stripMargin)
 
-    val source = cpg.identifier.name("x").l
-    val sink   = cpg.call.name("puts").l
-    sink.reachableByFlows(source).size shouldBe 2
+    val source = cpg.literal.code("1").l
+    val sink   = cpg.call.name("puts").argument(1).l
+    sink.reachableByFlows(source).size shouldBe 1
   }
 
 }
