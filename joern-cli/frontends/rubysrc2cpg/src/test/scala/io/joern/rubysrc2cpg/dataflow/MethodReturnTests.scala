@@ -12,11 +12,11 @@ class MethodReturnTests extends RubyCode2CpgFixture(withPostProcessing = true, w
         | return x
         |end
         |""".stripMargin)
-    val source = cpg.method.name("f").parameter
+    val source = cpg.method.name("f").parameter.index(1)
     val sink   = cpg.method.name("f").methodReturn
     val flows  = sink.reachableByFlows(source)
     flows.map(flowToResultPairs).toSet shouldBe
-      Set(List(("f(x)", 2), ("return x", 3), ("RET", 2)))
+      Set(List(("f(this, x)", 2), ("return x", 3), ("RET", 2)))
   }
 
   "flow from method parameter to implicit return of the same variable" in {
@@ -25,22 +25,22 @@ class MethodReturnTests extends RubyCode2CpgFixture(withPostProcessing = true, w
         | x
         |end
         |""".stripMargin)
-    val source = cpg.method.name("f").parameter
+    val source = cpg.method.name("f").parameter.index(1)
     val sink   = cpg.method.name("f").methodReturn
     val flows  = sink.reachableByFlows(source)
     flows.map(flowToResultPairs).toSet shouldBe
-      Set(List(("f(x)", 2), ("x", 3), ("RET", 2)))
+      Set(List(("f(this, x)", 2), ("x", 3), ("RET", 2)))
   }
 
   "flow from endless method parameter to implicit return of the same variable" in {
     val cpg = code("""
         |def f(x) = x
         |""".stripMargin)
-    val source = cpg.method.name("f").parameter
+    val source = cpg.method.name("f").parameter.index(1)
     val sink   = cpg.method.name("f").methodReturn
     val flows  = sink.reachableByFlows(source)
     flows.map(flowToResultPairs).toSet shouldBe
-      Set(List(("f(x)", 2), ("x", 2), ("RET", 2)))
+      Set(List(("f(this, x)", 2), ("x", 2), ("RET", 2)))
   }
 
   "flow from method parameter to implicit return via assignment to temporary variable" in {
@@ -49,15 +49,14 @@ class MethodReturnTests extends RubyCode2CpgFixture(withPostProcessing = true, w
         | y = x
         |end
         |""".stripMargin)
-    val source = cpg.method.name("f").parameter
+    val source = cpg.method.name("f").parameter.index(1)
     val sink   = cpg.method.name("f").methodReturn
     val flows  = sink.reachableByFlows(source)
     flows.map(flowToResultPairs).toSet shouldBe
-      Set(List(("f(x)", 2), ("y = x", 3), ("RET", 2)))
+      Set(List(("f(this, x)", 2), ("y = x", 3), ("RET", 2)))
   }
 
-  // Works in deprecated
-  "Implicit return in if-else block" ignore {
+  "Implicit return in if-else block" in {
     val cpg = code("""
                      |def foo(arg)
                      |if arg > 1
@@ -72,13 +71,24 @@ class MethodReturnTests extends RubyCode2CpgFixture(withPostProcessing = true, w
                      |puts y
                      |""".stripMargin)
 
-    val src  = cpg.identifier.name("x").l
-    val sink = cpg.call.name("puts").l
-    sink.reachableByFlows(src).l.size shouldBe 2
+    val src   = cpg.method.name("foo").parameter.index(1).l
+    val sink  = cpg.call.name("puts").argument(1).l
+    val flows = sink.reachableByFlows(src)
+    flows.map(flowToResultPairs).toSet shouldBe
+      Set(
+        List(
+          ("foo(this, arg)", 2),
+          ("arg > 1", 3),
+          ("arg + 1", 4),
+          ("RET", 2),
+          ("foo x", 11),
+          ("y = foo x", 11),
+          ("puts y", 12)
+        )
+      )
   }
 
-  // Works in deprecated
-  "Implicit return in if-else block and underlying function call" ignore {
+  "Implicit return in if-else block and underlying function call" in {
     val cpg = code("""
                      |def add(arg)
                      |arg + 100
@@ -98,17 +108,32 @@ class MethodReturnTests extends RubyCode2CpgFixture(withPostProcessing = true, w
                      |
                      |""".stripMargin)
 
-    val src  = cpg.identifier.name("x").l
-    val sink = cpg.call.name("puts").l
-    sink.reachableByFlows(src).l.size shouldBe 2
+    val src   = cpg.method.name("foo").parameter.index(1).l
+    val sink  = cpg.call.name("puts").argument(1).l
+    val flows = sink.reachableByFlows(src)
+    flows.map(flowToResultPairs).toSet shouldBe
+      Set(
+        List(
+          ("foo(this, arg)", 6),
+          ("arg > 1", 7),
+          ("add(arg)", 8),
+          ("add(this, arg)", 2),
+          ("arg + 100", 3),
+          ("RET", 2),
+          ("add(arg)", 8),
+          ("RET", 6),
+          ("foo x", 15),
+          ("y = foo x", 15),
+          ("puts y", 16)
+        )
+      )
   }
 
-  // Works in deprecated
-  "Return via call w/o initialization" ignore {
+  "Return via call w/o initialization" in {
     val cpg = code("""
                      |def add(p)
-                     |q = p
-                     |return q
+                     |  q = p
+                     |  return q
                      |end
                      |
                      |n = 1
@@ -116,8 +141,20 @@ class MethodReturnTests extends RubyCode2CpgFixture(withPostProcessing = true, w
                      |puts ret
                      |""".stripMargin)
 
-    val src  = cpg.identifier.name("n").l
-    val sink = cpg.call.name("puts").l
-    sink.reachableByFlows(src).l.size shouldBe 2
+    val src   = cpg.method.name("add").parameter.index(1).l
+    val sink  = cpg.call.name("puts").argument(1).l
+    val flows = sink.reachableByFlows(src)
+    flows.map(flowToResultPairs).toSet shouldBe
+      Set(
+        List(
+          ("add(this, p)", 2),
+          ("q = p", 3),
+          ("return q", 4),
+          ("RET", 2),
+          ("add(n)", 8),
+          ("ret = add(n)", 8),
+          ("puts ret", 9)
+        )
+      )
   }
 }
