@@ -49,8 +49,8 @@ class ProcParameterAndYieldTests extends RubyCode2CpgFixture(withPostProcessing 
                      |yield_method { puts x }
                      |""".stripMargin)
 
-    val src  = cpg.identifier.name("x").l
-    val sink = cpg.call.name("puts").l
+    val src  = cpg.local.code("1").l
+    val sink = cpg.call.name("puts").argument(1).l
     sink.reachableByFlows(src).size shouldBe 1
   }
 
@@ -58,17 +58,17 @@ class ProcParameterAndYieldTests extends RubyCode2CpgFixture(withPostProcessing 
   "Data flow coming out of yield without argument" ignore {
     val cpg = code("""
                      |def foo
-                     |        x=10
-                     |        z = yield
-                     |        puts z
+                     |  x=10
+                     |  z = yield
+                     |  puts z
                      |end
                      |
                      |x = 100
                      |foo{ x + 10 }
                      |""".stripMargin)
 
-    val src  = cpg.identifier.name("x").l
-    val sink = cpg.call.name("puts").l
+    val src  = cpg.local.code("100").l
+    val sink = cpg.call.name("puts").argument(1).l
     sink.reachableByFlows(src).size shouldBe 1
   }
 
@@ -86,11 +86,11 @@ class ProcParameterAndYieldTests extends RubyCode2CpgFixture(withPostProcessing 
                      |yield_with_arguments { |arg| puts "Yield block 2 #{arg}" }
                      |""".stripMargin)
 
-    val src1  = cpg.identifier.name("x").l
-    val sink1 = cpg.call.name("puts").l
+    val src1  = cpg.local.code("\"something\"").l
+    val sink1 = cpg.call.name("puts").argument(1).l
     sink1.reachableByFlows(src1).size shouldBe 2
 
-    val src2  = cpg.identifier.name("y").l
+    val src2  = cpg.local.code("\"something_else\"").l
     val sink2 = cpg.call.name("puts").l
     sink2.reachableByFlows(src2).size shouldBe 2
   }
@@ -105,9 +105,9 @@ class ProcParameterAndYieldTests extends RubyCode2CpgFixture(withPostProcessing 
                      |hello { puts x }
                      |""".stripMargin)
 
-    val source = cpg.identifier.name("x").l
-    val sink   = cpg.call.name("puts").l
-    sink.reachableByFlows(source).l.size shouldBe 2
+    val source = cpg.literal.code("\"hello\"").l
+    val sink   = cpg.call.name("puts").argument(1).l
+    sink.reachableByFlows(source).size shouldBe 1
   }
 
   "Data flow through invocationWithBlockOnlyPrimary and method name starting with capital usage" in {
@@ -120,13 +120,13 @@ class ProcParameterAndYieldTests extends RubyCode2CpgFixture(withPostProcessing 
                      |Hello { puts x }
                      |""".stripMargin)
 
-    val source = cpg.identifier.name("x").l
-    val sink   = cpg.call.name("puts").l
-    sink.reachableByFlows(source).l.size shouldBe 2
+    val source = cpg.literal.code("\"hello\"").l
+    val sink   = cpg.call.name("puts").argument(1).l
+    sink.reachableByFlows(source).size shouldBe 1
   }
 
   // Works in deprecated
-  "Data flow for yield block specified alongwith the call" ignore {
+  "Data flow for yield block specified along with the call" in {
     val cpg = code("""
                      |x=10
                      |def foo(x)
@@ -139,20 +139,11 @@ class ProcParameterAndYieldTests extends RubyCode2CpgFixture(withPostProcessing 
                      |}
                      |""".stripMargin)
 
-    val source = cpg.identifier.name("x").l
-    val sink   = cpg.call.name("puts").l
+    val source = cpg.literal.code("10").l
+    val sink   = cpg.call.name("puts").argument(1).l
     sink.reachableByFlows(source).size shouldBe 1
-    /*
-     * TODO the flow count shows 1 since the origin is considered as x + 2
-     * The actual origin is x=10. However, this is not considered since there is
-     * no REACHING_DEF edge from the x of 'x=10' to the x of 'x + 2'.
-     * There are already other disabled data flow test cases for this problem. Once solved, it should
-     * be possible to set the required count to 2
-     */
-
   }
 
-  // Works in deprecated - Unsupported element type SplattingArgumentArgumentList
   "Data flow through block splatting type arguments context" ignore {
     val cpg = code("""
                      |x=10
@@ -172,12 +163,12 @@ class ProcParameterAndYieldTests extends RubyCode2CpgFixture(withPostProcessing 
                      |puts y
                      |""".stripMargin)
 
-    val source = cpg.identifier.name("x").l
-    val sink   = cpg.call.name("puts").l
+    val source = cpg.literal.code("10").l
+    val sink   = cpg.call.name("puts").argument(1).l
     sink.reachableByFlows(source).size shouldBe 2
   }
 
-  "flow through a proc definition with non-empty block and zero parameters" ignore {
+  "flow through a proc definition with non-empty block and zero parameters" in {
     val cpg = code("""
                      |x=10
                      |y = x
@@ -186,22 +177,21 @@ class ProcParameterAndYieldTests extends RubyCode2CpgFixture(withPostProcessing 
                      |}.call
                      |""".stripMargin)
 
-    val source = cpg.identifier.name("x").l
-    val sink   = cpg.call.name("puts").l
-    sink.reachableByFlows(source).size shouldBe 2
+    val source = cpg.literal.code("10").l
+    val sink   = cpg.call.name("puts").argument(1).l
+    sink.reachableByFlows(source).size shouldBe 1
   }
 
-  // Works in deprecated - Could not represent expression: -> (arg) {puts arg} in new frontend
-  "flow through a proc definition with non-empty block and non-zero parameters" ignore {
+  "flow through a proc definition with non-empty block and non-zero parameters" in {
     val cpg = code("""
                      |x=10
                      |-> (arg){
-                     |puts arg
+                     |  puts arg
                      |}.call(x)
                      |""".stripMargin)
 
-    val source = cpg.identifier.name("x").l
-    val sink   = cpg.call.name("puts").l
-    sink.reachableByFlows(source).size shouldBe 2
+    val source = cpg.literal.code("10").l
+    val sink   = cpg.call.name("puts").argument(1).l
+    sink.reachableByFlows(source).size shouldBe 1
   }
 }

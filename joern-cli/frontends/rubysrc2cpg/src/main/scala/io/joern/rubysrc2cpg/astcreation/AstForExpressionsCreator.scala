@@ -154,11 +154,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   protected def astForMemberCall(node: MemberCall): Ast = {
     // Use the scope type recovery to attempt to obtain a receiver type for the call
     // TODO: Type recovery should potentially resolve this
-    val fullName = typeFromCallTarget(node.target)
-      .map(x => s"$x:${node.methodName}")
-      .getOrElse(XDefines.DynamicCallUnknownFullName)
-
-    val receiver     = astForExpression(node.target)
+    val receiver = astForExpression(node.target)
+    val fullName = receiver.root match {
+      case Some(x: NewMethodRef) => x.methodFullName
+      case _ =>
+        typeFromCallTarget(node.target)
+          .map(x => s"$x:${node.methodName}")
+          .getOrElse(XDefines.DynamicCallUnknownFullName)
+    }
     val argumentAsts = node.arguments.map(astForMethodCallArgument)
 
     receiver.root.collect { case x: NewCall => x.typeFullName(fullName) }
