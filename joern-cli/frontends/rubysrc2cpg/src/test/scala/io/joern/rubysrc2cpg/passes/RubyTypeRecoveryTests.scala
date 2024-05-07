@@ -1,5 +1,6 @@
 package io.joern.rubysrc2cpg.passes
 
+import io.joern.rubysrc2cpg.datastructures.{RubyMethod, RubyProgramSummary, RubyStubbedType, RubyType}
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines as XDefines
 import io.shiftleft.semanticcpg.language.importresolver.*
@@ -34,5 +35,4 @@ class RubyTypeRecoveryTests extends RubyCode2CpgFixture(withPostProcessing = tru
       absCall.methodFullName shouldBe "main.rb:<global>::program:sleep"
     }
   }
-
 }

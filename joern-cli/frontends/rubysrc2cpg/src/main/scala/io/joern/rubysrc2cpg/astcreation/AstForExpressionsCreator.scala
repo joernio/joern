@@ -698,8 +698,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     callWithLambdaArg
   }
 
-  private def astForMethodCallArgument(node: RubyNode): Ast = 
-  {
+  private def astForMethodCallArgument(node: RubyNode): Ast = {
     node match
       // Associations in method calls are keyword arguments
       case assoc: Association => astForKeywordArgument(assoc)
