@@ -28,7 +28,7 @@ object TypeRenderer {
     "kotlin.ShortArray"   -> "short[]"
   )
 
-  def descriptorRenderer(): DescriptorRenderer = {
+  private def descriptorRenderer(): DescriptorRenderer = {
     val opts = new DescriptorRendererOptionsImpl
     opts.setParameterNamesInFunctionalTypes(false)
     opts.setInformativeErrorType(false)
@@ -64,11 +64,9 @@ object TypeRenderer {
     }
     val strippedOfContainingDeclarationIfNeeded =
       Option(desc.getContainingDeclaration)
-        .map { containingDeclaration =>
-          containingDeclaration match {
-            case c: ClassDescriptor => maybeReplacedOrTake(c, simpleRender)
-            case _                  => simpleRender
-          }
+        .map {
+          case c: ClassDescriptor => maybeReplacedOrTake(c, simpleRender)
+          case _                  => simpleRender
         }
         .getOrElse(simpleRender)
     desc match {

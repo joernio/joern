@@ -657,7 +657,7 @@ class ClassTests extends RubyCode2CpgFixture {
                           identifier.code shouldBe "scope"
                           literal.code shouldBe ":hits_by_ip"
                           methodRef.methodFullName shouldBe "Test0.rb:<global>::program.Foo:<init>:<lambda>0"
-                          methodRef.referencedMethod.parameter.name.l shouldBe List("ip", "col")
+                          methodRef.referencedMethod.parameter.indexGt(0).name.l shouldBe List("ip", "col")
                         case xs => fail(s"Expected three children, got ${xs.code.mkString(", ")} instead")
                       }
                     case xs => fail(s"Expected one call, got ${xs.code.mkString(", ")} instead")

@@ -150,7 +150,9 @@ object AntlrContextHelpers {
       case ctx: CommandIndexingArgumentListContext => List(ctx.command())
       case ctx: OperatorExpressionListIndexingArgumentListContext =>
         ctx.operatorExpressionList().operatorExpression().asScala.toList
-      case ctx: AssociationListIndexingArgumentListContext => ctx.associationList().associations
+      case ctx: AssociationListIndexingArgumentListContext   => ctx.associationList().associations
+      case ctx: SplattingArgumentIndexingArgumentListContext => ctx.splattingArgument() :: Nil
+      case ctx: OperatorExpressionListWithSplattingArgumentIndexingArgumentListContext => ctx.splattingArgument() :: Nil
       case ctx =>
         logger.warn(s"Unsupported argument type ${ctx.getClass}")
         List()
@@ -175,6 +177,8 @@ object AntlrContextHelpers {
         operatorExpressions ++ associations ++ splatting ++ block
       case ctx: AssociationsArgumentListContext =>
         Option(ctx.associationList()).map(_.associations).getOrElse(List.empty)
+      case ctx: SplattingArgumentArgumentListContext =>
+        Option(ctx.splattingArgument()).toList
       case ctx =>
         logger.warn(s"Unsupported element type ${ctx.getClass.getSimpleName}")
         List()

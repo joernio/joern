@@ -12,6 +12,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   protected def astsForStatement(node: RubyNode): Seq[Ast] = node match
     case node: WhileExpression            => astForWhileStatement(node) :: Nil
+    case node: DoWhileExpression          => astForDoWhileStatement(node) :: Nil
     case node: UntilExpression            => astForUntilStatement(node) :: Nil
     case node: IfExpression               => astForIfStatement(node) :: Nil
     case node: UnlessExpression           => astForUnlessStatement(node) :: Nil
@@ -34,6 +35,12 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val conditionAst = astForExpression(node.condition)
     val bodyAsts     = astsForStatement(node.body)
     whileAst(Some(conditionAst), bodyAsts, Option(code(node)), line(node), column(node))
+  }
+
+  private def astForDoWhileStatement(node: DoWhileExpression): Ast = {
+    val conditionAst = astForExpression(node.condition)
+    val bodyAsts     = astsForStatement(node.body)
+    doWhileAst(Some(conditionAst), bodyAsts, Option(code(node)), line(node), column(node))
   }
 
   // `until T do B` is lowered as `while !T do B`
@@ -312,7 +319,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     returnAst(returnNode(node, code(node)), List(astForMemberCall(node)))
   }
 
-  private def astForBreakStatement(node: BreakStatement): Ast = {
+  protected def astForBreakStatement(node: BreakStatement): Ast = {
     val _node = NewControlStructure()
       .controlStructureType(ControlStructureTypes.BREAK)
       .lineNumber(line(node))
@@ -379,8 +386,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           elseClause.map(transform).orElse(defaultElseBranch(node.span)),
           ensureClause
         )(node.span)
-      case WhileExpression(condition, body) => WhileExpression(condition, transform(body))(node.span)
-      case UntilExpression(condition, body) => UntilExpression(condition, transform(body))(node.span)
+      case WhileExpression(condition, body)   => WhileExpression(condition, transform(body))(node.span)
+      case DoWhileExpression(condition, body) => DoWhileExpression(condition, transform(body))(node.span)
+      case UntilExpression(condition, body)   => UntilExpression(condition, transform(body))(node.span)
       case IfExpression(condition, thenClause, elsifClauses, elseClause) =>
         IfExpression(
           condition,

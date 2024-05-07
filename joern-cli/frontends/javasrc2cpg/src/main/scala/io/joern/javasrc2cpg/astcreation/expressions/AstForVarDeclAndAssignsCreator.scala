@@ -1,6 +1,7 @@
 package io.joern.javasrc2cpg.astcreation.expressions
 
 import com.github.javaparser.ast.Node
+import com.github.javaparser.ast.`type`.ClassOrInterfaceType
 import com.github.javaparser.ast.body.VariableDeclarator
 import com.github.javaparser.ast.expr.AssignExpr.Operator
 import com.github.javaparser.ast.expr.{AssignExpr, Expression, ObjectCreationExpr, VariableDeclarationExpr}
@@ -104,11 +105,26 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
   }
 
   def astsForVariableDeclarator(variableDeclarator: VariableDeclarator, originNode: Node): Seq[Ast] = {
+
+    val variableDeclaratorType = variableDeclarator.getType
+    // If generics are in the type name, we may be unable to resolve the type
+    val (variableTypeString, maybeTypeArgs) = variableDeclaratorType match {
+      case typ: ClassOrInterfaceType =>
+        val typeParams = typ.getTypeArguments.toScala.map(_.asScala.flatMap(typeInfoCalc.fullName))
+        (typ.getName.asString(), typeParams)
+      case _ => (variableDeclarator.getTypeAsString, None)
+    }
+
     val typeFullName = tryWithSafeStackOverflow(
       scope
-        .lookupType(variableDeclarator.getTypeAsString, includeWildcards = false)
+        .lookupType(variableTypeString, includeWildcards = false)
         .orElse(typeInfoCalc.fullName(variableDeclarator.getType))
-    ).toOption.flatten
+    ).toOption.flatten.map { typ =>
+      maybeTypeArgs match {
+        case Some(typeArgs) if keepTypeArguments => s"$typ<${typeArgs.mkString(",")}>"
+        case _                                   => typ
+      }
+    }
 
     val (correspondingNode, localAst): (NewVariableNode, Option[Ast]) =
       scope.lookupVariable(variableDeclarator.getNameAsString).variableNode.map((_, None)).getOrElse {

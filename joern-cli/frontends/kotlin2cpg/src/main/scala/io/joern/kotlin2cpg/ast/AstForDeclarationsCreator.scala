@@ -4,12 +4,23 @@ import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.ast.Nodes.operatorCallNode
 import io.joern.kotlin2cpg.psi.PsiUtils
 import io.joern.kotlin2cpg.psi.PsiUtils.nonUnderscoreDestructuringEntries
-import io.joern.kotlin2cpg.types.{AnonymousObjectContext, TypeConstants, TypeInfoProvider}
+import io.joern.kotlin2cpg.types.AnonymousObjectContext
+import io.joern.kotlin2cpg.types.TypeConstants
+import io.joern.kotlin2cpg.types.TypeInfoProvider
+import io.joern.x2cpg.Ast
+import io.joern.x2cpg.Defines
+import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.utils.NodeBuilders
-import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newIdentifierNode, newMethodReturnNode}
-import io.joern.x2cpg.{Ast, AstNodeBuilder, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewCall, NewMethod, NewTypeDecl}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
+import io.joern.x2cpg.utils.NodeBuilders.newBindingNode
+import io.joern.x2cpg.utils.NodeBuilders.newIdentifierNode
+import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
+import io.shiftleft.codepropertygraph.generated.nodes.NewCall
+import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
+import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.semanticcpg.language.*
 import org.jetbrains.kotlin.psi.*
 
@@ -150,8 +161,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       classDeclarations.toSeq
         .collectAll[KtClassOrObject]
         .filterNot(typeInfoProvider.isCompanionObject)
-        .map(astsForDeclaration(_))
-        .flatten
+        .flatMap(astsForDeclaration(_))
 
     val classFunctions = Option(ktClass.getBody)
       .map(_.getFunctions.asScala.collect { case f: KtNamedFunction => f })
@@ -228,7 +238,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     }
     if (typedInit.isEmpty) {
       logger.warn(
-        s"Unhandled case for destructuring declaration: `${expr.getText}`; type: `${expr.getInitializer.getClass}` in this file `${relativizedPath}`."
+        s"Unhandled case for destructuring declaration: `${expr.getText}`; type: `${expr.getInitializer.getClass}` in this file `$relativizedPath`."
       )
       return Seq()
     }
@@ -266,19 +276,22 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
           )
         val assignmentNode = operatorCallNode(Operators.assignment, s"$tmpName  = ${Constants.alloc}", None)
         callAst(assignmentNode, List(assignmentLhsAst, Ast(assignmentRhsNode)))
-      } else if (expr.getInitializer.isInstanceOf[KtArrayAccessExpression]) {
-        astForArrayAccess(expr.getInitializer.asInstanceOf[KtArrayAccessExpression], None, None)
-      } else if (expr.getInitializer.isInstanceOf[KtPostfixExpression]) {
-        astForPostfixExpression(expr.getInitializer.asInstanceOf[KtPostfixExpression], None, None)
-      } else if (expr.getInitializer.isInstanceOf[KtWhenExpression]) {
-        astForWhenAsExpression(expr.getInitializer.asInstanceOf[KtWhenExpression], None, None)
-      } else if (expr.getInitializer.isInstanceOf[KtIfExpression]) {
-        astForIfAsExpression(expr.getInitializer.asInstanceOf[KtIfExpression], None, None)
       } else {
-        val assignmentNode = operatorCallNode(Operators.assignment, s"$tmpName = ${rhsCall.getText}", None)
-        val assignmentRhsAst =
-          astsForExpression(rhsCall, None).headOption.getOrElse(Ast(unknownNode(rhsCall, Constants.empty)))
-        callAst(assignmentNode, List(assignmentLhsAst, assignmentRhsAst))
+        expr.getInitializer match {
+          case accessExpression: KtArrayAccessExpression =>
+            astForArrayAccess(accessExpression, None, None)
+          case expression: KtPostfixExpression =>
+            astForPostfixExpression(expression, None, None)
+          case expression: KtWhenExpression =>
+            astForWhenAsExpression(expression, None, None)
+          case expression: KtIfExpression =>
+            astForIfAsExpression(expression, None, None)
+          case _ =>
+            val assignmentNode = operatorCallNode(Operators.assignment, s"$tmpName = ${rhsCall.getText}", None)
+            val assignmentRhsAst =
+              astsForExpression(rhsCall, None).headOption.getOrElse(Ast(unknownNode(rhsCall, Constants.empty)))
+            callAst(assignmentNode, List(assignmentLhsAst, assignmentRhsAst))
+        }
       }
     val tmpAssignmentPrologue = rhsCall match {
       case call: KtCallExpression if isCtor =>
@@ -328,7 +341,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
     val typedInit = Option(expr.getInitializer).collect { case e: KtNameReferenceExpression => e }
     if (typedInit.isEmpty) {
-      logger.warn(s"Unhandled case for destructuring declaration: `${expr.getText}` in this file `${relativizedPath}`.")
+      logger.warn(s"Unhandled case for destructuring declaration: `${expr.getText}` in this file `$relativizedPath`.")
       return Seq()
     }
     val destructuringRHS = typedInit.get
@@ -624,7 +637,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  def astForMember(decl: KtDeclaration)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  private def astForMember(decl: KtDeclaration)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val name = Option(decl.getName).getOrElse(TypeConstants.any)
     val explicitTypeName = decl.getOriginalElement match {
       case p: KtProperty if p.getTypeReference != null => p.getTypeReference.getText

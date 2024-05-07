@@ -2,35 +2,35 @@ package io.joern.kotlin2cpg.ast
 
 import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.ast.Nodes.operatorCallNode
-import io.joern.kotlin2cpg.types.{TypeConstants, TypeInfoProvider}
-import io.joern.x2cpg.{Ast, AstNodeBuilder, ValidationMode}
+import io.joern.kotlin2cpg.types.TypeConstants
+import io.joern.kotlin2cpg.types.TypeInfoProvider
+import io.joern.x2cpg.Ast
+import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.utils.NodeBuilders.newIdentifierNode
+import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
-import org.jetbrains.kotlin.psi.{
-  KtAnnotationEntry,
-  KtBlockExpression,
-  KtBreakExpression,
-  KtClassOrObject,
-  KtContainerNodeForControlStructureBody,
-  KtContinueExpression,
-  KtDoWhileExpression,
-  KtExpression,
-  KtForExpression,
-  KtIfExpression,
-  KtNamedFunction,
-  KtProperty,
-  KtPsiUtil,
-  KtTryExpression,
-  KtWhenConditionWithExpression,
-  KtWhenEntry,
-  KtWhenExpression,
-  KtWhileExpression
-}
+import org.jetbrains.kotlin.psi.KtAnnotationEntry
+import org.jetbrains.kotlin.psi.KtBlockExpression
+import org.jetbrains.kotlin.psi.KtBreakExpression
+import org.jetbrains.kotlin.psi.KtClassOrObject
+import org.jetbrains.kotlin.psi.KtContainerNodeForControlStructureBody
+import org.jetbrains.kotlin.psi.KtContinueExpression
+import org.jetbrains.kotlin.psi.KtDoWhileExpression
+import org.jetbrains.kotlin.psi.KtExpression
+import org.jetbrains.kotlin.psi.KtForExpression
+import org.jetbrains.kotlin.psi.KtIfExpression
+import org.jetbrains.kotlin.psi.KtNamedFunction
+import org.jetbrains.kotlin.psi.KtProperty
+import org.jetbrains.kotlin.psi.KtPsiUtil
+import org.jetbrains.kotlin.psi.KtTryExpression
+import org.jetbrains.kotlin.psi.KtWhenConditionWithExpression
+import org.jetbrains.kotlin.psi.KtWhenEntry
+import org.jetbrains.kotlin.psi.KtWhenExpression
+import org.jetbrains.kotlin.psi.KtWhileExpression
 
 import scala.jdk.CollectionConverters.*
-import scala.collection.mutable
-import io.shiftleft.semanticcpg.language.*
 
 trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
@@ -277,7 +277,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     else astForIfAsExpression(expr, argIdx, argNameMaybe, annotations)
   }
 
-  def astForIfAsControlStructure(expr: KtIfExpression, annotations: Seq[KtAnnotationEntry] = Seq())(implicit
+  private def astForIfAsControlStructure(expr: KtIfExpression, annotations: Seq[KtAnnotationEntry] = Seq())(implicit
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
     val conditionAst = astsForExpression(expr.getCondition, None).headOption
@@ -338,7 +338,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
       .withChildren(annotations.map(astForAnnotationEntry))
   }
 
-  def astForWhenAsStatement(expr: KtWhenExpression, argIdx: Option[Int])(implicit
+  private def astForWhenAsStatement(expr: KtWhenExpression, argIdx: Option[Int])(implicit
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
     val (astForSubject, finalAstForSubject) = Option(expr.getSubjectExpression) match {
@@ -352,7 +352,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
         }
         (astForSubject, finalAstForSubject)
       case _ =>
-        logger.warn(s"Subject Expression empty in this file `${relativizedPath}`.")
+        logger.warn(s"Subject Expression empty in this file `$relativizedPath`.")
         (Ast(), Ast())
     }
 
@@ -388,7 +388,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     val subjectExpressionAsts = Option(expr.getSubjectExpression) match {
       case Some(subjectExpression) => astsForExpression(subjectExpression, None)
       case _ =>
-        logger.warn(s"Subject Expression empty in this file `${relativizedPath}`.")
+        logger.warn(s"Subject Expression empty in this file `$relativizedPath`.")
         Seq.empty
     }
     val subjectBlock    = blockNode(expr.getSubjectExpression, "", "")
@@ -432,6 +432,11 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
 
           val newElseAst = callAst(callNode, Seq(condAst, entryExprAst, elseAst))
           elseAst = newElseAst
+        case Some(cond) =>
+          logger.debug(
+            s"Creating empty AST node for unknown condition expression `${cond.getClass}` with text `${cond.getText}`."
+          )
+          Seq(Ast(unknownNode(expr, Option(expr).map(_.getText).getOrElse(Constants.codePropUndefinedValue))))
         case None =>
           // This is the 'else' branch of 'when'.
           // and thus first in reverse order, if exists
@@ -497,9 +502,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
       typeInfoProvider.expressionType(expr.getTryBlock.getStatements.asScala.last, TypeConstants.any)
     )
     val tryBlockAst = astsForExpression(expr.getTryBlock, None).headOption.getOrElse(Ast())
-    val clauseAsts = expr.getCatchClauses.asScala.toSeq.map { entry =>
+    val clauseAsts = expr.getCatchClauses.asScala.toSeq.flatMap { entry =>
       astsForExpression(entry.getCatchBody, None)
-    }.flatten
+    }
     val node =
       operatorCallNode(Operators.tryCatch, expr.getText, Option(typeFullName), line(expr), column(expr))
         .argumentName(argNameMaybe)
@@ -555,7 +560,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     }
     val declarationAsts          = declarations.flatMap(astsForDeclaration)
     val allStatementsButLast     = statements.dropRight(1)
-    val allStatementsButLastAsts = allStatementsButLast.map(astsForExpression(_, None)).flatten
+    val allStatementsButLastAsts = allStatementsButLast.flatMap(astsForExpression(_, None))
 
     val lastStatementAstWithTail =
       if (implicitReturnAroundLastStatement && statements.nonEmpty) {

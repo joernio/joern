@@ -49,6 +49,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case node: ProcOrLambdaExpr         => astForProcOrLambdaExpr(node)
     case node: RubyCallWithBlock[_]     => astsForCallWithBlockInExpr(node)
     case node: SelfIdentifier           => astForSelfIdentifier(node)
+    case node: BreakStatement           => astForBreakStatement(node)
+    case node: StatementList            => astForStatementList(node)
     case node: DummyNode                => Ast(node.node)
     case _                              => astForUnknown(node)
 
@@ -152,11 +154,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   protected def astForMemberCall(node: MemberCall): Ast = {
     // Use the scope type recovery to attempt to obtain a receiver type for the call
     // TODO: Type recovery should potentially resolve this
-    val fullName = typeFromCallTarget(node.target)
-      .map(x => s"$x:${node.methodName}")
-      .getOrElse(XDefines.DynamicCallUnknownFullName)
-
-    val receiver     = astForExpression(node.target)
+    val receiver = astForExpression(node.target)
+    val fullName = receiver.root match {
+      case Some(x: NewMethodRef) => x.methodFullName
+      case _ =>
+        typeFromCallTarget(node.target)
+          .map(x => s"$x:${node.methodName}")
+          .getOrElse(XDefines.DynamicCallUnknownFullName)
+    }
     val argumentAsts = node.arguments.map(astForMethodCallArgument)
 
     receiver.root.collect { case x: NewCall => x.typeFullName(fullName) }
@@ -693,7 +698,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     callWithLambdaArg
   }
 
-  private def astForMethodCallArgument(node: RubyNode): Ast = {
+  private def astForMethodCallArgument(node: RubyNode): Ast = 
+  {
     node match
       // Associations in method calls are keyword arguments
       case assoc: Association => astForKeywordArgument(assoc)

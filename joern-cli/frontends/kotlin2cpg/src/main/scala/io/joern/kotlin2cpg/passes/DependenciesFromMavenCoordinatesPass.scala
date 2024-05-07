@@ -2,9 +2,7 @@ package io.joern.kotlin2cpg.passes
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.CpgPass
-import io.shiftleft.semanticcpg.language._
-import io.shiftleft.codepropertygraph.generated.nodes.{NewDependency}
-import org.slf4j.{Logger, LoggerFactory}
+import io.shiftleft.codepropertygraph.generated.nodes.NewDependency
 
 import scala.util.matching.Regex
 
@@ -25,10 +23,10 @@ org.springframework:spring-context:6.0.7
 ```
  */
 class DependenciesFromMavenCoordinatesPass(coordinates: Seq[String], cpg: Cpg) extends CpgPass(cpg) {
-  override def run(dstGraph: DiffGraphBuilder): Unit = {
+  private val keyValPattern: Regex = "^([^:]+):([^:]+):([^:]+)$".r
 
+  override def run(dstGraph: DiffGraphBuilder): Unit = {
     coordinates.foreach { coordinate =>
-      val keyValPattern: Regex = "^([^:]+):([^:]+):([^:]+)$".r
       for (patternMatch <- keyValPattern.findAllMatchIn(coordinate)) {
         val groupId = patternMatch.group(1)
         val name    = patternMatch.group(2)

@@ -6,31 +6,29 @@ import io.shiftleft.semanticcpg.language.*
 
 class CallTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataFlow = true) {
 
-  // Works on deprecated
-  "Flow through call" ignore {
+  "Flow through call" in {
     val cpg = code("""
-        |def print(content)
-        |puts content
+        |def foo(content)
+        | puts content
         |end
         |
         |def main
-        |n = 1
-        |print( n )
+        | n = 1
+        | foo( n )
         |end
         |""".stripMargin)
 
-    val src  = cpg.method.name("print").parameter.where(_.index(1)).argument.l
+    val src  = cpg.method.name("foo").parameter.where(_.index(1)).argument.l
     val sink = cpg.method.name("puts").callIn.argument(1).l
     sink.reachableByFlows(src).size shouldBe 1
   }
 
-  // Works on deprecated
-  "Explicit return via call with initialization" ignore {
+  "Explicit return via call with initialization" in {
     val cpg = code("""
                      |def add(p)
-                     |q = 5
-                     |q = p
-                     |return q
+                     |  q = 5
+                     |  q = p
+                     |  return q
                      |end
                      |
                      |n = 1
@@ -38,18 +36,17 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataF
                      |puts ret
                      |""".stripMargin)
 
-    val src  = cpg.identifier.name("n").l
-    val sink = cpg.call.name("puts").l
-    sink.reachableByFlows(src).l.size shouldBe 2
+    val src  = cpg.literal.code("1").l
+    val sink = cpg.call.name("puts").argument(1).l
+    sink.reachableByFlows(src).size shouldBe 1
   }
 
-  // Works on deprecated
-  "Implicit return via call with initialization" ignore {
+  "Implicit return via call with initialization" in {
     val cpg = code("""
                      |def add(p)
-                     |q = 5
-                     |q = p
-                     |q
+                     |  q = 5
+                     |  q = p
+                     |  q
                      |end
                      |
                      |n = 1
@@ -57,16 +54,15 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataF
                      |puts ret
                      |""".stripMargin)
 
-    val src  = cpg.identifier.name("n").l
-    val sink = cpg.call.name("puts").l
-    sink.reachableByFlows(src).l.size shouldBe 2
+    val src  = cpg.literal.code("1").l
+    val sink = cpg.call.name("puts").argument(1).l
+    sink.reachableByFlows(src).size shouldBe 1
   }
 
-  // Works in deprecated
-  "Data flow through grouping expression with negation" ignore {
+  "Data flow through grouping expression with negation" in {
     val cpg = code("""
                      |def foo(arg)
-                     |return arg
+                     |  return arg
                      |end
                      |
                      |x = false
@@ -75,12 +71,11 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataF
                      |
                      |""".stripMargin)
 
-    val source = cpg.identifier.name("x").l
-    val sink   = cpg.call.name("puts").l
-    sink.reachableByFlows(source).size shouldBe 2
+    val source = cpg.literal.code("false").l
+    val sink   = cpg.call.name("puts").argument(1).l
+    sink.reachableByFlows(source).size shouldBe 1
   }
 
-  // Works in deprecated
   "Data flow through variable params" ignore {
     val cpg = code("""
                      |def foo(*args)
@@ -88,17 +83,16 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataF
                      |end
                      |
                      |x = 1
-                     |y = foo(x, "another param")
+                     |y = foo("another param", x)
                      |puts y
                      |""".stripMargin)
 
-    val source = cpg.identifier.name("x").l
-    val sink   = cpg.call.name("puts").l
-    sink.reachableByFlows(source).size shouldBe 2
+    val source = cpg.literal.code("1").l
+    val sink   = cpg.call.name("puts").argument(1).l
+    sink.reachableByFlows(source).size shouldBe 1
   }
 
-  // Works in deprecated
-  "Data flow through optional params" ignore {
+  "Data flow through optional params" in {
     val cpg = code("""
                      |def foo(arg=10)
                      |  return arg + 10
@@ -109,13 +103,12 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataF
                      |puts y
                      |""".stripMargin)
 
-    val source = cpg.identifier.name("x").l
-    val sink   = cpg.call.name("puts").l
-    sink.reachableByFlows(source).size shouldBe 2
+    val source = cpg.literal.code("1").l
+    val sink   = cpg.call.name("puts").argument(1).l
+    sink.reachableByFlows(source).size shouldBe 1
   }
 
-  // Works in deprecated
-  "Data flow across files" ignore {
+  "Data flow across files" in {
     val cpg = code(
       """
         |def my_func(x)
@@ -138,8 +131,7 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataF
     sink.reachableByFlows(source).size shouldBe 1
   }
 
-  // Works in deprecated
-  "Across the file data flow test" ignore {
+  "Across the file data flow test" should {
     val cpg = code(
       """
         |def foo(arg)
@@ -164,22 +156,23 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataF
         "bar.rb"
       )
 
-    val source = cpg.literal.code("1").l
-    val sink   = cpg.call.name("puts").argument(1).lineNumber(3).l
-    sink.reachableByFlows(source).size shouldBe 1
-    val src = cpg.identifier("x").lineNumber(3).l
-    sink.reachableByFlows(src).size shouldBe 1
+    "be found for sink in outer block" in {
+      val source = cpg.literal.code("1").l
+      val sink   = cpg.call.name("puts").argument(1).lineNumber(3).l
+      sink.reachableByFlows(source).size shouldBe 1
+      val src = cpg.identifier("x").lineNumber(3).l
+      sink.reachableByFlows(src).size shouldBe 1
+    }
 
-//    // TODO: Need to be fixed.
-//    "be found for sink in nested block" ignore {
-//      val src  = cpg.identifier("x").lineNumber(3).l
-//      val sink = cpg.call.name("puts").argument(1).lineNumber(7).l
-//      sink.reachableByFlows(src).size shouldBe 1
-//    }
+    "be found for sink in nested block" in {
+      val src  = cpg.identifier("x").lineNumber(3).l
+      val sink = cpg.call.name("puts").argument(1).lineNumber(7).l
+      sink.reachableByFlows(src).size shouldBe 1
+    }
   }
 
-  // Works in deprecated - does not parse on new frontend
-  "Data flow through invocation or command with EMARK" ignore {
+  // TODO: Generates warnings
+  "Data flow through invocation or command with EMARK" in {
     val cpg = code("""
                      |x=12
                      |def woo(x)
@@ -193,13 +186,12 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataF
                      |end
                      |""".stripMargin)
 
-    val source = cpg.identifier.name("x").l
-    val sink   = cpg.call.name("puts").l
-    sink.reachableByFlows(source).size shouldBe 3
+    val source = cpg.literal.code("12").l
+    val sink   = cpg.call.name("puts").argument(1).l
+    sink.reachableByFlows(source).size shouldBe 1
   }
 
-  // Works in deprecated
-  "Flow for nested puts calls" ignore {
+  "Flow for nested puts calls" in {
     val cpg = code("""
                      |x=10
                      |def put_name(x)
@@ -214,9 +206,9 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataF
                      |double_nested_put(x)
                      |""".stripMargin)
 
-    val source = cpg.identifier.name("x").l
-    val sink   = cpg.call.name("puts").l
-    sink.reachableByFlows(source).size shouldBe 5
+    val source = cpg.literal.code("10").l
+    val sink   = cpg.call.name("puts").argument(1).l
+    sink.reachableByFlows(source).size shouldBe 1
   }
 
   "Data flow through a keyword? named method usage" in {
@@ -226,29 +218,27 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataF
                      |puts y
                      |""".stripMargin)
 
-    val src  = cpg.identifier.name("x").l
-    val sink = cpg.call.name("puts").l
-    sink.reachableByFlows(src).size shouldBe 2
+    val src  = cpg.literal.code("1").l
+    val sink = cpg.call.name("puts").argument(1).l
+    sink.reachableByFlows(src).size shouldBe 1
   }
 
-  // Works in deprecated
-  "Data flow through a keyword inside a association" ignore {
+  "Data flow through a keyword inside a association" in {
     val cpg = code("""
                      |def foo(arg)
-                     |puts arg
+                     |  puts arg
                      |end
                      |
                      |x = 1
                      |foo if: x.nil?
                      |""".stripMargin)
 
-    val src  = cpg.identifier.name("x").l
-    val sink = cpg.call.name("puts").l
-    sink.reachableByFlows(src).size shouldBe 2
+    val src  = cpg.literal.code("1").l
+    val sink = cpg.call.name("puts").argument(1).l
+    sink.reachableByFlows(src).size shouldBe 1
   }
 
-  // Works in deprecated
-  "flow through a method call with safe navigation operator with parantheses" ignore {
+  "flow through a method call with safe navigation operator with parentheses" in {
     val cpg = code("""
                      |class Foo
                      | def bar(arg)
@@ -261,13 +251,13 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataF
                      |puts y
                      |""".stripMargin)
 
-    val source = cpg.identifier.name("x").l
-    val sink   = cpg.call.name("puts").l
-    sink.reachableByFlows(source).size shouldBe 2
+    val src  = cpg.literal.code("1").l
+    val sink = cpg.call.name("puts").argument(1).l
+    src.reachableByFlows(src).size shouldBe 1
   }
 
-  // Works in deprecated
-  "flow through a method call with safe navigation operator without parantheses" ignore {
+  // TODO: This does not create a call node, as AMPDOT is not recognized by the parser without parentheses
+  "flow through a method call with safe navigation operator without parentheses" ignore {
     val cpg = code("""
                      |class Foo
                      | def bar(arg)
@@ -280,9 +270,9 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataF
                      |puts y
                      |""".stripMargin)
 
-    val source = cpg.identifier.name("x").l
-    val sink   = cpg.call.name("puts").l
-    sink.reachableByFlows(source).size shouldBe 2
+    val src  = cpg.literal.code("1").l
+    val sink = cpg.call.name("puts").argument(1).l
+    sink.reachableByFlows(src).size shouldBe 1
   }
 
   "flow through a method call present in next line, with the second line starting with `.`" in {
@@ -300,9 +290,9 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataF
                      |puts y
                      |""".stripMargin)
 
-    val source = cpg.identifier.name("x").l
-    val sink   = cpg.call.name("puts").l
-    sink.reachableByFlows(source).size shouldBe 1
+    val src  = cpg.literal.code("1").l
+    val sink = cpg.call.name("puts").argument(1).l
+    sink.reachableByFlows(src).size shouldBe 2
   }
 
   "flow through a method call present in next line, with the first line ending with `.`" in {
@@ -320,8 +310,8 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataF
                      |puts y
                      |""".stripMargin)
 
-    val source = cpg.identifier.name("x").l
-    val sink   = cpg.call.name("puts").l
-    sink.reachableByFlows(source).size shouldBe 1
+    val src  = cpg.literal.code("1").l
+    val sink = cpg.call.name("puts").argument(1).l
+    sink.reachableByFlows(src).size shouldBe 2
   }
 }

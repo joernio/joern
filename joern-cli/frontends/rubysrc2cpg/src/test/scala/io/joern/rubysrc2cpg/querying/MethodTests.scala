@@ -21,7 +21,7 @@ class MethodTests extends RubyCode2CpgFixture {
     f.numberOfLines shouldBe 1
 
     val List(x) = f.parameter.name("x").l
-    x.index shouldBe 0
+    x.index shouldBe 1
     x.isVariadic shouldBe false
     x.lineNumber shouldBe Some(2)
   }
@@ -39,7 +39,7 @@ class MethodTests extends RubyCode2CpgFixture {
     f.isExternal shouldBe false
     f.lineNumber shouldBe Some(2)
     f.numberOfLines shouldBe 3
-    f.parameter.size shouldBe 0
+    f.parameter.size shouldBe 1
   }
 
   "`def f = puts 'hi'` is represented by a METHOD node returning `puts 'hi'`" in {
@@ -53,7 +53,7 @@ class MethodTests extends RubyCode2CpgFixture {
     f.isExternal shouldBe false
     f.lineNumber shouldBe Some(2)
     f.numberOfLines shouldBe 1
-    f.parameter.size shouldBe 0
+    f.parameter.size shouldBe 1
 
     val List(r: Return) = f.methodReturn.cfgIn.l: @unchecked
     r.code shouldBe "puts 'hi'"
@@ -71,7 +71,7 @@ class MethodTests extends RubyCode2CpgFixture {
     f.isExternal shouldBe false
     f.lineNumber shouldBe Some(2)
     f.numberOfLines shouldBe 1
-    f.parameter.size shouldBe 1
+    f.parameter.size shouldBe 2
 
     val List(r: Return) = f.methodReturn.cfgIn.l: @unchecked
     r.code shouldBe "x.class"
@@ -234,7 +234,7 @@ class MethodTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "be interpreted as an array type parameter if a single star given" in {
-      inside(cpg.method("foo").parameter.l) {
+      inside(cpg.method("foo").parameter.indexGt(0).l) {
         case xs :: Nil =>
           xs.name shouldBe "xs"
           xs.code shouldBe "*xs"
@@ -245,7 +245,7 @@ class MethodTests extends RubyCode2CpgFixture {
     }
 
     "be interpreted as a hash type parameter if two stars given" in {
-      inside(cpg.method("bar").parameter.l) {
+      inside(cpg.method("bar").parameter.indexGt(0).l) {
         case ys :: Nil =>
           ys.name shouldBe "ys"
           ys.code shouldBe "**ys"
@@ -419,7 +419,7 @@ class MethodTests extends RubyCode2CpgFixture {
   "break unless statement" should {
     val cpg = code("""
         |  def foo
-        |    loop do
+        |    bar do
         |      break unless 1 < 2
         |    end
         |  end

@@ -51,6 +51,8 @@ slices.json
 **/.antlr
 /joern-cli/frontends/*/bin
 /joern-cli/frontends/*/type_stubs
+**/.gradle
+**/build/gatheredDependencies
 
 ##############
 # Nix flakes #

@@ -18,8 +18,7 @@ class MultipleAssignmentTests extends RubyCode2CpgFixture(withPostProcessing = t
     sink.reachableByFlows(src).l.size shouldBe 2
   }
 
-  // Works in deprecated - fails to parse in new frontend
-  "flow through multiple assignments with grouping" ignore {
+  "flow through multiple assignments with grouping" in {
     val cpg = code("""
                      |x = 1
                      |y = 2
@@ -29,11 +28,10 @@ class MultipleAssignmentTests extends RubyCode2CpgFixture(withPostProcessing = t
 
     val src  = cpg.identifier.name("x").l
     val sink = cpg.call.name("puts").l
-    sink.reachableByFlows(src).l.size shouldBe 2
+    sink.reachableByFlows(src).size shouldBe 2
   }
 
-  // Works in deprecated - fails to parse in new frontend
-  "Data flow through multiple assignments with grouping and method in RHS" ignore {
+  "Data flow through multiple assignments with grouping and method in RHS" in {
     val cpg = code("""
                      |def foo()
                      |x = 1
@@ -48,11 +46,10 @@ class MultipleAssignmentTests extends RubyCode2CpgFixture(withPostProcessing = t
 
     val src  = cpg.identifier.name("x").l
     val sink = cpg.call.name("puts").l
-    sink.reachableByFlows(src).l.size shouldBe 2
+    sink.reachableByFlows(src).size shouldBe 2
   }
 
-  // Works in deprecated
-  "Data flow through single LHS and splatting RHS" ignore {
+  "Data flow through single LHS and splatting RHS" in {
     val cpg = code("""
                      |x=1
                      |y=*x
@@ -61,7 +58,7 @@ class MultipleAssignmentTests extends RubyCode2CpgFixture(withPostProcessing = t
 
     val src  = cpg.identifier.name("x").l
     val sink = cpg.call.name("puts").l
-    sink.reachableByFlows(src).l.size shouldBe 2
+    sink.reachableByFlows(src).size shouldBe 2
   }
 
 }

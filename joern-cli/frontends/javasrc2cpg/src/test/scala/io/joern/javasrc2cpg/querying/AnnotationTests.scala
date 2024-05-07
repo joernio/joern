@@ -1,8 +1,8 @@
 package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.{Annotation, AnnotationLiteral, ArrayInitializer}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.language.*
 
 class AnnotationTests extends JavaSrcCode2CpgFixture {
   "normal value annotations" should {
@@ -24,6 +24,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
       annotationNode.fullName shouldBe "some.NormalAnnotation"
       annotationNode.lineNumber shouldBe Some(5)
       annotationNode.columnNumber shouldBe Some(3)
+      annotationNode.asInstanceOf[CfgNode].method.fullName shouldBe "SomeClass.function:void()"
     }
 
     "test annotation node parameter assignment child" in {
@@ -84,6 +85,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
       paramValue.code shouldBe "classAnnotation"
       paramValue.order shouldBe 2
       paramValue.argumentIndex shouldBe 2
+      paramValue.method.fullName shouldBe "SomeClass.function:void()"
     }
   }
 

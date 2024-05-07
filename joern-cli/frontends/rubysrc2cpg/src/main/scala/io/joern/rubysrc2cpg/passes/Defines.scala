@@ -22,6 +22,7 @@ object Defines {
   val Lambda: String     = "lambda"
   val Proc: String       = "proc"
   val This: String       = "this"
+  val Loop: String       = "loop"
 
   val Program: String = ":program"
 

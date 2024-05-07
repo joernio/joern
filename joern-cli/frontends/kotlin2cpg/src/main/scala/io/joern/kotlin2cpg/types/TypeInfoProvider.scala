@@ -1,6 +1,5 @@
 package io.joern.kotlin2cpg.types
 
-import io.shiftleft.passes.KeyPool
 import org.jetbrains.kotlin.descriptors.DescriptorVisibility
 import org.jetbrains.kotlin.psi.{
   KtAnnotationEntry,
@@ -12,7 +11,6 @@ import org.jetbrains.kotlin.psi.{
   KtElement,
   KtExpression,
   KtFile,
-  KtLambdaArgument,
   KtLambdaExpression,
   KtNameReferenceExpression,
   KtNamedFunction,
