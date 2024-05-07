@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.descriptors.impl.{
   PropertyDescriptorImpl,
   TypeAliasConstructorDescriptorImpl
 }
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.load.java.`lazy`.descriptors.LazyJavaClassDescriptor
 import org.jetbrains.kotlin.load.java.sources.JavaSourceElement
 import org.jetbrains.kotlin.load.java.structure.impl.classFiles.BinaryJavaMethod
@@ -40,8 +41,8 @@ import org.jetbrains.kotlin.psi.{
   KtExpression,
   KtFile,
   KtLambdaExpression,
-  KtNameReferenceExpression,
   KtNamedFunction,
+  KtNameReferenceExpression,
   KtParameter,
   KtPrimaryConstructor,
   KtProperty,
@@ -115,6 +116,18 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     val mapForEntity = bindingsForEntity(bindingContext, fn)
     Option(mapForEntity.get(BindingContext.FUNCTION.getKey))
       .map(_.getVisibility)
+  }
+
+  def modality(fn: KtNamedFunction): Option[Modality] = {
+    val mapForEntity = bindingsForEntity(bindingContext, fn)
+    Option(mapForEntity.get(BindingContext.FUNCTION.getKey))
+      .map(_.getModality)
+  }
+
+  def modality(ktClass: KtClassOrObject): Option[Modality] = {
+    val mapForEntity = bindingsForEntity(bindingContext, ktClass)
+    Option(mapForEntity.get(BindingContext.CLASS.getKey))
+      .map(_.getModality)
   }
 
   def containingTypeDeclFullName(ktFn: KtNamedFunction, defaultValue: String): String = {
