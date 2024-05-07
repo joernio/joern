@@ -42,7 +42,7 @@ class FileTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     }
 
     "should allow traversing from file to its type declarations" in {
-      cpg.file.nameNot(FileTraversal.UNKNOWN).typeDecl.name.toSet shouldBe Set("<global>", "Foo")
+      cpg.file.nameNot(FileTraversal.UNKNOWN).typeDecl.name.sorted.toSet shouldBe Set("add", "baz", "Foo", "<global>")
     }
   }
 }

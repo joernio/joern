@@ -1,8 +1,12 @@
 package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Local, Method, Return, TypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.Call
+import io.shiftleft.codepropertygraph.generated.nodes.Identifier
+import io.shiftleft.codepropertygraph.generated.nodes.Local
+import io.shiftleft.codepropertygraph.generated.nodes.Method
+import io.shiftleft.codepropertygraph.generated.nodes.Return
+import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
 import io.shiftleft.semanticcpg.language.*
 
 class ObjectExpressionTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
@@ -30,10 +34,13 @@ class ObjectExpressionTests extends KotlinCode2CpgFixture(withOssDataflow = fals
         |}
         |""".stripMargin)
 
-    "should contain two TYPE_DECL nodes with the correct props set" in {
-      val List(firstTd: TypeDecl, secondTd: TypeDecl) = cpg.typeDecl.isExternal(false).nameNot("<global>").l
-      firstTd.fullName shouldBe "mypkg.foo$object$1"
-      secondTd.fullName shouldBe "mypkg.foo$object$2"
+    "should contain TYPE_DECL nodes with the correct props set" in {
+      val List(p1, p2, foo, o1, o2) = cpg.typeDecl.isExternal(false).nameNot("<global>").l
+      p1.fullName shouldBe "mypkg.foo$object$1.printWithSuffix:void(java.lang.String)"
+      p2.fullName shouldBe "mypkg.foo$object$2.printWithSuffix:void(java.lang.String)"
+      foo.fullName shouldBe "mypkg.foo:void(java.lang.String)"
+      o1.fullName shouldBe "mypkg.foo$object$1"
+      o2.fullName shouldBe "mypkg.foo$object$2"
     }
 
     "should contain two LOCAL nodes with the correct props set" in {
@@ -81,12 +88,19 @@ class ObjectExpressionTests extends KotlinCode2CpgFixture(withOssDataflow = fals
       c.methodFullName shouldBe "mypkg.does:void(mypkg.AnInterface,java.lang.String)"
     }
 
-    "contain a TYPE_DECL node with the correct props set" in {
-      val List(_: TypeDecl, secondTd: TypeDecl) = cpg.typeDecl.isExternal(false).nameNot("<global>").l
-      secondTd.name shouldBe "anonymous_obj"
-      secondTd.fullName shouldBe "mypkg.foo$object$1"
-      secondTd.inheritsFromTypeFullName shouldBe Seq("mypkg.AnInterface")
-      val List(firstMethod: Method, secondMethod: Method) = secondTd.boundMethod.l
+    "contain TYPE_DECL nodes with the correct props set" in {
+      val List(f1, does, f2, foo, interface, obj) = cpg.typeDecl.isExternal(false).nameNot("<global>").l
+      f1.fullName shouldBe "mypkg.AnInterface.doSomething:void(java.lang.String)"
+      does.fullName shouldBe "mypkg.does:void(mypkg.AnInterface,java.lang.String)"
+      f2.fullName shouldBe "mypkg.foo$object$1.doSomething:void(java.lang.String)"
+      foo.fullName shouldBe "mypkg.foo:void(java.lang.String)"
+      interface.fullName shouldBe "mypkg.AnInterface"
+      interface.inheritsFromTypeFullName shouldBe List("java.lang.Object")
+      obj.name shouldBe "anonymous_obj"
+      obj.fullName shouldBe "mypkg.foo$object$1"
+      obj.inheritsFromTypeFullName shouldBe Seq("mypkg.AnInterface")
+
+      val List(firstMethod: Method, secondMethod: Method) = obj.boundMethod.l
       firstMethod.fullName shouldBe "mypkg.foo$object$1.doSomething:void(java.lang.String)"
       secondMethod.fullName shouldBe "mypkg.foo$object$1.<init>:void()"
     }
@@ -123,12 +137,16 @@ class ObjectExpressionTests extends KotlinCode2CpgFixture(withOssDataflow = fals
         |}
         |""".stripMargin)
 
-    "contain a TYPE_DECL node with the correct props set" in {
-      val List(_: TypeDecl, _: TypeDecl, thirdTd: TypeDecl) =
-        cpg.typeDecl.isExternal(false).nameNot("<global>").l
-      thirdTd.name shouldBe "anonymous_obj"
-      thirdTd.fullName shouldBe "mypkg.f1$object$1"
-      thirdTd.inheritsFromTypeFullName shouldBe Seq("mypkg.SomeInterface")
+    "contain TYPE_DECL nodes with the correct props set" in {
+      val List(interfaceF1, objectF1, f1, interface, qClass, obj) = cpg.typeDecl.isExternal(false).nameNot("<global>").l
+      interfaceF1.fullName shouldBe "mypkg.SomeInterface.doSomething:void()"
+      objectF1.fullName shouldBe "mypkg.f1$object$1.doSomething:void()"
+      f1.fullName shouldBe "mypkg.f1:void()"
+      interface.fullName shouldBe "mypkg.SomeInterface"
+      qClass.fullName shouldBe "mypkg.QClass"
+      obj.name shouldBe "anonymous_obj"
+      obj.fullName shouldBe "mypkg.f1$object$1"
+      obj.inheritsFromTypeFullName shouldBe Seq("mypkg.SomeInterface")
     }
   }
 

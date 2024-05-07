@@ -129,6 +129,11 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = true) {
         |""".stripMargin)
 
     "have their own instance of primaryCtorCall nodes" in {
+      cpg.typeDecl.nameExact("AClass").method.isConstructor.fullName.l shouldBe List(
+        "AClass.<init>:void()",
+        "AClass.<init>:void(java.lang.String)",
+        "AClass.<init>:void(java.lang.String,int)"
+      )
       val List(call1, call2) = cpg.method.nameExact("<init>").filter(_.parameter.size > 1).call.nameExact("<init>").l
       call1.method.fullName shouldBe "AClass.<init>:void(java.lang.String)"
       call2.method.fullName shouldBe "AClass.<init>:void(java.lang.String,int)"
