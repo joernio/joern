@@ -43,9 +43,6 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
 
   override val membersInScope: mutable.Set[MemberLike] = mutable.Set(builtinMethods*)
 
-  // Ruby does not have overloading, so this can be set to true
-  override protected def isOverloadedBy(method: RubyMethod, argTypes: List[String]): Boolean = true
-
   /** @return
     *   using the stack, will initialize a new module scope object.
     */
@@ -218,19 +215,49 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
 
   override def tryResolveTypeReference(typeName: String): Option[RubyType] = {
     val normalizedTypeName = typeName.replaceAll("::", ".")
+
+    /** Given a typeName, attempts to resolve full name using internal types currently in scope
+      * @param typeName
+      *   the shorthand name
+      * @return
+      *   the type meta-data if found
+      */
+    def tryResolveInternalTypeReference(typeName: String): Option[RubyType] = {
+      typesInScope.collectFirst {
+        case typ if !typ.isInstanceOf[RubyStubbedType] && typ.name.split("[.]").endsWith(typeName.split("[.]")) => typ
+      }
+    }
+
+    /** Given a typeName, attempts to resolve full name using stubbed types currently in scope
+      * @param typeName
+      *   the shorthand name
+      * @return
+      *   the type meta-data if found
+      */
+    def tryResolveStubbedTypeReference(typeName: String): Option[RubyType] = {
+      typesInScope.collectFirst {
+        case typ if typ.isInstanceOf[RubyStubbedType] && typ.name.split("[.]").endsWith(typeName.split("[.]")) => typ
+      }
+    }
+
     // TODO: While we find better ways to understand how the implicit class loading works,
     //  we can approximate that all types are in scope in the mean time.
-    super.tryResolveTypeReference(normalizedTypeName) match {
-      case None if GlobalTypes.builtinFunctions.contains(normalizedTypeName) =>
-        // TODO: Create a builtin.json for the program summary to load
-        Option(RubyType(s"${GlobalTypes.builtinPrefix}.$normalizedTypeName", List.empty, List.empty))
-      case None =>
-        summary.namespaceToType.flatMap(_._2).collectFirst {
-          case x if x.name.split("[.]").lastOption.contains(normalizedTypeName) =>
-            typesInScope.addOne(x)
-            x
+    tryResolveInternalTypeReference(typeName)
+      .orElse(tryResolveStubbedTypeReference(typeName))
+      .orElse {
+        super.tryResolveTypeReference(normalizedTypeName) match {
+          case None if GlobalTypes.builtinFunctions.contains(normalizedTypeName) =>
+            // TODO: Create a builtin.json for the program summary to load
+            Option(RubyType(s"${GlobalTypes.builtinPrefix}.$normalizedTypeName", List.empty, List.empty))
+          case None =>
+            summary.namespaceToType.flatMap(_._2).collectFirst {
+              case x if x.name.split("[.]").lastOption.contains(normalizedTypeName) =>
+                typesInScope.addOne(x)
+                x
+            }
+          case x => x
         }
-      case x => x
-    }
+      }
   }
+
 }

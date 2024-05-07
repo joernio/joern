@@ -2,7 +2,7 @@ package io.joern.rubysrc2cpg.datastructures
 
 import better.files.File
 import io.joern.x2cpg.Defines as XDefines
-import io.joern.x2cpg.datastructures.{FieldLike, MethodLike, ProgramSummary, TypeLike}
+import io.joern.x2cpg.datastructures.{FieldLike, MethodLike, ProgramSummary, StubbedType, TypeLike}
 import io.joern.x2cpg.typestub.{TypeStubMetaData, TypeStubUtil}
 import org.slf4j.LoggerFactory
 
@@ -68,13 +68,14 @@ object RubyProgramSummary {
       logger.warn("No ZIP files found.")
       InputStream.nullInputStream()
     } else {
-      val mergedMpksObj = ListBuffer[collection.mutable.Map[String, Set[RubyType]]]()
+      val mergedMpksObj = ListBuffer[collection.mutable.Map[String, Set[RubyStubbedType]]]()
       typeStubFiles.foreach { f =>
         f.fileInputStream { fis =>
           val zis = new ZipInputStream(fis)
 
           LazyList.continually(zis.getNextEntry).takeWhile(_ != null).foreach { file =>
-            val mpkObj = upickle.default.readBinary[collection.mutable.Map[String, Set[RubyType]]](zis.readAllBytes())
+            val mpkObj =
+              upickle.default.readBinary[collection.mutable.Map[String, Set[RubyStubbedType]]](zis.readAllBytes())
             mergedMpksObj.addOne(mpkObj)
           }
         }
@@ -92,7 +93,7 @@ object RubyProgramSummary {
           })
           prev
         })
-        .getOrElse(collection.mutable.Map[String, Set[RubyType]]())
+        .getOrElse(collection.mutable.Map[String, Set[RubyStubbedType]]())
 
       new ByteArrayInputStream(upickle.default.writeBinary(mergedMpks))
     }
@@ -120,6 +121,39 @@ object RubyMethod {
 }
 
 case class RubyField(name: String, typeName: String) extends FieldLike derives ReadWriter
+
+class RubyStubbedType(name: String, methods: List[RubyMethod], fields: List[RubyField])
+    extends RubyType(name, methods, fields)
+    with StubbedType[RubyMethod, RubyField]
+
+object RubyStubbedType {
+  implicit val rubyTypeRw: ReadWriter[RubyStubbedType] = readwriter[ujson.Value].bimap[RubyStubbedType](
+    x =>
+      ujson.Obj(
+        "name" -> x.name,
+        "methods" -> x.methods.map { method =>
+          ujson.Obj("name" -> method.name)
+        },
+        "fields" -> x.fields.map { field => write[RubyField](field) }
+      ),
+    json =>
+      RubyStubbedType(
+        name = json("name").str,
+        methods = json.obj.get("methods") match {
+          case Some(jsonMethods) =>
+            val methodsList = read[List[RubyMethod]](jsonMethods)
+
+            methodsList.map { func =>
+              val baseTypeFullName = json("name").str
+
+              func.copy(name = func.name, baseTypeFullName = Option(baseTypeFullName))
+            }
+          case None => Nil
+        },
+        fields = json.obj.get("fields").map(read[List[RubyField]](_)).getOrElse(Nil)
+      )
+  )
+}
 
 case class RubyType(name: String, methods: List[RubyMethod], fields: List[RubyField])
     extends TypeLike[RubyMethod, RubyField] {

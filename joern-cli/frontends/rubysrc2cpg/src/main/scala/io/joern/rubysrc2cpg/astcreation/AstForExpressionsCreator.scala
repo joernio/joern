@@ -183,7 +183,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     scope.tryResolveTypeReference(node.target.text).map(_.name) match {
       case Some(typeReference) =>
         scope
-          .tryResolveMethodInvocation("[]", List.empty, Option(typeReference))
+          .tryResolveMethodInvocation("[]", typeFullName = Option(typeReference))
           .map { m =>
             val expr = astForExpression(MemberCall(node.target, "::", "[]", node.indices)(node.span))
             expr.root.collect { case x: NewCall =>
@@ -367,7 +367,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     scope.lookupVariable(name) match {
       case Some(_) => handleVariableOccurrence(node)
-      case None if scope.tryResolveMethodInvocation(node.text, List.empty).isDefined =>
+      case None if scope.tryResolveMethodInvocation(node.text).isDefined =>
         astForSimpleCall(SimpleCall(node, List())(node.span))
       case None => handleVariableOccurrence(node)
     }
@@ -657,11 +657,21 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val methodName = methodIdentifier.text
 
     lazy val defaultResult = Defines.Any -> XDefines.DynamicCallUnknownFullName
-    val (receiverType, methodFullName) = scope.tryResolveMethodInvocation(methodName, List.empty) match {
-      case Some(m) =>
-        scope.typeForMethod(m).map(t => t.name -> s"${t.name}:${m.name}").getOrElse(defaultResult)
-      case None => defaultResult
-    }
+
+    val (receiverType, methodFullName) =
+      scope
+        .tryResolveMethodInvocation(
+          methodName,
+          typeFullName = scope.surroundingTypeFullName
+        ) //  Check if this is a method invocation of a method define within this scope
+        .orElse(
+          scope.tryResolveMethodInvocation(methodName)
+        ) // Check if this is a method invocation of a member imported into scope
+      match {
+        case Some(m) =>
+          scope.typeForMethod(m).map(t => t.name -> s"${t.name}:${m.name}").getOrElse(defaultResult)
+        case None => defaultResult
+      }
     val argumentAst      = node.arguments.map(astForMethodCallArgument)
     val call             = callNode(node, code(node), methodName, methodFullName, DispatchTypes.DYNAMIC_DISPATCH)
     val receiverCallName = identifierNode(node, call.name, call.name, receiverType)

@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.StatementList
-import io.joern.rubysrc2cpg.datastructures.{RubyField, RubyMethod, RubyProgramSummary, RubyType}
+import io.joern.rubysrc2cpg.datastructures.{RubyField, RubyMethod, RubyProgramSummary, RubyStubbedType, RubyType}
 import io.joern.rubysrc2cpg.parser.RubyNodeCreator
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.passes.base.AstLinkerPass
@@ -17,7 +17,7 @@ import scala.util.Using
 
 trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  def summarize(): RubyProgramSummary = {
+  def summarize(asExternal: Boolean = false): RubyProgramSummary = {
     this.parseLevel = AstParseLevel.SIGNATURES
     Using.resource(Cpg.withConfig(Config.withoutOverflow())) { cpg =>
       // Build and store compilation unit AST
@@ -30,7 +30,7 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
       AstLinkerPass(cpg).createAndApply()
 
       // Summarize findings
-      summarize(cpg)
+      summarize(cpg, asExternal)
     }
   }
 
@@ -38,7 +38,7 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
     AstCreator(fileName, programCtx, projectRoot, newSummary)
   }
 
-  private def summarize(cpg: Cpg): RubyProgramSummary = {
+  private def summarize(cpg: Cpg, asExternal: Boolean): RubyProgramSummary = {
     def toMethod(m: Method): RubyMethod = {
       RubyMethod(
         m.name,
@@ -57,7 +57,8 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
     }
 
     def toType(m: TypeDecl): RubyType = {
-      RubyType(m.fullName, m.method.map(toMethod).l, m.member.map(toField).l)
+      if asExternal then RubyStubbedType(m.fullName, m.method.map(toMethod).l, m.member.map(toField).l)
+      else RubyType(m.fullName, m.method.map(toMethod).l, m.member.map(toField).l)
     }
 
     def handleNestedTypes(t: TypeDecl, parentScope: String): Seq[(String, Set[RubyType])] = {

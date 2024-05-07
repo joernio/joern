@@ -49,10 +49,10 @@ null
 **/*_builtin_types.zip.sha512
 slices.json
 **/.antlr
+/joern-cli/frontends/*/bin
+/joern-cli/frontends/*/type_stubs
 **/.gradle
 **/build/gatheredDependencies
-/joern-cli/frontends/csharpsrc2cpg/bin
-/joern-cli/frontends/rubysrc2cpg/type_stubs
 
 ##############
 # Nix flakes #

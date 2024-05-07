@@ -1,7 +1,7 @@
 package io.joern.csharpsrc2cpg.datastructures
 
 import io.joern.csharpsrc2cpg.Constants
-import io.joern.x2cpg.datastructures.{FieldLike, MethodLike, ProgramSummary, TypeLike}
+import io.joern.x2cpg.datastructures.{FieldLike, MethodLike, OverloadableMethod, ProgramSummary, TypeLike}
 import org.slf4j.LoggerFactory
 import upickle.core.LinkedHashMap
 import upickle.default.*
@@ -13,7 +13,6 @@ import scala.io.Source
 import scala.util.{Failure, Success, Try}
 import java.net.JarURLConnection
 import scala.util.Using
-
 import scala.jdk.CollectionConverters.*
 
 type NamespaceToTypeMap = Map[String, Set[CSharpType]]
@@ -144,7 +143,8 @@ object CSharpProgramSummary {
 case class CSharpField(name: String, typeName: String) extends FieldLike derives ReadWriter
 
 case class CSharpMethod(name: String, returnType: String, parameterTypes: List[(String, String)], isStatic: Boolean)
-    extends MethodLike derives ReadWriter
+    extends MethodLike
+    with OverloadableMethod derives ReadWriter
 
 case class CSharpType(name: String, methods: List[CSharpMethod], fields: List[CSharpField])
     extends TypeLike[CSharpMethod, CSharpField] derives ReadWriter {
