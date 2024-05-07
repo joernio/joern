@@ -107,6 +107,10 @@ trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: 
       }
   }
 
+  def matchingM(callName: String)(implicit tag: ClassTag[M]): PartialFunction[MemberLike, M] = {
+    case m: M if m.name == callName => m
+  }
+
   /** Given the type full name and call name, will attempt to find the matching entry.
     *
     * @param typeFullName
@@ -122,10 +126,10 @@ trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: 
     tag: ClassTag[M]
   ): Option[M] = typeFullName match {
     case None =>
-      // This function uses the `implicit tag` (IntelliJ incorrectly marks it as unused)
-      def matchingM: PartialFunction[MemberLike, M] = { case m: M if m.name == callName => m }
       // TODO: The typesInScope part is to imprecisely solve the unimplemented polymorphism limitation
-      membersInScope.collectFirst(matchingM).orElse { typesInScope.flatMap(_.methods).collectFirst(matchingM) }
+      membersInScope.collectFirst(matchingM(callName)).orElse {
+        typesInScope.flatMap(_.methods).collectFirst(matchingM(callName))
+      }
     case Some(tfn) =>
       tryResolveTypeReference(tfn).flatMap { t =>
         t.methods.find(m => m.name == callName)
@@ -219,10 +223,10 @@ trait OverloadableScope[M <: OverloadableMethod] {
     typeFullName: Option[String] = None
   )(implicit tag: ClassTag[M]): Option[M] = typeFullName match {
     case None =>
-      // This function uses the `implicit tag` (IntelliJ incorrectly marks it as unused)
-      def matchingM: PartialFunction[MemberLike, M] = { case m: M if m.name == callName => m }
       // TODO: The typesInScope part is to imprecisely solve the unimplemented polymorphism limitation
-      membersInScope.collectFirst(matchingM).orElse { typesInScope.flatMap(_.methods).collectFirst(matchingM) }
+      membersInScope.collectFirst(matchingM(callName)).orElse {
+        typesInScope.flatMap(_.methods).collectFirst(matchingM(callName))
+      }
     case Some(tfn) =>
       val methodsWithEqualArgs = tryResolveTypeReference(tfn).flatMap { t =>
         Option(
@@ -427,3 +431,5 @@ trait OverloadableMethod extends MethodLike {
     */
   def parameterTypes: List[(String, String)]
 }
+
+trait StubbedType[M <: MethodLike, F <: FieldLike] extends TypeLike[M, F]
