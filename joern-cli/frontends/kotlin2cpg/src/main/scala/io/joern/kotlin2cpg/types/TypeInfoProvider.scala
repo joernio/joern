@@ -1,6 +1,7 @@
 package io.joern.kotlin2cpg.types
 
 import org.jetbrains.kotlin.descriptors.DescriptorVisibility
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.psi.{
   KtAnnotationEntry,
   KtBinaryExpression,
@@ -12,8 +13,8 @@ import org.jetbrains.kotlin.psi.{
   KtExpression,
   KtFile,
   KtLambdaExpression,
-  KtNameReferenceExpression,
   KtNamedFunction,
+  KtNameReferenceExpression,
   KtParameter,
   KtPrimaryConstructor,
   KtProperty,
@@ -35,6 +36,10 @@ trait TypeInfoProvider {
   def isStaticMethodCall(expr: KtQualifiedExpression): Boolean
 
   def visibility(fn: KtNamedFunction): Option[DescriptorVisibility]
+
+  def modality(fn: KtNamedFunction): Option[Modality]
+
+  def modality(ktClass: KtClassOrObject): Option[Modality]
 
   def returnType(elem: KtNamedFunction, defaultValue: String): String
 
