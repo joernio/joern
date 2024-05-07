@@ -144,8 +144,7 @@ object RubyStubbedType {
             val methodsList = read[List[RubyMethod]](jsonMethods)
 
             methodsList.map { func =>
-              val splitName        = func.name.split("\\.")
-              val baseTypeFullName = splitName.dropRight(1).mkString(".")
+              val baseTypeFullName = json("name").str
 
               func.copy(name = func.name, baseTypeFullName = Option(baseTypeFullName))
             }

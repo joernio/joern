@@ -183,7 +183,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     scope.tryResolveTypeReference(node.target.text).map(_.name) match {
       case Some(typeReference) =>
         scope
-          .tryResolveMethodInvocation("[]", List.empty, Option(typeReference))
+          .tryResolveMethodInvocation("[]", typeFullName = Option(typeReference))
           .map { m =>
             val expr = astForExpression(MemberCall(node.target, "::", "[]", node.indices)(node.span))
             expr.root.collect { case x: NewCall =>
@@ -367,7 +367,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     scope.lookupVariable(name) match {
       case Some(_) => handleVariableOccurrence(node)
-      case None if scope.tryResolveMethodInvocation(node.text, List.empty).isDefined =>
+      case None if scope.tryResolveMethodInvocation(node.text).isDefined =>
         astForSimpleCall(SimpleCall(node, List())(node.span))
       case None => handleVariableOccurrence(node)
     }
@@ -662,11 +662,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       scope
         .tryResolveMethodInvocation(
           methodName,
-          Nil,
-          scope.surroundingTypeFullName
+          typeFullName = scope.surroundingTypeFullName
         ) //  Check if this is a method invocation of a method define within this scope
         .orElse(
-          scope.tryResolveMethodInvocation(methodName, Nil)
+          scope.tryResolveMethodInvocation(methodName)
         ) // Check if this is a method invocation of a member imported into scope
       match {
         case Some(m) =>

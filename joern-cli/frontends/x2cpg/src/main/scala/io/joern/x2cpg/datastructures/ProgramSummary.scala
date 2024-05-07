@@ -107,7 +107,7 @@ trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: 
       }
   }
 
-  def matchingM(callName: String)(implicit tag: ClassTag[M]): PartialFunction[MemberLike, M] = {
+  protected def matchingM(callName: String)(implicit tag: ClassTag[M]): PartialFunction[MemberLike, M] = {
     case m: M if m.name == callName => m
   }
 
@@ -122,8 +122,8 @@ trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: 
     * @return
     *   the method meta data if found.
     */
-  def tryResolveMethodInvocation(callName: String, argTypes: List[String], typeFullName: Option[String] = None)(implicit
-    tag: ClassTag[M]
+  def tryResolveMethodInvocation(callName: String, argTypes: List[String] = Nil, typeFullName: Option[String] = None)(
+    implicit tag: ClassTag[M]
   ): Option[M] = typeFullName match {
     case None =>
       // TODO: The typesInScope part is to imprecisely solve the unimplemented polymorphism limitation
@@ -229,6 +229,7 @@ trait OverloadableScope[M <: OverloadableMethod] {
       }
     case Some(tfn) =>
       val methodsWithEqualArgs = tryResolveTypeReference(tfn).flatMap { t =>
+        // TODO: Investigate using `isOverloadedBy` here
         Option(
           t.methods.filter(m => m.name == callName && m.parameterTypes.filterNot(_._1 == "this").size == argTypes.size)
         )
@@ -236,10 +237,8 @@ trait OverloadableScope[M <: OverloadableMethod] {
 
       methodsWithEqualArgs
         .getOrElse(List.empty[M])
-        .find(isOverloadedBy(_, argTypes)) match {
-        case Some(m) => Option(m)
-        case None    => methodsWithEqualArgs.getOrElse(List.empty[M]).headOption
-      }
+        .find(isOverloadedBy(_, argTypes))
+        .orElse(methodsWithEqualArgs.getOrElse(List.empty[M]).headOption)
   }
 
   /** Determines if, by observing the given argument types, that the method's signature is a plausible match to the

@@ -17,7 +17,7 @@ import scala.util.Using
 
 trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  def summarize(dependencyDownloadPass: Boolean = false): RubyProgramSummary = {
+  def summarize(asExternal: Boolean = false): RubyProgramSummary = {
     this.parseLevel = AstParseLevel.SIGNATURES
     Using.resource(Cpg.withConfig(Config.withoutOverflow())) { cpg =>
       // Build and store compilation unit AST
@@ -30,7 +30,7 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
       AstLinkerPass(cpg).createAndApply()
 
       // Summarize findings
-      summarize(cpg, dependencyDownloadPass)
+      summarize(cpg, asExternal)
     }
   }
 
@@ -38,7 +38,7 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
     AstCreator(fileName, programCtx, projectRoot, newSummary)
   }
 
-  private def summarize(cpg: Cpg, dependencyDownloadPass: Boolean): RubyProgramSummary = {
+  private def summarize(cpg: Cpg, asExternal: Boolean): RubyProgramSummary = {
     def toMethod(m: Method): RubyMethod = {
       RubyMethod(
         m.name,
@@ -57,7 +57,7 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
     }
 
     def toType(m: TypeDecl): RubyType = {
-      if dependencyDownloadPass then RubyStubbedType(m.fullName, m.method.map(toMethod).l, m.member.map(toField).l)
+      if asExternal then RubyStubbedType(m.fullName, m.method.map(toMethod).l, m.member.map(toField).l)
       else RubyType(m.fullName, m.method.map(toMethod).l, m.member.map(toField).l)
     }
 
