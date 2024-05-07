@@ -215,13 +215,31 @@ implicit val semverRw: ReadWriter[SemVer] = readwriter[ujson.Value]
   .bimap[SemVer](
     x => ujson.Str(x.toString),
     {
-      case json @ (j: ujson.Str) => SemVer(json.str.replaceAll("^[vV]", "")) // get rid of leading `v` if any
+      case json @ (j: ujson.Str) => json.str.asSemver
       case x                     => throw JsonException(s"Unexpected value type for URL strings: ${x.getClass}")
     }
   )
 
 private case class Dist(reference: String, shasum: String, `type`: String, url: URL) derives ReadWriter
 
-private case class Package(dist: Dist, version: SemVer) derives ReadWriter
+private case class Package(dist: Dist, @upickle.implicits.key("version_normalized") version: SemVer) derives ReadWriter
 
 private case class PackageReleases(packages: Map[String, List[Package]]) derives ReadWriter
+
+/** Parses and simplifies the version string to help prevent the flakey SemVer parser from crashing.
+  */
+implicit class SemverStrExt(s: String) {
+
+  def asSemver: SemVer = {
+    val stableSemverString =
+      s.replaceAll("^[vV]", "").replaceAll("[+-].*$", "") // get rid of leading `v` or trailing build info
+
+    // Packagist normalized versions have a 4th version number entry which we can discard
+    if (stableSemverString.count(_ == '.') == 3) {
+      SemVer(stableSemverString.substring(0, stableSemverString.lastIndexOf('.')))
+    } else {
+      SemVer(stableSemverString)
+    }
+  }
+
+}
