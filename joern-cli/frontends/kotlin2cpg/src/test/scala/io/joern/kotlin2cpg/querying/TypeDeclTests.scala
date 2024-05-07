@@ -411,6 +411,8 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       val List(td) = cpg.typeDecl.nameExact("AnInterface").l
       td.fullName shouldBe "mypkg.AnInterface"
       td.inheritsFromTypeFullName shouldBe Seq("java.lang.Object")
+      cpg.typeDecl.isAbstract.head shouldBe td
+      td.method.isAbstract.fullName.l shouldBe List("mypkg.AnInterface.doSomething:void(java.lang.String)")
     }
   }
 
@@ -426,6 +428,8 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       val List(td) = cpg.typeDecl.nameExact("AFunInterface").l
       td.fullName shouldBe "mypkg.AFunInterface"
       td.inheritsFromTypeFullName shouldBe Seq("java.lang.Object")
+      cpg.typeDecl.isAbstract.head shouldBe td
+      td.method.isAbstract.fullName.l shouldBe List("mypkg.AFunInterface.doSomething:void(java.lang.String)")
     }
   }
 

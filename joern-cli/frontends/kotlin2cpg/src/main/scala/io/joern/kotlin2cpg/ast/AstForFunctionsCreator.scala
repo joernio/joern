@@ -17,6 +17,7 @@ import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.psi.*
 
 import java.util.UUID.nameUUIDFromBytes
@@ -24,6 +25,10 @@ import scala.jdk.CollectionConverters.*
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
+
+  private def isAbstract(ktFn: KtNamedFunction)(implicit typeInfoProvider: TypeInfoProvider): Boolean = {
+    typeInfoProvider.modality(ktFn).contains(Modality.ABSTRACT)
+  }
 
   def astsForMethod(ktFn: KtNamedFunction, needsThisParameter: Boolean = false, withVirtualModifier: Boolean = false)(
     implicit typeInfoProvider: TypeInfoProvider
@@ -85,15 +90,15 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       if (withVirtualModifier) Seq(modifierNode(ModifierTypes.VIRTUAL))
       else Seq()
 
+    val modifiers = if (isAbstract(ktFn)) {
+      List(visibilityModifier) ++ modifierNodes :+ modifierNode(ModifierTypes.ABSTRACT)
+    } else {
+      List(visibilityModifier) ++ modifierNodes
+    }
+
     val annotationEntries = ktFn.getAnnotationEntries.asScala.map(astForAnnotationEntry).toSeq
     Seq(
-      methodAst(
-        _methodNode,
-        thisParameterAsts ++ methodParametersAsts,
-        bodyAst,
-        _methodReturnNode,
-        List(visibilityModifier) ++ modifierNodes
-      )
+      methodAst(_methodNode, thisParameterAsts ++ methodParametersAsts, bodyAst, _methodReturnNode, modifiers)
         .withChildren(otherBodyAsts)
         .withChildren(annotationEntries)
     )
