@@ -303,7 +303,7 @@ class AstCreator(
       scope.lookupType(annotation.getNameAsString)
     case namedExpr: NodeWithName[_] =>
       scope.lookupVariableOrType(namedExpr.getNameAsString)
-    case namedExpr: NodeWithSimpleName[_] =>
+    case namedExpr: NodeWithSimpleName[_] if !expr.isMethodCallExpr =>
       scope.lookupVariableOrType(namedExpr.getNameAsString)
     // JavaParser doesn't handle literals well for some reason
     case _: BooleanLiteralExpr   => Some("boolean")
