@@ -87,7 +87,11 @@ private object Frontend {
       opt[Unit]("generate-nodes-for-dependencies")
         .text("Generate nodes for the dependencies of the target project")
         .action((_, c) => c.withGenerateNodesForDependencies(true)),
-      DependencyDownloadConfig.parserOptions
+      DependencyDownloadConfig.parserOptions,
+      opt[Unit]("keep-type-arguments")
+        .hidden()
+        .action((_, c) => c.withKeepTypeArguments(true))
+        .text("Type full names of variables keep their type arguments.")
     )
   }
 }
