@@ -19,16 +19,16 @@ class LiteralTests extends RubyCode2CpgFixture(withPostProcessing = true, withDa
     sink.reachableByFlows(source).size shouldBe 1
   }
 
-  "flow through interpolated double-quoted string literal " in {
-    val cpg = code("""
-                     |x = "foo"
-                     |y = :"bar #{x}"
-                     |puts y
+  "flow through interpolated double-quoted symbol literal" in {
+    val cpg = code("""def foo(x)
+                     |  y = :"bar #{x}"
+                     |  puts y
+                     |end
                      |""".stripMargin)
 
-    val source = cpg.local.code("\"foo\"").l
+    val source = cpg.method("foo").parameter.index(1).l
     val sink   = cpg.call.name("puts").argument(1).l
-    sink.reachableByFlows(source).size shouldBe 2
+    sink.reachableByFlows(source).size shouldBe 1
   }
 
   "flow through symbol literal defined using \\:" in {
