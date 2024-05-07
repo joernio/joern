@@ -23,7 +23,7 @@ class RubyTypeRecoveryTests extends RubyCode2CpgFixture(withPostProcessing = tru
       "main.rb"
     ).cpg
 
-    "resolve 'print' and 'puts' calls" in {
+    "resolve 'print' and 'puts' StubbedRubyType calls" in {
       val List(printCall) = cpg.call("print").l
       printCall.methodFullName shouldBe "__builtin:print"
       val List(maxCall) = cpg.call("puts").l
