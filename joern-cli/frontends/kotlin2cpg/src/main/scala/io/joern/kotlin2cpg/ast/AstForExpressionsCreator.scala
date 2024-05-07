@@ -448,14 +448,19 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val methodFqName = if (importedNames.isDefinedAt(referencedName)) {
       importedNames(referencedName).getImportedFqName.toString
-    } else if (nameToClass.contains(expr.getCalleeExpression.getText)) {
+    } else if (Option(expr.getCalleeExpression).map(_.getText).exists(nameToClass.contains)) {
       val klass = nameToClass(expr.getCalleeExpression.getText)
       s"${klass.getContainingKtFile.getPackageFqName.toString}.$referencedName"
     } else {
       s"${expr.getContainingKtFile.getPackageFqName.toString}.$referencedName"
     }
-    val explicitSignature     = s"${TypeConstants.any}(${argAsts.map { _ => TypeConstants.any }.mkString(",")})"
-    val explicitFullName      = s"$methodFqName:$explicitSignature"
+    lazy val typeArgs =
+      expr.getTypeArguments.asScala.map(x => typeInfoProvider.typeFullName(x.getTypeReference, TypeConstants.any))
+    val explicitSignature = s"${TypeConstants.any}(${argAsts.map { _ => TypeConstants.any }.mkString(",")})"
+    val explicitFullName =
+      if (typeInfoProvider.typeRenderer.keepTypeArguments && typeArgs.nonEmpty)
+        s"$methodFqName<${typeArgs.mkString(",")}>:$explicitSignature"
+      else s"$methodFqName:$explicitSignature"
     val (fullName, signature) = typeInfoProvider.fullNameWithSignature(expr, (explicitFullName, explicitSignature))
 
     // TODO: add test case to confirm whether the ANY fallback makes sense (could be void)

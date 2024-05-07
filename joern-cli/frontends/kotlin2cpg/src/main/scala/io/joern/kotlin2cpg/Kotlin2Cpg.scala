@@ -7,8 +7,7 @@ import io.joern.kotlin2cpg.files.SourceFilesPicker
 import io.joern.kotlin2cpg.interop.JavasrcInterop
 import io.joern.kotlin2cpg.jar4import.UsesService
 import io.joern.kotlin2cpg.passes.*
-import io.joern.kotlin2cpg.types.ContentSourcesPicker
-import io.joern.kotlin2cpg.types.DefaultTypeInfoProvider
+import io.joern.kotlin2cpg.types.{ContentSourcesPicker, DefaultTypeInfoProvider, TypeRenderer}
 import io.joern.kotlin2cpg.utils.PathUtils
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.X2CpgFrontend
@@ -228,8 +227,11 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
 
       new MetaDataPass(cpg, Languages.KOTLIN, config.inputPath).createAndApply()
 
+      val typeRenderer = new TypeRenderer(config.keepTypeArguments)
       val astCreator =
-        new AstCreationPass(sourceFiles, new DefaultTypeInfoProvider(environment), cpg)(config.schemaValidation)
+        new AstCreationPass(sourceFiles, new DefaultTypeInfoProvider(environment, typeRenderer), cpg)(
+          config.schemaValidation
+        )
       astCreator.createAndApply()
 
       val kotlinAstCreatorTypes = astCreator.global.usedTypes.keys().asScala.toList
