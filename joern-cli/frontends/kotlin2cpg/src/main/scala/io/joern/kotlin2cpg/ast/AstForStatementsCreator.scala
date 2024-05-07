@@ -1,11 +1,11 @@
 package io.joern.kotlin2cpg.ast
 
 import io.joern.kotlin2cpg.Constants
-import io.joern.kotlin2cpg.ast.Nodes.operatorCallNode
 import io.joern.kotlin2cpg.types.TypeConstants
 import io.joern.kotlin2cpg.types.TypeInfoProvider
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
+import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.utils.NodeBuilders.newIdentifierNode
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
@@ -85,7 +85,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
       callAst(iteratorAssignmentRhs, Seq(), Option(Ast(iteratorAssignmentRhsIdentifier)))
 
     val iteratorAssignment =
-      operatorCallNode(Operators.assignment, s"$iteratorName = ${iteratorAssignmentRhs.code}", None)
+      NodeBuilders.newOperatorCallNode(Operators.assignment, s"$iteratorName = ${iteratorAssignmentRhs.code}", None)
     val iteratorAssignmentAst = callAst(iteratorAssignment, List(Ast(iteratorAssignmentLhs), iteratorAssignmentRhsAst))
 
     val controlStructure    = controlStructureNode(expr, ControlStructureTypes.WHILE, expr.getText)
@@ -140,7 +140,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val iteratorNextCallAst =
       callAst(iteratorNextCall, Seq(), Option(iteratorNextIdentifierAst))
-    val tmpParameterNextAssignment    = operatorCallNode(Operators.assignment, s"$tmpName = ${iteratorNextCall.code}")
+    val tmpParameterNextAssignment =
+      NodeBuilders.newOperatorCallNode(Operators.assignment, s"$tmpName = ${iteratorNextCall.code}")
     val tmpParameterNextAssignmentAst = callAst(tmpParameterNextAssignment, List(tmpIdentifierAst, iteratorNextCallAst))
 
     val assignmentsForEntries =
@@ -203,7 +204,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     val iteratorAssignmentRhsAst =
       callAst(iteratorAssignmentRhs, Seq(), Option(Ast(iteratorAssignmentRhsIdentifier)))
     val iteratorAssignment =
-      operatorCallNode(Operators.assignment, s"$iteratorName = ${iteratorAssignmentRhs.code}", None)
+      NodeBuilders.newOperatorCallNode(Operators.assignment, s"$iteratorName = ${iteratorAssignmentRhs.code}", None)
 
     val iteratorAssignmentAst = callAst(iteratorAssignment, List(Ast(iteratorAssignmentLhs), iteratorAssignmentRhsAst))
     val controlStructure      = controlStructureNode(expr, ControlStructureTypes.WHILE, expr.getText)
@@ -249,7 +250,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     val iteratorNextCallAst =
       callAst(iteratorNextCall, Seq(), Option(iteratorNextIdentifierAst))
     val loopParameterNextAssignment =
-      operatorCallNode(Operators.assignment, s"$loopParameterName = ${iteratorNextCall.code}", None)
+      NodeBuilders.newOperatorCallNode(Operators.assignment, s"$loopParameterName = ${iteratorNextCall.code}", None)
     val loopParameterNextAssignmentAst =
       callAst(loopParameterNextAssignment, List(Ast(loopParameterIdentifier), iteratorNextCallAst))
 
@@ -303,7 +304,13 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     if (allAsts.nonEmpty) {
       val returnTypeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
       val node =
-        operatorCallNode(Operators.conditional, expr.getText, Option(returnTypeFullName), line(expr), column(expr))
+        NodeBuilders.newOperatorCallNode(
+          Operators.conditional,
+          expr.getText,
+          Option(returnTypeFullName),
+          line(expr),
+          column(expr)
+        )
       callAst(withArgumentIndex(node, argIdx).argumentName(argNameMaybe), allAsts)
         .withChildren(annotations.map(astForAnnotationEntry))
     } else {
@@ -382,7 +389,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
   ): Ast = {
 
     val callNode =
-      withArgumentIndex(operatorCallNode("<operator>.when", "<operator>.when", None), argIdx)
+      withArgumentIndex(NodeBuilders.newOperatorCallNode("<operator>.when", "<operator>.when", None), argIdx)
         .argumentName(argNameMaybe)
 
     val subjectExpressionAsts = Option(expr.getSubjectExpression) match {
@@ -428,7 +435,13 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
           val entryExprAst = astsForExpression(entryExpr, None).head
 
           val callNode =
-            operatorCallNode(Operators.conditional, Operators.conditional, Some(typeFullName), line(cond), column(cond))
+            NodeBuilders.newOperatorCallNode(
+              Operators.conditional,
+              Operators.conditional,
+              Some(typeFullName),
+              line(cond),
+              column(cond)
+            )
 
           val newElseAst = callAst(callNode, Seq(condAst, entryExprAst, elseAst))
           elseAst = newElseAst
@@ -506,7 +519,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
       astsForExpression(entry.getCatchBody, None)
     }
     val node =
-      operatorCallNode(Operators.tryCatch, expr.getText, Option(typeFullName), line(expr), column(expr))
+      NodeBuilders
+        .newOperatorCallNode(Operators.tryCatch, expr.getText, Option(typeFullName), line(expr), column(expr))
         .argumentName(argNameMaybe)
 
     callAst(withArgumentIndex(node, argIdx), List(tryBlockAst) ++ clauseAsts)

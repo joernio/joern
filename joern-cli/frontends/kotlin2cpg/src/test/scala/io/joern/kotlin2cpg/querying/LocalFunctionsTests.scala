@@ -2,7 +2,8 @@ package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.Method
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
+import io.shiftleft.semanticcpg.language.*
 
 class LocalFunctionsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
@@ -27,6 +28,17 @@ class LocalFunctionsTests extends KotlinCode2CpgFixture(withOssDataflow = false)
       m.parameter.size shouldBe 1
       m.block.size shouldBe 1
       m.block.expressionDown.size shouldBe 1
+    }
+
+    "contain TYPE_DECL nodes for the functions with the correct PROPS set" in {
+      val List(m1: Method)   = cpg.method.nameExact("f1").l
+      val List(m2: Method)   = cpg.method.nameExact("f2").l
+      val List(t1: TypeDecl) = cpg.typeDecl.internal.nameExact("f1").l
+      t1.fullName shouldBe "mypkg.f1:void(java.lang.String)"
+      t1.bindsOut.flatMap(_.refOut).l should contain(m1)
+      val List(t2: TypeDecl) = cpg.typeDecl.internal.nameExact("f2").l
+      t2.fullName shouldBe "mypkg.f1.f2:void(java.lang.String)"
+      t2.bindsOut.flatMap(_.refOut).l should contain(m2)
     }
   }
 

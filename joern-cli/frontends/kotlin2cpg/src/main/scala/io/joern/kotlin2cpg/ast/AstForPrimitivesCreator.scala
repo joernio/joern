@@ -1,13 +1,12 @@
 package io.joern.kotlin2cpg.ast
 
 import io.joern.kotlin2cpg.Constants
-import io.joern.kotlin2cpg.ast.Nodes.namespaceBlockNode
-import io.joern.kotlin2cpg.ast.Nodes.operatorCallNode
 import io.joern.kotlin2cpg.types.TypeConstants
 import io.joern.kotlin2cpg.types.TypeInfoProvider
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.ValidationMode
+import io.joern.x2cpg.utils.NodeBuilders
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.NewAnnotation
@@ -59,7 +58,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
       if (expr.hasInterpolation) {
         val args = expr.getEntries.filter(_.getExpression != null).zipWithIndex.map { case (entry, idx) =>
           val entryTypeFullName = registerType(typeInfoProvider.expressionType(entry.getExpression, TypeConstants.any))
-          val valueCallNode = operatorCallNode(
+          val valueCallNode = NodeBuilders.newOperatorCallNode(
             Operators.formattedValue,
             entry.getExpression.getText,
             Option(entryTypeFullName),
@@ -70,7 +69,13 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
           callAst(valueCallNode, valueArgs.toList)
         }
         val node =
-          operatorCallNode(Operators.formatString, expr.getText, Option(typeFullName), line(expr), column(expr))
+          NodeBuilders.newOperatorCallNode(
+            Operators.formatString,
+            expr.getText,
+            Option(typeFullName),
+            line(expr),
+            column(expr)
+          )
         callAst(withArgumentName(withArgumentIndex(node, argIdx), argName), args.toIndexedSeq.toList)
       } else {
         val node = literalNode(expr, expr.getText, typeFullName)
@@ -107,7 +112,13 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
         identifierNode(expr, expr.getIdentifier.getText, expr.getIdentifier.getText, typeFullName),
         fieldIdentifierNode(expr, Constants.companionObjectMemberName, Constants.companionObjectMemberName)
       ).map(Ast(_))
-      val node = operatorCallNode(Operators.fieldAccess, expr.getText, Option(typeFullName), line(expr), column(expr))
+      val node = NodeBuilders.newOperatorCallNode(
+        Operators.fieldAccess,
+        expr.getText,
+        Option(typeFullName),
+        line(expr),
+        column(expr)
+      )
       callAst(withArgumentIndex(node, argIdx), argAsts)
     } else {
       val node = typeRefNode(expr.getIdentifier, expr.getIdentifier.getText, typeFullName)
@@ -125,7 +136,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     val thisNode             = identifierNode(expr, Constants.this_, Constants.this_, referenceTargetTypeFullName)
     val thisAst              = astWithRefEdgeMaybe(Constants.this_, thisNode)
     val _fieldIdentifierNode = fieldIdentifierNode(expr, expr.getReferencedName, expr.getReferencedName)
-    val node = operatorCallNode(
+    val node = NodeBuilders.newOperatorCallNode(
       Operators.fieldAccess,
       s"${Constants.this_}.${expr.getReferencedName}",
       Option(typeFullName),
@@ -227,14 +238,14 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
   def astForPackageDeclaration(packageName: String): Ast = {
     val node =
       if (packageName == Constants.root)
-        namespaceBlockNode(
+        NodeBuilders.newNamespaceBlockNode(
           NamespaceTraversal.globalNamespaceName,
           NamespaceTraversal.globalNamespaceName,
           relativizedPath
         )
       else {
         val name = packageName.split("\\.").lastOption.getOrElse("")
-        namespaceBlockNode(name, packageName, relativizedPath)
+        NodeBuilders.newNamespaceBlockNode(name, packageName, relativizedPath)
       }
     Ast(node)
   }

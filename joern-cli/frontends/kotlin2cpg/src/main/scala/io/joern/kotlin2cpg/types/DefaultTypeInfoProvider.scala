@@ -24,6 +24,8 @@ import org.jetbrains.kotlin.descriptors.impl.{
   PropertyDescriptorImpl,
   TypeAliasConstructorDescriptorImpl
 }
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.load.java.`lazy`.descriptors.LazyJavaClassDescriptor
 import org.jetbrains.kotlin.load.java.sources.JavaSourceElement
@@ -377,7 +379,9 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       desc = resolvedCallForSubexpression.getResultingDescriptor
     } yield desc
 
-    descMaybe.collect { case desc: FunctionDescriptor => desc }
+    descMaybe.collect {
+      case desc: FunctionDescriptor if desc.getKind == CallableMemberDescriptor.Kind.DECLARATION => desc
+    }
   }
 
   private def isConstructorDescriptor(desc: FunctionDescriptor): Boolean = {

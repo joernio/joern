@@ -15,6 +15,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewModifier
 }
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies}
+import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
 
 /** NodeBuilders helps with node creation and is intended to be used when functions from `x2cpg.AstCreatorBase` are not
   * appropriate; for example, in cases in which the node's line and column are _not_ set from the base ASTNode type of a
@@ -177,4 +178,11 @@ object NodeBuilders {
       .evaluationStrategy(EvaluationStrategies.BY_VALUE)
       .lineNumber(line)
       .columnNumber(column)
+
+  def newNamespaceBlockNode(name: String, fullName: String, fileName: String): NewNamespaceBlock = {
+    NewNamespaceBlock()
+      .name(name)
+      .fullName(fullName)
+      .filename(fileName)
+  }
 }
