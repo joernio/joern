@@ -1,7 +1,9 @@
 package io.joern.kotlin2cpg.querying
 
+import io.joern.kotlin2cpg.Config
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.semanticcpg.language.*
 
 class TypeTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
@@ -64,4 +66,48 @@ class TypeTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       x.name shouldBe "l"
     }
   }
+
+  "generics with 'keep type arguments' config" should {
+
+    "show the fully qualified type arguments for stdlib `List and `Map` objects" in {
+      val cpg = code("""
+                       |import java.util.ArrayList
+                       |import java.util.HashMap
+                       |
+                       |fun foo() {
+                       |  val stringList = ArrayList<String>()
+                       |  val stringIntMap = HashMap<String, Integer>()
+                       |}
+                       |""".stripMargin)
+        .withConfig(Config().withKeepTypeArguments(true))
+
+      cpg.identifier("stringList").typeFullName.head shouldBe "java.util.ArrayList<java.lang.String>"
+      cpg.identifier("stringIntMap").typeFullName.head shouldBe "java.util.HashMap<java.lang.String,java.lang.Integer>"
+    }
+
+    "show the fully qualified names of external types" in {
+      val cpg = code("""
+                       |import org.apache.flink.streaming.api.datastream.DataStream
+                       |import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment
+                       |import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer
+                       |import org.apache.flink.streaming.util.serialization.SimpleStringSchema
+                       |
+                       |import java.util.Properties;
+                       |
+                       |class FlinkKafkaExample {
+                       |    fun main() {
+                       |        val kafkaProducer = FlinkKafkaProducer<String>("kafka-topic")
+                       |    }
+                       |}
+                       |""".stripMargin).withConfig(Config().withKeepTypeArguments(true))
+
+      cpg.call
+        .codeExact("FlinkKafkaProducer<String>(\"kafka-topic\")")
+        .filterNot(_.name == Operators.alloc)
+        .map(_.methodFullName)
+        .head shouldBe "org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer<java.lang.String>:ANY(ANY)"
+    }
+
+  }
+
 }

@@ -26,7 +26,7 @@ import org.jetbrains.kotlin.psi.{
 
 case class AnonymousObjectContext(declaration: KtElement)
 
-trait TypeInfoProvider {
+trait TypeInfoProvider(val typeRenderer: TypeRenderer = new TypeRenderer()) {
   def isExtensionFn(fn: KtNamedFunction): Boolean
 
   def usedAsExpression(expr: KtExpression): Option[Boolean]

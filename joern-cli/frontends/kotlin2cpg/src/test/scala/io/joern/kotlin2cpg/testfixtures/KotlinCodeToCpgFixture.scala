@@ -19,15 +19,22 @@ trait KotlinFrontend extends LanguageFrontend {
   protected val withTestResourcePaths: Boolean
 
   override val fileSuffix: String = ".kt"
+  private lazy val defaultContentRoot =
+    BFile(ProjectRoot.relativise("joern-cli/frontends/kotlin2cpg/src/test/resources/jars/"))
+  private lazy val defaultConfig: Config =
+    Config(
+      classpath = if (withTestResourcePaths) Set(defaultContentRoot.path.toAbsolutePath.toString) else Set(),
+      includeJavaSourceFiles = true
+    )
 
   override def execute(sourceCodeFile: File): Cpg = {
-    val defaultContentRoot =
-      BFile(ProjectRoot.relativise("joern-cli/frontends/kotlin2cpg/src/test/resources/jars/"))
-    implicit val defaultConfig: Config =
-      Config(
-        classpath = if (withTestResourcePaths) Set(defaultContentRoot.path.toAbsolutePath.toString) else Set(),
-        includeJavaSourceFiles = true
-      )
+    implicit val config: Config = getConfig() match {
+      case Some(config: Config) => config
+      case _ =>
+        setConfig(defaultConfig)
+        defaultConfig
+    }
+
     new Kotlin2Cpg().createCpg(sourceCodeFile.getAbsolutePath).get
   }
 }
