@@ -61,4 +61,25 @@ class ConfigFileCreationPassTests extends JavaSrcCode2CpgFixture {
     }
   }
 
+  "it should populate config files correctly when they are nested" in {
+    val configFile1Path = Paths.get("config.properties").toString
+    val configFile2Path = Paths.get("someDir", "config.properties").toString
+    val cpg = code("""public class Foo{}
+        |""".stripMargin)
+      .moreCode(code = "config.file=1", fileName = configFile1Path)
+      .moreCode(code = "config.file=2", fileName = configFile2Path)
+
+    cpg.typeDecl.name("Foo").nonEmpty shouldBe true
+    cpg.configFile.sortBy(_.name).l match {
+      case List(configFile1, configFile2) =>
+        configFile1.name shouldBe configFile1Path
+        configFile1.content shouldBe "config.file=1"
+
+        configFile2.name shouldBe configFile2Path
+        configFile2.content shouldBe "config.file=2"
+
+      case result => fail(s"Expected two config files but got $result")
+    }
+  }
+
 }
