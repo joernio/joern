@@ -119,7 +119,6 @@ class AstCreator(
       .flatMap(_._2)
       .filter(x => x.name.contains(":program"))
       .flatMap(_.methods)
-      .filterNot(x => x.name.contains("<init>") || x.name.contains("<clinit>"))
       .map { method =>
         val methodRefNode = NewMethodRef()
           .code(s"def ${method.name} (...)")
