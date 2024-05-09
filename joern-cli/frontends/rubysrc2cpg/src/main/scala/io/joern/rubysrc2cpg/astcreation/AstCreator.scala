@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
-import io.joern.rubysrc2cpg.datastructures.{BlockScope, NamespaceScope, RubyProgramSummary, RubyScope}
+import io.joern.rubysrc2cpg.datastructures.{BlockScope, NamespaceScope, RubyProgramSummary, RubyScope, RubyStubbedType}
 import io.joern.rubysrc2cpg.parser.{RubyNodeCreator, RubyParser}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
@@ -44,7 +44,7 @@ class AstCreator(
       .map(_.stripPrefix(java.io.File.separator))
       .getOrElse(fileName)
 
-  private val internalLineAndColNum: Option[Integer] = Option(1)
+  private def internalLineAndColNum: Option[Integer] = Option(1)
 
   /** The relative file name, in a unix path delimited format.
     */
@@ -110,14 +110,14 @@ class AstCreator(
   private def methodRefNodesForInternalMethods(): List[Ast] = {
     val typeNameForMethods = scope.surroundingTypeFullName
       .map { x =>
-        x.split("[:]{2}").dropRight(1).mkString("")
+        x.stripSuffix(s":${Defines.Program}")
       }
       .getOrElse(Defines.Undefined)
 
     programSummary.namespaceToType
       .filter(_._1 == typeNameForMethods)
       .flatMap(_._2)
-      .filter(x => x.name.contains(":program"))
+      .filter(!_.isInstanceOf[RubyStubbedType])
       .flatMap(_.methods)
       .map { method =>
         val methodRefNode = NewMethodRef()
@@ -140,25 +140,30 @@ class AstCreator(
   }
 
   private def typeRefNodesForInternalDecls(): List[Ast] = {
-    programSummary.namespaceToType
-      .filter(_._1.contains(scope.surroundingTypeFullName.getOrElse(Defines.Undefined)))
-      .flatMap(_._2)
-      .map { x =>
-        val typeRefName = x.name.split("[.]").takeRight(1).head
-        val typeRefNode = NewTypeRef()
-          .code(s"class ${x.name} (...)")
-          .typeFullName(x.name)
+    scope.surroundingTypeFullName
+      .map { surroundingTypeFullName =>
+        programSummary.namespaceToType
+          .filter(_._1.contains(surroundingTypeFullName))
+          .flatMap(_._2)
+          .map { x =>
+            val typeRefName = x.name.split("[.]").takeRight(1).head
+            val typeRefNode = NewTypeRef()
+              .code(s"class ${x.name} (...)")
+              .typeFullName(x.name)
 
-        val typeRefIdent = NewIdentifier()
-          .code(typeRefName)
-          .name(typeRefName)
-          .typeFullName(x.name)
-          .lineNumber(internalLineAndColNum)
-          .columnNumber(internalLineAndColNum)
+            val typeRefIdent = NewIdentifier()
+              .code(typeRefName)
+              .name(typeRefName)
+              .typeFullName(x.name)
+              .lineNumber(internalLineAndColNum)
+              .columnNumber(internalLineAndColNum)
 
-        astForAssignment(typeRefIdent, typeRefNode, internalLineAndColNum, internalLineAndColNum)
+            astForAssignment(typeRefIdent, typeRefNode, internalLineAndColNum, internalLineAndColNum)
+          }
+          .toList
       }
-      .toList
+      .getOrElse(List.empty)
+
   }
 }
 
