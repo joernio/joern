@@ -521,6 +521,37 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
         .last shouldBe "Derived.getCurrentSession:org.hibernate.Session()"
     }
   }
+
+  "call to external method in a builder-like pattern" should {
+    val cpg = code("""
+        |package example;
+        |import org.Builder;
+        |import org.Client;
+        |
+        |class Main {
+        | static void main(String[] args) {
+        |   Client foo = new Builder().foo().buildClient(); // 8
+        |   new Builder().somethingElse().buildClient();    // 9
+        | }
+        |}
+        |""".stripMargin)
+
+    "have correct method full name for `buildClient` call on line 8" in {
+      cpg.call("buildClient").lineNumber(8).l match {
+        case List(buildClient) =>
+          buildClient.methodFullName shouldBe "<unresolvedNamespace>.buildClient:<unresolvedSignature>(0)"
+        case result => fail(s"Expected single buildClient call but got $result")
+      }
+    }
+
+    "have correct method full name for `buildClient` call on line 9" in {
+      cpg.call("buildClient").lineNumber(9).l match {
+        case List(buildClient) =>
+          buildClient.methodFullName shouldBe "<unresolvedNamespace>.buildClient:<unresolvedSignature>(0)"
+        case result => fail(s"Expected single buildClient call but got $result")
+      }
+    }
+  }
 }
 
 class CallTests extends JavaSrcCode2CpgFixture {

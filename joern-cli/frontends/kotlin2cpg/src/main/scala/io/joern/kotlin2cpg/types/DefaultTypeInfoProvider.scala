@@ -3,60 +3,52 @@ package io.joern.kotlin2cpg.types
 import io.joern.kotlin2cpg.psi.PsiUtils
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.Operators
-import org.jetbrains.kotlin.cli.jvm.compiler.{
-  KotlinCoreEnvironment,
-  KotlinToJVMBytecodeCompiler,
-  NoScopeRecordCliBindingTrace
-}
-import org.jetbrains.kotlin.com.intellij.util.keyFMap.KeyFMap
-import org.jetbrains.kotlin.descriptors.{
-  DeclarationDescriptor,
-  DescriptorVisibility,
-  FunctionDescriptor,
-  ValueDescriptor,
-  ValueParameterDescriptor
-}
 import kotlin.reflect.jvm.internal.impl.load.java.descriptors.JavaClassConstructorDescriptor
-import org.jetbrains.kotlin.descriptors.impl.{
-  ClassConstructorDescriptorImpl,
-  EnumEntrySyntheticClassDescriptor,
-  LazyPackageViewDescriptorImpl,
-  PropertyDescriptorImpl,
-  TypeAliasConstructorDescriptorImpl
-}
+import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
+import org.jetbrains.kotlin.cli.jvm.compiler.KotlinToJVMBytecodeCompiler
+import org.jetbrains.kotlin.cli.jvm.compiler.NoScopeRecordCliBindingTrace
+import org.jetbrains.kotlin.com.intellij.util.keyFMap.KeyFMap
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.DescriptorVisibility
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.ValueDescriptor
+import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
+import org.jetbrains.kotlin.descriptors.impl.ClassConstructorDescriptorImpl
+import org.jetbrains.kotlin.descriptors.impl.EnumEntrySyntheticClassDescriptor
+import org.jetbrains.kotlin.descriptors.impl.LazyPackageViewDescriptorImpl
+import org.jetbrains.kotlin.descriptors.impl.PropertyDescriptorImpl
+import org.jetbrains.kotlin.descriptors.impl.TypeAliasConstructorDescriptorImpl
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
-import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.load.java.`lazy`.descriptors.LazyJavaClassDescriptor
 import org.jetbrains.kotlin.load.java.sources.JavaSourceElement
 import org.jetbrains.kotlin.load.java.structure.impl.classFiles.BinaryJavaMethod
-import org.jetbrains.kotlin.psi.{
-  KtAnnotationEntry,
-  KtArrayAccessExpression,
-  KtBinaryExpression,
-  KtCallExpression,
-  KtClassBody,
-  KtClassLiteralExpression,
-  KtClassOrObject,
-  KtDestructuringDeclarationEntry,
-  KtElement,
-  KtExpression,
-  KtFile,
-  KtLambdaExpression,
-  KtNamedFunction,
-  KtNameReferenceExpression,
-  KtParameter,
-  KtPrimaryConstructor,
-  KtProperty,
-  KtPsiUtil,
-  KtQualifiedExpression,
-  KtSecondaryConstructor,
-  KtSuperExpression,
-  KtThisExpression,
-  KtTypeAlias,
-  KtTypeReference
-}
-import org.jetbrains.kotlin.resolve.{BindingContext, DescriptorUtils}
+import org.jetbrains.kotlin.psi.KtAnnotationEntry
+import org.jetbrains.kotlin.psi.KtArrayAccessExpression
+import org.jetbrains.kotlin.psi.KtBinaryExpression
+import org.jetbrains.kotlin.psi.KtCallExpression
+import org.jetbrains.kotlin.psi.KtClassBody
+import org.jetbrains.kotlin.psi.KtClassLiteralExpression
+import org.jetbrains.kotlin.psi.KtClassOrObject
+import org.jetbrains.kotlin.psi.KtDestructuringDeclarationEntry
+import org.jetbrains.kotlin.psi.KtElement
+import org.jetbrains.kotlin.psi.KtExpression
+import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtLambdaExpression
+import org.jetbrains.kotlin.psi.KtNameReferenceExpression
+import org.jetbrains.kotlin.psi.KtNamedFunction
+import org.jetbrains.kotlin.psi.KtParameter
+import org.jetbrains.kotlin.psi.KtPrimaryConstructor
+import org.jetbrains.kotlin.psi.KtProperty
+import org.jetbrains.kotlin.psi.KtPsiUtil
+import org.jetbrains.kotlin.psi.KtQualifiedExpression
+import org.jetbrains.kotlin.psi.KtSecondaryConstructor
+import org.jetbrains.kotlin.psi.KtSuperExpression
+import org.jetbrains.kotlin.psi.KtThisExpression
+import org.jetbrains.kotlin.psi.KtTypeAlias
+import org.jetbrains.kotlin.psi.KtTypeReference
+import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.DescriptorUtils.getSuperclassDescriptors
 import org.jetbrains.kotlin.resolve.`lazy`.descriptors.LazyClassDescriptor
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedClassDescriptor
@@ -65,14 +57,16 @@ import org.jetbrains.kotlin.types.error.ErrorType
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 import scala.util.control.NonFatal
-import scala.util.{Failure, Success, Try}
 
 class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment, typeRenderer: TypeRenderer = new TypeRenderer())
     extends TypeInfoProvider(typeRenderer) {
   private val logger = LoggerFactory.getLogger(getClass)
 
-  import DefaultTypeInfoProvider._
+  import DefaultTypeInfoProvider.*
 
   val bindingContext: BindingContext = {
     Try {
@@ -379,10 +373,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment, typeRenderer: 
       resolvedCallForSubexpression <- Option(bindingContext.get(BindingContext.RESOLVED_CALL, callForSubexpression))
       desc = resolvedCallForSubexpression.getResultingDescriptor
     } yield desc
-
-    descMaybe.collect {
-      case desc: FunctionDescriptor if desc.getKind == CallableMemberDescriptor.Kind.DECLARATION => desc
-    }
+    descMaybe.collect { case desc: FunctionDescriptor => desc }
   }
 
   private def isConstructorDescriptor(desc: FunctionDescriptor): Boolean = {
@@ -413,8 +404,8 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment, typeRenderer: 
           case typedDesc: TypeAliasConstructorDescriptorImpl =>
             typedDesc.getUnderlyingConstructorDescriptor
           case typedDesc: FunctionDescriptor if !typedDesc.isActual =>
-            val overwriddenDescriptors = typedDesc.getOverriddenDescriptors.asScala.toList
-            if (overwriddenDescriptors.nonEmpty) overwriddenDescriptors.head
+            val overriddenDescriptors = typedDesc.getOverriddenDescriptors.asScala.toList
+            if (overriddenDescriptors.nonEmpty) overriddenDescriptors.head
             else typedDesc
           case _ => originalDesc
         }
@@ -778,23 +769,23 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment, typeRenderer: 
   def fullNameWithSignature(expr: KtPrimaryConstructor, defaultValue: (String, String)): (String, String) = {
     // if not explicitly defined, the primary ctor will be `null`
     if (expr == null) {
-      return defaultValue
+      defaultValue
+    } else {
+      val paramTypeNames = expr.getValueParameters.asScala.map { parameter =>
+        val explicitTypeFullName = Option(parameter.getTypeReference)
+          .map(_.getText)
+          .getOrElse(Defines.UnresolvedNamespace)
+        // TODO: return all the parameter types in this fn for registration, otherwise they will be missing
+        parameterType(parameter, typeRenderer.stripped(explicitTypeFullName))
+      }
+      val paramListSignature = s"(${paramTypeNames.mkString(",")})"
+      val methodName = Option(bindingContext.get(BindingContext.CONSTRUCTOR, expr))
+        .map { info => s"${typeRenderer.renderFqNameForDesc(info)}${TypeConstants.initPrefix}" }
+        .getOrElse(s"${Defines.UnresolvedNamespace}.${TypeConstants.initPrefix}")
+      val signature = s"${TypeConstants.void}$paramListSignature"
+      val fullname  = s"$methodName:$signature"
+      (fullname, signature)
     }
-    val paramTypeNames = expr.getValueParameters.asScala.map { parameter =>
-      val explicitTypeFullName = Option(parameter.getTypeReference)
-        .map(_.getText)
-        .getOrElse(Defines.UnresolvedNamespace)
-      // TODO: return all the parameter types in this fn for registration, otherwise they will be missing
-      parameterType(parameter, typeRenderer.stripped(explicitTypeFullName))
-    }
-    val paramListSignature = s"(${paramTypeNames.mkString(",")})"
-
-    val methodName = Option(bindingContext.get(BindingContext.CONSTRUCTOR, expr))
-      .map { info => s"${typeRenderer.renderFqNameForDesc(info)}${TypeConstants.initPrefix}" }
-      .getOrElse(s"${Defines.UnresolvedNamespace}.${TypeConstants.initPrefix}")
-    val signature = s"${TypeConstants.void}$paramListSignature"
-    val fullname  = s"$methodName:$signature"
-    (fullname, signature)
   }
 
   def fullNameWithSignatureAsLambda(expr: KtNamedFunction, lambdaName: String): (String, String) = {
@@ -905,13 +896,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment, typeRenderer: 
       .getOrElse(NameReferenceKinds.Unknown)
   }
 
-  def typeFullName(expr: KtPrimaryConstructor, defaultValue: String): String = {
-    Option(bindingContext.get(BindingContext.CONSTRUCTOR, expr))
-      .map { desc => typeRenderer.render(desc.getReturnType) }
-      .getOrElse(defaultValue)
-  }
-
-  def typeFullName(expr: KtSecondaryConstructor, defaultValue: String): String = {
+  def typeFullName(expr: KtPrimaryConstructor | KtSecondaryConstructor, defaultValue: String): String = {
     Option(bindingContext.get(BindingContext.CONSTRUCTOR, expr))
       .map { desc => typeRenderer.render(desc.getReturnType) }
       .getOrElse(defaultValue)
@@ -944,41 +929,40 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment, typeRenderer: 
 
   def implicitParameterName(expr: KtLambdaExpression): Option[String] = {
     if (!expr.getValueParameters.isEmpty) {
-      return None
-    }
-
-    val hasSingleImplicitParameter =
-      Option(bindingContext.get(BindingContext.EXPECTED_EXPRESSION_TYPE, expr)).exists { desc =>
-        // 1 for the parameter + 1 for the return type == 2
-        desc.getConstructor.getParameters.size() == 2
-      }
-
-    val containingQualifiedExpression = Option(expr.getParent)
-      .map(_.getParent)
-      .flatMap(_.getParent match {
-        case q: KtQualifiedExpression => Some(q)
-        case _                        => None
-      })
-    containingQualifiedExpression match {
-      case Some(qualifiedExpression) =>
-        resolvedCallDescriptor(qualifiedExpression) match {
-          case Some(fnDescriptor) =>
-            val originalDesc   = fnDescriptor.getOriginal
-            val vps            = originalDesc.getValueParameters
-            val renderedFqName = typeRenderer.renderFqNameForDesc(originalDesc)
-            if (
-              hasSingleImplicitParameter &&
-              (renderedFqName.startsWith(TypeConstants.kotlinRunPrefix) ||
-                renderedFqName.startsWith(TypeConstants.kotlinApplyPrefix))
-            ) {
-              Some(TypeConstants.scopeFunctionThisParameterName)
-              // https://kotlinlang.org/docs/lambdas.html#it-implicit-name-of-a-single-parameter
-            } else if (hasSingleImplicitParameter) {
-              Some(TypeConstants.lambdaImplicitParameterName)
-            } else None
-          case None => None
+      None
+    } else {
+      val hasSingleImplicitParameter =
+        Option(bindingContext.get(BindingContext.EXPECTED_EXPRESSION_TYPE, expr)).exists { desc =>
+          // 1 for the parameter + 1 for the return type == 2
+          desc.getConstructor.getParameters.size() == 2
         }
-      case None => None
+      val containingQualifiedExpression = Option(expr.getParent)
+        .map(_.getParent)
+        .flatMap(_.getParent match {
+          case q: KtQualifiedExpression => Some(q)
+          case _                        => None
+        })
+      containingQualifiedExpression match {
+        case Some(qualifiedExpression) =>
+          resolvedCallDescriptor(qualifiedExpression) match {
+            case Some(fnDescriptor) =>
+              val originalDesc   = fnDescriptor.getOriginal
+              val vps            = originalDesc.getValueParameters
+              val renderedFqName = typeRenderer.renderFqNameForDesc(originalDesc)
+              if (
+                hasSingleImplicitParameter &&
+                (renderedFqName.startsWith(TypeConstants.kotlinRunPrefix) ||
+                  renderedFqName.startsWith(TypeConstants.kotlinApplyPrefix))
+              ) {
+                Some(TypeConstants.scopeFunctionThisParameterName)
+                // https://kotlinlang.org/docs/lambdas.html#it-implicit-name-of-a-single-parameter
+              } else if (hasSingleImplicitParameter) {
+                Some(TypeConstants.lambdaImplicitParameterName)
+              } else None
+            case None => None
+          }
+        case None => None
+      }
     }
   }
 }

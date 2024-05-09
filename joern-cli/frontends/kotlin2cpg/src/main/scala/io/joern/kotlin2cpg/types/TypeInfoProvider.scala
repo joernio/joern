@@ -107,9 +107,7 @@ trait TypeInfoProvider(val typeRenderer: TypeRenderer = new TypeRenderer()) {
 
   def typeFullName(expr: KtTypeReference, defaultValue: String): String
 
-  def typeFullName(expr: KtPrimaryConstructor, defaultValue: String): String
-
-  def typeFullName(expr: KtSecondaryConstructor, defaultValue: String): String
+  def typeFullName(expr: KtPrimaryConstructor | KtSecondaryConstructor, defaultValue: String): String
 
   def typeFullName(expr: KtCallExpression, defaultValue: String): String
 
