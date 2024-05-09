@@ -114,29 +114,35 @@ class AstCreator(
       }
       .getOrElse(Defines.Undefined)
 
-    programSummary.namespaceToType
-      .filter(_._1 == typeNameForMethods)
-      .flatMap(_._2)
-      .filter(!_.isInstanceOf[RubyStubbedType])
-      .flatMap(_.methods)
-      .map { method =>
-        val methodRefNode = NewMethodRef()
-          .code(s"def ${method.name} (...)")
-          .methodFullName(scope.surroundingTypeFullName.map { x => s"$x:${method.name}" }.getOrElse(method.name))
-          .typeFullName(Defines.Any)
-          .lineNumber(internalLineAndColNum)
-          .columnNumber(internalLineAndColNum)
+    scope.surroundingTypeFullName
+      .map { x =>
+        val typeNameForMethods = x.stripSuffix(s":${Defines.Program}")
+        programSummary.namespaceToType
+          .filter(_._1 == typeNameForMethods)
+          .flatMap(_._2)
+          .filter(!_.isInstanceOf[RubyStubbedType])
+          .flatMap(_.methods)
+          .map { method =>
+            val methodRefNode = NewMethodRef()
+              .code(s"def ${method.name} (...)")
+              .methodFullName(scope.surroundingTypeFullName.map { x => s"$x:${method.name}" }.getOrElse(method.name))
+              .typeFullName(Defines.Any)
+              .lineNumber(internalLineAndColNum)
+              .columnNumber(internalLineAndColNum)
 
-        val methodRefIdent = NewIdentifier()
-          .code(method.name)
-          .name(method.name)
-          .typeFullName(Defines.Any)
-          .lineNumber(internalLineAndColNum)
-          .columnNumber(internalLineAndColNum)
+            val methodRefIdent = NewIdentifier()
+              .code(method.name)
+              .name(method.name)
+              .typeFullName(Defines.Any)
+              .lineNumber(internalLineAndColNum)
+              .columnNumber(internalLineAndColNum)
 
-        astForAssignment(methodRefIdent, methodRefNode, internalLineAndColNum, internalLineAndColNum)
+            astForAssignment(methodRefIdent, methodRefNode, internalLineAndColNum, internalLineAndColNum)
+          }
+          .toList
       }
-      .toList
+      .getOrElse(List.empty)
+
   }
 
   private def typeRefNodesForInternalDecls(): List[Ast] = {
