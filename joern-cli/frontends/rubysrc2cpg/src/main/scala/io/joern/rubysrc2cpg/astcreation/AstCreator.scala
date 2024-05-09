@@ -161,8 +161,6 @@ class AstCreator(
       }
       .toList
   }
-
-  private def generateAssignmentNode(): Unit = {}
 }
 
 /** Determines till what depth the AST creator will parse until.
