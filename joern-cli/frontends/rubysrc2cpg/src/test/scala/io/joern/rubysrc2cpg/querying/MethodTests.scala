@@ -2,8 +2,9 @@ package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
+import io.joern.rubysrc2cpg.passes.Defines as RDefines
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, Return}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, MethodRef, Return, TypeRef}
 import io.shiftleft.semanticcpg.language.*
 
 class MethodTests extends RubyCode2CpgFixture {
@@ -535,6 +536,93 @@ class MethodTests extends RubyCode2CpgFixture {
             case xs => fail(s"Expected 3 arguments, got ${xs.code.mkString(", ")} instead")
           }
         case None => fail("Expected if-condition")
+      }
+    }
+  }
+
+  "METHOD_REF and TYPE_REF nodes" should {
+    val cpg = code(
+      """
+        |module A
+        | def foo
+        | end
+        |end
+        |
+        |class B
+        |end
+        |
+        |def c
+        |end
+        |""".stripMargin,
+      "t1.rb"
+    )
+      .moreCode(
+        """
+          |require 't1'
+          |class D
+          |end
+          |
+          |def e
+          |end
+          |""".stripMargin,
+        "t2.rb"
+      )
+
+    "be directly under :program" in {
+      inside(cpg.method.name(RDefines.Program).filename("t1.rb").assignment.l) {
+        case moduleAssignment :: classAssignment :: methodAssignment :: Nil =>
+          moduleAssignment.code shouldBe "A = class t1.rb:<global>::program.A (...)"
+          classAssignment.code shouldBe "B = class t1.rb:<global>::program.B (...)"
+          methodAssignment.code shouldBe "c = def c (...)"
+
+          inside(moduleAssignment.argument.l) {
+            case (lhs: Identifier) :: (rhs: TypeRef) :: Nil =>
+              lhs.name shouldBe "A"
+              rhs.typeFullName shouldBe "t1.rb:<global>::program.A"
+            case xs => fail(s"Expected lhs and rhs, instead got ${xs.code.mkString(",")}")
+          }
+
+          inside(classAssignment.argument.l) {
+            case (lhs: Identifier) :: (rhs: TypeRef) :: Nil =>
+              lhs.name shouldBe "B"
+              rhs.typeFullName shouldBe "t1.rb:<global>::program.B"
+            case xs => fail(s"Expected lhs and rhs, instead got ${xs.code.mkString(",")}")
+          }
+
+          inside(methodAssignment.argument.l) {
+            case (lhs: Identifier) :: (rhs: MethodRef) :: Nil =>
+              lhs.name shouldBe "c"
+              rhs.methodFullName shouldBe "t1.rb:<global>::program:c"
+              rhs.typeFullName shouldBe RDefines.Any
+            case xs => fail(s"Expected lhs and rhs, instead got ${xs.code.mkString(",")}")
+          }
+
+        case xs => fail(s"Expected three assignments, got [${xs.code.mkString(",")}]")
+      }
+    }
+
+    "not be present in other files" in {
+      inside(cpg.method.name(RDefines.Program).filename("t2.rb").assignment.l) {
+        case classAssignment :: methodAssignment :: Nil =>
+          classAssignment.code shouldBe "D = class t2.rb:<global>::program.D (...)"
+          methodAssignment.code shouldBe "e = def e (...)"
+
+          inside(classAssignment.argument.l) {
+            case (lhs: Identifier) :: (rhs: TypeRef) :: Nil =>
+              lhs.name shouldBe "D"
+              rhs.typeFullName shouldBe "t2.rb:<global>::program.D"
+            case xs => fail(s"Expected lhs and rhs, instead got ${xs.code.mkString(",")}")
+          }
+
+          inside(methodAssignment.argument.l) {
+            case (lhs: Identifier) :: (rhs: MethodRef) :: Nil =>
+              lhs.name shouldBe "e"
+              rhs.methodFullName shouldBe "t2.rb:<global>::program:e"
+              rhs.typeFullName shouldBe RDefines.Any
+            case xs => fail(s"Expected lhs and rhs, instead got ${xs.code.mkString(",")}")
+          }
+
+        case xs => fail(s"Expected two assignments, got [${xs.code.mkString(",")}]")
       }
     }
   }
