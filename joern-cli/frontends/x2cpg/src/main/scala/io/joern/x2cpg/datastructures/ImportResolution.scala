@@ -1,10 +1,7 @@
 package io.joern.x2cpg.datastructures
 
-import io.joern.x2cpg.datastructures.DefaultImportResolver.ResolvablePackage
-import io.joern.x2cpg.datastructures.ImportResolver.{Import, Resolvable}
-import io.joern.x2cpg.datastructures.ModuleResolver.Module
-import io.shiftleft.codepropertygraph.generated.nodes.{Local, Member, Method, Namespace, TypeDecl}
-import io.shiftleft.codepropertygraph.generated.{Cpg, NodeTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.nodes.{Local, Member, Method, TypeDecl}
+
 import scala.collection.mutable
 
 /** Describes a class that resolves imports from a given file system and code layout.
@@ -28,6 +25,19 @@ trait ImportResolver {
 
 }
 
+/** A trait for adapters to provide a file system to resolve imports against.
+  */
+trait FileSystemAdapter {
+
+  import ImportResolver.FileSystem
+
+  /** @return
+    *   the file system model.
+    */
+  def fileSystem: FileSystem
+
+}
+
 object ImportResolver {
 
   /** An import statement referring to some external but potentially resolvable entity.
@@ -42,6 +52,10 @@ object ImportResolver {
       *   the entity identifier.
       */
     def name: String
+
+  }
+
+  trait FileContainedEntity extends Entity {
 
     /** @return
       *   the file containing this entity.
@@ -63,9 +77,9 @@ object ImportResolver {
 
   }
 
-  /** A package or namespace containing importable entities.
+  /** A module containing importable entities.
     */
-  trait PackageLike extends Entity {
+  trait ModuleLike extends Entity {
 
     /** The delimiter between package names in the fully qualified name.
       */
@@ -75,7 +89,7 @@ object ImportResolver {
       *   the fully qualified name of this package-like.
       */
     lazy val fullName: String = {
-      def recurseName(x: PackageLike): String = x.parent match {
+      def recurseName(x: ModuleLike): String = x.parent match {
         case Some(parentPackage) => s"${recurseName(parentPackage)}$packageDelimiter${x.name}"
         case None                => x.name
       }
@@ -90,13 +104,23 @@ object ImportResolver {
     /** @return
       *   the parent package, if not the root package.
       */
-    def parent: Option[PackageLike]
+    def parent: Option[ModuleLike]
 
     /** @return
       *   children packages, if any.
       */
-    def children: Seq[PackageLike]
+    def children: Seq[ModuleLike]
 
+  }
+
+  /** A namespace or package similar to those in C#/Java.
+    */
+  trait PackageLike extends ModuleLike {
+
+    /** @return
+      *   the paths which this package concerns.
+      */
+    def paths: Seq[String]
   }
 
   /** A file system to model entities in an import analysis.
@@ -130,15 +154,15 @@ object ImportResolver {
       */
     class FileSystemBuilder(rootPaths: Seq[String]) {
 
-      private val packages        = mutable.Seq.empty[PackageLike]
+      private val packages        = mutable.Seq.empty[ModuleLike]
       private val fileToEntityMap = mutable.Map.empty[String, mutable.Set[Entity]]
 
-      def addEntity(e: Entity): this.type = {
+      def addEntity(e: FileContainedEntity): this.type = {
         fileToEntityMap.getOrElseUpdate(e.filename, mutable.Set.empty).add(e)
         this
       }
 
-      def addEntities(es: Seq[Entity]): this.type = {
+      def addEntities(es: Seq[FileContainedEntity]): this.type = {
         es.groupBy(_.filename).foreach { case (filename, ees) =>
           fileToEntityMap.getOrElseUpdate(filename, mutable.Set.empty).addAll(ees)
         }
@@ -152,17 +176,16 @@ object ImportResolver {
 
 }
 
-/** For systems where a module-like behaviour is found in addition to namespaces/packages.
+/** Provides a set of useful CPG-based entities.
   */
-object ModuleResolver {
+object DefaultImportResolver {
 
   import ImportResolver.*
 
   /** A module such as those found in Python/JavaScript.
+    *
     * @param name
     *   the module name.
-    * @param filename
-    *   the containing file.
     * @param entities
     *   the entities this module exposes.
     * @param parent
@@ -170,22 +193,14 @@ object ModuleResolver {
     * @param children
     *   children package-likes, which in this context are other modules.
     */
-  class Module(
+  class RegularModule(
     val name: String,
     val filename: String,
     val entities: Seq[Entity],
-    val parent: Option[PackageLike] = None,
-    val children: Seq[PackageLike] = Seq.empty
-  ) extends PackageLike
-
-}
-
-/** Provides a set of useful CPG-based entities.
-  */
-object DefaultImportResolver {
-
-  import ImportResolver.*
-  import ModuleResolver.*
+    val parent: Option[ModuleLike] = None,
+    val children: Seq[ModuleLike] = Seq.empty
+  ) extends ModuleLike
+      with FileContainedEntity
 
   /** A basic package.
     *
@@ -200,27 +215,38 @@ object DefaultImportResolver {
     * @param children
     *   the children packages.
     */
-  class Package(
+  class RegularPackage(
     override val name: String,
-    override val filename: String,
+    filename: String,
     override val entities: Seq[Entity],
-    override val parent: Option[PackageLike] = None,
-    override val children: Seq[PackageLike] = Seq.empty
-  ) extends PackageLike
+    override val parent: Option[ModuleLike] = None,
+    override val children: Seq[ModuleLike] = Seq.empty
+  ) extends PackageLike {
 
-  /** A basic resolvable package.
-    * @param resolver
-    *   the callback for the respective CPG namespace node.
+    override def paths: Seq[String] = Seq(filename)
+
+  }
+
+  /** A basic namespace such as those in C-languages.
+    *
+    * @param name
+    *   the package name.
+    * @param paths
+    *   the files referencing this namespace.
+    * @param entities
+    *   the entities which can be imported from this package.
+    * @param parent
+    *   the parent package.
+    * @param children
+    *   the children packages.
     */
-  case class ResolvablePackage(
+  class RegularNamespace(
     override val name: String,
-    override val filename: String,
+    override val paths: Seq[String],
     override val entities: Seq[Entity],
-    override val parent: Option[PackageLike] = None,
-    override val children: Seq[PackageLike] = Seq.empty,
-    resolver: () => Namespace
-  ) extends Package(name, filename, entities, parent, children)
-      with Resolvable[Namespace]
+    override val parent: Option[ModuleLike] = None,
+    override val children: Seq[ModuleLike] = Seq.empty
+  ) extends PackageLike
 
   /** A basic resolvable function.
     * @param name
@@ -263,10 +289,10 @@ object DefaultImportResolver {
     override val name: String,
     override val filename: String,
     override val entities: Seq[Entity],
-    override val parent: Option[PackageLike] = None,
-    override val children: Seq[PackageLike] = Seq.empty,
+    override val parent: Option[ModuleLike] = None,
+    override val children: Seq[ModuleLike] = Seq.empty,
     resolver: () => Method
-  ) extends Module(name, filename, entities, parent, children)
+  ) extends RegularModule(name, filename, entities, parent, children)
       with Resolvable[Method]
 
   /** A basic resolvable variable. Modules may export module-level variables
