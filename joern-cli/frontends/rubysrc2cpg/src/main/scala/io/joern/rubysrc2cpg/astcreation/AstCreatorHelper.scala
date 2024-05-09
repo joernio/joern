@@ -10,7 +10,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
 }
 import io.joern.rubysrc2cpg.datastructures.{BlockScope, FieldDecl}
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
@@ -79,6 +79,24 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         }
     }
 
+  }
+
+  protected def astForAssignment(
+    lhs: NewNode,
+    rhs: NewNode,
+    lineNumber: Option[Integer],
+    columnNumber: Option[Integer]
+  ): Ast = {
+    val code = Seq(lhs, rhs).collect { case x: AstNodeNew => x.code }.mkString(" = ")
+    val assignment = NewCall()
+      .name(Operators.assignment)
+      .methodFullName(Operators.assignment)
+      .code(code)
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .lineNumber(lineNumber)
+      .columnNumber(columnNumber)
+
+    callAst(assignment, Seq(Ast(lhs), Ast(rhs)))
   }
 
   protected val UnaryOperatorNames: Map[String, String] = Map(

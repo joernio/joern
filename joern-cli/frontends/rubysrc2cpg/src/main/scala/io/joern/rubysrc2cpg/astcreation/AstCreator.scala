@@ -6,7 +6,7 @@ import io.joern.rubysrc2cpg.parser.{RubyNodeCreator, RubyParser}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.ModifierTypes
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, ModifierTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.{Logger, LoggerFactory}
@@ -43,6 +43,8 @@ class AstCreator(
       .map(fileName.stripPrefix)
       .map(_.stripPrefix(java.io.File.separator))
       .getOrElse(fileName)
+
+  private val internalLineAndColNum: Option[Integer] = Option(1)
 
   /** The relative file name, in a unix path delimited format.
     */
@@ -94,14 +96,73 @@ class AstCreator(
         scope.pushNewScope(moduleScope)
         val block = blockNode(rootNode)
         scope.pushNewScope(BlockScope(block))
-        val statementAsts = rootNode.statements.flatMap(astsForStatement)
+        val statementAsts         = rootNode.statements.flatMap(astsForStatement)
+        val internalMethodRefAsts = methodRefNodesForInternalMethods()
+        val internalTypeRefAsts   = typeRefNodesForInternalDecls()
         scope.popScope()
-        val bodyAst = blockAst(block, statementAsts)
+        val bodyAst = blockAst(block, internalTypeRefAsts ++ internalMethodRefAsts ++ statementAsts)
         scope.popScope()
         methodAst(methodNode_, Seq.empty, bodyAst, methodReturn, newModifierNode(ModifierTypes.MODULE) :: Nil)
       }
       .getOrElse(Ast())
   }
+
+  private def methodRefNodesForInternalMethods(): List[Ast] = {
+    val typeNameForMethods = scope.surroundingTypeFullName
+      .map { x =>
+        x.split("[:]{2}").dropRight(1).mkString("")
+      }
+      .getOrElse(Defines.Undefined)
+
+    programSummary.namespaceToType
+      .filter(_._1 == typeNameForMethods)
+      .flatMap(_._2)
+      .filter(x => x.name.contains(":program"))
+      .flatMap(_.methods)
+      .filterNot(x => x.name.contains("<init>") || x.name.contains("<clinit>"))
+      .map { method =>
+        val methodRefNode = NewMethodRef()
+          .code(s"def ${method.name} (...)")
+          .methodFullName(scope.surroundingTypeFullName.map { x => s"$x:${method.name}" }.getOrElse(method.name))
+          .typeFullName(Defines.Any)
+          .lineNumber(internalLineAndColNum)
+          .columnNumber(internalLineAndColNum)
+
+        val methodRefIdent = NewIdentifier()
+          .code(method.name)
+          .name(method.name)
+          .typeFullName(Defines.Any)
+          .lineNumber(internalLineAndColNum)
+          .columnNumber(internalLineAndColNum)
+
+        astForAssignment(methodRefIdent, methodRefNode, internalLineAndColNum, internalLineAndColNum)
+      }
+      .toList
+  }
+
+  private def typeRefNodesForInternalDecls(): List[Ast] = {
+    programSummary.namespaceToType
+      .filter(_._1.contains(scope.surroundingTypeFullName.getOrElse(Defines.Undefined)))
+      .flatMap(_._2)
+      .map { x =>
+        val typeRefName = x.name.split("[.]").takeRight(1).head
+        val typeRefNode = NewTypeRef()
+          .code(s"class ${x.name} (...)")
+          .typeFullName(x.name)
+
+        val typeRefIdent = NewIdentifier()
+          .code(typeRefName)
+          .name(typeRefName)
+          .typeFullName(x.name)
+          .lineNumber(internalLineAndColNum)
+          .columnNumber(internalLineAndColNum)
+
+        astForAssignment(typeRefIdent, typeRefNode, internalLineAndColNum, internalLineAndColNum)
+      }
+      .toList
+  }
+
+  private def generateAssignmentNode(): Unit = {}
 }
 
 /** Determines till what depth the AST creator will parse until.
