@@ -152,11 +152,10 @@ class TSTypesTests extends AstJsSrc2CpgSuite {
      |""".stripMargin,
       "Test0.ts"
     ).withConfig(Config().withTsTypes(true))
-    inside(cpg.identifier.l) { case List(idX) =>
-      idX.name shouldBe "x"
-      idX.code shouldBe "x"
-      idX.typeFullName shouldBe Defines.String // we can actually follow type intrinsics
-    }
+    val List(idX) = cpg.identifier.nameExact("x").l
+    idX.name shouldBe "x"
+    idX.code shouldBe "x"
+    idX.typeFullName shouldBe Defines.String // we can actually follow type intrinsics
   }
 
   "have correct types for TS function parameters" in {
