@@ -9,14 +9,14 @@ jobs:
     concurrency: master
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Set up JDK
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '19'
+          java-version: '21'
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
@@ -29,13 +29,13 @@ jobs:
       - name: Delete `.cargo` directory # to save disk space
         run: rm -rf /home/runner/.cargo
         if: runner.os == 'Linux'
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: |
             ~/.sbt
             ~/.coursier
           key: ${{ runner.os }}-sbt-${{ hashfiles('**/build.sbt') }}
-      - run: sbt scalafmtCheck +test
+      - run: sbt scalafmtCheck test
       - run: ./testDistro.sh
       - run: |
           cd joern-cli/target/universal/stage

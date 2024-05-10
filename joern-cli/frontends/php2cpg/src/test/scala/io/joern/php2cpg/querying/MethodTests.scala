@@ -1,5 +1,6 @@
 package io.joern.php2cpg.querying
 
+import io.joern.php2cpg.Config
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
@@ -107,15 +108,48 @@ class MethodTests extends PhpCode2CpgFixture {
     cpg.method.nameExact("<global>").fullName.l shouldBe List("test.php:<global>")
   }
 
-  "methods with non-unicode-legal characters should be created with escaped char codes" in {
+  "methods with non-unicode-legal characters" should {
     val cpg = code("""<?php
         |function foo() {
         |  $x = "\xFF";
         |}
-        |""".stripMargin)
+        |""".stripMargin).withConfig(Config().withDisableFileContent(false))
 
-    cpg.file.method.name.toSet shouldBe Set("<global>", "foo")
-    cpg.assignment.code.l shouldBe List("$x = \"\\\\xFF\"")
+    "be created with escaped char codes" in {
+      cpg.file.method.name.toSet shouldBe Set("<global>", "foo")
+      cpg.assignment.code.l shouldBe List("$x = \"\\\\xFF\"")
+    }
+
+    "set the file content correctly" in {
+      inside(cpg.method.nameExact("foo").l) { case List(fooMethod) =>
+        val offsetStart = fooMethod.offset.get
+        val offsetEnd   = fooMethod.offsetEnd.get
+        fooMethod.file.head.content.substring(offsetStart, offsetEnd) shouldBe
+          """function foo() {
+            |  $x = "\xFF";
+            |}""".stripMargin
+      }
+    }
+  }
+
+  "methods with unicode characters in source" should {
+    val cpg = code("""<?php
+        |function foo() {
+        |  // ⦝
+        |  $x = "🙂⨌🙂𐇐🙂🙂🙂🙂";
+        |}""".stripMargin).withConfig(Config().withDisableFileContent(false))
+
+    "set the content field correctly" in {
+      inside(cpg.method.nameExact("foo").l) { case List(fooMethod) =>
+        val offsetStart = fooMethod.offset.get
+        val offsetEnd   = fooMethod.offsetEnd.get
+        fooMethod.file.head.content.substring(offsetStart, offsetEnd) shouldBe
+          """function foo() {
+            |  // ⦝
+            |  $x = "🙂⨌🙂𐇐🙂🙂🙂🙂";
+            |}""".stripMargin
+      }
+    }
   }
 
   "explicit constructors" should {
@@ -126,7 +160,7 @@ class MethodTests extends PhpCode2CpgFixture {
         |}
         |""".stripMargin,
       fileName = "foo.php"
-    )
+    ).withConfig(Config().withDisableFileContent(false))
 
     "have the constructor modifier set" in {
       inside(cpg.method.nameExact("__construct").l) { case List(constructor) =>
@@ -140,6 +174,14 @@ class MethodTests extends PhpCode2CpgFixture {
       inside(cpg.method.nameExact("__construct").l) { case List(constructor) =>
         constructor.filename shouldBe "foo.php"
         constructor.file.name.l shouldBe List("foo.php")
+      }
+    }
+
+    "have the content offsets set correctly" in {
+      inside(cpg.method.nameExact("__construct").l) { case List(constructor) =>
+        val offsetStart = constructor.offset.get
+        val offsetEnd   = constructor.offsetEnd.get
+        constructor.file.head.content.substring(offsetStart, offsetEnd) shouldBe "function __construct() {}"
       }
     }
   }

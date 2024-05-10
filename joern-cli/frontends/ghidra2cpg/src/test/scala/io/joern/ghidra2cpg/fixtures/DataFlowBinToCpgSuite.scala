@@ -14,7 +14,7 @@ import scala.util.Try
 
 class DataFlowBinToCpgSuite extends GhidraBinToCpgSuite {
 
-  implicit var context: EngineContext = _
+  implicit var context: EngineContext = scala.compiletime.uninitialized
 
   override def beforeAll(): Unit = {
     super.beforeAll()

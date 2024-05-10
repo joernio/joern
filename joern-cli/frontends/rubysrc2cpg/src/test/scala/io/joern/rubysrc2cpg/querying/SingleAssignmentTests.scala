@@ -120,4 +120,97 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
     two.code shouldBe "2"
   }
 
+  "`if-else-end` on the RHS of an assignment" in {
+    val cpg = code("""
+        |x = if true then 20 else 40 end
+        |""".stripMargin)
+
+    val List(assignmentIfBranch, assignmentElseBranch) = cpg.assignment.l
+
+    val rhsIfBranchIdentifier = assignmentIfBranch.argument(1).asInstanceOf[Identifier]
+    val rhsIfBranchValue      = assignmentIfBranch.argument(2).asInstanceOf[Literal]
+
+    val rhsElseBranchIdentifier = assignmentElseBranch.argument(1).asInstanceOf[Identifier]
+    val rhsElseBranchValue      = assignmentElseBranch.argument(2).asInstanceOf[Literal]
+
+    assignmentIfBranch.methodFullName shouldBe Operators.assignment
+    rhsIfBranchIdentifier.code shouldBe "x"
+    rhsIfBranchValue.code shouldBe "20"
+
+    assignmentElseBranch.methodFullName shouldBe Operators.assignment
+    rhsElseBranchIdentifier.code shouldBe "x"
+    rhsElseBranchValue.code shouldBe "40"
+  }
+
+  "nested if-else-end on the RHS of an assignment" in {
+    val cpg = code("""
+      |x = if true
+      |  if true
+      |    1
+      |  else
+      |    2
+      |  end
+      |else
+      |  if true
+      |    3
+      |  else
+      |    4
+      |  end
+      |end
+      |
+      |""".stripMargin)
+
+    inside(cpg.assignment.l) {
+      case assign1 :: assign2 :: assign3 :: assign4 :: Nil =>
+        assign1.lineNumber shouldBe Some(4)
+        assign1.argument(1).code shouldBe "x"
+        assign1.argument(2).code shouldBe "1"
+        assign1.argument(2).lineNumber shouldBe Some(4)
+
+        assign2.lineNumber shouldBe Some(5)
+        assign2.argument(1).code shouldBe "x"
+        assign2.argument(2).code shouldBe "2"
+        assign2.argument(2).lineNumber shouldBe Some(6)
+
+        assign3.lineNumber shouldBe Some(10)
+        assign3.argument(1).code shouldBe "x"
+        assign3.argument(2).code shouldBe "3"
+        assign3.argument(2).lineNumber shouldBe Some(10)
+
+        assign4.lineNumber shouldBe Some(11)
+        assign4.argument(1).code shouldBe "x"
+        assign4.argument(2).code shouldBe "4"
+        assign4.argument(2).lineNumber shouldBe Some(12)
+      case xs => fail(s"Expected 4 assignments, instead got [${xs.code.mkString(",")}]")
+    }
+
+  }
+
+  "nested if-end should have implicit elses" in {
+    val cpg = code("""
+      |x = if true
+      | if true
+      |  1
+      | end
+      |end
+      |""".stripMargin)
+
+    val assigns = cpg.assignment.l
+    inside(cpg.assignment.l) {
+      case assign1 :: assignNil1 :: assignNil2 :: Nil =>
+        assign1.argument(1).code shouldBe "x"
+        assign1.argument(2).code shouldBe "1"
+        assign1.lineNumber shouldBe Some(4)
+
+        assignNil1.argument(1).code shouldBe "x"
+        assignNil1.argument(2).code shouldBe "nil"
+        assignNil1.lineNumber shouldBe Some(3)
+
+        assignNil2.argument(1).code shouldBe "x"
+        assignNil2.argument(2).code shouldBe "nil"
+        assignNil2.lineNumber shouldBe Some(2)
+      case xs => fail(s"Expected 3 assignments, instead got [${xs.code.mkString(",")}]")
+    }
+  }
+
 }

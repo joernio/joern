@@ -57,11 +57,11 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
     new SourceBasedFrontend("python", Languages.PYTHONSRC, "Python Source Frontend", "py")
   def golang: SourceBasedFrontend = new SourceBasedFrontend("golang", Languages.GOLANG, "Golang Source Frontend", "go")
   def javascript: SourceBasedFrontend =
-    new SourceBasedFrontend("javascript", Languages.JAVASCRIPT, "Javascript Source Frontend", "js")
+    new JsFrontend("javascript", Languages.JAVASCRIPT, "Javascript Source Frontend", "js")
   def jssrc: SourceBasedFrontend =
-    new SourceBasedFrontend("jssrc", Languages.JSSRC, "Javascript/Typescript Source Frontend based on astgen", "js")
+    new JsFrontend("jssrc", Languages.JSSRC, "Javascript/Typescript Source Frontend based on astgen", "js")
   def swiftsrc: SourceBasedFrontend =
-    new SourceBasedFrontend("swiftsrc", Languages.SWIFTSRC, "Swift Source Frontend based on swiftastgen", "swift")
+    new SwiftSrcFrontend("swiftsrc", Languages.SWIFTSRC, "Swift Source Frontend based on swiftastgen", "swift")
   def csharp: Frontend          = new BinaryFrontend("csharp", Languages.CSHARP, "C# Source Frontend (Roslyn)")
   def llvm: Frontend            = new BinaryFrontend("llvm", Languages.LLVM, "LLVM Bitcode Frontend")
   def php: SourceBasedFrontend  = new SourceBasedFrontend("php", Languages.PHP, "PHP source frontend", "php")
@@ -103,6 +103,20 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
     def isAvailable: Boolean =
       cpgGeneratorForLanguage(language, config.frontend, config.install.rootPath.path, args = Nil).exists(_.isAvailable)
 
+    protected def fromFile(inputPath: String, projectName: String = "", args: List[String] = List()): Cpg = {
+      checkInputPath(inputPath)
+      if (File(inputPath).isDirectory) {
+        throw new ConsoleException(s"Input path is a directory: '$inputPath'")
+      }
+      withFileInTmpFile(inputPath) { dir =>
+        this.apply(dir.pathAsString, projectName, args)
+      } match {
+        case Failure(exception) =>
+          throw new ConsoleException(s"unable to generate cpg from file '$inputPath'", exception)
+        case Success(value) => value
+      }
+    }
+
     def apply(inputPath: String, projectName: String = "", args: List[String] = List()): Cpg = {
       val frontend = cpgGeneratorForLanguage(language, config.frontend, config.install.rootPath.path, args)
         .getOrElse(throw new ConsoleException(s"no cpg generator for language=$language available!"))
@@ -117,8 +131,8 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
       extends Frontend(name, language, description) {
 
     def fromString(str: String, args: List[String] = List()): Cpg = {
-      withCodeInTmpFile(str, "tmp." + extension) { dir =>
-        super.apply(dir.path.toString, args = args)
+      withCodeInTmpFile(str, s"tmp.$extension") { dir =>
+        super.apply(dir.pathAsString, args = args)
       } match {
         case Failure(exception) => throw new ConsoleException(s"unable to generate cpg from given String", exception)
         case Success(value)     => value
@@ -150,6 +164,32 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
     }
   }
 
+  class SwiftSrcFrontend(name: String, language: String, description: String, extension: String)
+      extends SourceBasedFrontend(name, language, description, extension) {
+    override def apply(inputPath: String, projectName: String, args: List[String]): Cpg = {
+      if (!File(inputPath).isDirectory) {
+        // The Swift frontend does not support importing a single file.
+        // Hence, we have to copy it into a temporary folder with super.fromFile and import that folder.
+        super.fromFile(inputPath, projectName, args)
+      } else {
+        super.apply(inputPath, projectName, args)
+      }
+    }
+  }
+
+  class JsFrontend(name: String, language: String, description: String, extension: String)
+      extends SourceBasedFrontend(name, language, description, extension) {
+    override def apply(inputPath: String, projectName: String, args: List[String]): Cpg = {
+      if (!File(inputPath).isDirectory) {
+        // The JS frontend does not support importing a single file.
+        // Hence, we have to copy it into a temporary folder with super.fromFile and import that folder.
+        super.fromFile(inputPath, projectName, args)
+      } else {
+        super.apply(inputPath, projectName, args)
+      }
+    }
+  }
+
   class CFrontend(name: String, extension: String = "c")
       extends SourceBasedFrontend(name, Languages.NEWC, "Eclipse CDT Based Frontend for C/C++", extension)
 
@@ -157,6 +197,16 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
     val dir = File.newTemporaryDirectory("console")
     val result = Try {
       (dir / filename).write(str)
+      f(dir)
+    }
+    dir.deleteOnExit(swallowIOExceptions = true)
+    result
+  }
+
+  private def withFileInTmpFile(inputPath: String)(f: File => Cpg): Try[Cpg] = {
+    val dir = File.newTemporaryDirectory("console")
+    val result = Try {
+      File(inputPath).copyToDirectory(dir)
       f(dir)
     }
     dir.deleteOnExit(swallowIOExceptions = true)

@@ -52,6 +52,9 @@ object Domain {
     val isNull    = s"is_null"
     val unset     = s"unset"
     val shellExec = s"shell_exec"
+
+    // Used for composer dependencies
+    val autoload = "<autoload>"
   }
 
   object PhpDomainTypeConstants {
@@ -71,16 +74,18 @@ object Domain {
   // Used for creating the default constructor.
   val ConstructorMethodName = "__construct"
 
-  final case class PhpAttributes(lineNumber: Option[Integer], kind: Option[Int])
+  final case class PhpAttributes(lineNumber: Option[Integer], kind: Option[Int], startFilePos: Int, endFilePos: Int)
   object PhpAttributes {
-    val Empty: PhpAttributes = PhpAttributes(None, None)
+    val Empty: PhpAttributes = PhpAttributes(None, None, -1, -1)
 
     def apply(json: Value): PhpAttributes = {
       Try(json("attributes")) match {
         case Success(Obj(attributes)) =>
-          val startLine = attributes.get("startLine").map(num => Integer.valueOf(num.num.toInt))
-          val kind      = attributes.get("kind").map(_.num.toInt)
-          PhpAttributes(startLine, kind)
+          val startLine    = attributes.get("startLine").map(num => Integer.valueOf(num.num.toInt))
+          val kind         = attributes.get("kind").map(_.num.toInt)
+          val startFilePos = attributes.get("startFilePos").map(_.num.toInt).getOrElse(-1)
+          val endFilePos   = attributes.get("endFilePos").map(_.num.toInt + 1).getOrElse(-1)
+          PhpAttributes(startLine, kind, startFilePos, endFilePos)
 
         case Success(Arr(_)) =>
           logger.debug(s"Found array attributes in $json")
@@ -134,8 +139,8 @@ object Domain {
     default: Option[PhpExpr],
     // TODO type
     flags: Int,
-    // TODO attributeGroups: Seq[PhpAttributeGroup],
-    attributes: PhpAttributes
+    attributes: PhpAttributes,
+    attributeGroups: Seq[PhpAttributeGroup]
   ) extends PhpNode
 
   sealed trait PhpArgument extends PhpNode
@@ -208,11 +213,15 @@ object Domain {
     returnType: Option[PhpNameExpr],
     stmts: List[PhpStmt],
     returnByRef: Boolean,
-    // TODO attributeGroups: Seq[PhpAttributeGroup],
     namespacedName: Option[PhpNameExpr],
     isClassMethod: Boolean,
-    attributes: PhpAttributes
+    attributes: PhpAttributes,
+    attributeGroups: Seq[PhpAttributeGroup]
   ) extends PhpStmtWithBody
+
+  final case class PhpAttributeGroup(attrs: List[PhpAttribute], attributes: PhpAttributes)
+
+  final case class PhpAttribute(name: PhpNameExpr, args: List[PhpArgument], attributes: PhpAttributes) extends PhpExpr
 
   final case class PhpClassLikeStmt(
     name: Option[PhpNameExpr],
@@ -224,7 +233,8 @@ object Domain {
     // Optionally used for enums with values
     scalarType: Option[PhpNameExpr],
     hasConstructor: Boolean,
-    attributes: PhpAttributes
+    attributes: PhpAttributes,
+    attributeGroups: Seq[PhpAttributeGroup]
   ) extends PhpStmtWithBody
   object ClassLikeTypes {
     val Class: String     = "class"
@@ -916,6 +926,8 @@ object Domain {
 
     val attributes = PhpAttributes(json)
 
+    val attributeGroups = json("attrGroups").arr.map(readAttributeGroup).toList
+
     PhpClassLikeStmt(
       name,
       modifiers,
@@ -925,7 +937,8 @@ object Domain {
       classLikeType,
       scalarType,
       hasConstructor,
-      attributes
+      attributes,
+      attributeGroups
     )
   }
 
@@ -1136,9 +1149,10 @@ object Domain {
     val returnType  = Option.unless(json("returnType").isNull)(readType(json("returnType")))
     val stmts       = json("stmts").arr.map(readStmt).toList
     // Only class methods have modifiers
-    val modifiers      = Nil
-    val namespacedName = Option.unless(json("namespacedName").isNull)(readName(json("namespacedName")))
-    val isClassMethod  = false
+    val modifiers       = Nil
+    val namespacedName  = Option.unless(json("namespacedName").isNull)(readName(json("namespacedName")))
+    val isClassMethod   = false
+    val attributeGroups = json("attrGroups").arr.map(readAttributeGroup).toSeq
 
     PhpMethodDecl(
       name,
@@ -1149,7 +1163,8 @@ object Domain {
       returnByRef,
       namespacedName,
       isClassMethod,
-      PhpAttributes(json)
+      PhpAttributes(json),
+      attributeGroups
     )
   }
 
@@ -1165,8 +1180,9 @@ object Domain {
       else
         json("stmts").arr.map(readStmt).toList
 
-    val namespacedName = None // only defined for functions
-    val isClassMethod  = true
+    val namespacedName  = None // only defined for functions
+    val isClassMethod   = true
+    val attributeGroups = json("attrGroups").arr.map(readAttributeGroup).toSeq
 
     PhpMethodDecl(
       name,
@@ -1177,8 +1193,17 @@ object Domain {
       returnByRef,
       namespacedName,
       isClassMethod,
-      PhpAttributes(json)
+      PhpAttributes(json),
+      attributeGroups
     )
+  }
+
+  private def readAttributeGroup(json: Value): PhpAttributeGroup = {
+    PhpAttributeGroup(json("attrs").arr.map(readAttribute).toList, PhpAttributes(json))
+  }
+
+  private def readAttribute(json: Value): PhpAttribute = {
+    PhpAttribute(readName(json("name")), json("args").arr.map(readCallArg).toList, PhpAttributes(json))
   }
 
   private def readProperty(json: Value): PhpPropertyStmt = {
@@ -1351,7 +1376,8 @@ object Domain {
   }
 
   private def readParam(json: Value): PhpParam = {
-    val paramType = Option.unless(json("type").isNull)(readType(json("type")))
+    val paramType       = Option.unless(json("type").isNull)(readType(json("type")))
+    val attributeGroups = json("attrGroups").arr.map(readAttributeGroup).toSeq
     PhpParam(
       name = json("var")("name").str,
       paramType = paramType,
@@ -1359,7 +1385,8 @@ object Domain {
       isVariadic = json("variadic").bool,
       default = json.obj.get("default").filterNot(_.isNull).map(readExpr),
       flags = json("flags").num.toInt,
-      attributes = PhpAttributes(json)
+      attributes = PhpAttributes(json),
+      attributeGroups
     )
   }
 

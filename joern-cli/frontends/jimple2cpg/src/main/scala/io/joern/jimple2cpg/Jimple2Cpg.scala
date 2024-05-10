@@ -7,7 +7,7 @@ import io.joern.jimple2cpg.util.ProgramHandlingUtil.{ClassFile, extractClassesIn
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.datastructures.Global
-import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
+import io.joern.x2cpg.passes.frontend.{JavaConfigFileCreationPass, MetaDataPass, TypeNodePass}
 import io.shiftleft.codepropertygraph.Cpg
 import org.slf4j.LoggerFactory
 import soot.options.Options
@@ -54,12 +54,12 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
     *   [[tmpDir]]
     */
   private def loadClassFiles(src: File, tmpDir: File, recurse: Boolean, depth: Int): List[ClassFile] = {
-    val archiveFileExtensions = Set(".jar", ".war", ".zip")
     extractClassesInPackageLayout(
       src,
       tmpDir,
       isClass = e => e.extension.contains(".class"),
-      isArchive = e => e.extension.exists(archiveFileExtensions.contains),
+      isArchive = e => e.isZipFile,
+      isConfigFile = e => e.isConfigFile,
       recurse,
       depth
     )
@@ -97,7 +97,6 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
     val input = File(config.inputPath)
     configureSoot(config, tmpDir)
     new MetaDataPass(cpg, language, config.inputPath).createAndApply()
-
     val globalFromAstCreation: () => Global = input.extension match {
       case Some(".apk" | ".dex") if input.isRegularFile =>
         sootLoadApk(input, config.android)
@@ -126,6 +125,7 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
       .withRegisteredTypes(global.usedTypes.keys().asScala.toList, cpg)
       .createAndApply()
     DeclarationRefPass(cpg).createAndApply()
+    JavaConfigFileCreationPass(cpg, Option(tmpDir.pathAsString)).createAndApply()
   }
 
   private def decompileClassFiles(classFiles: List[ClassFile], decompileJava: Boolean): Unit = {

@@ -1,14 +1,15 @@
 package io.joern.csharpsrc2cpg.datastructures
 
 import io.joern.x2cpg.Defines
-import io.joern.x2cpg.datastructures.{Scope, ScopeElement, TypedScope, TypedScopeElement}
+import io.joern.x2cpg.datastructures.{OverloadableScope, Scope, ScopeElement, TypedScope, TypedScopeElement}
 import io.shiftleft.codepropertygraph.generated.nodes.DeclarationNew
 
 import scala.collection.mutable
 
 class CSharpScope(summary: CSharpProgramSummary)
     extends Scope[String, DeclarationNew, TypedScopeElement]
-    with TypedScope[CSharpMethod, CSharpField, CSharpType](summary) {
+    with TypedScope[CSharpMethod, CSharpField, CSharpType](summary)
+    with OverloadableScope[CSharpMethod] {
 
   override val typesInScope: mutable.Set[CSharpType] = mutable.Set.empty[CSharpType].addAll(summary.findGlobalTypes)
 

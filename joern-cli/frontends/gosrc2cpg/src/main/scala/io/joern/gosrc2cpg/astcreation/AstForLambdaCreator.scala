@@ -1,5 +1,6 @@
 package io.joern.gosrc2cpg.astcreation
 
+import io.joern.gosrc2cpg.datastructures.{LambdaTypeInfo, MethodCacheMetaData}
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.datastructures.Stack.StackWrapper
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
@@ -7,6 +8,8 @@ import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewMethodReturn}
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes}
 import ujson.Value
+
+import scala.jdk.CollectionConverters.*
 
 trait AstForLambdaCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -17,9 +20,8 @@ trait AstForLambdaCreator(implicit withSchemaValidation: ValidationMode) { this:
       .collectFirst({ case m: NewMethod if !m.fullName.endsWith(parserResult.filename) => m.fullName })
       .getOrElse(fullyQualifiedPackage)
     val fullName = s"$baseFullName.$lambdaName"
-    val (signature, returnTypeStr, methodReturn, params, genericTypeMethodMap) = generateLambdaSignature(
-      createParserNodeInfo(funcLiteral.json(ParserKeys.Type))
-    )
+    val LambdaFunctionMetaData(signature, returnTypeStr, methodReturn, params, genericTypeMethodMap) =
+      generateLambdaSignature(createParserNodeInfo(funcLiteral.json(ParserKeys.Type)))
     val methodNode_ = methodNode(funcLiteral, lambdaName, funcLiteral.code, fullName, Some(signature), relPathFileName)
     methodAstParentStack.push(methodNode_)
     scope.pushNewScope(methodNode_)
@@ -40,7 +42,7 @@ trait AstForLambdaCreator(implicit withSchemaValidation: ValidationMode) { this:
         typeDeclNode_.astParentType(NodeTypes.TYPE_DECL).astParentFullName(fullyQualifiedPackage)
       else typeDeclNode_.astParentType(NodeTypes.METHOD).astParentFullName(baseFullName)
       val structTypes = Option(goGlobal.lambdaSignatureToLambdaTypeMap.get(signature)) match {
-        case Some(types) => types.map(_._1)
+        case Some(types) => types.asScala.map(_.lambdaStructTypeFullName)
         case None        => Seq.empty
       }
       typeDeclNode_.inheritsFromTypeFullName(structTypes)
@@ -50,13 +52,11 @@ trait AstForLambdaCreator(implicit withSchemaValidation: ValidationMode) { this:
       methodNode_.astParentFullName(fullName)
       Ast.storeInDiffGraph(astForMethod, diffGraph)
     }
-    goGlobal.recordFullNameToReturnType(fullName, returnTypeStr, signature)
+    goGlobal.recordMethodMetadata(baseFullName, lambdaName, MethodCacheMetaData(returnTypeStr, signature))
     Seq(Ast(methodRefNode(funcLiteral, funcLiteral.code, fullName, fullName)))
   }
 
-  protected def generateLambdaSignature(
-    funcType: ParserNodeInfo
-  ): (String, String, NewMethodReturn, Value, Map[String, List[String]]) = {
+  protected def generateLambdaSignature(funcType: ParserNodeInfo): LambdaFunctionMetaData = {
     val genericTypeMethodMap: Map[String, List[String]] = Map()
     // TODO: While handling the tuple return type we need to handle it here as well.
     val (returnTypeStr, returnTypeInfo) =
@@ -68,6 +68,14 @@ trait AstForLambdaCreator(implicit withSchemaValidation: ValidationMode) { this:
     val paramSignature = parameterSignature(params, genericTypeMethodMap)
     val signature =
       s"${XDefines.ClosurePrefix}($paramSignature)$returnTypeStr"
-    (signature, returnTypeStr, methodReturn, params, genericTypeMethodMap)
+    LambdaFunctionMetaData(signature, returnTypeStr, methodReturn, params, genericTypeMethodMap)
   }
 }
+
+case class LambdaFunctionMetaData(
+  signature: String,
+  returnTypeStr: String,
+  methodReturn: NewMethodReturn,
+  params: Value,
+  genericTypeMethodMap: Map[String, List[String]]
+)

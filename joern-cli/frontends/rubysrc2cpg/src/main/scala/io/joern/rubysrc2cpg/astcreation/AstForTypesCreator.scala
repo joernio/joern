@@ -11,7 +11,7 @@ import scala.collection.immutable.List
 
 trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  protected def astForClassDeclaration(node: RubyNode with TypeDeclaration): Ast = {
+  protected def astForClassDeclaration(node: RubyNode & TypeDeclaration): Ast = {
     node.name match
       case name: SimpleIdentifier => astForSimpleNamedClassDeclaration(node, name)
       case name =>
@@ -42,7 +42,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   }
 
   private def astForSimpleNamedClassDeclaration(
-    node: RubyNode with TypeDeclaration,
+    node: RubyNode & TypeDeclaration,
     nameIdentifier: SimpleIdentifier
   ): Ast = {
     val className     = nameIdentifier.text

@@ -23,7 +23,7 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
 
   implicit protected val resolver: NoResolve.type = NoResolve
   private val fileNamePattern                     = Pattern.compile("^(.*(.py|.js|.rb)).*$")
-  protected val pathSep: Char                     = '.'
+  protected val pathSep: String                   = "."
 
   protected def calls: Iterator[Call] = cpg.call
     .nameNot("<operator>.*", "<operators>.*")
@@ -32,7 +32,7 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
   protected def calleeNames(c: Call): Seq[String] =
     c.dynamicTypeHintFullName.filterNot(_.equals("ANY")).distinct
 
-  protected def callees(names: Seq[String]): List[Method] = cpg.method.fullNameExact(names: _*).toList
+  protected def callees(names: Seq[String]): List[Method] = cpg.method.fullNameExact(names*).toList
 
   override def run(builder: DiffGraphBuilder): Unit = linkCalls(builder)
 
@@ -82,8 +82,11 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
   def linkCallToCallee(call: Call, method: MethodBase, builder: DiffGraphBuilder): Unit = {
     builder.addEdge(call, method, EdgeTypes.CALL)
     method match {
-      case method: Method =>
-        builder.setNodeProperty(call, PropertyNames.TYPE_FULL_NAME, method.methodReturn.typeFullName)
+      case m: Method if m.methodReturn.possibleTypes.headOption.exists(_ != "ANY") =>
+        val typeFullName = m.methodReturn.possibleTypes.headOption.getOrElse(m.methodReturn.typeFullName)
+        builder.setNodeProperty(call, PropertyNames.TYPE_FULL_NAME, typeFullName)
+      case m: Method =>
+        builder.setNodeProperty(call, PropertyNames.TYPE_FULL_NAME, m.methodReturn.typeFullName)
       case _ =>
     }
   }
@@ -115,7 +118,7 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     }
     val name =
       if (methodName.contains(pathSep) && methodName.length > methodName.lastIndexOf(pathSep) + 1)
-        methodName.substring(methodName.lastIndexOf(pathSep) + 1)
+        methodName.substring(methodName.lastIndexOf(pathSep) + pathSep.length)
       else methodName
     createMethodStub(name, methodName, call.argumentOut.size, isExternal, builder)
   }

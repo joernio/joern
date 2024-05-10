@@ -54,7 +54,7 @@ object GradleDependencies {
        |allprojects {
        |  afterEvaluate { project ->
        |    def taskName = "$taskName"
-       |    def destinationDir = "$destination"
+       |    def destinationDir = "${destination.replaceAll("\\\\", "/")}"
        |    def gradleProjectName = "$gradleProjectName"
        |    def gradleConfigurationName = "$gradleConfigurationName"
        |
@@ -92,12 +92,19 @@ object GradleDependencies {
 
   // this init script _should_ work with Gradle 4-8, but has not been tested thoroughly
   // TODO: add test cases for older Gradle versions
-  private def gradle5OrLaterInitScript(taskName: String, destination: String): String = {
+  private def gradle5OrLaterInitScript(
+    taskName: String,
+    destination: String,
+    gradleConfigurationName: String
+  ): String = {
     s"""
      |allprojects {
      |  apply plugin: 'java'
      |  task $taskName(type: Copy) {
-     |    into "$destination"
+     |    configurations.$gradleConfigurationName.setCanBeResolved(true)
+     |    configurations.implementation.setCanBeResolved(true)
+     |    configurations.default.setCanBeResolved(true)
+     |    into "${destination.replaceAll("\\\\", "/")}"
      |    from configurations.default
      |  }
      |}
@@ -115,7 +122,7 @@ object GradleDependencies {
       if (forAndroid) {
         gradle5OrLaterAndroidInitScript(taskName, destinationDir.toString, gradleProjectName, gradleConfigurationName)
       } else {
-        gradle5OrLaterInitScript(taskName, destinationDir.toString)
+        gradle5OrLaterInitScript(taskName, destinationDir.toString, gradleConfigurationName)
       }
     GradleDepsInitScript(content, taskName, destinationDir)
   }

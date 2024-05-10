@@ -28,8 +28,8 @@ trait ExternalCommand {
     val stdErrOutput  = new ConcurrentLinkedQueue[String]
     val processLogger = ProcessLogger(stdOutOutput.add, stdErrOutput.add)
     val process = shellPrefix match {
-      case Nil => Process(command, new java.io.File(cwd), extraEnv.toList: _*)
-      case _   => Process(shellPrefix :+ command, new java.io.File(cwd), extraEnv.toList: _*)
+      case Nil => Process(command, new java.io.File(cwd), extraEnv.toList*)
+      case _   => Process(shellPrefix :+ command, new java.io.File(cwd), extraEnv.toList*)
     }
     handleRunResult(Try(process.!(processLogger)), stdOutOutput.asScala.toSeq, stdErrOutput.asScala.toSeq)
   }

@@ -2,29 +2,38 @@ package io.joern.kotlin2cpg.ast
 
 import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.KtFileWithMeta
-import io.joern.kotlin2cpg.ast.Nodes.{namespaceBlockNode, operatorCallNode}
-import io.joern.kotlin2cpg.types.{TypeConstants, TypeInfoProvider, TypeRenderer}
-import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.*
-import io.shiftleft.passes.IntervalKeyPool
-import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, Defines, ValidationMode}
+import io.joern.kotlin2cpg.datastructures.Scope
+import io.joern.kotlin2cpg.types.TypeConstants
+import io.joern.kotlin2cpg.types.TypeInfoProvider
+import io.joern.kotlin2cpg.types.TypeRenderer
+import io.joern.x2cpg.Ast
+import io.joern.x2cpg.AstCreatorBase
+import io.joern.x2cpg.AstNodeBuilder
+import io.joern.x2cpg.Defines
+import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.kotlin2cpg.datastructures.Scope
+import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
+import io.shiftleft.codepropertygraph.generated.*
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.passes.IntervalKeyPool
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
-import org.jetbrains.kotlin.descriptors.{DescriptorVisibilities, DescriptorVisibility}
+import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
+import org.jetbrains.kotlin.descriptors.DescriptorVisibility
+import org.jetbrains.kotlin.lexer.KtToken
+import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.lexer.{KtToken, KtTokens}
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
+import java.io.PrintWriter
+import java.io.StringWriter
 import scala.annotation.tailrec
 import scala.collection.mutable
-import io.shiftleft.semanticcpg.language.*
-
-import java.io.{PrintWriter, StringWriter}
 import scala.jdk.CollectionConverters.*
 
 case class BindingInfo(node: NewBinding, edgeMeta: Seq[(NewNode, NewNode, String)])
@@ -52,7 +61,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   protected val relativizedPath: String = fileWithMeta.relativizedPath
 
   protected val scope: Scope[String, DeclarationNew, NewNode] = new Scope()
-  protected val debugScope                                    = mutable.Stack.empty[KtDeclaration]
+  protected val debugScope: mutable.Stack[KtDeclaration]      = mutable.Stack.empty[KtDeclaration]
 
   def createAst(): DiffGraphBuilder = {
     implicit val typeInfoProvider: TypeInfoProvider = xTypeInfoProvider
@@ -130,7 +139,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     else node.importedEntity.getOrElse("")
   }
 
-  protected def storeInDiffGraph(ast: Ast): Unit = {
+  private def storeInDiffGraph(ast: Ast): Unit = {
     Ast.storeInDiffGraph(ast, diffGraph)
 
     for {
@@ -273,7 +282,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     }
   }
 
-  def astForFile(fileWithMeta: KtFileWithMeta)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  private def astForFile(fileWithMeta: KtFileWithMeta)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val ktFile = fileWithMeta.f
 
     val importDirectives = ktFile.getImportList.getImports.asScala
@@ -282,19 +291,19 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       for {
         node <- importAsts.flatMap(_.root.collectAll[NewImport])
         name = getName(node)
-      } yield Ast(namespaceBlockNode(name, name, relativizedPath))
+      } yield Ast(NodeBuilders.newNamespaceBlockNode(name, name, relativizedPath))
 
     val packageName = ktFile.getPackageFqName.toString
     val node =
       if (packageName == Constants.root)
-        namespaceBlockNode(
+        NodeBuilders.newNamespaceBlockNode(
           NamespaceTraversal.globalNamespaceName,
           NamespaceTraversal.globalNamespaceName,
           relativizedPath
         )
       else {
         val name = packageName.split("\\.").lastOption.getOrElse("")
-        namespaceBlockNode(name, packageName, relativizedPath)
+        NodeBuilders.newNamespaceBlockNode(name, packageName, relativizedPath)
       }
     methodAstParentStack.push(node)
 
@@ -344,7 +353,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           case p: KtProperty             => astsForProperty(p)
           case unhandled =>
             logger.error(
-              s"Unknown declaration type encountered in this file `${relativizedPath}` with text `${unhandled.getText}` and class `${unhandled.getClass}`!"
+              s"Unknown declaration type encountered in this file `$relativizedPath` with text `${unhandled.getText}` and class `${unhandled.getClass}`!"
             )
             Seq()
         }
@@ -355,7 +364,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           val printWriter  = new PrintWriter(stringWriter)
           exception.printStackTrace(printWriter)
           logger.warn(
-            s"Caught exception while processing decl in this file `${relativizedPath}`:\n$declText\n${stringWriter.toString}"
+            s"Caught exception while processing decl in this file `$relativizedPath`:\n$declText\n${stringWriter.toString}"
           )
           Seq()
       }
@@ -408,7 +417,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val componentNAst =
       callAst(componentNCallNode, Seq(), Option(componentNIdentifierAst))
 
-    val assignmentCallNode = operatorCallNode(
+    val assignmentCallNode = NodeBuilders.newOperatorCallNode(
       Operators.assignment,
       s"${entry.getText} = $componentNCallCode",
       None,

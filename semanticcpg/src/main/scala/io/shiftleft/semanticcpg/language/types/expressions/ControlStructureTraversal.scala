@@ -33,6 +33,14 @@ class ControlStructureTraversal(val traversal: Iterator[ControlStructure]) exten
   def isTry: Iterator[ControlStructure] =
     traversal.controlStructureTypeExact(ControlStructureTypes.TRY)
 
+  @Doc(info = "Only `Catch` control structures")
+  def isCatch: Iterator[ControlStructure] =
+    traversal.controlStructureTypeExact(ControlStructureTypes.CATCH)
+
+  @Doc(info = "Only `Finally` control structures")
+  def isFinally: Iterator[ControlStructure] =
+    traversal.controlStructureTypeExact(ControlStructureTypes.FINALLY)
+
   @Doc(info = "Only `If` control structures")
   def isIf: Iterator[ControlStructure] =
     traversal.controlStructureTypeExact(ControlStructureTypes.IF)

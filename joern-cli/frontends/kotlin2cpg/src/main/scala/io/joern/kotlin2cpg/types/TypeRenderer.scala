@@ -12,6 +12,8 @@ import org.jetbrains.kotlin.renderer.{DescriptorRenderer, DescriptorRendererImpl
 import org.jetbrains.kotlin.types.typeUtil.TypeUtilsKt
 import org.jetbrains.kotlin.resolve.jvm.JvmPrimitiveType
 
+import scala.jdk.CollectionConverters.*
+
 object TypeRenderer {
 
   private val cpgUnresolvedType =
@@ -28,7 +30,13 @@ object TypeRenderer {
     "kotlin.ShortArray"   -> "short[]"
   )
 
-  def descriptorRenderer(): DescriptorRenderer = {
+}
+
+class TypeRenderer(val keepTypeArguments: Boolean = false) {
+
+  import TypeRenderer.*
+
+  private def descriptorRenderer(): DescriptorRenderer = {
     val opts = new DescriptorRendererOptionsImpl
     opts.setParameterNamesInFunctionalTypes(false)
     opts.setInformativeErrorType(false)
@@ -64,11 +72,9 @@ object TypeRenderer {
     }
     val strippedOfContainingDeclarationIfNeeded =
       Option(desc.getContainingDeclaration)
-        .map { containingDeclaration =>
-          containingDeclaration match {
-            case c: ClassDescriptor => maybeReplacedOrTake(c, simpleRender)
-            case _                  => simpleRender
-          }
+        .map {
+          case c: ClassDescriptor => maybeReplacedOrTake(c, simpleRender)
+          case _                  => simpleRender
         }
         .getOrElse(simpleRender)
     desc match {
@@ -132,9 +138,20 @@ object TypeRenderer {
             val relevantT = Option(TypeUtilsKt.getImmediateSuperclassNotAny(t)).getOrElse(t)
             stripped(renderer.renderType(relevantT))
           }
-    if (shouldMapPrimitiveArrayTypes && primitiveArrayMappings.contains(rendered)) primitiveArrayMappings(rendered)
-    else if (rendered == TypeConstants.kotlinUnit) TypeConstants.void
-    else rendered
+    val renderedType =
+      if (shouldMapPrimitiveArrayTypes && primitiveArrayMappings.contains(rendered)) primitiveArrayMappings(rendered)
+      else if (rendered == TypeConstants.kotlinUnit) TypeConstants.void
+      else rendered
+
+    if (keepTypeArguments && !t.getArguments.isEmpty) {
+      val typeArgs = t.getArguments.asScala
+        .map(_.getType)
+        .map(render(_, shouldMapPrimitiveArrayTypes, unwrapPrimitives))
+        .mkString(",")
+      s"$renderedType<$typeArgs>"
+    } else {
+      renderedType
+    }
   }
 
   private def isFunctionXType(t: KotlinType): Boolean = {

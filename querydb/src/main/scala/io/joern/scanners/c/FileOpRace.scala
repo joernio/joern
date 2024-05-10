@@ -57,10 +57,10 @@ object FileOpRace extends QueryBundle {
         )
 
         def fileCalls(calls: Iterator[Call]) =
-          calls.nameExact(operations.keys.toSeq: _*)
+          calls.nameExact(operations.keys.toSeq*)
 
         def fileArgs(c: Call) =
-          c.argument.whereNot(_.isLiteral).argumentIndex(operations(c.name): _*)
+          c.argument.whereNot(_.isLiteral).argumentIndex(operations(c.name)*)
 
         fileCalls(cpg.call)
           .filter(call => {

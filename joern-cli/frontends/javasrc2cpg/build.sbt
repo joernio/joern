@@ -4,13 +4,13 @@ dependsOn(Projects.dataflowengineoss % "compile->compile;test->test", Projects.x
 
 libraryDependencies ++= Seq(
   "io.shiftleft"           %% "codepropertygraph"             % Versions.cpg,
-  "com.github.javaparser"   % "javaparser-symbol-solver-core" % "3.25.8",
+  "com.github.javaparser"   % "javaparser-symbol-solver-core" % Versions.javaParser,
   "org.gradle"              % "gradle-tooling-api"            % Versions.gradleTooling,
   "org.scalatest"          %% "scalatest"                     % Versions.scalatest % Test,
-  "org.projectlombok"       % "lombok"                        % "1.18.30",
-  "org.scala-lang.modules" %% "scala-parallel-collections"    % "1.0.4",
-  "org.scala-lang.modules" %% "scala-parser-combinators"      % "2.2.0",
-  "net.lingala.zip4j"       % "zip4j"                         % "2.11.5"
+  "org.projectlombok"       % "lombok"                        % Versions.lombok,
+  "org.scala-lang.modules" %% "scala-parallel-collections"    % Versions.scalaParallel,
+  "org.scala-lang.modules" %% "scala-parser-combinators"      % Versions.scalaParserCombinators,
+  "net.lingala.zip4j"       % "zip4j"                         % Versions.zip4j
 )
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)

@@ -14,7 +14,7 @@ object Main {
 
   def dumpQueries(): Unit = {
     implicit val engineContext: EngineContext = EngineContext(Semantics.empty)
-    implicit val formats: AnyRef with Formats =
+    implicit val formats: AnyRef & Formats =
       Serialization.formats(NoTypeHints)
     val queryDb = new QueryDatabase(new JoernDefaultArgumentProvider(0))
     // TODO allow specifying file from the outside and make this portable

@@ -4,7 +4,8 @@ import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 
 class UnitTypeMappingTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
-  "CPG for code with definion of simple fn returning `kotlin.Unit`" should {
+
+  "CPG for code with definition of simple fn returning `kotlin.Unit`" should {
     lazy val cpg = code("""
         |package mypkg
         |
@@ -18,4 +19,5 @@ class UnitTypeMappingTests extends KotlinCode2CpgFixture(withOssDataflow = false
       m.fullName shouldBe "mypkg.main:void()"
     }
   }
+
 }

@@ -1,7 +1,8 @@
 package io.joern.jimple2cpg.astcreation.declarations
 
-import io.joern.jimple2cpg.astcreation.{AstCreator}
-import io.joern.x2cpg.utils.NodeBuilders
+import cats.syntax.all.*
+import io.joern.jimple2cpg.astcreation.AstCreator
+import io.joern.jimple2cpg.astcreation.statements.BodyControlInfo
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -9,17 +10,13 @@ import org.slf4j.LoggerFactory
 import soot.jimple.*
 import soot.jimple.internal.JimpleLocal
 import soot.tagkit.*
-import soot.toolkits.graph.BriefUnitGraph
 import soot.{SootMethod, Local as SootLocal, Unit as SUnit, *}
 
+import java.util.concurrent.atomic.AtomicBoolean
 import scala.collection.immutable.HashSet
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
-
-import cats.syntax.all.*;
-import scala.collection.mutable.ArrayBuffer
-import io.joern.jimple2cpg.astcreation.statements.BodyControlInfo
 
 trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -86,10 +83,12 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
         if (nonJavaLibs.nonEmpty || cls.getMethods.asScala.exists(_.getName.endsWith("$"))) {
           val errMsg = "The bytecode for this method suggests it is built with a non-Java JVM language. " +
             "Soot requires including the specific language's SDK in the analysis to create the method body for " +
-            s"'${methodNode.fullName}' correctly."
-          logger.warn(
-            if (nonJavaLibs.nonEmpty) s"$errMsg. Language(s) detected: ${nonJavaLibs.mkString(",")}."
-            else errMsg
+            s"'${methodNode.fullName}' correctly. This detection warning will only be emitted once."
+          AstForMethodsCreator.emitNotJvmLanguageDetected(() =>
+            logger.warn(
+              if (nonJavaLibs.nonEmpty) s"$errMsg. Language(s) detected: ${nonJavaLibs.mkString(",")}."
+              else errMsg
+            )
           )
         } else {
           logger.warn(
@@ -250,4 +249,15 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
     stack.pop()
   }
 
+}
+
+object AstForMethodsCreator {
+
+  private val nonJvmWarnEmitted = AtomicBoolean(false)
+
+  private def emitNotJvmLanguageDetected(logFunction: () => Unit): Unit = {
+    if (!nonJvmWarnEmitted.getAndSet(true)) {
+      logFunction()
+    }
+  }
 }

@@ -89,9 +89,9 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
     }
 
     "have corresponding type decl with correct bindings for function" in {
-      val cpg            = code("func method() -> {}")
+      val cpg            = code("func method() {}")
       val List(typeDecl) = cpg.typeDecl.nameExact("method").l
-      typeDecl.fullName should endWith(".swift:<global>:method")
+      typeDecl.fullName should endWith(".swift:<global>:method:ANY()")
 
       val List(binding) = typeDecl.bindsOut.l
       binding.name shouldBe ""
@@ -99,6 +99,15 @@ class SimpleAstCreationPassTest extends AstSwiftSrc2CpgSuite {
 
       val List(boundMethod) = binding.refOut.l
       boundMethod shouldBe cpg.method.nameExact("method").head
+    }
+
+    "have correct ref to local for simple let" in {
+      val cpg = code("""
+          |let x = ""
+          |""".stripMargin)
+      val List(localX) = cpg.local.nameExact("x").l
+      val List(idX)    = cpg.identifier.nameExact("x").l
+      idX.refOut.head shouldBe localX
     }
 
     "have correct closure bindings" in {

@@ -2,14 +2,6 @@ name := "console"
 
 enablePlugins(JavaAppPackaging)
 
-val ScoptVersion          = "4.1.0"
-val CaskVersion           = "0.9.1"
-val CirceVersion          = "0.14.6"
-val ZeroturnaroundVersion = "1.15"
-val OsLibVersion          = "0.9.1"
-val PprintVersion         = "0.7.3"
-val CommonsLangVersion    = "3.14.0"
-
 dependsOn(
   Projects.semanticcpg,
   Projects.macros,
@@ -25,16 +17,16 @@ dependsOn(
 libraryDependencies ++= Seq(
   "io.shiftleft"         %% "codepropertygraph"    % Versions.cpg,
   "com.michaelpollmeier" %% "scala-repl-pp-server" % Versions.scalaReplPP,
-  "com.github.scopt"     %% "scopt"                % ScoptVersion,
-  "org.typelevel"        %% "cats-effect"          % Versions.cats,
-  "io.circe"             %% "circe-generic"        % CirceVersion,
-  "io.circe"             %% "circe-parser"         % CirceVersion,
-  "org.zeroturnaround"    % "zt-zip"               % ZeroturnaroundVersion,
-  "com.lihaoyi"          %% "os-lib"               % OsLibVersion,
-  "com.lihaoyi"          %% "pprint"               % PprintVersion,
-  "com.lihaoyi"          %% "cask"                 % CaskVersion,
-  "org.apache.commons"    % "commons-lang3"        % CommonsLangVersion,
+  "com.github.scopt"     %% "scopt"                % Versions.scopt,
+  "org.typelevel"        %% "cats-effect"          % Versions.catsEffect,
+  "org.zeroturnaround"    % "zt-zip"               % Versions.zeroTurnaround,
+  "com.lihaoyi"          %% "os-lib"               % Versions.osLib,
+  "com.lihaoyi"          %% "pprint"               % Versions.pPrint,
+  "com.lihaoyi"          %% "cask"                 % Versions.cask,
+  "org.apache.commons"    % "commons-lang3"        % Versions.commonsLang,
   "org.scalatest"        %% "scalatest"            % Versions.scalatest % Test
 )
 
-Test / compile := (Test / compile).dependsOn((Projects.c2cpg / stage)).value
+Test / compile := (Test / compile)
+  .dependsOn(Projects.c2cpg / stage, Projects.jssrc2cpg / stage, Projects.swiftsrc2cpg / stage)
+  .value

@@ -3,20 +3,19 @@ package io.joern.javasrc2cpg
 import better.files.File
 import io.joern.javasrc2cpg.passes.{
   AstCreationPass,
-  ConfigFileCreationPass,
   JavaTypeHintCallLinker,
   JavaTypeRecoveryPassGenerator,
   TypeInferencePass
 }
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
-import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass, XTypeRecoveryConfig}
+import io.joern.x2cpg.passes.frontend.{JavaConfigFileCreationPass, MetaDataPass, TypeNodePass, XTypeRecoveryConfig}
 import io.joern.x2cpg.X2CpgFrontend
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.passes.CpgPassBase
 import org.slf4j.LoggerFactory
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import scala.util.Try
 import scala.util.matching.Regex
 
@@ -31,7 +30,8 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
       val astCreationPass = new AstCreationPass(config, cpg)
       astCreationPass.createAndApply()
       astCreationPass.sourceParser.cleanupDelombokOutput()
-      new ConfigFileCreationPass(cpg).createAndApply()
+      astCreationPass.clearJavaParserCaches()
+      JavaConfigFileCreationPass(cpg).createAndApply()
       if (!config.skipTypeInfPass) {
         TypeNodePass.withRegisteredTypes(astCreationPass.global.usedTypes.keys().asScala.toList, cpg).createAndApply()
         new TypeInferencePass(cpg).createAndApply()
@@ -77,6 +77,11 @@ object JavaSrc2Cpg {
         extends JavaSrcEnvVar(
           "JAVASRC_JDK_PATH",
           "Path to the JDK home used for retrieving type information about builtin Java types."
+        )
+    case FetchDependencies
+        extends JavaSrcEnvVar(
+          "JAVASRC_FETCH_DEPENDENCIES",
+          "If set, javasrc2cpg will fetch dependencies regardless of the --fetch-dependencies flag."
         )
   }
 }

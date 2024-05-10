@@ -21,7 +21,7 @@ trait DummyNodeImpl extends StoredNode {
   override def addEdgeSilentImpl(label: String, inNode: Node, keyValues: util.Map[String, AnyRef]): Unit = ???
   override def setPropertyImpl(key: String, value: Any): Unit                                            = ???
   override def setPropertyImpl[A](key: PropertyKey[A], value: A): Unit                                   = ???
-  override def setPropertyImpl(property: Property[_]): Unit                                              = ???
+  override def setPropertyImpl(property: Property[?]): Unit                                              = ???
   override def removePropertyImpl(key: String): Unit                                                     = ???
   override def removeImpl(): Unit                                                                        = ???
 

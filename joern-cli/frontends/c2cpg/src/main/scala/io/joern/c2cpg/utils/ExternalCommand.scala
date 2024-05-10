@@ -24,8 +24,8 @@ object ExternalCommand extends io.joern.x2cpg.utils.ExternalCommand {
     val stdOutOutput  = new ConcurrentLinkedQueue[String]
     val processLogger = ProcessLogger(stdOutOutput.add, stdOutOutput.add)
     val process = shellPrefix match {
-      case Nil => Process(command, new java.io.File(cwd), extraEnv.toList: _*)
-      case _   => Process(shellPrefix :+ command, new java.io.File(cwd), extraEnv.toList: _*)
+      case Nil => Process(command, new java.io.File(cwd), extraEnv.toList*)
+      case _   => Process(shellPrefix :+ command, new java.io.File(cwd), extraEnv.toList*)
     }
     handleRunResult(Try(process.!(processLogger)), stdOutOutput.asScala.toSeq, Nil)
   }

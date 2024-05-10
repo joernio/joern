@@ -42,7 +42,7 @@ class FileCreationPass(cpg: Cpg) extends CpgPass(cpg) with LinkingUtil {
     // Create SOURCE_FILE edges from nodes of various types to FILE
     linkToSingle(
       cpg,
-      srcNodes = cpg.graph.nodes(srcLabels: _*).toList,
+      srcNodes = cpg.graph.nodes(srcLabels*).toList,
       srcLabels = srcLabels,
       dstNodeLabel = NodeTypes.FILE,
       edgeType = EdgeTypes.SOURCE_FILE,

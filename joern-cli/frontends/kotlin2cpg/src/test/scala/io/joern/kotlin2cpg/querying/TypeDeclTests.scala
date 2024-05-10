@@ -310,8 +310,9 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         |""".stripMargin)
 
     "should contain a BINDING node for X with the correct props set" in {
-      val List(b) = cpg.all.collect { case b: Binding => b }.filter { b => b.name == "add1" }.l
+      val List(b) = cpg.typeDecl.methodBinding.nameExact("add1").l
       b.name shouldBe "add1"
+      b.methodFullName shouldBe "mypkg.Foo.add1:int(int)"
       b.signature shouldBe "int(int)"
     }
   }
@@ -411,6 +412,8 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       val List(td) = cpg.typeDecl.nameExact("AnInterface").l
       td.fullName shouldBe "mypkg.AnInterface"
       td.inheritsFromTypeFullName shouldBe Seq("java.lang.Object")
+      cpg.typeDecl.isAbstract.head shouldBe td
+      td.method.isAbstract.fullName.l shouldBe List("mypkg.AnInterface.doSomething:void(java.lang.String)")
     }
   }
 
@@ -426,6 +429,8 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       val List(td) = cpg.typeDecl.nameExact("AFunInterface").l
       td.fullName shouldBe "mypkg.AFunInterface"
       td.inheritsFromTypeFullName shouldBe Seq("java.lang.Object")
+      cpg.typeDecl.isAbstract.head shouldBe td
+      td.method.isAbstract.fullName.l shouldBe List("mypkg.AFunInterface.doSomething:void(java.lang.String)")
     }
   }
 

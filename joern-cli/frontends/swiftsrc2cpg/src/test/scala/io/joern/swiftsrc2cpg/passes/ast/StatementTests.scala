@@ -33,12 +33,14 @@ class StatementTests extends AstSwiftSrc2CpgSuite {
 
       val List(tryBlock1) = doStructure1.astChildren.order(1).l
       tryBlock1.astChildren.isCall.codeExact("foo()").size shouldBe 1
-      val List(catchBlock1) = doStructure1.astChildren.order(2).l
+      val List(catchBlock1) = doStructure1.astChildren.isControlStructure.isCatch.l
+      catchBlock1.order shouldBe 2
       catchBlock1.astChildren.isCall.codeExact("bar()").size shouldBe 1
 
       val List(tryBlock2) = doStructure2.astChildren.order(1).l
       tryBlock2.astChildren.isCall.codeExact("foo()").size shouldBe 1
-      val List(catchBlock2) = doStructure2.astChildren.order(2).l
+      val List(catchBlock2) = doStructure2.astChildren.isControlStructure.isCatch.l
+      catchBlock2.order shouldBe 2
       catchBlock2.astChildren.isCall.code.l shouldBe List("(error as NSError) == NSError()")
     }
 

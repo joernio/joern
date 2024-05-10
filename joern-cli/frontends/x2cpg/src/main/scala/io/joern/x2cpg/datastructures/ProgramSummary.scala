@@ -2,6 +2,7 @@ package io.joern.x2cpg.datastructures
 
 import io.shiftleft.codepropertygraph.generated.nodes.DeclarationNew
 
+import scala.annotation.targetName
 import scala.collection.immutable.Map
 import scala.collection.mutable
 import scala.reflect.ClassTag
@@ -14,7 +15,7 @@ import scala.reflect.ClassTag
   * @tparam T
   *   the type/class meta data class.
   */
-trait ProgramSummary[T <: TypeLike[_, _]] {
+trait ProgramSummary[T <: TypeLike[?, ?]] {
 
   /** A mapping between a namespace/directory and the containing types.
     */
@@ -43,13 +44,21 @@ object ProgramSummary {
 
   /** Combines two namespace-to-type maps.
     */
-  def combine[T <: TypeLike[_, _]](a: Map[String, Set[T]], b: Map[String, Set[T]]): Map[String, Set[T]] = {
+  def combine[T <: TypeLike[M, F], M <: MethodLike, F <: FieldLike](
+    a: Map[String, Set[T]],
+    b: Map[String, Set[T]]
+  ): Map[String, Set[T]] = {
     val accumulator = mutable.HashMap.from(a)
 
-    b.keySet.foreach(k =>
-      accumulator.updateWith(k) {
-        case Some(existing) => Option(a.getOrElse(k, Set.empty) ++ b.getOrElse(k, Set.empty) ++ existing)
-        case None           => Option(a.getOrElse(k, Set.empty) ++ b.getOrElse(k, Set.empty))
+    b.keySet.foreach(namespace =>
+      accumulator.updateWith(namespace) {
+        case Some(existing) =>
+          val types = (existing.toList ++ b(namespace).toList)
+            .groupBy(_.name)
+            .map { case (_, ts) => ts.reduce((a, b) => (a + b).asInstanceOf[T]) }
+            .toSet
+          Option(types)
+        case None => b.get(namespace)
       }
     )
     accumulator.toMap
@@ -67,7 +76,7 @@ object ProgramSummary {
   *   the type/class meta data class.
   */
 trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: ProgramSummary[T]) {
-  this: Scope[_, _, TypedScopeElement] =>
+  this: Scope[?, ?, TypedScopeElement] =>
 
   /** Tracks the types that are visible to this scope.
     */
@@ -98,6 +107,10 @@ trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: 
       }
   }
 
+  protected def matchingM(callName: String)(implicit tag: ClassTag[M]): PartialFunction[MemberLike, M] = {
+    case m: M if m.name == callName => m
+  }
+
   /** Given the type full name and call name, will attempt to find the matching entry.
     *
     * @param typeFullName
@@ -109,26 +122,17 @@ trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: 
     * @return
     *   the method meta data if found.
     */
-  def tryResolveMethodInvocation(callName: String, argTypes: List[String], typeFullName: Option[String] = None)(implicit
-    tag: ClassTag[M]
+  def tryResolveMethodInvocation(callName: String, argTypes: List[String] = Nil, typeFullName: Option[String] = None)(
+    implicit tag: ClassTag[M]
   ): Option[M] = typeFullName match {
     case None =>
-      // This function uses the `implicit tag` (IntelliJ incorrectly marks it as unused)
-      def matchingM: PartialFunction[MemberLike, M] = { case m: M if m.name == callName => m }
       // TODO: The typesInScope part is to imprecisely solve the unimplemented polymorphism limitation
-      membersInScope.collectFirst(matchingM).orElse { typesInScope.flatMap(_.methods).collectFirst(matchingM) }
-    case Some(tfn) =>
-      val methodsWithEqualArgs = tryResolveTypeReference(tfn).flatMap { t =>
-        Option(
-          t.methods.filter(m => m.name == callName && m.parameterTypes.filterNot(_._1 == "this").size == argTypes.size)
-        )
+      membersInScope.collectFirst(matchingM(callName)).orElse {
+        typesInScope.flatMap(_.methods).collectFirst(matchingM(callName))
       }
-
-      methodsWithEqualArgs
-        .getOrElse(List.empty[M])
-        .find(isOverloadedBy(_, argTypes)) match {
-        case Some(m) => Option(m)
-        case None    => methodsWithEqualArgs.getOrElse(List.empty[M]).headOption
+    case Some(tfn) =>
+      tryResolveTypeReference(tfn).flatMap { t =>
+        t.methods.find(m => m.name == callName)
       }
   }
 
@@ -145,9 +149,6 @@ trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: 
     * @return
     *   true if the method could be overloaded by a call with these argument types.
     */
-  protected def isOverloadedBy(method: M, argTypes: List[String]): Boolean = {
-    method.parameterTypes.size == argTypes.size
-  }
 
   /** Given the type full name and field name, will attempt to find the matching entry.
     * @param typeFullName
@@ -212,6 +213,50 @@ trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: 
     typesInScope.find(t => t.methods.contains(m))
   }
 
+}
+
+trait OverloadableScope[M <: OverloadableMethod] {
+  this: TypedScope[M, ?, ?] =>
+  override def tryResolveMethodInvocation(
+    callName: String,
+    argTypes: List[String],
+    typeFullName: Option[String] = None
+  )(implicit tag: ClassTag[M]): Option[M] = typeFullName match {
+    case None =>
+      // TODO: The typesInScope part is to imprecisely solve the unimplemented polymorphism limitation
+      membersInScope.collectFirst(matchingM(callName)).orElse {
+        typesInScope.flatMap(_.methods).collectFirst(matchingM(callName))
+      }
+    case Some(tfn) =>
+      val methodsWithEqualArgs = tryResolveTypeReference(tfn).flatMap { t =>
+        // TODO: Investigate using `isOverloadedBy` here
+        Option(
+          t.methods.filter(m => m.name == callName && m.parameterTypes.filterNot(_._1 == "this").size == argTypes.size)
+        )
+      }
+
+      methodsWithEqualArgs
+        .getOrElse(List.empty[M])
+        .find(isOverloadedBy(_, argTypes))
+        .orElse(methodsWithEqualArgs.getOrElse(List.empty[M]).headOption)
+  }
+
+  /** Determines if, by observing the given argument types, that the method's signature is a plausible match to the
+    * observed arguments.
+    *
+    * The default implementation only considers that the same number of arguments are added and does not account for
+    * variadic arguments nor polymorphism.
+    *
+    * @param method
+    *   the method meta data.
+    * @param argTypes
+    *   the observed arguments from the call-site.
+    * @return
+    *   true if the method could be overloaded by a call with these argument types.
+    */
+  protected def isOverloadedBy(method: M, argTypes: List[String]): Boolean = {
+    method.parameterTypes.size == argTypes.size
+  }
 }
 
 /** An implementation of combining the typed scoping structures to manage the available type information at namespace
@@ -299,6 +344,38 @@ trait TypeLike[M <: MethodLike, F <: FieldLike] {
     */
   def fields: List[F]
 
+  /** Adds the contents of the two types and produces a new type.
+    * @param o
+    *   the other type-like.
+    * @return
+    *   a type-like that is the combination of the two, with precedence to colliding contents to this type (LHS).
+    */
+  @targetName("add")
+  def +(o: TypeLike[M, F]): TypeLike[M, F]
+
+  /** Helper method for creating the sum of two type-like's methods, while preferring this types' methods on collisions.
+    * @param o
+    *   the other type-like.
+    * @return
+    *   the combination of the two type-like's methods.
+    */
+  protected def mergeMethods(o: TypeLike[M, ?]): List[M] = {
+    val methodNames = methods.map(_.name).toSet
+    methods ++ o.methods.filterNot(m => methodNames.contains(m.name))
+  }
+
+  /** Helper method for creating the sum of two type-like's fields, while preferring this types' fields on collisions.
+    *
+    * @param o
+    *   the other type-like.
+    * @return
+    *   the combination of the two type-like's fields.
+    */
+  protected def mergeFields(o: TypeLike[?, F]): List[F] = {
+    val fieldNames = fields.map(_.name).toSet
+    fields ++ o.fields.filterNot(f => fieldNames.contains(f.name))
+  }
+
 }
 
 /** An entity that is a member to some type or module.
@@ -335,13 +412,6 @@ trait MethodLike extends MemberLike {
     */
   def name: String
 
-  /** Stores a tuple of the parameter name and type name.
-    *
-    * @return
-    *   the names and type names of the parameters.
-    */
-  def parameterTypes: List[(String, String)]
-
   /** Stores the return type name.
     *
     * @return
@@ -350,3 +420,15 @@ trait MethodLike extends MemberLike {
   def returnType: String
 
 }
+
+trait OverloadableMethod extends MethodLike {
+
+  /** Stores a tuple of the parameter name and type name.
+    *
+    * @return
+    *   the names and type names of the parameters.
+    */
+  def parameterTypes: List[(String, String)]
+}
+
+trait StubbedType[M <: MethodLike, F <: FieldLike] extends TypeLike[M, F]

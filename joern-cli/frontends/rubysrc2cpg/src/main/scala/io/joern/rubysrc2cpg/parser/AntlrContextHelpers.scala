@@ -73,6 +73,16 @@ object AntlrContextHelpers {
     def isInterpolated: Boolean = ctx.doubleQuotedString().isInterpolated || concatenations.exists(_.isInterpolated)
   }
 
+  sealed implicit class DoubleQuotedSymbolExpressionContextHelper(ctx: DoubleQuotedSymbolLiteralContext) {
+    def interpolations: List[ParserRuleContext] = ctx.doubleQuotedString().interpolations ++ (ctx
+      .doubleQuotedString() :: Nil)
+      .filter(_.isInterpolated)
+      .flatMap(_.interpolations)
+
+    def concatenations: List[DoubleQuotedStringContext] = ctx.doubleQuotedString() :: Nil
+    def isInterpolated: Boolean = ctx.doubleQuotedString().isInterpolated || concatenations.exists(_.isInterpolated)
+  }
+
   sealed implicit class SingleQuotedStringExpressionContextHelper(ctx: SingleQuotedStringExpressionContext) {
     def concatenations: List[SingleOrDoubleQuotedStringContext] = ctx.singleOrDoubleQuotedString().asScala.toList
     def isInterpolated: Boolean                                 = concatenations.exists(_.isInterpolated)
@@ -150,7 +160,9 @@ object AntlrContextHelpers {
       case ctx: CommandIndexingArgumentListContext => List(ctx.command())
       case ctx: OperatorExpressionListIndexingArgumentListContext =>
         ctx.operatorExpressionList().operatorExpression().asScala.toList
-      case ctx: AssociationListIndexingArgumentListContext => ctx.associationList().associations
+      case ctx: AssociationListIndexingArgumentListContext   => ctx.associationList().associations
+      case ctx: SplattingArgumentIndexingArgumentListContext => ctx.splattingArgument() :: Nil
+      case ctx: OperatorExpressionListWithSplattingArgumentIndexingArgumentListContext => ctx.splattingArgument() :: Nil
       case ctx =>
         logger.warn(s"Unsupported argument type ${ctx.getClass}")
         List()
@@ -177,6 +189,8 @@ object AntlrContextHelpers {
         Option(ctx.associationList()).map(_.associations).getOrElse(List.empty)
       case ctx: BlockArgumentArgumentListContext =>
         Option(ctx.blockArgument()).toList
+      case ctx: SplattingArgumentArgumentListContext =>
+        Option(ctx.splattingArgument()).toList
       case ctx =>
         logger.warn(s"Unsupported element type ${ctx.getClass.getSimpleName}")
         List()

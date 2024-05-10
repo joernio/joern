@@ -19,6 +19,8 @@ import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.nodes.File.PropertyDefaults
 import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
 
+import scala.annotation.unused
+
 trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
 
@@ -584,6 +586,19 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
   case class AstAndMethod(ast: Ast, method: NewMethod, methodBlock: Ast)
 
+  private def paramSignature(
+    node: FunctionParameterClauseSyntax | ClosureShorthandParameterListSyntax | ClosureParameterClauseSyntax
+  ): String = {
+    node match {
+      case f: FunctionParameterClauseSyntax =>
+        f.parameters.children.map(c => code(c.`type`)).mkString("(", ",", ")")
+      case c: ClosureParameterClauseSyntax =>
+        c.parameters.children.map(c => c.`type`.fold(Defines.Any)(code)).mkString("(", ",", ")")
+      case c: ClosureShorthandParameterListSyntax =>
+        c.children.map(_ => Defines.Any).mkString("(", ",", ")")
+    }
+  }
+
   protected def astForFunctionLike(
     node: FunctionDeclLike,
     shouldCreateFunctionReference: Boolean = false,
@@ -607,16 +622,40 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val modifiers                    = modifiersForFunctionLike(node)
     val (methodName, methodFullName) = calcMethodNameAndFullName(node)
     val filename                     = parserResult.filename
+    val (signature, returnType) = node match {
+      case f: FunctionDeclSyntax =>
+        val returnType = f.signature.returnClause.fold(Defines.Any)(c => code(c.`type`))
+        (s"$returnType${paramSignature(f.signature.parameterClause)}", returnType)
+      case a: AccessorDeclSyntax =>
+        val returnType = Defines.Any
+        (s"$returnType${a.parameters.fold("()")(code)}", returnType)
+      case i: InitializerDeclSyntax =>
+        val (_, returnType) = astParentInfo()
+        (s"$returnType${paramSignature(i.signature.parameterClause)}", returnType)
+      case _: DeinitializerDeclSyntax =>
+        val returnType = Defines.Any
+        (s"$returnType()", returnType)
+      case s: SubscriptDeclSyntax =>
+        val returnType = code(s.returnClause.`type`)
+        (s"$returnType${paramSignature(s.parameterClause)}", returnType)
+      case c: ClosureExprSyntax =>
+        val returnType      = c.signature.flatMap(_.returnClause).fold(Defines.Any)(r => code(r.`type`))
+        val paramClauseCode = c.signature.flatMap(_.parameterClause).fold("()")(paramSignature)
+        (s"$returnType$paramClauseCode", returnType)
+    }
+    registerType(returnType)
+    val methodFullNameAndSignature = s"$methodFullName:$signature"
+    functionNodeToNameAndFullName(node) = (methodName, methodFullNameAndSignature)
 
     val methodRefNode_ = if (!shouldCreateFunctionReference) {
       None
     } else {
-      Option(methodRefNode(node, methodName, methodFullName, methodFullName))
+      Option(methodRefNode(node, methodName, methodFullNameAndSignature, methodFullNameAndSignature))
     }
 
     val callAst = if (shouldCreateAssignmentCall && shouldCreateFunctionReference) {
       val idNode  = identifierNode(node, methodName)
-      val idLocal = localNode(node, methodName, methodName, methodFullName).order(0)
+      val idLocal = localNode(node, methodName, methodName, methodFullNameAndSignature).order(0)
       diffGraph.addEdge(localAstParentStack.head, idLocal, EdgeTypes.AST)
       scope.addVariable(methodName, idLocal, BlockScope)
       scope.addVariableReference(methodName, idNode)
@@ -634,32 +673,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         typeRefIdStack.headOption
       }
 
-    val (signature, returnType) = node match {
-      case f: FunctionDeclSyntax =>
-        val returnType = f.signature.returnClause.fold(Defines.Any)(c => code(c.`type`))
-        (s"$returnType $methodFullName ${code(f.signature.parameterClause)}", returnType)
-      case a: AccessorDeclSyntax =>
-        val returnType = Defines.Any
-        (s"$returnType $methodFullName ${a.parameters.fold("()")(code)}", returnType)
-      case i: InitializerDeclSyntax =>
-        val (_, returnType) = astParentInfo()
-        (s"$returnType $methodFullName ${i.signature.parameterClause.parameters.children.map(code)}", returnType)
-      case _: DeinitializerDeclSyntax =>
-        val returnType = Defines.Any
-        (s"$returnType $methodFullName ()", returnType)
-      case s: SubscriptDeclSyntax =>
-        val returnType = code(s.returnClause.`type`)
-        (s"$returnType $methodFullName ${s.parameterClause.parameters.children.map(code)}", returnType)
-      case c: ClosureExprSyntax =>
-        val returnType = c.signature.flatMap(_.returnClause).fold(Defines.Any)(r => code(r.`type`))
-        val paramClauseCode =
-          c.signature.flatMap(_.parameterClause).fold("")(code).stripPrefix("(").stripSuffix(")")
-        (s"$returnType $methodFullName ($paramClauseCode)", returnType)
-    }
-    registerType(returnType)
-
     val codeString  = code(node)
-    val methodNode_ = methodNode(node, methodName, codeString, methodFullName, Option(signature), filename)
+    val methodNode_ = methodNode(node, methodName, codeString, methodFullNameAndSignature, Option(signature), filename)
     val block       = blockNode(node, PropertyDefaults.Code, Defines.Any)
     methodAstParentStack.push(methodNode_)
     scope.pushNewMethodScope(methodFullName, methodName, block, capturingRefNode)
@@ -744,7 +759,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     localAstParentStack.pop()
     methodAstParentStack.pop()
 
-    val typeDeclAst = createFunctionTypeAndTypeDeclAst(node, methodNode_, methodName, methodFullName)
+    val typeDeclAst = createFunctionTypeAndTypeDeclAst(node, methodNode_, methodName, methodFullNameAndSignature)
     Ast.storeInDiffGraph(astForMethod, diffGraph)
     Ast.storeInDiffGraph(typeDeclAst, diffGraph)
     diffGraph.addEdge(methodAstParentStack.head, methodNode_, EdgeTypes.AST)
@@ -831,15 +846,15 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     callAst(callNode, argAsts)
   }
 
-  private def astForOperatorDeclSyntax(node: OperatorDeclSyntax): Ast = Ast()
+  private def astForOperatorDeclSyntax(@unused node: OperatorDeclSyntax): Ast = Ast()
 
   private def astForPoundSourceLocationSyntax(node: PoundSourceLocationSyntax): Ast = notHandledYet(node)
 
-  private def astForPrecedenceGroupDeclSyntax(node: PrecedenceGroupDeclSyntax): Ast = Ast()
+  private def astForPrecedenceGroupDeclSyntax(@unused node: PrecedenceGroupDeclSyntax): Ast = Ast()
 
   private def astForSubscriptDeclSyntax(node: SubscriptDeclSyntax): Ast = notHandledYet(node)
 
-  private def handleTypeAliasInitializer(node: TypeSyntax): String = {
+  protected def handleTypeAliasInitializer(node: TypeSyntax): String = {
     astForTypeSyntax(node).root match
       case Some(id: NewIdentifier)     => id.name
       case Some(typeDecl: NewTypeDecl) => typeDecl.fullName
@@ -930,7 +945,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           Ast()
         } else {
           val patternIdentifier = identifierNode(binding.pattern, name).typeFullName(typeFullName)
-          val patternAst        = Ast(patternIdentifier)
+          scope.addVariableReference(name, patternIdentifier)
+          val patternAst = Ast(patternIdentifier)
           modifiers.foreach { mod =>
             diffGraph.addEdge(patternIdentifier, mod, EdgeTypes.AST)
           }

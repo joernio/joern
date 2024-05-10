@@ -1,8 +1,9 @@
 package io.joern.kotlin2cpg.validation
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, ControlStructure, Literal}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.Call
+import io.shiftleft.codepropertygraph.generated.nodes.Literal
+import io.shiftleft.semanticcpg.language.*
 
 class ArgumentIndexTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "CPG for code with simple if-expression inside DQE" should {

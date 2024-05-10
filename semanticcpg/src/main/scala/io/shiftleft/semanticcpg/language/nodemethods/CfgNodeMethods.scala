@@ -83,26 +83,6 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
     }
   }
 
-  /** Using the post dominator tree, will determine if this node passes through the included set of nodes and filter it
-    * in.
-    * @param included
-    *   the nodes this node must pass through.
-    * @return
-    *   the traversal of this node if it passes through the included set.
-    */
-  def passes(included: Set[CfgNode]): Iterator[CfgNode] =
-    Iterator.single(node).filter(_.postDominatedBy.exists(included.contains))
-
-  /** Using the post dominator tree, will determine if this node passes through the excluded set of nodes and filter it
-    * out.
-    * @param excluded
-    *   the nodes this node must not pass through.
-    * @return
-    *   the traversal of this node if it does not pass through the excluded set.
-    */
-  def passesNot(excluded: Set[CfgNode]): Iterator[CfgNode] =
-    Iterator.single(node).filterNot(_.postDominatedBy.exists(excluded.contains))
-
   private def expandExhaustively(expand: CfgNode => Iterator[StoredNode]): Iterator[CfgNode] = {
     var controllingNodes = List.empty[CfgNode]
     var visited          = Set.empty + node
@@ -128,6 +108,7 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
     case _: MethodParameterIn | _: MethodParameterOut | _: MethodReturn =>
       walkUpAst(node)
     case _: CallRepr if !node.isInstanceOf[Call] => walkUpAst(node)
+    case _: Annotation | _: AnnotationLiteral    => node.inAst.collectAll[Method].head
     case _: Expression | _: JumpTarget           => walkUpContains(node)
   }
 

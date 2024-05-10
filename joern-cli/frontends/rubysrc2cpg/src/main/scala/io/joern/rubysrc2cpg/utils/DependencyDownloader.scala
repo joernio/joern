@@ -210,7 +210,7 @@ class DependencyDownloader(cpg: Cpg, internalProgramSummary: RubyProgramSummary)
         }
       // Pre-parse the AST creators for high level structures
       val librarySummaries = ConcurrentTaskUtil
-        .runUsingThreadPool(astCreators.map(x => () => remapPaths(x.summarize())).iterator)
+        .runUsingThreadPool(astCreators.map(x => () => remapPaths(x.summarize(asExternal = true))).iterator)
         .flatMap {
           case Failure(exception) => logger.warn(s"Unable to pre-parse Ruby file, skipping - ", exception); None
           case Success(summary)   => Option(summary)

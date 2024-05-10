@@ -43,7 +43,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
     }
 
     "have no parameters in the closure declaration" in {
-      inside(cpg.method("<lambda>0").parameter.l) {
+      inside(cpg.method("<lambda>0").parameter.indexGt(0).l) {
         case Nil => // pass
         case xs  => fail(s"Expected the closure to have no parameters, instead got [${xs.code.mkString(", ")}]")
       }
@@ -88,7 +88,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
     }
 
     "have the `item` parameter in the closure declaration" in {
-      inside(cpg.method("<lambda>0").parameter.l) {
+      inside(cpg.method("<lambda>0").parameter.indexGt(0).l) {
         case itemParam :: Nil =>
           itemParam.name shouldBe "item"
         case xs => fail(s"Expected the closure to have a single parameter, instead got [${xs.code.mkString(", ")}]")
@@ -97,7 +97,11 @@ class DoBlockTests extends RubyCode2CpgFixture {
 
     "specify the closure reference as an argument to the member call with block" in {
       inside(cpg.call("each").argument.l) {
-        case (_: Identifier) :: (lambdaRef: MethodRef) :: Nil =>
+        case (myArray: Identifier) :: (lambdaRef: MethodRef) :: Nil =>
+          myArray.argumentIndex shouldBe 0
+          myArray.name shouldBe "my_array"
+
+          lambdaRef.argumentIndex shouldBe 1
           lambdaRef.methodFullName shouldBe "Test0.rb:<global>::program:<lambda>0"
         case xs =>
           fail(s"Expected `each` call to have call and method ref arguments, instead got [${xs.code.mkString(", ")}]")
@@ -147,7 +151,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
     }
 
     "have the `key` and `value` parameter in the closure declaration" in {
-      inside(cpg.method("<lambda>0").parameter.l) {
+      inside(cpg.method("<lambda>0").parameter.indexGt(0).l) {
         case keyParam :: valParam :: Nil =>
           keyParam.name shouldBe "key"
           valParam.name shouldBe "value"
@@ -157,7 +161,11 @@ class DoBlockTests extends RubyCode2CpgFixture {
 
     "specify the closure reference as an argument to the member call with block" in {
       inside(cpg.call("each").argument.l) {
-        case (_: Identifier) :: (lambdaRef: MethodRef) :: Nil =>
+        case (hash: Identifier) :: (lambdaRef: MethodRef) :: Nil =>
+          hash.argumentIndex shouldBe 0
+          hash.name shouldBe "hash"
+
+          lambdaRef.argumentIndex shouldBe 1
           lambdaRef.methodFullName shouldBe "Test0.rb:<global>::program:<lambda>0"
         case xs =>
           fail(s"Expected `each` call to have call and method ref arguments, instead got [${xs.code.mkString(", ")}]")

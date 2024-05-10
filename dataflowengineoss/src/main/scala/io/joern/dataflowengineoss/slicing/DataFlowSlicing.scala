@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory
 
 import java.util.concurrent.Callable
 import scala.concurrent.ExecutionContext
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 object DataFlowSlicing {
 
@@ -23,12 +23,14 @@ object DataFlowSlicing {
     val tasks = (config.fileFilter match {
       case Some(fileName) => cpg.file.nameExact(fileName).method.call
       case None           => cpg.call
-    }).method.withMethodNameFilter.withMethodParameterFilter.withMethodAnnotationFilter.call.withExternalCalleeFilter
+    }).method.withMethodNameFilter.withMethodParameterFilter.withMethodAnnotationFilter.call.withExternalCalleeFilter.withSinkFilter
       .map(c => () => new TrackDataFlowTask(config, c).call())
-      .iterator
+      .l
+
+    logger.info(s"Processing ${tasks.size} sinks")
 
     ConcurrentTaskUtil
-      .runUsingThreadPool(tasks, config.parallelism.getOrElse(Runtime.getRuntime.availableProcessors()))
+      .runUsingThreadPool(tasks.iterator, config.parallelism.getOrElse(Runtime.getRuntime.availableProcessors()))
       .flatMap {
         case Success(slice) => slice
         case Failure(e) =>
@@ -38,10 +40,10 @@ object DataFlowSlicing {
       .reduceOption { (a, b) => DataFlowSlice(a.nodes ++ b.nodes, a.edges ++ b.edges) }
   }
 
-  private class TrackDataFlowTask(config: DataFlowConfig, c: Call) extends Callable[Option[DataFlowSlice]] {
+  private class TrackDataFlowTask(config: DataFlowConfig, c: Call) {
 
-    override def call(): Option[DataFlowSlice] = {
-      val sinks           = config.sinkPatternFilter.map(filter => c.argument.code(filter).l).getOrElse(c.argument.l)
+    def call(): Option[DataFlowSlice] = {
+      val sinks           = c.argument.l
       val sliceNodes      = sinks.iterator.repeat(_.ddgIn)(_.maxDepth(config.sliceDepth).emit).dedup.l
       val sliceNodesIdSet = sliceNodes.id.toSet
       // Lazily set up the rest if the filters are satisfied

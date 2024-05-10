@@ -183,5 +183,74 @@ class CollectionTests extends CSharpCode2CpgFixture {
 
       }
     }
+
+    "Create index-access call" in {
+      val cpg = code(basicBoilerplate("""
+          |var foo = new[] {1, 2, 3};
+          |foo[4] = 5;
+          |""".stripMargin))
+
+      inside(cpg.method.name("Main").l) {
+        case mainMethod :: Nil =>
+          inside(mainMethod.block.astChildren.isCall.l) {
+            case arrInit :: assignmentCall :: Nil =>
+              inside(assignmentCall.argument.l) {
+                case (indexAccessCall: Call) :: (numLiteral: Literal) :: Nil =>
+                  indexAccessCall.name shouldBe Operators.indexAccess
+
+                  numLiteral.code shouldBe "5"
+
+                  inside(indexAccessCall.argument.l) {
+                    case (ident: Identifier) :: (index: Literal) :: Nil =>
+                      ident.code shouldBe "foo"
+                      ident.typeFullName shouldBe "System.Int32[]"
+
+                      index.code shouldBe "4"
+                    case xs => fail(s"Expected identifier and literal, got ${xs.code.mkString(", ")} instead")
+                  }
+
+                case xs => fail(s"Expected indexAccess and literal, got ${xs.code.mkString(", ")} instead")
+              }
+            case xs => fail(s"Expected 2 calls in main method, got ${xs.code.mkString(", ")} instead")
+          }
+        case xs => fail(s"Expected one Main method, got ${xs.name.mkString(", ")} instead")
+      }
+    }
   }
+
+  "Dictionary AST" should {
+    val cpg = code(basicBoilerplate("""
+        |var dict = new Dictionary<string, string>();
+        |dict["foo"] = "bar";
+        |""".stripMargin))
+
+    "Create index-access call" in {
+      inside(cpg.method.name("Main").l) {
+        case mainMethod :: Nil =>
+          inside(mainMethod.block.astChildren.isCall.l) {
+            case dictInit :: assignmentCall :: Nil =>
+              inside(assignmentCall.argument.l) {
+                case (indexAccessCall: Call) :: (barLiteral: Literal) :: Nil =>
+                  indexAccessCall.name shouldBe Operators.indexAccess
+
+                  barLiteral.code shouldBe "\"bar\""
+
+                  inside(indexAccessCall.argument.l) {
+                    case (ident: Identifier) :: (index: Literal) :: Nil =>
+                      ident.code shouldBe "dict"
+                      ident.typeFullName shouldBe "Dictionary"
+
+                      index.code shouldBe "\"foo\""
+                    case xs => fail(s"Expected identifier and literal, got ${xs.code.mkString(", ")} instead")
+                  }
+
+                case xs => fail(s"Expected indexAccess and literal, got ${xs.code.mkString(", ")} instead")
+              }
+            case xs => fail(s"Expected 2 calls in main method, got ${xs.code.mkString(", ")} instead")
+          }
+        case xs => fail(s"Expected one Main method, got ${xs.name.mkString(", ")} instead")
+      }
+    }
+  }
+
 }

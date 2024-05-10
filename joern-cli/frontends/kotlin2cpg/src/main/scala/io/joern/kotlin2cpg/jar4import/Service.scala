@@ -5,8 +5,7 @@ import org.slf4j.LoggerFactory
 class Service(url: String) {
   private val logger = LoggerFactory.getLogger(getClass)
 
-  val findUrl: String   = url + "/find"
-  val healthUrl: String = url + "/health"
+  private val findUrl: String = url + "/find"
 
   def fetchDependencyCoordinates(imports: Seq[String]): Seq[String] = {
     try {

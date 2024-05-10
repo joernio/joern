@@ -1,16 +1,14 @@
 package io.joern.jssrc2cpg.utils
 
-import java.nio.file.{Path, Paths}
-import org.slf4j.LoggerFactory
-import com.fasterxml.jackson.databind.ObjectMapper
 import io.shiftleft.utils.IOUtils
 import org.apache.commons.lang3.StringUtils
+import org.slf4j.LoggerFactory
+import upickle.default.read
 
+import java.nio.file.{Path, Paths}
 import scala.collection.concurrent.TrieMap
-import scala.util.Try
-import scala.jdk.CollectionConverters._
-import scala.util.Failure
-import scala.util.Success
+import scala.jdk.CollectionConverters.*
+import scala.util.{Failure, Success, Try}
 
 object PackageJsonParser {
   private val logger = LoggerFactory.getLogger(PackageJsonParser.getClass)
@@ -43,38 +41,35 @@ object PackageJsonParser {
         val lockDepsPath = packageJsonPath.resolveSibling(Paths.get(PackageJsonLockFilename))
 
         val lockDeps = Try {
-          val content      = IOUtils.readEntireFile(lockDepsPath)
-          val objectMapper = new ObjectMapper
-          val packageJson  = objectMapper.readTree(content)
+          val content     = IOUtils.readEntireFile(lockDepsPath)
+          val packageJson = read[ujson.Obj](content)
 
           var depToVersion = Map.empty[String, String]
-          val dependencyIt = Option(packageJson.get("dependencies"))
-            .map(_.fields().asScala)
-            .getOrElse(Iterator.empty)
-          dependencyIt.foreach { entry =>
-            val depName     = entry.getKey
-            val versionNode = entry.getValue.get("version")
-            if (versionNode != null) {
-              depToVersion = depToVersion.updated(depName, versionNode.asText())
-            }
+          val dependencyIt = packageJson.value.get("dependencies").map(_.obj).getOrElse(Map.empty[String, ujson.Value])
+          dependencyIt.foreach {
+            case (depName, value @ ujson.Str(version)) =>
+              depToVersion = depToVersion.updated(depName, version)
+            case (depName, value @ ujson.Obj(obj)) =>
+              obj.get("version").foreach { version =>
+                depToVersion = depToVersion.updated(depName, version.str)
+              }
+            case (depName, value) =>
+              logger.warn(s"Unexpected version structure for dependency $depName: ${value.getClass}")
           }
           depToVersion
         }.toOption
 
         // lazy val because we only evaluate this in case no package lock file is available.
         lazy val deps = Try {
-          val content      = IOUtils.readEntireFile(depsPath)
-          val objectMapper = new ObjectMapper
-          val packageJson  = objectMapper.readTree(content)
+          val content     = IOUtils.readEntireFile(depsPath)
+          val packageJson = read[ujson.Obj](content)
 
           var depToVersion = Map.empty[String, String]
           ProjectDependencies
             .foreach { dependency =>
-              val dependencyIt = Option(packageJson.get(dependency))
-                .map(_.fields().asScala)
-                .getOrElse(Iterator.empty)
-              dependencyIt.foreach { entry =>
-                depToVersion = depToVersion.updated(entry.getKey, entry.getValue.asText())
+              val dependencyIt = packageJson.value.get(dependency).map(_.obj).getOrElse(Map.empty[String, ujson.Value])
+              dependencyIt.foreach { case (key, value) =>
+                depToVersion = depToVersion.updated(key, value.str)
               }
             }
           depToVersion

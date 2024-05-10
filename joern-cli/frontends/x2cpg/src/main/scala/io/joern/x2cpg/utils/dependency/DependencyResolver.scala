@@ -64,7 +64,7 @@ object DependencyResolver {
   def getDependencies(
     projectDir: Path,
     params: DependencyResolverParams = new DependencyResolverParams
-  ): Option[collection.Seq[String]] = {
+  ): Option[Seq[String]] = {
     val dependencies = findSupportedBuildFiles(projectDir).flatMap { buildFile =>
       if (isMavenBuildFile(buildFile)) {
         MavenDependencies.get(buildFile.getParent)

@@ -1,7 +1,7 @@
 package io.joern.kotlin2cpg.types
 
-import io.shiftleft.passes.KeyPool
 import org.jetbrains.kotlin.descriptors.DescriptorVisibility
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.psi.{
   KtAnnotationEntry,
   KtBinaryExpression,
@@ -12,10 +12,9 @@ import org.jetbrains.kotlin.psi.{
   KtElement,
   KtExpression,
   KtFile,
-  KtLambdaArgument,
   KtLambdaExpression,
-  KtNameReferenceExpression,
   KtNamedFunction,
+  KtNameReferenceExpression,
   KtParameter,
   KtPrimaryConstructor,
   KtProperty,
@@ -27,7 +26,7 @@ import org.jetbrains.kotlin.psi.{
 
 case class AnonymousObjectContext(declaration: KtElement)
 
-trait TypeInfoProvider {
+trait TypeInfoProvider(val typeRenderer: TypeRenderer = new TypeRenderer()) {
   def isExtensionFn(fn: KtNamedFunction): Boolean
 
   def usedAsExpression(expr: KtExpression): Option[Boolean]
@@ -37,6 +36,10 @@ trait TypeInfoProvider {
   def isStaticMethodCall(expr: KtQualifiedExpression): Boolean
 
   def visibility(fn: KtNamedFunction): Option[DescriptorVisibility]
+
+  def modality(fn: KtNamedFunction): Option[Modality]
+
+  def modality(ktClass: KtClassOrObject): Option[Modality]
 
   def returnType(elem: KtNamedFunction, defaultValue: String): String
 
@@ -104,9 +107,7 @@ trait TypeInfoProvider {
 
   def typeFullName(expr: KtTypeReference, defaultValue: String): String
 
-  def typeFullName(expr: KtPrimaryConstructor, defaultValue: String): String
-
-  def typeFullName(expr: KtSecondaryConstructor, defaultValue: String): String
+  def typeFullName(expr: KtPrimaryConstructor | KtSecondaryConstructor, defaultValue: String): String
 
   def typeFullName(expr: KtCallExpression, defaultValue: String): String
 

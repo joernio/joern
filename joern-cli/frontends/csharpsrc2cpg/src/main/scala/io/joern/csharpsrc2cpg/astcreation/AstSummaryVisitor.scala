@@ -48,6 +48,8 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
 
   private def summarize(cpg: Cpg): CSharpProgramSummary = {
 
+    def imports = cpg.imports.importedEntity.toSet
+
     def toMethod(m: Method): CSharpMethod = {
       CSharpMethod(
         m.name,
@@ -66,7 +68,7 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
         CSharpType(typ.fullName, typ.method.map(toMethod).l, typ.member.map(toField).l)
       }.toSet
     }.toMap
-    CSharpProgramSummary(List(mapping))
+    CSharpProgramSummary(mapping, imports)
   }
 
 }

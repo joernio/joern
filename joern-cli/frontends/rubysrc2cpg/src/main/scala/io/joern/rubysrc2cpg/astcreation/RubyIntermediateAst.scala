@@ -3,6 +3,8 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.passes.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 
+import scala.annotation.tailrec
+
 object RubyIntermediateAst {
 
   case class TextSpan(
@@ -52,7 +54,9 @@ object RubyIntermediateAst {
     def size: Int = statements.size
   }
 
-  sealed trait TypeDeclaration {
+  sealed trait AllowedTypeDeclarationChild
+
+  sealed trait TypeDeclaration extends AllowedTypeDeclarationChild {
     def name: RubyNode
     def baseClass: Option[RubyNode]
     def body: RubyNode
@@ -68,7 +72,7 @@ object RubyIntermediateAst {
     name: RubyNode,
     baseClass: Option[RubyNode],
     body: RubyNode,
-    fields: List[RubyNode with RubyFieldIdentifier]
+    fields: List[RubyNode & RubyFieldIdentifier]
   )(span: TextSpan)
       extends RubyNode(span)
       with TypeDeclaration
@@ -85,7 +89,9 @@ object RubyIntermediateAst {
   ) extends RubyNode(span)
       with AnonymousTypeDeclaration
 
-  final case class FieldsDeclaration(fieldNames: List[RubyNode])(span: TextSpan) extends RubyNode(span) {
+  final case class FieldsDeclaration(fieldNames: List[RubyNode])(span: TextSpan)
+      extends RubyNode(span)
+      with AllowedTypeDeclarationChild {
     def hasGetter: Boolean = text.startsWith("attr_reader") || text.startsWith("attr_accessor")
 
     def hasSetter: Boolean = text.startsWith("attr_writer") || text.startsWith("attr_accessor")
@@ -93,6 +99,7 @@ object RubyIntermediateAst {
 
   final case class MethodDeclaration(methodName: String, parameters: List[RubyNode], body: RubyNode, isClosure: Boolean = false)(span: TextSpan)
       extends RubyNode(span)
+      with AllowedTypeDeclarationChild
 
   final case class SingletonMethodDeclaration(
     target: RubyNode,
@@ -101,6 +108,7 @@ object RubyIntermediateAst {
     body: RubyNode
   )(span: TextSpan)
       extends RubyNode(span)
+      with AllowedTypeDeclarationChild
 
   sealed trait MethodParameter {
     def name: String
@@ -147,6 +155,8 @@ object RubyIntermediateAst {
     */
   sealed trait RubyFieldIdentifier extends RubyIdentifier
 
+  sealed trait SingletonMethodIdentifier
+
   final case class RescueExpression(
     body: RubyNode,
     rescueClauses: List[RubyNode],
@@ -167,6 +177,10 @@ object RubyIntermediateAst {
   final case class EnsureClause(thenClause: RubyNode)(span: TextSpan) extends RubyNode(span) with ControlFlowClause
 
   final case class WhileExpression(condition: RubyNode, body: RubyNode)(span: TextSpan)
+      extends RubyNode(span)
+      with ControlFlowExpression
+
+  final case class DoWhileExpression(condition: RubyNode, body: RubyNode)(span: TextSpan)
       extends RubyNode(span)
       with ControlFlowExpression
 
@@ -220,6 +234,7 @@ object RubyIntermediateAst {
   final case class SimpleIdentifier(typeFullName: Option[String] = None)(span: TextSpan)
       extends RubyNode(span)
       with RubyIdentifier
+      with SingletonMethodIdentifier
 
   /** Represents a InstanceFieldIdentifier e.g `@x` */
   final case class InstanceFieldIdentifier()(span: TextSpan) extends RubyNode(span) with RubyFieldIdentifier
@@ -227,7 +242,7 @@ object RubyIntermediateAst {
   /** Represents a ClassFieldIdentifier e.g `@@x` */
   final case class ClassFieldIdentifier()(span: TextSpan) extends RubyNode(span) with RubyFieldIdentifier
 
-  final case class SelfIdentifier()(span: TextSpan) extends RubyNode(span)
+  final case class SelfIdentifier()(span: TextSpan) extends RubyNode(span) with SingletonMethodIdentifier
 
   /** Represents some kind of literal expression.
     */
@@ -242,7 +257,7 @@ object RubyIntermediateAst {
     def isString: Boolean = text.startsWith("\"") || text.startsWith("'")
 
     def innerText: String = {
-      val strRegex = ":?['\"]([\\w\\d_-]+)['\"]".r
+      val strRegex = "[./:]?['\"]([\\w\\d_-]+)(?:\\.rb)?['\"]".r
       text match {
         case s":'$content'"                       => content
         case s":$symbol"                          => symbol
@@ -318,7 +333,7 @@ object RubyIntermediateAst {
 
     def block: Block
 
-    def withoutBlock: RubyNode with C
+    def withoutBlock: RubyNode & C
   }
 
   final case class SimpleCallWithBlock(target: RubyNode, arguments: List[RubyNode], block: Block)(span: TextSpan)
@@ -373,8 +388,10 @@ object RubyIntermediateAst {
   /** Represents a `do` or `{ .. }` (braces) block. */
   final case class Block(parameters: List[RubyNode], body: RubyNode)(span: TextSpan) extends RubyNode(span) {
 
-    def toMethodDeclaration(name: String): MethodDeclaration = MethodDeclaration(name, parameters, body, isClosure = true)(span)
-
+    def toMethodDeclaration(name: String, parameters: Option[List[RubyNode]]): MethodDeclaration = parameters match {
+      case Some(givenParameters) => MethodDeclaration(name, givenParameters, body)(span)
+      case None                  => MethodDeclaration(name, this.parameters, body)(span)
+    }
   }
 
   /** A dummy class for wrapping around `NewNode` and allowing it to integrate with RubyNode classes.
@@ -386,4 +403,8 @@ object RubyIntermediateAst {
   final case class BinaryExpression(lhs: RubyNode, op: String, rhs: RubyNode)(span: TextSpan) extends RubyNode(span)
 
   final case class HereDocNode(content: String)(span: TextSpan) extends RubyNode(span)
+
+  final case class AliasStatement(oldName: String, newName: String)(span: TextSpan) extends RubyNode(span)
+
+  final case class BreakStatement()(span: TextSpan) extends RubyNode(span)
 }

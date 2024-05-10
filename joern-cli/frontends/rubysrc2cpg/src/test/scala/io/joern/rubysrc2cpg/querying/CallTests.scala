@@ -1,5 +1,6 @@
 package io.joern.rubysrc2cpg.querying
 
+import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
@@ -17,7 +18,11 @@ class CallTests extends RubyCode2CpgFixture {
     puts.lineNumber shouldBe Some(2)
     puts.code shouldBe "puts 'hello'"
 
-    val List(hello) = puts.argument.l
+    val List(rec: Identifier, hello: Literal) = puts.argument.l: @unchecked
+    rec.argumentIndex shouldBe 0
+    rec.name shouldBe "puts"
+
+    hello.argumentIndex shouldBe 1
     hello.code shouldBe "'hello'"
     hello.lineNumber shouldBe Some(2)
   }
@@ -29,7 +34,7 @@ class CallTests extends RubyCode2CpgFixture {
 
     val List(foo) = cpg.call.name("foo").l
     foo.code shouldBe "foo(1,2)"
-    foo.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+    foo.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
     foo.lineNumber shouldBe Some(2)
 
     val one = foo.argument(1)
@@ -47,7 +52,7 @@ class CallTests extends RubyCode2CpgFixture {
     val List(fieldAccess) = cpg.fieldAccess.l
 
     fieldAccess.code shouldBe "x.y"
-    fieldAccess.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+    fieldAccess.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
     fieldAccess.lineNumber shouldBe Some(2)
     fieldAccess.fieldIdentifier.code.l shouldBe List("y")
 
@@ -75,7 +80,10 @@ class CallTests extends RubyCode2CpgFixture {
 
     "contain they keyword in the argumentName property" in {
       inside(cpg.call.nameExact("foo").argument.l) {
-        case (hello: Literal) :: (baz: Literal) :: Nil =>
+        case (foo: Identifier) :: (hello: Literal) :: (baz: Literal) :: Nil =>
+          foo.name shouldBe "foo"
+          foo.argumentIndex shouldBe 0
+
           hello.code shouldBe "\"hello\""
           hello.argumentIndex shouldBe 1
           hello.argumentName shouldBe None
@@ -157,6 +165,35 @@ class CallTests extends RubyCode2CpgFixture {
           src.methodFullName shouldBe "Test0.rb:<global>::program:src"
         case xs => fail(s"Expected exactly one `src` call, instead got [${xs.code.mkString(",")}]")
       }
+    }
+  }
+
+  "an identifier sharing the name of a previously defined method" should {
+    val cpg = code("""
+        |def foo()
+        |end
+        |
+        |foo = 1
+        |foo
+        |""".stripMargin)
+
+    "get precedence over the method" in {
+      cpg.call("foo").size shouldBe 0
+    }
+  }
+
+  "splatting argument for a call should be a single argument" in {
+    val cpg = code("""
+        |args = [1, 2]
+        |foo(*args)
+        |""".stripMargin)
+
+    inside(cpg.call("foo").argument.l) {
+      case _ :: (args: Call) :: Nil =>
+        args.methodFullName shouldBe RubyOperators.splat
+        args.code shouldBe "*args"
+        args.lineNumber shouldBe Some(3)
+      case xs => fail(s"Expected a single `*args` argument under `foo`, got [${xs.code.mkString(",")}]")
     }
   }
 

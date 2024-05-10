@@ -2,9 +2,10 @@ package io.joern.javasrc2cpg.passes
 
 import better.files.File
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
+import io.joern.x2cpg.passes.frontend.JavaConfigFileCreationPass
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.NewMetaData
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.utils.ProjectRoot
 import overflowdb.BatchedUpdate
 import overflowdb.BatchedUpdate.DiffGraphBuilder
@@ -19,7 +20,7 @@ class ConfigFileCreationPassTests extends JavaSrcCode2CpgFixture {
   "it should find the correct config files" in {
     val cpg = new Cpg()
     BatchedUpdate.applyDiff(cpg.graph, new DiffGraphBuilder().addNode(NewMetaData().root(testConfigDir)).build())
-    val foundFiles        = new ConfigFileCreationPass(cpg).generateParts().map(_.canonicalPath)
+    val foundFiles        = new JavaConfigFileCreationPass(cpg).generateParts().map(_.canonicalPath)
     val absoluteConfigDir = File(testConfigDir).canonicalPath
     foundFiles should contain theSameElementsAs Array(
       Paths.get(absoluteConfigDir, "application.conf").toString,
@@ -57,6 +58,27 @@ class ConfigFileCreationPassTests extends JavaSrcCode2CpgFixture {
         configFile.content shouldBe "key=value"
 
       case result => fail(s"Expected single config file but got $result")
+    }
+  }
+
+  "it should populate config files correctly when they are nested" in {
+    val configFile1Path = Paths.get("config.properties").toString
+    val configFile2Path = Paths.get("someDir", "config.properties").toString
+    val cpg = code("""public class Foo{}
+        |""".stripMargin)
+      .moreCode(code = "config.file=1", fileName = configFile1Path)
+      .moreCode(code = "config.file=2", fileName = configFile2Path)
+
+    cpg.typeDecl.name("Foo").nonEmpty shouldBe true
+    cpg.configFile.sortBy(_.name).l match {
+      case List(configFile1, configFile2) =>
+        configFile1.name shouldBe configFile1Path
+        configFile1.content shouldBe "config.file=1"
+
+        configFile2.name shouldBe configFile2Path
+        configFile2.content shouldBe "config.file=2"
+
+      case result => fail(s"Expected two config files but got $result")
     }
   }
 

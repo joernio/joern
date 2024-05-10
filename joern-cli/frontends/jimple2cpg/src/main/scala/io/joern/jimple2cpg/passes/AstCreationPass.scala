@@ -26,7 +26,7 @@ class AstCreationPass(classFiles: List[ClassFile], cpg: Cpg, config: Config)
   val global: Global = new Global()
   private val logger = LoggerFactory.getLogger(classOf[AstCreationPass])
 
-  override def generateParts(): Array[_ <: AnyRef] = classFiles.toArray
+  override def generateParts(): Array[? <: AnyRef] = classFiles.toArray
 
   override def runOnPart(builder: DiffGraphBuilder, classFile: ClassFile): Unit = {
     try {
