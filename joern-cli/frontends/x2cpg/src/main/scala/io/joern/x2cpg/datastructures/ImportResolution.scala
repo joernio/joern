@@ -225,6 +225,14 @@ object DefaultImportResolver {
 
     override def paths: Seq[String] = Seq(filename)
 
+    def withEntities(newEntities: Seq[Entity]): RegularPackage = {
+      new RegularPackage(name, filename, entities ++ newEntities, parent, children)
+    }
+
+    def withChildren(newChildren: Seq[ModuleLike]): RegularPackage = {
+      new RegularPackage(name, filename, entities, parent, children ++ newChildren)
+    }
+
   }
 
   /** A basic namespace such as those in C-languages.
