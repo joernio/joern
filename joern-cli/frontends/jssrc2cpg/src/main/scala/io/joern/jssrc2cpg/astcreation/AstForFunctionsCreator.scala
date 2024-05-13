@@ -158,14 +158,15 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         case ObjectPattern =>
           val paramName = generateUnusedVariableName(usedVariableNames, s"param$index")
           // Handle de-structured parameters declared as `{ username: string; password: string; }`
-          val typeDecl = astForTypeAlias(nodeInfo)
+          val typeDeclAst = astForTypeAlias(nodeInfo)
+          Ast.storeInDiffGraph(typeDeclAst, diffGraph)
 
           val tpe          = typeFor(nodeInfo)
           var typeFullName = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
 
           val possibleTypes =
             Seq(
-              typeDecl.root
+              typeDeclAst.root
                 .collect { case t: NewTypeDecl =>
                   typeFullName = t.fullName
                   t.fullName
@@ -181,7 +182,6 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
             EvaluationStrategies.BY_VALUE,
             typeFullName
           ).possibleTypes(possibleTypes)
-          Ast.storeInDiffGraph(typeDecl, diffGraph)
           scope.addVariable(paramName, param, MethodScope)
 
           additionalBlockStatements.addAll(nodeInfo.json("properties").arr.toList.map { element =>

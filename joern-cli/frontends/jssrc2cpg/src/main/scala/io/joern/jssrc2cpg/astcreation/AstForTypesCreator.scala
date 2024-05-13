@@ -21,7 +21,9 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     val nameNodeInfo = if (hasKey(alias.json, "right")) {
       createBabelNodeInfo(alias.json("right"))
-    } else { createBabelNodeInfo(alias.json) }
+    } else {
+      createBabelNodeInfo(alias.json)
+    }
     val nameTpe = typeFor(nameNodeInfo)
     val name = if (nameTpe.contains("{") || nameTpe.contains("(")) {
       calcTypeNameAndFullName(nameNodeInfo)._1
@@ -54,13 +56,13 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     }
 
     // adding all class methods / functions and uninitialized, non-static members
-    val membersAndInitializers = (alias.node match {
+    (alias.node match {
       case TSTypeLiteral => classMembersForTypeAlias(alias)
       case ObjectPattern => Try(alias.json("properties").arr).toOption.toSeq.flatten
       case _             => classMembersForTypeAlias(createBabelNodeInfo(alias.json("typeAnnotation")))
     }).filter(member => isClassMethodOrUninitializedMemberOrObjectProperty(member) && !isStaticMember(member))
-      .map(m => astForClassMember(m, aliasTypeDeclNode))
-    Ast(aliasTypeDeclNode).withChildren(membersAndInitializers)
+      .map(m => astForClassMember(m, aliasTypeDeclNode, ignoreInitCalls = true))
+    Ast(aliasTypeDeclNode)
   }
 
   private def isConstructor(json: Value): Boolean = createBabelNodeInfo(json).node match {
@@ -167,7 +169,11 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     }
   }
 
-  private def astForClassMember(classElement: Value, typeDeclNode: NewTypeDecl): Ast = {
+  private def astForClassMember(
+    classElement: Value,
+    typeDeclNode: NewTypeDecl,
+    ignoreInitCalls: Boolean = false
+  ): Ast = {
     val nodeInfo      = createBabelNodeInfo(classElement)
     val tpe           = typeFor(nodeInfo)
     val possibleTypes = Seq(tpe)
@@ -214,7 +220,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       decoratorAst.root.foreach(diffGraph.addEdge(memberNode_, _, EdgeTypes.AST))
     }
 
-    if (hasKey(nodeInfo.json, "value") && !nodeInfo.json("value").isNull) {
+    if (!ignoreInitCalls && hasKey(nodeInfo.json, "value") && !nodeInfo.json("value").isNull) {
       val lhsAst = astForNode(nodeInfo.json("key"))
       val rhsAst = astForNodeWithFunctionReference(nodeInfo.json("value"))
       val callNode_ =

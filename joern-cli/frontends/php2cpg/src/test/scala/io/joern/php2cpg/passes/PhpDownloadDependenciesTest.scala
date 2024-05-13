@@ -63,4 +63,30 @@ class PhpDownloadDependenciesTest extends PhpCode2CpgFixture() {
 
   }
 
+  "a PHP project with dependencies referencing the same base namespace & psr0 specifications" should {
+    val cpg = code(
+      """
+        |{
+        |    "require": {
+        |        "doctrine/cache": "^2.2.0",
+        |        "doctrine/dbal": "^3.6.6",
+        |        "doctrine/migrations": "^3.6.0",
+        |        "doctrine/orm": "^2.16.1",
+        |        "doctrine/persistence": "^3.2"
+        |    }
+        |}
+        |""".stripMargin,
+      "composer.json"
+    ).withConfig(Config().withDownloadDependencies(true))
+
+    "parse all namespaces and move the files to the correct locations" in {
+      cpg.typ.fullName.count(_.startsWith("Doctrine\\Common\\Cache\\")) should be > 0
+      cpg.typ.fullName.count(_.startsWith("Doctrine\\DBAL\\")) should be > 0
+      cpg.typ.fullName.count(_.startsWith("Doctrine\\Migrations\\")) should be > 0
+      cpg.typ.fullName.count(_.startsWith("Doctrine\\ORM\\")) should be > 0
+      cpg.typ.fullName.count(_.startsWith("Doctrine\\Persistence\\")) should be > 0
+    }
+
+  }
+
 }
