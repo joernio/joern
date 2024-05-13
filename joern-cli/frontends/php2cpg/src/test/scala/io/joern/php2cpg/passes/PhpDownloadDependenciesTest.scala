@@ -1,11 +1,22 @@
 package io.joern.php2cpg.passes
 
+import com.github.sh4869.semver_parser.SemVer
 import io.joern.php2cpg.Config
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.AstNode
+import io.joern.php2cpg.utils.*
 import io.shiftleft.semanticcpg.language.*
 
 class PhpDownloadDependenciesTest extends PhpCode2CpgFixture() {
+
+  "semantic versions from Packagist" should {
+
+    "parse successfully" in {
+      "3.0.0.0-beta1".asSemver shouldBe SemVer(3, 0, 0, None, None)
+      "3.304.4".asSemver shouldBe SemVer(3, 304, 4, None, None)
+      "v2.7.3".asSemver shouldBe SemVer(2, 7, 3, None, None)
+    }
+
+  }
 
   "a PHP project downloading the AWS SDK" should {
 

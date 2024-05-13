@@ -73,6 +73,16 @@ object AntlrContextHelpers {
     def isInterpolated: Boolean = ctx.doubleQuotedString().isInterpolated || concatenations.exists(_.isInterpolated)
   }
 
+  sealed implicit class DoubleQuotedSymbolExpressionContextHelper(ctx: DoubleQuotedSymbolLiteralContext) {
+    def interpolations: List[ParserRuleContext] = ctx.doubleQuotedString().interpolations ++ (ctx
+      .doubleQuotedString() :: Nil)
+      .filter(_.isInterpolated)
+      .flatMap(_.interpolations)
+
+    def concatenations: List[DoubleQuotedStringContext] = ctx.doubleQuotedString() :: Nil
+    def isInterpolated: Boolean = ctx.doubleQuotedString().isInterpolated || concatenations.exists(_.isInterpolated)
+  }
+
   sealed implicit class SingleQuotedStringExpressionContextHelper(ctx: SingleQuotedStringExpressionContext) {
     def concatenations: List[SingleOrDoubleQuotedStringContext] = ctx.singleOrDoubleQuotedString().asScala.toList
     def isInterpolated: Boolean                                 = concatenations.exists(_.isInterpolated)

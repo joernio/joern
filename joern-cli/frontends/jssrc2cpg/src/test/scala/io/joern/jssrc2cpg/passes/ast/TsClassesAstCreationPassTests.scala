@@ -342,6 +342,8 @@ class TsClassesAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
       cpg.all.collectAll[CfgNode].whereNot(_._astIn).size shouldBe 0
       cpg.identifier.count(_.refsTo.size > 1) shouldBe 0
       cpg.identifier.whereNot(_.refsTo).size shouldBe 0
+      // should not produce assignment calls directly under typedecls
+      cpg.call.assignment.astParent.isTypeDecl shouldBe empty
     }
 
     "AST generation for destructured type in a parameter" in {
@@ -360,6 +362,8 @@ class TsClassesAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
       cpg.all.collectAll[CfgNode].whereNot(_._astIn).size shouldBe 0
       cpg.identifier.count(_.refsTo.size > 1) shouldBe 0
       cpg.identifier.whereNot(_.refsTo).size shouldBe 0
+      // should not produce assignment calls directly under typedecls
+      cpg.call.assignment.astParent.isTypeDecl shouldBe empty
     }
 
   }

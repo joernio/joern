@@ -334,6 +334,14 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     }
   }
 
+  override def visitDoubleQuotedSymbolLiteral(ctx: RubyParser.DoubleQuotedSymbolLiteralContext): RubyNode = {
+    if (!ctx.isInterpolated) {
+      StaticLiteral(getBuiltInType(Defines.Symbol))(ctx.toTextSpan)
+    } else {
+      DynamicLiteral(getBuiltInType(Defines.Symbol), ctx.interpolations.map(visit))(ctx.toTextSpan)
+    }
+  }
+
   override def visitQuotedExpandedStringLiteral(ctx: RubyParser.QuotedExpandedStringLiteralContext): RubyNode = {
     if (!ctx.isInterpolated) {
       StaticLiteral(getBuiltInType(Defines.String))(ctx.toTextSpan)
@@ -346,6 +354,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     if (ctx.isStatic) {
       StaticLiteral(getBuiltInType(Defines.Regexp))(ctx.toTextSpan)
     } else {
+      logger.warn(s"Unhandled regular expression literal '${ctx.toTextSpan}'")
       Unknown()(ctx.toTextSpan)
     }
   }
@@ -706,6 +715,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
       }
     }
 
+    logger.warn(s"MemberAccessExpression not handled: '${ctx.toTextSpan}'")
     Unknown()(ctx.toTextSpan)
   }
 
@@ -1065,6 +1075,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     if (Option(ctx.primary()).isEmpty) {
       MandatoryParameter(ctx.toTextSpan.text)(ctx.toTextSpan)
     } else {
+      logger.warn(s"Variable LHS without primary expression is not handled: '${ctx.toTextSpan}'")
       Unknown()(ctx.toTextSpan)
     }
   }
@@ -1084,6 +1095,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
 
   override def visitExceptionClassList(ctx: RubyParser.ExceptionClassListContext): RubyNode = {
     // Requires implementing multiple rhs with splatting
+    logger.warn(s"Exception class lists are not handled: '${ctx.toTextSpan}'")
     Unknown()(ctx.toTextSpan)
   }
 
@@ -1125,6 +1137,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     if (Option(ctx.operatorExpression()).isDefined) {
       visit(ctx.operatorExpression())
     } else {
+      logger.warn(s"Association keys without operator expressions are not handled '${ctx.toTextSpan}''")
       Unknown()(ctx.toTextSpan)
     }
   }

@@ -14,7 +14,8 @@ final case class Config(
   jar4importServiceUrl: Option[String] = None,
   includeJavaSourceFiles: Boolean = false,
   generateNodesForDependencies: Boolean = false,
-  downloadDependencies: Boolean = false
+  downloadDependencies: Boolean = false,
+  keepTypeArguments: Boolean = false
 ) extends X2CpgConfig[Config]
     with DependencyDownloadConfig[Config] {
 
@@ -49,6 +50,10 @@ final case class Config(
   override def withDownloadDependencies(value: Boolean): Config = {
     this.copy(downloadDependencies = value).withInheritedFields(this)
   }
+
+  def withKeepTypeArguments(value: Boolean): Config = {
+    copy(keepTypeArguments = value).withInheritedFields(this)
+  }
 }
 
 private object Frontend {
@@ -82,7 +87,11 @@ private object Frontend {
       opt[Unit]("generate-nodes-for-dependencies")
         .text("Generate nodes for the dependencies of the target project")
         .action((_, c) => c.withGenerateNodesForDependencies(true)),
-      DependencyDownloadConfig.parserOptions
+      DependencyDownloadConfig.parserOptions,
+      opt[Unit]("keep-type-arguments")
+        .hidden()
+        .action((_, c) => c.withKeepTypeArguments(true))
+        .text("Type full names of variables keep their type arguments.")
     )
   }
 }

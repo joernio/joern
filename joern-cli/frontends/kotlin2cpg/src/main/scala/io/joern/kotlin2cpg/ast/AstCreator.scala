@@ -2,8 +2,6 @@ package io.joern.kotlin2cpg.ast
 
 import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.KtFileWithMeta
-import io.joern.kotlin2cpg.ast.Nodes.namespaceBlockNode
-import io.joern.kotlin2cpg.ast.Nodes.operatorCallNode
 import io.joern.kotlin2cpg.datastructures.Scope
 import io.joern.kotlin2cpg.types.TypeConstants
 import io.joern.kotlin2cpg.types.TypeInfoProvider
@@ -15,6 +13,7 @@ import io.joern.x2cpg.Defines
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.datastructures.Stack.*
+import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -292,19 +291,19 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       for {
         node <- importAsts.flatMap(_.root.collectAll[NewImport])
         name = getName(node)
-      } yield Ast(namespaceBlockNode(name, name, relativizedPath))
+      } yield Ast(NodeBuilders.newNamespaceBlockNode(name, name, relativizedPath))
 
     val packageName = ktFile.getPackageFqName.toString
     val node =
       if (packageName == Constants.root)
-        namespaceBlockNode(
+        NodeBuilders.newNamespaceBlockNode(
           NamespaceTraversal.globalNamespaceName,
           NamespaceTraversal.globalNamespaceName,
           relativizedPath
         )
       else {
         val name = packageName.split("\\.").lastOption.getOrElse("")
-        namespaceBlockNode(name, packageName, relativizedPath)
+        NodeBuilders.newNamespaceBlockNode(name, packageName, relativizedPath)
       }
     methodAstParentStack.push(node)
 
@@ -418,7 +417,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val componentNAst =
       callAst(componentNCallNode, Seq(), Option(componentNIdentifierAst))
 
-    val assignmentCallNode = operatorCallNode(
+    val assignmentCallNode = NodeBuilders.newOperatorCallNode(
       Operators.assignment,
       s"${entry.getText} = $componentNCallCode",
       None,
