@@ -4,8 +4,8 @@ import better.files.File
 import com.github.sh4869.semver_parser.{Range, SemVer}
 import io.joern.php2cpg.Config
 import io.joern.php2cpg.parser.Domain.PhpOperators
-import io.joern.php2cpg.passes.{Autoload, Composer, PsrArray, PsrString}
-import io.joern.x2cpg.astgen.AstGenRunner.DefaultAstGenRunnerResult
+import io.joern.php2cpg.passes.{Composer, PsrArray, PsrString}
+import io.joern.x2cpg.utils.FileUtil.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Dependency
 import io.shiftleft.semanticcpg.language.*
@@ -14,8 +14,7 @@ import upickle.default.*
 
 import java.io.{FileOutputStream, IOException}
 import java.net.{HttpURLConnection, URI, URL, URLConnection}
-import java.util.regex.Matcher
-import java.util.zip.{GZIPInputStream, InflaterInputStream, ZipEntry}
+import java.util.zip.ZipEntry
 import javax.json.JsonException
 import scala.util.{Failure, Success, Try, Using}
 
@@ -157,7 +156,7 @@ class DependencyDownloader(cpg: Cpg, config: Config) {
     */
   private def unzipDependency(targetDir: File, pack: Package, vendor: String): Unit = {
 
-    def zipFilter(zipEntry: ZipEntry): Boolean = {
+    def zipFilter(zipEntry: ZipEntry) = {
       val isZipSlip = zipEntry.getName.contains("..")
       !isZipSlip && (zipEntry.isDirectory || zipEntry.getName.matches(".*\\.(php|json)$"))
     }
@@ -178,12 +177,13 @@ class DependencyDownloader(cpg: Cpg, config: Config) {
       targetDir.list
         .filter(f => f.isDirectory && f.name.startsWith(vendor.replace("\\", "-")))
         .foreach { unpackedDest =>
-          unpackedDest.list.foreach { x => x.moveToDirectory(targetDir) }
+          unpackedDest.mergeDirectory(targetDir)(copyOptions = File.CopyOptions(overwrite = true))
           unpackedDest.delete(swallowIOExceptions = true)
         }
     }
 
     // Move and merge files according to `composer.json`
+    // TODO: This should probably happen as we unzip/unpack
     targetDir
       .walk()
       .collectFirst {
@@ -191,6 +191,10 @@ class DependencyDownloader(cpg: Cpg, config: Config) {
           Using.resource(x.newInputStream) { is => read[Composer](ujson.Readable.fromByteArray(is.readAllBytes())) }
       }
       .foreach { composer =>
+        composer.autoload.`psr-0`.foreach {
+          case (targetNamespace, PsrString(pathPrefix))  => moveDir(targetNamespace, pathPrefix)
+          case (targetNamespace, PsrArray(pathPrefixes)) => pathPrefixes.foreach(moveDir(targetNamespace, _))
+        }
         composer.autoload.`psr-4`.foreach {
           case (targetNamespace, PsrString(pathPrefix))  => moveDir(targetNamespace, pathPrefix)
           case (targetNamespace, PsrArray(pathPrefixes)) => pathPrefixes.foreach(moveDir(targetNamespace, _))
@@ -224,7 +228,16 @@ private case class Dist(reference: String, shasum: String, `type`: String, url: 
 
 private case class Package(dist: Dist, @upickle.implicits.key("version_normalized") version: SemVer) derives ReadWriter
 
-private case class PackageReleases(packages: Map[String, List[Package]]) derives ReadWriter
+implicit val packageRw: ReadWriter[PackageReleases] = readwriter[ujson.Value].bimap[PackageReleases](
+  x => ujson.Obj("packages" -> write(x.packages)),
+  json =>
+    val packagesWithDist = json("packages").obj.map { case (packName, packages) =>
+      packName -> packages.arr.filter(_.obj.keySet.contains("dist"))
+    }
+    PackageReleases(read[Map[String, List[Package]]](packagesWithDist))
+)
+
+private case class PackageReleases(packages: Map[String, List[Package]])
 
 /** Parses and simplifies the version string to help prevent the flakey SemVer parser from crashing.
   */
