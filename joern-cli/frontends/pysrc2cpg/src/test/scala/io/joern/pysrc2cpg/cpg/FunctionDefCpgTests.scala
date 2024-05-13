@@ -136,7 +136,7 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
       staticMethod.name shouldBe "staticmethod"
       val (abc: Call) :: Nil = staticMethod.start.astParent.l: @unchecked
       abc.code shouldBe "abc(arg)(staticmethod(def func(...)))"
-      abc.name shouldBe "abc"
+      abc.name shouldBe ""
       val (assign: Call) :: Nil = abc.start.astParent.l: @unchecked
       assign.code shouldBe "func = abc(arg)(staticmethod(def func(...)))"
     }

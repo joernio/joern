@@ -259,13 +259,8 @@ class PythonAstVisitor(
   def wrapMethodRefWithDecorators(methodRefNode: nodes.NewNode, decoratorList: Iterable[ast.iexpr]): nodes.NewNode = {
     decoratorList.foldRight(methodRefNode)((decorator: ast.iexpr, wrappedMethodRef: nodes.NewNode) =>
       val (decoratorNode, decoratorName) = convert(decorator) match {
-        case decoratorNode: NewIdentifier =>
-          decoratorNode -> decoratorNode.name
-        case decoratorNode: NewCall =>
-          decoratorNode -> decoratorNode.name
-        case decoratorNode =>
-          logger.warn(s"Unhandled decorator node class ${decoratorNode.getClass}, decorator call will not have a name")
-          decoratorNode -> ""
+        case decoratorNode: NewIdentifier => decoratorNode -> decoratorNode.name
+        case decoratorNode                => decoratorNode -> "" // other decorators are dynamic so we leave this blank
       }
       createCall(decoratorNode, decoratorName, lineAndColOf(decorator), wrappedMethodRef :: Nil, Nil)
     )
