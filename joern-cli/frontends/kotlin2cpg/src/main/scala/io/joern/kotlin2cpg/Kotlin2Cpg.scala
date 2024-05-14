@@ -8,7 +8,6 @@ import io.joern.kotlin2cpg.interop.JavasrcInterop
 import io.joern.kotlin2cpg.jar4import.UsesService
 import io.joern.kotlin2cpg.passes.*
 import io.joern.kotlin2cpg.types.{ContentSourcesPicker, DefaultTypeInfoProvider, TypeRenderer}
-import io.joern.kotlin2cpg.utils.PathUtils
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
@@ -228,13 +227,12 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
       new MetaDataPass(cpg, Languages.KOTLIN, config.inputPath).createAndApply()
 
       val typeRenderer = new TypeRenderer(config.keepTypeArguments)
-      val astCreator =
-        new AstCreationPass(sourceFiles, new DefaultTypeInfoProvider(environment, typeRenderer), cpg)(
-          config.schemaValidation
-        )
+      val astCreator = new AstCreationPass(sourceFiles, new DefaultTypeInfoProvider(environment, typeRenderer), cpg)(
+        config.schemaValidation
+      )
       astCreator.createAndApply()
 
-      val kotlinAstCreatorTypes = astCreator.global.usedTypes.keys().asScala.toList
+      val kotlinAstCreatorTypes = astCreator.usedTypes()
       TypeNodePass.withRegisteredTypes(kotlinAstCreatorTypes, cpg).createAndApply()
 
       runJavasrcInterop(cpg, sourceDir, config, filesWithJavaExtension, kotlinAstCreatorTypes)
@@ -295,47 +293,26 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
   }
 
   private def entriesForSources(files: Iterable[KtFile], relativeTo: String): Iterable[KtFileWithMeta] = {
-    files
-      .flatMap { f =>
-        try {
-          val relPath = PathUtils.relativize(relativeTo, f.getVirtualFilePath)
-          Some(f, relPath)
-        } catch {
-          case _: Throwable => None
-        }
+    val filesWithMeta = for {
+      file    <- files
+      relPath <- Try(SourceFiles.toRelativePath(file.getVirtualFilePath, relativeTo)).toOption
+    } yield KtFileWithMeta(file, relPath, file.getVirtualFilePath)
+    filesWithMeta.filterNot { fwp =>
+      // TODO: add test for this type of filtering
+      // TODO: support Windows paths
+      val willFilter = SourceFilesPicker.shouldFilter(fwp.relativizedPath)
+      if (willFilter) {
+        logger.debug(s"Filtered file at `${fwp.f.getVirtualFilePath}`.")
       }
-      .map { fwp =>
-        KtFileWithMeta(fwp._1, fwp._2, fwp._1.getVirtualFilePath)
-      }
-      .filterNot { fwp =>
-        // TODO: add test for this type of filtering
-        // TODO: support Windows paths
-        val willFilter = SourceFilesPicker.shouldFilter(fwp.relativizedPath)
-        if (willFilter) {
-          logger.debug(s"Filtered file at `${fwp.f.getVirtualFilePath}`.")
-        }
-        willFilter
-      }
+      willFilter
+    }
   }
 
-  private def entriesForConfigFiles(paths: Seq[String], relativeTo: String): Seq[FileContentAtPath] = {
-    paths
-      .flatMap { fileName =>
-        try {
-          val relPath = PathUtils.relativize(relativeTo, fileName)
-          Some(fileName, relPath)
-        } catch {
-          case _: Throwable => None
-        }
-      }
-      .map { fnm =>
-        val fileContents =
-          try {
-            IOUtils.readLinesInFile(Paths.get(fnm._1)).mkString("\n")
-          } catch {
-            case t: Throwable => s"$parsingError\n${t.toString}"
-          }
-        FileContentAtPath(fileContents, fnm._2, fnm._1)
-      }
+  private def entriesForConfigFiles(paths: Seq[String], sourceDir: String): Seq[FileContentAtPath] = {
+    for {
+      fileName     <- paths
+      relPath      <- Try(SourceFiles.toRelativePath(fileName, sourceDir)).toOption
+      fileContents <- Try(IOUtils.readEntireFile(Paths.get(fileName))).toOption
+    } yield FileContentAtPath(fileContents, relPath, fileName)
   }
 }

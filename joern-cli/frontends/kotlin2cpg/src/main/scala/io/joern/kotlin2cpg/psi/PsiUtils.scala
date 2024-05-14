@@ -1,13 +1,11 @@
 package io.joern.kotlin2cpg.psi
 
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
-import org.jetbrains.kotlin.psi.{
-  KtDestructuringDeclaration,
-  KtDestructuringDeclarationEntry,
-  KtElement,
-  KtObjectDeclaration,
-  KtTreeVisitorVoid
-}
+import org.jetbrains.kotlin.psi.KtDestructuringDeclaration
+import org.jetbrains.kotlin.psi.KtDestructuringDeclarationEntry
+import org.jetbrains.kotlin.psi.KtElement
+import org.jetbrains.kotlin.psi.KtObjectDeclaration
+import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
@@ -42,5 +40,3 @@ object PsiUtils {
     outIdx
   }
 }
-
-class PsiUtils {}

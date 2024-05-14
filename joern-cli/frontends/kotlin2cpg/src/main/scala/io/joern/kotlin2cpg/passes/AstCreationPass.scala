@@ -9,14 +9,18 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import org.slf4j.LoggerFactory
 
+import scala.jdk.CollectionConverters.EnumerationHasAsScala
+
 class AstCreationPass(filesWithMeta: Iterable[KtFileWithMeta], typeInfoProvider: TypeInfoProvider, cpg: Cpg)(implicit
   withSchemaValidation: ValidationMode
 ) extends ConcurrentWriterCpgPass[KtFileWithMeta](cpg) {
-  val global: Global = new Global()
-  private val logger = LoggerFactory.getLogger(getClass)
 
-  override def generateParts(): Array[KtFileWithMeta] =
-    filesWithMeta.toArray
+  private val logger         = LoggerFactory.getLogger(getClass)
+  private val global: Global = new Global()
+
+  def usedTypes(): List[String] = global.usedTypes.keys().asScala.toList
+
+  override def generateParts(): Array[KtFileWithMeta] = filesWithMeta.toArray
 
   override def runOnPart(diffGraph: DiffGraphBuilder, fileWithMeta: KtFileWithMeta): Unit = {
     diffGraph.absorb(new AstCreator(fileWithMeta, typeInfoProvider, global).createAst())

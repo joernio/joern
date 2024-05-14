@@ -75,7 +75,7 @@ trait TypeInfoProvider(val typeRenderer: TypeRenderer = new TypeRenderer()) {
 
   def isReferenceToClass(expr: KtNameReferenceExpression): Boolean
 
-  def bindingKind(expr: KtQualifiedExpression): CallKinds.CallKind
+  def bindingKind(expr: KtQualifiedExpression): CallKind
 
   def fullNameWithSignature(expr: KtQualifiedExpression, or: (String, String)): (String, String)
 
@@ -101,7 +101,7 @@ trait TypeInfoProvider(val typeRenderer: TypeRenderer = new TypeRenderer()) {
 
   def hasApplyOrAlsoScopeFunctionParent(expr: KtLambdaExpression): Boolean
 
-  def nameReferenceKind(expr: KtNameReferenceExpression): NameReferenceKinds.NameReferenceKind
+  def nameReferenceKind(expr: KtNameReferenceExpression): NameReferenceKind
 
   def isConstructorCall(expr: KtExpression): Option[Boolean]
 
