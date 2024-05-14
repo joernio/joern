@@ -284,10 +284,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForQualifiedExpressionWithReceiverEdge(
-                                                         expr: KtQualifiedExpression,
-                                                         callKind: CallKind,
-                                                         argIdx: Option[Int],
-                                                         argNameMaybe: Option[String]
+    expr: KtQualifiedExpression,
+    callKind: CallKind,
+    argIdx: Option[Int],
+    argNameMaybe: Option[String]
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val isDynamicCall = callKind == CallKind.DynamicCall
     val isStaticCall  = callKind == CallKind.StaticCall
