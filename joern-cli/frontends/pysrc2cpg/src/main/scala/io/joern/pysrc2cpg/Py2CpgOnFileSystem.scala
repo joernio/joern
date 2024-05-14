@@ -131,5 +131,7 @@ class Py2CpgOnFileSystem extends X2CpgFrontend[Py2CpgOnFileSystemConfig] {
     logger.info(s"IgnorePaths: ${config.ignorePaths.mkString(", ")}")
     logger.info(s"IgnoreDirNames: ${config.ignoreDirNames.mkString(", ")}")
     logger.info(s"No dummy types: ${config.disableDummyTypes}")
+    logger.info(s"Enable file content: ${!config.disableFileContent}")
+    logger.info(s"Version: ${this.getClass.getPackage.getImplementationVersion}")
   }
 }
