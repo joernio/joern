@@ -1,7 +1,7 @@
 package io.joern.kotlin2cpg.ast
 
 import io.joern.kotlin2cpg.Constants
-import io.joern.kotlin2cpg.types.CallKinds
+import io.joern.kotlin2cpg.types.CallKind
 import io.joern.kotlin2cpg.types.TypeConstants
 import io.joern.kotlin2cpg.types.TypeInfoProvider
 import io.joern.x2cpg.Ast
@@ -285,18 +285,18 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
 
   private def astForQualifiedExpressionWithReceiverEdge(
     expr: KtQualifiedExpression,
-    callKind: CallKinds.CallKind,
+    callKind: CallKind,
     argIdx: Option[Int],
     argNameMaybe: Option[String]
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val isDynamicCall = callKind == CallKinds.DynamicCall
-    val isStaticCall  = callKind == CallKinds.StaticCall
+    val isDynamicCall = callKind == CallKind.DynamicCall
+    val isStaticCall  = callKind == CallKind.StaticCall
     val argIdxForReceiver =
       if (isDynamicCall) 0
       else if (isStaticCall) 1
       else 1
     val dispatchType =
-      if (callKind == CallKinds.DynamicCall) DispatchTypes.DYNAMIC_DISPATCH
+      if (callKind == CallKind.DynamicCall) DispatchTypes.DYNAMIC_DISPATCH
       else DispatchTypes.STATIC_DISPATCH
 
     val receiverAst = astsForExpression(expr.getReceiverExpression, Some(argIdxForReceiver)).headOption
@@ -339,7 +339,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     annotations: Seq[KtAnnotationEntry] = Seq()
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val callKind        = typeInfoProvider.bindingKind(expr)
-    val isExtensionCall = callKind == CallKinds.ExtensionCall
+    val isExtensionCall = callKind == CallKind.ExtensionCall
 
     val hasThisSuperOrNameRefReceiver = expr.getReceiverExpression match {
       case _: KtThisExpression          => true

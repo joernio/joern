@@ -497,27 +497,27 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment, typeRenderer: 
     resolvedCallDescriptor(expr).forall(_.getDispatchReceiverParameter == null)
   }
 
-  def bindingKind(expr: KtQualifiedExpression): CallKinds.CallKind = {
+  def bindingKind(expr: KtQualifiedExpression): CallKind = {
     val isStaticBasedOnStructure = expr.getReceiverExpression.isInstanceOf[KtSuperExpression]
-    if (isStaticBasedOnStructure) return CallKinds.StaticCall
+    if (isStaticBasedOnStructure) return CallKind.StaticCall
 
     val isDynamicBasedOnStructure = expr.getReceiverExpression match {
       case _: KtArrayAccessExpression => true
       case _: KtThisExpression        => true
       case _                          => false
     }
-    if (isDynamicBasedOnStructure) return CallKinds.DynamicCall
+    if (isDynamicBasedOnStructure) return CallKind.DynamicCall
 
     resolvedCallDescriptor(expr)
       .map { desc =>
         val isExtension = DescriptorUtils.isExtension(desc)
         val isStatic    = DescriptorUtils.isStaticDeclaration(desc) || hasStaticDesc(expr)
 
-        if (isExtension) CallKinds.ExtensionCall
-        else if (isStatic) CallKinds.StaticCall
-        else CallKinds.DynamicCall
+        if (isExtension) CallKind.ExtensionCall
+        else if (isStatic) CallKind.StaticCall
+        else CallKind.DynamicCall
       }
-      .getOrElse(CallKinds.Unknown)
+      .getOrElse(CallKind.Unknown)
   }
 
   def isExtensionFn(fn: KtNamedFunction): Boolean = {
@@ -879,21 +879,21 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment, typeRenderer: 
       .getOrElse(defaultValue)
   }
 
-  def nameReferenceKind(expr: KtNameReferenceExpression): NameReferenceKinds.NameReferenceKind = {
+  def nameReferenceKind(expr: KtNameReferenceExpression): NameReferenceKind = {
     descriptorForNameReference(expr)
       .collect {
-        case _: ValueDescriptor                   => NameReferenceKinds.Property
-        case _: LazyClassDescriptor               => NameReferenceKinds.ClassName
-        case _: LazyJavaClassDescriptor           => NameReferenceKinds.ClassName
-        case _: DeserializedClassDescriptor       => NameReferenceKinds.ClassName
-        case _: EnumEntrySyntheticClassDescriptor => NameReferenceKinds.EnumEntry
+        case _: ValueDescriptor                   => NameReferenceKind.Property
+        case _: LazyClassDescriptor               => NameReferenceKind.ClassName
+        case _: LazyJavaClassDescriptor           => NameReferenceKind.ClassName
+        case _: DeserializedClassDescriptor       => NameReferenceKind.ClassName
+        case _: EnumEntrySyntheticClassDescriptor => NameReferenceKind.EnumEntry
         case unhandled: Any =>
           logger.debug(
             s"Unhandled class in type info fetch in `nameReferenceKind[NameReference]` for `${expr.getText}` with class `${unhandled.getClass}`."
           )
-          NameReferenceKinds.Unknown
+          NameReferenceKind.Unknown
       }
-      .getOrElse(NameReferenceKinds.Unknown)
+      .getOrElse(NameReferenceKind.Unknown)
   }
 
   def typeFullName(expr: KtPrimaryConstructor | KtSecondaryConstructor, defaultValue: String): String = {
