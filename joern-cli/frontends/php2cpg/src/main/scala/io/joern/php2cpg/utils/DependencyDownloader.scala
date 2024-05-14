@@ -50,8 +50,9 @@ class DependencyDownloader(cpg: Cpg, config: Config) {
   private def downloadDependency(targetDir: File, dependency: Dependency): Unit = {
     Thread.sleep(100) // throttling
 
-    val dependencyName  = dependency.name.strip()
-    val dependencyRange = Range(dependency.version)
+    val dependencyName = dependency.name.strip()
+    // adjust version for exceptional cases like "abc/def/ghi"
+    val dependencyRange = if dependency.version.contains("/") then Range(">=0.0.0") else Range(dependency.version)
 
     def getCompatiblePackage(vendor: String, pack: String): Option[Package] = Try {
       Using.resource(URI(s"https://$PACKAGIST_API/$vendor/$pack.json").toURL.openStream()) { is =>

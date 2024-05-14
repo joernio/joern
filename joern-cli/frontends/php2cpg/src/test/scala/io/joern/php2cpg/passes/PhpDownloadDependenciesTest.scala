@@ -89,4 +89,22 @@ class PhpDownloadDependenciesTest extends PhpCode2CpgFixture() {
 
   }
 
+  "a PHP project with dependencies with a non-semver like version" should {
+    val cpg = code(
+      """
+        |{
+        |    "require": {
+        |        "doctrine/cache": "abc/XY-1234/def"
+        |    }
+        |}
+        |""".stripMargin,
+      "composer.json"
+    ).withConfig(Config().withDownloadDependencies(true))
+
+    "resolve and still get all namespaces" in {
+      cpg.typ.fullName.count(_.startsWith("Doctrine\\Common\\Cache\\")) should be > 0
+    }
+
+  }
+
 }
