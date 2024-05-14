@@ -131,7 +131,7 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
         |""".stripMargin)
 
     "test decorator wrapping of method reference" in {
-      val (staticMethod: Call) :: Nil = cpg.methodRef("func").astParent.l: @unchecked
+      val (staticMethod: Call) :: Nil = cpg.methodRefWithName("func").astParent.l: @unchecked
       staticMethod.code shouldBe "staticmethod(def func(...))"
       staticMethod.name shouldBe "staticmethod"
       val (abc: Call) :: Nil = staticMethod.start.astParent.l: @unchecked

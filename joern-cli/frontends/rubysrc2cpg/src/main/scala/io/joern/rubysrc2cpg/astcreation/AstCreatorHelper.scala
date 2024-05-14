@@ -84,8 +84,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def astForAssignment(
     lhs: NewNode,
     rhs: NewNode,
-    lineNumber: Option[Integer],
-    columnNumber: Option[Integer]
+    lineNumber: Option[Int],
+    columnNumber: Option[Int]
   ): Ast = {
     val code = Seq(lhs, rhs).collect { case x: AstNodeNew => x.code }.mkString(" = ")
     val assignment = NewCall()
