@@ -15,7 +15,7 @@ lazy val joernTypeStubsVersion = settingKey[String]("joern_type_stub version")
 joernTypeStubsVersion := appProperties.value.getString("rubysrc2cpg.joern_type_stubs_version")
 
 libraryDependencies ++= Seq(
-  "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
+  "com.michaelpollmeier"  %% "codepropertygraph" % Versions.cpg,
   "org.apache.commons" % "commons-compress" % Versions.commonsCompress, // For unpacking Gems with `--download-dependencies`
   "org.scalatest" %% "scalatest"         % Versions.scalatest % Test,
   "org.antlr"      % "antlr4-runtime"    % Versions.antlr
