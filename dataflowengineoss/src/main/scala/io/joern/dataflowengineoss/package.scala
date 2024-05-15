@@ -5,7 +5,7 @@ import io.shiftleft.semanticcpg.language.*
 
 package object dataflowengineoss {
 
-  def globalFromLiteral(lit: Literal): Iterator[Expression] = lit.start.inAssignment
+  def globalFromLiteral(lit: Literal): Iterator[Expression] = lit.start.inCall.assignment
     .where(_.method.isModule)
     .argument(1)
 
