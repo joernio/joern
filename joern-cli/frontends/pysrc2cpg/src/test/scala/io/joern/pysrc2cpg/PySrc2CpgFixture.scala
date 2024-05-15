@@ -1,6 +1,7 @@
 package io.joern.pysrc2cpg
 
 import io.joern.dataflowengineoss.DefaultSemantics
+import io.joern.dataflowengineoss.language.Path
 import io.joern.dataflowengineoss.layers.dataflows.*
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
@@ -61,4 +62,8 @@ class PySrc2CpgFixture(
 
   implicit val resolver: ICallResolver = NoResolve
 
+  protected def flowToResultPairs(path: Path): List[(String, Integer)] =
+    path.resultPairs().collect { case (firstElement: String, secondElement: Option[Integer]) =>
+      (firstElement, secondElement.getOrElse(-1))
+    }
 }

@@ -290,9 +290,30 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataF
                      |puts y
                      |""".stripMargin)
 
-    val src  = cpg.literal.code("1").l
-    val sink = cpg.call.name("puts").argument(1).l
-    sink.reachableByFlows(src).size shouldBe 2
+    val src        = cpg.literal.code("1").l
+    val sink       = cpg.call.name("puts").argument(1).l
+    val List(flow) = sink.reachableByFlows(src).map(flowToResultPairs).distinct.sortBy(_.length).l
+    flow shouldBe List(
+      (
+        """|foo
+           | .bar(1)""".stripMargin,
+        11
+      ),
+      ("bar(this, x)", 3),
+      ("return x", 4),
+      ("RET", 3),
+      (
+        """|foo
+           | .bar(1)""".stripMargin,
+        10
+      ),
+      (
+        """|y = foo
+           | .bar(1)""".stripMargin,
+        10
+      ),
+      ("puts y", 12)
+    )
   }
 
   "flow through a method call present in next line, with the first line ending with `.`" in {
@@ -310,8 +331,29 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataF
                      |puts y
                      |""".stripMargin)
 
-    val src  = cpg.literal.code("1").l
-    val sink = cpg.call.name("puts").argument(1).l
-    sink.reachableByFlows(src).size shouldBe 2
+    val src        = cpg.literal.code("1").l
+    val sink       = cpg.call.name("puts").argument(1).l
+    val List(flow) = sink.reachableByFlows(src).map(flowToResultPairs).distinct.sortBy(_.length).l
+    flow shouldBe List(
+      (
+        """|foo.
+           |  bar(1)""".stripMargin,
+        11
+      ),
+      ("bar(this, x)", 3),
+      ("return x", 4),
+      ("RET", 3),
+      (
+        """|foo.
+           |  bar(1)""".stripMargin,
+        10
+      ),
+      (
+        """|y = foo.
+           |  bar(1)""".stripMargin,
+        10
+      ),
+      ("puts y", 12)
+    )
   }
 }

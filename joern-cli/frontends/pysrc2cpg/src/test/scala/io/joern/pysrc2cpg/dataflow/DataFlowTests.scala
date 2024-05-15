@@ -22,6 +22,17 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     sink.reachableByFlows(source).size shouldBe 1
   }
 
+  "intra-procedural 2" in {
+    val cpg = code("""
+        |x = foo(20)
+        |print(x)
+        |""".stripMargin)
+    val source     = cpg.literal("20")
+    val sink       = cpg.call("print").argument
+    val List(flow) = sink.reachableByFlows(source).map(flowToResultPairs).distinct.sortBy(_.length).l
+    flow shouldBe List(("foo(20)", 2), ("x = foo(20)", 2), ("print(x)", 3))
+  }
+
   "chained call" in {
     val cpg: Cpg = code("""
       |a = 42
