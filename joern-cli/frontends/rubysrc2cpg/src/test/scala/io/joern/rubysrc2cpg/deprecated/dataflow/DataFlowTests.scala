@@ -2498,9 +2498,10 @@ class DataFlowTests
         |puts a
         |""".stripMargin)
 
-    val source = cpg.literal.code("b").l
-    val sink   = cpg.call.name("puts").l
-    sink.reachableByFlows(source).size shouldBe 2
+    val source     = cpg.literal.code("b").l
+    val sink       = cpg.call.name("puts").l
+    val List(flow) = sink.reachableByFlows(source).map(flowToResultPairs).distinct.sortBy(_.length).l
+    flow shouldBe List(("[b, c]", 2), ("[b, c]", -1), ("a = %w[b c]", 2), ("puts a", 3))
   }
 
   "flow through hash containing splatting literal" in {
@@ -2585,9 +2586,19 @@ class DataFlowTests
         |puts a
         |""".stripMargin)
 
-    val source = cpg.literal.code("b").l
-    val sink   = cpg.call.name("puts").l
-    sink.reachableByFlows(source).size shouldBe 2
+    val source     = cpg.literal.code("b").l
+    val sink       = cpg.call.name("puts").l
+    val List(flow) = sink.reachableByFlows(source).map(flowToResultPairs).distinct.sortBy(_.length).l
+    flow shouldBe List(
+      ("[b, c]", 2),
+      ("[b, c]", -1),
+      (
+        """|a = %i[b
+           |    c]""".stripMargin,
+        2
+      ),
+      ("puts a", 4)
+    )
   }
 
   "flow through array constructor using []" in {
