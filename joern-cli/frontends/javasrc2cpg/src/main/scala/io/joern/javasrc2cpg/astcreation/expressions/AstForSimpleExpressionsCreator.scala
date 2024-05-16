@@ -13,14 +13,19 @@ import com.github.javaparser.ast.expr.{
   FieldAccessExpr,
   InstanceOfExpr,
   LiteralExpr,
+  MethodReferenceExpr,
+  NameExpr,
   SuperExpr,
   ThisExpr,
+  TypeExpr,
   UnaryExpr
 }
+import com.github.javaparser.ast.nodeTypes.NodeWithName
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
+import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
-import io.joern.javasrc2cpg.util.NameConstants
-import io.joern.x2cpg.Ast
+import io.joern.javasrc2cpg.util.{NameConstants, Util}
+import io.joern.x2cpg.{Ast, Defines}
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode, newOperatorCallNode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewFieldIdentifier, NewLiteral, NewTypeRef}
@@ -28,6 +33,7 @@ import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
 
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
+import scala.util.{Failure, Success}
 
 trait AstForSimpleExpressionsCreator { this: AstCreator =>
 
@@ -377,5 +383,30 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
     )
 
     callAst(callNode, argsAsts)
+  }
+
+  private[expressions] def astForMethodReferenceExpr(expr: MethodReferenceExpr, expectedType: ExpectedType): Ast = {
+    val typeFullName = expr.getScope match {
+      case typeExpr: TypeExpr =>
+        // JavaParser wraps the "type" scope of a MethodReferenceExpr in a TypeExpr, but this also catches variable names.
+        scope.lookupVariableOrType(typeExpr.getTypeAsString).orElse(expressionReturnTypeFullName(typeExpr))
+      case scopeExpr => expressionReturnTypeFullName(scopeExpr)
+    }
+
+    val namespacePrefix = typeFullName.getOrElse(Defines.UnresolvedNamespace)
+    val methodName      = expr.getIdentifier
+
+    val signature = tryWithSafeStackOverflow(expr.resolve()) match {
+      case Failure(_) => Defines.UnresolvedSignature
+
+      case Success(resolvedMethod) =>
+        val returnType     = typeInfoCalc.fullName(resolvedMethod.getReturnType)
+        val parameterTypes = argumentTypesForMethodLike(Success(resolvedMethod))
+        composeSignature(returnType, parameterTypes, resolvedMethod.getNumberOfParams)
+    }
+
+    val methodFullName = Util.composeMethodFullName(namespacePrefix, methodName, signature)
+
+    Ast(methodRefNode(expr, expr.toString, methodFullName, typeFullName.getOrElse(TypeConstants.Any)))
   }
 }
