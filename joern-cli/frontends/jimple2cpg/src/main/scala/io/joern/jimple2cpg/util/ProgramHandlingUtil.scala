@@ -43,27 +43,14 @@ object ProgramHandlingUtil {
           Using.resource(f.getInputStream(zipEntry)) { is =>
             File.temporaryFile("jimple2cpg-", ".zip").apply { f =>
               f.writeBytes(is.readAllBytes().iterator)
-              isValidZipFile(f.newZipInputStream)
+              isValidZipFile(f)
             }
           }
         }
       case _ => false
     }
 
-    private def isValidZipFile(zis: ZipInputStream): Boolean = Try {
-      var ze = Option(zis.getNextEntry)
-      Option(zis.getNextEntry) match {
-        case None => throw new Exception()
-        case _    => // do nothing
-      }
-      while (ze.isDefined) {
-        // A corrupted ZIP may throw an exception on these
-        ze.foreach(_.getCrc)
-        ze.foreach(_.getCompressedSize)
-        ze.foreach(_.getName)
-        ze = Option(zis.getNextEntry)
-      }
-    }.isSuccess
+    private def isValidZipFile(zis: ZipInputStream): Boolean = Try(zis.getNextEntry != null).getOrElse(false)
 
     /** Determines if the given file is a valid and uncorrupted zip file by reading through the whole archive until the
       * end.
@@ -73,7 +60,7 @@ object ProgramHandlingUtil {
       *   true if the file is a valid and uncorrupted zip file, false if otherwise.
       */
     private def isValidZipFile(f: File): Boolean =
-      f.zipInputStream.apply { zis => isValidZipFile(zis) }
+      f.zipInputStream.apply(isValidZipFile)
 
     def isConfigFile: Boolean = {
       val configExt = Set(".xml", ".properties", ".yaml", ".yml", ".tf", ".tfvars", ".vm", ".jsp", ".conf", ".mf")

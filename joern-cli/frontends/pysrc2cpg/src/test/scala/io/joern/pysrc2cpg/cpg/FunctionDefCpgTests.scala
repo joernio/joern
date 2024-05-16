@@ -2,6 +2,7 @@ package io.joern.pysrc2cpg.cpg
 
 import io.joern.pysrc2cpg.{Constants, Py2CpgTestContext}
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
+import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -130,8 +131,14 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
         |""".stripMargin)
 
     "test decorator wrapping of method reference" in {
-      cpg.methodRef("func").astParent.astParent.astParent.isCall.head.code shouldBe
-        "func = abc(arg)(staticmethod(def func(...)))"
+      val (staticMethod: Call) :: Nil = cpg.methodRef("func").astParent.l: @unchecked
+      staticMethod.code shouldBe "staticmethod(def func(...))"
+      staticMethod.name shouldBe "staticmethod"
+      val (abc: Call) :: Nil = staticMethod.start.astParent.l: @unchecked
+      abc.code shouldBe "abc(arg)(staticmethod(def func(...)))"
+      abc.name shouldBe ""
+      val (assign: Call) :: Nil = abc.start.astParent.l: @unchecked
+      assign.code shouldBe "func = abc(arg)(staticmethod(def func(...)))"
     }
 
   }

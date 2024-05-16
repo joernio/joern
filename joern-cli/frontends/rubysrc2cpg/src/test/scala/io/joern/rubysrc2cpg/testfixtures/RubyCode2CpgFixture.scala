@@ -75,7 +75,7 @@ class RubyCode2CpgFixture(
 
   protected def flowToResultPairs(path: Path): List[(String, Integer)] =
     path.resultPairs().collect { case (firstElement: String, secondElement: Option[Integer]) =>
-      (firstElement, secondElement.get)
+      (firstElement, secondElement.getOrElse(-1))
     }
 }
 

@@ -7,23 +7,16 @@ import io.shiftleft.passes.ConcurrentWriterCpgPass
 import org.slf4j.LoggerFactory
 
 class ConfigPass(fileContentsAtPath: Iterable[FileContentAtPath], cpg: Cpg)
-    extends ConcurrentWriterCpgPass[String](cpg) {
+    extends ConcurrentWriterCpgPass[FileContentAtPath](cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  override def generateParts(): Array[String] =
-    fileContentsAtPath.map { entry => entry.filename }.toArray
+  override def generateParts(): Array[FileContentAtPath] = fileContentsAtPath.toArray
 
-  override def runOnPart(diffGraph: DiffGraphBuilder, fileName: String): Unit = {
-    val contentsAtPath = fileContentsAtPath.find(_.filename == fileName)
-    contentsAtPath match {
-      case Some(fm) =>
-        val configNode = NewConfigFile().name(fm.relativizedPath).content(fm.content)
-        diffGraph.addNode(configNode)
-        logger.debug(s"Adding file `$fileName` as config.")
-      case None =>
-        logger.info(s"Could not find file at `$fileName`.")
-    }
+  override def runOnPart(diffGraph: DiffGraphBuilder, fileContent: FileContentAtPath): Unit = {
+    logger.debug(s"Adding file `${fileContent.filename}` as config.")
+    val configNode = NewConfigFile().name(fileContent.relativizedPath).content(fileContent.content)
+    diffGraph.addNode(configNode)
   }
 
 }

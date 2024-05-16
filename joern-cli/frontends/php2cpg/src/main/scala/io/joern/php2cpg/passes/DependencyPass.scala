@@ -73,6 +73,9 @@ object PsrStringOrArray:
       )
   }
 
-case class Autoload(@targetName("psr4") `psr-4`: Map[String, PsrStringOrArray] = Map.empty) derives ReadWriter
+case class Autoload(
+  @targetName("psr0") `psr-0`: Map[String, PsrStringOrArray] = Map.empty,
+  @targetName("psr4") `psr-4`: Map[String, PsrStringOrArray] = Map.empty
+) derives ReadWriter
 
 case class Composer(require: Map[String, String] = Map.empty, autoload: Autoload = Autoload()) derives ReadWriter

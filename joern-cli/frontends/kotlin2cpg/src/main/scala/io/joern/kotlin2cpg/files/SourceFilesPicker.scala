@@ -1,6 +1,5 @@
 package io.joern.kotlin2cpg.files
 
-import io.joern.kotlin2cpg.utils.PathUtils
 import io.joern.x2cpg.SourceFiles
 
 import org.slf4j.LoggerFactory
@@ -63,9 +62,7 @@ object SourceFilesPicker {
     sourceFileNames
       .filter(isConfigFile)
       .filterNot { fileName =>
-        // TODO: add test for this type of filtering
-        // TODO: support Windows paths
-        val relativized = PathUtils.relativize(forDir, fileName)
+        val relativized = SourceFiles.toRelativePath(fileName, forDir)
         val willFilter  = SourceFilesPicker.shouldFilter(relativized)
         if (willFilter) {
           logger.debug(s"Filtered file at `$fileName`.")

@@ -82,8 +82,6 @@ object CompilerAPI {
   }
 }
 
-class CompilerAPI {}
-
 class ErrorLoggingMessageCollector extends MessageCollector {
   private val logger = LoggerFactory.getLogger(getClass)
 

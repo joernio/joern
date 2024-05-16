@@ -6,7 +6,7 @@ import io.joern.pysrc2cpg.Constants.builtinPrefix
 import io.joern.pythonparser.ast
 import io.joern.x2cpg.{AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
-import io.shiftleft.codepropertygraph.generated.nodes.{NewNode, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewIdentifier, NewNode, NewTypeDecl}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
@@ -252,13 +252,17 @@ class PythonAstVisitor(
    * The lowering is:
    * func = f1(arg)(f2(func))
    *
-   * This function takes a method ref, wrappes it in the decorator calls and returns the resulting expression.
+   * This function takes a method ref, wraps it in the decorator calls and returns the resulting expression.
    * In the example case this is:
    * f1(arg)(f2(func))
    */
   def wrapMethodRefWithDecorators(methodRefNode: nodes.NewNode, decoratorList: Iterable[ast.iexpr]): nodes.NewNode = {
     decoratorList.foldRight(methodRefNode)((decorator: ast.iexpr, wrappedMethodRef: nodes.NewNode) =>
-      createCall(convert(decorator), "", lineAndColOf(decorator), wrappedMethodRef :: Nil, Nil)
+      val (decoratorNode, decoratorName) = convert(decorator) match {
+        case decoratorNode: NewIdentifier => decoratorNode -> decoratorNode.name
+        case decoratorNode                => decoratorNode -> "" // other decorators are dynamic so we leave this blank
+      }
+      createCall(decoratorNode, decoratorName, lineAndColOf(decorator), wrappedMethodRef :: Nil, Nil)
     )
   }
 
