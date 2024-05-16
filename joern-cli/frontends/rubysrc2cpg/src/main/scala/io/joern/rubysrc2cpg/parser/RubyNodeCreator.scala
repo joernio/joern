@@ -522,9 +522,11 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
       val arguments     = ctx.commandArgument().arguments.map(visit)
       (identifierCtx.getText, arguments) match {
         case ("require", List(argument)) =>
-          RequireCall(visit(identifierCtx), argument, false)(ctx.toTextSpan)
+          RequireCall(visit(identifierCtx), argument)(ctx.toTextSpan)
         case ("require_relative", List(argument)) =>
           RequireCall(visit(identifierCtx), argument, true)(ctx.toTextSpan)
+        case ("require_all", List(argument)) =>
+          RequireCall(visit(identifierCtx), argument, true, true)(ctx.toTextSpan)
         case ("include", List(argument)) =>
           IncludeCall(visit(identifierCtx), argument)(ctx.toTextSpan)
         case (idAssign, arguments) if idAssign.endsWith("=") =>

@@ -178,4 +178,56 @@ class ImportTests extends RubyCode2CpgFixture with Inspectors {
       }
     }
   }
+
+  "`require_all` on a directory" should {
+    val cpg = code("""
+        |require_all './dir'
+        |Module1.foo
+        |Module2.foo
+        |""".stripMargin)
+      .moreCode(
+        """
+        |module Module1
+        | def foo
+        | end
+        |end
+        |""".stripMargin,
+        "dir/module1.rb"
+      )
+      .moreCode(
+        """
+        |module Module2
+        | def foo
+        | end
+        |end
+        |""".stripMargin,
+        "dir/module2.rb"
+      )
+
+    "allow the resolution for all modules in that directory" in {
+      cpg.call("foo").methodFullName.l shouldBe List(
+        "dir/module1.rb:<global>::program.Module1:foo",
+        "dir/module2.rb:<global>::program.Module2:foo"
+      )
+    }
+  }
+
+  "`require_all`, `require_relative`, and `load`" should {
+    val cpg = code("""
+        |require_all './dir'
+        |require_relative '../foo'
+        |load 'pp'
+        |""".stripMargin)
+
+    "also create import nodes" in {
+      inside(cpg.imports.l) {
+        case requireAll :: requireRelative :: load :: Nil =>
+          requireAll.importedAs shouldBe Option("./dir")
+          requireAll.isWildcard shouldBe Option(true)
+          requireRelative.importedAs shouldBe Option("../foo")
+          load.importedAs shouldBe Option("pp")
+        case xs => fail(s"Expected two imports, got [${xs.code.mkString(",")}] instead")
+      }
+    }
+  }
 }

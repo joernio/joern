@@ -225,7 +225,9 @@ object RubyIntermediateAst {
   final case class SimpleIdentifier(typeFullName: Option[String] = None)(span: TextSpan)
       extends RubyNode(span)
       with RubyIdentifier
-      with SingletonMethodIdentifier
+      with SingletonMethodIdentifier {
+    override def toString: String = s"SimpleIdentifier(${span.text}, $typeFullName)"
+  }
 
   /** Represents a InstanceFieldIdentifier e.g `@x` */
   final case class InstanceFieldIdentifier()(span: TextSpan) extends RubyNode(span) with RubyFieldIdentifier
@@ -248,7 +250,7 @@ object RubyIntermediateAst {
     def isString: Boolean = text.startsWith("\"") || text.startsWith("'")
 
     def innerText: String = {
-      val strRegex = "[./:]?['\"]([\\w\\d_-]+)(?:\\.rb)?['\"]".r
+      val strRegex = "['\"]([./:]{0,3}[\\w\\d_-]+)(?:\\.rb)?['\"]".r
       text match {
         case s":'$content'"                       => content
         case s":$symbol"                          => symbol
@@ -298,7 +300,12 @@ object RubyIntermediateAst {
       extends RubyNode(span)
       with RubyCall
 
-  final case class RequireCall(target: RubyNode, argument: RubyNode, isRelative: Boolean)(span: TextSpan)
+  final case class RequireCall(
+    target: RubyNode,
+    argument: RubyNode,
+    isRelative: Boolean = false,
+    isWildCard: Boolean = false
+  )(span: TextSpan)
       extends RubyNode(span)
       with RubyCall {
     def arguments: List[RubyNode] = List(argument)
