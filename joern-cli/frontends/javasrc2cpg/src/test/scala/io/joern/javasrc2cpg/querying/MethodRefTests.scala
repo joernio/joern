@@ -77,8 +77,7 @@ class MethodRefTests extends JavaSrcCode2CpgFixture {
   }
 
   "resolved instance method refs should be handled correctly" in {
-    val cpg = code(
-      """package foo;
+    val cpg = code("""package foo;
         |
         |import java.util.function.Consumer;
         |
@@ -104,8 +103,7 @@ class MethodRefTests extends JavaSrcCode2CpgFixture {
   }
 
   "instance method refs with types from imports should be handled correctly" in {
-    val cpg = code(
-      """package foo;
+    val cpg = code("""package foo;
         |
         |import java.util.function.Consumer;
         |import bar.Bar;

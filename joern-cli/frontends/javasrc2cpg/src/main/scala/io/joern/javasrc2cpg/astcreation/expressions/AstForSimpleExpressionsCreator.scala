@@ -1,6 +1,25 @@
 package io.joern.javasrc2cpg.astcreation.expressions
 
-import com.github.javaparser.ast.expr.{ArrayAccessExpr, ArrayCreationExpr, ArrayInitializerExpr, BinaryExpr, CastExpr, ClassExpr, ConditionalExpr, EnclosedExpr, Expression, FieldAccessExpr, InstanceOfExpr, LiteralExpr, MethodReferenceExpr, NameExpr, SuperExpr, ThisExpr, TypeExpr, UnaryExpr}
+import com.github.javaparser.ast.expr.{
+  ArrayAccessExpr,
+  ArrayCreationExpr,
+  ArrayInitializerExpr,
+  BinaryExpr,
+  CastExpr,
+  ClassExpr,
+  ConditionalExpr,
+  EnclosedExpr,
+  Expression,
+  FieldAccessExpr,
+  InstanceOfExpr,
+  LiteralExpr,
+  MethodReferenceExpr,
+  NameExpr,
+  SuperExpr,
+  ThisExpr,
+  TypeExpr,
+  UnaryExpr
+}
 import com.github.javaparser.ast.nodeTypes.NodeWithName
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator
