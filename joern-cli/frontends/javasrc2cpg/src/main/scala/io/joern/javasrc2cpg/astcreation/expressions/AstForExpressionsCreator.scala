@@ -17,6 +17,7 @@ import com.github.javaparser.ast.expr.{
   LambdaExpr,
   LiteralExpr,
   MethodCallExpr,
+  MethodReferenceExpr,
   NameExpr,
   ObjectCreationExpr,
   SuperExpr,
@@ -56,6 +57,7 @@ trait AstForExpressionsCreator
       case x: LambdaExpr              => Seq(astForLambdaExpr(x, expectedType))
       case x: LiteralExpr             => Seq(astForLiteralExpr(x))
       case x: MethodCallExpr          => Seq(astForMethodCall(x, expectedType))
+      case x: MethodReferenceExpr     => Seq(astForMethodReferenceExpr(x, expectedType))
       case x: NameExpr                => Seq(astForNameExpr(x, expectedType))
       case x: ObjectCreationExpr      => Seq(blockAstForObjectCreationExpr(x, expectedType))
       case x: SuperExpr               => Seq(astForSuperExpr(x, expectedType))

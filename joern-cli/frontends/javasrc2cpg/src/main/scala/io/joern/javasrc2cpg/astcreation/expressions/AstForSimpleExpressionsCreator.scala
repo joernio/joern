@@ -13,14 +13,16 @@ import com.github.javaparser.ast.expr.{
   FieldAccessExpr,
   InstanceOfExpr,
   LiteralExpr,
+  MethodReferenceExpr,
   SuperExpr,
   ThisExpr,
   UnaryExpr
 }
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
+import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
-import io.joern.javasrc2cpg.util.NameConstants
-import io.joern.x2cpg.Ast
+import io.joern.javasrc2cpg.util.{NameConstants, Util}
+import io.joern.x2cpg.{Ast, Defines}
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode, newOperatorCallNode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewFieldIdentifier, NewLiteral, NewTypeRef}
@@ -28,6 +30,7 @@ import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
 
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
+import scala.util.{Failure, Success}
 
 trait AstForSimpleExpressionsCreator { this: AstCreator =>
 
@@ -377,5 +380,27 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
     )
 
     callAst(callNode, argsAsts)
+  }
+
+  private[expressions] def astForMethodReferenceExpr(expr: MethodReferenceExpr, expectedType: ExpectedType): Ast = {
+    val typeFullName =
+      expressionReturnTypeFullName(expr.getScope)
+        .orElse(expectedType.fullName)
+
+    val namespacePrefix = typeFullName.getOrElse(Defines.UnresolvedNamespace)
+    val methodName      = expr.getIdentifier
+
+    val signature = tryWithSafeStackOverflow(expr.resolve()) match {
+      case Failure(_) => Defines.UnresolvedSignature
+
+      case Success(resolvedMethod) =>
+        val returnType     = typeInfoCalc.fullName(resolvedMethod.getReturnType)
+        val parameterTypes = argumentTypesForMethodLike(Success(resolvedMethod))
+        composeSignature(returnType, parameterTypes, resolvedMethod.getNumberOfParams)
+    }
+
+    val methodFullName = Util.composeMethodFullName(namespacePrefix, methodName, signature)
+
+    Ast(methodRefNode(expr, expr.toString, methodFullName, typeFullName.getOrElse(TypeConstants.Any)))
   }
 }
