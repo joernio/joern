@@ -251,7 +251,11 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   def astForAnnotationEntry(entry: KtAnnotationEntry)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val typeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
+    val typeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any) match {
+      case value if value != TypeConstants.any => value
+      case _ =>
+        typeInfoProvider.typeFromImports(entry.getShortName.toString, entry.getContainingKtFile).getOrElse("ANY")
+    })
     val node =
       NewAnnotation()
         .code(entry.getText)
