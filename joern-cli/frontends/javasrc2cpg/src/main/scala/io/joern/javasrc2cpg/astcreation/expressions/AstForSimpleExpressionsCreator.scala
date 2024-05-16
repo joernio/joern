@@ -1,23 +1,7 @@
 package io.joern.javasrc2cpg.astcreation.expressions
 
-import com.github.javaparser.ast.expr.{
-  ArrayAccessExpr,
-  ArrayCreationExpr,
-  ArrayInitializerExpr,
-  BinaryExpr,
-  CastExpr,
-  ClassExpr,
-  ConditionalExpr,
-  EnclosedExpr,
-  Expression,
-  FieldAccessExpr,
-  InstanceOfExpr,
-  LiteralExpr,
-  MethodReferenceExpr,
-  SuperExpr,
-  ThisExpr,
-  UnaryExpr
-}
+import com.github.javaparser.ast.expr.{ArrayAccessExpr, ArrayCreationExpr, ArrayInitializerExpr, BinaryExpr, CastExpr, ClassExpr, ConditionalExpr, EnclosedExpr, Expression, FieldAccessExpr, InstanceOfExpr, LiteralExpr, MethodReferenceExpr, NameExpr, SuperExpr, ThisExpr, TypeExpr, UnaryExpr}
+import com.github.javaparser.ast.nodeTypes.NodeWithName
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
@@ -383,9 +367,12 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
   }
 
   private[expressions] def astForMethodReferenceExpr(expr: MethodReferenceExpr, expectedType: ExpectedType): Ast = {
-    val typeFullName =
-      expressionReturnTypeFullName(expr.getScope)
-        .orElse(expectedType.fullName)
+    val typeFullName = expr.getScope match {
+      case typeExpr: TypeExpr =>
+        // JavaParser wraps the "type" scope of a MethodReferenceExpr in a TypeExpr, but this also catches variable names.
+        scope.lookupVariableOrType(typeExpr.getTypeAsString).orElse(expressionReturnTypeFullName(typeExpr))
+      case scopeExpr => expressionReturnTypeFullName(scopeExpr)
+    }
 
     val namespacePrefix = typeFullName.getOrElse(Defines.UnresolvedNamespace)
     val methodName      = expr.getIdentifier
