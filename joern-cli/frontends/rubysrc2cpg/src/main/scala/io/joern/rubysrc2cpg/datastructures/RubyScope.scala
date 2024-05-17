@@ -91,7 +91,8 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
     isWildCard: Boolean = false
   ): Unit = {
     val path = requiredPath.stripSuffix(":<global>") // Sometimes the require call provides a processed path
-    // We assume the project root is the sole LOAD_PATH of the project sources for now
+    // We assume the project root is the sole LOAD_PATH of the project sources
+    // NB: Tracking whatever has been added to $LOADER is dynamic and requires post-processing step!
     val resolvedPath =
       if (isRelative) {
         Try((File(currentFilePath).parent / path).pathAsString).toOption
