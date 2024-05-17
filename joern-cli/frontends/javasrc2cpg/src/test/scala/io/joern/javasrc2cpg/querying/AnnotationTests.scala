@@ -318,4 +318,27 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
       }
     }
   }
+
+  "CPG for code with a custom annotation" should {
+    val cpg = code("""
+        |package mypak;
+        |
+        |import retrofit2.http.Body;
+        |import retrofit2.http.POST;
+        |
+        |public interface User {
+        |
+        |    @POST("/name")
+        |    public Call<Response> getUser(@Body Request request);
+        |}
+        |""".stripMargin)
+
+    "contain an ANNOTATION node" in {
+      cpg.all.collectAll[Annotation].codeExact("@POST(\"/name\")").size shouldBe 1
+    }
+
+    "the ANNOTATION node should have correct full name" in {
+      cpg.all.collectAll[Annotation].codeExact("@POST(\"/name\")").fullName.head shouldBe "retrofit2.http.POST"
+    }
+  }
 }
