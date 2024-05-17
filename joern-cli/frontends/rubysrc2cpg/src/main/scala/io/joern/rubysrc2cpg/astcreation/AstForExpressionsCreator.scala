@@ -389,7 +389,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case arg: StaticLiteral if arg.isString => Option(arg.innerText)
       case _                                  => None
     }
-    pathOpt.foreach(path => scope.addRequire(path, node.isRelative))
+    pathOpt.foreach(path => scope.addRequire(projectRoot.get, fileName, path, node.isRelative, node.isWildCard))
     astForSimpleCall(node.asSimpleCall)
   }
 

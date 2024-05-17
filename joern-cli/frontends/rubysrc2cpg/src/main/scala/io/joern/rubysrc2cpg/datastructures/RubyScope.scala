@@ -83,21 +83,37 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
     super.pushNewScope(mappedScopeNode)
   }
 
-  def addRequire(rawPath: String, isRelative: Boolean): Unit = {
-    val path = rawPath.stripSuffix(":<global>") // Sometimes the require call provides a processed path
-    // We assume the project root is the sole LOAD_PATH of the project sources for now
-    val relativizedPath =
+  def addRequire(
+    projectRoot: String,
+    currentFilePath: String,
+    requiredPath: String,
+    isRelative: Boolean,
+    isWildCard: Boolean = false
+  ): Unit = {
+    val path = requiredPath.stripSuffix(":<global>") // Sometimes the require call provides a processed path
+    // We assume the project root is the sole LOAD_PATH of the project sources
+    // NB: Tracking whatever has been added to $LOADER is dynamic and requires post-processing step!
+    val resolvedPath =
       if (isRelative) {
-        Try {
-          val parentDir = File(surrounding[ProgramScope].get.fileName).parentOption.get
-          val absPath   = (parentDir / path).path.toAbsolutePath
-          projectRoot.map(File(_).path.toAbsolutePath.relativize(absPath).toString)
-        }.getOrElse(Option(path))
+        Try((File(currentFilePath).parent / path).pathAsString).toOption
+          .map(_.stripPrefix(s"$projectRoot/"))
+          .getOrElse(path)
       } else {
-        Option(path)
+        path
       }
 
-    relativizedPath.iterator.flatMap(summary.pathToType.getOrElse(_, Set())) match {
+    val pathsToImport =
+      if (isWildCard) {
+        val dir = File(projectRoot) / resolvedPath
+        if (dir.isDirectory)
+          dir.list
+            .map(_.pathAsString.stripPrefix(s"$projectRoot/").stripSuffix(".rb"))
+            .toList
+        else Nil
+      } else {
+        resolvedPath :: Nil
+      }
+    pathsToImport.flatMap(summary.pathToType.getOrElse(_, Set())) match {
       case x if x.nonEmpty =>
         x.foreach { ty => addImportedTypeOrModule(ty.name) }
       case _ =>
