@@ -82,6 +82,32 @@ class RubyTypeRecoveryTests extends RubyCode2CpgFixture(withPostProcessing = tru
     }
   }
 
+  "Type information for imported modules" should {
+    val cpg = code(
+      """
+        |require 'test2'
+        |
+        |a = test2.func
+        |""".stripMargin)
+      .moreCode(
+        """
+          |class Test2A
+          |end
+          |
+          |module Test2B
+          |end
+          |
+          |def func
+          | "abc"
+          |end
+          |""".stripMargin, "test2.rb")
+
+    "pp" in {
+      cpg.identifier.l.foreach(x => println(s"${x.name}: ${x.typeFullName}"))
+      cpg.method.l.foreach(x => println(s"${x.fullName}: ${x.methodReturn.typeFullName}"))
+    }
+  }
+
   "Type information for constructors" should {
     val cpg = code("""
         |class A
