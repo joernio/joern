@@ -35,7 +35,7 @@ swift build
  - Java runtime >= 11
  - `glibc` >= 2.34 (for swiftastgen); or `swift` [5.10](https://www.swift.org/download/) directly which brings in all required dependencies anyway.
 
-### Manual Installation for Swift via Tarball (Ubuntu)
+### Manual Installation for Swift via Tarball (e.g., for Ubuntu 20.04)
  - ```
    $ apt-get install \
           binutils \
