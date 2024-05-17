@@ -254,7 +254,9 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     val typeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any) match {
       case value if value != TypeConstants.any => value
       case _ =>
-        typeInfoProvider.typeFromImports(entry.getShortName.toString, entry.getContainingKtFile).getOrElse(TypeConstants.any)
+        typeInfoProvider
+          .typeFromImports(entry.getShortName.toString, entry.getContainingKtFile)
+          .getOrElse(TypeConstants.any)
     })
     val node =
       NewAnnotation()
