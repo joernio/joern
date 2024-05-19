@@ -34,7 +34,7 @@ object Versions {
   val soot                   = "4.5.0"
   val slf4j                  = "2.0.7"
   val log4j                  = "2.20.0"
-  val upickle                = "3.3.0"
+  val upickle                = "3.3.1"
   val zeroTurnaround         = "1.17"
 
   // Shared with `projects/meta-build.sbt`, which needs to be updated there directly
