@@ -57,13 +57,13 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitWhileExpression(ctx: RubyParser.WhileExpressionContext): RubyNode = {
-    val condition = visit(ctx.commandOrPrimaryValue())
+    val condition = visit(ctx.expressionOrCommand())
     val body      = visit(ctx.doClause())
     WhileExpression(condition, body)(ctx.toTextSpan)
   }
 
   override def visitUntilExpression(ctx: RubyParser.UntilExpressionContext): RubyNode = {
-    val condition = visit(ctx.commandOrPrimaryValue())
+    val condition = visit(ctx.expressionOrCommand())
     val body      = visit(ctx.doClause())
     UntilExpression(condition, body)(ctx.toTextSpan)
   }
@@ -73,7 +73,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitIfExpression(ctx: RubyParser.IfExpressionContext): RubyNode = {
-    val condition = visit(ctx.commandOrPrimaryValue())
+    val condition = visit(ctx.expressionOrCommand())
     val thenBody  = visit(ctx.thenClause())
     val elsifs    = ctx.elsifClause().asScala.map(visit).toList
     val elseBody  = Option(ctx.elseClause()).map(visit)
@@ -89,7 +89,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitUnlessExpression(ctx: RubyParser.UnlessExpressionContext): RubyNode = {
-    val condition = visit(ctx.commandOrPrimaryValue())
+    val condition = visit(ctx.expressionOrCommand())
     val thenBody  = visit(ctx.thenClause())
     val elseBody  = Option(ctx.elseClause()).map(visit)
     UnlessExpression(condition, thenBody, elseBody)(ctx.toTextSpan)
@@ -1113,7 +1113,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitCaseWithExpression(ctx: RubyParser.CaseWithExpressionContext): RubyNode = {
-    val expression  = Option(ctx.commandOrPrimaryValue()).map(visit)
+    val expression  = Option(ctx.expressionOrCommand()).map(visit)
     val whenClauses = Option(ctx.whenClause().asScala).fold(List())(_.map(visit).toList)
     val elseClause  = Option(ctx.elseClause()).map(visit)
     CaseExpression(expression, whenClauses, elseClause)(ctx.toTextSpan)
