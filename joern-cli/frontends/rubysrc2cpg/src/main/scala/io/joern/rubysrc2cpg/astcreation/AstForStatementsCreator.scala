@@ -382,8 +382,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         // Ensure never returns a value, only the main body, rescue & else clauses
         RescueExpression(
           transform(body),
-          rescueClauses.map(transform),
-          elseClause.map(transform).orElse(defaultElseBranch(node.span)),
+          rescueClauses.map(transform).collect { case x: RescueClause => x },
+          elseClause.map(transform).orElse(defaultElseBranch(node.span)).collect { case x: ElseClause => x },
           ensureClause
         )(node.span)
       case WhileExpression(condition, body)   => WhileExpression(condition, transform(body))(node.span)

@@ -30,10 +30,10 @@ object RubyIntermediateAst {
   }
 
   implicit class RubyNodeHelper(node: RubyNode) {
-    def asStatementList = node match
+    def asStatementList: StatementList = node match {
       case stmtList: StatementList => stmtList
       case _                       => StatementList(List(node))(node.span)
-
+    }
   }
 
   final case class Unknown()(span: TextSpan) extends RubyNode(span)
@@ -150,16 +150,16 @@ object RubyIntermediateAst {
 
   final case class RescueExpression(
     body: RubyNode,
-    rescueClauses: List[RubyNode],
-    elseClause: Option[RubyNode],
-    ensureClause: Option[RubyNode]
+    rescueClauses: List[RescueClause],
+    elseClause: Option[ElseClause],
+    ensureClause: Option[EnsureClause]
   )(span: TextSpan)
       extends RubyNode(span)
       with ControlFlowExpression
 
   final case class RescueClause(
     exceptionClassList: Option[RubyNode],
-    assignment: Option[RubyNode],
+    variables: Option[RubyNode],
     thenClause: RubyNode
   )(span: TextSpan)
       extends RubyNode(span)

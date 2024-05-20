@@ -604,20 +604,23 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   protected def astForRescueExpression(node: RescueExpression): Ast = {
     val tryAst = astForStatementList(node.body.asStatementList)
     val rescueAsts = node.rescueClauses
-      .map {
-        case x: RescueClause =>
-          // TODO: add exception assignment
-          astForStatementList(x.thenClause.asStatementList)
-        case x => astForUnknown(x)
+      .map { x =>
+        val classes =
+          x.exceptionClassList.map(e => scope.tryResolveTypeReference(e.text).map(_.name).getOrElse(e.text)).toSeq
+        val variables = x.variables
+          .flatMap { v =>
+            handleVariableOccurrence(v)
+            scope.lookupVariable(v.text)
+          }
+          .collect {
+            case x: NewLocal             => Ast(x.dynamicTypeHintFullName(classes))
+            case x: NewMethodParameterIn => Ast(x.dynamicTypeHintFullName(classes))
+          }
+          .toList
+        astForStatementList(x.thenClause.asStatementList).withChildren(variables)
       }
-    val elseAst = node.elseClause.map {
-      case x: ElseClause => astForStatementList(x.thenClause.asStatementList)
-      case x             => astForUnknown(x)
-    }
-    val ensureAst = node.ensureClause.map {
-      case x: EnsureClause => astForStatementList(x.thenClause.asStatementList)
-      case x               => astForUnknown(x)
-    }
+    val elseAst   = node.elseClause.map { x => astForStatementList(x.thenClause.asStatementList) }
+    val ensureAst = node.ensureClause.map { x => astForStatementList(x.thenClause.asStatementList) }
     tryCatchAst(
       NewControlStructure()
         .controlStructureType(ControlStructureTypes.TRY)
