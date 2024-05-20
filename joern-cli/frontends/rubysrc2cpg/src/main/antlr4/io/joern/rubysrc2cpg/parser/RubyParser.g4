@@ -298,21 +298,21 @@ primaryValue
         # lambdaExpression
 
         // Control structures
-    |   IF NL* commandOrPrimaryValue thenClause elsifClause* elseClause? END
+    |   IF NL* expressionOrCommand thenClause elsifClause* elseClause? END
         # ifExpression
-    |   UNLESS NL* commandOrPrimaryValue thenClause elseClause? END
+    |   UNLESS NL* expressionOrCommand thenClause elseClause? END
         # unlessExpression
-    |   UNTIL NL* commandOrPrimaryValue doClause END
+    |   UNTIL NL* expressionOrCommand doClause END
         # untilExpression
     |   YIELD argumentWithParentheses?
         # yieldExpression
     |   BEGIN bodyStatement END
         # beginEndExpression
-    |   CASE NL* commandOrPrimaryValue (SEMI | NL)* whenClause+ elseClause? END
+    |   CASE NL* expressionOrCommand (SEMI | NL)* whenClause+ elseClause? END
         # caseWithExpression
     |   CASE (SEMI | NL)* whenClause+ elseClause? END
         # caseWithoutExpression
-    |   WHILE NL* commandOrPrimaryValue doClause END
+    |   WHILE NL* expressionOrCommand doClause END
         # whileExpression
     |   FOR NL* forVariable IN NL* commandOrPrimaryValue doClause END
         # forExpression

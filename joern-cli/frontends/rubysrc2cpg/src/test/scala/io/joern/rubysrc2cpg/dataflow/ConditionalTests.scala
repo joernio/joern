@@ -20,8 +20,7 @@ class ConditionalTests extends RubyCode2CpgFixture(withPostProcessing = true, wi
       Set(List(("x = 1", 2), ("z = x", 4), ("puts z", 5)), List(("y = 2", 3), ("z = y", 4), ("puts z", 5)))
   }
 
-  // Works in deprecated
-  "flow through statement with ternary operator with multiple line" ignore {
+  "flow through statement with ternary operator with multiple line" in {
     val cpg = code("""
                      |x = 2
                      |y = 3
@@ -33,8 +32,29 @@ class ConditionalTests extends RubyCode2CpgFixture(withPostProcessing = true, wi
                      |puts y
                      |""".stripMargin)
 
-    val source = cpg.identifier.name("y").l
-    val sink   = cpg.call.name("puts").l
-    sink.reachableByFlows(source).size shouldBe 2
+    val source = cpg.literal.code("3").l
+    val sink   = cpg.call.name("puts").argument(1).l
+    sink.reachableByFlows(source).size shouldBe 1
   }
+
+  "flow through method conditional over-approximates a flow disregarding outcome of the conditional" in {
+    val cpg = code("""
+        |x = 12
+        |def woo(x)
+        |  return x == 10
+        |end
+        |
+        |if !woo x
+        |  puts x
+        |else
+        |  puts "No"
+        |end
+        |
+        |""".stripMargin)
+
+    val source = cpg.literal.code("12").l
+    val sink   = cpg.call.name("puts").argument(1).l
+    sink.reachableByFlows(source).size shouldBe 1
+  }
+
 }
