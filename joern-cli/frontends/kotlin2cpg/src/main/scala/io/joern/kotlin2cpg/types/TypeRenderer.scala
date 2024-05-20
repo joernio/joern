@@ -168,7 +168,10 @@ class TypeRenderer(val keepTypeArguments: Boolean = false) {
       // We do this because at the beginning of a type name we cannot
       // have type parameters but instead <unresolvedNamespace> which
       // we do not want to strip.
-      typeName.replaceAll("(?<!^)<.*>", "")
+      // Sometimes with a lambda expression as an argument, we see a
+      // named function instead of a lambda, so we keep the
+      // <anonymous> tag.
+      typeName.replaceAll("(?<!^)<(?!anonymous).*>", "")
     }
     def stripOut(name: String): String = {
       if (name.contains("<") && name.contains(">") && name.contains("out")) {
@@ -188,6 +191,10 @@ class TypeRenderer(val keepTypeArguments: Boolean = false) {
       }
     }
 
-    stripTypeParams(stripOptionality(stripDebugInfo(stripOut(typeName))).trim().replaceAll(" ", "")).replaceAll("`", "")
+    val t1 = stripOut(typeName)
+    val t2 = stripDebugInfo(t1)
+    val t3 = stripOptionality(t2)
+    val t4 = stripTypeParams(t3)
+    t4.trim().replaceAll(" ", "").replaceAll("`", "")
   }
 }

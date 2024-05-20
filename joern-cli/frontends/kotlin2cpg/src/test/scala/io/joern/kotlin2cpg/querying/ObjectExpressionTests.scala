@@ -209,7 +209,7 @@ class ObjectExpressionTests extends KotlinCode2CpgFixture(withOssDataflow = fals
       c.methodFullName shouldBe "mypkg.addListener:void(mypkg.SomeInterface)"
       val List(objExpr: TypeDecl, l: Local, alloc: Call, init: Call, i: Identifier) =
         c.astChildren.isBlock.astChildren.l: @unchecked
-      objExpr.fullName shouldBe "mypkg.f1$object$1"
+      objExpr.fullName shouldBe "mypkg.f1.<anonymous>$object$1"
       l.code shouldBe "tmp_obj_1"
       alloc.code shouldBe "tmp_obj_1 = <alloc>"
       init.code shouldBe "<init>"
