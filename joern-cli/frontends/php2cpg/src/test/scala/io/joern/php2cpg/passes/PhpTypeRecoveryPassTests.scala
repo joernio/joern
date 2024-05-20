@@ -1,7 +1,8 @@
 package io.joern.php2cpg.passes
 
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.Identifier
+import io.shiftleft.semanticcpg.language.*
 
 class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture() {
 
@@ -442,6 +443,101 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture() {
     "resolve all types and calls for `$response`, where the call should have some dummy type" in {
       cpg.identifier("response").typeFullName.toSet shouldBe Set("Curler\\Client->get-><returnValue>")
       cpg.call("getBody").methodFullName.toSet shouldBe Set("Curler\\Client->get-><returnValue>->getBody")
+    }
+  }
+
+  "a reference to a field of some external type (propagated via inherited calls)" should {
+    val cpg = code(
+      """
+        |<?php
+        |
+        |declare(strict_types=1);
+        |
+        |namespace Customer\Marketplace\Core\Repository;
+        |
+        |use Doctrine\ORM\EntityManagerInterface;
+        |use Doctrine\ORM\EntityRepository;
+        |use Doctrine\ORM\QueryBuilder;
+        |use Some\Repository\EntityRepositoryInterface;
+        |
+        |abstract class AbstractEntityRepository implements EntityRepositoryInterface
+        |{
+        |    protected AliasHelperInterface $aliasHelper;
+        |    private EntityManagerInterface $entityManager;
+        |
+        |    private string $entityClassName;
+        |
+        |    public function __construct(
+        |        EntityManagerInterface $entityManager,
+        |    ) {
+        |        $this->entityManager = $entityManager;
+        |    }
+        |
+        |    protected function createQueryBuilder(string $alias, ?string $indexBy = null): QueryBuilder
+        |    {
+        |        return $this->entityManager->createQueryBuilder()->select($alias)
+        |            ->from("ABC", $alias, $indexBy);
+        |    }
+        |}
+        |""".stripMargin,
+      "AbstractEntity.php"
+    ).moreCode(
+      """
+        |<?php
+        |
+        |declare(strict_types=1);
+        |
+        |namespace Some\Repository;
+        |
+        |use Some\Entity\User;
+        |use Some\Entity\EntityInterface;
+        |
+        |class SomeRepository extends AbstractEntityRepository
+        |{
+        |    public function findSomething(
+        |        \DateTimeImmutable $date,
+        |        string $accountId,
+        |    ): ?EntityInterface {
+        |        $rootAlias = $this->getRootAlias();
+        |        $userAlias = $this->aliasHelper->getAliasForClass(User::class);
+        |
+        |        $queryBuilder = $this->createQueryBuilder($rootAlias);
+        |
+        |        $queryBuilder
+        |            ->leftJoin(sprintf('%s.foo', $rootAlias), $userAlias)
+        |            ->setParameter('userName', $userName)
+        |
+        |        return $queryBuilder->getQuery()->execute()[0] ?? null;
+        |    }
+        |}
+        |""".stripMargin,
+      "User.php"
+    )
+
+    "resolve the correct full name for the wrapped QueryBuilder call off the field" in {
+      inside(cpg.method.nameExact("createQueryBuilder").call.name(".*createQueryBuilder").l) {
+        case queryBuilderCall :: Nil =>
+          queryBuilderCall.methodFullName shouldBe "Doctrine\\ORM\\EntityManagerInterface->createQueryBuilder-><returnValue>"
+        case xs => fail(s"Expected one call, instead got [$xs]")
+      }
+    }
+
+    "propagate this QueryBuilder type to the identifier assigned to the inherited call for the wrapped `createQueryBuilder`" ignore {
+      cpg.method
+        .nameExact("findSomething")
+        ._containsOut
+        .collectAll[Identifier]
+        .nameExact("queryBuilder")
+        .typeFullName
+        .head shouldBe "Doctrine\\ORM\\EntityManagerInterface->createQueryBuilder-><returnValue>->select-><returnValue>->from-><returnValue>"
+    }
+
+    "resolve the correct full name a call based on the QueryBuilder return value" ignore {
+      inside(cpg.call.nameExact("setParameter").l) {
+        case setParamCall :: Nil =>
+          setParamCall.methodFullName shouldBe "Doctrine\\ORM\\EntityManagerInterface->createQueryBuilder-><returnValue>->leftJoin-><returnValue>->setParameter-><returnValue>"
+        case xs => fail(s"Expected one call, instead got [$xs]")
+      }
     }
   }
 

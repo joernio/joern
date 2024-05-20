@@ -10,7 +10,6 @@ import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, FieldAccess}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
-import scala.annotation.tailrec
 import scala.collection.mutable
 
 class PhpTypeRecoveryPassGenerator(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig(iterations = 3))
@@ -41,8 +40,8 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
   override protected def prepopulateSymbolTableEntry(x: AstNode): Unit = x match {
     case x: Call =>
       x.methodFullName match {
-        case Operators.alloc =>
-        case _               => symbolTable.append(x, (x.methodFullName +: x.dynamicTypeHintFullName).toSet)
+        case s"<operator>.$_" =>
+        case _                => symbolTable.append(x, (x.methodFullName +: x.dynamicTypeHintFullName).toSet)
       }
     case _ => super.prepopulateSymbolTableEntry(x)
   }
@@ -117,11 +116,10 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
     )
     existingTypes.addAll(methodTypesTable.getOrElse(m, mutable.HashSet()))
 
-    @tailrec
     def extractTypes(xs: List[CfgNode]): Set[String] = xs match {
       case ::(head: Literal, Nil) if head.typeFullName != "ANY" =>
         Set(head.typeFullName)
-      case ::(head: Call, Nil) if head.name == Operators.fieldAccess =>
+      case (head: Call) :: _ if head.name == Operators.fieldAccess =>
         val fieldAccess = head.asInstanceOf[FieldAccess]
         val (sym, ts)   = getSymbolFromCall(fieldAccess)
         val cpgTypes = cpg.typeDecl
@@ -133,21 +131,23 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
           .toSet
         if (cpgTypes.nonEmpty) cpgTypes
         else symbolTable.get(sym)
-      case ::(head: Call, Nil) if symbolTable.contains(head) =>
+      case (head: Call) :: _ if symbolTable.contains(head) =>
         val callPaths    = symbolTable.get(head)
         val returnValues = methodReturnValues(callPaths.toSeq)
         if (returnValues.isEmpty)
           callPaths.map(c => s"$c$pathSep${XTypeRecovery.DummyReturnType}")
         else
           returnValues
-      case ::(head: Call, Nil) if head.argumentOut.headOption.exists(symbolTable.contains) =>
+      case (head: Call) :: _ if head.receiver.headOption.exists(symbolTable.contains) =>
         symbolTable
-          .get(head.argumentOut.head)
+          .get(head.receiver.head)
           .map(t => Seq(t, head.name, XTypeRecovery.DummyReturnType).mkString(pathSep))
       case ::(identifier: Identifier, Nil) if symbolTable.contains(identifier) =>
         symbolTable.get(identifier)
-      case ::(head: Call, Nil) =>
-        extractTypes(head.argument.l)
+      case (head: Call) :: _ =>
+        val callees =
+          extractTypes(head.argument.l).map(t => Seq(t, head.name, XTypeRecovery.DummyReturnType).mkString(pathSep))
+        symbolTable.append(head, callees)
       case _ => Set.empty
     }
     val returnTypes = extractTypes(ret.argumentOut.l)
