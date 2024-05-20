@@ -1083,10 +1083,11 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitBodyStatement(ctx: RubyParser.BodyStatementContext): RubyNode = {
-    val body          = visit(ctx.compoundStatement())
-    val rescueClauses = Option(ctx.rescueClause.asScala).fold(List())(_.map(visit).toList)
-    val elseClause    = Option(ctx.elseClause).map(visit)
-    val ensureClause  = Option(ctx.ensureClause).map(visit)
+    val body = visit(ctx.compoundStatement())
+    val rescueClauses =
+      Option(ctx.rescueClause.asScala).fold(List())(_.map(visit).toList).collect { case x: RescueClause => x }
+    val elseClause   = Option(ctx.elseClause).map(visit).collect { case x: ElseClause => x }
+    val ensureClause = Option(ctx.ensureClause).map(visit).collect { case x: EnsureClause => x }
 
     if (rescueClauses.isEmpty && elseClause.isEmpty && ensureClause.isEmpty) {
       visit(ctx.compoundStatement())
@@ -1096,16 +1097,14 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitExceptionClassList(ctx: RubyParser.ExceptionClassListContext): RubyNode = {
-    // Requires implementing multiple rhs with splatting
-    logger.warn(s"Exception class lists are not handled: '${ctx.toTextSpan}'")
-    Unknown()(ctx.toTextSpan)
+    Option(ctx.multipleRightHandSide()).map(visitMultipleRightHandSide).getOrElse(visit(ctx.operatorExpression()))
   }
 
   override def visitRescueClause(ctx: RubyParser.RescueClauseContext): RubyNode = {
     val exceptionClassList = Option(ctx.exceptionClassList).map(visit)
-    val elseClause         = Option(ctx.exceptionVariableAssignment).map(visit)
+    val variables          = Option(ctx.exceptionVariableAssignment).map(visit)
     val thenClause         = visit(ctx.thenClause)
-    RescueClause(exceptionClassList, elseClause, thenClause)(ctx.toTextSpan)
+    RescueClause(exceptionClassList, variables, thenClause)(ctx.toTextSpan)
   }
 
   override def visitEnsureClause(ctx: RubyParser.EnsureClauseContext): RubyNode = {
