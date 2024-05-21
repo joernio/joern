@@ -12,7 +12,7 @@ package object dataflowengineoss {
     val lhsOfAssignment = relevantLiteral.inCall.assignment.argument(1)
 
     // Gets <x> from `<x> = import(...<lit>...)` because of how Python imports are represented
-    val lhsOfImport = relevantLiteral.inCall.name("import").inCall.assignment.argument(1)
+    val lhsOfImport = relevantLiteral.inCall.nameExact("import").inCall.assignment.argument(1)
 
     lhsOfAssignment ++ lhsOfImport
   }
