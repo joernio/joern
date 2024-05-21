@@ -57,6 +57,7 @@ trait PythonAstVisitorHelpers(implicit withSchemaValidation: ValidationMode) { t
     val finalBlockSeq  = finalBlock.toSeq
     val orElseBlockSeq = orElseBlock.toSeq
 
+    // TODO: orElse semantics are not yet handled, so if present, we group it under the finally block
     val finalBlockAst = if (finalBlockSeq.nonEmpty && orElseBlockSeq.nonEmpty) {
       val _blockNode      = nodeBuilder.blockNode("<empty>", lineAndColumn)
       val finalBlockNode  = createBlock(finalBlockSeq, lineAndColumn).asInstanceOf[NewBlock]
@@ -73,6 +74,7 @@ trait PythonAstVisitorHelpers(implicit withSchemaValidation: ValidationMode) { t
 
     addAstChildNodes(controlStructureNode, 1, Seq(bodyBlockNode) ++ handlersBlockNodes ++ finalBlockAst*)
 
+    // Performs the same ordering operation as io.joern.x2cpg.AstCreatorBase::tryCatchAst
     bodyBlockNode.order = 1
     handlersBlockNodes.foreach(_.order = 2)
     finalBlockAst.foreach(_.order = 3)

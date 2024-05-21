@@ -8,6 +8,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Literal, Member, Method}
 import io.shiftleft.semanticcpg.language.*
 
 import java.io.File
+import scala.collection.immutable.List
 
 class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
 
@@ -425,9 +426,11 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         |""".stripMargin)
 
     // TODO: For some reason, cpg.parameter.nameExact("request").l does not work as a source
-    val source = cpg.assignment.target.isIdentifier.nameExact("file").l
+    val source = cpg.assignment.and(_.target.isIdentifier.nameExact("file"), _.source.code("request.*")).source.l
     val sink   = cpg.call.nameExact("load").argument(1).l
-    sink.reachableByFlows(source).size shouldBe 1
+    sink.reachableByFlows(source).map(flowToResultPairs).l shouldBe List(
+      List(("file = request.FILES[\"file\"]", 4), ("yaml.load(file, yaml.Loader)", 6))
+    )
   }
 
 }
