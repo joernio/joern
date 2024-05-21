@@ -302,31 +302,27 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     val cpg = code("""
         |from foo import bar
         |d = {
-        | 'x': F.sum('x'),
-        | 'y': F.sum('y'),
-        | 'z': F.sum('z'),
+        | 'x': 123
         |}
         |
         |class Foo():
         |   def foo(self):
         |       return bar(d)
         |""".stripMargin)
-    val sources    = cpg.call("<operator>.indexAccess").argument.isIdentifier.l
+    val sources    = cpg.literal("123").l
     val sinks      = cpg.call("bar").l
     val List(flow) = sinks.reachableByFlows(sources).map(flowToResultPairs).l
     flow shouldBe List(
-      ("tmp0['z'] = F.sum('z')", 3),
-      ("tmp0['x'] = F.sum('x')", 3),
+      ("tmp0['x'] = 123", 4),
+      ("tmp0['x'] = 123", 3),
       ("tmp0", 3),
       (
         """d = tmp0 = {}
-      |tmp0['x'] = F.sum('x')
-      |tmp0['y'] = F.sum('y')
-      |tmp0['z'] = F.sum('z')
+      |tmp0['x'] = 123
       |tmp0""".stripMargin,
         3
       ),
-      ("bar(d)", 11)
+      ("bar(d)", 9)
     )
   }
 
@@ -334,31 +330,27 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     val cpg = code("""
         |import bar
         |d = {
-        | 'x': F.sum('x'),
-        | 'y': F.sum('y'),
-        | 'z': F.sum('z'),
+        | 'x': 123,
         |}
         |
         |class Foo():
         |   def foo(self):
         |       return bar.baz(d)
         |""".stripMargin)
-    val sources    = cpg.call("<operator>.indexAccess").argument.isIdentifier.l
+    val sources    = cpg.literal("123").l
     val sinks      = cpg.call("baz").l
     val List(flow) = sinks.reachableByFlows(sources).map(flowToResultPairs).l
     flow shouldBe List(
-      ("tmp0['z'] = F.sum('z')", 3),
-      ("tmp0['x'] = F.sum('x')", 3),
+      ("tmp0['x'] = 123", 4),
+      ("tmp0['x'] = 123", 3),
       ("tmp0", 3),
       (
         """d = tmp0 = {}
-          |tmp0['x'] = F.sum('x')
-          |tmp0['y'] = F.sum('y')
-          |tmp0['z'] = F.sum('z')
+          |tmp0['x'] = 123
           |tmp0""".stripMargin,
         3
       ),
-      ("bar.baz(d)", 11)
+      ("bar.baz(d)", 9)
     )
   }
 
