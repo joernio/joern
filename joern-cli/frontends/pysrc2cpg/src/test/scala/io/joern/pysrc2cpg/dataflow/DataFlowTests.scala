@@ -411,6 +411,25 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     flow shouldBe List(("FOOBAR = \"XYZ\"", 2), ("models = import(, models)", 2), ("print(models.FOOBAR)", 3))
   }
 
+  "flows through nested try-except structures" in {
+    val cpg = code("""
+        |def a9_lab(request):
+        | try:
+        |   file = request.FILES["file"]
+        |   try:
+        |     data = yaml.load(file, yaml.Loader)
+        |   except:
+        |     print("Failed to deserialize yaml")
+        | except:
+        |   print("Failed to extract file parameter from request")
+        |""".stripMargin)
+
+    // TODO: For some reason, cpg.parameter.nameExact("request").l does not work as a source
+    val source = cpg.assignment.target.isIdentifier.nameExact("file").l
+    val sink   = cpg.call.nameExact("load").argument(1).l
+    sink.reachableByFlows(source).size shouldBe 1
+  }
+
 }
 
 class RegexDefinedFlowsDataFlowTests
