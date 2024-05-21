@@ -114,7 +114,9 @@ class JavaConfigFileCreationPass(cpg: Cpg, rootDir: Option[String] = None)
     // JPA
     pathEndFilter("persistence.xml"),
     // HIBERNATE
-    pathEndFilter("cfg.xml")
+    pathEndFilter("cfg.xml"),
+    // MAVEN
+    pathEndFilter("pom.xml")
   )
 
   private def mybatisFilter(file: File): Boolean = {
