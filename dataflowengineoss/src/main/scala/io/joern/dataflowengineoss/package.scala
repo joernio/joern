@@ -5,9 +5,17 @@ import io.shiftleft.semanticcpg.language.*
 
 package object dataflowengineoss {
 
-  def globalFromLiteral(lit: Literal): Iterator[Expression] = lit.start.inCall.assignment
-    .where(_.method.isModule)
-    .argument(1)
+  def globalFromLiteral(lit: Literal): Iterator[Expression] = {
+    val relevantLiteral = lit.start.where(_.method.isModule).l
+
+    // Gets <x> from `<x> = <lit>`
+    val lhsOfAssignment = relevantLiteral.inCall.assignment.argument(1)
+
+    // Gets <x> from `<x> = import(...<lit>...)` because of how Python imports are represented
+    val lhsOfImport = relevantLiteral.inCall.nameExact("import").inCall.assignment.argument(1)
+
+    lhsOfAssignment ++ lhsOfImport
+  }
 
   def identifierToFirstUsages(node: Identifier): List[Identifier] = node.refsTo.flatMap(identifiersFromCapturedScopes).l
 
