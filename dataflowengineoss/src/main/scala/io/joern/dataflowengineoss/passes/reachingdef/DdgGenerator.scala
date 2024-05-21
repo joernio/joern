@@ -1,8 +1,8 @@
 package io.joern.dataflowengineoss.passes.reachingdef
 
+import io.joern.dataflowengineoss.identifierToFirstUsages
 import io.joern.dataflowengineoss.queryengine.AccessPathUsage.toTrackedBaseAndAccessPathSimple
 import io.joern.dataflowengineoss.semanticsloader.Semantics
-import io.joern.dataflowengineoss.{globalFromLiteral, identifierToFirstUsages}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators, PropertyNames}
 import io.shiftleft.semanticcpg.accesspath.MatchResult
@@ -192,7 +192,7 @@ class DdgGenerator(semantics: Semantics) {
       // See PR #3735 on Joern for details
       val globalIdentifiers =
         (method._callViaContainsOut ++ method._returnViaContainsOut).ast.isLiteral
-          .flatMap(globalFromLiteral)
+          .flatMap(_.start.where(_.method.isMethod).inAssignment.argument(1))
           .collectAll[Identifier]
           .l
       globalIdentifiers
