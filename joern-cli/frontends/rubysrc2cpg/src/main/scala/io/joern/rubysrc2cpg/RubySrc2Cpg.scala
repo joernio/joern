@@ -6,7 +6,15 @@ import io.joern.rubysrc2cpg.datastructures.RubyProgramSummary
 import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser
 import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser.*
 import io.joern.rubysrc2cpg.parser.RubyParser
-import io.joern.rubysrc2cpg.passes.{AstCreationPass, ConfigFileCreationPass, DependencyPass, ImplicitRequirePass, ImportsPass, RubyImportResolverPass, RubyTypeHintCallLinker}
+import io.joern.rubysrc2cpg.passes.{
+  AstCreationPass,
+  ConfigFileCreationPass,
+  DependencyPass,
+  ImplicitRequirePass,
+  ImportsPass,
+  RubyImportResolverPass,
+  RubyTypeHintCallLinker
+}
 import io.joern.rubysrc2cpg.utils.DependencyDownloader
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.passes.base.AstLinkerPass
@@ -155,8 +163,8 @@ object RubySrc2Cpg {
         )
     } else {
       List(new RubyImportResolverPass(cpg)) ++
-      new passes.RubyTypeRecoveryPassGenerator(cpg, config = XTypeRecoveryConfig(iterations = 4))
-        .generate() ++ List(new RubyTypeHintCallLinker(cpg), new NaiveCallLinker(cpg), new AstLinkerPass(cpg))
+        new passes.RubyTypeRecoveryPassGenerator(cpg, config = XTypeRecoveryConfig(iterations = 4))
+          .generate() ++ List(new RubyTypeHintCallLinker(cpg), new NaiveCallLinker(cpg), new AstLinkerPass(cpg))
 //      List()
     }
   }

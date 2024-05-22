@@ -3,6 +3,7 @@ package io.joern.rubysrc2cpg.passes
 import io.joern.rubysrc2cpg.datastructures.{RubyMethod, RubyProgramSummary, RubyStubbedType, RubyType}
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines as XDefines
+import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.semanticcpg.language.importresolver.*
 import io.shiftleft.semanticcpg.language.*
 
@@ -21,7 +22,8 @@ object RubyTypeRecoveryTests {
       |""".stripMargin
 }
 
-class RubyTypeRecoveryTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataFlow = true) {
+class RubyTypeRecoveryTests
+    extends RubyCode2CpgFixture(withPostProcessing = true, withDataFlow = true, downloadDependencies = true) {
   "recovering paths for built-in calls" should {
     lazy val cpg = code(
       """
@@ -82,29 +84,48 @@ class RubyTypeRecoveryTests extends RubyCode2CpgFixture(withPostProcessing = tru
     }
   }
 
-  "Type information for imported modules" should {
+  "Type information for imported function" should {
     val cpg = code(
       """
-        |require 'test2'
+        |class Test2A
+        |end
         |
-        |a = test2.func
-        |""".stripMargin)
+        |module Test2B
+        |end
+        |
+        |def func
+        |  "abc"
+        |end
+        |
+        |""".stripMargin,
+      "test2.rb"
+    )
       .moreCode(
         """
-          |class Test2A
-          |end
-          |
-          |module Test2B
-          |end
-          |
-          |def func
-          | "abc"
-          |end
-          |""".stripMargin, "test2.rb")
+        |require 'test2'
+        |a = func
+        |
+        |b = Test2A.new
+        |""".stripMargin,
+        "test1.rb"
+      )
 
-    "pp" in {
-      cpg.identifier.l.foreach(x => println(s"${x.name}: ${x.typeFullName}"))
-      cpg.method.l.foreach(x => println(s"${x.fullName}: ${x.methodReturn.typeFullName}"))
+    "propagate to assigned variable" in {
+      inside(cpg.file("test1.rb").method.name(":program").call.nameExact("<operator>.assignment").l) {
+        case funcAssignment :: constructAssignment :: tmpAssignment :: Nil =>
+          inside(funcAssignment.argument.l) {
+            case (lhs: Identifier) :: rhs :: Nil =>
+              lhs.typeFullName shouldBe "__builtin.String"
+            case xs => fail(s"Expected lhs and rhs, got [${xs.code.mkString(",")}] ")
+          }
+
+          inside(constructAssignment.argument.l) {
+            case (lhs: Identifier) :: rhs :: Nil =>
+              lhs.typeFullName shouldBe "test2.rb:<global>::program.Test2A"
+            case xs => fail(s"Expected lhs and rhs, got [${xs.code.mkString(",")}]")
+          }
+        case xs => fail(s"Expected lhs and rhs, got [${xs.code.mkString(",")}]")
+      }
     }
   }
 
@@ -132,7 +153,7 @@ class RubyTypeRecoveryTests extends RubyCode2CpgFixture(withPostProcessing = tru
     }
   }
 
-  "Type information for nodes with external dependency" ignore {
+  "Type information for nodes with external dependency" should {
 
     val cpg = code(
       """
@@ -150,11 +171,13 @@ class RubyTypeRecoveryTests extends RubyCode2CpgFixture(withPostProcessing = tru
     cpg.method.name("func").dotAst.l.foreach(println)
 
     "be present in (Case 1)" in {
-      cpg.identifier("sg").lineNumber(5).typeFullName.l shouldBe List("sendgrid-ruby::program.SendGrid.API")
-      cpg.call("client").methodFullName.l shouldBe List("sendgrid-ruby::program.SendGrid.API.client")
+      cpg.identifier("sg").lineNumber(5).typeFullName.l shouldBe List(
+        "sendgrid/sendgrid.rb:<global>::program.SendGrid.API"
+      )
+      cpg.call("client").methodFullName.l shouldBe List("sendgrid/sendgrid.rb:<global>::program.SendGrid.API:client")
     }
 
-    "be present in (Case 2)" ignore {
+    "be present in (Case 2)" in {
       cpg.call("post").methodFullName.l shouldBe List(
         "sendgrid-ruby::program.SendGrid.API.client<returnValue>.mail<returnValue>.anonymous<returnValue>.post"
       )

@@ -16,12 +16,12 @@ class RubyImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
   private val pathPattern = Pattern.compile("[\"']([\\w/.]+)[\"']")
 
   override protected def optionalResolveImport(
-                                                fileName: String,
-                                                importCall: Call,
-                                                importedEntity: String,
-                                                importedAs: String,
-                                                diffGraph: DiffGraphBuilder
-                                              ): Unit = {
+    fileName: String,
+    importCall: Call,
+    importedEntity: String,
+    importedAs: String,
+    diffGraph: DiffGraphBuilder
+  ): Unit = {
 
     resolveEntities(importedEntity, importCall, fileName).foreach(x => evaluatedImportToTag(x, importCall, diffGraph))
   }
@@ -43,31 +43,34 @@ class RubyImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
 
     // TODO Limited ResolvedMethod exposure for now, will open up after looking at more concrete examples
     val finalResolved = {
-        val filePattern = s"${Pattern.quote(expResolvedPath)}\\.?.*"
-        val resolvedTypeDecls = cpg.typeDecl
-          .where(_.file.name(filePattern))
-          .fullName
-          .flatMap(fullName =>
-            Seq(ResolvedTypeDecl(fullName), ResolvedMethod(s"$fullName.${XDefines.ConstructorMethodName}", "new"))
+      val filePattern = s"${Pattern.quote(expResolvedPath)}\\.?.*"
+      val resolvedTypeDecls = cpg.typeDecl
+        .where(_.file.name(filePattern))
+        .fullName
+        .flatMap(fullName =>
+          Seq(
+            ResolvedTypeDecl(fullName),
+            ResolvedMethod(s"$fullName.${XDefines.ConstructorMethodName}", "new", fullName.split("[.]").lastOption)
           )
-          .toSet
+        )
+        .toSet
 
-        val resolvedModules = cpg.namespaceBlock
-          .whereNot(_.nameExact("<global>"))
-          .where(_.file.name(filePattern))
-          .flatMap(module => Seq(ResolvedTypeDecl(module.fullName)))
-          .toSet
+      val resolvedModules = cpg.namespaceBlock
+        .whereNot(_.nameExact("<global>"))
+        .where(_.file.name(filePattern))
+        .flatMap(module => Seq(ResolvedTypeDecl(module.fullName)))
+        .toSet
 
-        // Expose methods which are directly present in a file, without any module, TypeDecl
-        val resolvedMethods = cpg.method
-          .where(_.file.name(filePattern))
-          .where(_.nameExact(":program"))
-          .astChildren
-          .astChildren
-          .isMethod
-          .flatMap(method => Seq(ResolvedMethod(method.fullName, method.name)))
-          .toSet
-        resolvedTypeDecls ++ resolvedModules ++ resolvedMethods
+      // Expose methods which are directly present in a file, without any module, TypeDecl
+      val resolvedMethods = cpg.method
+        .where(_.file.name(filePattern))
+        .where(_.nameExact(":program"))
+        .astChildren
+        .astChildren
+        .isMethod
+        .flatMap(method => Seq(ResolvedMethod(method.fullName, method.name)))
+        .toSet
+      resolvedTypeDecls ++ resolvedModules ++ resolvedMethods
     }.collectAll[EvaluatedImport].toSet
 
     finalResolved
