@@ -221,4 +221,15 @@ class LiteralTests extends RubyCode2CpgFixture {
     literal.lineNumber shouldBe Some(2)
     literal.typeFullName shouldBe "__builtin.Regexp"
   }
+
+  "`/fedora|el-|centos/` is represented by a LITERAL node" in {
+    val cpg = code("""
+        |/fedora|el-|centos/
+        |""".stripMargin)
+
+    val List(literal) = cpg.literal.l
+    literal.code shouldBe "/fedora|el-|centos/"
+    literal.lineNumber shouldBe Some(2)
+    literal.typeFullName shouldBe "__builtin.Regexp"
+  }
 }

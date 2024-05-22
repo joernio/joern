@@ -38,6 +38,7 @@ trait RegexLiteralHandling { this: RubyLexerBase =>
     EQ3,
     CARET,
     LTEQGT,
+    EQGT,
     EQTILDE,
     GT,
     GTEQ,
