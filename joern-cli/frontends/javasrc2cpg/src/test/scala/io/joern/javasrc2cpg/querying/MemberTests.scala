@@ -6,6 +6,39 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Id
 import io.shiftleft.semanticcpg.language._
 
 class NewMemberTests extends JavaSrcCode2CpgFixture {
+  "locals shadowing members" should {
+    val cpg = code("""
+                     |public class Foo {
+                     |  Integer value = 12;
+                     |
+                     |  static void foo() {
+                     |    String value = "Hello";
+                     |    value.trim();
+                     |  }
+                     |}
+                     |""".stripMargin)
+
+    "use the local type for calls" in {
+      cpg.call.name("trim").methodFullName.toList shouldBe List("java.lang.String.trim:java.lang.String()")
+    }
+  }
+
+  "parameters shadowing members" should {
+    val cpg = code("""
+                     |public class Foo {
+                     |  Integer value = 12;
+                     |
+                     |  static void foo(String value) {
+                     |    value.trim();
+                     |  }
+                     |}
+                     |""".stripMargin)
+
+    "use the local type for calls" in {
+      cpg.call.name("trim").methodFullName.toList shouldBe List("java.lang.String.trim:java.lang.String()")
+    }
+  }
+
   "members with anonymous classes" should {
     val cpg = code("""
         |class Foo {
