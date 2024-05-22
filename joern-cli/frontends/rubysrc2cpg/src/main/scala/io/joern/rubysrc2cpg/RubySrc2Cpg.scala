@@ -178,7 +178,7 @@ object RubySrc2Cpg {
         ignoredFilesPath = Option(config.ignoredFiles)
       )
       .map { fileName => () =>
-        resourceManagedParser.parse(fileName) match {
+        resourceManagedParser.parse(File(config.inputPath), fileName) match {
           case Failure(exception) => throw exception
           case Success(ctx)       => new AstCreator(fileName, ctx, projectRoot)(config.schemaValidation)
         }

@@ -37,5 +37,6 @@ object Defines {
     val association     = "<operator>.association"
     val splat           = "<operator>.splat"
     val regexpMatch     = "=~"
+    val regexpNotMatch  = "!~"
   }
 }

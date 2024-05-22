@@ -418,4 +418,24 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
     }
   }
 
+  "implicit return of a heredoc should return a literal" in {
+    val cpg = code("""
+          |def custom_fact_content(key='custom_fact', value='custom_value', *args)
+          | <<-EOM
+          |  Facter.add('#{key}') do
+          |    setcode {'#{value}'}
+          |    #{args.empty? ? '' : args.join('\n')}
+          |  end
+          |   EOM
+          |end
+          |""".stripMargin)
+
+    inside(cpg.method.nameExact("custom_fact_content").methodReturn.toReturn.astChildren.l) {
+      case (heredoc: Literal) :: Nil =>
+        heredoc.typeFullName shouldBe "__builtin.String"
+        heredoc.code should startWith("<<-EOM")
+      case xs => fail(s"Expected a single literal node, instead got [${xs.code.mkString(", ")}]")
+    }
+  }
+
 }
