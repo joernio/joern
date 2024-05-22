@@ -148,4 +148,38 @@ class MethodTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       m.fullName shouldBe "mypkg.doSomething:void(mypkg.Base)"
     }
   }
+
+  "a higher-function defined from a closure" should {
+    val cpg = code("""
+        |class Foo {
+        |    fun Collection<ByteArray>.sorted(): List<ByteArray> = sortedWith { a, b ->
+        |        operator fun ByteArray.compareTo(other: ByteArray): Int {
+        |            var result: Int? = null
+        |            val minSize = kotlin.math.min(this.size, other.size)
+        |            for (index in 0 until minSize) {
+        |                val thisByte = this[index]
+        |                val otherByte = other[index]
+        |                val comparedResult = thisByte.compareTo(otherByte)
+        |                if (comparedResult != 0 && result == null) {
+        |                    result = comparedResult
+        |                }
+        |            }
+        |
+        |            return result ?: this.size.compareTo(other.size)
+        |        }
+        |
+        |        return a.compareTo(b)
+        |    }
+        |}
+        |""".stripMargin)
+
+    "pass the lambda to a `sortedWith` call which is then under the method `sorted`" in {
+      inside(cpg.methodRef(".*<lambda>.*").inCall.l) {
+        case sortedWith :: Nil =>
+          sortedWith.name shouldBe "sortedWith"
+          sortedWith.method.name shouldBe "sorted"
+        case xs => fail(s"Expected a single call with the method reference argument. Instead got [$xs]")
+      }
+    }
+  }
 }

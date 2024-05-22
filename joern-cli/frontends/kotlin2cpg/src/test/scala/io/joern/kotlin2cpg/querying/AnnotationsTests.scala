@@ -605,4 +605,25 @@ class AnnotationsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
     }
   }
+
+  "CPG for code with a custom annotation" should {
+    val cpg = code("""
+        |package mypkg
+        |import retrofit2.http.POST
+        |
+        |interface Username {
+        |    @Headers("Content-Type: application/json")
+        |    @POST("/name")
+        |    fun sendUsername(@Body username: UserDto): Call<Void>
+        |}
+        |""".stripMargin)
+
+    "contain an ANNOTATION node" in {
+      cpg.all.collectAll[Annotation].codeExact("@POST(\"/name\")").size shouldBe 1
+    }
+
+    "the ANNOTATION node should have correct full name" in {
+      cpg.all.collectAll[Annotation].codeExact("@POST(\"/name\")").fullName.head shouldBe "retrofit2.http.POST"
+    }
+  }
 }

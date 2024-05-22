@@ -178,4 +178,113 @@ class ImportTests extends RubyCode2CpgFixture with Inspectors {
       }
     }
   }
+
+  "`require_all` on a directory" should {
+    val cpg = code("""
+        |require_all './dir'
+        |Module1.foo
+        |Module2.foo
+        |""".stripMargin)
+      .moreCode(
+        """
+        |module Module1
+        | def foo
+        | end
+        |end
+        |""".stripMargin,
+        "dir/module1.rb"
+      )
+      .moreCode(
+        """
+        |module Module2
+        | def foo
+        | end
+        |end
+        |""".stripMargin,
+        "dir/module2.rb"
+      )
+
+    "allow the resolution for all modules in that directory" in {
+      cpg.call("foo").methodFullName.l shouldBe List(
+        "dir/module1.rb:<global>::program.Module1:foo",
+        "dir/module2.rb:<global>::program.Module2:foo"
+      )
+    }
+  }
+
+  "`require_all`, `require_relative`, and `load`" should {
+    val cpg = code("""
+        |require_all './dir'
+        |require_relative '../foo'
+        |load 'pp'
+        |""".stripMargin)
+
+    "also create import nodes" in {
+      inside(cpg.imports.l) {
+        case requireAll :: requireRelative :: load :: Nil =>
+          requireAll.importedAs shouldBe Option("./dir")
+          requireAll.isWildcard shouldBe Option(true)
+          requireRelative.importedAs shouldBe Option("../foo")
+          load.importedAs shouldBe Option("pp")
+        case xs => fail(s"Expected two imports, got [${xs.code.mkString(",")}] instead")
+      }
+    }
+  }
+
+  "Modifying `$LOADER` with an additional entry" should {
+    val cpg = code(
+      """
+        |lib_dir = File.expand_path('lib', __dir__)
+        |src_dir = File.expand_path('src', File.dirname(__FILE__))
+        |
+        |$LOADER << lib_dir unless $LOADER.include?(lib_dir)
+        |$LOAD_PATH.unshift(src_dir) unless $LOAD_PATH.include?(src_dir)
+        |
+        |require 'file1'
+        |require 'file2'
+        |require 'file3'
+        |
+        |File1::foo # lib/file1.rb::program:foo
+        |File2::foo # lib/file2.rb::program:foo
+        |File3::foo # src/file3.rb::program:foo
+        |""".stripMargin,
+      "main.rb"
+    ).moreCode(
+      """
+        |module File1
+        | def self.foo
+        | end
+        |end
+        |""".stripMargin,
+      "lib/file1.rb"
+    ).moreCode(
+      """
+        |module File2
+        | def self.foo
+        | end
+        |end
+        |""".stripMargin,
+      "lib/file2.rb"
+    ).moreCode(
+      """
+        |module File3
+        | def self.foo
+        | end
+        |end
+        |""".stripMargin,
+      "src/file3.rb"
+    )
+
+    // TODO: This works because of an over-approximation of the type resolver assuming that classes may have been
+    //  implicitly loaded elsewhere
+    "resolve the calls directly" in {
+      inside(cpg.call.name("foo.*").l) {
+        case foo1 :: foo2 :: foo3 :: Nil =>
+          foo1.methodFullName shouldBe "lib/file1.rb:<global>::program.File1:foo"
+          foo2.methodFullName shouldBe "lib/file2.rb:<global>::program.File2:foo"
+          foo3.methodFullName shouldBe "src/file3.rb:<global>::program.File3:foo"
+        case xs => fail(s"Expected 3 calls, got [${xs.code.mkString(",")}] instead")
+      }
+    }
+  }
 }

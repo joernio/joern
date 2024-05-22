@@ -90,22 +90,22 @@ object GradleDependencies {
        |""".stripMargin
   }
 
-  // this init script _should_ work with Gradle 4-8, but has not been tested thoroughly
+  // this init script _should_ work with Gradle >=4, but has not been tested thoroughly
   // TODO: add test cases for older Gradle versions
   private def gradle5OrLaterInitScript(
     taskName: String,
     destination: String,
     gradleConfigurationName: String
   ): String = {
+    val into = destination.replaceAll("\\\\", "/")
+    val fromConfigurations =
+      Set(s"from configurations.$gradleConfigurationName", "from configurations.runtimeClasspath").mkString("\n")
     s"""
      |allprojects {
      |  apply plugin: 'java'
      |  task $taskName(type: Copy) {
-     |    configurations.$gradleConfigurationName.setCanBeResolved(true)
-     |    configurations.implementation.setCanBeResolved(true)
-     |    configurations.default.setCanBeResolved(true)
-     |    into "${destination.replaceAll("\\\\", "/")}"
-     |    from configurations.default
+     |    $fromConfigurations
+     |    into "$into"
      |  }
      |}
      |""".stripMargin

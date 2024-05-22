@@ -575,27 +575,32 @@ class ClassTests extends RubyCode2CpgFixture {
   "Bodies that aren't StatementList" should {
     val cpg = code("""
         |  class EventWebhook
-        |    # * *Args* :
-        |    #   - +public_key+ -> elliptic curve public key
-        |    #   - +payload+ -> event payload in the request body
-        |    #   - +signature+ -> signature value obtained from the 'X-Twilio-Email-Event-Webhook-Signature' header
-        |    #   - +timestamp+ -> timestamp value obtained from the 'X-Twilio-Email-Event-Webhook-Timestamp' header
+        |    ERRORS = [CustomErrorA, CustomErrorB]
+        |
         |    def verify_signature(public_key, payload, signature, timestamp)
         |      verify_engine
-        |      timestamped_playload = "#{timestamp}#{payload}"
-        |      payload_digest = Digest::SHA256.digest(timestamped_playload)
+        |      timestamped_payload = "#{timestamp}#{payload}"
+        |      payload_digest = Digest::SHA256.digest(timestamped_payload)
         |      decoded_signature = Base64.decode64(signature)
         |      public_key.dsa_verify_asn1(payload_digest, decoded_signature)
-        |    rescue StandardError
+        |    rescue *ERRORS => splat_errors
+        |      false
+        |    rescue StandardError => some_variable
         |      false
         |    end
         |  end
         |""".stripMargin)
-    "not throw an execption" in {
-      inside(cpg.method.name("verify_signature").l) {
-        case verifySigMethod :: Nil => // Passing case
-        case _                      => fail("Expected method for verify_sginature")
-      }
+
+    "successfully parse and create the method" in {
+      cpg.method.nameExact("verify_signature").nonEmpty shouldBe true
+    }
+
+    "create the `StandardError` local variable" in {
+      cpg.local.nameExact("some_variable").dynamicTypeHintFullName.toList shouldBe List("__builtin.StandardError")
+    }
+
+    "create the splatted error local variable" in {
+      cpg.local.nameExact("splat_errors").size shouldBe 1
     }
   }
 

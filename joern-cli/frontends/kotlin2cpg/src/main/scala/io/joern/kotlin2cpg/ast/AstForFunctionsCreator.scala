@@ -351,7 +351,13 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     val returnTypeFullName     = registerType(typeInfoProvider.returnTypeFullName(expr))
     val lambdaTypeDeclFullName = fullName.split(":").head
 
-    val bodyAst = bodyAsts.headOption.getOrElse(Ast(unknownNode(expr, Constants.empty)))
+    val (bodyAst, nestedLambdaDecls) = bodyAsts.toList match {
+      case body :: nestedLambdaDecls =>
+        if (nestedLambdaDecls.exists(_.root.exists(x => !x.isInstanceOf[NewMethod])))
+          logger.warn("Detected non-method related AST nodes under lambda expression. This is unexpected.")
+        body -> nestedLambdaDecls
+      case Nil => Ast(unknownNode(expr, Constants.empty)) -> Nil
+    }
     val lambdaMethodAst = methodAst(
       lambdaMethodNode,
       parametersAsts,
@@ -385,6 +391,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     closureBindingDefs.foreach(closureBindingDefQueue.prepend)
     lambdaBindingInfoQueue.prepend(bindingInfo)
     lambdaAstQueue.prepend(lambdaMethodAst)
+    nestedLambdaDecls.foreach(lambdaAstQueue.prepend)
     Ast(_methodRefNode)
       .withChildren(annotations.map(astForAnnotationEntry))
   }
