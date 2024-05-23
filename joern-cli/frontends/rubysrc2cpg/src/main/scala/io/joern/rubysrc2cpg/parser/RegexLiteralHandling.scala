@@ -78,10 +78,8 @@ trait RegexLiteralHandling { this: RubyLexerBase =>
 
   private def isControlStructureStart: Boolean = {
     previousNonWsTokenTypeOrEOF() == IF
-    // TODO: Determine which of the below control structures are also valid for regex use
-//      || previousNonWsTokenTypeOrEOF() == UNLESS
-//      || previousNonWsTokenTypeOrEOF() == UNTIL || previousNonWsTokenTypeOrEOF() == YIELD
-//      || previousNonWsTokenTypeOrEOF() == BEGIN || previousNonWsTokenTypeOrEOF() == CASE
-//      || previousNonWsTokenTypeOrEOF() == WHILE || previousNonWsTokenTypeOrEOF() == FOR
+    || previousNonWsTokenTypeOrEOF() == UNLESS
+    || previousNonWsTokenTypeOrEOF() == UNTIL || previousNonWsTokenTypeOrEOF() == YIELD
+    || previousNonWsTokenTypeOrEOF() == WHILE
   }
 }
