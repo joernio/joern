@@ -2,6 +2,7 @@ package io.joern.php2cpg.passes
 
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.passes.frontend.*
+import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, PropertyNames}
@@ -249,9 +250,22 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
   }
 
   override protected def methodReturnValues(methodFullNames: Seq[String]): Set[String] = {
+    // Check inheritance for resolved method full name patterns
+    val fullNames = {
+      val foundMethodFullNames = methodFullNames.flatMap {
+        case s"${typeFullName}->${methodName}" =>
+          val targetTypes = cpg.typeDecl.fullNameExact(typeFullName).l
+          val transtypes  = targetTypes.baseTypeDeclTransitive.l
+          val methods     = transtypes.method.nameExact(methodName).l
+          methods.fullName.toSet
+        case _ => Set.empty
+      }
+      if foundMethodFullNames.nonEmpty then foundMethodFullNames else methodFullNames
+    }
+
     /* Look up methods in existing CPG */
     val rs = cpg.method
-      .fullNameExact(methodFullNames*)
+      .fullNameExact(fullNames*)
       .methodReturn
       .flatMap(mr => mr.typeFullName +: mr.dynamicTypeHintFullName)
       .filterNot(_ == "ANY")
@@ -260,7 +274,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
       .toSet
     if (rs.isEmpty)
       /* Return dummy return type if not found */
-      methodFullNames
+      fullNames
         .flatMap(m => Set(m.concat(s"$pathSep${XTypeRecovery.DummyReturnType}")))
         .toSet
     else rs
@@ -270,31 +284,34 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
    *
    * TODO: Are there methods / instances where this doesn't work? Static methods?
    * TODO: What if the first parameter could take multiple types?
-   * TODO: Test on nested dynamic calls, e.g. foo->bar->baz()
    */
-  protected def visitUnresolvedDynamicCall(c: Call): Unit = {
+  private def visitUnresolvedDynamicCall(c: Call): Unit = {
+
+    def setFromKnownTypes(i: CfgNode): Unit = {
+      i.getKnownTypes.l match {
+        case t :: Nil =>
+          val newFullName = t + "->" + c.name
+          builder.setNodeProperty(c, PropertyNames.METHOD_FULL_NAME, newFullName)
+          builder.setNodeProperty(
+            c,
+            PropertyNames.TYPE_FULL_NAME,
+            s"$newFullName$pathSep${XTypeRecovery.DummyReturnType}"
+          )
+          builder.setNodeProperty(c, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty)
+        case _ =>
+        /* TODO: case where multiple possible types are identified */
+
+      }
+    }
 
     if (c.argument.exists(_.argumentIndex == 0)) {
       c.argument(0) match {
-        case p: Identifier =>
-          val ts = (p.typeFullName +: p.dynamicTypeHintFullName)
-            .filterNot(_ == "ANY")
-            .distinct
-            .l
-          ts match {
-            case Nil =>
-            case t :: Nil =>
-              val newFullName = t + "->" + c.name
-              builder.setNodeProperty(c, PropertyNames.METHOD_FULL_NAME, newFullName)
-              builder.setNodeProperty(
-                c,
-                PropertyNames.TYPE_FULL_NAME,
-                s"$newFullName$pathSep${XTypeRecovery.DummyReturnType}"
-              )
-              builder.setNodeProperty(c, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty)
-            case _ => { /* TODO: case where multiple possible types are identified */ }
-          }
-        case _ =>
+        case rc: Call
+            if rc.methodFullName.startsWith("<operator") || rc.methodFullName.startsWith(Defines.UnresolvedNamespace) =>
+        // ignore calls with callees that are unknown
+        case p: Identifier => setFromKnownTypes(p)
+        case rc: Call      => setFromKnownTypes(rc)
+        case _             =>
       }
     }
   }

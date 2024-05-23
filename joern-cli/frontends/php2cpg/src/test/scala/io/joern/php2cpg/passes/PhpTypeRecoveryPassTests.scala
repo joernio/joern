@@ -453,7 +453,7 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture() {
         |
         |declare(strict_types=1);
         |
-        |namespace Customer\Marketplace\Core\Repository;
+        |namespace Some\Repository;
         |
         |use Doctrine\ORM\EntityManagerInterface;
         |use Doctrine\ORM\EntityRepository;
@@ -522,20 +522,28 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture() {
       }
     }
 
-    "propagate this QueryBuilder type to the identifier assigned to the inherited call for the wrapped `createQueryBuilder`" ignore {
+    "propagate this QueryBuilder type to the identifier assigned to the inherited call for the wrapped `createQueryBuilder`" in {
       cpg.method
         .nameExact("findSomething")
         ._containsOut
         .collectAll[Identifier]
         .nameExact("queryBuilder")
         .typeFullName
-        .head shouldBe "Doctrine\\ORM\\EntityManagerInterface->createQueryBuilder-><returnValue>->select-><returnValue>->from-><returnValue>"
+        .head shouldBe "Doctrine\\ORM\\QueryBuilder"
     }
 
-    "resolve the correct full name a call based on the QueryBuilder return value" ignore {
+    "resolve the correct full name for `leftJoin` based on the QueryBuilder return value" in {
+      inside(cpg.call.nameExact("leftJoin").l) {
+        case setParamCall :: Nil =>
+          setParamCall.methodFullName shouldBe "Doctrine\\ORM\\QueryBuilder->leftJoin"
+        case xs => fail(s"Expected one call, instead got [$xs]")
+      }
+    }
+
+    "resolve the correct full name for `setParameter` based on the QueryBuilder return value" in {
       inside(cpg.call.nameExact("setParameter").l) {
         case setParamCall :: Nil =>
-          setParamCall.methodFullName shouldBe "Doctrine\\ORM\\EntityManagerInterface->createQueryBuilder-><returnValue>->leftJoin-><returnValue>->setParameter-><returnValue>"
+          setParamCall.methodFullName shouldBe "Doctrine\\ORM\\QueryBuilder->leftJoin-><returnValue>->setParameter"
         case xs => fail(s"Expected one call, instead got [$xs]")
       }
     }
