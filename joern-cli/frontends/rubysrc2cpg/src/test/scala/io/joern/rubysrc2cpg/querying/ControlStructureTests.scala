@@ -298,6 +298,17 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     putsHi.lineNumber shouldBe Some(2)
   }
 
+  "rescue nil is represented by a TRY CONTROL_STRUCTURE node" in {
+    val cpg = code("""
+                     |def test1
+                     |  @dev.close rescue nil
+                     |end
+                     |""".stripMargin)
+    val List(rescueNode) = cpg.method("test1").tryBlock.l
+    rescueNode.controlStructureType shouldBe ControlStructureTypes.TRY
+    val List(body, rescueBody, implicitReturnBody) = rescueNode.astChildren.l
+  }
+
   "`begin ... rescue ... end is represented by a `TRY` CONTROL_STRUCTURE node" in {
     val cpg = code("""
         |def test1

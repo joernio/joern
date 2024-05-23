@@ -506,6 +506,7 @@ definedMethodName
     |   EQ2
     |   EQ3
     |   LTEQGT
+    |   LT2
     ;
 
 methodParameterPart
