@@ -128,8 +128,16 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
         val condition = visit(ctx.expressionOrCommand())
         val body      = visit(ctx.statement())
         DoWhileExpression(condition, body)(ctx.toTextSpan)
+      case "rescue" =>
+        val body       = visit(ctx.statement())
+        val thenClause = visit(ctx.expressionOrCommand())
+        val rescueClause =
+          RescueClause(Option.empty, Option.empty, thenClause)(ctx.toTextSpan)
+        val rescExp =
+          RescueExpression(body, List(rescueClause), Option.empty, Option.empty)(ctx.toTextSpan)
+        rescExp
       case _ =>
-        logger.warn(s"Unhandled modifier statement ${ctx.getClass}")
+        logger.warn(s"Unhandled modifier statement ${ctx.getClass} ${ctx.toTextSpan} ")
         Unknown()(ctx.toTextSpan)
   }
 

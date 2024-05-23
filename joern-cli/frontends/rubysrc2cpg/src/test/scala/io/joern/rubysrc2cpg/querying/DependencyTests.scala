@@ -129,6 +129,25 @@ class DownloadDependencyTest extends RubyCode2CpgFixture(downloadDependencies = 
     }
   }
 
+  "parsing logger repo" should {
+    val cpg = code(
+      """
+        |require "logger"
+        |""".stripMargin,
+      "main.rb"
+    )
+      .moreCode(
+        """
+          |source 'https://rubygems.org'
+          |gem 'logger'
+          |
+          |""".stripMargin,
+        "Gemfile"
+      )
+
+    "Not throw any exceptions" in {}
+  }
+
 }
 
 object DependencyTests {

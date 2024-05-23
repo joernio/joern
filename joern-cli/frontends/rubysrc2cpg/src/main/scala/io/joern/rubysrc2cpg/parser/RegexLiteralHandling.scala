@@ -69,10 +69,17 @@ trait RegexLiteralHandling { this: RubyLexerBase =>
     * may not start with a WS. E.g. `puts /x/` is valid, but `puts / x/` is not.
     */
   private def isInCommandArgumentPosition: Boolean = {
-    val previousNonWsIsIdentifier = previousNonWsTokenTypeOrEOF() == LOCAL_VARIABLE_IDENTIFIER
-    val previousIsWs              = previousTokenTypeOrEOF() == WS
-    val nextCharIsWs              = _input.LA(1) == ' '
+    val previousNonWsIsIdentifier =
+      previousNonWsTokenTypeOrEOF() == LOCAL_VARIABLE_IDENTIFIER || isControlStructureStart
+    val previousIsWs = previousTokenTypeOrEOF() == WS
+    val nextCharIsWs = _input.LA(1) == ' '
     previousNonWsIsIdentifier && previousIsWs && !nextCharIsWs
   }
 
+  private def isControlStructureStart: Boolean = {
+    previousNonWsTokenTypeOrEOF() == IF
+    || previousNonWsTokenTypeOrEOF() == UNLESS
+    || previousNonWsTokenTypeOrEOF() == UNTIL || previousNonWsTokenTypeOrEOF() == YIELD
+    || previousNonWsTokenTypeOrEOF() == WHILE
+  }
 }
