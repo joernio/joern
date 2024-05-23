@@ -20,7 +20,7 @@ class DumpCfg(options: CfgDumpOptions) extends LayerCreator {
   override val description: String       = DumpCfg.description
   override val storeOverlayName: Boolean = false
 
-  override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
+  override def create(context: LayerCreatorContext): Unit = {
     val cpg = context.cpg
     cpg.method.zipWithIndex.foreach { case (method, i) =>
       val str = method.dotCfg.head

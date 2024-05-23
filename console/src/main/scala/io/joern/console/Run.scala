@@ -15,14 +15,14 @@ object Run {
       override val overlayName: String = "custom"
       override val description: String = "A custom pass"
 
-      override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
+      override def create(context: LayerCreatorContext): Unit = {
         val pass: CpgPass = new CpgPass(console.cpg) {
           override val name = "custom"
           override def run(builder: DiffGraphBuilder): Unit = {
             query.store()(builder)
           }
         }
-        runPass(pass, context, storeUndoInfo)
+        runPass(pass, context)
       }
     })
   }
