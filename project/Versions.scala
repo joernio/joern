@@ -27,7 +27,7 @@ object Versions {
   val requests               = "0.8.0"
   val scalaParallel          = "1.0.4"
   val scalaParserCombinators = "2.4.0"
-  val scalaReplPP            = "0.1.85"
+  val scalaReplPP            = "0.1.87"
   val scalatest              = "3.2.18"
   val scopt                  = "4.1.0"
   val semverParser           = "0.0.6"
