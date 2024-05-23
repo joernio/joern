@@ -94,7 +94,8 @@ class PhpDownloadDependenciesTest extends PhpCode2CpgFixture() {
       """
         |{
         |    "require": {
-        |        "doctrine/cache": "abc/XY-1234/def"
+        |        "doctrine/cache": "abc/XY-1234/def",
+        |        "doctrine/orm": "dev-main#8adb"
         |    }
         |}
         |""".stripMargin,
@@ -103,6 +104,7 @@ class PhpDownloadDependenciesTest extends PhpCode2CpgFixture() {
 
     "resolve and still get all namespaces" in {
       cpg.typ.fullName.count(_.startsWith("Doctrine\\Common\\Cache\\")) should be > 0
+      cpg.typ.fullName.count(_.startsWith("Doctrine\\ORM\\")) should be > 0
     }
 
   }
