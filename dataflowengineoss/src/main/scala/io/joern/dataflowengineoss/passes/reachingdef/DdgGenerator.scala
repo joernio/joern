@@ -192,7 +192,7 @@ class DdgGenerator(semantics: Semantics) {
       // See PR #3735 on Joern for details
       val globalIdentifiers =
         (method.callViaContainsOut ++ method.returnViaContainsOut).ast.isLiteral
-          .flatMap(globalFromLiteral)
+          .flatMap(globalFromLiteral(_))
           .collectAll[Identifier]
           .l
       globalIdentifiers
