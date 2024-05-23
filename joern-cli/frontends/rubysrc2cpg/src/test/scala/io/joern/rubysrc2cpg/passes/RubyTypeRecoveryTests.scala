@@ -19,6 +19,7 @@ object RubyTypeRecoveryTests {
       |
       |gem "sendgrid-ruby"
       |gem "dummy_logger"
+      |gem "stripe"
       |""".stripMargin
 }
 
@@ -154,13 +155,13 @@ class RubyTypeRecoveryTests
   }
 
   "Type information for nodes with external dependency" should {
-
     val cpg = code(
       """
         |require "sendgrid-ruby"
         |
         |def func
         |   sg = SendGrid::API.new(api_key: ENV['SENDGRID_API_KEY'])
+        |   sg2 = SendGrid::MailSettingsDto.fetch
         |   response = sg.client.mail._('send').post(request_body: data)
         |end
         |""".stripMargin,
@@ -168,9 +169,8 @@ class RubyTypeRecoveryTests
     )
       .moreCode(RubyTypeRecoveryTests.GEMFILE, "Gemfile")
 
-    cpg.method.name("func").dotAst.l.foreach(println)
-
     "be present in (Case 1)" in {
+      println(cpg.identifier("sg2").foreach(x => println(x.typeFullName)))
       cpg.identifier("sg").lineNumber(5).typeFullName.l shouldBe List(
         "sendgrid/sendgrid.rb:<global>::program.SendGrid.API"
       )
@@ -184,15 +184,16 @@ class RubyTypeRecoveryTests
     }
   }
 
-  "recovering module members across modules" ignore {
-    lazy val cpg = code(
+  // TODO: Handle . versus :: Syntax needs to be resolved first
+  "Type information for module members across modules" ignore {
+    val cpg = code(
       """
-        |require "dbi"
+        |# require "dbi"
         |
         |module FooModule
         | x = 1
         | y = "test"
-        | db = DBI.connect("DBI:Mysql:TESTDB:localhost", "testuser", "test123")
+        | # db = DBI.connect("DBI:Mysql:TESTDB:localhost", "testuser", "test123")
         |end
         |
         |""".stripMargin,
@@ -204,9 +205,9 @@ class RubyTypeRecoveryTests
         |z = FooModule::x
         |z = FooModule::y
         |
-        |d = FooModule::db
+        |# d = FooModule::db
         |
-        |row = d.select_one("SELECT VERSION()")
+        |# row = d.select_one("SELECT VERSION()")
         |
         |""".stripMargin,
       "bar.rb"
@@ -219,7 +220,7 @@ class RubyTypeRecoveryTests
       y.typeFullName shouldBe "__builtin.String"
     }
 
-    "resolve 'FooModule.x' and 'FooModule.y' field access primitive types correctly" ignore {
+    "resolve 'FooModule.x' and 'FooModule.y' field access primitive types correctly" in {
       val List(z1, z2) = cpg.file
         .name(".*bar.*")
         .ast
@@ -290,17 +291,21 @@ class RubyTypeRecoveryTests
     }
   }
 
-  "assignment from a call to a identifier inside an imported module using methodCall" ignore {
-    lazy val cpg = code("""
+  "assignment from a call to a identifier inside an imported module using methodCall" should {
+    lazy val cpg = code(
+      """
                           |require 'stripe'
                           |
                           |customer = Stripe::Customer.create
                           |
-                          |""".stripMargin).cpg
+                          |""".stripMargin,
+      "main.rb"
+    )
+      .moreCode(RubyTypeRecoveryTests.GEMFILE, "Gemfile")
 
     "resolved the type of call" in {
       val Some(create) = cpg.call("create").headOption: @unchecked
-      create.methodFullName shouldBe "stripe::program.Stripe.Customer.create"
+      create.methodFullName shouldBe "stripe.rb:<global>::program.Stripe:create"
     }
 
     "resolved the type of identifier" in {
