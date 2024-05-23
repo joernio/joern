@@ -31,9 +31,31 @@ swift build
 
 ## Running
 
-Required runtime dependencies:
+### Required Runtime Dependencies:
  - Java runtime >= 11
- - `glibc` >= 2.34 (for swiftastgen); or `swift` 5.9 directly which brings in all required dependencies anyway.
+ - `glibc` >= 2.34 (for swiftastgen); or `swift` [5.10](https://www.swift.org/download/) directly which brings in all required dependencies anyway.
+
+### Manual Installation for Swift via Tarball (e.g., for Ubuntu 20.04)
+ - ```
+   $ apt-get install \
+          binutils \
+          git \
+          gnupg2 \
+          libc6-dev \
+          libcurl4 \
+          libedit2 \
+          libgcc-9-dev \
+          libpython2.7 \
+          libsqlite3-0 \
+          libstdc++-9-dev \
+          libxml2 \
+          libz3-dev \
+          pkg-config \
+          tzdata \
+          uuid-dev \
+          zlib1g-dev
+   ```
+ - and follow the steps in https://www.swift.org/install/linux/#installation-via-tarball
 
 To produce a code property graph issue the command:
 ```shell script
@@ -52,7 +74,3 @@ Run the following to see a complete list of available options:
 ```shell script
 ./swiftsrc2cpg.sh --help
 ```
-
-## Warning
-
-This is work in progress.

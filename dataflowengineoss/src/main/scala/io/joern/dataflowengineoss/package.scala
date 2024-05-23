@@ -5,9 +5,19 @@ import io.shiftleft.semanticcpg.language.*
 
 package object dataflowengineoss {
 
-  def globalFromLiteral(lit: Literal): Iterator[Expression] = lit.start.inCall.assignment
+  /** Returns the target of an assignment involving [[lit]], if the assignment is found inside a module method.
+    *
+    * @param lit
+    *   the literal to appear on the RHS of the assignment
+    * @param recursive
+    *   should [[lit]] be the sole RHS (false) or can it be an arbitrarily nested sub-expression (true)
+    * @return
+    *   the LHS of the assignment
+    */
+  def globalFromLiteral(lit: Literal, recursive: Boolean = true): Iterator[Expression] = lit.start
     .where(_.method.isModule)
-    .argument(1)
+    .flatMap(t => if (recursive) t.inAssignment else t.inCall.assignment)
+    .target
 
   def identifierToFirstUsages(node: Identifier): List[Identifier] = node.refsTo.flatMap(identifiersFromCapturedScopes).l
 

@@ -1,19 +1,22 @@
 package io.joern.rubysrc2cpg.parser
 
+import better.files.File
 import org.antlr.v4.runtime.*
 import org.antlr.v4.runtime.atn.{ATN, ATNConfigSet}
 import org.antlr.v4.runtime.dfa.DFA
 import org.slf4j.LoggerFactory
-
+import java.io.File.separator
 import java.util
 import scala.collection.mutable.ListBuffer
 import scala.util.Try
 
 /** A consumable wrapper for the RubyParser class used to parse the given file and be disposed thereafter.
+  * @param inputDir
+  *   the directory of the target to parse.
   * @param filename
   *   the file path to the file to be parsed.
   */
-class AntlrParser(filename: String) {
+class AntlrParser(inputDir: File, filename: String) {
 
   private val charStream  = CharStreams.fromFileName(filename)
   private val lexer       = new RubyLexer(charStream)
@@ -32,7 +35,8 @@ class AntlrParser(filename: String) {
         msg: String,
         e: RecognitionException
       ): Unit = {
-        val errorMessage = s"Syntax error on $filename:$line:$charPositionInLine"
+        val errorMessage =
+          s"Syntax error on ${filename.stripPrefix(s"${inputDir.pathAsString}$separator")}:$line:$charPositionInLine"
         errors.append(errorMessage)
       }
 
@@ -85,8 +89,9 @@ class ResourceManagedParser(clearLimit: Double) extends AutoCloseable {
   private var maybeDecisionToDFA: Option[Array[DFA]] = None
   private var maybeAtn: Option[ATN]                  = None
 
-  def parse(filename: String): Try[RubyParser.ProgramContext] = {
-    val antlrParser = AntlrParser(filename)
+  def parse(inputFile: File, filename: String): Try[RubyParser.ProgramContext] = {
+    val inputDir    = if inputFile.isDirectory then inputFile else inputFile.parent
+    val antlrParser = AntlrParser(inputDir, filename)
     val interp      = antlrParser.parser.getInterpreter
     // We need to grab a live instance in order to get the static variables as they are protected from static access
     maybeDecisionToDFA = Option(interp.decisionToDFA)
