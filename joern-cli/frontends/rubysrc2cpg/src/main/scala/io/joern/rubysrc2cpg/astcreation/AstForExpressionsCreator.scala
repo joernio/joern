@@ -43,6 +43,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case node: IfExpression             => astForIfExpression(node)
     case node: UnlessExpression         => astForUnlessExpression(node)
     case node: RescueExpression         => astForRescueExpression(node)
+    case node: CaseExpression           => blockAst(NewBlock(), astsForCaseExpression(node).toList)
     case node: MandatoryParameter       => astForMandatoryParameter(node)
     case node: SplattingRubyNode        => astForSplattingRubyNode(node)
     case node: AnonymousTypeDeclaration => astForAnonymousTypeDeclaration(node)
@@ -52,7 +53,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case node: BreakStatement           => astForBreakStatement(node)
     case node: StatementList            => astForStatementList(node)
     case node: DummyNode                => Ast(node.node)
-    case _                              => astForUnknown(node)
+    case node: Unknown                  => astForUnknown(node)
+    case x =>
+      logger.warn(s"Unhandled expression of type ${x.getClass.getSimpleName}")
+      astForUnknown(node)
 
   protected def astForStaticLiteral(node: StaticLiteral): Ast = {
     Ast(literalNode(node, code(node), node.typeFullName))
@@ -117,10 +121,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   protected def astForBinary(node: BinaryExpression): Ast = {
     getBinaryOperatorName(node.op) match
       case None =>
-        logger.warn(s"Unrecognized binary operator: ${code(node)} ($relativeFileName), skipping")
-        astForUnknown(node)
-      case Some("=~") =>
-        astForMemberCall(MemberCall(node.lhs, ".", "=~", List(node.rhs))(node.span))
+        logger.debug(s"Unrecognized binary operator: ${code(node)} ($relativeFileName), assuming method call")
+        astForMemberCall(MemberCall(node.lhs, ".", node.op, List(node.rhs))(node.span))
       case Some(op) =>
         val lhsAst = astForExpression(node.lhs)
         val rhsAst = astForExpression(node.rhs)
@@ -639,7 +641,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   protected def astForUnknown(node: RubyNode): Ast = {
     val className = node.getClass.getSimpleName
     val text      = code(node)
-    logger.warn(s"Could not represent expression: $text ($className) ($relativeFileName), skipping")
+    node match {
+      case _: Unknown => // Unknowns are syntax errors which are logged by the parser already
+      case _ => logger.warn(s"Could not represent expression: $text ($className) ($relativeFileName), skipping")
+    }
     Ast(unknownNode(node, text))
   }
 

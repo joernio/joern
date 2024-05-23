@@ -354,8 +354,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     if (ctx.isStatic) {
       StaticLiteral(getBuiltInType(Defines.Regexp))(ctx.toTextSpan)
     } else {
-      logger.warn(s"Unhandled regular expression literal '${ctx.toTextSpan}'")
-      Unknown()(ctx.toTextSpan)
+      DynamicLiteral(getBuiltInType(Defines.Regexp), ctx.interpolations.map(visit))(ctx.toTextSpan)
     }
   }
 

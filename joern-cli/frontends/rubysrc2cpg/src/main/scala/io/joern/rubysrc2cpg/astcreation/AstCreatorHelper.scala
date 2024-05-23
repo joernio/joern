@@ -131,8 +131,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       "|"   -> Operators.or,
       "^"   -> Operators.xor,
       "<<"  -> Operators.shiftLeft,
-      ">>"  -> Operators.logicalShiftRight,
-      "=~"  -> RubyOperators.regexpMatch
+      ">>"  -> Operators.logicalShiftRight
     )
 
   protected val AssignmentOperatorNames: Map[String, String] = Map(
