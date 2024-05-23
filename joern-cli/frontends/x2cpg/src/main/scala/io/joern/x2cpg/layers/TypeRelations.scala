@@ -19,10 +19,10 @@ class TypeRelations extends LayerCreator {
   override val description: String     = TypeRelations.description
   override val dependsOn: List[String] = List(Base.overlayName)
 
-  override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
+  override def create(context: LayerCreatorContext): Unit = {
     val cpg = context.cpg
     TypeRelations.passes(cpg).zipWithIndex.foreach { case (pass, index) =>
-      runPass(pass, context, storeUndoInfo, index)
+      runPass(pass, context, index)
     }
   }
 

@@ -20,7 +20,7 @@ abstract class LayerCreator {
     */
   protected val storeOverlayName: Boolean = true
 
-  def run(context: LayerCreatorContext, storeUndoInfo: Boolean = false): Unit = {
+  def run(context: LayerCreatorContext): Unit = {
     val appliedOverlays = Overlays.appliedOverlays(context.cpg).toSet
     if (!dependsOn.toSet.subsetOf(appliedOverlays)) {
       logger.warn(
@@ -29,7 +29,7 @@ abstract class LayerCreator {
     } else if (appliedOverlays.contains(overlayName)) {
       logger.warn(s"The overlay $overlayName already exists - skipping creation")
     } else {
-      create(context, storeUndoInfo)
+      create(context)
       if (storeOverlayName) {
         Overlays.appendOverlayName(context.cpg, overlayName)
       }
@@ -43,18 +43,13 @@ abstract class LayerCreator {
     }
   }
 
-  protected def runPass(
-    pass: CpgPassBase,
-    context: LayerCreatorContext,
-    storeUndoInfo: Boolean,
-    index: Int = 0
-  ): Unit = {
+  protected def runPass(pass: CpgPassBase, context: LayerCreatorContext, index: Int = 0): Unit = {
     val serializedCpg = initSerializedCpg(context.outputDir, pass.name, index)
-    pass.createApplySerializeAndStore(serializedCpg, inverse = storeUndoInfo)
+    pass.createApplySerializeAndStore(serializedCpg)
     serializedCpg.close()
   }
 
-  def create(context: LayerCreatorContext, storeUndoInfo: Boolean = false): Unit
+  def create(context: LayerCreatorContext): Unit
 
 }
 

@@ -30,10 +30,10 @@ class ControlFlow extends LayerCreator {
   override val description: String     = ControlFlow.description
   override val dependsOn: List[String] = List(Base.overlayName)
 
-  override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
+  override def create(context: LayerCreatorContext): Unit = {
     val cpg = context.cpg
     ControlFlow.passes(cpg).zipWithIndex.foreach { case (pass, index) =>
-      runPass(pass, context, storeUndoInfo, index)
+      runPass(pass, context, index)
     }
   }
 

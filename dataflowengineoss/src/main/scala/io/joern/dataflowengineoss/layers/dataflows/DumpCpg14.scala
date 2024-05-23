@@ -23,7 +23,7 @@ class DumpCpg14(options: Cpg14DumpOptions)(implicit semantics: Semantics = Defau
   override val description: String       = DumpDdg.description
   override val storeOverlayName: Boolean = false
 
-  override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
+  override def create(context: LayerCreatorContext): Unit = {
     val cpg = context.cpg
     cpg.method.zipWithIndex.foreach { case (method, i) =>
       val str = method.dotCpg14.head

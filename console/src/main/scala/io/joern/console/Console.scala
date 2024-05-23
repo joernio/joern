@@ -442,7 +442,7 @@ class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.cur
 
   protected def runCreator(creator: LayerCreator, overlayDirName: Option[String]): Unit = {
     val context = new LayerCreatorContext(cpg, overlayDirName)
-    creator.run(context, storeUndoInfo = true)
+    creator.run(context)
   }
 
   // We still tie the project name to the input path here
