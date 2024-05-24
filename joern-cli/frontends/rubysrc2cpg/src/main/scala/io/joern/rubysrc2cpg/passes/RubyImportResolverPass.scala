@@ -27,12 +27,7 @@ class RubyImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
   }
 
   private def resolveEntities(expEntity: String, importCall: Call, fileName: String): Set[EvaluatedImport] = {
-    // TODO
-    /* Currently we are considering only case where exposed module are Classes,
-    and the only way to consume them is by creating a new object as we encounter more cases,
-     This needs to be handled accordingly
-     */
-
+    // TODO: Currently only working on internal dependencies, will be fixed for external dependencies once the dependency linking is done
     val expResolvedPath =
       if (expEntity.contains("."))
         getResolvedPath(expEntity, fileName)

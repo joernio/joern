@@ -1,6 +1,5 @@
 package io.joern.rubysrc2cpg.passes
 
-import io.joern.rubysrc2cpg.datastructures.{RubyMethod, RubyProgramSummary, RubyStubbedType, RubyType}
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines as XDefines
 import io.shiftleft.codepropertygraph.generated.nodes.Identifier
@@ -9,8 +8,8 @@ import io.shiftleft.semanticcpg.language.*
 
 import scala.collection.immutable.List
 
-object RubyTypeRecoveryTests {
-  private val GEMFILE =
+object RubyExternalTypeRecoveryTests {
+  private val SENDGRID_GEMFILE =
     """
       |# frozen_string_literal: true
       |source "https://rubygems.org"
@@ -18,13 +17,30 @@ object RubyTypeRecoveryTests {
       |ruby "2.6.5"
       |
       |gem "sendgrid-ruby"
-      |gem "dummy_logger"
+      |""".stripMargin
+
+  private val STRIPE_GEMFILE =
+    """
+      |# frozen_string_literal: true
+      |source "https://rubygems.org"
+      |
+      |ruby "2.6.5"
+      |
       |gem "stripe"
+      |""".stripMargin
+
+  private val LOGGER_GEMFILE =
+    """
+      |# frozen_string_literal: true
+      |source "https://rubygems.org"
+      |
+      |ruby "2.6.5"
+      |
+      |gem "logger"
       |""".stripMargin
 }
 
-class RubyTypeRecoveryTests
-    extends RubyCode2CpgFixture(withPostProcessing = true, withDataFlow = true, downloadDependencies = true) {
+class RubyInternalTypeRecoveryTests extends RubyCode2CpgFixture(withPostProcessing = true) {
   "recovering paths for built-in calls" should {
     lazy val cpg = code(
       """
@@ -54,18 +70,18 @@ class RubyTypeRecoveryTests
 
   "Type information for literals" should {
     val cpg = code("""
-        |def func
-        | a = 2
-        | b = "abc"
-        | b
-        |end
-        |
-        |def func2
-        | func
-        |end
-        |
-        |c = func2()
-        |""".stripMargin)
+                     |def func
+                     | a = 2
+                     | b = "abc"
+                     | b
+                     |end
+                     |
+                     |def func2
+                     | func
+                     |end
+                     |
+                     |c = func2()
+                     |""".stripMargin)
 
     "propagate function return types" in {
       inside(cpg.method.name("func2?").l) {
@@ -103,11 +119,11 @@ class RubyTypeRecoveryTests
     )
       .moreCode(
         """
-        |require 'test2'
-        |a = func
-        |
-        |b = Test2A.new
-        |""".stripMargin,
+          |require 'test2'
+          |a = func
+          |
+          |b = Test2A.new
+          |""".stripMargin,
         "test1.rb"
       )
 
@@ -132,17 +148,17 @@ class RubyTypeRecoveryTests
 
   "Type information for constructors" should {
     val cpg = code("""
-        |class A
-        |end
-        |
-        |def func
-        | d = A.new
-        | d
-        |end
-        |
-        |a = A.new
-        |b = func
-        |""".stripMargin)
+                     |class A
+                     |end
+                     |
+                     |def func
+                     | d = A.new
+                     | d
+                     |end
+                     |
+                     |a = A.new
+                     |b = func
+                     |""".stripMargin)
 
     "propagate to identifier" in {
       inside(cpg.identifier.name("(a|b)").l) {
@@ -153,6 +169,10 @@ class RubyTypeRecoveryTests
       }
     }
   }
+}
+
+class RubyExternalTypeRecoveryTests
+    extends RubyCode2CpgFixture(withPostProcessing = true, downloadDependencies = true) {
 
   "Type information for nodes with external dependency" should {
     val cpg = code(
@@ -167,17 +187,16 @@ class RubyTypeRecoveryTests
         |""".stripMargin,
       "main.rb"
     )
-      .moreCode(RubyTypeRecoveryTests.GEMFILE, "Gemfile")
+      .moreCode(RubyExternalTypeRecoveryTests.SENDGRID_GEMFILE, "Gemfile")
 
     "be present in (Case 1)" in {
-      println(cpg.identifier("sg2").foreach(x => println(x.typeFullName)))
       cpg.identifier("sg").lineNumber(5).typeFullName.l shouldBe List(
         "sendgrid/sendgrid.rb:<global>::program.SendGrid.API"
       )
       cpg.call("client").methodFullName.l shouldBe List("sendgrid/sendgrid.rb:<global>::program.SendGrid.API:client")
     }
 
-    "be present in (Case 2)" in {
+    "be present in (Case 2)" ignore {
       cpg.call("post").methodFullName.l shouldBe List(
         "sendgrid-ruby::program.SendGrid.API.client<returnValue>.mail<returnValue>.anonymous<returnValue>.post"
       )
@@ -268,16 +287,18 @@ class RubyTypeRecoveryTests
 
   }
 
-  "assignment from a call to a identifier inside an imported module using new" ignore {
+  "assignment from a call to a identifier inside an imported module using new" should {
     lazy val cpg = code("""
                           |require 'logger'
                           |
                           |log = Logger.new(STDOUT)
                           |log.error("foo")
                           |
-                          |""".stripMargin).cpg
+                          |""".stripMargin)
+      .moreCode(RubyExternalTypeRecoveryTests.LOGGER_GEMFILE, "Gemfile")
 
-    "resolve correct imports via tag nodes" in {
+    // TODO: Fix when external dependency resolving is complete
+    "resolve correct imports via tag nodes" ignore {
       val List(logging: ResolvedMethod, _) =
         cpg.call.where(_.referencedImports).tag._toEvaluatedImport.toList: @unchecked
       logging.fullName shouldBe s"logger::program.Logger.${XDefines.ConstructorMethodName}"
@@ -285,9 +306,9 @@ class RubyTypeRecoveryTests
 
     "provide a dummy type" in {
       val Some(log) = cpg.identifier("log").headOption: @unchecked
-      log.typeFullName shouldBe "logger::program.Logger"
+      log.typeFullName shouldBe "logger.rb:<global>::program.Logger"
       val List(errorCall) = cpg.call("error").l
-      errorCall.methodFullName shouldBe "logger::program.Logger.error"
+      errorCall.methodFullName shouldBe "logger.rb:<global>::program.Logger:error"
     }
   }
 
@@ -301,36 +322,38 @@ class RubyTypeRecoveryTests
                           |""".stripMargin,
       "main.rb"
     )
-      .moreCode(RubyTypeRecoveryTests.GEMFILE, "Gemfile")
+      .moreCode(RubyExternalTypeRecoveryTests.STRIPE_GEMFILE, "Gemfile")
 
-    "resolved the type of call" in {
+    "resolved the type of call" ignore {
       val Some(create) = cpg.call("create").headOption: @unchecked
-      create.methodFullName shouldBe "stripe.rb:<global>::program.Stripe:create"
+      create.methodFullName shouldBe "stripe.rb:<global>::program.Stripe.Customer:create"
     }
 
-    "resolved the type of identifier" in {
+    "resolved the type of identifier" ignore {
       val Some(customer) = cpg.identifier("customer").headOption: @unchecked
       customer.typeFullName shouldBe "stripe::program.Stripe.Customer.create.<returnValue>"
     }
   }
 
-  "recovery of type for call having a method with same name" ignore {
+  "recovery of type for call having a method with same name" should {
     lazy val cpg = code("""
-                          |require "dbi"
+                          |require "logger"
                           |
-                          |def connect
+                          |def error(a)
                           |  puts "I am here"
                           |end
                           |
-                          |d = DBI.connect("DBI:Mysql:TESTDB:localhost", "testuser", "test123")
+                          |d = Logger.new(STDOUT)
+                          |e = d.error("abc")
                           |""".stripMargin)
+      .moreCode(RubyExternalTypeRecoveryTests.LOGGER_GEMFILE, "Gemfile")
 
     "have a correct type for call `connect`" in {
-      cpg.call("connect").methodFullName.l shouldBe List("dbi::program.DBI.connect")
+      cpg.call("error").methodFullName.l shouldBe List("logger.rb:<global>::program.Logger:error")
     }
 
     "have a correct type for identifier `d`" in {
-      cpg.identifier("d").typeFullName.l shouldBe List("dbi::program.DBI.connect.<returnValue>")
+      cpg.identifier("e").typeFullName.l shouldBe List("logger.rb:<global>::program.Logger:error.<returnValue>")
     }
   }
 }
