@@ -223,6 +223,17 @@ class LiteralTests extends RubyCode2CpgFixture {
     literal.typeFullName shouldBe "__builtin.Regexp"
   }
 
+  "`/fedora|el-|centos/` is represented by a LITERAL node" in {
+    val cpg = code("""
+        |/fedora|el-|centos/
+        |""".stripMargin)
+
+    val List(literal) = cpg.literal.l
+    literal.code shouldBe "/fedora|el-|centos/"
+    literal.lineNumber shouldBe Some(2)
+    literal.typeFullName shouldBe "__builtin.Regexp"
+  }
+
   "`/#{os_version_regex}/` is represented by a CALL node with a string format method full name" in {
     val cpg = code("""
         |os_version_regex = "1.2.0"
@@ -234,16 +245,6 @@ class LiteralTests extends RubyCode2CpgFixture {
     formatValueCall.lineNumber shouldBe Some(3)
     formatValueCall.typeFullName shouldBe "__builtin.Regexp"
     formatValueCall.methodFullName shouldBe Operators.formatString
-  }
-
-  "regex values in a hash literal" ignore {
-    val cpg = code("""
-        |PLATFORM_PATTERNS = {
-        | :redhat        => /fedora|el-|centos/
-        |}
-        |""".stripMargin)
-
-    cpg.method(":program").dotAst.foreach(println)
   }
 
 }

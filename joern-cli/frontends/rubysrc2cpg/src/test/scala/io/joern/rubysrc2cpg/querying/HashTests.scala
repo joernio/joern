@@ -34,6 +34,51 @@ class HashTests extends RubyCode2CpgFixture {
     one.code shouldBe "1"
   }
 
+  "`{:x => 1}` is represented by a `hashInitializer` operator call" in {
+    val cpg = code("""
+        |{:x => 1}
+        |""".stripMargin)
+
+    val List(hashCall) = cpg.call.name(RubyOperators.hashInitializer).l
+    hashCall.code shouldBe "{:x => 1}"
+    hashCall.lineNumber shouldBe Some(2)
+
+    val List(assocCall) = hashCall.inCall.astSiblings.assignment.l
+    val List(x, one)    = assocCall.argument.l
+    x.code shouldBe "<tmp-0>[:x]"
+    one.code shouldBe "1"
+  }
+
+  "`{:x => /(eu|us)/}` is represented by a `hashInitializer` operator call" in {
+    val cpg = code("""
+        |{:x => /(eu|us)/}
+        |""".stripMargin)
+
+    val List(hashCall) = cpg.call.name(RubyOperators.hashInitializer).l
+    hashCall.code shouldBe "{:x => /(eu|us)/}"
+    hashCall.lineNumber shouldBe Some(2)
+
+    val List(assocCall) = hashCall.inCall.astSiblings.assignment.l
+    val List(x, regexp) = assocCall.argument.l
+    x.code shouldBe "<tmp-0>[:x]"
+    regexp.code shouldBe "/(eu|us)/"
+  }
+
+  "`{:x : /(eu|us)/}` is represented by a `hashInitializer` operator call" in {
+    val cpg = code("""
+        |{:x : /(eu|us)/}
+        |""".stripMargin)
+
+    val List(hashCall) = cpg.call.name(RubyOperators.hashInitializer).l
+    hashCall.code shouldBe "{:x : /(eu|us)/}"
+    hashCall.lineNumber shouldBe Some(2)
+
+    val List(assocCall) = hashCall.inCall.astSiblings.assignment.l
+    val List(x, regexp) = assocCall.argument.l
+    x.code shouldBe "<tmp-0>[:x]"
+    regexp.code shouldBe "/(eu|us)/"
+  }
+
   "Inclusive Range of primitive ordinal type should expand in hash key" in {
     val cpg = code("""
         |{1..3:"abc", 4..5:"ade"}

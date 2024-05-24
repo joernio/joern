@@ -30,11 +30,11 @@ class Base extends LayerCreator {
   override val overlayName: String = Base.overlayName
   override val description: String = Base.description
 
-  override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
+  override def create(context: LayerCreatorContext): Unit = {
     val cpg = context.cpg
     cpg.graph.indexManager.createNodePropertyIndex(PropertyNames.FULL_NAME)
     Base.passes(cpg).zipWithIndex.foreach { case (pass, index) =>
-      runPass(pass, context, storeUndoInfo, index)
+      runPass(pass, context, index)
     }
   }
 
