@@ -201,4 +201,8 @@ object AntlrContextHelpers {
         logger.warn(s"ArgumentListContextHelper - Unsupported element type ${ctx.getClass.getSimpleName}")
         List()
   }
+
+  sealed implicit class CommandWithDoBlockContextHelper(ctx: CommandWithDoBlockContext) {
+    def arguments: List[ParserRuleContext] = Option(ctx.argumentList()).map(_.elements).getOrElse(Nil)
+  }
 }

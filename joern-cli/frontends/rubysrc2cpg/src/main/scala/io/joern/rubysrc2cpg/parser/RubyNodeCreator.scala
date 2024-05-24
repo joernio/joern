@@ -1,8 +1,8 @@
 package io.joern.rubysrc2cpg.parser
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
-import io.joern.rubysrc2cpg.deprecated.passes.RubyImportResolverPass
 import io.joern.rubysrc2cpg.parser.AntlrContextHelpers.*
+import io.joern.rubysrc2cpg.parser.RubyParser.CommandWithDoBlockContext
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
@@ -187,6 +187,13 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     } else {
       methodInvocation
     }
+  }
+
+  override def visitCommandWithDoBlock(ctx: CommandWithDoBlockContext): RubyNode = {
+    val name = Option(ctx.methodIdentifier()).orElse(Option(ctx.methodName())).map(visit).getOrElse(defaultResult())
+    val arguments = ctx.arguments.map(visit)
+    val block     = visit(ctx.doBlock()).asInstanceOf[Block]
+    SimpleCallWithBlock(name, arguments, block)(ctx.toTextSpan)
   }
 
   override def visitHereDocs(ctx: RubyParser.HereDocsContext): RubyNode = {
