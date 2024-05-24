@@ -1188,7 +1188,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     lazy val existingTypes = storedNode.getKnownTypes
 
     val hasUnknownTypeFullName = storedNode
-      .property(PropertyNames.TYPE_FULL_NAME, "ANY")
+      .property(PropertyNames.TYPE_FULL_NAME, Defines.Any)
       .matches(XTypeRecovery.unknownTypePattern.pattern.pattern())
 
     if (types.nonEmpty && (hasUnknownTypeFullName || types.toSet != existingTypes)) {
@@ -1227,7 +1227,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     */
   protected def storeDefaultTypeInfo(n: StoredNode, types: Seq[String]): Unit =
     val hasUnknownType =
-      n.property(PropertyNames.TYPE_FULL_NAME, "ANY").matches(XTypeRecovery.unknownTypePattern.pattern.pattern())
+      n.property(PropertyNames.TYPE_FULL_NAME, Defines.Any).matches(XTypeRecovery.unknownTypePattern.pattern.pattern())
 
     if (types.toSet != n.getKnownTypes || (hasUnknownType && types.nonEmpty)) {
       setTypes(n, (n.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty) ++ types).distinct)
