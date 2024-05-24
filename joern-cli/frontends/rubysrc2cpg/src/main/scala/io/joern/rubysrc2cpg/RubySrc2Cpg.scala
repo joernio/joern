@@ -11,7 +11,7 @@ import io.joern.rubysrc2cpg.passes.{
   ConfigFileCreationPass,
   DependencyPass,
   ImplicitRequirePass,
-  ImportDependencyLinkerPass,
+  ImportDependencyFileCreationPass,
   ImportsPass
 }
 import io.joern.rubysrc2cpg.utils.DependencyDownloader
@@ -74,7 +74,7 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
       AstCreationPass(cpg, astCreators.map(_.withSummary(programSummary))).createAndApply()
       if (cpg.dependency.name.contains("zeitwerk")) ImplicitRequirePass(cpg, programSummary).createAndApply()
       ImportsPass(cpg).createAndApply()
-      if config.downloadDependencies then ImportDependencyLinkerPass(cpg).createAndApply()
+      if config.downloadDependencies then ImportDependencyFileCreationPass(cpg).createAndApply()
       TypeNodePass.withTypesFromCpg(cpg).createAndApply()
     }
   }

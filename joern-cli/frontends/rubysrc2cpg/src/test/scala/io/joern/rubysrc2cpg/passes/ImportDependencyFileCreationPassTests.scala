@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.passes
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.semanticcpg.language.*
 
-class ImportDependencyLinkerPassTests
+class ImportDependencyFileCreationPassTests
     extends RubyCode2CpgFixture(withPostProcessing = true, downloadDependencies = true) {
   "Code for method full name when method present in module" should {
     val cpg = code(
