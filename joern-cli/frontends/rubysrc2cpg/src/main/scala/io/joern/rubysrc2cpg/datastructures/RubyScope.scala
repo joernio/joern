@@ -113,12 +113,24 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
       } else {
         resolvedPath :: Nil
       }
-    pathsToImport.flatMap(summary.pathToType.getOrElse(_, Set())) match {
-      case x if x.nonEmpty =>
-        x.foreach { ty => addImportedTypeOrModule(ty.name) }
-      case _ =>
-        addRequireGem(path)
+
+    pathsToImport.foreach { pathName =>
+      // Pull in type / module defs
+      summary.pathToType.getOrElse(pathName, Set()) match {
+        case x if x.nonEmpty =>
+          x.foreach { ty => addImportedTypeOrModule(ty.name) }
+          addImportedFunctions(pathName)
+        case _ =>
+          addRequireGem(path)
+      }
     }
+  }
+
+  def addImportedFunctions(importName: String): Unit = {
+    val matchingTypes = summary.namespaceToType.values.flatten.filter(x =>
+      x.name.startsWith(importName) && x.name.endsWith(RDefines.Program)
+    )
+    typesInScope.addAll(matchingTypes)
   }
 
   def addInclude(typeOrModule: String): Unit = {
@@ -267,6 +279,9 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
             Option(RubyType(s"${GlobalTypes.builtinPrefix}.$normalizedTypeName", List.empty, List.empty))
           case None =>
             summary.namespaceToType.flatMap(_._2).collectFirst {
+              case x if x.name.split("[.]").endsWith(normalizedTypeName.split("[.]")) =>
+                typesInScope.addOne(x)
+                x
               case x if x.name.split("[.]").lastOption.contains(normalizedTypeName) =>
                 typesInScope.addOne(x)
                 x

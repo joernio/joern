@@ -11,13 +11,15 @@ import io.joern.rubysrc2cpg.passes.{
   ConfigFileCreationPass,
   DependencyPass,
   ImplicitRequirePass,
-  ImportsPass
+  ImportsPass,
+  RubyImportResolverPass,
+  RubyTypeHintCallLinker
 }
 import io.joern.rubysrc2cpg.utils.DependencyDownloader
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.passes.base.AstLinkerPass
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
-import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
+import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass, XTypeRecoveryConfig}
 import io.joern.x2cpg.utils.{ConcurrentTaskUtil, ExternalCommand}
 import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.Cpg
@@ -160,7 +162,9 @@ object RubySrc2Cpg {
           new AstLinkerPass(cpg)
         )
     } else {
-      List()
+      List(new RubyImportResolverPass(cpg)) ++
+        new passes.RubyTypeRecoveryPassGenerator(cpg, config = XTypeRecoveryConfig(iterations = 4))
+          .generate() ++ List(new RubyTypeHintCallLinker(cpg), new NaiveCallLinker(cpg), new AstLinkerPass(cpg))
     }
   }
 
