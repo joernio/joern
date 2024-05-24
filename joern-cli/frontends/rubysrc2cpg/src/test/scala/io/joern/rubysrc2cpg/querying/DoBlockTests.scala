@@ -285,4 +285,23 @@ class DoBlockTests extends RubyCode2CpgFixture {
     }
   }
 
+  "A command with do block and argument" should {
+
+    val cpg = code("""
+        |test_name 'Foo' do
+        | puts "a"
+        |end
+        |""".stripMargin)
+
+    "create a call `test_name` with a test name and lambda argument" in {
+      inside(cpg.call.nameExact("test_name").argument.l) {
+        case (_: Identifier) :: (testName: Literal) :: (testMethod: MethodRef) :: Nil =>
+          testName.code shouldBe "'Foo'"
+          testMethod.referencedMethod.call.nameExact("puts").nonEmpty shouldBe true
+        case xs => fail(s"Expected a literal and method ref argument, instead got $xs")
+      }
+    }
+
+  }
+
 }
