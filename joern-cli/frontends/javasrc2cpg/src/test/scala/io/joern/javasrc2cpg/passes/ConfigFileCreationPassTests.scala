@@ -17,8 +17,7 @@ class ConfigFileCreationPassTests extends JavaSrcCode2CpgFixture {
     ProjectRoot.relativise("joern-cli/frontends/javasrc2cpg/src/test/resources/config_tests")
 
   "it should find the correct config files" in {
-    val cpg = Cpg.empty
-    cpg.graph.addNode(NewMetaData().root(testConfigDir))
+    val cpg = Cpg.from(_.addNode(NewMetaData().root(testConfigDir)))
 
     val foundFiles        = new JavaConfigFileCreationPass(cpg).generateParts().map(_.canonicalPath)
     val absoluteConfigDir = File(testConfigDir).canonicalPath

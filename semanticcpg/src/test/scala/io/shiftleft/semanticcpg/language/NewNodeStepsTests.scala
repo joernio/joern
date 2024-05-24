@@ -7,8 +7,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import scala.jdk.CollectionConverters.*
-
 class NewNodeStepsTest extends AnyWordSpec with Matchers {
   import io.shiftleft.semanticcpg.language.NewNodeNodeStepsTest.*
 
