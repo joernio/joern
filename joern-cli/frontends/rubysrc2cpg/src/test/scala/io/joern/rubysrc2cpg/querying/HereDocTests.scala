@@ -35,7 +35,7 @@ class HereDocTests extends RubyCode2CpgFixture {
     }
   }
 
-  "HereDoc as function argument" should {
+  "HereDoc as a literal assignment" should {
     val cpg = code("""
         |def foo()
         | a = <<-SQL
@@ -62,6 +62,18 @@ class HereDocTests extends RubyCode2CpgFixture {
         case _ => fail("Expected one method for foo")
       }
     }
+  }
+
+  "HereDoc as a function argument" ignore {
+    val cpg = code("""
+        |def foo(arg)
+        |  bar(arg, <<-SOME_HEREDOC, arg + 1)
+        |   inside here doc
+        |  SOME_HEREDOC
+        |end
+        |""".stripMargin)
+
+    // TODO: This creates a syntax error
   }
 
 }
