@@ -10,6 +10,7 @@ import io.joern.rubysrc2cpg.passes.{
   AstCreationPass,
   ConfigFileCreationPass,
   DependencyPass,
+  DependencySummarySolverPass,
   ImplicitRequirePass,
   ImportDependencyFileCreationPass,
   ImportsPass,
@@ -67,16 +68,21 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
         }
         .foldLeft(RubyProgramSummary(RubyProgramSummary.BuiltinTypes(config.typeStubMetaData)))(_ ++ _)
 
-      val programSummary = if (config.downloadDependencies) {
-        DependencyDownloader(cpg, internalProgramSummary).download()
+      val dependencySummary = if (config.downloadDependencies) {
+        DependencyDownloader(cpg).download()
       } else {
-        internalProgramSummary
+        RubyProgramSummary()
       }
+
+      val programSummary = internalProgramSummary ++ dependencySummary
 
       AstCreationPass(cpg, astCreators.map(_.withSummary(programSummary))).createAndApply()
       if (cpg.dependency.name.contains("zeitwerk")) ImplicitRequirePass(cpg, programSummary).createAndApply()
       ImportsPass(cpg).createAndApply()
-      if config.downloadDependencies then ImportDependencyFileCreationPass(cpg).createAndApply()
+      if config.downloadDependencies then {
+        ImportDependencyFileCreationPass(cpg).createAndApply()
+        DependencySummarySolverPass(cpg, dependencySummary).createAndApply()
+      }
       TypeNodePass.withTypesFromCpg(cpg).createAndApply()
     }
   }

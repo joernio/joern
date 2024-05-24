@@ -22,7 +22,7 @@ import scala.util.{Failure, Success, Try, Using}
   * @see
   *   <a href="https://guides.rubygems.org/rubygems-org-api/">Ruby Gems API</a>
   */
-class DependencyDownloader(cpg: Cpg, internalProgramSummary: RubyProgramSummary) {
+class DependencyDownloader(cpg: Cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
   private val RESOLVER_BASE_URL =
@@ -39,7 +39,7 @@ class DependencyDownloader(cpg: Cpg, internalProgramSummary: RubyProgramSummary)
         downloadDependency(dir, dependency)
       }
       untarDependencies(dir)
-      summarizeDependencies(dir / "lib") ++ internalProgramSummary
+      summarizeDependencies(dir / "lib")
     }
   }
 
@@ -218,7 +218,7 @@ class DependencyDownloader(cpg: Cpg, internalProgramSummary: RubyProgramSummary)
         .reduceOption((a, b) => a ++ b)
         .getOrElse(RubyProgramSummary())
 
-      librarySummaries ++ internalProgramSummary
+      librarySummaries
     }
   }
 
