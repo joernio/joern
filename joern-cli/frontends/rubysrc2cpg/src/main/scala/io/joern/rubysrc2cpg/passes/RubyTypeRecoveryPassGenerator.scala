@@ -16,8 +16,6 @@ class RubyTypeRecoveryPassGenerator(cpg: Cpg, config: XTypeRecoveryConfig = XTyp
 private class RubyTypeRecovery(cpg: Cpg, state: XTypeRecoveryState, iteration: Int)
     extends XTypeRecovery[File](cpg, state, iteration) {
 
-  override def isParallel: Boolean = false
-
   override def compilationUnits: Iterator[File] = cpg.file.iterator
 
   override def generateRecoveryForCompilationUnitTask(
