@@ -165,7 +165,6 @@ object RubySrc2Cpg {
       List(new RubyImportResolverPass(cpg)) ++
         new passes.RubyTypeRecoveryPassGenerator(cpg, config = XTypeRecoveryConfig(iterations = 4))
           .generate() ++ List(new RubyTypeHintCallLinker(cpg), new NaiveCallLinker(cpg), new AstLinkerPass(cpg))
-//      List()
     }
   }
 
