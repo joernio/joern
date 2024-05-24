@@ -8,6 +8,8 @@ import io.joern.x2cpg.passes.frontend.XImportResolverPass
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.semanticcpg.language.*
+import io.joern.rubysrc2cpg.passes.Defines as RDefines
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import java.io.File as JFile
 import java.util.regex.{Matcher, Pattern}
@@ -51,7 +53,7 @@ class RubyImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
         .toSet
 
       val resolvedModules = cpg.namespaceBlock
-        .whereNot(_.nameExact("<global>"))
+        .whereNot(_.nameExact(NamespaceTraversal.globalNamespaceName))
         .where(_.file.name(filePattern))
         .flatMap(module => Seq(ResolvedTypeDecl(module.fullName)))
         .toSet
@@ -59,7 +61,7 @@ class RubyImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
       // Expose methods which are directly present in a file, without any module, TypeDecl
       val resolvedMethods = cpg.method
         .where(_.file.name(filePattern))
-        .where(_.nameExact(":program"))
+        .where(_.nameExact(RDefines.Program))
         .astChildren
         .astChildren
         .isMethod
