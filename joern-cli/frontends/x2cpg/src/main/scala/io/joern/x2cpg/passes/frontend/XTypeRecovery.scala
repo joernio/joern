@@ -965,7 +965,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       .foreach {
         case x: Local if symbolTable.contains(x) => storeNodeTypeInfo(x, symbolTable.get(x).toSeq)
         case x: MethodParameterIn                => setTypeFromTypeHints(x)
-        case x: MethodReturn                     => setTypeFromTypeHints(x)
+        case x: MethodReturn =>
+          setTypeFromTypeHints(x)
         case x: Identifier if symbolTable.contains(x) =>
           setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.l)
         case x: Call if symbolTable.contains(x) =>
@@ -1060,7 +1061,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 
   protected def setTypeFromTypeHints(n: StoredNode): Unit = {
     val types = n.getKnownTypes.filterNot(XTypeRecovery.isDummyType)
-    if (types.nonEmpty) setTypes(n, types.toSeq)
+    if (types.nonEmpty)
+      setTypes(n, types.toSeq)
   }
 
   /** In the case this field access is a function pointer, we would want to make sure this has a method ref.
@@ -1185,7 +1187,11 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   private def storeNodeTypeInfo(storedNode: StoredNode, types: Seq[String]): Unit = {
     lazy val existingTypes = storedNode.getKnownTypes
 
-    if (types.nonEmpty && types.toSet != existingTypes) {
+    val hasUnknownTypeFullName = storedNode
+      .property(PropertyNames.TYPE_FULL_NAME, Defines.Any)
+      .matches(XTypeRecovery.unknownTypePattern.pattern.pattern())
+
+    if (types.nonEmpty && (hasUnknownTypeFullName || types.toSet != existingTypes)) {
       storedNode match {
         case m: Member =>
           // To avoid overwriting member updates, we store them elsewhere until the end
@@ -1220,7 +1226,10 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** Allows one to modify the types assigned to nodes otherwise.
     */
   protected def storeDefaultTypeInfo(n: StoredNode, types: Seq[String]): Unit =
-    if (types.toSet != n.getKnownTypes) {
+    val hasUnknownType =
+      n.property(PropertyNames.TYPE_FULL_NAME, Defines.Any).matches(XTypeRecovery.unknownTypePattern.pattern.pattern())
+
+    if (types.toSet != n.getKnownTypes || (hasUnknownType && types.nonEmpty)) {
       setTypes(n, (n.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty) ++ types).distinct)
     }
 
