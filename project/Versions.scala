@@ -40,7 +40,7 @@ object Versions {
   // Shared with `projects/meta-build.sbt`, which needs to be updated there directly
   val betterFiles    = "3.9.2"
   val javaCc         = "7.0.12"
-  val osLib          = "0.9.3"
+  val osLib          = "0.10.1"
   val typeSafeConfig = "1.4.3"
   val versionSort    = "1.0.11"
   val zip4j          = "2.11.5"
