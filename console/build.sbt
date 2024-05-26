@@ -30,3 +30,13 @@ libraryDependencies ++= Seq(
 Test / compile := (Test / compile)
   .dependsOn(Projects.c2cpg / stage, Projects.jssrc2cpg / stage, Projects.swiftsrc2cpg / stage)
   .value
+
+githubOwner      := "Privado-Inc"
+githubRepository := "joern"
+credentials +=
+  Credentials(
+    "GitHub Package Registry",
+    "maven.pkg.github.com",
+    "Privado-Inc",
+    sys.env.getOrElse("GITHUB_TOKEN", "N/A")
+  )

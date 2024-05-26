@@ -17,11 +17,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '21'
-      - run: sudo apt update && sudo apt install -y gnupg
-      - run: echo $PGP_SECRET | base64 --decode | gpg --batch --import
-        env:
-          PGP_SECRET: ${{ secrets.PGP_SECRET }}
-      - run: export GPG_TTY=$(tty)
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
@@ -34,16 +29,22 @@ jobs:
       - name: Delete `.cargo` directory # to save disk space
         run: rm -rf /home/runner/.cargo
         if: runner.os == 'Linux'
-#      - run: sbt scalafmtCheck test
-#      - run: ./testDistro.sh
-#      - run: |
-#          cd joern-cli/target/universal/stage
-#          ./schema-extender/test.sh
-#          cd -
-      - run: sbt printPublishInfo ciReleaseTagNextVersion ciReleaseSonatype createDistribution
+      - run: sbt scalafmtCheck test
+      - run: ./testDistro.sh
+      - run: |
+          cd joern-cli/target/universal/stage
+          ./schema-extender/test.sh
+          cd -
+      - name: sbt createDistribution
+        run: |
+          sbt createDistribution
         env:
-          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: sbt ciReleaseTagNextVersion publish
+        run: |
+          sbt ciReleaseTagNextVersion publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: sha512sum target/joern-cli.zip > target/joern-cli.zip.sha512
       - name: Export ENV vars
         run:
@@ -104,3 +105,5 @@ jobs:
           asset_path: /tmp/querydb.json
           asset_name: querydb.json
           asset_content_type: application/json
+
+

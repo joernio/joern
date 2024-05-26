@@ -20,8 +20,8 @@ lazy val astGenVersion = settingKey[String]("dotnetastgen version")
 astGenVersion := appProperties.value.getString("csharpsrc2cpg.dotnetastgen_version")
 
 libraryDependencies ++= Seq(
-  "io.shiftleft"              %% "codepropertygraph" % Versions.cpg,
-  "org.scalatest"             %% "scalatest"         % Versions.scalatest % Test
+  "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
+  "org.scalatest" %% "scalatest"         % Versions.scalatest % Test
 )
 
 Compile / doc / scalacOptions ++= Seq("-doc-title", "semanticcpg apidocs", "-doc-version", version.value)
@@ -100,3 +100,13 @@ stage := Def
 
 Universal / packageName       := name.value
 Universal / topLevelDirectory := None
+
+githubOwner      := "Privado-Inc"
+githubRepository := "joern"
+credentials +=
+  Credentials(
+    "GitHub Package Registry",
+    "maven.pkg.github.com",
+    "Privado-Inc",
+    sys.env.getOrElse("GITHUB_TOKEN", "N/A")
+  )
