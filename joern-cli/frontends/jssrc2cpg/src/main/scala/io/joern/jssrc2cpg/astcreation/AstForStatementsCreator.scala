@@ -2,9 +2,10 @@ package io.joern.jssrc2cpg.astcreation
 
 import io.joern.jssrc2cpg.parser.BabelAst.*
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
-import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.jssrc2cpg.passes.Defines
-import io.joern.x2cpg.{Ast, ValidationMode, AstNodeBuilder}
+import io.joern.x2cpg.Ast
+import io.joern.x2cpg.ValidationMode
+import io.joern.x2cpg.datastructures.Stack.*
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
@@ -85,29 +86,43 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       .getOrElse(Ast(retNode))
   }
 
-  private def astForCatchClause(catchClause: BabelNodeInfo): Ast =
-    astForNodeWithFunctionReference(catchClause.json("body"))
+  private def astForCatchClause(catchClause: BabelNodeInfo): Ast = {
+    val blockNode = createBlockNode(catchClause)
+    scope.pushNewBlockScope(blockNode)
+    localAstParentStack.push(blockNode)
+    val paramAst = safeObj(catchClause.json, "param")
+      .map { param => astForNodeWithFunctionReference(Obj(param)) }
+      .getOrElse(Ast())
+    val bodyAsts           = createBlockStatementAsts(catchClause.json("body")("body"))
+    val blockStatementAsts = paramAst +: bodyAsts
+    setArgumentIndices(blockStatementAsts)
+    localAstParentStack.pop()
+    scope.popScope()
+    blockAst(blockNode, blockStatementAsts)
+  }
 
   protected def astForTryStatement(tryStmt: BabelNodeInfo): Ast = {
     val tryNode = createControlStructureNode(tryStmt, ControlStructureTypes.TRY)
     val bodyAst = astForNodeWithFunctionReference(tryStmt.json("block"))
     val catchAst = safeObj(tryStmt.json, "handler")
       .map { handler =>
-        astForCatchClause(createBabelNodeInfo(Obj(handler)))
+        val catchNodeInfo = createBabelNodeInfo(Obj(handler))
+        val catchNode     = createControlStructureNode(catchNodeInfo, ControlStructureTypes.CATCH)
+        val catchAst      = astForCatchClause(catchNodeInfo)
+        Ast(catchNode).withChild(catchAst)
       }
       .getOrElse(Ast())
     val finalizerAst = safeObj(tryStmt.json, "finalizer")
       .map { finalizer =>
-        astForNodeWithFunctionReference(Obj(finalizer))
+        val finalNodeInfo = createBabelNodeInfo(Obj(finalizer))
+        val finalNode     = createControlStructureNode(finalNodeInfo, ControlStructureTypes.FINALLY)
+        val finalAst      = astForNodeWithFunctionReference(finalNodeInfo.json)
+        Ast(finalNode).withChild(finalAst)
       }
       .getOrElse(Ast())
-    // The semantics of try statement children is defined by their order value.
-    // Thus we set the here explicitly and do not rely on the usual consecutive
-    // ordering.
-    setOrderExplicitly(bodyAst, 1)
-    setOrderExplicitly(catchAst, 2)
-    setOrderExplicitly(finalizerAst, 3)
-    Ast(tryNode).withChildren(List(bodyAst, catchAst, finalizerAst))
+    val childrenAsts = List(bodyAst, catchAst, finalizerAst)
+    setArgumentIndices(childrenAsts)
+    Ast(tryNode).withChildren(childrenAsts)
   }
 
   def astForIfStatement(ifStmt: BabelNodeInfo): Ast = {

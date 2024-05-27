@@ -57,7 +57,6 @@ class SimpleCfgCreationPassTests extends CfgTestFixture(() => new JsSrcCfgTestCp
 
     "have correct structure for untagged runtime node in call" in {
       implicit val cpg: Cpg = code(s"foo(`Hello $${world}!`)")
-
       succOf(":program") shouldBe expected(("foo", AlwaysEdge))
       succOf("foo") shouldBe expected(("this", AlwaysEdge))
       succOf("this", NodeTypes.IDENTIFIER) shouldBe expected(("\"Hello \"", AlwaysEdge))
@@ -95,51 +94,54 @@ class SimpleCfgCreationPassTests extends CfgTestFixture(() => new JsSrcCfgTestCp
 
     "be correct for try" in {
       implicit val cpg: Cpg = code("""
-                                           |try {
-                                           | open()
-                                           |} catch(err) {
-                                           | handle()
-                                           |} finally {
-                                           | close()
-                                           |}
-                                           |""".stripMargin)
+         |try {
+         | open()
+         |} catch(err) {
+         | handle()
+         |} finally {
+         | close()
+         |}
+         |""".stripMargin)
       succOf(":program") shouldBe expected(("open", AlwaysEdge))
       succOf("open") shouldBe expected(("this", AlwaysEdge))
       succOf("this", NodeTypes.IDENTIFIER) shouldBe expected(("open()", AlwaysEdge))
-      succOf("open()") shouldBe expected(("handle", AlwaysEdge), ("close", AlwaysEdge))
+      succOf("open()") shouldBe expected(("err", AlwaysEdge), ("close", AlwaysEdge))
+      succOf("err") shouldBe expected(("handle", AlwaysEdge))
       succOf("handle()") shouldBe expected(("close", AlwaysEdge))
       succOf("close()") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "be correct for try with multiple CFG exit nodes in try block" in {
       implicit val cpg: Cpg = code("""
-                                          |try {
-                                          | if (true) {
-                                          |   doA()
-                                          | } else {
-                                          |   doB()
-                                          | }
-                                          |} catch(err) {
-                                          | handle()
-                                          |} finally {
-                                          | close()
-                                          |}
-                                          |""".stripMargin)
+        |try {
+        | if (true) {
+        |   doA()
+        | } else {
+        |   doB()
+        | }
+        |} catch(err) {
+        | handle()
+        |} finally {
+        | close()
+        |}
+        |""".stripMargin)
       succOf(":program") shouldBe expected(("true", AlwaysEdge))
       succOf("true") shouldBe expected(("doA", TrueEdge), ("doB", FalseEdge))
-      succOf("doA()") shouldBe expected(("handle", AlwaysEdge), ("close", AlwaysEdge))
-      succOf("doB()") shouldBe expected(("handle", AlwaysEdge), ("close", AlwaysEdge))
+      succOf("doA()") shouldBe expected(("err", AlwaysEdge), ("close", AlwaysEdge))
+      succOf("err") shouldBe expected(("handle", AlwaysEdge))
+      succOf("doB()") shouldBe expected(("err", AlwaysEdge), ("close", AlwaysEdge))
+      succOf("err") shouldBe expected(("handle", AlwaysEdge))
       succOf("handle()") shouldBe expected(("close", AlwaysEdge))
       succOf("close()") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "be correct for 1 object with simple values" in {
       implicit val cpg: Cpg = code("""
-                                           |var x = {
-                                           | key1: "value",
-                                           | key2: 2
-                                           |}
-                                           |""".stripMargin)
+         |var x = {
+         | key1: "value",
+         | key2: 2
+         |}
+         |""".stripMargin)
       succOf(":program") shouldBe expected(("x", AlwaysEdge))
       succOf("x") shouldBe expected(("_tmp_0", AlwaysEdge))
       succOf("_tmp_0") shouldBe expected(("key1", AlwaysEdge))
@@ -200,7 +202,6 @@ class SimpleCfgCreationPassTests extends CfgTestFixture(() => new JsSrcCfgTestCp
 
     "be correct for consecutive return statements" in {
       implicit val cpg: Cpg = code("function foo(x, y) { return x; return y; }")
-
       succOf("foo", NodeTypes.METHOD) shouldBe expected(("x", AlwaysEdge))
       succOf("x", NodeTypes.IDENTIFIER) shouldBe expected(("return x", AlwaysEdge))
       succOf("y", NodeTypes.IDENTIFIER) shouldBe expected(("return y", AlwaysEdge))
@@ -272,16 +273,16 @@ class SimpleCfgCreationPassTests extends CfgTestFixture(() => new JsSrcCfgTestCp
 
     "be correct for labeled expressions with continue" in {
       implicit val cpg: Cpg = code("""
-                                     |var i, j;
-                                     |loop1: for (i = 0; i < 3; i++) {
-                                     |   loop2: for (j = 0; j < 3; j++) {
-                                     |      if (i === 1 && j === 1) {
-                                     |         continue loop1;
-                                     |      }
-                                     |      console.log("");
-                                     |   }
-                                     |}
-                                     |""".stripMargin)
+         |var i, j;
+         |loop1: for (i = 0; i < 3; i++) {
+         |   loop2: for (j = 0; j < 3; j++) {
+         |      if (i === 1 && j === 1) {
+         |         continue loop1;
+         |      }
+         |      console.log("");
+         |   }
+         |}
+         |""".stripMargin)
       succOf(":program") shouldBe expected(("var i, j;", AlwaysEdge))
       succOf("loop1:") shouldBe expected(("i", AlwaysEdge))
       succOf("i") shouldBe expected(("0", AlwaysEdge))
@@ -317,7 +318,6 @@ class SimpleCfgCreationPassTests extends CfgTestFixture(() => new JsSrcCfgTestCp
       succOf("log") shouldBe expected(("console.log", AlwaysEdge))
     }
 
-    // WHILE Loops
     "be correct for plain while loop" in {
       implicit val cpg: Cpg = code("while (x < 1) { y = 2; }")
       succOf(":program") shouldBe expected(("x", AlwaysEdge))
@@ -379,14 +379,14 @@ class SimpleCfgCreationPassTests extends CfgTestFixture(() => new JsSrcCfgTestCp
 
     "nested while loop with conditional break" in {
       implicit val cpg: Cpg = code(s"""
-                                      |while (x) {
-                                      |  if (y) {
-                                      |	   break;
-                                      |	 }
-                                      |	 while (z) {
-                                      |    break;
-                                      |  }
-                                      |}
+        |while (x) {
+        |  if (y) {
+        |	   break;
+        |	 }
+        |	 while (z) {
+        |    break;
+        |  }
+        |}
       """.stripMargin)
       succOf(":program") shouldBe expected(("x", AlwaysEdge))
       succOf("x") shouldBe expected(("y", TrueEdge), ("RET", FalseEdge))
@@ -578,7 +578,6 @@ class SimpleCfgCreationPassTests extends CfgTestFixture(() => new JsSrcCfgTestCp
       succOf("true") shouldBe expected(("true", TrueEdge), ("RET", FalseEdge))
     }
 
-    // IF Statement
     "be correct for simple if statement" in {
       implicit val cpg: Cpg = code("if (x) { y; }")
       succOf(":program") shouldBe expected(("x", AlwaysEdge))
@@ -623,7 +622,6 @@ class SimpleCfgCreationPassTests extends CfgTestFixture(() => new JsSrcCfgTestCp
 
     "be correct for switch-case with multiple cases" in {
       implicit val cpg: Cpg = code("switch (x) { case 1: y; case 2: z;}")
-
       succOf(":program") shouldBe expected(("x", AlwaysEdge))
       succOf("x") shouldBe expected(("case 1:", CaseEdge), ("case 2:", CaseEdge), ("RET", CaseEdge))
       succOf("case 1:") shouldBe expected(("1", AlwaysEdge))
