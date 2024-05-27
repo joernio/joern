@@ -2,7 +2,7 @@ name                     := "joern"
 ThisBuild / organization := "com.michaelpollmeier"
 ThisBuild / scalaVersion := "3.4.2"
 
-val cpgVersion = "1.6.13+12-0ea86e2c"
+val cpgVersion = "1.6.13+13-0bd6923b"
 // TODO change org back to io.joern, only changed temporarily so I can debug something on jenkins
 // ThisBuild / organization := "io.joern"
 

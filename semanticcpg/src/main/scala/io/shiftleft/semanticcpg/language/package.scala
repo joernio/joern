@@ -22,7 +22,7 @@ import io.shiftleft.semanticcpg.language.types.structure.*
   * Implicit conversions to specific steps, based on the node at hand. Automatically in scope when using anything in the
   * `steps` package, e.g. `Steps`
   */
-package object language extends generated.Language
+package object language extends generated.language
     with operatorextension.Implicits
     with modulevariable.Implicits
     with importresolver.Implicits
