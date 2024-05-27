@@ -30,6 +30,8 @@ ThisBuild / libraryDependencies ++= Seq(
   "io.shiftleft" %% "codepropertygraph-domain-classes" % cpgVersion
 )
 
+ThisBuild / resolvers += "Github Package Registry" at "https://maven.pkg.github.com/Privado-Inc/codepropertygraph"
+
 lazy val schema = project
   .in(file("schema"))
   .settings(generateDomainClasses := {
