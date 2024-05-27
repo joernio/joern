@@ -97,7 +97,7 @@ jobs:
             ~/.sbt
             ~/.coursier
           key: ${{ runner.os }}-sbt-${{ hashfiles('**/build.sbt') }}
-      - run: ./testDistro.sh
+      - run: export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} && ./testDistro.sh
       - run: |
           mkdir /tmp/foo
           echo "int foo(int a, int b, int c, int d, int e, int f) {}" > /tmp/foo/foo.c
