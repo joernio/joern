@@ -32,7 +32,7 @@ jobs:
 #      - run: sbt scalafmtCheck test
 #        env:
 #          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#      - run: export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} && ./testDistro.sh
+      - run: export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} && ./testDistro.sh
       - run: |
           cd joern-cli/target/universal/stage
           export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} && ./schema-extender/test.sh
