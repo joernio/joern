@@ -14,3 +14,11 @@ Compile / doc / sources ~= (_ filter (_ => false))
 
 trapExit    := false
 Test / fork := true
+
+credentials +=
+  Credentials(
+    "GitHub Package Registry",
+    "maven.pkg.github.com",
+    "Privado-Inc",
+    sys.env.getOrElse("GITHUB_TOKEN", "N/A")
+  )

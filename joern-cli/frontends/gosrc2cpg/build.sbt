@@ -102,3 +102,10 @@ stage := Def
 
 githubOwner      := "Privado-Inc"
 githubRepository := "joern"
+credentials +=
+  Credentials(
+    "GitHub Package Registry",
+    "maven.pkg.github.com",
+    "Privado-Inc",
+    sys.env.getOrElse("GITHUB_TOKEN", "N/A")
+  )
