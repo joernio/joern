@@ -104,8 +104,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   protected def astForTryStatement(tryStmt: BabelNodeInfo): Ast = {
     val tryNode = createControlStructureNode(tryStmt, ControlStructureTypes.TRY)
     val bodyAst = astForNodeWithFunctionReference(tryStmt.json("block"))
-    setOrderExplicitly(bodyAst, 1)
-
     val catchAst = safeObj(tryStmt.json, "handler")
       .map { handler =>
         val catchNodeInfo = createBabelNodeInfo(Obj(handler))
@@ -114,8 +112,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         Ast(catchNode).withChild(catchAst)
       }
       .getOrElse(Ast())
-    setOrderExplicitly(catchAst, 2)
-
     val finalizerAst = safeObj(tryStmt.json, "finalizer")
       .map { finalizer =>
         val finalNodeInfo = createBabelNodeInfo(Obj(finalizer))
@@ -124,9 +120,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         Ast(finalNode).withChild(finalAst)
       }
       .getOrElse(Ast())
-    setOrderExplicitly(finalizerAst, 3)
-
-    Ast(tryNode).withChildren(List(bodyAst, catchAst, finalizerAst))
+    val childrenAsts = List(bodyAst, catchAst, finalizerAst)
+    setArgumentIndices(childrenAsts)
+    Ast(tryNode).withChildren(childrenAsts)
   }
 
   def astForIfStatement(ifStmt: BabelNodeInfo): Ast = {
