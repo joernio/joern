@@ -1,4 +1,4 @@
-name: release
+name: gh packages release
 on:
   schedule:
     - cron: "0 7 * * *" # run once daily
