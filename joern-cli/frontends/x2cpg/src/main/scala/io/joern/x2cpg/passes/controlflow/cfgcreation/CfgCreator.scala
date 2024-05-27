@@ -497,7 +497,8 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
 
     val tryBodyCfg: Cfg = maybeTryBlock.map(cfgFor).getOrElse(Cfg.empty)
 
-    val catchControlStructures = node.astChildren.isControlStructure.isCatch.toList
+    val catchControlStructures =
+      (node.astChildren.isControlStructure.isCatch ++ node.astChildren.isControlStructure.isElse).toList
     val catchBodyCfgs = if (catchControlStructures.isEmpty) {
       node.astChildren.order(2).toList match {
         case Nil  => List(Cfg.empty)
