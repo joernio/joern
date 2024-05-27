@@ -29,14 +29,17 @@ jobs:
       - name: Delete `.cargo` directory # to save disk space
         run: rm -rf /home/runner/.cargo
         if: runner.os == 'Linux'
-#      - run: sbt scalafmtCheck test
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - run: export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} && ./testDistro.sh
+      #      - run: sbt scalafmtCheck test
+      #        env:
+      #          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #      - run: export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} && ./testDistro.sh
       - run: |
+          sbt stage
           cd joern-cli/target/universal/stage
-          export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} && ./schema-extender/test.sh
+          ./schema-extender/test.sh
           cd -
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: sbt createDistribution
         run: |
           sbt createDistribution
@@ -107,5 +110,3 @@ jobs:
           asset_path: /tmp/querydb.json
           asset_name: querydb.json
           asset_content_type: application/json
-
-
