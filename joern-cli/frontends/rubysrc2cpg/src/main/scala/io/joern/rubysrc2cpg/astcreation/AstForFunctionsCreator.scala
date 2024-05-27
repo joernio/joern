@@ -3,11 +3,19 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.{ConstructorScope, MethodScope}
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.x2cpg.utils.NodeBuilders.{newClosureBindingNode, newLocalNode, newModifierNode, newThisParameterNode}
+import io.joern.x2cpg.utils.NodeBuilders.{
+  newBindingNode,
+  newClosureBindingNode,
+  newLocalNode,
+  newModifierNode,
+  newThisParameterNode
+}
 import io.joern.x2cpg.{Ast, AstEdge, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes, NodeTypes}
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
+
+import scala.collection.mutable
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -24,11 +32,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   protected def astForMethodDeclaration(node: MethodDeclaration, isClosure: Boolean = false): Seq[Ast] = {
 
     // Special case constructor methods
-    val isInTypeDecl = scope.surroundingAstLabel.contains(NodeTypes.TYPE_DECL)
-    val methodName = node.methodName match {
-      case "initialize" if isInTypeDecl => XDefines.ConstructorMethodName
-      case name                         => name
-    }
+    val isInTypeDecl  = scope.surroundingAstLabel.contains(NodeTypes.TYPE_DECL)
+    val isConstructor = node.methodName == "initialize" && isInTypeDecl
+    val methodName    = if isConstructor then XDefines.ConstructorMethodName else node.methodName
     // TODO: body could be a try
     val fullName = computeMethodFullName(methodName)
     val method = methodNode(
@@ -42,7 +48,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       astParentFullName = scope.surroundingScopeFullName
     )
 
-    if (methodName == XDefines.ConstructorMethodName) scope.pushNewScope(ConstructorScope(fullName))
+    if (isConstructor) scope.pushNewScope(ConstructorScope(fullName))
     else scope.pushNewScope(MethodScope(fullName, procParamGen.fresh))
 
     val thisParameterAst = Ast(
@@ -58,7 +64,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val optionalStatementList = statementListForOptionalParams(node.parameters)
 
     val methodReturn = methodReturnNode(node, Defines.Any)
-    val refs = if (isClosure) {
+    val refs =
       List(
         typeDeclNode(
           node,
@@ -72,12 +78,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         typeRefNode(node, methodName, fullName),
         methodRefNode(node, methodName, fullName, methodReturn.typeFullName)
       ).map {
-        case x: NewTypeDecl => Ast(x).withChild(Ast(newModifierNode(ModifierTypes.LAMBDA)))
-        case x              => Ast(x)
+        case x: NewTypeDecl if isClosure => Ast(x).withChild(Ast(newModifierNode(ModifierTypes.LAMBDA)))
+        case x                           => Ast(x)
       }
-    } else {
-      Nil
-    }
 
     // Consider which variables are captured from the outer scope
     val stmtBlockAst = if (isClosure) {
@@ -100,10 +103,20 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     scope.popScope()
 
-    val modifiers =
-      ModifierTypes.VIRTUAL :: (if isClosure then ModifierTypes.LAMBDA :: Nil else Nil) map newModifierNode
+    val modifiers = mutable.Buffer(ModifierTypes.VIRTUAL)
+    if (isClosure) modifiers.addOne(ModifierTypes.LAMBDA)
+    if (isConstructor) modifiers.addOne(ModifierTypes.CONSTRUCTOR)
 
-    methodAst(method, parameterAsts ++ anonProcParam, stmtBlockAst, methodReturn, modifiers) :: refs
+    createMethodTypeBindings(method, refs)
+
+    methodAst(
+      method,
+      parameterAsts ++ anonProcParam,
+      stmtBlockAst,
+      methodReturn,
+      modifiers.map(newModifierNode).toSeq
+    ) :: // For closures, we also want the method/type refs for upstream use
+      (if isClosure then refs else refs.filter(_.root.exists(_.isInstanceOf[NewTypeDecl])))
   }
 
   private def transformAsClosureBody(refs: List[Ast], baseStmtBlockAst: Ast) = {
@@ -146,6 +159,16 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       }
 
     capturedBlockAst
+  }
+
+  /** Creates the bindings between the method and its types. This is useful for resolving function pointers and imports.
+    */
+  private def createMethodTypeBindings(method: NewMethod, refs: List[Ast]): Unit = {
+    refs.flatMap(_.root).collectFirst { case typeRef: NewTypeDecl =>
+      val bindingNode = newBindingNode(method.name, "", method.fullName)
+      diffGraph.addEdge(typeRef, bindingNode, EdgeTypes.BINDS)
+      diffGraph.addEdge(bindingNode, method, EdgeTypes.REF)
+    }
   }
 
   // TODO: remaining cases

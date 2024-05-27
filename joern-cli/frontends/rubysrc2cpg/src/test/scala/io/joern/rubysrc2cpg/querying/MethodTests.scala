@@ -3,28 +3,40 @@ package io.joern.rubysrc2cpg.querying
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.joern.rubysrc2cpg.passes.Defines as RDefines
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, NodeTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, MethodRef, Return, TypeRef}
 import io.shiftleft.semanticcpg.language.*
 
 class MethodTests extends RubyCode2CpgFixture {
 
-  "`def f(x) = 1` is represented by a METHOD node" in {
+  "`def f(x) = 1`" should {
     val cpg = code("""
-                     |def f(x) = 1
-                     |""".stripMargin)
+        |def f(x) = 1
+        |""".stripMargin)
 
-    val List(f) = cpg.method.name("f").l
+    "be represented by a METHOD node" in {
+      val List(f) = cpg.method.name("f").l
 
-    f.fullName shouldBe "Test0.rb:<global>::program:f"
-    f.isExternal shouldBe false
-    f.lineNumber shouldBe Some(2)
-    f.numberOfLines shouldBe 1
+      f.fullName shouldBe "Test0.rb:<global>::program:f"
+      f.isExternal shouldBe false
+      f.lineNumber shouldBe Some(2)
+      f.numberOfLines shouldBe 1
 
-    val List(x) = f.parameter.name("x").l
-    x.index shouldBe 1
-    x.isVariadic shouldBe false
-    x.lineNumber shouldBe Some(2)
+      val List(x) = f.parameter.name("x").l
+      x.index shouldBe 1
+      x.isVariadic shouldBe false
+      x.lineNumber shouldBe Some(2)
+    }
+
+    "have a corresponding bound type" in {
+      val List(fType) = cpg.typeDecl("f").l
+      fType.fullName shouldBe "Test0.rb:<global>::program:f"
+      fType.code shouldBe "def f(x) = 1"
+      fType.astParentFullName shouldBe "Test0.rb:<global>::program:f"
+      fType.astParentType shouldBe NodeTypes.METHOD
+      val List(fMethod) = fType.iterator.boundMethod.l
+      fType.fullName shouldBe "Test0.rb:<global>::program:f"
+    }
   }
 
   "`def f ... return 1 ... end` is represented by a METHOD node" in {
