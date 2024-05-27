@@ -30,6 +30,8 @@ jobs:
         run: rm -rf /home/runner/.cargo
         if: runner.os == 'Linux'
       - run: sbt scalafmtCheck test
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: ./testDistro.sh
       - run: |
           cd joern-cli/target/universal/stage
