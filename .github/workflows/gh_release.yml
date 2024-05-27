@@ -35,7 +35,7 @@ jobs:
       - run: ./testDistro.sh
       - run: |
           cd joern-cli/target/universal/stage
-          ./schema-extender/test.sh
+          export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} && ./schema-extender/test.sh
           cd -
       - name: sbt createDistribution
         run: |

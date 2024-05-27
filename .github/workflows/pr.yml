@@ -107,4 +107,4 @@ jobs:
           ./joern-slice data-flow -o target/slice
       - run: |
           cd joern-cli/target/universal/stage
-          ./schema-extender/test.sh
+          export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} && ./schema-extender/test.sh
