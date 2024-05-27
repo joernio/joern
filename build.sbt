@@ -2,7 +2,7 @@ name                     := "joern"
 ThisBuild / organization := "io.joern"
 ThisBuild / scalaVersion := "3.4.2"
 
-val cpgVersion = "1.6.13"
+val cpgVersion = "0.1.2"
 
 lazy val joerncli          = Projects.joerncli
 lazy val querydb           = Projects.querydb
@@ -84,6 +84,7 @@ createDistribution := {
 }
 
 ThisBuild / resolvers ++= Seq(
+  "Github Package Registry" at "https://maven.pkg.github.com/Privado-Inc/codepropertygraph",
   Resolver.mavenLocal,
   "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public",
   "Atlassian" at "https://packages.atlassian.com/mvn/maven-atlassian-external",
