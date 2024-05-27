@@ -50,3 +50,6 @@ packTestCode := {
   }
 }
 packTestCode := packTestCode.triggeredBy(Test / compile).value
+
+githubOwner      := "Privado-Inc"
+githubRepository := "joern"

@@ -9,9 +9,9 @@ name := "gosrc2cpg"
 dependsOn(Projects.dataflowengineoss % "compile->compile;test->test", Projects.x2cpg % "compile->compile;test->test")
 
 libraryDependencies ++= Seq(
-  "io.shiftleft"              %% "codepropertygraph" % Versions.cpg,
-  "org.scalatest"             %% "scalatest"         % Versions.scalatest % Test,
-  "com.lihaoyi"               %% "os-lib"            % Versions.osLib
+  "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
+  "org.scalatest" %% "scalatest"         % Versions.scalatest % Test,
+  "com.lihaoyi"   %% "os-lib"            % Versions.osLib
 )
 
 scalacOptions ++= Seq(
@@ -99,3 +99,6 @@ stage := Def
   .sequential(goAstGenSetAllPlatforms, Universal / stage)
   .andFinally(System.setProperty("ALL_PLATFORMS", "FALSE"))
   .value
+
+githubOwner      := "Privado-Inc"
+githubRepository := "joern"

@@ -8,3 +8,6 @@ libraryDependencies ++= Seq(
 )
 
 enablePlugins(JavaAppPackaging)
+
+githubOwner      := "Privado-Inc"
+githubRepository := "joern"

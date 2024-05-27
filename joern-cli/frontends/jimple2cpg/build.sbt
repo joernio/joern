@@ -13,3 +13,6 @@ libraryDependencies ++= Seq(
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 trapExit    := false
 Test / fork := true
+
+githubOwner      := "Privado-Inc"
+githubRepository := "joern"

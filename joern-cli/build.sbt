@@ -132,3 +132,6 @@ generateScaladocs := {
 Universal / packageBin / mappings ++= sbt.Path.directory(new File("joern-cli/src/main/resources/scripts"))
 
 maintainer := "fabs@shiftleft.io"
+
+githubOwner      := "Privado-Inc"
+githubRepository := "joern"

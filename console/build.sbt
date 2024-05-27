@@ -30,3 +30,6 @@ libraryDependencies ++= Seq(
 Test / compile := (Test / compile)
   .dependsOn(Projects.c2cpg / stage, Projects.jssrc2cpg / stage, Projects.swiftsrc2cpg / stage)
   .value
+
+githubOwner      := "Privado-Inc"
+githubRepository := "joern"

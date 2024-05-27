@@ -66,3 +66,6 @@ Compile / scalacOptions ++= Seq("-Xfatal-warnings", "-feature", "-language:impli
 fork := true
 
 maintainer := "fabs@shiftleft.io"
+
+githubOwner      := "Privado-Inc"
+githubRepository := "joern"

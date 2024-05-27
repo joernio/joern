@@ -9,3 +9,6 @@ libraryDependencies ++= Seq(
 )
 
 Compile / doc / scalacOptions ++= Seq("-doc-title", "semanticcpg apidocs", "-doc-version", version.value)
+
+githubOwner      := "Privado-Inc"
+githubRepository := "joern"

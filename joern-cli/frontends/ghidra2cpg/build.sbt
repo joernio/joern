@@ -23,3 +23,6 @@ enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 
 fork        := true
 javaOptions := Seq("-Djava.protocol.handler.pkgs=ghidra.framework.protocol")
+
+githubOwner      := "Privado-Inc"
+githubRepository := "joern"

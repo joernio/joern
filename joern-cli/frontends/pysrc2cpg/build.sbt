@@ -27,3 +27,6 @@ javaCCTask := {
 }
 
 Compile / sourceGenerators += javaCCTask
+
+githubOwner      := "Privado-Inc"
+githubRepository := "joern"

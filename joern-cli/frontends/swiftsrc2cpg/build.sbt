@@ -92,3 +92,6 @@ stage := Def
 
 Universal / packageName       := name.value
 Universal / topLevelDirectory := None
+
+githubOwner      := "Privado-Inc"
+githubRepository := "joern"

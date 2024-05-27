@@ -52,6 +52,8 @@ jobs:
           key: ${{ runner.os }}-sbt-${{ hashfiles('**/build.sbt') }}
       - name: Compile and run tests
         run: sbt clean test
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   formatting:
     runs-on: ubuntu-latest
     steps:
@@ -71,6 +73,8 @@ jobs:
           key: ${{ runner.os }}-sbt-${{ hashfiles('**/build.sbt') }}
       - name: Check formatting
         run: sbt scalafmtCheck Test/scalafmtCheck
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: echo "Previous step failed because code is not formatted. Run 'sbt scalafmt Test/scalafmt'"
         if: ${{ failure() }}
       - name: Validate CITATION.cff
@@ -93,7 +97,7 @@ jobs:
             ~/.sbt
             ~/.coursier
           key: ${{ runner.os }}-sbt-${{ hashfiles('**/build.sbt') }}
-      - run: ./testDistro.sh
+      - run: export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} && ./testDistro.sh
       - run: |
           mkdir /tmp/foo
           echo "int foo(int a, int b, int c, int d, int e, int f) {}" > /tmp/foo/foo.c
@@ -103,4 +107,4 @@ jobs:
           ./joern-slice data-flow -o target/slice
       - run: |
           cd joern-cli/target/universal/stage
-          ./schema-extender/test.sh
+          export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} && ./schema-extender/test.sh
