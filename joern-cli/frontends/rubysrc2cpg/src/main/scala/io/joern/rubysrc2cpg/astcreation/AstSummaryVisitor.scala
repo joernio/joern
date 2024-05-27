@@ -65,7 +65,7 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
       val typeFullName     = s"$parentScope.${t.name}"
       val childrenTypes    = t.astChildren.collectAll[TypeDecl].l
       val typesOnThisLevel = childrenTypes.flatMap(handleNestedTypes(_, typeFullName))
-      Seq(typeFullName -> childrenTypes.map(toType).toSet) ++ typesOnThisLevel
+      Seq(typeFullName -> childrenTypes.whereNot(_.methodBinding).map(toType).toSet) ++ typesOnThisLevel
     }
 
     val mappings =
@@ -89,7 +89,7 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
             val childrenTypes = m.block.astChildren.collectAll[TypeDecl].l
             val fullName      = s"${namespace.fullName}:${m.name}"
             val nestedTypes   = childrenTypes.flatMap(handleNestedTypes(_, fullName))
-            (path, fullName) -> (childrenTypes.map(toType).toSet ++ nestedTypes.flatMap(_._2))
+            (path, fullName) -> (childrenTypes.whereNot(_.methodBinding).map(toType).toSet ++ nestedTypes.flatMap(_._2))
         }.toSeq
 
         moduleEntry +: typeEntries
