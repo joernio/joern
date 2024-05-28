@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.querying
 import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, NodeTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal}
 import io.shiftleft.semanticcpg.language.*
 
@@ -198,11 +198,25 @@ class CallTests extends RubyCode2CpgFixture {
   }
 
   "named parameters in parenthesis-less call to a symbol value should create a correctly named argument" in {
-    val cpg = code("on in: :sequence")
-
+    val cpg            = code("on in: :sequence")
     val List(_, inArg) = cpg.call.argument.l: @unchecked
     inArg.code shouldBe ":sequence"
     inArg.argumentName shouldBe Option("in")
+  }
+
+  "a call with a quoted regex literal should have a literal receiver" in {
+    val cpg                         = code("%r{^/}.freeze")
+    val List(regexLiteral: Literal) = cpg.call.nameExact("freeze").receiver.l: @unchecked
+    regexLiteral.typeFullName shouldBe "__builtin.Regexp"
+    regexLiteral.code shouldBe "%r{^/}"
+  }
+
+  "a call with a double colon receiver" in {
+    val cpg                = code("::Augeas.open { |aug| aug.get('/augeas/version') }")
+    val List(augeas: Call) = cpg.call.nameExact("open").receiver.l: @unchecked
+    // TODO: Right now this is seen as a "getter" but should _probably_ be a field access, e.g. self.Augeas
+    augeas.methodFullName shouldBe "Test0.rb:<global>::program:Augeas"
+    augeas.code shouldBe "::Augeas"
   }
 
 }

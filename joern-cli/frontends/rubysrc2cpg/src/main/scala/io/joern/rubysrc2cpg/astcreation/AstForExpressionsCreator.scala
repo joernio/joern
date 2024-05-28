@@ -641,10 +641,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   protected def astForUnknown(node: RubyNode): Ast = {
     val className = node.getClass.getSimpleName
     val text      = code(node)
-    node match {
-      case _: Unknown => // Unknowns are syntax errors which are logged by the parser already
-      case _ => logger.warn(s"Could not represent expression: $text ($className) ($relativeFileName), skipping")
-    }
+    logger.warn(s"Could not represent expression: $text ($className) ($relativeFileName), skipping")
     Ast(unknownNode(node, text))
   }
 

@@ -2,7 +2,7 @@ package io.joern.rubysrc2cpg.parser
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.parser.AntlrContextHelpers.*
-import io.joern.rubysrc2cpg.parser.RubyParser.CommandWithDoBlockContext
+import io.joern.rubysrc2cpg.parser.RubyParser.{CommandWithDoBlockContext, ConstantVariableReferenceContext}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
@@ -373,6 +373,16 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     }
   }
 
+  override def visitQuotedExpandedRegularExpressionLiteral(
+    ctx: RubyParser.QuotedExpandedRegularExpressionLiteralContext
+  ): RubyNode = {
+    if (ctx.isStatic) {
+      StaticLiteral(getBuiltInType(Defines.Regexp))(ctx.toTextSpan)
+    } else {
+      DynamicLiteral(getBuiltInType(Defines.Regexp), ctx.interpolations.map(visit))(ctx.toTextSpan)
+    }
+  }
+
   override def visitCurlyBracesBlock(ctx: RubyParser.CurlyBracesBlockContext): RubyNode = {
     val parameters = Option(ctx.blockParameter()).fold(List())(_.parameters).map(visit)
     val body       = visit(ctx.compoundStatement())
@@ -733,6 +743,12 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
 
     logger.warn(s"MemberAccessExpression not handled: '${ctx.toTextSpan}'")
     Unknown()(ctx.toTextSpan)
+  }
+
+  override def visitConstantVariableReference(ctx: ConstantVariableReferenceContext): RubyNode = {
+    MemberAccess(SelfIdentifier()(ctx.toTextSpan.spanStart(Defines.Self)), "::", ctx.CONSTANT_IDENTIFIER().getText)(
+      ctx.toTextSpan
+    )
   }
 
   override def visitIndexingAccessExpression(ctx: RubyParser.IndexingAccessExpressionContext): RubyNode = {

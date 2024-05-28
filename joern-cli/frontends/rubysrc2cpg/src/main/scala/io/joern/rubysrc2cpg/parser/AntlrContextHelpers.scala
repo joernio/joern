@@ -92,7 +92,7 @@ object AntlrContextHelpers {
 
   sealed implicit class RegularExpressionLiteralContextHelper(ctx: RegularExpressionLiteralContext) {
     def isStatic: Boolean  = !isDynamic
-    def isDynamic: Boolean = ctx.regexpLiteralContent.asScala.exists(c => Option(c.compoundStatement()).isDefined)
+    def isDynamic: Boolean = interpolations.nonEmpty
 
     def interpolations: List[ParserRuleContext] = ctx
       .regexpLiteralContent()
@@ -100,6 +100,22 @@ object AntlrContextHelpers {
       .filter(ctx => Option(ctx.compoundStatement()).isDefined)
       .map(ctx => ctx.compoundStatement())
       .toList
+  }
+
+  sealed implicit class QuotedExpandedRegularExpressionLiteralContextHelper(
+    ctx: QuotedExpandedRegularExpressionLiteralContext
+  ) {
+
+    def isStatic: Boolean  = !isDynamic
+    def isDynamic: Boolean = interpolations.nonEmpty
+
+    def interpolations: List[ParserRuleContext] = ctx
+      .quotedExpandedLiteralStringContent()
+      .asScala
+      .filter(ctx => Option(ctx.compoundStatement()).isDefined)
+      .map(ctx => ctx.compoundStatement())
+      .toList
+
   }
 
   sealed implicit class CurlyBracesBlockContextHelper(ctx: CurlyBracesBlockContext) {
