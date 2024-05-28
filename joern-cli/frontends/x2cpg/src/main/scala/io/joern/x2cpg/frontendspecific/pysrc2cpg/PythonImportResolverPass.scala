@@ -23,7 +23,7 @@ class PythonImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
   private val moduleCache: mutable.HashMap[String, ImportableEntity] = mutable.HashMap.empty
 
   override def init(): Unit = {
-    cpg.typeDecl.isExternal(false).nameExact("<module>").foreach { moduleType =>
+    cpg.typeDecl.isExternal(false).nameExact(Constants.moduleName).foreach { moduleType =>
       val modulePath = fileToPythonImportNotation(moduleType.filename)
       cpg.method.fullNameExact(moduleType.fullName).headOption.foreach { moduleMethod =>
         moduleCache.put(modulePath, Module(moduleType, moduleMethod))
@@ -48,7 +48,7 @@ class PythonImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
       .stripPrefix(codeRootDir)
       .replaceAll(Matcher.quoteReplacement(JFile.separator), ".")
       .stripSuffix(".py")
-      .stripSuffix(".__init__")
+      .stripSuffix(s".${Constants.initName}")
 
   override protected def optionalResolveImport(
     fileName: String,
@@ -103,16 +103,20 @@ class PythonImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
 
     def toUnresolvedImport(pseudoPath: String): Set[EvaluatedImport] = {
       if (isMaybeConstructor) {
-        Set(UnknownMethod(Seq(pseudoPath, "__init__").mkString(pathSep.toString), alias), UnknownTypeDecl(pseudoPath))
+        Set(
+          UnknownMethod(Seq(pseudoPath, Constants.initName).mkString(pathSep.toString), alias),
+          UnknownTypeDecl(pseudoPath)
+        )
       } else {
         Set(UnknownImport(pseudoPath))
       }
     }
 
     expEntity.split(pathSep).reverse.toList match
-      case name :: Nil => toUnresolvedImport(s"$name.py:<module>")
-      case name :: xs  => toUnresolvedImport(s"${xs.reverse.mkString(JFile.separator)}.py:<module>$pathSep$name")
-      case Nil         => Set.empty
+      case name :: Nil => toUnresolvedImport(s"$name.py:${Constants.moduleName}")
+      case name :: xs =>
+        toUnresolvedImport(s"${xs.reverse.mkString(JFile.separator)}.py:${Constants.moduleName}$pathSep$name")
+      case Nil => Set.empty
   }
 
   private sealed trait ImportableEntity {
@@ -140,6 +144,6 @@ class PythonImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
 
   private case class ImportableType(typ: TypeDecl) extends ImportableEntity {
     override def toResolvedImport(alias: String): List[EvaluatedImport] =
-      List(ResolvedTypeDecl(typ.fullName), ResolvedMethod(s"${typ.fullName}.__init__", typ.name))
+      List(ResolvedTypeDecl(typ.fullName), ResolvedMethod(s"${typ.fullName}.${Constants.initName}", typ.name))
   }
 }
