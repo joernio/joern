@@ -197,4 +197,12 @@ class CallTests extends RubyCode2CpgFixture {
     }
   }
 
+  "named parameters in parenthesis-less call to a symbol value should create a correctly named argument" in {
+    val cpg = code("on in: :sequence")
+
+    val List(_, inArg) = cpg.call.argument.l: @unchecked
+    inArg.code shouldBe ":sequence"
+    inArg.argumentName shouldBe Option("in")
+  }
+
 }

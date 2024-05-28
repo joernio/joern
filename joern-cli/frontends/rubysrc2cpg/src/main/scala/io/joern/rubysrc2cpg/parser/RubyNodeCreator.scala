@@ -1152,8 +1152,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     if (Option(ctx.operatorExpression()).isDefined) {
       visit(ctx.operatorExpression())
     } else {
-      logger.warn(s"Association keys without operator expressions are not handled '${ctx.toTextSpan}''")
-      Unknown()(ctx.toTextSpan)
+      SimpleIdentifier()(ctx.toTextSpan)
     }
   }
 
