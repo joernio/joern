@@ -418,12 +418,20 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
   }
 
   private def astForTryStmt(stmt: PhpTryStmt): Ast = {
-    val tryBody     = stmtBodyBlockAst(stmt)
-    val catches     = stmt.catches.map(astForCatchStmt)
-    val finallyBody = stmt.finallyStmt.map(fin => stmtBodyBlockAst(fin))
+    val tryBody = stmtBodyBlockAst(stmt)
+
+    val catches = stmt.catches.map { catchStmt =>
+      val catchNode = controlStructureNode(catchStmt, ControlStructureTypes.CATCH, "catch")
+      Ast(catchNode).withChild(astForCatchStmt(catchStmt))
+    }
+
+    val finallyBody = stmt.finallyStmt.map { fin =>
+      val finallyNode = controlStructureNode(fin, ControlStructureTypes.FINALLY, "finally")
+      Ast(finallyNode).withChild(stmtBodyBlockAst(fin))
+    }
 
     val tryNode = controlStructureNode(stmt, ControlStructureTypes.TRY, "try { ... }")
-
+    setArgumentIndices(tryBody +: (catches ++ finallyBody.toSeq))
     tryCatchAst(tryNode, tryBody, catches, finallyBody)
   }
 
@@ -640,7 +648,7 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
       DispatchTypes.DYNAMIC_DISPATCH,
       Some(currentCallSignature),
       Some(TypeConstants.Any)
-    );
+    )
     val currentCallAst = callAst(currentCallNode, base = Option(iteratorIdentifierAst))
 
     val valueAst = if (stmt.assignByRef) {
@@ -709,7 +717,7 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
           Ast(local) :: assignmentAst.toList
 
         case other =>
-          logger.warn(s"Unexpected static variable type ${other} in $filename")
+          logger.warn(s"Unexpected static variable type $other in $filename")
           Nil
       }
     }
@@ -720,7 +728,7 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
     Ast()
   }
 
-  def codeForClassStmt(stmt: PhpClassLikeStmt, name: PhpNameExpr): String = {
+  private def codeForClassStmt(stmt: PhpClassLikeStmt, name: PhpNameExpr): String = {
     // TODO Extend for anonymous classes
     val extendsString = stmt.extendsNames match {
       case Nil   => ""
@@ -990,18 +998,14 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
 
     val fullName = call.target match {
       // Static method call with a known class name
-      case Some(nameExpr: PhpNameExpr) if call.isStatic => {
+      case Some(nameExpr: PhpNameExpr) if call.isStatic =>
         if (nameExpr.name == "self") composeMethodFullName(name, call.isStatic)
-        else s"${nameExpr.name}${StaticMethodDelimiter}$name"
-      }
-
+        else s"${nameExpr.name}$StaticMethodDelimiter$name"
       case Some(expr) =>
         s"$UnresolvedNamespace\\$codePrefix"
-
       case None if PhpBuiltins.FuncNames.contains(name) =>
         // No signature/namespace for MFN for builtin functions to ensure stable names as type info improves.
         name
-
       // Function call
       case None =>
         composeMethodFullName(name, call.isStatic)
@@ -1084,8 +1088,8 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
           .sortBy(_.argumentIndex)
 
       if (args.size != 2) {
-        val position = s"${line(assignment).getOrElse("")}:${filename}"
-        logger.warn(s"Expected 2 call args for emptyArrayDimAssign. Not resetting code: ${position}")
+        val position = s"${line(assignment).getOrElse("")}:$filename"
+        logger.warn(s"Expected 2 call args for emptyArrayDimAssign. Not resetting code: $position")
       } else {
         val codeOverride = s"${args.head.code}[] = ${args.last.code}"
         astRoot.code(codeOverride)
@@ -1512,7 +1516,7 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
     // Init node
     val initArgs      = expr.args.map(astForCallArg)
     val initSignature = s"$UnresolvedSignature(${initArgs.size})"
-    val initFullName  = s"$className$InstanceMethodDelimiter${ConstructorMethodName}"
+    val initFullName  = s"$className$InstanceMethodDelimiter$ConstructorMethodName"
     val initCode      = s"$initFullName(${initArgs.map(_.rootCodeOrEmpty).mkString(",")})"
     val initCallNode = callNode(
       expr,
@@ -1604,8 +1608,8 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
         callAst(accessNode, variableAst :: dimensionAst :: Nil)
 
       case None =>
-        val errorPosition = s"${variableCode}:${line(expr).getOrElse("")}:${filename}"
-        logger.error(s"ArrayDimFetchExpr without dimensions should be handled in assignment: ${errorPosition}")
+        val errorPosition = s"$variableCode:${line(expr).getOrElse("")}:$filename"
+        logger.error(s"ArrayDimFetchExpr without dimensions should be handled in assignment: $errorPosition")
         Ast()
     }
   }
@@ -1757,9 +1761,9 @@ object AstCreator {
     val Unknown: String      = "UNKNOWN"
     val Closure: String      = "__closure"
     val Class: String        = "class"
-    val True: String         = "true";
-    val False: String        = "false";
-    val NullName: String     = "null";
+    val True: String         = "true"
+    val False: String        = "false"
+    val NullName: String     = "null"
 
     def isBoolean(name: String): Boolean = {
       List(True, False).contains(name)

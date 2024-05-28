@@ -739,32 +739,26 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         |};
         |""".stripMargin)
 
-    "create the try block correctly" in {
-      inside(cpg.controlStructure.l) { case List(tryStructure) =>
-        tryStructure.controlStructureType shouldBe ControlStructureTypes.TRY
-        tryStructure.lineNumber shouldBe Some(2)
+    val List(tryNode) = cpg.controlStructure.isTry.l
 
-        inside(tryStructure.astChildren.l) { case List(body: Block, _, _, _) =>
-          body.order shouldBe 1
-          inside(body.astChildren.code.l) { case List(bodyCode) =>
-            bodyCode shouldBe "$body1"
-          }
-        }
-      }
+    "create the try block correctly" in {
+      val List(tryBlock) = tryNode.astChildren.isBlock.l
+      tryNode.lineNumber shouldBe Some(2)
+      tryBlock.astChildren.code.l shouldBe List("$body1")
     }
 
     "create the catch blocks correctly" in {
-      val catchBlocks = cpg.controlStructure.astChildren.order(2).toSet
-
-      catchBlocks.flatMap(_.astChildren.code.toSet) shouldBe Set("$body2", "$body3")
-      catchBlocks.flatMap(_.lineNumber) shouldBe Set(4, 6)
+      val List(catchA, catchB) = tryNode.astChildren.isControlStructure.isCatch.l
+      catchA.astChildren.isBlock.astChildren.code.l shouldBe List("$body2")
+      catchA.lineNumber shouldBe Some(4)
+      catchB.astChildren.isBlock.astChildren.code.l shouldBe List("$body3")
+      catchB.lineNumber shouldBe Some(6)
     }
 
     "create the finally block correctly" in {
-      inside(cpg.controlStructure.astChildren.order(3).l) { case List(finallyBlock) =>
-        finallyBlock.astChildren.code.toSet shouldBe Set("$body4")
-        finallyBlock.lineNumber shouldBe Some(8)
-      }
+      val List(finallyNode) = tryNode.astChildren.isControlStructure.isFinally.l
+      finallyNode.astChildren.isBlock.astChildren.code.l shouldBe List("$body4")
+      finallyNode.lineNumber shouldBe Some(8)
     }
   }
 
@@ -777,25 +771,18 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         |};
         |""".stripMargin)
 
-    "create the try block correctly" in {
-      inside(cpg.controlStructure.l) { case List(tryStructure) =>
-        tryStructure.controlStructureType shouldBe ControlStructureTypes.TRY
-        tryStructure.lineNumber shouldBe Some(2)
+    val List(tryNode) = cpg.controlStructure.isTry.l
 
-        inside(tryStructure.astChildren.l) { case List(body: Block, _) =>
-          body.order shouldBe 1
-          inside(body.astChildren.code.l) { case List(bodyCode) =>
-            bodyCode shouldBe "$body1"
-          }
-        }
-      }
+    "create the try block correctly" in {
+      val List(tryBlock) = tryNode.astChildren.isBlock.l
+      tryNode.lineNumber shouldBe Some(2)
+      tryBlock.astChildren.code.l shouldBe List("$body1")
     }
 
     "create the finally block correctly" in {
-      inside(cpg.controlStructure.astChildren.order(3).l) { case List(finallyBlock) =>
-        finallyBlock.astChildren.code.toSet shouldBe Set("$body4")
-        finallyBlock.lineNumber shouldBe Some(4)
-      }
+      val List(finallyNode) = tryNode.astChildren.isControlStructure.isFinally.l
+      finallyNode.astChildren.isBlock.astChildren.code.l shouldBe List("$body4")
+      finallyNode.lineNumber shouldBe Some(4)
     }
   }
 
@@ -810,25 +797,20 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         |};
         |""".stripMargin)
 
-    "create the try block correctly" in {
-      inside(cpg.controlStructure.l) { case List(tryStructure) =>
-        tryStructure.controlStructureType shouldBe ControlStructureTypes.TRY
-        tryStructure.lineNumber shouldBe Some(2)
+    val List(tryNode) = cpg.controlStructure.isTry.l
 
-        inside(tryStructure.astChildren.l) { case List(body: Block, _, _) =>
-          body.order shouldBe 1
-          inside(body.astChildren.code.l) { case List(bodyCode) =>
-            bodyCode shouldBe "$body1"
-          }
-        }
-      }
+    "create the try block correctly" in {
+      val List(tryBlock) = tryNode.astChildren.isBlock.l
+      tryNode.lineNumber shouldBe Some(2)
+      tryBlock.astChildren.code.l shouldBe List("$body1")
     }
 
     "create the catch blocks correctly" in {
-      val catchBlocks = cpg.controlStructure.astChildren.order(2).toSet
-
-      catchBlocks.flatMap(_.astChildren.code.toSet) shouldBe Set("$body2", "$body3")
-      catchBlocks.flatMap(_.lineNumber) shouldBe Set(4, 6)
+      val List(catchA, catchB) = tryNode.astChildren.isControlStructure.isCatch.l
+      catchA.astChildren.isBlock.astChildren.code.l shouldBe List("$body2")
+      catchA.lineNumber shouldBe Some(4)
+      catchB.astChildren.isBlock.astChildren.code.l shouldBe List("$body3")
+      catchB.lineNumber shouldBe Some(6)
     }
   }
 
@@ -839,7 +821,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         |} catch (A $a) {};
         |""".stripMargin)
 
-    inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.THROW).l) { case List(throwExpr) =>
+    inside(cpg.controlStructure.isThrow.l) { case List(throwExpr) =>
       throwExpr.lineNumber shouldBe Some(3)
       throwExpr.code shouldBe "throw $x"
       throwExpr.astChildren.code.l shouldBe List("$x")
