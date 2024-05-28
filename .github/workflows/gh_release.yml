@@ -29,12 +29,11 @@ jobs:
       - name: Delete `.cargo` directory # to save disk space
         run: rm -rf /home/runner/.cargo
         if: runner.os == 'Linux'
-      #      - run: sbt scalafmtCheck test
-      #        env:
-      #          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #      - run: export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} && ./testDistro.sh
+      - run: sbt scalafmtCheck test
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} && ./testDistro.sh
       - run: |
-          sbt stage
           cd joern-cli/target/universal/stage
           ./schema-extender/test.sh
           cd -
