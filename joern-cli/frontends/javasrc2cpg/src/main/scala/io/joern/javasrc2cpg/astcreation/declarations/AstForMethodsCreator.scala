@@ -45,8 +45,7 @@ import io.joern.javasrc2cpg.astcreation.declarations.AstForMethodsCreator.Partia
 
 private[declarations] trait AstForMethodsCreator { this: AstCreator =>
   def astForMethod(methodDeclaration: MethodDeclaration): Ast = {
-    val methodNode = createPartialMethod(methodDeclaration)
-    println("Some method")
+    val methodNode     = createPartialMethod(methodDeclaration)
     val typeParameters = getIdentifiersForTypeParameters(methodDeclaration)
 
     val maybeResolved      = tryWithSafeStackOverflow(methodDeclaration.resolve())
