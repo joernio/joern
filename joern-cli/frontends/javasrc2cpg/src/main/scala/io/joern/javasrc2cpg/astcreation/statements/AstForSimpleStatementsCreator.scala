@@ -298,13 +298,13 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
         .columnNumber(column(catchClause))
       Ast(catchNode).withChild(astForCatchClause(catchClause))
     }
-    val finallyAst = stmt.getFinallyBlock.toScala.map { catchBlock =>
+    val finallyAst = stmt.getFinallyBlock.toScala.map { finallyBlock =>
       val finallyNode = NewControlStructure()
         .controlStructureType(ControlStructureTypes.FINALLY)
         .code("finally")
-        .lineNumber(line(catchBlock))
-        .columnNumber(column(catchBlock))
-      Ast(finallyNode).withChild(astForBlockStatement(catchBlock, "finally"))
+        .lineNumber(line(finallyBlock))
+        .columnNumber(column(finallyBlock))
+      Ast(finallyNode).withChild(astForBlockStatement(finallyBlock, "finally"))
     }.toList
 
     val childrenAsts = tryAst +: (catchAsts ++ finallyAst)
