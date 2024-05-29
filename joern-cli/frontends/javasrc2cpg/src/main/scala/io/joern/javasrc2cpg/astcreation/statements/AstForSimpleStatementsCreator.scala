@@ -56,7 +56,7 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
 
     val typeFullName = maybeResolved.toOption
       .map(_.declaringType())
-      .flatMap(typ => scope.lookupType(typ.getName()).orElse(typeInfoCalc.fullName(typ)))
+      .flatMap(typ => scope.lookupType(typ.getName).orElse(typeInfoCalc.fullName(typ)))
 
     val callRoot = initNode(
       typeFullName.orElse(Some(TypeConstants.Any)),
@@ -288,21 +288,28 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
       .columnNumber(column(stmt))
 
     val resources = stmt.getResources.asScala.flatMap(astsForExpression(_, expectedType = ExpectedType.empty)).toList
-    val tryAst    = astForBlockStatement(stmt.getTryBlock, codeStr = "try")
-    val catchAsts = stmt.getCatchClauses.asScala.map(astForCatchClause)
-    val catchBlock = Option
-      .when(catchAsts.nonEmpty) {
-        Ast(NewBlock().code("catch")).withChildren(catchAsts)
-      }
-      .toList
-    val finallyAst =
-      stmt.getFinallyBlock.toScala.map(astForBlockStatement(_, "finally")).toList
 
-    val controlStructureAst = Ast(tryNode)
-      .withChild(tryAst)
-      .withChildren(catchBlock)
-      .withChildren(finallyAst)
+    val tryAst = astForBlockStatement(stmt.getTryBlock, codeStr = "try")
+    val catchAsts = stmt.getCatchClauses.asScala.toList.map { catchClause =>
+      val catchNode = NewControlStructure()
+        .controlStructureType(ControlStructureTypes.CATCH)
+        .code("catch")
+        .lineNumber(line(catchClause))
+        .columnNumber(column(catchClause))
+      Ast(catchNode).withChild(astForCatchClause(catchClause))
+    }
+    val finallyAst = stmt.getFinallyBlock.toScala.map { finallyBlock =>
+      val finallyNode = NewControlStructure()
+        .controlStructureType(ControlStructureTypes.FINALLY)
+        .code("finally")
+        .lineNumber(line(finallyBlock))
+        .columnNumber(column(finallyBlock))
+      Ast(finallyNode).withChild(astForBlockStatement(finallyBlock, "finally"))
+    }.toList
 
+    val childrenAsts = tryAst +: (catchAsts ++ finallyAst)
+    setArgumentIndices(childrenAsts)
+    val controlStructureAst = Ast(tryNode).withChildren(childrenAsts)
     resources.appended(controlStructureAst)
   }
 }
