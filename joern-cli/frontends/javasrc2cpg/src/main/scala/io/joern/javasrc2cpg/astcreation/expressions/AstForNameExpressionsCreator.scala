@@ -97,14 +97,14 @@ trait AstForNameExpressionsCreator { this: AstCreator =>
     val variable      = capturedVariable.variable
     val typeDeclChain = capturedVariable.typeDeclChain
 
-    scope.enclosingMethod.map(_.lookupVariable("this")) match {
-      case None | Some(NotInScope) | Some(CapturedVariable(_, _)) =>
+    scope.lookupVariable("this") match {
+      case NotInScope | CapturedVariable(_, _) =>
         logger.warn(
           s"Attempted to create AST for captured variable ${variable.name}, but could not find `this` param in direct scope."
         )
         Ast(NewUnknown().code(variable.name).lineNumber(line(nameExpr)).columnNumber(column(nameExpr)))
 
-      case Some(SimpleVariable(ScopeParameter(thisNode: NewMethodParameterIn))) =>
+      case SimpleVariable(ScopeParameter(thisNode: NewMethodParameterIn)) =>
         val thisIdentifier = identifierNode(
           nameExpr,
           thisNode.name,
@@ -140,7 +140,7 @@ trait AstForNameExpressionsCreator { this: AstCreator =>
         val captureFieldIdentifier = fieldIdentifierNode(nameExpr, variable.name, variable.name)
         callAst(finalFieldAccess, List(outerClassChain, Ast(captureFieldIdentifier)))
 
-      case Some(SimpleVariable(thisNode)) =>
+      case SimpleVariable(thisNode) =>
         logger.warn(
           s"Attempted to create AST for captured variable ${variable.name}, but found non-parameter `this`: ${thisNode}."
         )

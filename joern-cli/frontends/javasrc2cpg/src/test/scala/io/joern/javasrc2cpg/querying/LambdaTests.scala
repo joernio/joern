@@ -742,4 +742,29 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
       cpg.call.nameExact("<init>").count(_.argument.isEmpty) shouldBe 0
     }
   }
+
+  "calls on captured variables in lambdas" should {
+    val cpg = code("""
+                     |
+                     |public class Foo {
+                     |
+                     |    public static void sink(String s) {};
+                     |
+                     |    public static Object test(Foo captured) {
+                     |      Visitor v = new Visitor() {
+                     |        public void visit(Visited visited) {
+                     |          visited.getList().forEach(lambdaParam -> captured.remove(lambdaParam));
+                     |        }
+                     |      };
+                     |    }
+                     |}
+                     |""".stripMargin)
+
+    "have the correct receiver ast" in {
+      inside(cpg.call.name("remove").receiver.l) { case List(receiver: Identifier) =>
+        receiver.name shouldBe "captured"
+        receiver.typeFullName shouldBe "<unresolvedNamespace>.Foo"
+      }
+    }
+  }
 }
