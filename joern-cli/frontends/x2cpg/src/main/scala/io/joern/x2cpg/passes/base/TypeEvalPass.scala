@@ -8,7 +8,8 @@ import overflowdb.Node
 import overflowdb.traversal.*
 
 class TypeEvalPass(cpg: Cpg) extends ForkJoinParallelCpgPass[List[Node]](cpg) with LinkingUtil {
-  val srcLabels = List(
+
+  private val srcLabels = List(
     NodeTypes.METHOD_PARAMETER_IN,
     NodeTypes.METHOD_PARAMETER_OUT,
     NodeTypes.METHOD_RETURN,
@@ -24,9 +25,9 @@ class TypeEvalPass(cpg: Cpg) extends ForkJoinParallelCpgPass[List[Node]](cpg) wi
   )
 
   def generateParts(): Array[List[Node]] = {
-    val nodes = cpg.graph.nodes(srcLabels*).toList
-    nodes.grouped(getBatchSize(nodes.size)).toArray
+    cpg.graph.nodes(srcLabels*).toList.grouped(MAX_BATCH_SIZE).toArray
   }
+
   def runOnPart(builder: DiffGraphBuilder, part: List[overflowdb.Node]): Unit = {
     linkToSingle(
       cpg = cpg,

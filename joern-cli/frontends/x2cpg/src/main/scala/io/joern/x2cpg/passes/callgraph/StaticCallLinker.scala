@@ -13,8 +13,7 @@ class StaticCallLinker(cpg: Cpg) extends ForkJoinParallelCpgPass[Seq[Call]](cpg)
   private val logger: Logger = LoggerFactory.getLogger(classOf[StaticCallLinker])
 
   override def generateParts(): Array[Seq[Call]] = {
-    val calls = cpg.call.l
-    calls.grouped(getBatchSize(calls.size)).toArray
+    cpg.call.toList.grouped(MAX_BATCH_SIZE).toArray
   }
 
   override def runOnPart(builder: DiffGraphBuilder, calls: Seq[Call]): Unit = {
