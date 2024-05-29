@@ -5,7 +5,7 @@ object Versions {
   // causes problems upstreams.
   val antlr                  = "4.7.2"
   val cask                   = "0.9.2"
-  val catsCore               = "2.10.0"
+  val catsCore               = "2.12.0"
   val catsEffect             = "3.5.4"
   val cfr                    = "0.152"
   val commonsCompress        = "1.26.2"
