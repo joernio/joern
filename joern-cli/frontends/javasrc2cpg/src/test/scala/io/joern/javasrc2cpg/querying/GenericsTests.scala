@@ -65,6 +65,12 @@ class GenericsTests extends JavaSrcCode2CpgFixture {
                      |}
                      |""".stripMargin)
 
+    "not have the generic types in the methodFullName for calls" in {
+      cpg.call.name("into").methodFullName.l shouldBe List("foo.Box.into:foo.Box()")
+
+      cpg.call.name("get").methodFullName.l shouldBe List("foo.Box.get:java.lang.Object()")
+    }
+
   }
 
   "unresolved generic variable types" should {
