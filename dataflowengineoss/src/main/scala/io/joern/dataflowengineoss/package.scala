@@ -16,7 +16,7 @@ package object dataflowengineoss {
     */
   def globalFromLiteral(lit: Literal, recursive: Boolean = true): Iterator[Expression] = lit.start
     .where(_.method.isModule)
-    .flatMap(t => if (recursive) t.inAssignment else t.inCall.assignment)
+    .flatMap(t => if (recursive) t.inAssignment else t.inCall.isAssignment)
     .target
 
   def identifierToFirstUsages(node: Identifier): List[Identifier] = node.refsTo.flatMap(identifiersFromCapturedScopes).l

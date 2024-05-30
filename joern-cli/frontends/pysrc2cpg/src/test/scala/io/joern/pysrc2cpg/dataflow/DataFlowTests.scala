@@ -1,7 +1,7 @@
 package io.joern.pysrc2cpg.dataflow
 
 import io.joern.dataflowengineoss.language.toExtendedCfgNode
-import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
+import io.joern.dataflowengineoss.semanticsloader.{FlowMapping, FlowSemantic, PassThroughMapping}
 import io.joern.pysrc2cpg.PySrc2CpgFixture
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Literal, Member, Method}
@@ -450,6 +450,66 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     def source     = cpg.literal("\"X\"")
     val List(flow) = sink.reachableByFlows(source).map(flowToResultPairs).l
     flow shouldBe List(("a.run(\"X\")", 4), ("x = a.run(\"X\")", 4), ("tmp0[\"x\"] = x", 6))
+  }
+
+  "flow from literals in dictionary literal assignment and first argument to second argument" in {
+    val cpg = code("""
+        |x = {'x': 10}
+        |print(1, x)
+        |""".stripMargin)
+
+    def source              = cpg.literal
+    def sink                = cpg.call("print").argument(2)
+    val List(flow1, flow10) = sink.reachableByFlows(source).map(flowToResultPairs).sortBy(_.length).l
+    flow1 shouldBe List(("print(1, x)", 3))
+    flow10 shouldBe List(
+      ("tmp0['x'] = 10", 2),
+      ("tmp0", 2),
+      ("x = tmp0 = {}\ntmp0['x'] = 10\ntmp0", 2),
+      ("print(1, x)", 3)
+    )
+  }
+
+  "flow from literal in dictionary literal assignment to second argument, using custom flows" in {
+    val cpg = code("""
+        |x = {'x': 10}
+        |print(1, x)
+        |""".stripMargin)
+      .withExtraFlows(List(FlowSemantic(".*print", List(PassThroughMapping), true)))
+
+    def source       = cpg.literal
+    def sink         = cpg.call("print").argument.argumentIndex(2)
+    val List(flow10) = sink.reachableByFlows(source).map(flowToResultPairs).l
+    flow10 shouldBe List(
+      ("tmp0['x'] = 10", 2),
+      ("tmp0", 2),
+      ("x = tmp0 = {}\ntmp0['x'] = 10\ntmp0", 2),
+      ("print(1, x)", 3)
+    )
+  }
+
+  "flow from literals in dictionary literal and first argument to second argument" in {
+    val cpg = code("""
+        |print(1, {'x': 10})
+        |""".stripMargin)
+
+    def source       = cpg.literal
+    def sink         = cpg.call("print").argument.argumentIndex(2)
+    val List(flow10) = sink.reachableByFlows(source).map(flowToResultPairs).l
+    flow10 shouldBe List(("tmp0['x'] = 10", 2), ("tmp0", 2))
+  }
+
+  "flow from literals into a dictionary literal used as an argument to an external call" in {
+    val cpg = code("""
+        |import bar
+        |x = 100
+        |bar.foo('D').baz(A='A', B=b, C={'Property': x})
+        |""".stripMargin)
+
+    def source        = cpg.literal
+    def sink          = cpg.call("baz").argument.argumentName("C")
+    val List(flow100) = sink.reachableByFlows(source).map(flowToResultPairs).l
+    flow100 shouldBe List(("x = 100", 3), ("tmp0['Property'] = x", 4), ("tmp0", 4))
   }
 
   "flow from global variable defined in imported file and used as argument to `print`" in {
