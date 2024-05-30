@@ -42,6 +42,7 @@ import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import com.github.javaparser.ast.Node
 import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserParameterDeclaration
 import io.joern.javasrc2cpg.astcreation.declarations.AstForMethodsCreator.PartialConstructorDeclaration
+import io.joern.javasrc2cpg.util.Util
 
 private[declarations] trait AstForMethodsCreator { this: AstCreator =>
   def astForMethod(methodDeclaration: MethodDeclaration): Ast = {
@@ -51,7 +52,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
 
     val maybeResolved      = tryWithSafeStackOverflow(methodDeclaration.resolve())
     val expectedReturnType = Try(symbolSolver.toResolvedType(methodDeclaration.getType, classOf[ResolvedType])).toOption
-    val simpleMethodReturnType = methodDeclaration.getTypeAsString()
+    val simpleMethodReturnType = Util.stripGenericTypes(methodDeclaration.getTypeAsString())
     val returnTypeFullName = expectedReturnType
       .flatMap(typeInfoCalc.fullName)
       .orElse(scope.lookupType(simpleMethodReturnType))
@@ -218,19 +219,14 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
   }
 
   private def astForParameter(parameter: Parameter, childNum: Int): Ast = {
-    val maybeArraySuffix = if (parameter.isVarArgs) "[]" else ""
+    val maybeArraySuffix     = if (parameter.isVarArgs) "[]" else ""
+    val rawParameterTypeName = Util.stripGenericTypes(parameter.getTypeAsString)
     val typeFullName =
       typeInfoCalc
         .fullName(parameter.getType)
-        .orElse(scope.lookupType(parameter.getTypeAsString))
-        // In a scenario where we have an import of an external type e.g. `import foo.bar.Baz` and
-        // this parameter's type is e.g. `Baz<String>`, the lookup will fail. However, if we lookup
-        // for `Baz` instead (i.e. without type arguments), then the lookup will succeed.
-        .orElse(
-          Try(parameter.getType.asClassOrInterfaceType).toOption.flatMap(t => scope.lookupType(t.getNameAsString))
-        )
+        .orElse(scope.lookupType(rawParameterTypeName))
         .map(_ ++ maybeArraySuffix)
-        .getOrElse(s"${Defines.UnresolvedNamespace}.${parameter.getTypeAsString}")
+        .getOrElse(s"${Defines.UnresolvedNamespace}.$rawParameterTypeName")
     val evalStrat =
       if (parameter.getType.isPrimitiveType) EvaluationStrategies.BY_VALUE else EvaluationStrategies.BY_SHARING
     typeInfoCalc.registerType(typeFullName)

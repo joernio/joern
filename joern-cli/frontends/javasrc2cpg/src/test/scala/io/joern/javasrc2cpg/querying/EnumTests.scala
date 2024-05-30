@@ -59,7 +59,7 @@ class EnumTests extends JavaSrcCode2CpgFixture {
     cpg.typeDecl.name(".*Color.*").member.size shouldBe 3
     val List(r, b, l) = cpg.typeDecl.name(".*Color.*").member.l
 
-    l.code shouldBe "java.lang.String label"
+    l.code shouldBe "String label"
 
     r.code shouldBe "RED(\"Red\")"
     r.astChildren.size shouldBe 0

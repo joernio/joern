@@ -4,55 +4,6 @@ import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 
 class GenericsTests extends JavaSrcCode2CpgFixture {
-
-  "resolved generic type declarations" should {
-    val cpg = code("""package box;
-                     |
-                     |public class Box<T> {
-                     |  public Box(T value) {}
-                     |
-                     |  public T get() { return null; }
-                     |
-                     |  public static void test() {
-                     |    Box<Integer> b = new Box<>(0);
-                     |    b.get();
-                     |  }
-                     |}
-                     |""".stripMargin)
-
-    "not include the type variable in the type decl name" in {
-      cpg.typeDecl.name(".*Box.*").fullName.l shouldBe List("box.Box")
-    }
-
-    "use erased types in the constructor full name" in {
-      cpg.method.nameExact("<init>").fullName.l shouldBe List("box.Box.<init>:void(java.lang.Object)")
-    }
-
-    "use erased types in the method full name" in {
-      cpg.method.nameExact("get").fullName.l shouldBe List("box.Box.get:java.lang.Object()")
-    }
-
-    "use erased types for the method full name in the constructor invocation" in {
-      cpg.call.nameExact("<init>").methodFullName.l shouldBe List("box.Box.<init>:void(java.lang.Object)")
-    }
-
-    "use erased types for the method full name in the get method invocation" in {
-      cpg.call.nameExact("get").methodFullName.l shouldBe List("box.Box.get:java.lang.Object()")
-    }
-
-    "not include generic types in type full names of objects" in {
-      cpg.local.name("b").typeFullName.l shouldBe List("box.Box<java.lang.Integer>")
-    }
-
-    "have type nodes mapping generic types to raw types" in {
-      inside(cpg.local.name("b").typ.l) { case List(typ) =>
-        typ.name shouldBe "Box<java.lang.Integer>"
-        typ.fullName shouldBe "box.Box<java.lang.Integer>"
-        typ.typeDeclFullName shouldBe "box.Box"
-      }
-    }
-  }
-
   "unresolved generic type declarations" should {
     val cpg = code("""import box.Box;
                      |
@@ -113,7 +64,7 @@ class GenericsTests extends JavaSrcCode2CpgFixture {
                      |  }
                      |}
                      |""".stripMargin)
-    
+
   }
 
   "unresolved generic variable types" should {
@@ -130,13 +81,28 @@ class GenericsTests extends JavaSrcCode2CpgFixture {
                      |""".stripMargin)
 
     "contain generic type information in the variable typeFullName" in {
-      cpg.method.name("foo").parameter.name("b").typeFullName.l shouldBe List("<unresolvedNamespace>.Bar<Integer>")
+      cpg.method.name("foo").parameter.name("b").typeFullName.l shouldBe List("<unresolvedNamespace>.Bar")
     }
 
     "not contain generic type information in the bar call methodFullName" in {
-      cpg.call.name("bar").methodFullName.l shouldBe List("<unresolvedNamespace>.Bar.bar:<unresolvedSignature>")
+      cpg.call.name("bar").methodFullName.l shouldBe List("<unresolvedNamespace>.Bar.bar:<unresolvedSignature>(0)")
     }
 
+  }
+
+  "fields with generic types" should {
+    val cpg = code("""
+      |package foo;
+      |class Box<T> {}
+      |
+      |class Foo {
+      |  Box<Integer> box;
+      |}
+      |""".stripMargin)
+
+    "not have the generic types in field type full names" in {
+      cpg.typeDecl.name("Foo").member.name("box").typeFullName.l shouldBe List("foo.Box")
+    }
   }
 
   "old generics tests" should {

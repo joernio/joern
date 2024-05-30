@@ -82,7 +82,7 @@ class NewMemberTests extends JavaSrcCode2CpgFixture {
       cpg.member
         .name("consumer")
         .typeFullName
-        .head shouldBe "org.apache.kafka.clients.consumer.Consumer<String,Integer>"
+        .head shouldBe "org.apache.kafka.clients.consumer.Consumer"
     }
 
     "have a resolved package name in methodFullName" in {
@@ -91,7 +91,7 @@ class NewMemberTests extends JavaSrcCode2CpgFixture {
         .methodFullName
         .head
         .split(":")
-        .head shouldBe "org.apache.kafka.clients.consumer.Consumer<String,Integer>.poll"
+        .head shouldBe "org.apache.kafka.clients.consumer.Consumer.poll"
     }
   }
 

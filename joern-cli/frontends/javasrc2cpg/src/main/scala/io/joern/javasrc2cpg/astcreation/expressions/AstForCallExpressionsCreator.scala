@@ -20,7 +20,7 @@ import io.joern.javasrc2cpg.astcreation.expressions.AstForCallExpressionsCreator
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
 import io.joern.javasrc2cpg.scope.Scope.typeFullName
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
-import io.joern.javasrc2cpg.util.NameConstants
+import io.joern.javasrc2cpg.util.{NameConstants, Util}
 import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, composeMethodLikeSignature, composeUnresolvedSignature}
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode, newOperatorCallNode}
@@ -192,9 +192,10 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
 
     val anonymousClassBody = expr.getAnonymousClassBody.toScala.map(_.asScala.toList)
     val nameSuffix         = if (anonymousClassBody.isEmpty) "" else s"$$${scope.getNextAnonymousClassIndex()}"
-    val typeName           = s"${expr.getTypeAsString}$nameSuffix"
+    val rawType            = Util.stripGenericTypes(expr.getTypeAsString)
+    val typeName           = s"$rawType$nameSuffix"
 
-    val baseTypeFromScope = scope.lookupScopeType(expr.getTypeAsString)
+    val baseTypeFromScope = scope.lookupScopeType(rawType)
     // These will be the same for non-anonymous type decls, but in that case only the typeFullName will be used.
     val baseTypeFullName =
       baseTypeFromScope
@@ -455,6 +456,7 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
         }
 
       case objectCreationExpr: ObjectCreationExpr =>
+        // Use type name with generics for code
         val typeName        = objectCreationExpr.getTypeAsString
         val argumentsString = getArgumentCodeString(objectCreationExpr.getArguments)
         someWithDotSuffix(s"new $typeName($argumentsString)")
