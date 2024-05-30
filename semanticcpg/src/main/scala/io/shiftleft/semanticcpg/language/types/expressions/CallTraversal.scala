@@ -21,7 +21,8 @@ class CallTraversal(val traversal: Iterator[Call]) extends AnyVal {
 
   /** Only assignment calls
     */
-  def isAssignment: Iterator[Assignment] = traversal.nameExact(allAssignmentTypes.toSeq*).collectAll[Assignment]
+  def isAssignment: Iterator[Assignment] =
+    traversal.methodFullNameExact(allAssignmentTypes.toSeq*).collectAll[Assignment]
 
   /** The receiver of a call if the call has a receiver associated.
     */
