@@ -1,9 +1,9 @@
 package io.shiftleft.semanticcpg.language.types.expressions
 
-import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.Assignment
+import io.shiftleft.semanticcpg.language.operatorextension.allAssignmentTypes
 
 /** A call site
   */
@@ -21,7 +21,7 @@ class CallTraversal(val traversal: Iterator[Call]) extends AnyVal {
 
   /** Only assignment calls
     */
-  def isAssignment: Iterator[Assignment] = traversal.nameExact(Operators.assignment).collectAll[Assignment]
+  def isAssignment: Iterator[Assignment] = traversal.nameExact(allAssignmentTypes.toSeq*).collectAll[Assignment]
 
   /** The receiver of a call if the call has a receiver associated.
     */
