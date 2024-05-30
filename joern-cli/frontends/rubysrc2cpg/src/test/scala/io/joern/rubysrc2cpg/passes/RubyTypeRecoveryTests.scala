@@ -194,6 +194,24 @@ class RubyExternalTypeRecoveryTests
       cpg.call("client").methodFullName.l shouldBe List("sendgrid-ruby.sendgrid.sendgrid.SendGrid.API:client")
     }
 
+    "resolve correct imports via tag nodes" in {
+      inside(cpg.call.where(_.referencedImports).l) {
+        case sendgridImport :: Nil =>
+          inside(
+            sendgridImport.tag._toEvaluatedImport
+              .filter(_.label == "RESOLVED_METHOD")
+              .map(_.asInstanceOf[ResolvedMethod])
+              .filter(_.fullName.startsWith("sendgrid-ruby.sendgrid.sendgrid.SendGrid.API"))
+              .l
+          ) {
+            case apiInit :: Nil =>
+              apiInit.fullName shouldBe s"sendgrid-ruby.sendgrid.sendgrid.SendGrid.API.${XDefines.ConstructorMethodName}"
+            case xs => fail(s"Only one ResolvedMethod expected")
+          }
+        case xs => fail(s"Only sendgrid-ruby should be referenced, got [${xs.name.mkString}]")
+      }
+    }
+
     "be present in (Case 2)" ignore {
       cpg.call("post").methodFullName.l shouldBe List(
         "sendgrid-ruby::program.SendGrid.API.client<returnValue>.mail<returnValue>.anonymous<returnValue>.post"
