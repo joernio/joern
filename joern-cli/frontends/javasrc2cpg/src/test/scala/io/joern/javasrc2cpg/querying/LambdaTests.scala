@@ -760,7 +760,7 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
         |}
         |""".stripMargin)
 
-    // This behaviour isn't exactly correct, but is on par with how we currently handle field captures in lambdas.
+    // TODO: This behaviour isn't exactly correct, but is on par with how we currently handle field captures in lambdas.
     "have the correct receiver ast" in {
       inside(cpg.call.name("remove").receiver.l) { case List(fieldAccessCall: Call) =>
         fieldAccessCall.name shouldBe Operators.fieldAccess
@@ -777,7 +777,7 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
     }
   }
 
-  // These tests exist to document current behaviour, but the current behaviour is wrong.
+  // TODO: These tests exist to document current behaviour, but the current behaviour is wrong.
   "lambdas capturing parameters" should {
     val cpg = code("""
         |import java.util.function.Consumer;
@@ -804,7 +804,7 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
       }
     }
 
-    // It should, but it doesn't.
+    // TODO: It should, but it doesn't.
     "have a captured local for the enclosing class" in {
       // There should be an `outerClass` local which captures the outer method `this`.
       cpg.method.name(".*lambda.*").local.name("this").typeFullName(".*Foo.*").isEmpty shouldBe true
