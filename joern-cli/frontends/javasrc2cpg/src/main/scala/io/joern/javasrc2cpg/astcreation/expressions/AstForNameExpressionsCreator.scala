@@ -104,15 +104,10 @@ trait AstForNameExpressionsCreator { this: AstCreator =>
         )
         Ast(NewUnknown().code(variable.name).lineNumber(line(nameExpr)).columnNumber(column(nameExpr)))
 
-      case SimpleVariable(ScopeParameter(thisNode: NewMethodParameterIn)) =>
-        val thisIdentifier = identifierNode(
-          nameExpr,
-          thisNode.name,
-          thisNode.code,
-          thisNode.typeFullName,
-          thisNode.dynamicTypeHintFullName
-        )
-        val thisAst = Ast(thisIdentifier).withRefEdge(thisIdentifier, thisNode)
+      case SimpleVariable(scopeVariable) =>
+        val thisIdentifier =
+          identifierNode(nameExpr, scopeVariable.name, scopeVariable.name, scopeVariable.typeFullName)
+        val thisAst = Ast(thisIdentifier).withRefEdge(thisIdentifier, scopeVariable.node)
 
         val lineNumber   = line(nameExpr)
         val columnNumber = column(nameExpr)
@@ -139,12 +134,6 @@ trait AstForNameExpressionsCreator { this: AstCreator =>
 
         val captureFieldIdentifier = fieldIdentifierNode(nameExpr, variable.name, variable.name)
         callAst(finalFieldAccess, List(outerClassChain, Ast(captureFieldIdentifier)))
-
-      case SimpleVariable(thisNode) =>
-        logger.warn(
-          s"Attempted to create AST for captured variable ${variable.name}, but found non-parameter `this`: ${thisNode}."
-        )
-        Ast(NewUnknown().code(variable.name).lineNumber(line(nameExpr)).columnNumber(column(nameExpr)))
     }
   }
 }
