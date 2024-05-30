@@ -117,14 +117,33 @@ abstract class X2CpgMain[T <: X2CpgConfig[T], X <: X2CpgFrontend[?]](val cmdLine
   implicit defaultConfig: T
 ) {
 
+  private val logger = LoggerFactory.getLogger(classOf[X2CpgMain[T, X]])
+
+  private def logVersionAndArgs(args: Array[String]): Unit = {
+    val frontendName = frontend.getClass.getSimpleName.stripSuffix("$")
+    val joernVersion = frontend.getClass.getPackage.getImplementationVersion
+    val logText      = s"Executing $frontendName (v$joernVersion) with arguments: ${args.mkString(" ")}"
+    logger.debug(logText)
+  }
+
+  private def logOutputPath(outputPath: String): Unit = {
+    if (X2CpgConfig.defaultOutputPath == outputPath) {
+      // We only log the output path of no explicit path was given by the user.
+      // Otherwise, the user obviously knows the path.
+      logger.info(s"The resulting CPG with be stored at ${File(outputPath)}")
+    }
+  }
+
   /** method that evaluates frontend with configuration
     */
   def run(config: T, frontend: X): Unit
 
   def main(args: Array[String]): Unit = {
+    logVersionAndArgs(args)
     X2Cpg.parseCommandLine(args, cmdLineParser, defaultConfig) match {
       case Some(config) =>
         try {
+          logOutputPath(config.outputPath)
           run(config, frontend)
         } catch {
           case ex: Throwable =>
