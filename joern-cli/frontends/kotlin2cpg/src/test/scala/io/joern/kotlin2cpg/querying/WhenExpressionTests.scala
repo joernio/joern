@@ -64,7 +64,7 @@ class WhenExpressionTests extends KotlinCode2CpgFixture(withOssDataflow = false)
 
     "contain a call node with the correct props and children set" in {
       val List(outerConditional)                      = cpg.call(Operators.conditional).argumentIndex(-1).l
-      val List(cond1, code1, nestedConditional: Call) = outerConditional.argument.l
+      val List(cond1, code1, nestedConditional: Call) = outerConditional.argument.l: @unchecked
 
       cond1.label shouldBe NodeTypes.IDENTIFIER
       cond1.code shouldBe "x"

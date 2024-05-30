@@ -172,15 +172,18 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
       |""".stripMargin)
 
     "should contain a CONTROL_STRUCTURE node for the try statement with the correct props set" in {
-      def matchTryQ = cpg.controlStructure.controlStructureType(ControlStructureTypes.TRY)
-      val List(cs)  = matchTryQ.l
-      cs.lineNumber shouldBe Some(5)
-      cs.columnNumber shouldBe Some(3)
+      val List(tryNode) = cpg.controlStructure.isTry.l
+      tryNode.lineNumber shouldBe Some(5)
+      tryNode.columnNumber shouldBe Some(3)
 
-      val List(c1, c2, c3) = matchTryQ.astChildren.l
-      c1.order shouldBe 1
-      c2.order shouldBe 2
-      c3.order shouldBe 3
+      val List(tryBlock) = tryNode.astChildren.order(1).l
+      tryBlock.astChildren.isCall.code.l shouldBe List("""println("INSIDE_TRY")""")
+
+      val List(catchBlock) = tryNode.astChildren.isControlStructure.isCatch.astChildren.l
+      catchBlock.astChildren.isCall.code.l shouldBe List("""print("Exception caught.")""")
+
+      val List(finallyBlock) = tryNode.astChildren.isControlStructure.isFinally.astChildren.l
+      finallyBlock.astChildren.isCall.code.l shouldBe List("""print("reached `finally`-block.")""")
     }
   }
 
