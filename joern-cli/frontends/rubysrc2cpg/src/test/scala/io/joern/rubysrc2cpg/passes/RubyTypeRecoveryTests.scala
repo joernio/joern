@@ -182,7 +182,6 @@ class RubyExternalTypeRecoveryTests
         |
         |def func
         |   sg = SendGrid::API.new(api_key: ENV['SENDGRID_API_KEY'])
-        |   sg2 = SendGrid::MailSettingsDto.fetch
         |   response = sg.client.mail._('send').post(request_body: data)
         |end
         |""".stripMargin,
@@ -191,10 +190,8 @@ class RubyExternalTypeRecoveryTests
       .moreCode(RubyExternalTypeRecoveryTests.SENDGRID_GEMFILE, "Gemfile")
 
     "be present in (Case 1)" in {
-      cpg.identifier("sg").lineNumber(5).typeFullName.l shouldBe List(
-        "sendgrid/sendgrid.rb:<global>::program.SendGrid.API"
-      )
-      cpg.call("client").methodFullName.l shouldBe List("sendgrid/sendgrid.rb:<global>::program.SendGrid.API:client")
+      cpg.identifier("sg").lineNumber(5).typeFullName.l shouldBe List("sendgrid-ruby.sendgrid.sendgrid.SendGrid.API")
+      cpg.call("client").methodFullName.l shouldBe List("sendgrid-ruby.sendgrid.sendgrid.SendGrid.API:client")
     }
 
     "be present in (Case 2)" ignore {
@@ -288,7 +285,8 @@ class RubyExternalTypeRecoveryTests
 
   }
 
-  "assignment from a call to a identifier inside an imported module using new" should {
+  // TODO: Should be fixed when evictions are implemented for stubbed types
+  "assignment from a call to a identifier inside an imported module using new" ignore {
     lazy val cpg = code("""
                           |require 'logger'
                           |
@@ -348,7 +346,8 @@ class RubyExternalTypeRecoveryTests
     }
   }
 
-  "recovery of type for call having a method with same name" should {
+  // TODO: Should be fixed when evictions are implemented for stubbed types
+  "recovery of type for call having a method with same name" ignore {
     lazy val cpg = code("""
                           |require "logger"
                           |

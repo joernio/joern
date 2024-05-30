@@ -40,11 +40,16 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
 
   private def summarize(cpg: Cpg, asExternal: Boolean): RubyProgramSummary = {
     def toMethod(m: Method): RubyMethod = {
+      val definingTypeDeclFullName =
+        if asExternal then
+          m.definingTypeDecl.fullName.headOption.map(_.replace(".rb:<global>::program", "").replaceAll("/", "."))
+        else m.definingTypeDecl.fullName.headOption
+
       RubyMethod(
         m.name,
         m.parameter.map(x => x.name -> x.typeFullName).l,
         m.methodReturn.typeFullName,
-        m.definingTypeDecl.fullName.headOption
+        definingTypeDeclFullName
       )
     }
 
@@ -57,9 +62,13 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
     }
 
     def toType(m: TypeDecl): RubyType = {
-      if asExternal then RubyStubbedType(m.fullName, m.method.map(toMethod).l, m.member.map(toField).l)
+      if asExternal then RubyStubbedType(buildFullName(m.fullName), m.method.map(toMethod).l, m.member.map(toField).l)
       else RubyType(m.fullName, m.method.map(toMethod).l, m.member.map(toField).l)
     }
+
+    def buildFullName(fullName: String): String = if asExternal then
+      fullName.replace(".rb:<global>::program", "").replaceAll("/", ".")
+    else fullName
 
     def handleNestedTypes(t: TypeDecl, parentScope: String): Seq[(String, Set[RubyType])] = {
       val typeFullName     = s"$parentScope.${t.name}"
@@ -74,10 +83,11 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
           .replaceAll(Matcher.quoteReplacement(JavaFile.separator), "/") // handle Windows paths
           .stripSuffix(".rb")
         // Map module functions/variables
-        val moduleEntry = (path, namespace.fullName) -> namespace.method.map { module =>
+        val namespaceFullName = buildFullName(namespace.fullName)
+        val moduleEntry = (path, namespaceFullName) -> namespace.method.map { module =>
           val moduleTypeMap =
             RubyType(
-              module.fullName,
+              buildFullName(module.fullName),
               module.block.astChildren.collectAll[Method].map(toMethod).l,
               module.local.map(toModuleVariable).l
             )
@@ -87,8 +97,9 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
         val typeEntries = namespace.method.collectFirst {
           case m: Method if m.name == Defines.Program =>
             val childrenTypes = m.block.astChildren.collectAll[TypeDecl].l
-            val fullName      = s"${namespace.fullName}:${m.name}"
+            val fullName      = buildFullName(s"${namespace.fullName}:${m.name}")
             val nestedTypes   = childrenTypes.flatMap(handleNestedTypes(_, fullName))
+
             (path, fullName) -> (childrenTypes.map(toType).toSet ++ nestedTypes.flatMap(_._2))
         }.toSeq
 
