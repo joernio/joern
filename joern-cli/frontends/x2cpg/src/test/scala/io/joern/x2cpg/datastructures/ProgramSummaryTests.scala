@@ -31,7 +31,7 @@ class ProgramSummaryTests extends AnyWordSpec with Matchers with Inside {
       List.empty
     )
 
-    val mockSummary = SummaryImpl(Map("io.joern" -> Set(mockTyp)))
+    val mockSummary = SummaryImpl(mutable.Map("io.joern" -> mutable.Set(mockTyp)))
 
     "provide the types within a given namespace" in {
       inside(mockSummary.typesUnderNamespace("io.joern").toList) {
@@ -88,7 +88,7 @@ class ProgramSummaryTests extends AnyWordSpec with Matchers with Inside {
 
     val mockTyp = Typ("foo.py:<module>", List.empty, List(Field("a", "__builtin.int")))
 
-    val mockSummary = SummaryImpl(Map("foo.py" -> Set(mockTyp)))
+    val mockSummary = SummaryImpl(mutable.Map("foo.py" -> mutable.Set(mockTyp)))
 
     "successfully resolve a module variable if its imported by a known module" in {
       /*
@@ -106,8 +106,8 @@ class ProgramSummaryTests extends AnyWordSpec with Matchers with Inside {
 
   }
 
-  class SummaryImpl(initMap: Map[String, Set[Typ]]) extends ProgramSummary[Typ] {
-    override protected val namespaceToType = Map.from(initMap)
+  class SummaryImpl(initMap: mutable.Map[String, mutable.Set[Typ]]) extends ProgramSummary[Typ, Method, Field] {
+    override protected val namespaceToType: mutable.Map[String, mutable.Set[Typ]] = mutable.Map.from(initMap)
   }
 
   case class NamespaceScope(fullName: String) extends NamespaceLikeScope

@@ -1,7 +1,14 @@
 package io.joern.csharpsrc2cpg.astcreation
 
 import io.joern.csharpsrc2cpg.Constants
-import io.joern.csharpsrc2cpg.datastructures.{CSharpField, CSharpMethod, CSharpProgramSummary, CSharpType}
+import io.joern.csharpsrc2cpg.datastructures.{
+  CSharpField,
+  CSharpMethod,
+  CSharpProgramSummary,
+  CSharpType,
+  NamespaceToTypeMap
+}
+
 import io.joern.csharpsrc2cpg.parser.ParserKeys
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -9,6 +16,7 @@ import io.shiftleft.codepropertygraph.generated.{Cpg, DiffGraphBuilder, EdgeType
 import io.shiftleft.semanticcpg.language.*
 import overflowdb.{BatchedUpdate, Config}
 
+import scala.collection.mutable
 import scala.util.Using
 
 /** Allows the AST creator to run at a signature-only level and query the resulting CPG to build up a look-ahead cache.
@@ -63,11 +71,13 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
       CSharpField(f.name, f.typeFullName)
     }
 
-    val mapping = cpg.namespaceBlock.map { namespace =>
-      namespace.fullName -> namespace.typeDecl.map { typ =>
-        CSharpType(typ.fullName, typ.method.map(toMethod).l, typ.member.map(toField).l)
-      }.toSet
-    }.toMap
+    val mapping = mutable.Map
+      .from(cpg.namespaceBlock.map { namespace =>
+        namespace.fullName -> mutable.Set.from(namespace.typeDecl.map { typ =>
+          CSharpType(typ.fullName, typ.method.map(toMethod).l, typ.member.map(toField).l)
+        })
+      })
+      .asInstanceOf[NamespaceToTypeMap]
     CSharpProgramSummary(mapping, imports)
   }
 

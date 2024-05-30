@@ -5,33 +5,30 @@ import io.joern.x2cpg.Defines as XDefines
 import io.joern.x2cpg.datastructures.{FieldLike, MethodLike, ProgramSummary, StubbedType, TypeLike}
 import io.joern.x2cpg.typestub.{TypeStubMetaData, TypeStubUtil}
 import org.slf4j.LoggerFactory
-
-import java.io.{ByteArrayInputStream, InputStream}
-import scala.annotation.targetName
-import scala.io.Source
-import java.net.JarURLConnection
-import java.util.zip.ZipInputStream
-import scala.util.{Failure, Success, Try, Using}
-import scala.jdk.CollectionConverters.*
 import upickle.default.*
 
+import java.io.{ByteArrayInputStream, InputStream}
+import java.util.zip.ZipInputStream
+import scala.annotation.targetName
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
+import scala.util.{Failure, Success, Try}
 
-type NamespaceToTypeMap = Map[String, Set[RubyType]]
+type NamespaceToTypeMap = mutable.Map[String, mutable.Set[RubyType]]
 
 class RubyProgramSummary(
-  initialNamespaceMap: NamespaceToTypeMap = Map.empty,
-  initialPathMap: NamespaceToTypeMap = Map.empty
-) extends ProgramSummary[RubyType] {
+  initialNamespaceMap: NamespaceToTypeMap = mutable.Map.empty,
+  initialPathMap: NamespaceToTypeMap = mutable.Map.empty
+) extends ProgramSummary[RubyType, RubyMethod, RubyField] {
 
-  override val namespaceToType: Map[String, Set[RubyType]] = initialNamespaceMap
-  val pathToType: Map[String, Set[RubyType]]               = initialPathMap
+  override val namespaceToType: NamespaceToTypeMap = initialNamespaceMap
+  val pathToType: NamespaceToTypeMap               = initialPathMap
 
-  @targetName("add")
-  def ++(other: RubyProgramSummary): RubyProgramSummary = {
+  @targetName("appendAll")
+  def ++=(other: RubyProgramSummary): RubyProgramSummary = {
     RubyProgramSummary(
-      ProgramSummary.combine(this.namespaceToType, other.namespaceToType),
-      ProgramSummary.combine(this.pathToType, other.pathToType)
+      ProgramSummary.merge(this.namespaceToType, other.namespaceToType),
+      ProgramSummary.merge(this.pathToType, other.pathToType)
     )
   }
 }
@@ -42,11 +39,11 @@ object RubyProgramSummary {
   def BuiltinTypes(implicit typeStubMetaData: TypeStubMetaData): NamespaceToTypeMap = {
     if (typeStubMetaData.useTypeStubs) {
       mpkZipToInitialMapping(mergeBuiltinMpkZip) match {
-        case Failure(exception) => logger.warn("Unable to parse builtin types", exception); Map.empty
+        case Failure(exception) => logger.warn("Unable to parse builtin types", exception); mutable.Map.empty
         case Success(mapping)   => mapping
       }
     } else {
-      Map.empty
+      mutable.Map.empty
     }
   }
 

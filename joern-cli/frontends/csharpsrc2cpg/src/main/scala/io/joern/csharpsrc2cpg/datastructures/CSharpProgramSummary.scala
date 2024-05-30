@@ -12,10 +12,11 @@ import scala.collection.mutable.ListBuffer
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 import java.net.JarURLConnection
+import scala.collection.mutable
 import scala.util.Using
 import scala.jdk.CollectionConverters.*
 
-type NamespaceToTypeMap = Map[String, Set[CSharpType]]
+type NamespaceToTypeMap = mutable.Map[String, mutable.Set[CSharpType]]
 
 /** A mapping of type stubs of known types within the scope of the analysis.
   *
@@ -25,13 +26,13 @@ type NamespaceToTypeMap = Map[String, Set[CSharpType]]
   *   [[CSharpProgramSummary.jsonToInitialMapping]] for generating initial mappings.
   */
 case class CSharpProgramSummary(val namespaceToType: NamespaceToTypeMap, val imports: Set[String])
-    extends ProgramSummary[CSharpType] {
+    extends ProgramSummary[CSharpType, CSharpMethod, CSharpField] {
 
-  def findGlobalTypes: Set[CSharpType] = namespaceToType.getOrElse(Constants.Global, Set.empty)
+  def findGlobalTypes: Set[CSharpType] = namespaceToType.getOrElse(Constants.Global, Set.empty).toSet
 
-  @targetName("add")
-  def ++(other: CSharpProgramSummary): CSharpProgramSummary = {
-    new CSharpProgramSummary(ProgramSummary.combine(namespaceToType, other.namespaceToType), imports ++ other.imports)
+  @targetName("appendAll")
+  def ++=(other: CSharpProgramSummary): CSharpProgramSummary = {
+    new CSharpProgramSummary(ProgramSummary.merge(namespaceToType, other.namespaceToType), imports ++ other.imports)
   }
 
 }
@@ -42,11 +43,14 @@ object CSharpProgramSummary {
   // the types and their methods are exposed through autoboxing of primitives
   def initialImports: Set[String] = Set("", "System")
 
-  def apply(namespaceToType: NamespaceToTypeMap = Map.empty, imports: Set[String] = Set.empty): CSharpProgramSummary =
+  def apply(
+    namespaceToType: NamespaceToTypeMap = mutable.Map.empty,
+    imports: Set[String] = Set.empty
+  ): CSharpProgramSummary =
     new CSharpProgramSummary(namespaceToType, imports)
 
   def apply(summaries: Iterable[CSharpProgramSummary]): CSharpProgramSummary =
-    summaries.foldLeft(CSharpProgramSummary())(_ ++ _)
+    summaries.foldLeft(CSharpProgramSummary())(_ ++= _)
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -54,9 +58,11 @@ object CSharpProgramSummary {
     *   a mapping of the `System` package types.
     */
   def BuiltinTypes: NamespaceToTypeMap = {
-    jsonToInitialMapping(mergeBuiltInTypesJson) match
-      case Failure(exception) => logger.warn("Unable to parse JSON type entry from builtin types", exception); Map.empty
-      case Success(mapping)   => mapping
+    jsonToInitialMapping(mergeBuiltInTypesJson) match {
+      case Failure(exception) =>
+        logger.warn("Unable to parse JSON type entry from builtin types", exception); mutable.Map.empty
+      case Success(mapping) => mapping
+    }
   }
 
   /** Converts a JSON type mapping to a NamespaceToTypeMap entry.
@@ -68,7 +74,7 @@ object CSharpProgramSummary {
   def jsonToInitialMapping(jsonInputStream: InputStream): Try[NamespaceToTypeMap] =
     Try(read[NamespaceToTypeMap](ujson.Readable.fromByteArray(jsonInputStream.readAllBytes())))
 
-  def mergeBuiltInTypesJson: InputStream = {
+  private def mergeBuiltInTypesJson: InputStream = {
     val classLoader      = getClass.getClassLoader
     val builtinDirectory = "builtin_types"
 

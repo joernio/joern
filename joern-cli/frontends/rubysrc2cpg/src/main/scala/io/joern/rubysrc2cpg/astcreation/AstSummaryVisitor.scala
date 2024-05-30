@@ -13,6 +13,7 @@ import overflowdb.{BatchedUpdate, Config}
 
 import java.io.File as JavaFile
 import java.util.regex.Matcher
+import scala.collection.mutable
 import scala.util.Using
 
 trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -95,8 +96,10 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
         moduleEntry +: typeEntries
       }.toList
 
-    val namespaceMappings = mappings.map { case (_, ns) -> entry => ns -> entry }.toMap
-    val pathMappings      = mappings.map { case (path, _) -> entry => path -> entry }.toMap
+    val namespaceMappings: mutable.Map[String, mutable.Set[RubyType]] =
+      mutable.Map.from(mappings.map { case (_, ns) -> entry => ns -> mutable.Set.from(entry) })
+    val pathMappings: mutable.Map[String, mutable.Set[RubyType]] =
+      mutable.Map.from(mappings.map { case (path, _) -> entry => path -> mutable.Set.from(entry) })
 
     RubyProgramSummary(namespaceMappings, pathMappings)
   }

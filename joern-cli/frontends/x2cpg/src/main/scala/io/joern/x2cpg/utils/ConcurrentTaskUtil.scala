@@ -50,13 +50,16 @@ object ConcurrentTaskUtil {
     * @return
     *   an array of the executed tasks as either a success or failure.
     */
-  def runUsingSpliterator[V](tasks: Iterator[() => V]): List[Try[V]] = {
-    StreamSupport
-      .stream(Spliterators.spliteratorUnknownSize(tasks.asJava, Spliterator.NONNULL), /* parallel */ true)
-      .map(task => Try(task.apply()))
-      .collect(Collectors.toList())
-      .asScala
-      .toList
+  def runUsingSpliterator[V](tasks: Iterator[() => V]): Seq[Try[V]] = {
+    scala.collection.immutable.ArraySeq
+      .ofRef(
+        java.util.Arrays
+          .stream(tasks.toArray)
+          .parallel()
+          .map(task => Try(task.apply()))
+          .toArray
+      )
+      .asInstanceOf[scala.collection.immutable.ArraySeq[Try[V]]]
   }
 
 }

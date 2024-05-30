@@ -142,6 +142,8 @@ class CallTests extends CSharpCode2CpgFixture {
         |}
         |""".stripMargin)
 
+    cpg.typeDecl.nameExact("Baz").inheritsFromTypeFullName.l shouldBe List("Foo.Bar.Bar.SomeClass")
+
     inside(cpg.call.nameExact("SomeOtherMethod").l) {
       case callNode :: Nil =>
         callNode.code shouldBe "SomeOtherMethod()"
