@@ -275,7 +275,6 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
       .orElse {
         super.tryResolveTypeReference(normalizedTypeName) match {
           case None if GlobalTypes.builtinFunctions.contains(normalizedTypeName) =>
-            // TODO: Create a builtin.json for the program summary to load
             Option(RubyType(s"${GlobalTypes.builtinPrefix}.$normalizedTypeName", List.empty, List.empty))
           case None =>
             summary.namespaceToType.flatMap(_._2).collectFirst {
