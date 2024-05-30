@@ -50,6 +50,19 @@ object Util {
     s"${Defines.UnresolvedSignature}($paramCount)"
   }
 
+  def stripGenericTypes(typeName: String): String = {
+    if (typeName.startsWith(Defines.UnresolvedNamespace)) {
+      logger.warn(s"stripGenericTypes should not be used for javasrc2cpg type $typeName")
+      typeName.head +: takeUntilGenericStart(typeName.tail)
+    } else {
+      takeUntilGenericStart(typeName)
+    }
+  }
+
+  private def takeUntilGenericStart(typeName: String): String = {
+    typeName.takeWhile(char => char != '<')
+  }
+
   private def getAllParents(typ: ResolvedReferenceType, result: mutable.ArrayBuffer[ResolvedReferenceType]): Unit = {
     if (typ.isJavaLangObject) {
       Iterable.empty

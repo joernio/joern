@@ -742,4 +742,72 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
       cpg.call.nameExact("<init>").count(_.argument.isEmpty) shouldBe 0
     }
   }
+
+  "calls on captured variables in lambdas contained in anonymous classes" should {
+    val cpg = code("""
+        |
+        |public class Foo {
+        |
+        |    public static void sink(String s) {};
+        |
+        |    public static Object test(Bar captured) {
+        |      Visitor v = new Visitor() {
+        |        public void visit(Visited visited) {
+        |          visited.getList().forEach(lambdaParam -> captured.remove(lambdaParam));
+        |        }
+        |      };
+        |    }
+        |}
+        |""".stripMargin)
+
+    // TODO: This behaviour isn't exactly correct, but is on par with how we currently handle field captures in lambdas.
+    "have the correct receiver ast" in {
+      inside(cpg.call.name("remove").receiver.l) { case List(fieldAccessCall: Call) =>
+        fieldAccessCall.name shouldBe Operators.fieldAccess
+
+        inside(fieldAccessCall.argument.l) { case List(identifier: Identifier, fieldIdentifier: FieldIdentifier) =>
+          identifier.name shouldBe "this"
+          identifier.typeFullName shouldBe "Foo.test.Visitor$0"
+
+          fieldIdentifier.canonicalName shouldBe "captured"
+
+          fieldAccessCall.typeFullName shouldBe "<unresolvedNamespace>.Bar"
+        }
+      }
+    }
+  }
+
+  // TODO: These tests exist to document current behaviour, but the current behaviour is wrong.
+  "lambdas capturing parameters" should {
+    val cpg = code("""
+        |import java.util.function.Consumer;
+        |
+        |public class Foo {
+        |  public String capturedField;
+        |
+        |  public void foo() {
+        |    Consumer<String> consumer = lambdaParam -> System.out.println(capturedField);
+        |  }
+        |}
+        |""".stripMargin)
+
+    "represent the captured field as a field access" in {
+      inside(cpg.method.name(".*lambda.*").call.name("println").argument.l) { case List(_, fieldAccessCall: Call) =>
+        fieldAccessCall.name shouldBe Operators.fieldAccess
+
+        inside(fieldAccessCall.argument.l) { case List(identifier: Identifier, fieldIdentifier: FieldIdentifier) =>
+          identifier.name shouldBe "this"
+          identifier.typeFullName shouldBe "Foo"
+
+          fieldIdentifier.canonicalName shouldBe "capturedField"
+        }
+      }
+    }
+
+    // TODO: It should, but it doesn't.
+    "have a captured local for the enclosing class" in {
+      // There should be an `outerClass` local which captures the outer method `this`.
+      cpg.method.name(".*lambda.*").local.name("this").typeFullName(".*Foo.*").isEmpty shouldBe true
+    }
+  }
 }

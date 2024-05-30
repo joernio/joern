@@ -97,22 +97,17 @@ trait AstForNameExpressionsCreator { this: AstCreator =>
     val variable      = capturedVariable.variable
     val typeDeclChain = capturedVariable.typeDeclChain
 
-    scope.enclosingMethod.map(_.lookupVariable("this")) match {
-      case None | Some(NotInScope) | Some(CapturedVariable(_, _)) =>
+    scope.lookupVariable("this") match {
+      case NotInScope | CapturedVariable(_, _) =>
         logger.warn(
           s"Attempted to create AST for captured variable ${variable.name}, but could not find `this` param in direct scope."
         )
-        Ast(NewUnknown().code(variable.name).lineNumber(line(nameExpr)).columnNumber(column(nameExpr)))
+        Ast(identifierNode(nameExpr, variable.name, variable.name, variable.typeFullName))
 
-      case Some(SimpleVariable(ScopeParameter(thisNode: NewMethodParameterIn))) =>
-        val thisIdentifier = identifierNode(
-          nameExpr,
-          thisNode.name,
-          thisNode.code,
-          thisNode.typeFullName,
-          thisNode.dynamicTypeHintFullName
-        )
-        val thisAst = Ast(thisIdentifier).withRefEdge(thisIdentifier, thisNode)
+      case SimpleVariable(scopeVariable) =>
+        val thisIdentifier =
+          identifierNode(nameExpr, scopeVariable.name, scopeVariable.name, scopeVariable.typeFullName)
+        val thisAst = Ast(thisIdentifier).withRefEdge(thisIdentifier, scopeVariable.node)
 
         val lineNumber   = line(nameExpr)
         val columnNumber = column(nameExpr)
@@ -139,12 +134,6 @@ trait AstForNameExpressionsCreator { this: AstCreator =>
 
         val captureFieldIdentifier = fieldIdentifierNode(nameExpr, variable.name, variable.name)
         callAst(finalFieldAccess, List(outerClassChain, Ast(captureFieldIdentifier)))
-
-      case Some(SimpleVariable(thisNode)) =>
-        logger.warn(
-          s"Attempted to create AST for captured variable ${variable.name}, but found non-parameter `this`: ${thisNode}."
-        )
-        Ast(NewUnknown().code(variable.name).lineNumber(line(nameExpr)).columnNumber(column(nameExpr)))
     }
   }
 }

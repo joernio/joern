@@ -203,7 +203,7 @@ class VarDeclTests extends JavaSrcCode2CpgFixture {
         .codeExact("new FlinkKafkaProducer<String>(\"kafka-topic\", schema, kafkaProps)")
         .filterNot(_.name == Operators.alloc)
         .map(_.methodFullName)
-        .head shouldBe "org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer<java.lang.String>.<init>:<unresolvedSignature>(3)"
+        .head shouldBe "org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer.<init>:<unresolvedSignature>(3)"
     }
 
   }
