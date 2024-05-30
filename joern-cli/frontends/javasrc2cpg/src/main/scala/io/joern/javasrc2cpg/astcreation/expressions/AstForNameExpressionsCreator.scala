@@ -102,7 +102,7 @@ trait AstForNameExpressionsCreator { this: AstCreator =>
         logger.warn(
           s"Attempted to create AST for captured variable ${variable.name}, but could not find `this` param in direct scope."
         )
-        Ast(NewUnknown().code(variable.name).lineNumber(line(nameExpr)).columnNumber(column(nameExpr)))
+        Ast(identifierNode(nameExpr, variable.name, variable.name, variable.typeFullName))
 
       case SimpleVariable(scopeVariable) =>
         val thisIdentifier =
