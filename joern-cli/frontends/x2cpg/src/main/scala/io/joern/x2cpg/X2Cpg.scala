@@ -130,7 +130,7 @@ abstract class X2CpgMain[T <: X2CpgConfig[T], X <: X2CpgFrontend[?]](val cmdLine
     if (X2CpgConfig.defaultOutputPath == outputPath) {
       // We only log the output path of no explicit path was given by the user.
       // Otherwise, the user obviously knows the path.
-      logger.info(s"The resulting CPG with be stored at ${File(outputPath)}")
+      logger.info(s"The resulting CPG will be stored at ${File(outputPath)}")
     }
   }
 
