@@ -92,28 +92,26 @@ class DownloadDependencyTest extends RubyCode2CpgFixture(downloadDependencies = 
     "recognize the full method name of the imported Main_outer_class's constructor" in {
       inside(cpg.assignment.where(_.target.isIdentifier.name("v")).argument.l) {
         case (v: Identifier) :: (block: Block) :: Nil =>
-          v.dynamicTypeHintFullName should contain("dummy_logger.dummy_logger.Main_module.Main_outer_class")
+          v.dynamicTypeHintFullName should contain("dummy_logger.Main_module.Main_outer_class")
 
           inside(block.astChildren.isCall.name(Defines.ConstructorMethodName).headOption) {
             case Some(constructorCall) =>
-              constructorCall.methodFullName shouldBe "dummy_logger.dummy_logger.Main_module.Main_outer_class:<init>"
+              constructorCall.methodFullName shouldBe "dummy_logger.Main_module.Main_outer_class:<init>"
             case None => fail(s"Expected constructor call, did not find one")
           }
         case xs => fail(s"Expected two arguments under the constructor assignment, got [${xs.code.mkString(", ")}]")
       }
     }
 
-    // TODO: There is a conflict between a built-in gem type and the downloaded gem type "Help" which aren't resolved.
-    //  This may be made worse as `utils/help` is the path expected as the import here, but this needs the be changed to
-    //  the gem name (`dummy_logger`) in the AstSummaryVisitor for dependencies.
-    "recognize the full method name of the imported Help's constructor" ignore {
+    // TODO: Double check this test during review!
+    "recognize the full method name of the imported Help's constructor" in {
       inside(cpg.assignment.where(_.target.isIdentifier.name("g")).argument.l) {
         case (g: Identifier) :: (block: Block) :: Nil =>
-          g.dynamicTypeHintFullName should contain("dummy_logger.utils.help.Help")
+          g.dynamicTypeHintFullName should contain("dummy_logger.Help")
 
           inside(block.astChildren.isCall.name(Defines.ConstructorMethodName).headOption) {
             case Some(constructorCall) =>
-              constructorCall.methodFullName shouldBe "dummy_logger.utils.help.Help:<init>"
+              constructorCall.methodFullName shouldBe "dummy_logger.Help:<init>"
             case None => fail(s"Expected constructor call, did not find one")
           }
         case xs => fail(s"Expected two arguments under the constructor assignment, got [${xs.code.mkString(", ")}]")

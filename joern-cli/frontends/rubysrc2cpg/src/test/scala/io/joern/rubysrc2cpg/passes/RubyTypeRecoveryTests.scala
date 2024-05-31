@@ -190,8 +190,8 @@ class RubyExternalTypeRecoveryTests
       .moreCode(RubyExternalTypeRecoveryTests.SENDGRID_GEMFILE, "Gemfile")
 
     "be present in (Case 1)" in {
-      cpg.identifier("sg").lineNumber(5).typeFullName.l shouldBe List("sendgrid-ruby.sendgrid.sendgrid.SendGrid.API")
-      cpg.call("client").methodFullName.l shouldBe List("sendgrid-ruby.sendgrid.sendgrid.SendGrid.API:client")
+      cpg.identifier("sg").lineNumber(5).typeFullName.l shouldBe List("sendgrid-ruby.SendGrid.API")
+      cpg.call("client").methodFullName.l shouldBe List("sendgrid-ruby.SendGrid.API:client")
     }
 
     "resolve correct imports via tag nodes" in {
@@ -201,11 +201,11 @@ class RubyExternalTypeRecoveryTests
             sendgridImport.tag._toEvaluatedImport
               .filter(_.label == "RESOLVED_METHOD")
               .map(_.asInstanceOf[ResolvedMethod])
-              .filter(_.fullName.startsWith("sendgrid-ruby.sendgrid.sendgrid.SendGrid.API"))
+              .filter(_.fullName.startsWith("sendgrid-ruby.SendGrid.API"))
               .l
           ) {
             case apiInit :: Nil =>
-              apiInit.fullName shouldBe s"sendgrid-ruby.sendgrid.sendgrid.SendGrid.API.${XDefines.ConstructorMethodName}"
+              apiInit.fullName shouldBe s"sendgrid-ruby.SendGrid.API.${XDefines.ConstructorMethodName}"
             case xs => fail(s"Only one ResolvedMethod expected")
           }
         case xs => fail(s"Only sendgrid-ruby should be referenced, got [${xs.name.mkString}]")
@@ -303,8 +303,7 @@ class RubyExternalTypeRecoveryTests
 
   }
 
-  // TODO: Should be fixed when evictions are implemented for stubbed types
-  "assignment from a call to a identifier inside an imported module using new" ignore {
+  "assignment from a call to a identifier inside an imported module using new" should {
     lazy val cpg = code("""
                           |require 'logger'
                           |
@@ -321,11 +320,11 @@ class RubyExternalTypeRecoveryTests
             loggerImport.tag._toEvaluatedImport
               .filter(_.label == "RESOLVED_METHOD")
               .map(_.asInstanceOf[ResolvedMethod])
-              .filter(_.fullName.startsWith("logger.rb"))
+              .filter(_.fullName == s"logger.Logger.${XDefines.ConstructorMethodName}")
               .l
           ) {
             case loggerInit :: Nil =>
-              loggerInit.fullName shouldBe s"logger.rb:<global>::program.Logger.${XDefines.ConstructorMethodName}"
+              loggerInit.fullName shouldBe s"logger.Logger.${XDefines.ConstructorMethodName}"
             case xs => fail(s"Only one ResolvedMethod expected")
           }
         case xs => fail(s"Only logger library should be referenced, got [${xs.name.mkString}]")
@@ -334,9 +333,9 @@ class RubyExternalTypeRecoveryTests
 
     "provide a dummy type" in {
       val Some(log) = cpg.identifier("log").headOption: @unchecked
-      log.typeFullName shouldBe "logger.rb:<global>::program.Logger"
+      log.typeFullName shouldBe "logger.Logger"
       val List(errorCall) = cpg.call("error").l
-      errorCall.methodFullName shouldBe "logger.rb:<global>::program.Logger:error"
+      errorCall.methodFullName shouldBe "logger.Logger:error"
     }
   }
 
@@ -364,8 +363,7 @@ class RubyExternalTypeRecoveryTests
     }
   }
 
-  // TODO: Should be fixed when evictions are implemented for stubbed types
-  "recovery of type for call having a method with same name" ignore {
+  "recovery of type for call having a method with same name" should {
     lazy val cpg = code("""
                           |require "logger"
                           |
@@ -379,11 +377,11 @@ class RubyExternalTypeRecoveryTests
       .moreCode(RubyExternalTypeRecoveryTests.LOGGER_GEMFILE, "Gemfile")
 
     "have a correct type for call `connect`" in {
-      cpg.call("error").methodFullName.l shouldBe List("logger.rb:<global>::program.Logger:error")
+      cpg.call("error").methodFullName.l shouldBe List("logger.Logger:error")
     }
 
     "have a correct type for identifier `d`" in {
-      cpg.identifier("e").typeFullName.l shouldBe List("logger.rb:<global>::program.Logger:error.<returnValue>")
+      cpg.identifier("e").typeFullName.l shouldBe List("logger.Logger:error.<returnValue>")
     }
   }
 }
