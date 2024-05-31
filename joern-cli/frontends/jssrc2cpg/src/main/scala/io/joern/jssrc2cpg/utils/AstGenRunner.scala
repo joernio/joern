@@ -130,13 +130,13 @@ object AstGenRunner {
     val debugMsgPath  = path.getOrElse("PATH")
     ExternalCommand.run(s"$astGenCommand --version", localPath).toOption.map(_.mkString.strip()) match {
       case Some(installedVersion)
-          if installedVersion != "unknown" && Try(VersionHelper.compare(installedVersion, astGenVersion)).toOption
-            .getOrElse(-1) >= 0 =>
-        logger.debug(s"Using astgen v$installedVersion from $debugMsgPath")
+          if installedVersion != "unknown" &&
+            Try(VersionHelper.compare(installedVersion, astGenVersion)).toOption.getOrElse(-1) >= 0 =>
+        logger.debug(s"Found astgen v$installedVersion in '$debugMsgPath'")
         true
       case Some(installedVersion) =>
         logger.debug(
-          s"Found astgen v$installedVersion in $debugMsgPath but jssrc2cpg requires at least v$astGenVersion"
+          s"Found astgen v$installedVersion in '$debugMsgPath' but jssrc2cpg requires at least v$astGenVersion"
         )
         false
       case _ =>
@@ -160,15 +160,16 @@ object AstGenRunner {
         logger.debug(
           s"Did not find any astgen binary on this system (environment variable ASTGEN_BIN not set and no entry in the systems PATH)"
         )
-        val localPath = s"$executableDir/$executableName"
-        logger.debug(s"Using astgen from '$localPath'")
+        val localPath = s"$executableDir${java.io.File.separator}$executableName"
         localPath
   }
 
   private lazy val astGenCommand = {
     val conf          = ConfigFactory.load
     val astGenVersion = conf.getString("jssrc2cpg.astgen_version")
-    compatibleAstGenPath(astGenVersion)
+    val astGenPath    = compatibleAstGenPath(astGenVersion)
+    logger.info(s"Using astgen from '$astGenPath'")
+    astGenPath
   }
 }
 
@@ -354,7 +355,6 @@ class AstGenRunner(config: Config) {
 
   def execute(out: File): AstGenRunnerResult = {
     val in = File(config.inputPath)
-    logger.info(s"Running astgen in '$in' ...")
     runAstGenNative(in, out) match {
       case Success(result) =>
         val parsed  = checkParsedFiles(filterFiles(SourceFiles.determine(out.toString(), Set(".json")), out), in)
