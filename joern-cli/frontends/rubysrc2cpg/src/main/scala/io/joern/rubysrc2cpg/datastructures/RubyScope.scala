@@ -278,7 +278,7 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
             Option(RubyType(s"${GlobalTypes.builtinPrefix}.$normalizedTypeName", List.empty, List.empty))
           case None =>
             summary.namespaceToType.flatMap(_._2).collectFirst {
-              case x if x.name.split("[.]").endsWith(normalizedTypeName.split("[.]")) =>
+              case x if !x.isInstanceOf[RubyStubbedType] && x.name.split("[.]").endsWith(normalizedTypeName.split("[.]")) =>
                 typesInScope.addOne(x)
                 x
               case x if x.name.split("[.]").lastOption.contains(normalizedTypeName) =>

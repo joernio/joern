@@ -65,7 +65,7 @@ class ImportTests extends RubyCode2CpgFixture with Inspectors {
   }
 
   // FAILING TEST
-  "Ambiguous methods resolves to included method" ignore {
+  "Ambiguous methods resolves to included method" in {
     forAll(List("A", "B")) { moduleName =>
       val cpg = code(s"""
       | module A
