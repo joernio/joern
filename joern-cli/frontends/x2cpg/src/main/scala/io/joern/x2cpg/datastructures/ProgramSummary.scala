@@ -3,7 +3,6 @@ package io.joern.x2cpg.datastructures
 import io.shiftleft.codepropertygraph.generated.nodes.DeclarationNew
 
 import scala.annotation.targetName
-import scala.collection.immutable.Map
 import scala.collection.mutable
 import scala.reflect.ClassTag
 
@@ -14,16 +13,20 @@ import scala.reflect.ClassTag
   *
   * @tparam T
   *   the type/class meta data class.
+  * @tparam M
+  *   the function/method meta data class.
+  * @tparam F
+  *   the field/property/member meta data class.
   */
-trait ProgramSummary[T <: TypeLike[?, ?]] {
+trait ProgramSummary[T <: TypeLike[M, F], M <: MethodLike, F <: FieldLike] {
 
   /** A mapping between a namespace/directory and the containing types.
     */
-  protected val namespaceToType: Map[String, Set[T]]
+  protected val namespaceToType: mutable.Map[String, mutable.Set[T]]
 
   /** For the given namespace, returns the declared types.
     */
-  def typesUnderNamespace(namespace: String): Set[T] = namespaceToType.getOrElse(namespace, Set.empty)
+  def typesUnderNamespace(namespace: String): Set[T] = namespaceToType.getOrElse(namespace, Set.empty).toSet
 
   /** For a type, will search for the associated namespace.
     */
@@ -38,30 +41,68 @@ trait ProgramSummary[T <: TypeLike[?, ?]] {
     namespaceToType.values.flatten.filter(_.name.endsWith(typeName)).toList
   }
 
+  /** Absorbs the given program summary information into this program summary.
+    * @param o
+    *   the program summary to absorb.
+    * @return
+    *   this program summary.
+    */
+  def absorb(o: ProgramSummary[T, M, F]): ProgramSummary[T, M, F] = {
+    ProgramSummary.merge(this.namespaceToType, o.namespaceToType)
+    this
+  }
+
 }
 
 object ProgramSummary {
 
-  /** Combines two namespace-to-type maps.
-    */
-  def combine[T <: TypeLike[M, F], M <: MethodLike, F <: FieldLike](
-    a: Map[String, Set[T]],
-    b: Map[String, Set[T]]
-  ): Map[String, Set[T]] = {
-    val accumulator = mutable.HashMap.from(a)
+  def merge[T <: TypeLike[M, F], M <: MethodLike, F <: FieldLike](
+    a: mutable.Map[String, mutable.Set[T]],
+    b: mutable.Map[String, mutable.Set[T]]
+  ): mutable.Map[String, mutable.Set[T]] = {
 
-    b.keySet.foreach(namespace =>
-      accumulator.updateWith(namespace) {
-        case Some(existing) =>
-          val types = (existing.toList ++ b(namespace).toList)
-            .groupBy(_.name)
-            .map { case (_, ts) => ts.reduce((a, b) => (a + b).asInstanceOf[T]) }
-            .toSet
-          Option(types)
+    def dedupTypesInPlace(m: mutable.Map[String, mutable.Set[T]]): Unit = {
+      val newMap = m
+        .map { case (namespace, ts) => namespace -> ts.groupBy(_.name) }
+        .map { case (namespace, typMap) =>
+          val dedupedTypes = mutable.Set.from(
+            typMap
+              .map { case (name, ts) => name -> ts.reduce((u, v) => (u + v).asInstanceOf[T]) }
+              .values
+              .toSet
+          )
+          m.put(namespace, dedupedTypes)
+          namespace -> dedupedTypes
+        }
+        .toMap
+      assert(m.flatMap { case (name, ts) => ts.groupBy(_.name).map(_._2.size) }.forall(_ == 1))
+    }
+
+    // Handle duplicate types sharing the same namespace. This can be introduced from serialized type stubs.
+    dedupTypesInPlace(a)
+    dedupTypesInPlace(b)
+
+    b.foreach { case (namespace, bts) =>
+      a.updateWith(namespace) {
+        case Some(ats: mutable.Set[T]) =>
+          // Assert that we can simply reduce the grouped values to a simple key-value mapping for fast look-ups
+          assert(ats.groupBy(_.name).values.forall(_.sizeIs == 1))
+          val atsMap = ats.groupBy(_.name).map { case (name, ts) => name -> ts.head }
+
+          bts.foreach { bt =>
+            atsMap.get(bt.name) match {
+              case Some(at) =>
+                ats.remove(at)
+                ats.add((at + bt).asInstanceOf[T])
+              case None =>
+                ats.add(bt)
+            }
+          }
+          Option(ats)
         case None => b.get(namespace)
       }
-    )
-    accumulator.toMap
+    }
+    a
   }
 
 }
@@ -75,7 +116,7 @@ object ProgramSummary {
   * @tparam T
   *   the type/class meta data class.
   */
-trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: ProgramSummary[T]) {
+trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: ProgramSummary[T, M, F]) {
   this: Scope[?, ?, TypedScopeElement] =>
 
   /** Tracks the types that are visible to this scope.
@@ -135,20 +176,6 @@ trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: 
         t.methods.find(m => m.name == callName)
       }
   }
-
-  /** Determines if, by observing the given argument types, that the method's signature is a plausible match to the
-    * observed arguments.
-    *
-    * The default implementation only considers that the same number of arguments are added and does not account for
-    * variadic arguments nor polymorphism.
-    *
-    * @param method
-    *   the method meta data.
-    * @param argTypes
-    *   the observed arguments from the call-site.
-    * @return
-    *   true if the method could be overloaded by a call with these argument types.
-    */
 
   /** Given the type full name and field name, will attempt to find the matching entry.
     * @param typeFullName
@@ -271,7 +298,7 @@ trait OverloadableScope[M <: OverloadableMethod] {
   * @param summary
   *   the program summary.
   */
-class DefaultTypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: ProgramSummary[T])
+class DefaultTypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: ProgramSummary[T, M, F])
     extends Scope[String, DeclarationNew, TypedScopeElement]
     with TypedScope[M, F, T](summary) {
 

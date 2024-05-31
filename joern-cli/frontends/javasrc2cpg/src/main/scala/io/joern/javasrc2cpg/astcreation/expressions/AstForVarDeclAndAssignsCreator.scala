@@ -9,7 +9,7 @@ import com.github.javaparser.resolution.types.ResolvedType
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
 import io.joern.javasrc2cpg.scope.Scope.{NewVariableNode, typeFullName}
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
-import io.joern.javasrc2cpg.util.NameConstants
+import io.joern.javasrc2cpg.util.{NameConstants, Util}
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.nodes.{
@@ -113,7 +113,7 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
       case typ: ClassOrInterfaceType =>
         val typeParams = typ.getTypeArguments.toScala.map(_.asScala.flatMap(typeInfoCalc.fullName))
         (typ.getName.asString(), typeParams)
-      case _ => (variableDeclarator.getTypeAsString, None)
+      case _ => (Util.stripGenericTypes(variableDeclarator.getTypeAsString), None)
     }
 
     val typeFullName = tryWithSafeStackOverflow(
@@ -131,6 +131,7 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
     val declarationNode: Option[NewVariableNode] = if (originNode.isInstanceOf[FieldDeclaration]) {
       scope.lookupVariable(variableName).variableNode
     } else {
+      // Use type name with generics for code
       val localCode = s"${variableDeclarator.getTypeAsString} ${variableDeclarator.getNameAsString}"
 
       val local =
@@ -181,7 +182,7 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
             Operators.assignment,
             "=",
             ExpectedType(typeFullName, expectedType),
-            Some(variableDeclarator.getTypeAsString)
+            Some(Util.stripGenericTypes(variableDeclarator.getTypeAsString))
           )
         }
 

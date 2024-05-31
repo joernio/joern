@@ -42,13 +42,15 @@ class CSharpSrc2Cpg extends X2CpgFrontend[Config] {
             case Failure(exception) => logger.warn(s"Unable to pre-parse C# file, skipping - ", exception); None
             case Success(summary)   => Option(summary)
           }
-          .foldLeft(CSharpProgramSummary(imports = CSharpProgramSummary.initialImports))(_ ++ _)
+          .foldLeft(CSharpProgramSummary(imports = CSharpProgramSummary.initialImports))(_ ++= _)
 
         val builtinSummary = CSharpProgramSummary(
-          CSharpProgramSummary.BuiltinTypes.view.filterKeys(internalProgramSummary.imports(_)).toMap
+          mutable.Map
+            .fromSpecific(CSharpProgramSummary.BuiltinTypes.view.filterKeys(internalProgramSummary.imports(_)))
+            .result()
         )
 
-        val internalAndBuiltinSummary = internalProgramSummary ++ builtinSummary
+        val internalAndBuiltinSummary = internalProgramSummary ++= builtinSummary
 
         val hash = HashUtil.sha256(astCreators.map(_.parserResult).map(x => Paths.get(x.fullPath)))
         new MetaDataPass(cpg, Languages.CSHARPSRC, config.inputPath, Option(hash)).createAndApply()

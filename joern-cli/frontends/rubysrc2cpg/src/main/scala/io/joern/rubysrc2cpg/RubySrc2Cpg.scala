@@ -65,7 +65,7 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
           case Failure(exception) => logger.warn(s"Unable to pre-parse Ruby file, skipping - ", exception); None
           case Success(summary)   => Option(summary)
         }
-        .foldLeft(RubyProgramSummary(RubyProgramSummary.BuiltinTypes(config.typeStubMetaData)))(_ ++ _)
+        .foldLeft(RubyProgramSummary(RubyProgramSummary.BuiltinTypes(config.typeStubMetaData)))(_ ++= _)
 
       val dependencySummary = if (config.downloadDependencies) {
         DependencyDownloader(cpg).download()
@@ -73,7 +73,7 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
         RubyProgramSummary()
       }
 
-      val programSummary = internalProgramSummary ++ dependencySummary
+      val programSummary = internalProgramSummary ++= dependencySummary
 
       AstCreationPass(cpg, astCreators.map(_.withSummary(programSummary))).createAndApply()
       if (cpg.dependency.name.contains("zeitwerk")) ImplicitRequirePass(cpg, programSummary).createAndApply()

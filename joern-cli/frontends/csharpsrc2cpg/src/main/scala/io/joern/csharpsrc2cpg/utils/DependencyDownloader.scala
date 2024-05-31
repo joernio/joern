@@ -42,7 +42,7 @@ class DependencyDownloader(
     File.temporaryDirectory("joern-csharpsrc2cpg").apply { dir =>
       cpg.dependency.filterNot(isAlreadySummarized).foreach(downloadDependency(dir, _))
       unzipDependencies(dir)
-      summarizeDependencies(dir) ++ internalProgramSummary
+      summarizeDependencies(dir) ++= internalProgramSummary
     }
   }
 

@@ -8,7 +8,7 @@ import io.joern.x2cpg.utils.ConcurrentTaskUtil
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Dependency
 import io.shiftleft.semanticcpg.language.*
-import org.apache.commons.compress.archivers.tar.{TarArchiveEntry, TarArchiveInputStream}
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.slf4j.LoggerFactory
 import upickle.default.*
 
@@ -221,7 +221,7 @@ class DependencyDownloader(cpg: Cpg) {
           case Failure(exception) => logger.warn(s"Unable to pre-parse Ruby file, skipping - ", exception); None
           case Success(summary)   => Option(summary)
         }
-        .reduceOption((a, b) => a ++ b)
+        .reduceOption((a, b) => a ++= b)
         .getOrElse(RubyProgramSummary())
 
       librarySummaries
