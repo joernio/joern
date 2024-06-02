@@ -16,7 +16,7 @@ object Versions {
   val eclipseCore            = "3.20.100"
   val eclipseText            = "3.14.0"
   val ghidra                 = "11.0_PUBLIC_20231222-2"
-  val gradleTooling          = "8.3"
+  val gradleTooling          = "8.8"
   val jacksonDatabind        = "2.17.0"
   val javaParser             = "3.25.9"
   val json4s                 = "4.0.7"
