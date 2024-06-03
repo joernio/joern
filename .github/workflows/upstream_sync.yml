@@ -29,3 +29,5 @@ jobs:
 
       - name: Create a PR from ${{ env.LATEST_TAG }} to sync
         run: gh pr create -B sync -H ${{ env.LATEST_TAG }} --title 'Test PR' --body 'Created by Github action'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
