@@ -1,0 +1,31 @@
+name: gh packages release
+on:
+  schedule:
+    - cron: "0 9 * * *" # run once daily
+  workflow_dispatch:    # allow to manually trigger this workflow
+jobs:
+  sync_upstream:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: sync
+
+      - name: Get latest upstream release
+        run: |
+              echo "LATEST_TAG=$(curl -L \
+              -H "Accept: application/vnd.github+json" \
+              https://api.github.com/repos/joernio/joern/releases/latest | jq -r .name)" >> $GITHUB_ENV
+
+      - name: Create tag branch and merge upstream
+        uses: peterjgrainger/action-create-branch@v2.2.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          branch: ${{ env.LATEST_TAG }}
+
+      - run: ./upstream_sync.yml --branch ${{ env.LATEST_TAG }}
+
+      - name: Create a PR from ${{ env.LATEST_TAG }} to sync
+        run: gh pr create -B sync -H ${{ env.LATEST_TAG }} --title 'Test PR' --body 'Created by Github action'
