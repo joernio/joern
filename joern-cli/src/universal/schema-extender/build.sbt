@@ -30,6 +30,8 @@ ThisBuild / libraryDependencies ++= Seq(
   "io.shiftleft" %% "codepropertygraph-domain-classes" % cpgVersion
 )
 
+ThisBuild / resolvers += "Github Package Registry" at "https://maven.pkg.github.com/Privado-Inc/codepropertygraph"
+
 lazy val schema = project
   .in(file("schema"))
   .settings(generateDomainClasses := {
@@ -43,3 +45,11 @@ lazy val domainClasses =
   project.in(file("domain-classes")).settings(Compile / sourceGenerators += schema / generateDomainClasses)
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
+
+credentials +=
+  Credentials(
+    "GitHub Package Registry",
+    "maven.pkg.github.com",
+    "Privado-Inc",
+    sys.env.getOrElse("GITHUB_TOKEN", "N/A")
+  )

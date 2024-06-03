@@ -17,3 +17,14 @@ Antlr4 / antlr4PackageName := Some("io.joern.dataflowengineoss")
 Antlr4 / antlr4Version     := Versions.antlr
 Antlr4 / javaSource        := (Compile / sourceManaged).value
 Compile / doc / sources ~= (_ filter (_ => false))
+
+githubOwner      := "Privado-Inc"
+githubRepository := "joern"
+
+credentials +=
+  Credentials(
+    "GitHub Package Registry",
+    "maven.pkg.github.com",
+    "Privado-Inc",
+    sys.env.getOrElse("GITHUB_TOKEN", "N/A")
+  )

@@ -6,7 +6,7 @@ dependsOn(Projects.dataflowengineoss % "compile->compile;test->test", Projects.x
 
 lazy val appProperties = settingKey[Config]("App Properties")
 appProperties := {
-  val path = (Compile / resourceDirectory).value / "application.conf"
+  val path            = (Compile / resourceDirectory).value / "application.conf"
   val applicationConf = ConfigFactory.parseFile(path).resolve()
   applicationConf
 }
@@ -15,10 +15,10 @@ lazy val joernTypeStubsVersion = settingKey[String]("joern_type_stub version")
 joernTypeStubsVersion := appProperties.value.getString("rubysrc2cpg.joern_type_stubs_version")
 
 libraryDependencies ++= Seq(
-  "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
+  "io.shiftleft" %% "codepropertygraph" % Versions.cpg,
   "org.apache.commons" % "commons-compress" % Versions.commonsCompress, // For unpacking Gems with `--download-dependencies`
-  "org.scalatest" %% "scalatest"         % Versions.scalatest % Test,
-  "org.antlr"      % "antlr4-runtime"    % Versions.antlr
+  "org.scalatest" %% "scalatest"      % Versions.scalatest % Test,
+  "org.antlr"      % "antlr4-runtime" % Versions.antlr
 )
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin, Antlr4Plugin)
@@ -33,8 +33,8 @@ joernTypeStubsDlUrl := s"https://github.com/joernio/joern-type-stubs/releases/do
 lazy val joernTypeStubsDlTask = taskKey[Unit]("Download joern-type-stubs")
 joernTypeStubsDlTask := {
   val joernTypeStubsDir = baseDirectory.value / "type_stubs"
-  val fileName = "rubysrc_builtin_types.zip"
-  val shaFileName = s"$fileName.sha512"
+  val fileName          = "rubysrc_builtin_types.zip"
+  val shaFileName       = s"$fileName.sha512"
 
   joernTypeStubsDir.mkdir()
 
@@ -42,7 +42,7 @@ joernTypeStubsDlTask := {
   DownloadHelper.ensureIsAvailable(s"${joernTypeStubsDlUrl.value}$shaFileName", joernTypeStubsDir / shaFileName)
 
   val typeStubsFile = better.files.File(joernTypeStubsDir.getAbsolutePath) / fileName
-  val checksumFile = better.files.File(joernTypeStubsDir.getAbsolutePath)  / shaFileName
+  val checksumFile  = better.files.File(joernTypeStubsDir.getAbsolutePath) / shaFileName
 
   val typestubsSha = typeStubsFile.sha512
 
@@ -64,5 +64,16 @@ joernTypeStubsDlTask := {
 
 Compile / compile := ((Compile / compile) dependsOn joernTypeStubsDlTask).value
 
-Universal / packageName := name.value
+Universal / packageName       := name.value
 Universal / topLevelDirectory := None
+
+githubOwner      := "Privado-Inc"
+githubRepository := "joern"
+
+credentials +=
+  Credentials(
+    "GitHub Package Registry",
+    "maven.pkg.github.com",
+    "Privado-Inc",
+    sys.env.getOrElse("GITHUB_TOKEN", "N/A")
+  )
