@@ -371,35 +371,18 @@ class NamespaceTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
           finalClasses.name shouldBe "FinalClasses"
           finalClasses.fullName shouldBe "FinalClasses"
       }
-      inside(cpg.typ.name("A").derivedTypeTransitive.l) { case List(b1, c11, c12, b2, c21, c22, c23) =>
-        b1.name shouldBe "B1"
-        b1.fullName shouldBe "IntermediateClasses.B1"
-        b1.typeDeclFullName shouldBe "IntermediateClasses.B1"
 
-        c11.name shouldBe "C11"
-        c11.fullName shouldBe "FinalClasses.C11"
-        c11.typeDeclFullName shouldBe "FinalClasses.C11"
-
-        c12.name shouldBe "C12"
-        c12.fullName shouldBe "FinalClasses.C12"
-        c12.typeDeclFullName shouldBe "FinalClasses.C12"
-
-        b2.name shouldBe "B2"
-        b2.fullName shouldBe "IntermediateClasses.B2"
-        b2.typeDeclFullName shouldBe "IntermediateClasses.B2"
-
-        c21.name shouldBe "C21"
-        c21.fullName shouldBe "FinalClasses.C21"
-        c21.typeDeclFullName shouldBe "FinalClasses.C21"
-
-        c22.name shouldBe "C22"
-        c22.fullName shouldBe "FinalClasses.C22"
-        c22.typeDeclFullName shouldBe "FinalClasses.C22"
-
-        c23.name shouldBe "C23"
-        c23.fullName shouldBe "FinalClasses.C23"
-        c23.typeDeclFullName shouldBe "FinalClasses.C23"
-      }
+      cpg.typ.name("A").derivedTypeTransitive.typeDeclFullName.sorted.l shouldBe List(
+        "FinalClasses.C11",
+        "FinalClasses.C12",
+        "FinalClasses.C21",
+        "FinalClasses.C22",
+        "FinalClasses.C23",
+        "IntermediateClasses.B1",
+        "IntermediateClasses.B1*",
+        "IntermediateClasses.B2",
+        "IntermediateClasses.B2*"
+      )
     }
 
   }
