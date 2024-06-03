@@ -1,4 +1,4 @@
-name: gh packages release
+name: upstream sync
 on:
   schedule:
     - cron: "0 9 * * *" # run once daily
