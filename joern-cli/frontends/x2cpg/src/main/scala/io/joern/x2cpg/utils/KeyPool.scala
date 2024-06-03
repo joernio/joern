@@ -8,11 +8,11 @@ trait KeyPool {
 }
 
 /** A key pool that returns the integers of the interval [first, last] in a thread-safe manner.
- */
+  */
 class IntervalKeyPool(val first: Long, val last: Long) extends KeyPool {
 
   /** Get next number in interval or raise if number is larger than `last`
-   */
+    */
   def next: Long = {
     if (!valid) {
       throw new IllegalStateException("Call to `next` on invalidated IntervalKeyPool.")
@@ -26,8 +26,8 @@ class IntervalKeyPool(val first: Long, val last: Long) extends KeyPool {
   }
 
   /** Split key pool into `numberOfPartitions` partitions of mostly equal size. Invalidates the current pool to ensure
-   * that the user does not continue to use both the original pool and pools derived from it via `split`.
-   */
+    * that the user does not continue to use both the original pool and pools derived from it via `split`.
+    */
   def split(numberOfPartitions: Int): Iterator[IntervalKeyPool] = {
     valid = false
     if (numberOfPartitions == 0) {
@@ -47,7 +47,7 @@ class IntervalKeyPool(val first: Long, val last: Long) extends KeyPool {
 }
 
 /** A key pool that returns elements of `seq` in order in a thread-safe manner.
- */
+  */
 class SequenceKeyPool(seq: Seq[Long]) extends KeyPool {
 
   val seqLen: Int = seq.size
@@ -66,7 +66,7 @@ class SequenceKeyPool(seq: Seq[Long]) extends KeyPool {
 object KeyPoolCreator {
 
   /** Divide the keyspace into n intervals and return a list of corresponding key pools.
-   */
+    */
   def obtain(n: Long, minValue: Long = 0, maxValue: Long = Long.MaxValue): List[IntervalKeyPool] = {
     val nIntervals        = Math.max(n, 1)
     val intervalLen: Long = (maxValue - minValue) / nIntervals

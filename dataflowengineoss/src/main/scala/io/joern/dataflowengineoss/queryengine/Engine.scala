@@ -205,11 +205,11 @@ object Engine {
   private def elemForEdge(e: Edge, callSiteStack: List[Call] = List())(implicit
     semantics: Semantics
   ): Option[PathElement] = {
-    val curNode  = e.dst.asInstanceOf[CfgNode]
-    val parNode  = e.src.asInstanceOf[CfgNode]
+    val curNode = e.dst.asInstanceOf[CfgNode]
+    val parNode = e.src.asInstanceOf[CfgNode]
     // note: flatgraph only allows at most one property per edge, and since we know :tm: that this is a ReachingDef edge it must be the Variable property...
     val variablePropertyMaybe = Option(e.property).map(_.asInstanceOf[String])
-    val outLabel = variablePropertyMaybe.getOrElse("")
+    val outLabel              = variablePropertyMaybe.getOrElse("")
 
     if (!EdgeValidator.isValidEdge(curNode, parNode)) {
       return None

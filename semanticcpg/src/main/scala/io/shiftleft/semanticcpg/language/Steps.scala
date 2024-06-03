@@ -85,7 +85,7 @@ object Steps {
       { case _ => ??? },
       { case node: AbstractNode =>
         val elementMap = (0 until node.productArity).map { i =>
-          val label = node.productElementName(i)
+          val label   = node.productElementName(i)
           val element = node.productElement(i)
           label -> element
         }.toMap + ("_label" -> node.label)

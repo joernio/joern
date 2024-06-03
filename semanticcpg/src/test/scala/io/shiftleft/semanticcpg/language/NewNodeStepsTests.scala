@@ -28,15 +28,15 @@ class NewNodeStepsTest extends AnyWordSpec with Matchers {
 
   "stores containedNodes and connecting edge" when {
     "embedding a StoredNode and a NewNode" in {
-      val cpg                                         = Cpg.empty
+      val cpg         = Cpg.empty
       val newModifier = NewModifier()
       applyDiff(cpg.graph, Cpg.newDiffGraphBuilder.addNode(newModifier))
       val existingContainedNode = newModifier.storedRef.get
       cpg.graph.allNodes.toSet shouldBe Set(existingContainedNode)
 
       implicit val diffGraphBuilder: DiffGraphBuilder = Cpg.newDiffGraphBuilder
-      val newContainedNode = newTestNode()
-      val newNode          = newTestNode(evidence = List(existingContainedNode, newContainedNode))
+      val newContainedNode                            = newTestNode()
+      val newNode = newTestNode(evidence = List(existingContainedNode, newContainedNode))
       new NewNodeSteps(newNode.start).store()
       cpg.all.length shouldBe 1
       applyDiff(cpg.graph, diffGraphBuilder)

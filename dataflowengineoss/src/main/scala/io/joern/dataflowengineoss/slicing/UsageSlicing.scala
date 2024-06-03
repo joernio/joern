@@ -153,14 +153,15 @@ object UsageSlicing {
       // Handle the case where a call is an invocation of a field member (lambda) or function/method call
       val (callName, resolvedMethod): (Option[String], Option[String]) =
         if (isMemberInvocation)
-          baseCall.argumentOut.flatMap {
-            case x: FieldIdentifier =>
-              Option(Option(x.code) -> None)
-            case x: Call => Option(Option(x.name) -> getResolvedMethod(x))
-            case _       => None
-          }
-          .headOption
-          .getOrElse((None, None))
+          baseCall.argumentOut
+            .flatMap {
+              case x: FieldIdentifier =>
+                Option(Option(x.code) -> None)
+              case x: Call => Option(Option(x.name) -> getResolvedMethod(x))
+              case _       => None
+            }
+            .headOption
+            .getOrElse((None, None))
         else if (isConstructor) {
           val m = constructorTypeMatcher.matcher(baseCall.code)
           val typeName =
@@ -197,15 +198,16 @@ object UsageSlicing {
           case None                 => "ANY"
         }
       } else {
-        baseCall.argumentOut.flatMap {
-          case x: Call if !DefComponent.unresolvedCallPattern.matcher(x.methodFullName).matches() =>
-            cpg.method.fullNameExact(x.methodFullName).methodReturn.typeFullName.headOption
-          case x: Call =>
-            x.callee(resolver).methodReturn.typeFullName.headOption
-          case _ => None
-        }
-        .headOption
-        .getOrElse("ANY")
+        baseCall.argumentOut
+          .flatMap {
+            case x: Call if !DefComponent.unresolvedCallPattern.matcher(x.methodFullName).matches() =>
+              cpg.method.fullNameExact(x.methodFullName).methodReturn.typeFullName.headOption
+            case x: Call =>
+              x.callee(resolver).methodReturn.typeFullName.headOption
+            case _ => None
+          }
+          .headOption
+          .getOrElse("ANY")
       }
 
       Option(

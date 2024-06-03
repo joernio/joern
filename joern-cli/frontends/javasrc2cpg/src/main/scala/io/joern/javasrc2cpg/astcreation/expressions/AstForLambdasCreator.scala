@@ -5,7 +5,11 @@ import com.github.javaparser.ast.stmt.{BlockStmt, Statement}
 import com.github.javaparser.resolution.declarations.ResolvedMethodDeclaration
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
 import com.github.javaparser.resolution.types.{ResolvedReferenceType, ResolvedType, ResolvedTypeVariable}
-import io.joern.javasrc2cpg.astcreation.expressions.AstForLambdasCreator.{ClosureBindingEntry, LambdaBody, LambdaImplementedInfo}
+import io.joern.javasrc2cpg.astcreation.expressions.AstForLambdasCreator.{
+  ClosureBindingEntry,
+  LambdaBody,
+  LambdaImplementedInfo
+}
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
 import io.joern.javasrc2cpg.scope.Scope.ScopeVariable
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.{ObjectMethodSignatures, TypeConstants}

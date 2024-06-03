@@ -22,22 +22,23 @@ import io.shiftleft.semanticcpg.language.types.structure.*
   * Implicit conversions to specific steps, based on the node at hand. Automatically in scope when using anything in the
   * `steps` package, e.g. `Steps`
   */
-package object language extends generated.language
+package object language
+    extends generated.language
     with operatorextension.Implicits
     with modulevariable.Implicits
     with importresolver.Implicits
     with LowPrioImplicits {
   // Implicit conversions from generated node types. We use these to add methods
   // to generated node types.
-  implicit def cfgNodeToAstNode(node: CfgNode): AstNodeMethods                 = new AstNodeMethods(node)
-  implicit def toExtendedNode(node: AbstractNode): NodeMethods                 = new NodeMethods(node)
-  implicit def toExtendedStoredNode(node: StoredNode): StoredNodeMethods      = new StoredNodeMethods(node)
-  implicit def toAstNodeMethods(node: AstNode): AstNodeMethods                = new AstNodeMethods(node)
-  implicit def toExpressionMethods(node: Expression): ExpressionMethods       = new ExpressionMethods(node)
+  implicit def cfgNodeToAstNode(node: CfgNode): AstNodeMethods           = new AstNodeMethods(node)
+  implicit def toExtendedNode(node: AbstractNode): NodeMethods           = new NodeMethods(node)
+  implicit def toExtendedStoredNode(node: StoredNode): StoredNodeMethods = new StoredNodeMethods(node)
+  implicit def toAstNodeMethods(node: AstNode): AstNodeMethods           = new AstNodeMethods(node)
+  implicit def toExpressionMethods(node: Expression): ExpressionMethods  = new ExpressionMethods(node)
 
   implicit def toMethodMethods(node: Method): MethodMethods                   = new MethodMethods(node)
   implicit def toMethodReturnMethods(node: MethodReturn): MethodReturnMethods = new MethodReturnMethods(node)
-  implicit def toCallMethods(node: Call): CallMethods = new CallMethods(node)
+  implicit def toCallMethods(node: Call): CallMethods                         = new CallMethods(node)
   implicit def toMethodParamInMethods(node: MethodParameterIn): MethodParameterInMethods =
     new MethodParameterInMethods(node)
   implicit def toMethodParamOutMethods(node: MethodParameterOut): MethodParameterOutMethods =
@@ -103,7 +104,9 @@ package object language extends generated.language
   implicit def iterOnceToMethodParameterInTrav[A <: MethodParameterIn](a: IterableOnce[A]): MethodParameterTraversal =
     new MethodParameterTraversal(a.iterator)
 
-  implicit def iterOnceToMethodParameterOutTrav[A <: MethodParameterOut](a: IterableOnce[A]): MethodParameterOutTraversal =
+  implicit def iterOnceToMethodParameterOutTrav[A <: MethodParameterOut](
+    a: IterableOnce[A]
+  ): MethodParameterOutTraversal =
     new MethodParameterOutTraversal(a.iterator)
 
   implicit def iterOnceToMethodReturnTrav[A <: MethodReturn](a: IterableOnce[A]): MethodReturnTraversal =
@@ -131,26 +134,26 @@ package object language extends generated.language
     new ImportTraversal(a.iterator)
 
   // Call graph extension
-   implicit def singleToMethodTravCallGraphExt[A <: Method](a: A): MethodTraversal =
-     new MethodTraversal(Iterator.single(a))
-   implicit def iterOnceToMethodTravCallGraphExt[A <: Method](a: IterableOnce[A]): MethodTraversal =
-     new MethodTraversal(a.iterator)
-   implicit def singleToCallTrav[A <: Call](a: A): CallTraversal =
-     new CallTraversal(Iterator.single(a))
-   implicit def iterOnceToCallTrav[A <: Call](a: IterableOnce[A]): CallTraversal =
-     new CallTraversal(a.iterator)
+  implicit def singleToMethodTravCallGraphExt[A <: Method](a: A): MethodTraversal =
+    new MethodTraversal(Iterator.single(a))
+  implicit def iterOnceToMethodTravCallGraphExt[A <: Method](a: IterableOnce[A]): MethodTraversal =
+    new MethodTraversal(a.iterator)
+  implicit def singleToCallTrav[A <: Call](a: A): CallTraversal =
+    new CallTraversal(Iterator.single(a))
+  implicit def iterOnceToCallTrav[A <: Call](a: IterableOnce[A]): CallTraversal =
+    new CallTraversal(a.iterator)
   // / Call graph extension
 
 //   // Binding extensions
-   implicit def singleToBindingMethodTrav[A <: Method](a: A): BindingMethodTraversal =
-     new BindingMethodTraversal(Iterator.single(a))
-   implicit def iterOnceToBindingMethodTrav[A <: Method](a: IterableOnce[A]): BindingMethodTraversal =
-     new BindingMethodTraversal(a.iterator)
+  implicit def singleToBindingMethodTrav[A <: Method](a: A): BindingMethodTraversal =
+    new BindingMethodTraversal(Iterator.single(a))
+  implicit def iterOnceToBindingMethodTrav[A <: Method](a: IterableOnce[A]): BindingMethodTraversal =
+    new BindingMethodTraversal(a.iterator)
 
-   implicit def singleToBindingTypeDeclTrav[A <: TypeDecl](a: A): BindingTypeDeclTraversal =
-     new BindingTypeDeclTraversal(Iterator.single(a))
-   implicit def iterOnceToBindingTypeDeclTrav[A <: TypeDecl](a: IterableOnce[A]): BindingTypeDeclTraversal =
-     new BindingTypeDeclTraversal(a.iterator)
+  implicit def singleToBindingTypeDeclTrav[A <: TypeDecl](a: A): BindingTypeDeclTraversal =
+    new BindingTypeDeclTraversal(Iterator.single(a))
+  implicit def iterOnceToBindingTypeDeclTrav[A <: TypeDecl](a: IterableOnce[A]): BindingTypeDeclTraversal =
+    new BindingTypeDeclTraversal(a.iterator)
 
   implicit def singleToCfgNodeDot[A <: Method](a: A): CfgNodeDot =
     new CfgNodeDot(Iterator.single(a))
@@ -256,13 +259,11 @@ package object language extends generated.language
   object NonStandardImplicits {
 
     // note: this causes problems because MethodParameterOut has an `index` property and the `MethodParameterOutTraversal` defines an `index` step...
-  implicit def singleToMethodParameterOutTrav[A <: MethodParameterOut](a: A): MethodParameterOutTraversal =
-    new MethodParameterOutTraversal(Iterator.single(a))
+    implicit def singleToMethodParameterOutTrav[A <: MethodParameterOut](a: A): MethodParameterOutTraversal =
+      new MethodParameterOutTraversal(Iterator.single(a))
 
   }
 }
-
-
 
 trait LowPrioImplicits {
   implicit val docSearchPackages: DocSearchPackages =
@@ -275,7 +276,7 @@ trait LowPrioImplicits {
   implicit def iterOnceToAstNodeDot[A <: AstNode](a: IterableOnce[A]): AstNodeDot[A] =
     new AstNodeDot(a.iterator)
 
-  implicit def toCfgNodeMethods(node: CfgNode): CfgNodeMethods                = new CfgNodeMethods(node)
+  implicit def toCfgNodeMethods(node: CfgNode): CfgNodeMethods = new CfgNodeMethods(node)
 
   implicit def iterOnceToCfgNodeTraversal[A <: CfgNode](a: IterableOnce[A]): CfgNodeTraversal[A] =
     new CfgNodeTraversal[A](a.iterator)

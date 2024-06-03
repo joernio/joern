@@ -182,11 +182,7 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     .columnNumber(column)
     .typeFullName(Defines.Any)
 
-  protected def createFieldIdentifierNode(
-    name: String,
-    line: Option[Int],
-    column: Option[Int]
-  ): NewFieldIdentifier = {
+  protected def createFieldIdentifierNode(name: String, line: Option[Int], column: Option[Int]): NewFieldIdentifier = {
     NewFieldIdentifier()
       .code(name)
       .canonicalName(name)

@@ -236,7 +236,7 @@ object XTypeRecovery {
     def allTypes: Iterator[String] =
       (x.propertyOption(PropertyKeys.TypeFullName).getOrElse("ANY") +:
         (x.property(PropertyKeys.DynamicTypeHintFullName) ++
-         x.property(PropertyKeys.PossibleTypes))).iterator
+          x.property(PropertyKeys.PossibleTypes))).iterator
 
     def getKnownTypes: Set[String] = {
       x.allTypes.toSet.filterNot(XTypeRecovery.unknownTypePattern.matches)
@@ -1229,7 +1229,9 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     */
   protected def storeDefaultTypeInfo(n: StoredNode, types: Seq[String]): Unit =
     val hasUnknownType =
-      n.propertyOption(PropertyNames.TYPE_FULL_NAME).getOrElse(Defines.Any).matches(XTypeRecovery.unknownTypePattern.pattern.pattern())
+      n.propertyOption(PropertyNames.TYPE_FULL_NAME)
+        .getOrElse(Defines.Any)
+        .matches(XTypeRecovery.unknownTypePattern.pattern.pattern())
 
     if (types.toSet != n.getKnownTypes || (hasUnknownType && types.nonEmpty)) {
       setTypes(n, (n.propertyOption(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME).getOrElse(Seq.empty) ++ types).distinct)

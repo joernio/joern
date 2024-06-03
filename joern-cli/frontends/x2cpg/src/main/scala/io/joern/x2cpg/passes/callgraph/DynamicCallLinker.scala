@@ -44,7 +44,7 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
       .filter(m => !m.name.startsWith("<operator>"))
       .foreach { method => methodMap += (method.fullName -> method) }
   }
-  
+
   /** Main method of enhancement - to be implemented by child class
     */
   override def run(dstGraph: DiffGraphBuilder): Unit = {
@@ -174,7 +174,7 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     validM.get(call.methodFullName) match {
       case Some(tgts) =>
         val callsOut = call._callOut.cast[Method].fullName.toSetImmutable
-        val tgtMs = tgts.flatMap(destMethod => methodFullNameToNode(destMethod)).toSet
+        val tgtMs    = tgts.flatMap(destMethod => methodFullNameToNode(destMethod)).toSet
         // Non-overridden methods linked as external stubs should be excluded if they are detected
         val (externalMs, internalMs) = tgtMs.partition(_.isExternal)
         (if (externalMs.nonEmpty && internalMs.nonEmpty) internalMs else tgtMs)

@@ -18,13 +18,13 @@ trait Implicits {
     new FieldAccessMethods(fieldAccess)
 
   implicit def toFieldAccessTrav(steps: Iterator[OpNodes.FieldAccess]): FieldAccessTraversal =
-   new FieldAccessTraversal(steps)
+    new FieldAccessTraversal(steps)
 
   implicit def toAssignmentExt(assignment: OpNodes.Assignment): AssignmentMethods =
     new AssignmentMethods(assignment)
 
   implicit def toAssignmentTrav(steps: Iterator[OpNodes.Assignment]): AssignmentTraversal =
-   new AssignmentTraversal(steps)
+    new AssignmentTraversal(steps)
 
   implicit def toTargetExt(call: Expression): TargetMethods               = new TargetMethods(call)
   implicit def toTargetTrav(steps: Iterator[Expression]): TargetTraversal = new TargetTraversal(steps)

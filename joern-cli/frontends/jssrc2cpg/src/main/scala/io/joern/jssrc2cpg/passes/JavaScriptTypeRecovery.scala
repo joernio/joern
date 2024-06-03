@@ -49,8 +49,8 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
   override protected def prepopulateSymbolTableEntry(x: AstNode): Unit = x match {
     case x @ (_: Identifier | _: Local | _: MethodParameterIn)
         if x.propertyOption(PropertyKeys.TypeFullName).getOrElse(Defines.Any) != Defines.Any =>
-      val typeFullName = x.propertyOption(PropertyKeys.TypeFullName).getOrElse(Defines.Any)
-      val typeHints    = symbolTable.get(LocalVar(typeFullName)) - typeFullName
+      val typeFullName         = x.propertyOption(PropertyKeys.TypeFullName).getOrElse(Defines.Any)
+      val typeHints            = symbolTable.get(LocalVar(typeFullName)) - typeFullName
       lazy val cpgTypeFullName = cpg.typeDecl.nameExact(typeFullName).fullName.toSet
       val resolvedTypeHints =
         if (typeHints.nonEmpty) symbolTable.put(x, typeHints)
@@ -59,8 +59,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
       if (!resolvedTypeHints.contains(typeFullName) && resolvedTypeHints.sizeIs == 1)
         builder.setNodeProperty(x, PropertyNames.TYPE_FULL_NAME, resolvedTypeHints.head)
 
-    case x @ (_: Identifier | _: Local | _: MethodParameterIn)
-        if x.property(PropertyKeys.PossibleTypes).nonEmpty =>
+    case x @ (_: Identifier | _: Local | _: MethodParameterIn) if x.property(PropertyKeys.PossibleTypes).nonEmpty =>
       val possibleTypes = x.property(PropertyKeys.PossibleTypes)
       if (possibleTypes.sizeIs == 1 && !possibleTypes.contains("ANY")) {
         val typeFullName         = possibleTypes.head

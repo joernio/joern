@@ -19,14 +19,15 @@ class CfgDominatorFrontierTests extends AnyWordSpec with Matchers {
       node.in("CFG").cast[StoredNode]
   }
 
-  private class TestDomTreeAdapter(immediateDominators: scala.collection.Map[StoredNode, StoredNode]) extends DomTreeAdapter[StoredNode] {
+  private class TestDomTreeAdapter(immediateDominators: scala.collection.Map[StoredNode, StoredNode])
+      extends DomTreeAdapter[StoredNode] {
     override def immediateDominator(cfgNode: StoredNode): Option[StoredNode] = {
       immediateDominators.get(cfgNode)
     }
   }
 
   "Cfg dominance frontier test" in {
-    val cpg = Cpg.empty
+    val cpg   = Cpg.empty
     val graph = cpg.graph
 
     val v0 = graph.addNode(NewUnknown())
@@ -75,7 +76,7 @@ class CfgDominatorFrontierTests extends AnyWordSpec with Matchers {
   }
 
   "Cfg domiance frontier with dead code test" in {
-    val cpg = Cpg.empty
+    val cpg   = Cpg.empty
     val graph = cpg.graph
 
     val v0 = graph.addNode(NewUnknown())

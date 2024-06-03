@@ -16,7 +16,7 @@ class MetaDataPassTests extends AnyWordSpec with Matchers {
         val config = Config()
           .withInputPath(dir.createChild("dummyinputfile").pathAsString)
           .withOutputPath(dir.createChild("dummyoutputfile").pathAsString)
-        val cpg    = new RubySrc2Cpg().createCpg(config).get
+        val cpg = new RubySrc2Cpg().createCpg(config).get
         cpg.metaData.language.l shouldBe List(Languages.RUBYSRC)
       }
     }

@@ -24,7 +24,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   override def columnEnd(node: RubyNode): Option[Int] = node.columnEnd
   override def line(node: RubyNode): Option[Int]      = node.line
   override def lineEnd(node: RubyNode): Option[Int]   = node.lineEnd
-  override def code(node: RubyNode): String               = shortenCode(node.text)
+  override def code(node: RubyNode): String           = shortenCode(node.text)
 
   protected def isBuiltin(x: String): Boolean      = builtinFunctions.contains(x)
   protected def prefixAsBuiltin(x: String): String = s"$builtinPrefix$pathSep$x"

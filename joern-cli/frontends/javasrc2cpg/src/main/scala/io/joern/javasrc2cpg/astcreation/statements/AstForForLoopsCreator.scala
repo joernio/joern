@@ -9,7 +9,15 @@ import io.joern.x2cpg.Ast
 import io.joern.x2cpg.utils.IntervalKeyPool
 import io.joern.x2cpg.utils.NodeBuilders.{newCallNode, newFieldIdentifierNode, newIdentifierNode, newOperatorCallNode}
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewControlStructure, NewLiteral, NewLocal, NewMember, NewMethodParameterIn, NewNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  NewBlock,
+  NewControlStructure,
+  NewLiteral,
+  NewLocal,
+  NewMember,
+  NewMethodParameterIn,
+  NewNode
+}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import org.slf4j.LoggerFactory
 
@@ -253,11 +261,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
       .withRefEdge(idxIdentifierArg, idxLocal)
   }
 
-  private def nativeForEachCompareAst(
-    lineNo: Option[Int],
-    iterableSource: NodeTypeInfo,
-    idxLocal: NewLocal
-  ): Ast = {
+  private def nativeForEachCompareAst(lineNo: Option[Int], iterableSource: NodeTypeInfo, idxLocal: NewLocal): Ast = {
     val idxName = idxLocal.name
 
     val compareNode = newOperatorCallNode(

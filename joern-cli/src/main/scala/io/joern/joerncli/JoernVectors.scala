@@ -18,8 +18,7 @@ class BagOfPropertiesForNodes extends EmbeddingGenerator[AstNode, (String, Strin
   override def extractObjects(cpg: Cpg): Iterator[AstNode]       = cpg.astNode
   override def enumerateSubStructures(obj: AstNode): List[(String, String)] = {
     val relevantFieldTypes = Set(PropertyNames.NAME, PropertyNames.FULL_NAME, PropertyNames.CODE)
-    val relevantFields = obj
-      .propertiesMap
+    val relevantFields = obj.propertiesMap
       .entrySet()
       .asScala
       .toList

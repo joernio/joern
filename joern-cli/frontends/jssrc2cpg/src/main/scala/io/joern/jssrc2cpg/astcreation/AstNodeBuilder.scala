@@ -67,12 +67,7 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     callAst(callNode, arguments)
   }
 
-  protected def createIndexAccessCallAst(
-    baseAst: Ast,
-    partAst: Ast,
-    line: Option[Int],
-    column: Option[Int]
-  ): Ast = {
+  protected def createIndexAccessCallAst(baseAst: Ast, partAst: Ast, line: Option[Int], column: Option[Int]): Ast = {
     val callNode = createCallNode(
       s"${codeOf(baseAst.nodes.head)}[${codeOf(partAst.nodes.head)}]",
       Operators.indexAccess,
@@ -158,11 +153,7 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
   protected def createVoidCallNode(line: Option[Int], column: Option[Int]): NewCall =
     createCallNode("void 0", "<operator>.void", DispatchTypes.STATIC_DISPATCH, line, column)
 
-  protected def createFieldIdentifierNode(
-    name: String,
-    line: Option[Int],
-    column: Option[Int]
-  ): NewFieldIdentifier = {
+  protected def createFieldIdentifierNode(name: String, line: Option[Int], column: Option[Int]): NewFieldIdentifier = {
     val cleanedName = stripQuotes(name)
     NewFieldIdentifier()
       .code(cleanedName)

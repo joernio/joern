@@ -57,7 +57,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode)
     val typeFullName = registerType(annotationTag.getType.parseAsJavaType)
     val name         = typeFullName.split('.').last
     val elementNodes = annotationTag.getElems.asScala.map(astForAnnotationElement(_, host)).toSeq
-    val code = s"@$name(${elementNodes.flatMap(_.root).flatMap(_.propertiesMap.asScala.get(PropertyNames.CODE)).mkString(", ")})"
+    val code =
+      s"@$name(${elementNodes.flatMap(_.root).flatMap(_.propertiesMap.asScala.get(PropertyNames.CODE)).mkString(", ")})"
 
     val annotation = annotationNode(host, code, name, typeFullName)
     annotationAst(annotation, elementNodes)

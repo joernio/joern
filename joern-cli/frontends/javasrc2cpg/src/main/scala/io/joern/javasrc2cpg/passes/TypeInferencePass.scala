@@ -55,7 +55,7 @@ class TypeInferencePass(cpg: Cpg) extends ForkJoinParallelCpgPass[Call](cpg) {
 
     val hasDifferingArg = method.parameter.zip(callArgs).exists { case (parameter, argument) =>
       val maybeArgumentType = argument.propertyOption(PropertyKeys.TypeFullName).getOrElse(TypeConstants.Any)
-      val argMatches = maybeArgumentType == TypeConstants.Any || maybeArgumentType == parameter.typeFullName
+      val argMatches        = maybeArgumentType == TypeConstants.Any || maybeArgumentType == parameter.typeFullName
 
       !argMatches
     }
@@ -77,7 +77,7 @@ class TypeInferencePass(cpg: Cpg) extends ForkJoinParallelCpgPass[Call](cpg) {
 
   private def getReplacementMethod(call: Call): Option[Method] = {
     val argTypes = call.argument.property(PropertyKeys.TypeFullName).mkString(":")
-    val callKey = s"${call.methodFullName}:$argTypes"
+    val callKey  = s"${call.methodFullName}:$argTypes"
     cache.get(callKey).toScala.getOrElse {
       val callNameParts = getNameParts(call.name, call.methodFullName)
       resolvedMethodIndex.get(call.name).flatMap { candidateMethods =>

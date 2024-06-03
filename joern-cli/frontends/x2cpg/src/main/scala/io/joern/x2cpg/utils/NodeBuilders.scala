@@ -92,11 +92,7 @@ object NodeBuilders {
       .dependencyGroupId(groupId)
       .version(version)
 
-  def newFieldIdentifierNode(
-    name: String,
-    line: Option[Int] = None,
-    column: Option[Int] = None
-  ): NewFieldIdentifier = {
+  def newFieldIdentifierNode(name: String, line: Option[Int] = None, column: Option[Int] = None): NewFieldIdentifier = {
     NewFieldIdentifier()
       .canonicalName(name)
       .code(name)

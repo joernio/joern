@@ -41,7 +41,7 @@ class ContainsEdgePassTest extends AnyWordSpec with Matchers {
 
 object ContainsEdgePassTest {
   private class Fixture {
-    private val cpg = Cpg.empty
+    private val cpg   = Cpg.empty
     private val graph = cpg.graph
 
     val fileVertex            = graph.addNode(NewFile())

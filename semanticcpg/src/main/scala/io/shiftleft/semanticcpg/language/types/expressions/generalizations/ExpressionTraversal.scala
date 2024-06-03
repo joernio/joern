@@ -58,11 +58,12 @@ class ExpressionTraversal[NodeType <: Expression](val traversal: Iterator[NodeTy
   /** Traverse to enclosing method
     */
   def method: Iterator[Method] =
-    traversal._containsIn.map {
-      case x: Method   => x
-      case x: TypeDecl => x.astParent
-    }
-    .collectAll[Method]
+    traversal._containsIn
+      .map {
+        case x: Method   => x
+        case x: TypeDecl => x.astParent
+      }
+      .collectAll[Method]
 
   /** Traverse to expression evaluation type
     */

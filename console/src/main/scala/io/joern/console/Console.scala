@@ -349,7 +349,7 @@ class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.cur
 
     val cpgDestinationPath = cpgDestinationPathOpt.get
 
-    val isProtoFormat = CpgLoader.isProtoFormat(cpgFile.path)
+    val isProtoFormat      = CpgLoader.isProtoFormat(cpgFile.path)
     val isOverflowDbFormat = CpgLoader.isOverflowDbFormat(cpgFile.path)
     if (isProtoFormat || isOverflowDbFormat) {
       if (isProtoFormat) report("You have provided a legacy proto CPG. Attempting conversion.")

@@ -14,7 +14,8 @@ import scala.util.{Failure, Success, Try}
 /** Scans for and inserts configuration files into the CPG. Relies on the MetaData's `ROOT` property to provide the path
   * to scan, but alternatively one can specify a directory on the `rootDir` parameter.
   */
-abstract class XConfigFileCreationPass(cpg: Cpg, rootDir: Option[String] = None) extends ForkJoinParallelCpgPass[File](cpg) {
+abstract class XConfigFileCreationPass(cpg: Cpg, rootDir: Option[String] = None)
+    extends ForkJoinParallelCpgPass[File](cpg) {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 

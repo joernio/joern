@@ -257,7 +257,7 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
   protected def column(node: BabelNodeInfo): Option[Int]    = node.columnNumber
   protected def lineEnd(node: BabelNodeInfo): Option[Int]   = node.lineNumberEnd
   protected def columnEnd(node: BabelNodeInfo): Option[Int] = node.columnNumberEnd
-  protected def code(node: BabelNodeInfo): String               = node.code
+  protected def code(node: BabelNodeInfo): String           = node.code
 
   protected def nodeOffsets(node: Value): Option[(Int, Int)] = {
     for {

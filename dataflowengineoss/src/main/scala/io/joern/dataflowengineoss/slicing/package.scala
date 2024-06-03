@@ -331,11 +331,14 @@ package object slicing {
       *   extracted.
       */
     def fromNode(node: StoredNode, typeMap: Map[String, String] = Map.empty[String, String]): DefComponent = {
-      val typeFullNameProperty = node.propertyOption(PropertyKeys.TypeFullName).getOrElse("ANY")
+      val typeFullNameProperty             = node.propertyOption(PropertyKeys.TypeFullName).getOrElse("ANY")
       val dynamicTypeHintFullNamesProperty = node.property(PropertyKeys.DynamicTypeHintFullName)
-      val nodeType = (typeFullNameProperty +: dynamicTypeHintFullNamesProperty).filterNot(_.matches("(ANY|UNKNOWN)")).headOption.getOrElse("ANY")
+      val nodeType = (typeFullNameProperty +: dynamicTypeHintFullNamesProperty)
+        .filterNot(_.matches("(ANY|UNKNOWN)"))
+        .headOption
+        .getOrElse("ANY")
       val typeFullName = typeMap.getOrElse(nodeType, nodeType)
-      val lineNumber = node.propertyOption[Int](PropertyNames.LINE_NUMBER)
+      val lineNumber   = node.propertyOption[Int](PropertyNames.LINE_NUMBER)
       val columnNumber = node.propertyOption[Int](PropertyNames.COLUMN_NUMBER)
       node match {
         case x: MethodParameterIn => ParamDef(x.name, typeFullName, x.index, lineNumber, columnNumber)

@@ -15,11 +15,8 @@ import scala.collection.mutable
   * Alternatively, set `getTypesFromCpg = true`. If this is set, the `registeredTypes` argument will be ignored.
   * Instead, type nodes will be created for every unique `TYPE_FULL_NAME` value in the CPG.
   */
-class TypeNodePass protected (
-  registeredTypes: List[String],
-  cpg: Cpg,
-  getTypesFromCpg: Boolean
-) extends CpgPass(cpg, "types") {
+class TypeNodePass protected (registeredTypes: List[String], cpg: Cpg, getTypesFromCpg: Boolean)
+    extends CpgPass(cpg, "types") {
 
   protected def typeDeclTypes: mutable.Set[String] = {
     val typeDeclTypes = mutable.Set[String]()

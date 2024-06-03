@@ -47,8 +47,7 @@ object DataFlowSlicing {
       val sliceNodes      = sinks.iterator.repeat(_.ddgIn)(_.maxDepth(config.sliceDepth).emit).dedup.l
       val sliceNodesIdSet = sliceNodes.id.toSet
       // Lazily set up the rest if the filters are satisfied
-      lazy val sliceEdges = sliceNodes
-        .outE
+      lazy val sliceEdges = sliceNodes.outE
         .filter(x => sliceNodesIdSet.contains(x.dst.id()))
         .map { e => SliceEdge(e.src.id(), e.dst.id(), e.label) }
         .toSet
@@ -81,10 +80,7 @@ object DataFlowSlicing {
       case n: MethodRef => sliceNode.copy(name = n.methodFullName, code = n.code)
       case n: TypeRef   => sliceNode.copy(name = n.typeFullName, code = n.code)
       case n =>
-        sliceNode.copy(
-          name = n.property(PropertyKeys.Name),
-          typeFullName = n.property(PropertyKeys.TypeFullName)
-        )
+        sliceNode.copy(name = n.property(PropertyKeys.Name), typeFullName = n.property(PropertyKeys.TypeFullName))
     }
   }
 

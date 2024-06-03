@@ -27,7 +27,7 @@ class AccessPathUsageTests extends AnyWordSpec {
 
   private def genCALL(graph: Graph, op: String, args: GNode*): Call = {
     val diffGraphBuilder = Cpg.newDiffGraphBuilder
-    val newCall = NewCall().name(op)
+    val newCall          = NewCall().name(op)
     diffGraphBuilder.addNode(newCall)
     args.reverse.zipWithIndex.foreach { case (arg, idx) =>
       diffGraphBuilder.setNodeProperty(arg, PropertyNames.ARGUMENT_INDEX, idx + 1)

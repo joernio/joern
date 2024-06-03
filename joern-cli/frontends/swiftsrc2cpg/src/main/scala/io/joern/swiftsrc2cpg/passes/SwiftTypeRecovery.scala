@@ -47,9 +47,9 @@ private class RecoverForSwiftFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder,
 
   override protected def prepopulateSymbolTableEntry(x: AstNode): Unit = x match {
     case x @ (_: Identifier | _: Local | _: MethodParameterIn)
-      if x.propertyOption(PropertyKeys.TypeFullName).getOrElse(Defines.Any) != Defines.Any =>
-      val typeFullName = x.propertyOption(PropertyKeys.TypeFullName).getOrElse(Defines.Any)
-      val typeHints    = symbolTable.get(LocalVar(typeFullName)) - typeFullName
+        if x.propertyOption(PropertyKeys.TypeFullName).getOrElse(Defines.Any) != Defines.Any =>
+      val typeFullName         = x.propertyOption(PropertyKeys.TypeFullName).getOrElse(Defines.Any)
+      val typeHints            = symbolTable.get(LocalVar(typeFullName)) - typeFullName
       lazy val cpgTypeFullName = cpg.typeDecl.nameExact(typeFullName).fullName.toSet
       val resolvedTypeHints =
         if (typeHints.nonEmpty) symbolTable.put(x, typeHints)

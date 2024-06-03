@@ -24,7 +24,7 @@ class ControlStructureTraversal(val traversal: Iterator[ControlStructure]) exten
 
   @Doc(info = "Sub tree taken when condition evaluates to true")
   def whenTrue: Iterator[AstNode] =
-     traversal.out.collectAll[AstNode].order(secondChildIndex)
+    traversal.out.collectAll[AstNode].order(secondChildIndex)
 
   @Doc(info = "Sub tree taken when condition evaluates to false")
   def whenFalse: Iterator[AstNode] =

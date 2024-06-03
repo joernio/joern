@@ -94,9 +94,9 @@ class DdgGenerator {
         // in flatgraph an edge may have zero or one properties and they're not named...
         // in this case we know that we're dealing with ReachingDef edges which has the `variable` property
         val variablePropertyMaybe = x.property match {
-          case null => null
+          case null                     => null
           case variableProperty: String => variableProperty
-          case _ => null
+          case _                        => null
         }
         Edge(x.src.asInstanceOf[StoredNode], v, srcVisible = true, variablePropertyMaybe, edgeType)
       )

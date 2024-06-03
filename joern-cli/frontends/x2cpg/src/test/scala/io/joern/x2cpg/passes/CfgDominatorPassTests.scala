@@ -12,7 +12,7 @@ import scala.jdk.CollectionConverters.*
 
 class CfgDominatorPassTests extends AnyWordSpec with Matchers {
   "Have correct DOMINATE/POST_DOMINATE edges after CfgDominatorPass run." in {
-    val cpg = Cpg.empty
+    val cpg   = Cpg.empty
     val graph = cpg.graph
 
     val v0 = graph.addNode(NewMethod())
@@ -25,7 +25,7 @@ class CfgDominatorPassTests extends AnyWordSpec with Matchers {
 
     // TODO MP get arrow syntax back
 //    v0 --- EdgeTypes.AST --> v6
-//               
+//
 //    v0 --- EdgeTypes.CFG --> v1
 //    v1 --- EdgeTypes.CFG --> v2
 //    v2 --- EdgeTypes.CFG --> v3

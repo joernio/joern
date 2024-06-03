@@ -1730,7 +1730,7 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
   protected def column(phpNode: PhpNode): Option[Int]    = None
   protected def lineEnd(phpNode: PhpNode): Option[Int]   = None
   protected def columnEnd(phpNode: PhpNode): Option[Int] = None
-  protected def code(phpNode: PhpNode): String               = "" // Sadly, the Php AST does not carry any code fields
+  protected def code(phpNode: PhpNode): String           = "" // Sadly, the Php AST does not carry any code fields
 
   override protected def offset(phpNode: PhpNode): Option[(Int, Int)] = {
     Option.when(!disableFileContent) {
