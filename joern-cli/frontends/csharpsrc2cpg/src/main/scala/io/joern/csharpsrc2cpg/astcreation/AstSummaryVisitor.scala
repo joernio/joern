@@ -15,7 +15,6 @@ import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.semanticcpg.language.*
-import overflowdb.{BatchedUpdate, Config}
 
 import scala.collection.mutable
 import scala.util.Using

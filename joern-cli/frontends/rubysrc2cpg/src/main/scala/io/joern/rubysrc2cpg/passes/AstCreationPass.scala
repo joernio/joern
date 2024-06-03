@@ -8,7 +8,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.LoggerFactory
-import overflowdb.BatchedUpdate
 
 class AstCreationPass(cpg: Cpg, astCreators: List[AstCreator]) extends ForkJoinParallelCpgPass[AstCreator](cpg) {
 

@@ -13,7 +13,7 @@ import scala.jdk.CollectionConverters.*
 trait LinkingUtil {
 
   import flatgraph.DiffGraphBuilder
-  private val MAX_BATCH_SIZE = 100
+  val MAX_BATCH_SIZE: Int = 100
 
   val logger: Logger = LoggerFactory.getLogger(classOf[LinkingUtil])
 

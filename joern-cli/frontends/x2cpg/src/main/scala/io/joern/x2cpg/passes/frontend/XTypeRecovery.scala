@@ -982,7 +982,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         case _ =>
       }
     // Set types in an atomic way
-    newTypesForMembers.foreach { case (m, ts) => storeDefaultTypeInfo(m, m.dynamicTypeHintFullName, ts.toSeq) }
+    newTypesForMembers.foreach { case (m, ts) => storeDefaultTypeInfo(m, ts.toSeq) }
   }
 
   protected def createCallFromIdentifierTypeFullName(typeFullName: String, callName: String): String =
@@ -1189,7 +1189,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     lazy val existingTypes = storedNode.getKnownTypes
 
     val hasUnknownTypeFullName = storedNode
-      .property(PropertyNames.TYPE_FULL_NAME, Defines.Any)
+      .propertyOption(PropertyNames.TYPE_FULL_NAME)
+      .getOrElse(Defines.Any)
       .matches(XTypeRecovery.unknownTypePattern.pattern.pattern())
 
     if (types.nonEmpty && (hasUnknownTypeFullName || types.toSet != existingTypes)) {
@@ -1222,16 +1223,16 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** Allows one to modify the types assigned to identifiers.
     */
   protected def storeIdentifierTypeInfo(i: Identifier, types: Seq[String]): Unit =
-    storeDefaultTypeInfo(i, i.dynamicTypeHintFullName, types)
+    storeDefaultTypeInfo(i, types)
 
   /** Allows one to modify the types assigned to nodes otherwise.
     */
   protected def storeDefaultTypeInfo(n: StoredNode, types: Seq[String]): Unit =
     val hasUnknownType =
-      n.property(PropertyNames.TYPE_FULL_NAME, Defines.Any).matches(XTypeRecovery.unknownTypePattern.pattern.pattern())
+      n.propertyOption(PropertyNames.TYPE_FULL_NAME).getOrElse(Defines.Any).matches(XTypeRecovery.unknownTypePattern.pattern.pattern())
 
     if (types.toSet != n.getKnownTypes || (hasUnknownType && types.nonEmpty)) {
-      setTypes(n, (n.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty) ++ types).distinct)
+      setTypes(n, (n.propertyOption(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME).getOrElse(Seq.empty) ++ types).distinct)
     }
 
   /** If there is only 1 type hint then this is set to the `typeFullName` property and `dynamicTypeHintFullName` is
@@ -1246,7 +1247,6 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   protected def storeLocalTypeInfo(l: Local, types: Seq[String]): Unit = {
     storeDefaultTypeInfo(
       l,
-      l.dynamicTypeHintFullName,
       if (state.enableDummyTypesForThisIteration) types else types.filterNot(XTypeRecovery.isDummyType)
     )
   }

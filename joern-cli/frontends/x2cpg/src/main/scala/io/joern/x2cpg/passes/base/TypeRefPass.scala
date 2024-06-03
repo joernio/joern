@@ -9,7 +9,7 @@ import io.shiftleft.semanticcpg.language.*
 class TypeRefPass(cpg: Cpg) extends ForkJoinParallelCpgPass[List[StoredNode]](cpg) with LinkingUtil {
   private val srcLabels = List(NodeTypes.TYPE)
 
-  def generateParts(): Array[List[Node]] = {
+  def generateParts(): Array[List[StoredNode]] = {
     cpg.graph.nodes(srcLabels*).cast[StoredNode].toList.grouped(MAX_BATCH_SIZE).toArray
   }
 
