@@ -25,7 +25,7 @@ jobs:
         with:
           branch: ${{ env.LATEST_TAG }}
 
-      - run: ./upstream_sync.sh --branch ${{ env.LATEST_TAG }}
+      - run: bash ./upstream_sync.sh --branch ${{ env.LATEST_TAG }}
 
       - name: Create a PR from ${{ env.LATEST_TAG }} to sync
         run: gh pr create -B sync -H ${{ env.LATEST_TAG }} --title 'Test PR' --body 'Created by Github action'
