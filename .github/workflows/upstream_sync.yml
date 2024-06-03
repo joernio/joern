@@ -5,6 +5,7 @@ on:
   workflow_dispatch:    # allow to manually trigger this workflow
 jobs:
   sync_upstream:
+    permissions: write-all
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
