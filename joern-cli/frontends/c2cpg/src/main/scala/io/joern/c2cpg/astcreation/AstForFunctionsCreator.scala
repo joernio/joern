@@ -11,6 +11,7 @@ import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTLambdaExpression
 import org.eclipse.cdt.core.dom.ast.gnu.c.ICASTKnRFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.c.{CASTFunctionDeclarator, CASTParameterDeclaration}
 import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTFunctionDeclarator, CPPASTParameterDeclaration}
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFunctionDefinition
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import scala.annotation.tailrec
@@ -160,9 +161,18 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     }
   }
 
+  private def isCppConstructor(funcDef: IASTFunctionDefinition): Boolean = {
+    funcDef match {
+      case cppFunc: CPPASTFunctionDefinition => cppFunc.getMemberInitializers.nonEmpty
+      case _                                 => false
+    }
+  }
+
   protected def astForFunctionDefinition(funcDef: IASTFunctionDefinition): Ast = {
-    val filename       = fileName(funcDef)
-    val returnType     = typeForDeclSpecifier(funcDef.getDeclSpecifier)
+    val filename = fileName(funcDef)
+    val returnType = if (isCppConstructor(funcDef)) {
+      typeFor(funcDef.asInstanceOf[CPPASTFunctionDefinition].getMemberInitializers.head.getInitializer)
+    } else typeForDeclSpecifier(funcDef.getDeclSpecifier)
     val name           = shortName(funcDef)
     val fullname       = fullName(funcDef)
     val templateParams = templateParameters(funcDef).getOrElse("")
@@ -182,11 +192,16 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     }
     setVariadic(parameterNodes, funcDef)
 
+    val modifiers = if (isCppConstructor(funcDef)) {
+      List(newModifierNode(ModifierTypes.CONSTRUCTOR), newModifierNode(ModifierTypes.PUBLIC))
+    } else Nil
+
     val astForMethod = methodAst(
       methodNode_,
       parameterNodes.map(Ast(_)),
       astForMethodBody(Option(funcDef.getBody)),
-      newMethodReturnNode(funcDef, registerType(returnType))
+      newMethodReturnNode(funcDef, registerType(returnType)),
+      modifiers = modifiers
     )
 
     scope.popScope()
