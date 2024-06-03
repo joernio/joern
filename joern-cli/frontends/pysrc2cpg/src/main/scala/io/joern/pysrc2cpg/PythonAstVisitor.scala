@@ -1293,7 +1293,10 @@ class PythonAstVisitor(
     val code   = nodeToCode.getCode(errorStatement)
     val line   = errorStatement.attributeProvider.lineno
     val column = errorStatement.attributeProvider.col_offset
-    logger.warn(s"Could not parse file $relFileName at line $line column $column. Invalid code: $code")
+    logger.warn(
+      s"Could not parse file $relFileName at line $line column $column. Invalid code: $code" +
+        s"\nParser exception message: ${errorStatement.exception.getMessage}"
+    )
     nodeBuilder.unknownNode(errorStatement.toString, errorStatement.getClass.getName, lineAndColOf(errorStatement))
   }
 
