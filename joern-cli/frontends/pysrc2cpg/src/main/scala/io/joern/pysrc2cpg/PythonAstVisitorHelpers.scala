@@ -1,12 +1,17 @@
 package io.joern.pysrc2cpg
 
-import io.joern.pysrc2cpg.memop.{Load, MemoryOperation, Store}
+import io.joern.pysrc2cpg.memop.Load
+import io.joern.pysrc2cpg.memop.MemoryOperation
+import io.joern.pysrc2cpg.memop.Store
 import io.joern.pythonparser.ast
-import io.joern.x2cpg.{Ast, ValidationMode}
+import io.joern.x2cpg.ValidationMode
+import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 
-import scala.collection.immutable.{::, Nil}
+import scala.collection.immutable.::
+import scala.collection.immutable.Nil
 import scala.collection.mutable
 
 trait PythonAstVisitorHelpers(implicit withSchemaValidation: ValidationMode) { this: PythonAstVisitor =>
@@ -54,31 +59,41 @@ trait PythonAstVisitorHelpers(implicit withSchemaValidation: ValidationMode) { t
     val bodyBlockNode      = createBlock(body, lineAndColumn).asInstanceOf[NewBlock]
     val handlersBlockNodes = handlers.map(x => createBlock(Iterable(x), lineAndColumn).asInstanceOf[NewBlock]).toSeq
 
-    val finalBlockSeq  = finalBlock.toSeq
     val orElseBlockSeq = orElseBlock.toSeq
+    val finalBlockSeq  = finalBlock.toSeq
 
-    // TODO: orElse semantics are not yet handled, so if present, we group it under the finally block
-    val finalBlockAst = if (finalBlockSeq.nonEmpty && orElseBlockSeq.nonEmpty) {
-      val _blockNode      = nodeBuilder.blockNode("<empty>", lineAndColumn)
-      val finalBlockNode  = createBlock(finalBlockSeq, lineAndColumn).asInstanceOf[NewBlock]
+    val elseBlockNodes = if (orElseBlockSeq.nonEmpty) {
       val orElseBlockNode = createBlock(orElseBlockSeq, lineAndColumn).asInstanceOf[NewBlock]
-      addAstChildNodes(_blockNode, 1, finalBlockNode, orElseBlockNode)
-      Seq(_blockNode)
-    } else if (finalBlockSeq.nonEmpty) {
-      Seq(createBlock(finalBlockSeq, lineAndColumn).asInstanceOf[NewBlock])
-    } else if (orElseBlockSeq.nonEmpty) {
-      Seq(createBlock(orElseBlockSeq, lineAndColumn).asInstanceOf[NewBlock])
-    } else {
-      Seq.empty
+      Seq(orElseBlockNode)
+    } else { Seq.empty }
+
+    val finallyBlockNodes = if (finalBlockSeq.nonEmpty) {
+      val finalBlockNode = createBlock(finalBlockSeq, lineAndColumn).asInstanceOf[NewBlock]
+      Seq(finalBlockNode)
+    } else { Seq.empty }
+
+    val handlersAsts = handlersBlockNodes.map { handlerNode =>
+      val controlStructureNode =
+        nodeBuilder.controlStructureNode(codeOf(handlerNode), ControlStructureTypes.CATCH, lineAndColumn)
+      addAstChildNodes(controlStructureNode, 1, Seq(handlerNode))
+      controlStructureNode
     }
 
-    addAstChildNodes(controlStructureNode, 1, Seq(bodyBlockNode) ++ handlersBlockNodes ++ finalBlockAst*)
+    val finallyAsts = finallyBlockNodes.map { finallyNode =>
+      val controlStructureNode =
+        nodeBuilder.controlStructureNode(codeOf(finallyNode), ControlStructureTypes.FINALLY, lineAndColumn)
+      addAstChildNodes(controlStructureNode, 1, Seq(finallyNode))
+      controlStructureNode
+    }
 
-    // Performs the same ordering operation as io.joern.x2cpg.AstCreatorBase::tryCatchAst
-    bodyBlockNode.order = 1
-    handlersBlockNodes.foreach(_.order = 2)
-    finalBlockAst.foreach(_.order = 3)
+    val elseAsts = elseBlockNodes.map { elseNode =>
+      val controlStructureNode =
+        nodeBuilder.controlStructureNode(codeOf(elseNode), ControlStructureTypes.ELSE, lineAndColumn)
+      addAstChildNodes(controlStructureNode, 1, Seq(elseNode))
+      controlStructureNode
+    }
 
+    addAstChildNodes(controlStructureNode, 1, Seq(bodyBlockNode) ++ handlersAsts ++ elseAsts ++ finallyAsts)
     controlStructureNode
   }
 

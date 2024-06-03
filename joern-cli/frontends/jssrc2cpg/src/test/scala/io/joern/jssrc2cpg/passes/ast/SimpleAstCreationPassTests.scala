@@ -339,13 +339,40 @@ class SimpleAstCreationPassTests extends AstJsSrc2CpgSuite {
       tryStatement.controlStructureType shouldBe ControlStructureTypes.TRY
 
       val List(tryBlock) = tryStatement.astChildren.isBlock.order(1).l
-      tryBlock.astChildren.isCall.codeExact("open()").size shouldBe 1
+      tryBlock.ast.isCall.codeExact("open()").size shouldBe 1
 
-      val List(catchBlock) = tryStatement.astChildren.isBlock.order(2).l
-      catchBlock.astChildren.isCall.codeExact("handle()").size shouldBe 1
+      val List(catchBlock) = tryStatement.astChildren.isControlStructure.isCatch.l
+      catchBlock.order shouldBe 2
+      catchBlock.ast.isCall.codeExact("handle()").size shouldBe 1
 
-      val List(finallyBlock) = tryStatement.astChildren.isBlock.order(3).l
-      finallyBlock.astChildren.isCall.codeExact("close()").size shouldBe 1
+      val List(finallyBlock) = tryStatement.astChildren.isControlStructure.isFinally.l
+      finallyBlock.order shouldBe 3
+      finallyBlock.ast.isCall.codeExact("close()").size shouldBe 1
+    }
+
+    "have correct structure for try with empty catch / finally" in {
+      val cpg = code("""
+          |try {
+          | open()
+          |} catch(err) {}
+          |finally {}
+          |""".stripMargin)
+      val List(method)      = cpg.method.nameExact(":program").l
+      val List(methodBlock) = method.astChildren.isBlock.l
+
+      val List(tryStatement) = methodBlock.astChildren.isControlStructure.l
+      tryStatement.controlStructureType shouldBe ControlStructureTypes.TRY
+
+      val List(tryBlock) = tryStatement.astChildren.isBlock.order(1).l
+      tryBlock.ast.isCall.codeExact("open()").size shouldBe 1
+
+      val List(catchBlock) = tryStatement.astChildren.isControlStructure.isCatch.l
+      catchBlock.order shouldBe 2
+      catchBlock.astChildren.astChildren.code.l shouldBe List("err")
+
+      val List(finallyBlock) = tryStatement.astChildren.isControlStructure.isFinally.l
+      finallyBlock.order shouldBe 3
+      finallyBlock.astChildren.astChildren shouldBe empty
     }
 
     "have correct structure for 1 object with simple values" in {

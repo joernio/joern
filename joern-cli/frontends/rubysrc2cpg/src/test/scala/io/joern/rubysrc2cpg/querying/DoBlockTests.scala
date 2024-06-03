@@ -32,7 +32,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
             case xs => fail(s"Expected a two method nodes, instead got [${xs.code.mkString(", ")}]")
           }
 
-          inside(program.block.astChildren.collectAll[TypeDecl].l) {
+          inside(program.block.astChildren.collectAll[TypeDecl].isLambda.l) {
             case closureType :: Nil =>
               closureType.name shouldBe "<lambda>0"
               closureType.fullName shouldBe "Test0.rb:<global>::program:<lambda>0"

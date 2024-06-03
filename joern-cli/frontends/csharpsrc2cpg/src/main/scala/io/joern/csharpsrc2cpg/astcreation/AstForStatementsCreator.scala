@@ -1,14 +1,19 @@
 package io.joern.csharpsrc2cpg.astcreation
 
 import io.joern.csharpsrc2cpg.CSharpOperators
+import io.joern.csharpsrc2cpg.parser.DotNetNodeInfo
+import io.joern.csharpsrc2cpg.parser.ParserKeys
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
-import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
-import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewControlStructure, NewIdentifier}
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes}
+import io.joern.x2cpg.Ast
+import io.joern.x2cpg.ValidationMode
+import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.nodes.NewControlStructure
+import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
 
 import scala.::
-import scala.util.{Success, Try}
+import scala.util.Success
+import scala.util.Try
 
 trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -105,8 +110,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       )
       .toSeq
 
-    val switchNode = controlStructureNode(switchStmt, ControlStructureTypes.SWITCH, s"switch (${comparatorNode.code})");
-
+    val switchNode = controlStructureNode(switchStmt, ControlStructureTypes.SWITCH, s"switch (${comparatorNode.code})")
     Seq(controlStructureAst(switchNode, comparatorNodeAst, switchBodyAsts))
   }
 
@@ -242,20 +246,41 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   protected def astForTryStatement(tryStmt: DotNetNodeInfo): Seq[Ast] = {
     val tryNode = NewControlStructure()
       .controlStructureType(ControlStructureTypes.TRY)
-      .code("try")
+      .code(code(tryStmt))
       .lineNumber(line(tryStmt))
       .columnNumber(column(tryStmt))
-    val tryAst = astForBlock(createDotNetNodeInfo(tryStmt.json(ParserKeys.Block)), Option("try"))
+    val tryBlockNodeInfo = createDotNetNodeInfo(tryStmt.json(ParserKeys.Block))
+    val tryAst           = astForBlock(tryBlockNodeInfo, Option(code(tryBlockNodeInfo)))
 
-    val catchAsts = Try(tryStmt.json(ParserKeys.Catches)).map(_.arr.flatMap(astForNode).toSeq).getOrElse(Seq.empty)
+    val catchAsts = Try(tryStmt.json(ParserKeys.Catches))
+      .map(_.arr.toSeq)
+      .map { c =>
+        c.map { value =>
+          val nodeInfo = createDotNetNodeInfo(value)
+          val catchNode = NewControlStructure()
+            .controlStructureType(ControlStructureTypes.CATCH)
+            .code(code(nodeInfo))
+            .lineNumber(line(nodeInfo))
+            .columnNumber(column(nodeInfo))
+          val children = astForNode(nodeInfo)
+          Ast(catchNode).withChildren(children)
+        }
+      }
+      .getOrElse(Seq.empty)
 
-    val finallyBlock = Try(createDotNetNodeInfo(tryStmt.json(ParserKeys.Finally))).map(astForFinallyClause) match
-      case Success(finallyAst :: Nil) =>
-        finallyAst.root.collect { case x: NewBlock => x.code("finally") }
-        finallyAst
+    val finallyAst = Try(createDotNetNodeInfo(tryStmt.json(ParserKeys.Finally))) match {
+      case Success(finallyNodeInfo) =>
+        val finallyNode = NewControlStructure()
+          .controlStructureType(ControlStructureTypes.FINALLY)
+          .code(code(finallyNodeInfo))
+          .lineNumber(line(finallyNodeInfo))
+          .columnNumber(column(finallyNodeInfo))
+        val finallyClauseAst = astForFinallyClause(finallyNodeInfo)
+        Ast(finallyNode).withChildren(finallyClauseAst)
       case _ => Ast()
+    }
 
-    val controlStructureAst = tryCatchAst(tryNode, tryAst, catchAsts, Option(finallyBlock))
+    val controlStructureAst = tryCatchAst(tryNode, tryAst, catchAsts, Option(finallyAst))
     Seq(controlStructureAst)
   }
 
@@ -272,12 +297,13 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   private def astForUsingStatement(usingStmt: DotNetNodeInfo): Seq[Ast] = {
     val tryNode = NewControlStructure()
       .controlStructureType(ControlStructureTypes.TRY)
-      .code("try")
+      .code(code(usingStmt))
       .lineNumber(line(usingStmt))
       .columnNumber(column(usingStmt))
-    val tryAst   = astForBlock(createDotNetNodeInfo(usingStmt.json(ParserKeys.Statement)), Option("try"))
-    val declNode = createDotNetNodeInfo(usingStmt.json(ParserKeys.Declaration))
-    val declAst  = astForNode(declNode)
+    val tryNodeInfo = createDotNetNodeInfo(usingStmt.json(ParserKeys.Statement))
+    val tryAst      = astForBlock(tryNodeInfo, Option("try"))
+    val declNode    = createDotNetNodeInfo(usingStmt.json(ParserKeys.Declaration))
+    val declAst     = astForNode(declNode)
 
     val finallyAst = declAst.flatMap(_.nodes).collectFirst { case x: NewIdentifier => x.copy }.map { id =>
       val callCode = s"${id.name}.Dispose()"
@@ -291,9 +317,14 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         Option("System.Void()"),
         Option("System.Void")
       )
-      val disposeAst = callAst(disposeCall, receiver = Option(Ast(id)))
-      Ast(blockNode(usingStmt).code("finally"))
-        .withChild(disposeAst)
+      val disposeAst  = callAst(disposeCall, receiver = Option(Ast(id)))
+      val childrenAst = Ast(blockNode(usingStmt)).withChild(disposeAst)
+      val finallyNode = NewControlStructure()
+        .controlStructureType(ControlStructureTypes.FINALLY)
+        .code("finally")
+        .lineNumber(line(usingStmt))
+        .columnNumber(column(usingStmt))
+      Ast(finallyNode).withChild(childrenAst)
     }
 
     declAst :+ tryCatchAst(tryNode, tryAst, Seq.empty, finallyAst)

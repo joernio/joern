@@ -1,19 +1,27 @@
 package io.joern.php2cpg.parser
 
-import io.joern.php2cpg.astcreation.PhpBuiltins
-import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
-import io.joern.php2cpg.parser.Domain.PhpAssignment.{AssignTypeMap, isAssignType}
-import io.joern.php2cpg.parser.Domain.PhpBinaryOp.{BinaryOpTypeMap, isBinaryOpType}
-import io.joern.php2cpg.parser.Domain.PhpCast.{CastTypeMap, isCastType}
-import io.joern.php2cpg.parser.Domain.PhpUnaryOp.{UnaryOpTypeMap, isUnaryOpType}
-import io.joern.php2cpg.parser.Domain.PhpUseType.{PhpUseType, getUseType}
-import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
-import org.slf4j.LoggerFactory
-import ujson.{Arr, Obj, Str, Value}
-
-import scala.util.{Success, Try}
 import io.joern.php2cpg.astcreation.AstCreator
+import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
+import io.joern.php2cpg.parser.Domain.PhpAssignment.AssignTypeMap
+import io.joern.php2cpg.parser.Domain.PhpAssignment.isAssignType
+import io.joern.php2cpg.parser.Domain.PhpBinaryOp.BinaryOpTypeMap
+import io.joern.php2cpg.parser.Domain.PhpBinaryOp.isBinaryOpType
+import io.joern.php2cpg.parser.Domain.PhpCast.CastTypeMap
+import io.joern.php2cpg.parser.Domain.PhpCast.isCastType
+import io.joern.php2cpg.parser.Domain.PhpUnaryOp.UnaryOpTypeMap
+import io.joern.php2cpg.parser.Domain.PhpUnaryOp.isUnaryOpType
+import io.joern.php2cpg.parser.Domain.PhpUseType.PhpUseType
+import io.joern.php2cpg.parser.Domain.PhpUseType.getUseType
+import io.shiftleft.codepropertygraph.generated.ModifierTypes
+import io.shiftleft.codepropertygraph.generated.Operators
+import org.slf4j.LoggerFactory
+import ujson.Arr
+import ujson.Obj
+import ujson.Str
+import ujson.Value
+
+import scala.util.Success
+import scala.util.Try
 
 object Domain {
 
