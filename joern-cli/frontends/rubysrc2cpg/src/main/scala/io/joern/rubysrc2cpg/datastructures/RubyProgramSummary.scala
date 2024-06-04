@@ -37,7 +37,11 @@ object RubyProgramSummary {
   private val logger = LoggerFactory.getLogger(getClass)
 
   def BuiltinTypes(implicit typeStubMetaData: TypeStubMetaData): NamespaceToTypeMap = {
-    if (typeStubMetaData.useTypeStubs) {
+    val typeStubDir = File(typeStubMetaData.packagePath)
+    if (!typeStubDir.exists || !typeStubDir.isDirectory) {
+      logger.warn("No builtin type stubs provided, continuing with types provided by the project")
+      mutable.Map.empty
+    } else if (typeStubMetaData.useTypeStubs) {
       mpkZipToInitialMapping(mergeBuiltinMpkZip) match {
         case Failure(exception) => logger.warn("Unable to parse builtin types", exception); mutable.Map.empty
         case Success(mapping)   => mapping
