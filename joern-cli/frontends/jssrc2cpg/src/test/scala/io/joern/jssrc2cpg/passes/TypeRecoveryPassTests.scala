@@ -463,4 +463,24 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
   }
 
+  "A function assigned to a member should have it's full name resolved" in {
+    val cpg = code("""
+        |var foo = {};
+        |
+        |foo.bar = {};
+        |
+        |foo.bar.evaluator = function evaluator (src) {
+        |    eval(src);
+        |};
+        |
+        |foo.bar.getGlobals = function getGlobals (src) {
+        |    "use strict";
+        |    var original = Object.keys(global);
+        |    foo.bar.evaluator(src);
+        |};
+        |""".stripMargin)
+
+    cpg.call("evaluator").methodFullName.head shouldBe "Test0.js::program:evaluator"
+  }
+
 }
