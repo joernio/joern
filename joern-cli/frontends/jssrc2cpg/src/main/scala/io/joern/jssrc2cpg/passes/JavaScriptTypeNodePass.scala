@@ -14,10 +14,10 @@ object JavaScriptTypeNodePass {
 
       override def fullToShortName(typeName: String): String = {
         typeName match {
-          case name if name.endsWith(":program") => ":program"
-          case name if name.contains("=>")       => name
-          case name if name.contains(":")        => name.split(':').lastOption.getOrElse(typeName)
-          case _                                 => typeName.split('.').lastOption.getOrElse(typeName)
+          case name if name.endsWith(Defines.Program) => Defines.Program
+          case name if name.contains("=>")            => name
+          case name if name.contains(":")             => name.split(':').lastOption.getOrElse(typeName)
+          case _                                      => typeName.split('.').lastOption.getOrElse(typeName)
         }
       }
 

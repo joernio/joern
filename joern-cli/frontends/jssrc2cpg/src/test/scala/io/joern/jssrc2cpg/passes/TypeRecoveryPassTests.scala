@@ -1,6 +1,8 @@
 package io.joern.jssrc2cpg.passes
 
+import io.joern.jssrc2cpg.passes.Defines.OperatorsNew
 import io.joern.jssrc2cpg.testfixtures.DataFlowCodeToCpgSuite
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.importresolver.*
 import io.shiftleft.semanticcpg.language.*
 
@@ -461,6 +463,18 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
       cpg.call("post").methodFullName.headOption shouldBe Option("@angular/common/http:HttpClient:post")
     }
 
+  }
+
+  "resolve a function full name called as a constructor" in {
+    val cpg = code("""
+        |var Print = function(str) {
+        |	console.log(str);
+        |}
+        |
+        |new Print("Hello")
+        |""".stripMargin)
+
+    cpg.call.nameExact(OperatorsNew).methodFullName.head shouldBe "Test0.js::program:Print"
   }
 
 }
