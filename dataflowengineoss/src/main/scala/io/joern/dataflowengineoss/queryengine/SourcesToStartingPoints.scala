@@ -194,7 +194,7 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
         val usageInput = targetsToClassIdentifierPair(literalToInitializedMembers(lit), src)
         val uses       = usages(usageInput)
         val globals = globalFromLiteral(lit, recursive = false).flatMap {
-          case x: Identifier if x.isModuleVariable => x :: moduleVariableToFirstUsagesAcrossProgram(x)
+          case x: Identifier if x.isModuleVariable => moduleVariableToFirstUsagesAcrossProgram(x)
           case x                                   => x :: Nil
         }
         (lit :: (uses ++ globals), usageInput)

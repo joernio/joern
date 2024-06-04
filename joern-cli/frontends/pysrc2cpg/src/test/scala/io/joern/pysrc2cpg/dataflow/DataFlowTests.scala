@@ -512,6 +512,53 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     flow100 shouldBe List(("x = 100", 3), ("tmp0['Property'] = x", 4), ("tmp0", 4))
   }
 
+  "flow from literal in an imported dictionary literal to `print`" in {
+    val cpg = code(
+      """
+        |from p1.bar import baz
+        |print(baz)
+        |""".stripMargin,
+      "foo.py"
+    ).moreCode(
+      """
+        |baz = {"Property1": "foo"}
+        |""".stripMargin,
+      "p1/bar.py"
+    )
+    val source     = cpg.literal("\"foo\"")
+    val sink       = cpg.call("print").argument(1)
+    val List(flow) = sink.reachableByFlows(source).map(flowToResultPairs).l
+
+    flow shouldBe List(("tmp0[\"Property1\"] = \"foo\"", 2), ("baz = import(p1.bar, baz)", 2), ("print(baz)", 3))
+  }
+
+  "flow from literal in an imported method-returned dictionary to `print`" in {
+    val cpg = code(
+      """
+        |import bar
+        |print(bar.baz())
+        |""".stripMargin,
+      "main.py"
+    ).moreCode(
+      """
+        |def baz():
+        |  return {"Property": "foo"}
+        |""".stripMargin,
+      "bar.py"
+    )
+    val source     = cpg.literal("\"foo\"")
+    val sink       = cpg.call("print").argument(1)
+    val List(flow) = sink.reachableByFlows(source).map(flowToResultPairs).l
+
+    flow shouldBe List(
+      ("tmp0[\"Property\"] = \"foo\"", 3),
+      ("tmp0", 3),
+      ("return {\"Property\": \"foo\"}", 3),
+      ("RET", 2),
+      ("bar.baz()", 3)
+    )
+  }
+
   "flow from global variable defined in imported file and used as argument to `print`" in {
     val cpg = code("""
         |from models import FOOBAR
