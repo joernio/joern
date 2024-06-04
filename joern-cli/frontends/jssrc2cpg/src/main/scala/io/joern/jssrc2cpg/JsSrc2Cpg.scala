@@ -62,7 +62,7 @@ object JsSrc2Cpg {
     List(new JavaScriptInheritanceNamePass(cpg), new ConstClosurePass(cpg), new JavaScriptImportResolverPass(cpg))
       ++
         new JavaScriptTypeRecoveryPassGenerator(cpg, typeRecoveryConfig).generate() ++
-        List(new JavaScriptTypeHintCallLinker(cpg), new NaiveCallLinker(cpg))
+        List(new JavaScriptTypeHintCallLinker(cpg), ObjectPropertyCallLinker(cpg), new NaiveCallLinker(cpg))
   }
 
 }
