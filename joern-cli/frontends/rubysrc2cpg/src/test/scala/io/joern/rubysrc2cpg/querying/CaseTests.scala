@@ -1,5 +1,6 @@
 package io.joern.rubysrc2cpg.querying
 
+import io.joern.rubysrc2cpg.passes.Defines as RubyDefines
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -20,7 +21,7 @@ class CaseTests extends RubyCode2CpgFixture {
       |""".stripMargin
     val cpg = code(caseCode)
 
-    val block @ List(_) = cpg.method(":program").block.astChildren.isBlock.l
+    val block @ List(_) = cpg.method(RubyDefines.Program).block.astChildren.isBlock.l
 
     val List(assign)   = block.astChildren.assignment.l;
     val List(lhs, rhs) = assign.argument.l
@@ -68,7 +69,7 @@ class CaseTests extends RubyCode2CpgFixture {
       |end
       |""".stripMargin)
 
-    val block @ List(_) = cpg.method(":program").block.astChildren.isBlock.l
+    val block @ List(_) = cpg.method(RubyDefines.Program).block.astChildren.isBlock.l
 
     val headIf @ List(_)           = block.astChildren.isControlStructure.l
     val ifStmts @ List(_, _, _, _) = headIf.repeat(_.astChildren.order(3).astChildren.isControlStructure)(_.emit).l;

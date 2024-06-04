@@ -8,6 +8,7 @@ import io.joern.rubysrc2cpg.passes.Defines as RDefines
 import io.joern.x2cpg.datastructures.*
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{DeclarationNew, NewLocal, NewMethodParameterIn}
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import scala.collection.mutable
 import scala.reflect.ClassTag
@@ -72,7 +73,7 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
         typesInScope.addAll(summary.typesUnderNamespace(n.fullName))
         n
       case n: ProgramScope =>
-        typesInScope.addAll(summary.typesUnderNamespace(n.fullName))
+        typesInScope.addAll(summary.typesUnderNamespace(n.fileName))
         n
       case TypeScope(name, _) =>
         typesInScope.addAll(summary.matchingTypes(name))
@@ -90,7 +91,9 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
     isRelative: Boolean,
     isWildCard: Boolean = false
   ): Unit = {
-    val path = requiredPath.stripSuffix(":<global>") // Sometimes the require call provides a processed path
+    val path = requiredPath.stripSuffix(
+      s":${NamespaceTraversal.globalNamespaceName}"
+    ) // Sometimes the require call provides a processed path
     // We assume the project root is the sole LOAD_PATH of the project sources
     // NB: Tracking whatever has been added to $LOADER is dynamic and requires post-processing step!
     val resolvedPath =
@@ -146,7 +149,7 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
     *   the full name of the surrounding scope.
     */
   def surroundingScopeFullName: Option[String] = stack.collectFirst {
-    case ScopeElement(x: NamespaceLikeScope, _) => x.fullName
+    case ScopeElement(x: NamespaceLikeScope, _) => x.fullName.stripSuffix(s":${NamespaceTraversal.globalNamespaceName}")
     case ScopeElement(x: TypeLikeScope, _)      => x.fullName
     case ScopeElement(x: MethodLikeScope, _)    => x.fullName
   }

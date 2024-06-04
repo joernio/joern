@@ -2,6 +2,7 @@ package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
+import io.joern.rubysrc2cpg.passes.Defines as RubyDefines
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
@@ -21,21 +22,21 @@ class DoBlockTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "create an anonymous method with associated type declaration" in {
-      inside(cpg.method.nameExact(":program").l) {
+      inside(cpg.method.nameExact(RubyDefines.Program).l) {
         case program :: Nil =>
           inside(program.block.astChildren.collectAll[Method].l) {
             case foo :: closureMethod :: Nil =>
               foo.name shouldBe "foo"
 
               closureMethod.name shouldBe "<lambda>0"
-              closureMethod.fullName shouldBe "Test0.rb:<global>::program:<lambda>0"
+              closureMethod.fullName shouldBe s"Test0.rb:${RubyDefines.Program}:<lambda>0"
             case xs => fail(s"Expected a two method nodes, instead got [${xs.code.mkString(", ")}]")
           }
 
           inside(program.block.astChildren.collectAll[TypeDecl].isLambda.l) {
             case closureType :: Nil =>
               closureType.name shouldBe "<lambda>0"
-              closureType.fullName shouldBe "Test0.rb:<global>::program:<lambda>0"
+              closureType.fullName shouldBe s"Test0.rb:${RubyDefines.Program}:<lambda>0"
             case xs => fail(s"Expected a one closure type node, instead got [${xs.code.mkString(", ")}]")
           }
         case xs => fail(s"Expected a single program module, instead got [${xs.code.mkString(", ")}]")
@@ -68,19 +69,19 @@ class DoBlockTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "create an anonymous method with associated type declaration" in {
-      inside(cpg.method.nameExact(":program").l) {
+      inside(cpg.method.nameExact(RubyDefines.Program).l) {
         case program :: Nil =>
           inside(program.block.astChildren.collectAll[Method].l) {
             case closureMethod :: Nil =>
               closureMethod.name shouldBe "<lambda>0"
-              closureMethod.fullName shouldBe "Test0.rb:<global>::program:<lambda>0"
+              closureMethod.fullName shouldBe s"Test0.rb:${RubyDefines.Program}:<lambda>0"
             case xs => fail(s"Expected a one method nodes, instead got [${xs.code.mkString(", ")}]")
           }
 
           inside(program.block.astChildren.collectAll[TypeDecl].l) {
             case closureType :: Nil =>
               closureType.name shouldBe "<lambda>0"
-              closureType.fullName shouldBe "Test0.rb:<global>::program:<lambda>0"
+              closureType.fullName shouldBe s"Test0.rb:${RubyDefines.Program}:<lambda>0"
             case xs => fail(s"Expected a one closure type node, instead got [${xs.code.mkString(", ")}]")
           }
         case xs => fail(s"Expected a single program module, instead got [${xs.code.mkString(", ")}]")
@@ -102,7 +103,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
           myArray.name shouldBe "my_array"
 
           lambdaRef.argumentIndex shouldBe 1
-          lambdaRef.methodFullName shouldBe "Test0.rb:<global>::program:<lambda>0"
+          lambdaRef.methodFullName shouldBe s"Test0.rb:${RubyDefines.Program}:<lambda>0"
         case xs =>
           fail(s"Expected `each` call to have call and method ref arguments, instead got [${xs.code.mkString(", ")}]")
       }
@@ -129,12 +130,12 @@ class DoBlockTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "create an anonymous method with associated type declaration" in {
-      inside(cpg.method.nameExact(":program").l) {
+      inside(cpg.method.nameExact(RubyDefines.Program).l) {
         case program :: Nil =>
           inside(program.block.astChildren.collectAll[Method].l) {
             case closureMethod :: Nil =>
               closureMethod.name shouldBe "<lambda>0"
-              closureMethod.fullName shouldBe "Test0.rb:<global>::program:<lambda>0"
+              closureMethod.fullName shouldBe s"Test0.rb:${RubyDefines.Program}:<lambda>0"
               closureMethod.isLambda.nonEmpty shouldBe true
             case xs => fail(s"Expected a one method nodes, instead got [${xs.code.mkString(", ")}]")
           }
@@ -142,7 +143,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
           inside(program.block.astChildren.collectAll[TypeDecl].l) {
             case closureType :: Nil =>
               closureType.name shouldBe "<lambda>0"
-              closureType.fullName shouldBe "Test0.rb:<global>::program:<lambda>0"
+              closureType.fullName shouldBe s"Test0.rb:${RubyDefines.Program}:<lambda>0"
               closureType.isLambda.nonEmpty shouldBe true
             case xs => fail(s"Expected a one closure type node, instead got [${xs.code.mkString(", ")}]")
           }
@@ -166,7 +167,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
           hash.name shouldBe "hash"
 
           lambdaRef.argumentIndex shouldBe 1
-          lambdaRef.methodFullName shouldBe "Test0.rb:<global>::program:<lambda>0"
+          lambdaRef.methodFullName shouldBe s"Test0.rb:${RubyDefines.Program}:<lambda>0"
         case xs =>
           fail(s"Expected `each` call to have call and method ref arguments, instead got [${xs.code.mkString(", ")}]")
       }
@@ -215,12 +216,12 @@ class DoBlockTests extends RubyCode2CpgFixture {
           inside(myValue._localViaRefOut) {
             case Some(local) =>
               local.name shouldBe "myValue"
-              local.method.fullName.headOption shouldBe Option("Test0.rb:<global>::program")
+              local.method.fullName.headOption shouldBe Option(s"Test0.rb:${RubyDefines.Program}")
             case None => fail("Expected closure binding refer to the captured local")
           }
 
           inside(myValue._captureIn.l) {
-            case (x: MethodRef) :: Nil => x.methodFullName shouldBe "Test0.rb:<global>::program:<lambda>0"
+            case (x: MethodRef) :: Nil => x.methodFullName shouldBe s"Test0.rb:${RubyDefines.Program}:<lambda>0"
             case xs                    => fail(s"Expected single method ref binding but got [${xs.mkString(",")}]")
           }
 

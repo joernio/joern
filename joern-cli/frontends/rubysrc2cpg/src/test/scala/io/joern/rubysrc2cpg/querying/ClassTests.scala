@@ -26,7 +26,7 @@ class ClassTests extends RubyCode2CpgFixture {
     val List(classC) = cpg.typeDecl.name("C").l
 
     classC.inheritsFromTypeFullName shouldBe List()
-    classC.fullName shouldBe "Test0.rb:<global>::program.C"
+    classC.fullName shouldBe s"Test0.rb:${RubyDefines.Program}.C"
     classC.lineNumber shouldBe Some(2)
     classC.baseType.l shouldBe List()
     classC.member.l shouldBe List()
@@ -43,7 +43,7 @@ class ClassTests extends RubyCode2CpgFixture {
     val List(classC) = cpg.typeDecl.name("C").l
 
     classC.inheritsFromTypeFullName shouldBe List("D")
-    classC.fullName shouldBe "Test0.rb:<global>::program.C"
+    classC.fullName shouldBe s"Test0.rb:${RubyDefines.Program}.C"
     classC.lineNumber shouldBe Some(2)
     classC.member.l shouldBe List()
     classC.method.name.l shouldBe List("<init>", "<clinit>")
@@ -94,7 +94,7 @@ class ClassTests extends RubyCode2CpgFixture {
     methodAbc.code shouldBe "def abc (...)"
     methodAbc.lineNumber shouldBe Some(3)
     methodAbc.parameter.isEmpty shouldBe true
-    methodAbc.fullName shouldBe "Test0.rb:<global>::program.C:abc"
+    methodAbc.fullName shouldBe s"Test0.rb:${RubyDefines.Program}.C:abc"
 
     // TODO: Make sure that @abc in this return is the actual field
     val List(ret: Return)          = methodAbc.methodReturn.cfgIn.l: @unchecked
@@ -143,7 +143,7 @@ class ClassTests extends RubyCode2CpgFixture {
 
     methodA.code shouldBe "def a= (...)"
     methodA.lineNumber shouldBe Some(3)
-    methodA.fullName shouldBe "Test0.rb:<global>::program.C:a="
+    methodA.fullName shouldBe s"Test0.rb:${RubyDefines.Program}.C:a="
 
     // TODO: there's probably a better way for testing this
     val List(param)                            = methodA.parameter.l
@@ -180,7 +180,7 @@ class ClassTests extends RubyCode2CpgFixture {
     val List(classC)  = cpg.typeDecl.name("C").l
     val List(methodF) = classC.method.name("f").l
 
-    methodF.fullName shouldBe "Test0.rb:<global>::program.C:f"
+    methodF.fullName shouldBe s"Test0.rb:${RubyDefines.Program}.C:f"
   }
 
   "`def initialize() ... end` directly inside a class has method name `<init>`" in {
@@ -194,7 +194,7 @@ class ClassTests extends RubyCode2CpgFixture {
     val List(classC)     = cpg.typeDecl.name("C").l
     val List(methodInit) = classC.method.name("<init>").l
 
-    methodInit.fullName shouldBe "Test0.rb:<global>::program.C:<init>"
+    methodInit.fullName shouldBe s"Test0.rb:${RubyDefines.Program}.C:<init>"
   }
 
   "`class C end` has default constructor" in {
@@ -206,7 +206,7 @@ class ClassTests extends RubyCode2CpgFixture {
     val List(classC)     = cpg.typeDecl.name("C").l
     val List(methodInit) = classC.method.name("<init>").l
 
-    methodInit.fullName shouldBe "Test0.rb:<global>::program.C:<init>"
+    methodInit.fullName shouldBe s"Test0.rb:${RubyDefines.Program}.C:<init>"
   }
 
   "`def initialize() ... end` not directly under class has method name `initialize`" in {
@@ -246,14 +246,14 @@ class ClassTests extends RubyCode2CpgFixture {
       inside(cpg.typeDecl.nameExact("<anon-class-0>").l) {
         case anonClass :: Nil =>
           anonClass.name shouldBe "<anon-class-0>"
-          anonClass.fullName shouldBe "Test0.rb:<global>::program.<anon-class-0>"
+          anonClass.fullName shouldBe s"Test0.rb:${RubyDefines.Program}.<anon-class-0>"
           inside(anonClass.method.l) {
             case defaultConstructor :: hello :: Nil =>
               defaultConstructor.name shouldBe Defines.ConstructorMethodName
-              defaultConstructor.fullName shouldBe s"Test0.rb:<global>::program.<anon-class-0>:${Defines.ConstructorMethodName}"
+              defaultConstructor.fullName shouldBe s"Test0.rb:${RubyDefines.Program}.<anon-class-0>:${Defines.ConstructorMethodName}"
 
               hello.name shouldBe "hello"
-              hello.fullName shouldBe "Test0.rb:<global>::program.<anon-class-0>:hello"
+              hello.fullName shouldBe s"Test0.rb:${RubyDefines.Program}.<anon-class-0>:hello"
             case xs => fail(s"Expected a single method, but got [${xs.map(x => x.label -> x.code).mkString(",")}]")
           }
         case xs => fail(s"Expected a single anonymous class, but got [${xs.map(x => x.label -> x.code).mkString(",")}]")
@@ -261,7 +261,7 @@ class ClassTests extends RubyCode2CpgFixture {
     }
 
     "generate an assignment to the variable `a` with the source being a constructor invocation of the class" in {
-      inside(cpg.method(":program").assignment.l) {
+      inside(cpg.method(RubyDefines.Program).assignment.l) {
         case aAssignment :: Nil =>
           aAssignment.target.code shouldBe "a"
           // TODO: Constructors are not supported, we simply check the `code` property
@@ -289,16 +289,16 @@ class ClassTests extends RubyCode2CpgFixture {
       inside(cpg.typeDecl.nameExact("<anon-class-0>").l) {
         case anonClass :: Nil =>
           anonClass.name shouldBe "<anon-class-0>"
-          anonClass.fullName shouldBe "Test0.rb:<global>::program.<anon-class-0>"
+          anonClass.fullName shouldBe s"Test0.rb:${RubyDefines.Program}.<anon-class-0>"
           // TODO: Attempt to resolve the below with the `scope` class once we're handling constructors
           anonClass.inheritsFromTypeFullName shouldBe Seq("animal")
           inside(anonClass.method.l) {
             case defaultConstructor :: bark :: Nil =>
               defaultConstructor.name shouldBe Defines.ConstructorMethodName
-              defaultConstructor.fullName shouldBe s"Test0.rb:<global>::program.<anon-class-0>:${Defines.ConstructorMethodName}"
+              defaultConstructor.fullName shouldBe s"Test0.rb:${RubyDefines.Program}.<anon-class-0>:${Defines.ConstructorMethodName}"
 
               bark.name shouldBe "bark"
-              bark.fullName shouldBe "Test0.rb:<global>::program.<anon-class-0>:bark"
+              bark.fullName shouldBe s"Test0.rb:${RubyDefines.Program}.<anon-class-0>:bark"
             case xs => fail(s"Expected a single method, but got [${xs.map(x => x.label -> x.code).mkString(",")}]")
           }
         case xs => fail(s"Expected a single anonymous class, but got [${xs.map(x => x.label -> x.code).mkString(",")}]")
@@ -306,7 +306,7 @@ class ClassTests extends RubyCode2CpgFixture {
     }
 
     "register that `animal` may possibly be an instantiation of the singleton type" in {
-      cpg.local("animal").possibleTypes.l should contain("Test0.rb:<global>::program.<anon-class-0>")
+      cpg.local("animal").possibleTypes.l should contain(s"Test0.rb:${RubyDefines.Program}.<anon-class-0>")
     }
 
   }
@@ -412,7 +412,7 @@ class ClassTests extends RubyCode2CpgFixture {
     "resolve the internal type being referenced" in {
       inside(cpg.typeDecl("Foo").headOption) {
         case Some(app) =>
-          app.inheritsFromTypeFullName.head shouldBe "Test0.rb:<global>::program.Bar.Baz"
+          app.inheritsFromTypeFullName.head shouldBe s"Test0.rb:${RubyDefines.Program}.Bar.Baz"
         case None => fail("Expected a type decl for 'Foo', instead got nothing")
       }
     }
@@ -661,7 +661,7 @@ class ClassTests extends RubyCode2CpgFixture {
                         case (identifier: Identifier) :: (literal: Literal) :: (methodRef: MethodRef) :: Nil =>
                           identifier.code shouldBe "scope"
                           literal.code shouldBe ":hits_by_ip"
-                          methodRef.methodFullName shouldBe "Test0.rb:<global>::program.Foo:<init>:<lambda>0"
+                          methodRef.methodFullName shouldBe s"Test0.rb:${RubyDefines.Program}.Foo:<init>:<lambda>0"
                           methodRef.referencedMethod.parameter.indexGt(0).name.l shouldBe List("ip", "col")
                         case xs => fail(s"Expected three children, got ${xs.code.mkString(", ")} instead")
                       }
@@ -682,7 +682,7 @@ class ClassTests extends RubyCode2CpgFixture {
             case initMethod :: Nil =>
               inside(initMethod.astChildren.isMethod.l) {
                 case lambdaMethod :: Nil =>
-                  lambdaMethod.fullName shouldBe "Test0.rb:<global>::program.Foo:<init>:<lambda>0"
+                  lambdaMethod.fullName shouldBe s"Test0.rb:${RubyDefines.Program}.Foo:<init>:<lambda>0"
                 case xs => fail(s"Expected method decl for lambda, got ${xs.code.mkString(", ")} instead")
               }
             case xs => fail(s"Expected one init method, got ${xs.code.mkString(", ")} instead")

@@ -9,6 +9,7 @@ import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Local, Member, Method, TypeDecl}
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import overflowdb.{BatchedUpdate, Config}
 
 import java.io.File as JavaFile
@@ -75,7 +76,10 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
           .replaceAll(Matcher.quoteReplacement(JavaFile.separator), "/") // handle Windows paths
           .stripSuffix(".rb")
         // Map module functions/variables
-        val moduleEntry = (path, namespace.fullName) -> namespace.method.map { module =>
+        val moduleEntry = (
+          path,
+          namespace.fullName.stripSuffix(s":${NamespaceTraversal.globalNamespaceName}")
+        ) -> namespace.method.map { module =>
           val moduleTypeMap =
             RubyType(
               module.fullName,
@@ -88,8 +92,8 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
         val typeEntries = namespace.method.collectFirst {
           case m: Method if m.name == Defines.Program =>
             val childrenTypes = m.block.astChildren.collectAll[TypeDecl].l
-            val fullName      = s"${namespace.fullName}:${m.name}"
-            val nestedTypes   = childrenTypes.flatMap(handleNestedTypes(_, fullName))
+            val fullName = s"${namespace.fullName.stripSuffix(s":${NamespaceTraversal.globalNamespaceName}")}:${m.name}"
+            val nestedTypes = childrenTypes.flatMap(handleNestedTypes(_, fullName))
             (path, fullName) -> (childrenTypes.whereNot(_.methodBinding).map(toType).toSet ++ nestedTypes.flatMap(_._2))
         }.toSeq
 

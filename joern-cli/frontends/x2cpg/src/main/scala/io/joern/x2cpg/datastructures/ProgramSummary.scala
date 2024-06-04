@@ -1,6 +1,7 @@
 package io.joern.x2cpg.datastructures
 
 import io.shiftleft.codepropertygraph.generated.nodes.DeclarationNew
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import scala.annotation.targetName
 import scala.collection.mutable
@@ -20,6 +21,8 @@ import scala.reflect.ClassTag
   */
 trait ProgramSummary[T <: TypeLike[M, F], M <: MethodLike, F <: FieldLike] {
 
+  protected val typeNameSeparator = "."
+
   /** A mapping between a namespace/directory and the containing types.
     */
   protected val namespaceToType: mutable.Map[String, mutable.Set[T]]
@@ -38,7 +41,9 @@ trait ProgramSummary[T <: TypeLike[M, F], M <: MethodLike, F <: FieldLike] {
     *   the set of matching types' meta data.
     */
   def matchingTypes(typeName: String): List[T] = {
-    namespaceToType.values.flatten.filter(_.name.endsWith(typeName)).toList
+    namespaceToType.values.flatten.filter { t =>
+      t.name.split(typeNameSeparator).toList.lastOption.contains(typeName.split('.').last)
+    }.toList
   }
 
   /** Absorbs the given program summary information into this program summary.
@@ -306,8 +311,11 @@ class DefaultTypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](su
     */
   override def pushNewScope(scopeNode: TypedScopeElement): Unit = {
     scopeNode match {
-      case n: NamespaceLikeScope => typesInScope.addAll(summary.typesUnderNamespace(n.fullName))
-      case _                     =>
+      case n: NamespaceLikeScope =>
+        typesInScope.addAll(
+          summary.typesUnderNamespace(n.fullName.stripSuffix(s":${NamespaceTraversal.globalNamespaceName}"))
+        )
+      case _ =>
     }
     super.pushNewScope(scopeNode)
   }
@@ -317,7 +325,9 @@ class DefaultTypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](su
   override def popScope(): Option[TypedScopeElement] = {
     super.popScope().map {
       case n: NamespaceLikeScope =>
-        summary.typesUnderNamespace(n.fullName).foreach(typesInScope.remove)
+        summary
+          .typesUnderNamespace(n.fullName.stripSuffix(s":${NamespaceTraversal.globalNamespaceName}"))
+          .foreach(typesInScope.remove)
         n
       case x => x
     }

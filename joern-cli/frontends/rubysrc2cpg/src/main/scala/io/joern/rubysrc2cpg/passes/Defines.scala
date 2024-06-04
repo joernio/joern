@@ -25,7 +25,7 @@ object Defines {
   val Loop: String       = "loop"
   val Self: String       = "self"
 
-  val Program: String = ":program"
+  val Program: String = ":main"
 
   val Resolver: String = "<dependency-resolver>"
 

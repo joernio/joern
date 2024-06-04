@@ -1,5 +1,6 @@
 package io.joern.rubysrc2cpg.querying
 
+import io.joern.rubysrc2cpg.passes.Defines as RubyDefines
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.semanticcpg.language.*
 
@@ -13,7 +14,7 @@ class ModuleTests extends RubyCode2CpgFixture {
 
     val List(m) = cpg.typeDecl.name("M").l
 
-    m.fullName shouldBe "Test0.rb:<global>::program.M"
+    m.fullName shouldBe s"Test0.rb:${RubyDefines.Program}.M"
     m.lineNumber shouldBe Some(2)
     m.baseType.l shouldBe List()
     m.member.l shouldBe List()

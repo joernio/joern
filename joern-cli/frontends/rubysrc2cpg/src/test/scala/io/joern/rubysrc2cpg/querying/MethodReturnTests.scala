@@ -2,6 +2,7 @@ package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.joern.rubysrc2cpg.passes.Defines as RubyDefines
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Literal, Method, MethodRef, Return}
 import io.shiftleft.semanticcpg.language.*
@@ -379,7 +380,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
           inside(bar.astChildren.collectAll[Method].l) {
             case closureMethod :: Nil =>
               closureMethod.name shouldBe "<lambda>0"
-              closureMethod.fullName shouldBe "Test0.rb:<global>::program:bar:<lambda>0"
+              closureMethod.fullName shouldBe s"Test0.rb:${RubyDefines.Program}:bar:<lambda>0"
             case xs => fail(s"Expected closure method, but found ${xs.code.mkString(", ")} instead")
           }
 
@@ -392,7 +393,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
                   returnCall.name shouldBe "foo"
 
                   val List(_, arg: MethodRef) = returnCall.argument.l: @unchecked
-                  arg.methodFullName shouldBe "Test0.rb:<global>::program:bar:<lambda>0"
+                  arg.methodFullName shouldBe s"Test0.rb:${RubyDefines.Program}:bar:<lambda>0"
                 case xs => fail(s"Expected one call for return, but found ${xs.code.mkString(", ")} instead")
               }
 

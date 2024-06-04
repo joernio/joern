@@ -1,5 +1,6 @@
 package io.joern.rubysrc2cpg.querying
 
+import io.joern.rubysrc2cpg.passes.Defines as RubyDefines
 import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
@@ -105,13 +106,13 @@ class CallTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "create an assignment from `a` to an <init> invocation block" in {
-      inside(cpg.method(":program").assignment.where(_.target.isIdentifier.name("a")).l) {
+      inside(cpg.method(RubyDefines.Program).assignment.where(_.target.isIdentifier.name("a")).l) {
         case assignment :: Nil =>
           assignment.code shouldBe "a = A.new"
           inside(assignment.argument.l) {
             case (a: Identifier) :: (_: Block) :: Nil =>
               a.name shouldBe "a"
-              a.dynamicTypeHintFullName should contain("Test0.rb:<global>::program.A")
+              a.dynamicTypeHintFullName should contain(s"Test0.rb:${RubyDefines.Program}.A")
             case xs => fail(s"Expected one identifier and one call argument, got [${xs.code.mkString(",")}]")
           }
         case xs => fail(s"Expected a single assignment, got [${xs.code.mkString(",")}]")
@@ -119,7 +120,7 @@ class CallTests extends RubyCode2CpgFixture {
     }
 
     "create an assignment from a temp variable to the <init> call" in {
-      inside(cpg.method(":program").assignment.where(_.target.isIdentifier.name("<tmp-0>")).l) {
+      inside(cpg.method(RubyDefines.Program).assignment.where(_.target.isIdentifier.name("<tmp-0>")).l) {
         case assignment :: Nil =>
           inside(assignment.argument.l) {
             case (a: Identifier) :: (alloc: Call) :: Nil =>
@@ -140,7 +141,7 @@ class CallTests extends RubyCode2CpgFixture {
           inside(constructor.argument.l) {
             case (a: Identifier) :: Nil =>
               a.name shouldBe "<tmp-0>"
-              a.typeFullName shouldBe "Test0.rb:<global>::program.A"
+              a.typeFullName shouldBe s"Test0.rb:${RubyDefines.Program}.A"
               a.argumentIndex shouldBe 0
             case xs => fail(s"Expected one identifier and one call argument, got [${xs.code.mkString(",")}]")
           }
@@ -162,7 +163,7 @@ class CallTests extends RubyCode2CpgFixture {
       inside(cpg.call("src").l) {
         case src :: Nil =>
           src.name shouldBe "src"
-          src.methodFullName shouldBe "Test0.rb:<global>::program:src"
+          src.methodFullName shouldBe s"Test0.rb:${RubyDefines.Program}:src"
         case xs => fail(s"Expected exactly one `src` call, instead got [${xs.code.mkString(",")}]")
       }
     }
@@ -215,7 +216,7 @@ class CallTests extends RubyCode2CpgFixture {
     val cpg                = code("::Augeas.open { |aug| aug.get('/augeas/version') }")
     val List(augeas: Call) = cpg.call.nameExact("open").receiver.l: @unchecked
     // TODO: Right now this is seen as a "getter" but should _probably_ be a field access, e.g. self.Augeas
-    augeas.methodFullName shouldBe "Test0.rb:<global>::program:Augeas"
+    augeas.methodFullName shouldBe s"Test0.rb:${RubyDefines.Program}:Augeas"
     augeas.code shouldBe "::Augeas"
   }
 
