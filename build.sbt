@@ -1,10 +1,9 @@
 name                     := "joern"
+// TODO change org back to io.joern, only changed temporarily so I can debug something on jenkins
 ThisBuild / organization := "com.michaelpollmeier"
 ThisBuild / scalaVersion := "3.4.2"
 
 val cpgVersion = "1.6.13+13-0bd6923b"
-// TODO change org back to io.joern, only changed temporarily so I can debug something on jenkins
-// ThisBuild / organization := "io.joern"
 
 lazy val joerncli          = Projects.joerncli
 lazy val querydb           = Projects.querydb
@@ -98,6 +97,7 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 
 // publishing info for sonatype / maven central
 ThisBuild / publishTo  := sonatypePublishToBundle.value
+// TODO change back
 // sonatypeCredentialHost := "s01.oss.sonatype.org"
 ThisBuild / scmInfo    := Some(ScmInfo(url("https://github.com/joernio/joern"), "scm:git@github.com:joernio/joern.git"))
 ThisBuild / homepage   := Some(url("https://joern.io/"))
