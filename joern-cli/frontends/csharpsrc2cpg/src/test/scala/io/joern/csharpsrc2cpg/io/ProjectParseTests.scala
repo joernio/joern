@@ -8,7 +8,7 @@ import io.joern.csharpsrc2cpg.utils.DotNetAstGenRunner
 import io.joern.csharpsrc2cpg.{CSharpSrc2Cpg, Config}
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
 import io.joern.x2cpg.utils.Report
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.BeforeAndAfterAll
 

@@ -1,7 +1,7 @@
 package io.joern.swiftsrc2cpg.passes
 
 import better.files.File
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.NewMetaData
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.passes.CpgPass

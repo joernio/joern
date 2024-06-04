@@ -5,7 +5,7 @@ import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOpti
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.ghidra2cpg.fixtures.GhidraBinToCpgSuite
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.{ICallResolver, _}
 import io.shiftleft.semanticcpg.layers._
 

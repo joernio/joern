@@ -23,7 +23,7 @@ import overflowdb.traversal.help.Table.AvailableWidthProvider
   * {{{cpg.local}}}
   *
   * will start at all local variables. The complete list of starting points can be found at
-  * {{{io.shiftleft.codepropertygraph.Cpg}}}
+  * {{{io.shiftleft.codepropertygraph.generated.Cpg}}}
   *
   * ==Lazy evaluation==
   * Queries are lazily evaluated, e.g., `cpg.method` creates a traversal which you can add more steps to. You can, for

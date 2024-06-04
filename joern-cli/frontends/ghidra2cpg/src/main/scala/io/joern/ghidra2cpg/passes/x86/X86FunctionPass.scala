@@ -5,7 +5,7 @@ import io.joern.ghidra2cpg.utils.Decompiler
 import io.joern.ghidra2cpg.passes.FunctionPass
 import io.joern.ghidra2cpg.processors.X86Processor
 import io.joern.ghidra2cpg.utils.Utils._
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewMethod}
 

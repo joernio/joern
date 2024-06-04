@@ -1,7 +1,7 @@
 package io.joern.x2cpg.utils
 
 import io.joern.x2cpg.passes.frontend.Dereference
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{Properties, PropertyNames}
 import org.slf4j.{Logger, LoggerFactory}

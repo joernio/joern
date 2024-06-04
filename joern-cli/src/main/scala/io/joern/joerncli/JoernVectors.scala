@@ -1,7 +1,7 @@
 package io.joern.joerncli
 
 import io.joern.joerncli.CpgBasedTool.exitIfInvalid
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Method}
 import io.shiftleft.semanticcpg.language.*

@@ -4,7 +4,7 @@ import better.files.File
 import io.joern.console.FrontendConfig
 import io.joern.console.cpgcreation.{CCpgGenerator, JsSrcCpgGenerator}
 import io.joern.jssrc2cpg.{JsSrc2Cpg, Config as JsConfig}
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.utils.ProjectRoot
 

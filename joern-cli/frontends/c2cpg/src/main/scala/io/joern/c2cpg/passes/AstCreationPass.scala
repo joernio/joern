@@ -5,7 +5,7 @@ import io.joern.c2cpg.Config
 import io.joern.c2cpg.astcreation.AstCreator
 import io.joern.c2cpg.astcreation.Defines
 import io.joern.c2cpg.parser.{CdtParser, FileDefaults}
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.datastructures.Global

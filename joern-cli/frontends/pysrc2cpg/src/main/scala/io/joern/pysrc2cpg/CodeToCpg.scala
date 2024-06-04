@@ -1,6 +1,6 @@
 package io.joern.pysrc2cpg
 
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.joern.pysrc2cpg.Py2Cpg.InputProvider
 import io.joern.pythonparser.PyParser

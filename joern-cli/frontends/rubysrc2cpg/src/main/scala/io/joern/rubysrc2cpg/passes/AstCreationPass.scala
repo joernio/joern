@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.passes
 
 import io.joern.rubysrc2cpg.astcreation.AstCreator
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.passes.ConcurrentWriterCpgPass

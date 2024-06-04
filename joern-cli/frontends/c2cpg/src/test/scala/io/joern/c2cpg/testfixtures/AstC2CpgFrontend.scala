@@ -5,7 +5,7 @@ import io.joern.c2cpg.Config
 import io.joern.c2cpg.passes.AstCreationPass
 import io.joern.x2cpg.testfixtures.LanguageFrontend
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 
 trait AstC2CpgFrontend extends LanguageFrontend {
   def execute(sourceCodePath: java.io.File): Cpg = {

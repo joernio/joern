@@ -5,7 +5,7 @@ import io.joern.console.{CodeSnippet, Query, QueryBundle}
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.joern.util.QueryUtil
 import io.joern.x2cpg.testfixtures.TestCpg
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Literal, Method, StoredNode}
 
 class JavaQueryTestSuite[QB <: QueryBundle](val queryBundle: QB)

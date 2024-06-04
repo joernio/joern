@@ -1,7 +1,7 @@
 package io.joern.x2cpg.passes
 
 import io.shiftleft.OverflowDbTestInstance
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes}
 import io.joern.x2cpg.passes.controlflow.cfgdominator.CfgDominatorPass
 import org.scalatest.matchers.should.Matchers

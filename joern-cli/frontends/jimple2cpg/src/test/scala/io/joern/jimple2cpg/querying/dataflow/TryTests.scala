@@ -2,7 +2,7 @@ package io.joern.jimple2cpg.querying.dataflow
 
 import io.joern.dataflowengineoss.language.*
 import io.joern.jimple2cpg.testfixtures.JimpleDataFlowCodeToCpgSuite
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 

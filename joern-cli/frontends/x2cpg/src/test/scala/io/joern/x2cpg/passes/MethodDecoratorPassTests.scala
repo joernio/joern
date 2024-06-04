@@ -1,6 +1,6 @@
 package io.joern.x2cpg.passes
 
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated._
 import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn
 import io.joern.x2cpg.passes.base.MethodDecoratorPass

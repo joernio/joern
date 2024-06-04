@@ -24,7 +24,7 @@ import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
 import io.joern.x2cpg.utils.dependency.DependencyResolver
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import org.slf4j.LoggerFactory
 

@@ -2,7 +2,7 @@ package io.joern.joerncli
 
 import better.files.File
 import io.joern.joerncli.JoernExport.Representation
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

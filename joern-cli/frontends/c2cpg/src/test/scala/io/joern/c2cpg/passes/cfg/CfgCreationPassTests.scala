@@ -4,7 +4,7 @@ import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.testfixtures.CCfgTestCpg
 import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg.*
 import io.joern.x2cpg.testfixtures.CfgTestFixture
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 
 class CfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg) {
   override def code(code: String): CCfgTestCpg = {

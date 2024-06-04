@@ -2,7 +2,7 @@ package io.joern.ghidra2cpg.passes
 
 import ghidra.program.flatapi.FlatProgramAPI
 import ghidra.program.util.DefinedDataIterator
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 

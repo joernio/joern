@@ -1,7 +1,7 @@
 package io.joern.x2cpg.passes.callgraph
 
 import io.joern.x2cpg.utils.LinkingUtil
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes}
 import io.shiftleft.passes.ForkJoinParallelCpgPass

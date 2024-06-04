@@ -1,6 +1,6 @@
 package io.joern.c2cpg.passes
 
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
@@ -13,7 +13,7 @@ import scala.jdk.CollectionConverters._
 class MetaDataPassTests extends AnyWordSpec with Matchers {
 
   "MetaDataPass" should {
-    val cpg = Cpg.emptyCpg
+    val cpg = Cpg.empty
     new MetaDataPass(cpg, Languages.C, "").createAndApply()
 
     "create exactly two nodes" in {

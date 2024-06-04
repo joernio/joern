@@ -2,7 +2,7 @@ package io.joern.rubysrc2cpg.passes
 
 import better.files.File
 import io.joern.x2cpg.passes.frontend.XConfigFileCreationPass
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
 
 import scala.util.Try

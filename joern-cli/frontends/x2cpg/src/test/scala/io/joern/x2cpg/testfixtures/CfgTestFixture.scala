@@ -2,7 +2,7 @@ package io.joern.x2cpg.testfixtures
 
 import io.joern.x2cpg.passes.controlflow.CfgCreationPass
 import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg.CfgEdgeType
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Method}
 import io.shiftleft.semanticcpg.language._
 

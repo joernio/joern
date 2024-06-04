@@ -1,7 +1,7 @@
 package io.joern.console.scan
 
 import io.joern.console.Query
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.CpgPass
 
 /** Each query runs the data-flow engine, which is already parallelized. Another layer of parallelism causes undefined

@@ -3,7 +3,7 @@ package io.joern.pysrc2cpg.dataflow
 import io.joern.dataflowengineoss.language.toExtendedCfgNode
 import io.joern.dataflowengineoss.semanticsloader.{FlowMapping, FlowSemantic, PassThroughMapping}
 import io.joern.pysrc2cpg.PySrc2CpgFixture
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Literal, Member, Method}
 import io.shiftleft.semanticcpg.language.*
 

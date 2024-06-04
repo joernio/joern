@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg.language
 
-import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.Cpg.docSearchPackages
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{NodeTypes, Properties}
 import io.shiftleft.semanticcpg.testing.MockCpg
@@ -195,7 +195,7 @@ class StepsTest extends AnyWordSpec with Matchers {
     implicit val availableWidthProvider: AvailableWidthProvider = new ConstantWidth(120)
 
     "show domain overview" in {
-      val domainStartersHelp = Cpg.emptyCpg.help
+      val domainStartersHelp = Cpg.empty.help
       domainStartersHelp should include(".comment")
       domainStartersHelp should include("All comments in source-based CPGs")
       domainStartersHelp should include(".arithmetic")
@@ -203,16 +203,16 @@ class StepsTest extends AnyWordSpec with Matchers {
     }
 
     "provide node-specific overview" in {
-      val methodStepsHelp = Cpg.emptyCpg.method.help
+      val methodStepsHelp = Cpg.empty.method.help
       methodStepsHelp should include("Available steps for Method")
       methodStepsHelp should include(".namespace")
       methodStepsHelp should include(".depth") // from AstNode
 
-      val methodStepsHelpVerbose = Cpg.emptyCpg.method.helpVerbose
+      val methodStepsHelpVerbose = Cpg.empty.method.helpVerbose
       methodStepsHelpVerbose should include("traversal name")
       methodStepsHelpVerbose should include("structure.MethodTraversal")
 
-      val assignmentStepsHelp = Cpg.emptyCpg.assignment.help
+      val assignmentStepsHelp = Cpg.empty.assignment.help
       assignmentStepsHelp should include("Left-hand sides of assignments") // from AssignmentTraversal
     }
 

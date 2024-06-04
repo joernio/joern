@@ -1,7 +1,7 @@
 package io.joern.macros
 
 import io.joern.console.TraversalWithStrRep
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.StoredNode
 
 import scala.quoted.{Expr, Quotes}

@@ -1,6 +1,6 @@
 package io.joern.x2cpg.testfixtures
 
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 
 import java.io.File
 import io.joern.x2cpg.X2CpgConfig

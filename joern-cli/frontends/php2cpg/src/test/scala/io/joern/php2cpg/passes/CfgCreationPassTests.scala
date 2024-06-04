@@ -3,7 +3,7 @@ package io.joern.php2cpg.passes
 import io.joern.php2cpg.testfixtures.PhpFrontend
 import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg.AlwaysEdge
 import io.joern.x2cpg.testfixtures.{CfgTestCpg, CfgTestFixture}
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 
 class PhpCfgTestCpg extends CfgTestCpg with PhpFrontend
 
