@@ -14,8 +14,12 @@ import io.shiftleft.semanticcpg.language.*
 class ObjectPropertyCallLinker(cpg: Cpg) extends CpgPass(cpg) {
 
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
-    val propertyCallRegex = "^(?:\\{.*\\}|.*<returnValue>):<member>\\((.*)\\):.*$".r
-    val objectCalls       = cpg.call.methodFullName("^(?:\\{.*\\}|.*<returnValue>):<member>\\(.*\\):.*$").l
+
+    def propertyCallRegexPattern(withMatchingGroup: Boolean): String = 
+      "^(?:\\{.*\\}|.*<returnValue>):<member>\\(" + (if withMatchingGroup then "(.*)" else ".*") + "\\):.*$"
+
+    val propertyCallRegex = propertyCallRegexPattern(true).r
+    val objectCalls       = cpg.call.methodFullName(propertyCallRegexPattern(false)).l
     val propertyAccessToCalls = objectCalls
       .flatMap { call =>
         call.methodFullName match {
