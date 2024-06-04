@@ -1,7 +1,7 @@
 package io.joern.x2cpg.passes.frontend
 
 import better.files.File
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{NewMetaData, NewNamespaceBlock}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.types.structure.{FileTraversal, NamespaceTraversal}

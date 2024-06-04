@@ -1,7 +1,7 @@
 package io.joern.c2cpg.passes.ast
 
 import io.joern.c2cpg.testfixtures.AstC2CpgSuite
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EdgeTypes

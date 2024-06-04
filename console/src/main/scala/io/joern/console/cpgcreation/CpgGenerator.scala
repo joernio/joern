@@ -1,7 +1,7 @@
 package io.joern.console.cpgcreation
 
 import better.files.File
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 
 import scala.sys.process._
 import scala.util.Try

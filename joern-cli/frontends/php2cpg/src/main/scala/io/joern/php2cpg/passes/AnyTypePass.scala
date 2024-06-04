@@ -1,7 +1,7 @@
 package io.joern.php2cpg.passes
 
 import io.joern.php2cpg.astcreation.AstCreator
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults

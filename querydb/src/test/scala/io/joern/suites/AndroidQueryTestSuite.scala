@@ -4,7 +4,7 @@ import io.joern.console.scan._
 import io.joern.console.{CodeSnippet, Query, QueryBundle}
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.joern.util.QueryUtil
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.ConfigFile
 import io.shiftleft.semanticcpg.language._
 

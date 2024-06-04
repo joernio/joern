@@ -8,7 +8,7 @@ import io.joern.jssrc2cpg.utils.AstGenRunner
 import io.joern.x2cpg.testfixtures.LanguageFrontend
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 
 trait AstJsSrc2CpgFrontend extends LanguageFrontend {
   def execute(sourceCodePath: java.io.File): Cpg = {

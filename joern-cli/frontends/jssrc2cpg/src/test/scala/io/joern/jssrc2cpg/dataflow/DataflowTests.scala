@@ -2,7 +2,7 @@ package io.joern.jssrc2cpg.dataflow
 
 import io.joern.dataflowengineoss.language._
 import io.joern.jssrc2cpg.testfixtures.DataFlowCodeToCpgSuite
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
 import io.shiftleft.semanticcpg.language._

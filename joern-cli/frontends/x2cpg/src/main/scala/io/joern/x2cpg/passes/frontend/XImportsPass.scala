@@ -1,7 +1,7 @@
 package io.joern.x2cpg.passes.frontend
 
 import io.joern.x2cpg.Imports.createImportNodeAndLink
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.shiftleft.semanticcpg.language._

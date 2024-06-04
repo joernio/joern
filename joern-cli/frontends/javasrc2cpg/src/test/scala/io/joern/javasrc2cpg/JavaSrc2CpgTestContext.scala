@@ -1,6 +1,6 @@
 package io.joern.javasrc2cpg
 
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
 import io.joern.x2cpg.X2Cpg.writeCodeToFile

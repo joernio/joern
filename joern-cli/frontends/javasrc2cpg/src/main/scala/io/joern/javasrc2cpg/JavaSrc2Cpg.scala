@@ -10,7 +10,7 @@ import io.joern.javasrc2cpg.passes.{
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.passes.frontend.{JavaConfigFileCreationPass, MetaDataPass, TypeNodePass, XTypeRecoveryConfig}
 import io.joern.x2cpg.X2CpgFrontend
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.passes.CpgPassBase
 import org.slf4j.LoggerFactory

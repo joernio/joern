@@ -5,7 +5,7 @@ import ghidra.program.util.DefinedDataIterator
 import io.joern.ghidra2cpg._
 import io.joern.ghidra2cpg.utils.Utils._
 import io.joern.ghidra2cpg.utils.{Decompiler, PCodeMapper}
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewMethod}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
 import io.shiftleft.passes.ConcurrentWriterCpgPass

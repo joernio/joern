@@ -6,7 +6,7 @@ import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser
 import io.joern.rubysrc2cpg.deprecated.utils.{PackageContext, PackageTable}
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.datastructures.Global
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory

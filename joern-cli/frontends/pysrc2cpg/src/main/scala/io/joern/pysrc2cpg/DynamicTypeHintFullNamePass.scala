@@ -1,7 +1,7 @@
 package io.joern.pysrc2cpg
 
 import io.joern.x2cpg.passes.frontend.ImportStringHandling
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, MethodParameterIn, MethodReturn, StoredNode}
 import io.shiftleft.passes.ForkJoinParallelCpgPass

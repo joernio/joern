@@ -1,7 +1,7 @@
 package io.joern.jssrc2cpg.passes
 
 import io.joern.x2cpg.passes.frontend.TypeNodePass
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.passes.KeyPool
 

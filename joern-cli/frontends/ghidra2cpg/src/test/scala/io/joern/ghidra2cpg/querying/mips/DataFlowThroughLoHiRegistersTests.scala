@@ -6,7 +6,7 @@ import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.joern.ghidra2cpg.fixtures.GhidraBinToCpgSuite
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers._
 class DataFlowThroughLoHiRegistersTests extends GhidraBinToCpgSuite {

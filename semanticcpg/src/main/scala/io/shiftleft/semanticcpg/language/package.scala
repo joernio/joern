@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg
 
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.traversal.NodeTraversalImplicits
 import io.shiftleft.semanticcpg.language.bindingextension.{

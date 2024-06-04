@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.passes
 
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.codepropertygraph.generated.nodes.NewDependency
 

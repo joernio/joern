@@ -3,7 +3,7 @@ package io.joern.joerncli.console
 import io.joern.console.workspacehandling.{Project, ProjectFile}
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.Semantics
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 
 import java.nio.file.Path
 

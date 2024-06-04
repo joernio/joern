@@ -4,7 +4,7 @@ import better.files.File
 import io.joern.console.FrontendConfig
 import io.joern.swiftsrc2cpg.{Config, Frontend, SwiftSrc2Cpg}
 import io.joern.x2cpg.X2Cpg
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 
 import java.nio.file.Path
 import scala.util.Try

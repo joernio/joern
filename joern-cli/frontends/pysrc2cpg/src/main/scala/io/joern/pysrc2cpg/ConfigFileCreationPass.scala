@@ -2,7 +2,7 @@ package io.joern.pysrc2cpg
 
 import better.files.File
 import io.joern.x2cpg.passes.frontend.XConfigFileCreationPass
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 
 class ConfigFileCreationPass(cpg: Cpg, requirementsTxt: String = "requirement.txt")
     extends XConfigFileCreationPass(cpg) {
