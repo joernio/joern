@@ -1,5 +1,6 @@
 package io.joern.rubysrc2cpg.querying
 
+import io.joern.rubysrc2cpg.passes.Defines as RubyDefines
 import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
@@ -18,13 +19,19 @@ class CallTests extends RubyCode2CpgFixture {
     puts.lineNumber shouldBe Some(2)
     puts.code shouldBe "puts 'hello'"
 
-    val List(rec: Identifier, hello: Literal) = puts.argument.l: @unchecked
-    rec.argumentIndex shouldBe 0
-    rec.name shouldBe "puts"
+    val List(callBase: Identifier, hello: Literal) = puts.argument.l: @unchecked
+    callBase.argumentIndex shouldBe 0
+    callBase.name shouldBe "puts"
+    callBase.code shouldBe "puts"
 
     hello.argumentIndex shouldBe 1
     hello.code shouldBe "'hello'"
     hello.lineNumber shouldBe Some(2)
+
+    val List(selfReceiver: Identifier) = puts.receiver.l: @unchecked
+    selfReceiver.argumentIndex shouldBe -1
+    selfReceiver.name shouldBe RubyDefines.Self
+    selfReceiver.code shouldBe RubyDefines.Self
   }
 
   "`foo(1,2)` is represented by a CALL node" in {
