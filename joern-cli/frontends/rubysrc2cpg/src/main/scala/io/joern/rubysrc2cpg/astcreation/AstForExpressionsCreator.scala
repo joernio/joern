@@ -17,7 +17,7 @@ import io.shiftleft.codepropertygraph.generated.{
 
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  val tmpGen = FreshNameGenerator(i => s"<tmp-$i>")
+  val tmpGen: FreshNameGenerator[String] = FreshNameGenerator(i => s"<tmp-$i>")
 
   protected def astForExpression(node: RubyNode): Ast = node match
     case node: StaticLiteral            => astForStaticLiteral(node)
@@ -679,9 +679,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       }
     val argumentAst      = node.arguments.map(astForMethodCallArgument)
     val call             = callNode(node, code(node), methodName, methodFullName, DispatchTypes.DYNAMIC_DISPATCH)
-    val receiverCallName = identifierNode(node, call.name, call.name, receiverType)
-
-    callAst(call, argumentAst, Option(Ast(receiverCallName)))
+    val receiverCallName = identifierNode(node, Defines.Self, Defines.Self, receiverType)
+    val base             = identifierNode(node, call.name, call.name, receiverType)
+    callAst(call, argumentAst, Option(Ast(base)), Option(Ast(receiverCallName)))
   }
 
   private def astForProcOrLambdaExpr(node: ProcOrLambdaExpr): Ast = {

@@ -473,12 +473,12 @@ class ClassTests extends RubyCode2CpgFixture {
 
                   inside(aAssignment.argument.l) {
                     case (lhs: Call) :: (rhs: Literal) :: Nil =>
-                      lhs.code shouldBe "this.@a"
+                      lhs.code shouldBe s"${RubyDefines.Self}.@a"
                       lhs.methodFullName shouldBe Operators.fieldAccess
 
                       inside(lhs.argument.l) {
                         case (identifier: Identifier) :: (fieldIdentifier: FieldIdentifier) :: Nil =>
-                          identifier.code shouldBe RubyDefines.This
+                          identifier.code shouldBe RubyDefines.Self
                           fieldIdentifier.code shouldBe "@a"
                         case _ => fail("Expected identifier and fieldIdentifier for fieldAccess")
                       }
@@ -658,7 +658,8 @@ class ClassTests extends RubyCode2CpgFixture {
                   inside(methodBlock.astChildren.l) {
                     case methodCall :: Nil =>
                       inside(methodCall.astChildren.l) {
-                        case (identifier: Identifier) :: (literal: Literal) :: (methodRef: MethodRef) :: Nil =>
+                        case (self: Identifier) :: (identifier: Identifier) :: (literal: Literal) :: (methodRef: MethodRef) :: Nil =>
+                          self.name shouldBe "self"
                           identifier.code shouldBe "scope"
                           literal.code shouldBe ":hits_by_ip"
                           methodRef.methodFullName shouldBe "Test0.rb:<global>::program.Foo:<init>:<lambda>0"

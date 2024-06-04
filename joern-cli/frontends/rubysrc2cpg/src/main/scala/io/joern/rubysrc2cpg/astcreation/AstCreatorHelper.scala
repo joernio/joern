@@ -32,7 +32,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   private def astForFieldInstance(name: String, node: RubyNode & RubyFieldIdentifier): Ast = {
     val identName = node match {
-      case _: InstanceFieldIdentifier => Defines.This
+      case _: InstanceFieldIdentifier => Defines.Self
       case _: ClassFieldIdentifier    => scope.surroundingTypeFullName.map(_.split("[.]").last).getOrElse(Defines.Any)
     }
 
