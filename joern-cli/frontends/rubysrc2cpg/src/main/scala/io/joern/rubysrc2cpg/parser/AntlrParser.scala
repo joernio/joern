@@ -98,7 +98,7 @@ class ResourceManagedParser(clearLimit: Double) extends AutoCloseable {
     maybeAtn = Option(interp.atn)
     val usedMemory = runtime.freeMemory.toDouble / runtime.totalMemory.toDouble
     if (usedMemory >= clearLimit) {
-      logger.info(s"Runtime memory consumption at $usedMemory, clearing ANTLR DFA cache")
+      logger.debug(s"Runtime memory consumption at $usedMemory, clearing ANTLR DFA cache")
       clearDFA()
     }
     val (programCtx, errors) = antlrParser.parse()
