@@ -4,18 +4,19 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.{BlockScope, MethodScope, ModuleScope, TypeScope}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewIdentifier, NewTypeDecl, NewTypeRef}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, Operators}
 
 import scala.collection.immutable.List
 
 trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  protected def astForClassDeclaration(node: RubyNode & TypeDeclaration): Ast = {
+  protected def astForClassDeclaration(node: RubyNode & TypeDeclaration): Seq[Ast] = {
     node.name match
       case name: SimpleIdentifier => astForSimpleNamedClassDeclaration(node, name)
       case name =>
         logger.warn(s"Qualified class names are not supported yet: ${name.text} ($relativeFileName), skipping")
-        astForUnknown(node)
+        astForUnknown(node) :: Nil
   }
 
   private def getBaseClassName(node: RubyNode): Option[String] = {
@@ -43,7 +44,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   private def astForSimpleNamedClassDeclaration(
     node: RubyNode & TypeDeclaration,
     nameIdentifier: SimpleIdentifier
-  ): Ast = {
+  ): Seq[Ast] = {
     val className     = nameIdentifier.text
     val inheritsFrom  = node.baseClass.flatMap(getBaseClassName).toList
     val classFullName = computeClassFullName(className)
@@ -88,8 +89,29 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     }
 
     scope.popScope()
+    val prefixAst    = createTypeRefPointer(typeDecl)
+    val typeDeclAsts = prefixAst :: Ast(typeDecl).withChildren(fieldMemberNodes).withChildren(classBodyAsts) :: Nil
+    typeDeclAsts.filterNot(_.root.isEmpty)
+  }
 
-    Ast(typeDecl).withChildren(fieldMemberNodes).withChildren(classBodyAsts)
+  private def createTypeRefPointer(typeDecl: NewTypeDecl): Ast = {
+    if (scope.isSurroundedByProgramScope) {
+      val typeRefName = typeDecl.name.split("[.]").takeRight(1).head
+      val typeRefNode = NewTypeRef()
+        .code(s"class ${typeDecl.fullName} (...)")
+        .typeFullName(typeDecl.fullName)
+
+      val typeRefIdent = NewIdentifier()
+        .code(typeRefName)
+        .name(typeRefName)
+        .typeFullName(typeDecl.fullName)
+        .lineNumber(typeDecl.lineNumber)
+        .columnNumber(typeDecl.columnNumber)
+
+      astForAssignment(typeRefIdent, typeRefNode, typeDecl.lineNumber, typeDecl.columnNumber)
+    } else {
+      Ast()
+    }
   }
 
   protected def astsForFieldDeclarations(node: FieldsDeclaration): Seq[Ast] = {

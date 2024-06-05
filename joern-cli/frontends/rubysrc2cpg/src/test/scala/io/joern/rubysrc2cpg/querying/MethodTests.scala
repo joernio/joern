@@ -4,7 +4,16 @@ import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.joern.rubysrc2cpg.passes.Defines as RDefines
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, NodeTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, MethodRef, Return, TypeRef}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  Call,
+  Identifier,
+  Literal,
+  Method,
+  MethodRef,
+  Return,
+  TypeDecl,
+  TypeRef
+}
 import io.shiftleft.semanticcpg.language.*
 
 class MethodTests extends RubyCode2CpgFixture {
@@ -635,6 +644,16 @@ class MethodTests extends RubyCode2CpgFixture {
           }
 
         case xs => fail(s"Expected two assignments, got [${xs.code.mkString(",")}]")
+      }
+    }
+
+    "be placed directly before each entity's definition" in {
+      inside(cpg.method.name(RDefines.Program).filename("t1.rb").block.astChildren.l) {
+        case (a1: Call) :: (_: TypeDecl) :: (a2: Call) :: (_: TypeDecl) :: (a3: Call) :: (_: Method) :: (_: TypeDecl) :: Nil =>
+          a1.code shouldBe "A = class t1.rb:<global>::program.A (...)"
+          a2.code shouldBe "B = class t1.rb:<global>::program.B (...)"
+          a3.code shouldBe "c = def c (...)"
+        case xs => fail(s"Expected assignments to appear before definitions, instead got [$xs]")
       }
     }
   }

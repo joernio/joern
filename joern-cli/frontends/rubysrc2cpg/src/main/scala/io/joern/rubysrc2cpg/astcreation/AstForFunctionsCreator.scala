@@ -109,14 +109,18 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     createMethodTypeBindings(method, refs)
 
-    methodAst(
-      method,
-      parameterAsts ++ anonProcParam,
-      stmtBlockAst,
-      methodReturn,
-      modifiers.map(newModifierNode).toSeq
-    ) :: // For closures, we also want the method/type refs for upstream use
-      (if isClosure then refs else refs.filter(_.root.exists(_.isInstanceOf[NewTypeDecl])))
+    val prefixAsts = if isClosure then Ast() else createMethodRefPointer(method)
+    // For closures, we also want the method/type refs for upstream use
+    val suffixAsts = if isClosure then refs else refs.filter(_.root.exists(_.isInstanceOf[NewTypeDecl]))
+    val methodAsts = prefixAsts ::
+      methodAst(
+        method,
+        parameterAsts ++ anonProcParam,
+        stmtBlockAst,
+        methodReturn,
+        modifiers.map(newModifierNode).toSeq
+      ) :: suffixAsts
+    methodAsts.filterNot(_.root.isEmpty)
   }
 
   private def transformAsClosureBody(refs: List[Ast], baseStmtBlockAst: Ast) = {
@@ -280,7 +284,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     }
 
     // This will link the type decl to the surrounding context via base overlays
-    val typeDeclAst = astForClassDeclaration(node)
+    val typeDeclAst = astForClassDeclaration(node).last
     Ast.storeInDiffGraph(typeDeclAst, diffGraph)
 
     typeDeclAst.nodes
@@ -295,7 +299,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       .getOrElse(Ast())
   }
 
-  protected def astForSingletonMethodDeclaration(node: SingletonMethodDeclaration): Ast = {
+  protected def astForSingletonMethodDeclaration(node: SingletonMethodDeclaration): Seq[Ast] = {
     node.target match
       case targetNode: SingletonMethodIdentifier =>
         val fullName = computeMethodFullName(node.methodName)
@@ -361,16 +365,37 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           )
         if (addEdge) {
           Ast.storeInDiffGraph(_methodAst, diffGraph)
-          Ast()
+          Nil
         } else {
-          _methodAst
+          createMethodRefPointer(method) :: _methodAst :: Nil
         }
       case targetNode =>
         logger.warn(
           s"Target node type for singleton method declarations are not supported yet: ${targetNode.text} (${targetNode.getClass.getSimpleName}), skipping"
         )
-        astForUnknown(node)
+        astForUnknown(node) :: Nil
+  }
 
+  private def createMethodRefPointer(method: NewMethod): Ast = {
+    if (scope.isSurroundedByProgramScope) {
+      val methodRefNode = NewMethodRef()
+        .code(s"def ${method.name} (...)")
+        .methodFullName(method.fullName)
+        .typeFullName(Defines.Any)
+        .lineNumber(method.lineNumber)
+        .columnNumber(method.columnNumber)
+
+      val methodRefIdent = NewIdentifier()
+        .code(method.name)
+        .name(method.name)
+        .typeFullName(method.fullName)
+        .lineNumber(method.lineNumber)
+        .columnNumber(method.columnNumber)
+
+      astForAssignment(methodRefIdent, methodRefNode, method.lineNumber, method.columnNumber)
+    } else {
+      Ast()
+    }
   }
 
   private def astForParameters(parameters: List[RubyNode]): List[Ast] = {
