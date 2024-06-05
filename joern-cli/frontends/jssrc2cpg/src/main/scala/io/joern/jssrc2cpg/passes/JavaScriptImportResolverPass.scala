@@ -49,7 +49,7 @@ class JavaScriptImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
         cpg
           .file(s"${Pattern.quote(resolvedPath)}\\.?.*")
           .method
-          .nameExact(":program")
+          .nameExact(Defines.Program)
       else
         Iterator.empty
     ) match {
@@ -60,7 +60,7 @@ class JavaScriptImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
     }
 
     def targetAssignments = targetModule
-      .nameExact(":program")
+      .nameExact(Defines.Program)
       .flatMap(_._callViaContainsOut)
       .assignment
 

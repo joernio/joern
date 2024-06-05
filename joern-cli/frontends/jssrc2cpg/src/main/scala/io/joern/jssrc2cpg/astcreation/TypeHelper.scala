@@ -110,7 +110,7 @@ trait TypeHelper { this: AstCreator =>
     val matcher = ImportMatcher.matcher(value)
     this.rootTypeDecl.headOption match {
       case Some(typeDecl)            => typeDecl.fullName
-      case None if matcher.matches() => matcher.group(2).stripSuffix(".js").concat(".js::program")
+      case None if matcher.matches() => matcher.group(2).stripSuffix(".js").concat(s".js:${Defines.Program}")
       case None                      => value
     }
   }

@@ -9,7 +9,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 class JavaScriptInheritanceNamePass(cpg: Cpg) extends XInheritanceFullNamePass(cpg) {
 
   override val pathSep: Char      = ':'
-  override val moduleName: String = ":program"
+  override val moduleName: String = Defines.Program
   override val fileExt: String    = ".js"
 
 }

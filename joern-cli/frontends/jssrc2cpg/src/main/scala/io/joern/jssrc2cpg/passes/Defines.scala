@@ -19,7 +19,9 @@ object Defines {
   val Never: String             = Any
   val Undefined: String         = Any
   val NodeModulesFolder: String = "node_modules"
+  val Program: String           = ":program"
   val GlobalNamespace: String   = NamespaceTraversal.globalNamespaceName
+  val OperatorsNew: String      = "<operator>.new" // TODO: place "<operator>.new" into the schema
 
   val JsTypes: List[String] =
     List(
