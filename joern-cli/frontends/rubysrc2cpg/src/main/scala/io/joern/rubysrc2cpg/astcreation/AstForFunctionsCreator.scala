@@ -165,7 +165,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     */
   private def createMethodTypeBindings(method: NewMethod, refs: List[Ast]): Unit = {
     refs.flatMap(_.root).collectFirst { case typeRef: NewTypeDecl =>
-      val bindingNode = newBindingNode(method.name, "", method.fullName)
+      val bindingNode = newBindingNode("", "", method.fullName)
       diffGraph.addEdge(typeRef, bindingNode, EdgeTypes.BINDS)
       diffGraph.addEdge(bindingNode, method, EdgeTypes.REF)
     }
