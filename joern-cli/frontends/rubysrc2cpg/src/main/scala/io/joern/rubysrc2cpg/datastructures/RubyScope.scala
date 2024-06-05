@@ -48,6 +48,22 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
     */
   def newProgramScope: Option[ProgramScope] = surroundingScopeFullName.map(ProgramScope.apply)
 
+  /** @return
+    *   true if the top of the stack is the program/module.
+    */
+  def isSurroundedByProgramScope: Boolean = {
+    stack
+      .take(2)
+      .filterNot {
+        case ScopeElement(BlockScope(_), _) => true
+        case _                              => false
+      }
+      .headOption match {
+      case Some(ScopeElement(ProgramScope(_), _)) => true
+      case _                                      => false
+    }
+  }
+
   def pushField(field: FieldDecl): Unit = {
     popScope().foreach {
       case TypeScope(fullName, fields) =>

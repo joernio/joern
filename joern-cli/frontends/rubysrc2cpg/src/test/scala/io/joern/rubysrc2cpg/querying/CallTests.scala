@@ -26,6 +26,7 @@ class CallTests extends RubyCode2CpgFixture {
 
     hello.argumentIndex shouldBe 1
     hello.code shouldBe "'hello'"
+    hello.lineNumber shouldBe Some(2)
 
     val List(callBase: Call) = puts.receiver.l: @unchecked
     callBase.argumentIndex shouldBe -1
@@ -36,7 +37,6 @@ class CallTests extends RubyCode2CpgFixture {
     val List(baseSelf: Identifier, baseProperty: FieldIdentifier) = callBase.argument.l: @unchecked
     baseSelf.argumentIndex shouldBe 1
     baseSelf.name shouldBe RubyDefines.Self
-    hello.lineNumber shouldBe Some(2)
     baseProperty.argumentIndex shouldBe 2
     baseProperty.canonicalName shouldBe "puts"
   }

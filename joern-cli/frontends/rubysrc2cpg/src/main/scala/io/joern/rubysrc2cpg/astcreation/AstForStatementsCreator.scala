@@ -23,10 +23,10 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     case node: MemberCallWithBlock        => astsForCallWithBlock(node)
     case node: ReturnExpression           => astForReturnStatement(node) :: Nil
     case node: AnonymousTypeDeclaration   => astForAnonymousTypeDeclaration(node) :: Nil
-    case node: TypeDeclaration            => astForClassDeclaration(node) :: Nil
+    case node: TypeDeclaration            => astForClassDeclaration(node)
     case node: FieldsDeclaration          => astsForFieldDeclarations(node)
     case node: MethodDeclaration          => astForMethodDeclaration(node)
-    case node: SingletonMethodDeclaration => astForSingletonMethodDeclaration(node) :: Nil
+    case node: SingletonMethodDeclaration => astForSingletonMethodDeclaration(node)
     case node: MultipleAssignment         => node.assignments.map(astForExpression)
     case node: BreakStatement             => astForBreakStatement(node) :: Nil
     case _                                => astForExpression(node) :: Nil
