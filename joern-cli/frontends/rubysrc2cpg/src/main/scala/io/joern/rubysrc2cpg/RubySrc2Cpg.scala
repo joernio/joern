@@ -12,6 +12,7 @@ import io.joern.rubysrc2cpg.passes.{
   DependencyPass,
   ImplicitRequirePass,
   ImportsPass,
+  RemoveSpeculatedCallMethodFullNames,
   RubyImportResolverPass,
   RubyTypeHintCallLinker
 }
@@ -76,6 +77,7 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
       if (cpg.dependency.name.contains("zeitwerk")) ImplicitRequirePass(cpg, programSummary).createAndApply()
       ImportsPass(cpg).createAndApply()
       TypeNodePass.withTypesFromCpg(cpg).createAndApply()
+      RemoveSpeculatedCallMethodFullNames(cpg).createAndApply()
     }
   }
 
