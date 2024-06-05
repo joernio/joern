@@ -2,7 +2,7 @@
 
 set -e
 
-git remote add upstream https://github.com/joernio/joern
+git remote set-url upstream https://github.com/joernio/joern
 
 usage() {
   echo "Usage: $0 [--publish] [--branch <branch>]"
@@ -26,7 +26,7 @@ fi
 
 git fetch upstream
 
-git checkout "$BRANCH"
+git checkout -b "$BRANCH"
 git merge upstream/master
 git push origin "$BRANCH"
 
