@@ -12,7 +12,14 @@ import io.joern.x2cpg.utils.NodeBuilders.{
 }
 import io.joern.x2cpg.{Ast, AstEdge, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.{
+  DispatchTypes,
+  EdgeTypes,
+  EvaluationStrategies,
+  ModifierTypes,
+  NodeTypes,
+  Operators
+}
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
 
 import scala.collection.mutable
@@ -378,19 +385,30 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
   private def createMethodRefPointer(method: NewMethod): Ast = {
     if (scope.isSurroundedByProgramScope) {
-      val methodRefNode = NewMethodRef()
-        .code(s"def ${method.name} (...)")
-        .methodFullName(method.fullName)
-        .typeFullName(Defines.Any)
-        .lineNumber(method.lineNumber)
-        .columnNumber(method.columnNumber)
+      val methodRefNode = Ast(
+        NewMethodRef()
+          .code(s"def ${method.name} (...)")
+          .methodFullName(method.fullName)
+          .typeFullName(Defines.Any)
+          .lineNumber(method.lineNumber)
+          .columnNumber(method.columnNumber)
+      )
 
-      val methodRefIdent = NewIdentifier()
-        .code(method.name)
-        .name(method.name)
-        .typeFullName(method.fullName)
-        .lineNumber(method.lineNumber)
-        .columnNumber(method.columnNumber)
+      val methodRefIdent = {
+        val self = NewIdentifier().name(Defines.Self).code(Defines.Self).typeFullName(Defines.Any)
+        val fi = NewFieldIdentifier()
+          .code(method.name)
+          .canonicalName(method.name)
+          .lineNumber(method.lineNumber)
+          .columnNumber(method.columnNumber)
+        val fieldAccess = NewCall()
+          .name(Operators.fieldAccess)
+          .code(s"${Defines.Self}.${method.name}")
+          .methodFullName(Operators.fieldAccess)
+          .dispatchType(DispatchTypes.STATIC_DISPATCH)
+          .typeFullName(Defines.Any)
+        callAst(fieldAccess, Seq(Ast(self), Ast(fi)))
+      }
 
       astForAssignment(methodRefIdent, methodRefNode, method.lineNumber, method.columnNumber)
     } else {

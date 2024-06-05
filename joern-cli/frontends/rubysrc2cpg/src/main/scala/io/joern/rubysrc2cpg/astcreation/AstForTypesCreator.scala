@@ -4,7 +4,13 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.{BlockScope, MethodScope, ModuleScope, TypeScope}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewIdentifier, NewTypeDecl, NewTypeRef}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  NewCall,
+  NewFieldIdentifier,
+  NewIdentifier,
+  NewTypeDecl,
+  NewTypeRef
+}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, Operators}
 
 import scala.collection.immutable.List
@@ -96,18 +102,29 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
   private def createTypeRefPointer(typeDecl: NewTypeDecl): Ast = {
     if (scope.isSurroundedByProgramScope) {
-      val typeRefName = typeDecl.name.split("[.]").takeRight(1).head
-      val typeRefNode = NewTypeRef()
-        .code(s"class ${typeDecl.fullName} (...)")
-        .typeFullName(typeDecl.fullName)
+      val typeRefNode = Ast(
+        NewTypeRef()
+          .code(s"class ${typeDecl.name} (...)")
+          .typeFullName(typeDecl.fullName)
+          .lineNumber(typeDecl.lineNumber)
+          .columnNumber(typeDecl.columnNumber)
+      )
 
-      val typeRefIdent = NewIdentifier()
-        .code(typeRefName)
-        .name(typeRefName)
-        .typeFullName(typeDecl.fullName)
-        .lineNumber(typeDecl.lineNumber)
-        .columnNumber(typeDecl.columnNumber)
-
+      val typeRefIdent = {
+        val self = NewIdentifier().name(Defines.Self).code(Defines.Self).typeFullName(Defines.Any)
+        val fi = NewFieldIdentifier()
+          .code(typeDecl.name)
+          .canonicalName(typeDecl.name)
+          .lineNumber(typeDecl.lineNumber)
+          .columnNumber(typeDecl.columnNumber)
+        val fieldAccess = NewCall()
+          .name(Operators.fieldAccess)
+          .code(s"${Defines.Self}.${typeDecl.name}")
+          .methodFullName(Operators.fieldAccess)
+          .dispatchType(DispatchTypes.STATIC_DISPATCH)
+          .typeFullName(Defines.Any)
+        callAst(fieldAccess, Seq(Ast(self), Ast(fi)))
+      }
       astForAssignment(typeRefIdent, typeRefNode, typeDecl.lineNumber, typeDecl.columnNumber)
     } else {
       Ast()
