@@ -87,7 +87,16 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     lineNumber: Option[Integer],
     columnNumber: Option[Integer]
   ): Ast = {
-    val code = Seq(lhs, rhs).collect { case x: AstNodeNew => x.code }.mkString(" = ")
+    astForAssignment(Ast(lhs), Ast(rhs), lineNumber, columnNumber)
+  }
+
+  protected def astForAssignment(
+    lhs: Ast,
+    rhs: Ast,
+    lineNumber: Option[Integer],
+    columnNumber: Option[Integer]
+  ): Ast = {
+    val code = Seq(lhs, rhs).flatMap(_.root).collect { case x: ExpressionNew => x.code }.mkString(" = ")
     val assignment = NewCall()
       .name(Operators.assignment)
       .methodFullName(Operators.assignment)
@@ -96,7 +105,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       .lineNumber(lineNumber)
       .columnNumber(columnNumber)
 
-    callAst(assignment, Seq(Ast(lhs), Ast(rhs)))
+    callAst(assignment, Seq(lhs, rhs))
   }
 
   protected val UnaryOperatorNames: Map[String, String] = Map(

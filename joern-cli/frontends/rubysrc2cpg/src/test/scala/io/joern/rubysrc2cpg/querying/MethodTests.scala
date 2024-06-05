@@ -592,27 +592,30 @@ class MethodTests extends RubyCode2CpgFixture {
     "be directly under :program" in {
       inside(cpg.method.name(RDefines.Program).filename("t1.rb").assignment.l) {
         case moduleAssignment :: classAssignment :: methodAssignment :: Nil =>
-          moduleAssignment.code shouldBe "A = class t1.rb:<global>::program.A (...)"
-          classAssignment.code shouldBe "B = class t1.rb:<global>::program.B (...)"
-          methodAssignment.code shouldBe "c = def c (...)"
+          moduleAssignment.code shouldBe "self.A = class A (...)"
+          classAssignment.code shouldBe "self.B = class B (...)"
+          methodAssignment.code shouldBe "self.c = def c (...)"
 
           inside(moduleAssignment.argument.l) {
-            case (lhs: Identifier) :: (rhs: TypeRef) :: Nil =>
-              lhs.name shouldBe "A"
+            case (lhs: Call) :: (rhs: TypeRef) :: Nil =>
+              lhs.code shouldBe "self.A"
+              lhs.name shouldBe Operators.fieldAccess
               rhs.typeFullName shouldBe "t1.rb:<global>::program.A"
             case xs => fail(s"Expected lhs and rhs, instead got ${xs.code.mkString(",")}")
           }
 
           inside(classAssignment.argument.l) {
-            case (lhs: Identifier) :: (rhs: TypeRef) :: Nil =>
-              lhs.name shouldBe "B"
+            case (lhs: Call) :: (rhs: TypeRef) :: Nil =>
+              lhs.code shouldBe "self.B"
+              lhs.name shouldBe Operators.fieldAccess
               rhs.typeFullName shouldBe "t1.rb:<global>::program.B"
             case xs => fail(s"Expected lhs and rhs, instead got ${xs.code.mkString(",")}")
           }
 
           inside(methodAssignment.argument.l) {
-            case (lhs: Identifier) :: (rhs: MethodRef) :: Nil =>
-              lhs.name shouldBe "c"
+            case (lhs: Call) :: (rhs: MethodRef) :: Nil =>
+              lhs.code shouldBe "self.c"
+              lhs.name shouldBe Operators.fieldAccess
               rhs.methodFullName shouldBe "t1.rb:<global>::program:c"
               rhs.typeFullName shouldBe "t1.rb:<global>::program:c"
             case xs => fail(s"Expected lhs and rhs, instead got ${xs.code.mkString(",")}")
@@ -625,19 +628,21 @@ class MethodTests extends RubyCode2CpgFixture {
     "not be present in other files" in {
       inside(cpg.method.name(RDefines.Program).filename("t2.rb").assignment.l) {
         case classAssignment :: methodAssignment :: Nil =>
-          classAssignment.code shouldBe "D = class t2.rb:<global>::program.D (...)"
-          methodAssignment.code shouldBe "e = def e (...)"
+          classAssignment.code shouldBe "self.D = class D (...)"
+          methodAssignment.code shouldBe "self.e = def e (...)"
 
           inside(classAssignment.argument.l) {
-            case (lhs: Identifier) :: (rhs: TypeRef) :: Nil =>
-              lhs.name shouldBe "D"
+            case (lhs: Call) :: (rhs: TypeRef) :: Nil =>
+              lhs.code shouldBe "self.D"
+              lhs.name shouldBe Operators.fieldAccess
               rhs.typeFullName shouldBe "t2.rb:<global>::program.D"
             case xs => fail(s"Expected lhs and rhs, instead got ${xs.code.mkString(",")}")
           }
 
           inside(methodAssignment.argument.l) {
-            case (lhs: Identifier) :: (rhs: MethodRef) :: Nil =>
-              lhs.name shouldBe "e"
+            case (lhs: Call) :: (rhs: MethodRef) :: Nil =>
+              lhs.code shouldBe "self.e"
+              lhs.name shouldBe Operators.fieldAccess
               rhs.methodFullName shouldBe "t2.rb:<global>::program:e"
               rhs.typeFullName shouldBe "t2.rb:<global>::program:e"
             case xs => fail(s"Expected lhs and rhs, instead got ${xs.code.mkString(",")}")
@@ -650,9 +655,9 @@ class MethodTests extends RubyCode2CpgFixture {
     "be placed directly before each entity's definition" in {
       inside(cpg.method.name(RDefines.Program).filename("t1.rb").block.astChildren.l) {
         case (a1: Call) :: (_: TypeDecl) :: (a2: Call) :: (_: TypeDecl) :: (a3: Call) :: (_: Method) :: (_: TypeDecl) :: Nil =>
-          a1.code shouldBe "A = class t1.rb:<global>::program.A (...)"
-          a2.code shouldBe "B = class t1.rb:<global>::program.B (...)"
-          a3.code shouldBe "c = def c (...)"
+          a1.code shouldBe "self.A = class A (...)"
+          a2.code shouldBe "self.B = class B (...)"
+          a3.code shouldBe "self.c = def c (...)"
         case xs => fail(s"Expected assignments to appear before definitions, instead got [$xs]")
       }
     }

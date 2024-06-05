@@ -81,8 +81,12 @@ class MethodReturnTests extends RubyCode2CpgFixture(withPostProcessing = true, w
           ("arg > 1", 3),
           ("arg + 1", 4),
           ("RET", 2),
+          ("self.foo = def foo (...)", 2),
+          ("self.foo = def foo (...)", -1),
           ("foo x", 11),
-          ("y = foo x", 11),
+          ("foo(self, arg)", 2),
+          ("RET", 2),
+          ("foo x", 11),
           ("puts y", 12)
         )
       )
@@ -122,8 +126,12 @@ class MethodReturnTests extends RubyCode2CpgFixture(withPostProcessing = true, w
           ("RET", 2),
           ("add(arg)", 8),
           ("RET", 6),
+          ("self.foo = def foo (...)", 6),
+          ("self.foo = def foo (...)", -1),
           ("foo x", 15),
-          ("y = foo x", 15),
+          ("foo(self, arg)", 6),
+          ("RET", 6),
+          ("foo x", 15),
           ("puts y", 16)
         )
       )
@@ -151,8 +159,12 @@ class MethodReturnTests extends RubyCode2CpgFixture(withPostProcessing = true, w
           ("q = p", 3),
           ("return q", 4),
           ("RET", 2),
+          ("self.add = def add (...)", 2),
+          ("self.add = def add (...)", -1),
           ("add(n)", 8),
-          ("ret = add(n)", 8),
+          ("add(self, p)", 2),
+          ("RET", 2),
+          ("add(n)", 8),
           ("puts ret", 9)
         )
       )
