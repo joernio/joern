@@ -617,7 +617,7 @@ class MethodTests extends RubyCode2CpgFixture {
               lhs.code shouldBe "self.c"
               lhs.name shouldBe Operators.fieldAccess
               rhs.methodFullName shouldBe "t1.rb:<global>::program:c"
-              rhs.typeFullName shouldBe RDefines.Any
+              rhs.typeFullName shouldBe "t1.rb:<global>::program:c"
             case xs => fail(s"Expected lhs and rhs, instead got ${xs.code.mkString(",")}")
           }
 
@@ -644,7 +644,7 @@ class MethodTests extends RubyCode2CpgFixture {
               lhs.code shouldBe "self.e"
               lhs.name shouldBe Operators.fieldAccess
               rhs.methodFullName shouldBe "t2.rb:<global>::program:e"
-              rhs.typeFullName shouldBe RDefines.Any
+              rhs.typeFullName shouldBe "t2.rb:<global>::program:e"
             case xs => fail(s"Expected lhs and rhs, instead got ${xs.code.mkString(",")}")
           }
 

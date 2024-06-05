@@ -389,7 +389,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         NewMethodRef()
           .code(s"def ${method.name} (...)")
           .methodFullName(method.fullName)
-          .typeFullName(Defines.Any)
+          .typeFullName(method.fullName)
           .lineNumber(method.lineNumber)
           .columnNumber(method.columnNumber)
       )
