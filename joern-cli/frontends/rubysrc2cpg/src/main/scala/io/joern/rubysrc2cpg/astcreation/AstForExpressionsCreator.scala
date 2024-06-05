@@ -677,11 +677,24 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           scope.typeForMethod(m).map(t => t.name -> s"${t.name}:${m.name}").getOrElse(defaultResult)
         case None => defaultResult
       }
-    val argumentAst      = node.arguments.map(astForMethodCallArgument)
-    val call             = callNode(node, code(node), methodName, methodFullName, DispatchTypes.DYNAMIC_DISPATCH)
-    val receiverCallName = identifierNode(node, Defines.Self, Defines.Self, receiverType)
-    val base             = identifierNode(node, call.name, call.name, receiverType)
-    callAst(call, argumentAst, Option(Ast(base)), Option(Ast(receiverCallName)))
+    val argumentAst = node.arguments.map(astForMethodCallArgument)
+    val call        = callNode(node, code(node), methodName, methodFullName, DispatchTypes.DYNAMIC_DISPATCH)
+    val receiverAst = {
+      val fi   = Ast(fieldIdentifierNode(node, call.name, call.name))
+      val self = Ast(identifierNode(node, Defines.Self, Defines.Self, receiverType))
+      val baseAccess = callNode(
+        node,
+        s"${Defines.Self}.${call.name}",
+        Operators.fieldAccess,
+        Operators.fieldAccess,
+        DispatchTypes.STATIC_DISPATCH,
+        None,
+        Option(Defines.Any)
+      )
+      callAst(baseAccess, Seq(self, fi))
+    }
+    val baseAst = Ast(identifierNode(node, Defines.Self, Defines.Self, receiverType))
+    callAst(call, argumentAst, Option(baseAst), Option(receiverAst))
   }
 
   private def astForProcOrLambdaExpr(node: ProcOrLambdaExpr): Ast = {
