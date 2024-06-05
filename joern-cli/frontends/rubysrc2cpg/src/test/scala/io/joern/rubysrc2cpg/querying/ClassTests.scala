@@ -624,8 +624,8 @@ class ClassTests extends RubyCode2CpgFixture {
                   scopeCall.code shouldBe "scope :published, -> { where(status: \"Published\") }"
 
                   inside(scopeCall.argument.l) {
-                    case (scopeIdent: Identifier) :: (literalArg: Literal) :: unknownArg :: Nil =>
-                      scopeIdent.code shouldBe "scope"
+                    case (self: Identifier) :: (literalArg: Literal) :: unknownArg :: Nil =>
+                      self.code shouldBe "self"
                       literalArg.code shouldBe ":published"
                     case xs => fail(s"Expected three arguments, got ${xs.code.mkString(", ")} instead")
                   }
@@ -658,9 +658,9 @@ class ClassTests extends RubyCode2CpgFixture {
                   inside(methodBlock.astChildren.l) {
                     case methodCall :: Nil =>
                       inside(methodCall.astChildren.l) {
-                        case (self: Identifier) :: (identifier: Identifier) :: (literal: Literal) :: (methodRef: MethodRef) :: Nil =>
+                        case (base: Call) :: (self: Identifier) :: (literal: Literal) :: (methodRef: MethodRef) :: Nil =>
+                          base.code shouldBe "self.scope"
                           self.name shouldBe "self"
-                          identifier.code shouldBe "scope"
                           literal.code shouldBe ":hits_by_ip"
                           methodRef.methodFullName shouldBe "Test0.rb:<global>::program.Foo:<init>:<lambda>0"
                           methodRef.referencedMethod.parameter.indexGt(0).name.l shouldBe List("ip", "col")

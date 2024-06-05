@@ -402,11 +402,15 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     astForSimpleCall(node.asSimpleCall)
   }
 
+  /** A yield in Ruby could either return the result of the block, or simply call the block, depending on runtime
+    * conditions. Thus we embed this in a conditional expression where the condition itself is some non-deterministic
+    * placeholder.
+    */
   protected def astForYield(node: YieldExpr): Ast = {
     scope.useProcParam match {
       case Some(param) =>
         val call = astForExpression(
-          SimpleCall(SimpleIdentifier()(node.span.spanStart(param)), node.arguments)(node.span)
+          SimpleCall(SimpleIdentifier()(node.span.spanStart(param)), node.arguments)(node.span.spanStart(param))
         )
         val ret = returnAst(returnNode(node, code(node)))
         val cond = astForExpression(

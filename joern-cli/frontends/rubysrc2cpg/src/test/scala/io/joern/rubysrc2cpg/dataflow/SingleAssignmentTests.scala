@@ -20,8 +20,8 @@ class SingleAssignmentTests extends RubyCode2CpgFixture(withPostProcessing = tru
     flow1 shouldBe List(("y = 1", 2), ("puts y", 3))
     flow2 shouldBe List(("y = 1", 2), ("x = y = 1", 2), ("puts x", 4))
     flow3 shouldBe List(("y = 1", 2), ("puts y", 3), ("puts x", 4))
-    flow4 shouldBe List(("y = 1", 2), ("x = y = 1", 2), ("puts x", 4), ("puts z", 5))
-    flow5 shouldBe List(("y = 1", 2), ("x = y = 1", 2), ("z = x = y = 1", 2), ("puts z", 5))
+    flow4 shouldBe List(("y = 1", 2), ("x = y = 1", 2), ("z = x = y = 1", 2), ("puts z", 5))
+    flow5 shouldBe List(("y = 1", 2), ("x = y = 1", 2), ("puts x", 4), ("puts z", 5))
   }
 
   "flow through expressions" in {

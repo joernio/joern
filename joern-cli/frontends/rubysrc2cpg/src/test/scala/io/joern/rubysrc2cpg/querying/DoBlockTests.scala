@@ -109,7 +109,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
     }
 
     "have the call under the closure" in {
-      inside(cpg.method("<lambda>0").call.l) {
+      inside(cpg.method("<lambda>0").call.nameExact("puts").l) {
         case puts :: Nil =>
           puts.name shouldBe "puts"
           puts.code shouldBe "puts item"
@@ -173,7 +173,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
     }
 
     "have the calls under the closure" in {
-      inside(cpg.method("<lambda>0").call.l) {
+      inside(cpg.method("<lambda>0").call.nameExact("puts").l) {
         case puts1 :: puts2 :: Nil =>
           puts1.name shouldBe "puts"
           puts1.code shouldBe "puts key"
