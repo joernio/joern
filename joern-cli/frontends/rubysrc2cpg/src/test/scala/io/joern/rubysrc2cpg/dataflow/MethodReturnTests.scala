@@ -16,7 +16,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withPostProcessing = true, w
     val sink   = cpg.method.name("f").methodReturn
     val flows  = sink.reachableByFlows(source)
     flows.map(flowToResultPairs).toSet shouldBe
-      Set(List(("f(this, x)", 2), ("return x", 3), ("RET", 2)))
+      Set(List(("f(self, x)", 2), ("return x", 3), ("RET", 2)))
   }
 
   "flow from method parameter to implicit return of the same variable" in {
@@ -29,7 +29,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withPostProcessing = true, w
     val sink   = cpg.method.name("f").methodReturn
     val flows  = sink.reachableByFlows(source)
     flows.map(flowToResultPairs).toSet shouldBe
-      Set(List(("f(this, x)", 2), ("x", 3), ("RET", 2)))
+      Set(List(("f(self, x)", 2), ("x", 3), ("RET", 2)))
   }
 
   "flow from endless method parameter to implicit return of the same variable" in {
@@ -40,7 +40,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withPostProcessing = true, w
     val sink   = cpg.method.name("f").methodReturn
     val flows  = sink.reachableByFlows(source)
     flows.map(flowToResultPairs).toSet shouldBe
-      Set(List(("f(this, x)", 2), ("x", 2), ("RET", 2)))
+      Set(List(("f(self, x)", 2), ("x", 2), ("RET", 2)))
   }
 
   "flow from method parameter to implicit return via assignment to temporary variable" in {
@@ -53,7 +53,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withPostProcessing = true, w
     val sink   = cpg.method.name("f").methodReturn
     val flows  = sink.reachableByFlows(source)
     flows.map(flowToResultPairs).toSet shouldBe
-      Set(List(("f(this, x)", 2), ("y = x", 3), ("RET", 2)))
+      Set(List(("f(self, x)", 2), ("y = x", 3), ("RET", 2)))
   }
 
   "Implicit return in if-else block" in {
@@ -77,7 +77,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withPostProcessing = true, w
     flows.map(flowToResultPairs).toSet shouldBe
       Set(
         List(
-          ("foo(this, arg)", 2),
+          ("foo(self, arg)", 2),
           ("arg > 1", 3),
           ("arg + 1", 4),
           ("RET", 2),
@@ -114,10 +114,10 @@ class MethodReturnTests extends RubyCode2CpgFixture(withPostProcessing = true, w
     flows.map(flowToResultPairs).toSet shouldBe
       Set(
         List(
-          ("foo(this, arg)", 6),
+          ("foo(self, arg)", 6),
           ("arg > 1", 7),
           ("add(arg)", 8),
-          ("add(this, arg)", 2),
+          ("add(self, arg)", 2),
           ("arg + 100", 3),
           ("RET", 2),
           ("add(arg)", 8),
@@ -147,7 +147,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withPostProcessing = true, w
     flows.map(flowToResultPairs).toSet shouldBe
       Set(
         List(
-          ("add(this, p)", 2),
+          ("add(self, p)", 2),
           ("q = p", 3),
           ("return q", 4),
           ("RET", 2),

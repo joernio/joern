@@ -473,12 +473,12 @@ class ClassTests extends RubyCode2CpgFixture {
 
                   inside(aAssignment.argument.l) {
                     case (lhs: Call) :: (rhs: Literal) :: Nil =>
-                      lhs.code shouldBe "this.@a"
+                      lhs.code shouldBe s"${RubyDefines.Self}.@a"
                       lhs.methodFullName shouldBe Operators.fieldAccess
 
                       inside(lhs.argument.l) {
                         case (identifier: Identifier) :: (fieldIdentifier: FieldIdentifier) :: Nil =>
-                          identifier.code shouldBe RubyDefines.This
+                          identifier.code shouldBe RubyDefines.Self
                           fieldIdentifier.code shouldBe "@a"
                         case _ => fail("Expected identifier and fieldIdentifier for fieldAccess")
                       }
@@ -624,8 +624,8 @@ class ClassTests extends RubyCode2CpgFixture {
                   scopeCall.code shouldBe "scope :published, -> { where(status: \"Published\") }"
 
                   inside(scopeCall.argument.l) {
-                    case (scopeIdent: Identifier) :: (literalArg: Literal) :: unknownArg :: Nil =>
-                      scopeIdent.code shouldBe "scope"
+                    case (self: Identifier) :: (literalArg: Literal) :: unknownArg :: Nil =>
+                      self.code shouldBe "self"
                       literalArg.code shouldBe ":published"
                     case xs => fail(s"Expected three arguments, got ${xs.code.mkString(", ")} instead")
                   }
@@ -658,8 +658,9 @@ class ClassTests extends RubyCode2CpgFixture {
                   inside(methodBlock.astChildren.l) {
                     case methodCall :: Nil =>
                       inside(methodCall.astChildren.l) {
-                        case (identifier: Identifier) :: (literal: Literal) :: (methodRef: MethodRef) :: Nil =>
-                          identifier.code shouldBe "scope"
+                        case (base: Call) :: (self: Identifier) :: (literal: Literal) :: (methodRef: MethodRef) :: Nil =>
+                          base.code shouldBe "self.scope"
+                          self.name shouldBe "self"
                           literal.code shouldBe ":hits_by_ip"
                           methodRef.methodFullName shouldBe "Test0.rb:<global>::program.Foo:<init>:<lambda>0"
                           methodRef.referencedMethod.parameter.indexGt(0).name.l shouldBe List("ip", "col")

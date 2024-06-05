@@ -21,7 +21,6 @@ object Defines {
   val Regexp: String     = "Regexp"
   val Lambda: String     = "lambda"
   val Proc: String       = "proc"
-  val This: String       = "this"
   val Loop: String       = "loop"
   val Self: String       = "self"
 

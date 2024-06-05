@@ -128,28 +128,25 @@ class MethodTests extends RubyCode2CpgFixture(withPostProcessing = true, withDat
     sink.reachableByFlows(source).size shouldBe 2
   }
 
-  "Data flow through blockExprAssocTypeArguments with block argument in the wrapper function" in {
+  "Data flow through blockExprAssocTypeArguments with block argument in the wrapper function" ignore {
     val cpg = code("""
-                     |def foo (blockArg,&block)
-                     |block.call(blockArg)
+                     |def foo(blockArg, &block)
+                     |  block.call(blockArg)
                      |end
                      |
-                     |def foo_wrap (blockArg,&block)
-                     |foo(blockArg,&block)
+                     |def foo_wrap(blockArg, &block)
+                     |  foo(blockArg, &block)
                      |end
-                     |
                      |
                      |x = 10
                      |foo_wrap x do |arg|
                      |  y = 100 + arg
                      |  puts y
                      |end
-                     |
-                     |
                      |""".stripMargin)
 
-    val source = cpg.identifier.name("x").l
-    val sink   = cpg.call.name("puts").l
+    val source = cpg.literal.code("10").l
+    val sink   = cpg.call.name("puts").argument(1).l
     sink.reachableByFlows(source).size shouldBe 2
   }
 

@@ -1,10 +1,11 @@
 package io.joern.rubysrc2cpg.querying
 
+import io.joern.rubysrc2cpg.passes.Defines as RubyDefines
 import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, NodeTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal}
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, FieldIdentifier, Identifier, Literal}
 import io.shiftleft.semanticcpg.language.*
 
 class CallTests extends RubyCode2CpgFixture {
@@ -18,13 +19,26 @@ class CallTests extends RubyCode2CpgFixture {
     puts.lineNumber shouldBe Some(2)
     puts.code shouldBe "puts 'hello'"
 
-    val List(rec: Identifier, hello: Literal) = puts.argument.l: @unchecked
-    rec.argumentIndex shouldBe 0
-    rec.name shouldBe "puts"
+    val List(selfReceiver: Identifier, hello: Literal) = puts.argument.l: @unchecked
+    selfReceiver.argumentIndex shouldBe 0
+    selfReceiver.name shouldBe RubyDefines.Self
+    selfReceiver.code shouldBe RubyDefines.Self
 
     hello.argumentIndex shouldBe 1
     hello.code shouldBe "'hello'"
+
+    val List(callBase: Call) = puts.receiver.l: @unchecked
+    callBase.argumentIndex shouldBe -1
+    callBase.methodFullName shouldBe Operators.fieldAccess
+    callBase.name shouldBe Operators.fieldAccess
+    callBase.code shouldBe "self.puts"
+
+    val List(baseSelf: Identifier, baseProperty: FieldIdentifier) = callBase.argument.l: @unchecked
+    baseSelf.argumentIndex shouldBe 1
+    baseSelf.name shouldBe RubyDefines.Self
     hello.lineNumber shouldBe Some(2)
+    baseProperty.argumentIndex shouldBe 2
+    baseProperty.canonicalName shouldBe "puts"
   }
 
   "`foo(1,2)` is represented by a CALL node" in {
@@ -80,9 +94,9 @@ class CallTests extends RubyCode2CpgFixture {
 
     "contain they keyword in the argumentName property" in {
       inside(cpg.call.nameExact("foo").argument.l) {
-        case (foo: Identifier) :: (hello: Literal) :: (baz: Literal) :: Nil =>
-          foo.name shouldBe "foo"
-          foo.argumentIndex shouldBe 0
+        case (self: Identifier) :: (hello: Literal) :: (baz: Literal) :: Nil =>
+          self.name shouldBe RubyDefines.Self
+          self.argumentIndex shouldBe 0
 
           hello.code shouldBe "\"hello\""
           hello.argumentIndex shouldBe 1
@@ -199,7 +213,7 @@ class CallTests extends RubyCode2CpgFixture {
 
   "named parameters in parenthesis-less call to a symbol value should create a correctly named argument" in {
     val cpg            = code("on in: :sequence")
-    val List(_, inArg) = cpg.call.argument.l: @unchecked
+    val List(_, inArg) = cpg.call.nameExact("on").argument.l: @unchecked
     inArg.code shouldBe ":sequence"
     inArg.argumentName shouldBe Option("in")
   }

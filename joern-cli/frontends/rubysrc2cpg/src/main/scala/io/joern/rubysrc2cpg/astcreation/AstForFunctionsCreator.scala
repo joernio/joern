@@ -53,7 +53,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     val thisParameterAst = Ast(
       newThisParameterNode(
-        code = Defines.This,
+        code = Defines.Self,
         typeFullName = scope.surroundingTypeFullName.getOrElse(Defines.Any),
         line = method.lineNumber,
         column = method.columnNumber
@@ -302,7 +302,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
         val (astParentType, astParentFullName, thisParamCode, addEdge) = targetNode match {
           case _: SelfIdentifier =>
-            (scope.surroundingAstLabel, scope.surroundingScopeFullName, Defines.This, false)
+            (scope.surroundingAstLabel, scope.surroundingScopeFullName, Defines.Self, false)
           case _: SimpleIdentifier =>
             val baseType = node.target.span.text
             scope.surroundingTypeFullName.map(_.split("[.]").last) match {
@@ -312,9 +312,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
                 scope.tryResolveTypeReference(baseType) match {
                   case Some(typ) =>
                     (Option(NodeTypes.TYPE_DECL), Option(typ.name), baseType, true)
-                  case None => (None, None, Defines.This, false)
+                  case None => (None, None, Defines.Self, false)
                 }
-              case None => (None, None, Defines.This, false)
+              case None => (None, None, Defines.Self, false)
             }
         }
 

@@ -17,7 +17,7 @@ import io.shiftleft.codepropertygraph.generated.{
 
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  val tmpGen = FreshNameGenerator(i => s"<tmp-$i>")
+  val tmpGen: FreshNameGenerator[String] = FreshNameGenerator(i => s"<tmp-$i>")
 
   protected def astForExpression(node: RubyNode): Ast = node match
     case node: StaticLiteral            => astForStaticLiteral(node)
@@ -402,11 +402,15 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     astForSimpleCall(node.asSimpleCall)
   }
 
+  /** A yield in Ruby could either return the result of the block, or simply call the block, depending on runtime
+    * conditions. Thus we embed this in a conditional expression where the condition itself is some non-deterministic
+    * placeholder.
+    */
   protected def astForYield(node: YieldExpr): Ast = {
     scope.useProcParam match {
       case Some(param) =>
         val call = astForExpression(
-          SimpleCall(SimpleIdentifier()(node.span.spanStart(param)), node.arguments)(node.span)
+          SimpleCall(SimpleIdentifier()(node.span.spanStart(param)), node.arguments)(node.span.spanStart(param))
         )
         val ret = returnAst(returnNode(node, code(node)))
         val cond = astForExpression(
@@ -677,11 +681,24 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           scope.typeForMethod(m).map(t => t.name -> s"${t.name}:${m.name}").getOrElse(defaultResult)
         case None => defaultResult
       }
-    val argumentAst      = node.arguments.map(astForMethodCallArgument)
-    val call             = callNode(node, code(node), methodName, methodFullName, DispatchTypes.DYNAMIC_DISPATCH)
-    val receiverCallName = identifierNode(node, call.name, call.name, receiverType)
-
-    callAst(call, argumentAst, Option(Ast(receiverCallName)))
+    val argumentAst = node.arguments.map(astForMethodCallArgument)
+    val call        = callNode(node, code(node), methodName, methodFullName, DispatchTypes.DYNAMIC_DISPATCH)
+    val receiverAst = {
+      val fi   = Ast(fieldIdentifierNode(node, call.name, call.name))
+      val self = Ast(identifierNode(node, Defines.Self, Defines.Self, receiverType))
+      val baseAccess = callNode(
+        node,
+        s"${Defines.Self}.${call.name}",
+        Operators.fieldAccess,
+        Operators.fieldAccess,
+        DispatchTypes.STATIC_DISPATCH,
+        None,
+        Option(Defines.Any)
+      )
+      callAst(baseAccess, Seq(self, fi))
+    }
+    val baseAst = Ast(identifierNode(node, Defines.Self, Defines.Self, receiverType))
+    callAst(call, argumentAst, Option(baseAst), Option(receiverAst))
   }
 
   private def astForProcOrLambdaExpr(node: ProcOrLambdaExpr): Ast = {

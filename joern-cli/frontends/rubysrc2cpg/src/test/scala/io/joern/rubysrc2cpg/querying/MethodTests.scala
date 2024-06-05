@@ -186,7 +186,7 @@ class MethodTests extends RubyCode2CpgFixture {
           case funcF :: Nil =>
             inside(funcF.parameter.l) {
               case thisParam :: xParam :: Nil =>
-                thisParam.code shouldBe "this"
+                thisParam.code shouldBe RDefines.Self
                 thisParam.typeFullName shouldBe "Test0.rb:<global>::program.C"
                 thisParam.index shouldBe 0
                 thisParam.isVariadic shouldBe false
@@ -220,7 +220,7 @@ class MethodTests extends RubyCode2CpgFixture {
           case funcF :: Nil =>
             inside(funcF.parameter.l) {
               case thisParam :: xParam :: Nil =>
-                thisParam.code shouldBe "this"
+                thisParam.code shouldBe RDefines.Self
                 thisParam.typeFullName shouldBe "Test0.rb:<global>::program.C"
                 thisParam.index shouldBe 0
                 thisParam.isVariadic shouldBe false
