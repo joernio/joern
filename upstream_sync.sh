@@ -2,7 +2,7 @@
 
 set -e
 
-git remote set-url upstream https://github.com/joernio/joern
+git remote add upstream https://github.com/joernio/joern
 
 usage() {
   echo "Usage: $0 [--publish] [--branch <branch>]"
