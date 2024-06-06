@@ -3,6 +3,7 @@ package io.joern.rubysrc2cpg.querying
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.joern.rubysrc2cpg.passes.Defines as RDefines
+import io.joern.rubysrc2cpg.passes.GlobalTypes.builtinPrefix
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, NodeTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   Call,
@@ -261,7 +262,7 @@ class MethodTests extends RubyCode2CpgFixture {
           xs.name shouldBe "xs"
           xs.code shouldBe "*xs"
           xs.isVariadic shouldBe true
-          xs.typeFullName shouldBe "__builtin.Array"
+          xs.typeFullName shouldBe s"$builtinPrefix.Array"
         case xs => fail(s"Expected `foo` to have one parameter, got [${xs.code.mkString(", ")}]")
       }
     }
@@ -272,7 +273,7 @@ class MethodTests extends RubyCode2CpgFixture {
           ys.name shouldBe "ys"
           ys.code shouldBe "**ys"
           ys.isVariadic shouldBe true
-          ys.typeFullName shouldBe "__builtin.Hash"
+          ys.typeFullName shouldBe s"$builtinPrefix.Hash"
         case xs => fail(s"Expected `foo` to have one parameter, got [${xs.code.mkString(", ")}]")
       }
     }

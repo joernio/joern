@@ -1,8 +1,8 @@
 package io.joern.rubysrc2cpg.datastructures
 
 import better.files.File
-import io.joern.rubysrc2cpg.astcreation.GlobalTypes
-import io.joern.rubysrc2cpg.astcreation.GlobalTypes.builtinPrefix
+import io.joern.rubysrc2cpg.passes.GlobalTypes
+import io.joern.rubysrc2cpg.passes.GlobalTypes.builtinPrefix
 import io.joern.x2cpg.Defines
 import io.joern.rubysrc2cpg.passes.Defines as RDefines
 import io.joern.x2cpg.datastructures.*

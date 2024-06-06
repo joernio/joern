@@ -2,6 +2,7 @@ package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.passes.Defines as RubyDefines
 import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
+import io.joern.rubysrc2cpg.passes.GlobalTypes.builtinPrefix
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, NodeTypes, Operators}
@@ -18,6 +19,7 @@ class CallTests extends RubyCode2CpgFixture {
     val List(puts) = cpg.call.name("puts").l
     puts.lineNumber shouldBe Some(2)
     puts.code shouldBe "puts 'hello'"
+    puts.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
     val List(selfReceiver: Identifier, hello: Literal) = puts.argument.l: @unchecked
     selfReceiver.argumentIndex shouldBe 0
@@ -221,7 +223,7 @@ class CallTests extends RubyCode2CpgFixture {
   "a call with a quoted regex literal should have a literal receiver" in {
     val cpg                         = code("%r{^/}.freeze")
     val List(regexLiteral: Literal) = cpg.call.nameExact("freeze").receiver.l: @unchecked
-    regexLiteral.typeFullName shouldBe "__builtin.Regexp"
+    regexLiteral.typeFullName shouldBe s"$builtinPrefix.Regexp"
     regexLiteral.code shouldBe "%r{^/}"
   }
 
