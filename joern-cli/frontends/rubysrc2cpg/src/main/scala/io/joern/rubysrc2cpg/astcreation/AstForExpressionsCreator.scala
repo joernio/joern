@@ -684,7 +684,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       }
     val argumentAst = node.arguments.map(astForMethodCallArgument)
     val dispatchType =
-      if methodName.startsWith(GlobalTypes.builtinPrefix) then DispatchTypes.STATIC_DISPATCH
+      if receiverType == GlobalTypes.builtinPrefix then DispatchTypes.STATIC_DISPATCH
       else DispatchTypes.DYNAMIC_DISPATCH
     val call = callNode(node, code(node), methodName, methodFullName, dispatchType)
     val receiverAst = {

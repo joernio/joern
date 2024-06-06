@@ -19,6 +19,7 @@ class CallTests extends RubyCode2CpgFixture {
     val List(puts) = cpg.call.name("puts").l
     puts.lineNumber shouldBe Some(2)
     puts.code shouldBe "puts 'hello'"
+    puts.methodFullName shouldBe s"$builtinPrefix:puts"
     puts.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
     val List(selfReceiver: Identifier, hello: Literal) = puts.argument.l: @unchecked
