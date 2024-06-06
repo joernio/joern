@@ -16,6 +16,7 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
 import ujson.Value
 
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 class AstCreator(
   val relPathFileName: String,
@@ -72,7 +73,8 @@ class AstCreator(
     val methodReturn = methodReturnNode(rootNode, Defines.anyTypeName)
     val declsAsts = rootNode
       .json(ParserKeys.Decls)
-      .arr
+      .arrOpt
+      .getOrElse(ArrayBuffer.empty)
       .flatMap { item =>
         val node = createParserNodeInfo(item)
         astForNode(node, true)
