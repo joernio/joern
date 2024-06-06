@@ -220,7 +220,15 @@ abstract class AstCreatorBase(filename: String)(implicit withSchemaValidation: V
   /** For the given try body, catch ASTs and finally AST, create a try-catch-finally AST with orders set correctly for
     * the ossdataflow engine.
     */
-  def tryCatchAst(tryNode: NewControlStructure, tryBodyAst: Ast, catchAsts: Seq[Ast], finallyAst: Option[Ast]): Ast = {
+  @deprecated(
+    "This will be removed once all frontends switched to `tryCatchAst` using ControlStructure nodes for catches/finally. Use `tryCatchAst` instead."
+  )
+  def tryCatchAstWithOrder(
+    tryNode: NewControlStructure,
+    tryBodyAst: Ast,
+    catchAsts: Seq[Ast],
+    finallyAst: Option[Ast]
+  ): Ast = {
     tryBodyAst.root.collect { case x: ExpressionNew => x }.foreach(_.order = 1)
     catchAsts.flatMap(_.root).collect { case x: ExpressionNew => x }.foreach(_.order = 2)
     finallyAst.flatMap(_.root).collect { case x: ExpressionNew => x }.foreach(_.order = 3)
@@ -228,6 +236,16 @@ abstract class AstCreatorBase(filename: String)(implicit withSchemaValidation: V
       .withChild(tryBodyAst)
       .withChildren(catchAsts)
       .withChildren(finallyAst.toList)
+  }
+
+  /** For the given try body, catch ASTs, and finally AST, create a try-catch-finally AST.
+    */
+  def tryCatchAst(tryNode: NewControlStructure, tryBodyAst: Ast, catchAsts: Seq[Ast], finallyAst: Option[Ast]): Ast = {
+    setArgumentIndices(tryBodyAst +: (catchAsts ++ finallyAst.toSeq))
+    Ast(tryNode)
+      .withChild(tryBodyAst)
+      .withChildren(catchAsts)
+      .withChildren(finallyAst.toSeq)
   }
 
   /** For a given block node and statement ASTs, create an AST that represents the block. The main purpose of this

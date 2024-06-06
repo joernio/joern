@@ -54,22 +54,17 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForDiscardStmtSyntax(node: DiscardStmtSyntax): Ast = notHandledYet(node)
 
   private def astForDoStmtSyntax(node: DoStmtSyntax): Ast = {
-    val tryNode = controlStructureNode(node, ControlStructureTypes.TRY, code(node))
-    val bodyAst = astForNode(node.body)
-    setOrderExplicitly(bodyAst, 1)
-    val catchAsts = node.catchClauses.children.zipWithIndex.map { case (h, index) =>
-      astForCatchHandler(h, index + 2)
-    }.toIndexedSeq
-    Ast(tryNode).withChild(bodyAst).withChildren(catchAsts)
+    val tryNode   = controlStructureNode(node, ControlStructureTypes.TRY, code(node))
+    val bodyAst   = astForNode(node.body)
+    val catchAsts = node.catchClauses.children.map(astForCatchHandler)
+    tryCatchAst(tryNode, bodyAst, catchAsts, None)
   }
 
-  private def astForCatchHandler(catchClause: CatchClauseSyntax, argIndex: Int): Ast = {
-    val catchNode =
-      controlStructureNode(catchClause, ControlStructureTypes.CATCH, code(catchClause))
-        .order(argIndex)
-        .argumentIndex(argIndex)
-    val declAst = astForNode(catchClause.catchItems)
-    val bodyAst = astForNode(catchClause.body)
+  private def astForCatchHandler(catchClause: CatchClauseSyntax): Ast = {
+    val catchNode = controlStructureNode(catchClause, ControlStructureTypes.CATCH, code(catchClause))
+    val declAst   = astForNode(catchClause.catchItems)
+    val bodyAst   = astForNode(catchClause.body)
+    setArgumentIndices(List(declAst, bodyAst))
     Ast(catchNode).withChild(declAst).withChild(bodyAst)
   }
 

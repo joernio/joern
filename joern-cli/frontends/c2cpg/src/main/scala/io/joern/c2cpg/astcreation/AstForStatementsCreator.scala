@@ -123,18 +123,21 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   private def astForTryStatement(tryStmt: ICPPASTTryBlockStatement): Ast = {
     val tryNode = controlStructureNode(tryStmt, ControlStructureTypes.TRY, "try")
-    val body    = nullSafeAst(tryStmt.getTryBody, 1)
-    val catches = tryStmt.getCatchHandlers.zipWithIndex.map { case (h, index) =>
-      astForCatchHandler(h, index + 2)
-    }.toIndexedSeq
-    Ast(tryNode).withChildren(body).withChildren(catches)
+    val bodyAst = nullSafeAst(tryStmt.getTryBody) match {
+      case Nil         => Ast()
+      case elem :: Nil => elem
+      case elements =>
+        setArgumentIndices(elements)
+        blockAst(blockNode(tryStmt.getTryBody)).withChildren(elements)
+    }
+    val catchAsts = tryStmt.getCatchHandlers.toSeq.map(astForCatchHandler)
+    tryCatchAst(tryNode, bodyAst, catchAsts, None)
   }
 
-  private def astForCatchHandler(catchHandler: ICPPASTCatchHandler, argIndex: Int): Ast = {
-    val catchNode =
-      controlStructureNode(catchHandler, ControlStructureTypes.CATCH, "catch").order(argIndex).argumentIndex(argIndex)
-    val declAst = nullSafeAst(catchHandler.getDeclaration)
-    val bodyAst = nullSafeAst(catchHandler.getCatchBody)
+  private def astForCatchHandler(catchHandler: ICPPASTCatchHandler): Ast = {
+    val catchNode = controlStructureNode(catchHandler, ControlStructureTypes.CATCH, "catch")
+    val declAst   = nullSafeAst(catchHandler.getDeclaration)
+    val bodyAst   = nullSafeAst(catchHandler.getCatchBody)
     Ast(catchNode).withChildren(declAst).withChildren(bodyAst)
   }
 

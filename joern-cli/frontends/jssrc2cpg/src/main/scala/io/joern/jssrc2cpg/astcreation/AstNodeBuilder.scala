@@ -35,17 +35,6 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
       .columnNumber(switchCase.columnNumber)
   }
 
-  protected def createControlStructureNode(node: BabelNodeInfo, controlStructureType: String): NewControlStructure = {
-    val line   = node.lineNumber
-    val column = node.columnNumber
-    val code   = node.code
-    NewControlStructure()
-      .controlStructureType(controlStructureType)
-      .code(code)
-      .lineNumber(line)
-      .columnNumber(column)
-  }
-
   protected def codeOf(node: NewNode): String = node match {
     case astNodeNew: AstNodeNew => astNodeNew.code
     case _                      => ""

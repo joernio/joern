@@ -627,7 +627,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       }
     val elseAst   = node.elseClause.map { x => astForStatementList(x.thenClause.asStatementList) }
     val ensureAst = node.ensureClause.map { x => astForStatementList(x.thenClause.asStatementList) }
-    tryCatchAst(
+    tryCatchAstWithOrder(
       NewControlStructure()
         .controlStructureType(ControlStructureTypes.TRY)
         .code(code(node)),
