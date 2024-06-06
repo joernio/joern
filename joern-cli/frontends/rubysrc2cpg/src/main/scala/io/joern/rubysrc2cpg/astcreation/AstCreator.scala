@@ -4,9 +4,9 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.{BlockScope, NamespaceScope, RubyProgramSummary, RubyScope, RubyStubbedType}
 import io.joern.rubysrc2cpg.parser.{RubyNodeCreator, RubyParser}
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
+import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newModifierNode}
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, ModifierTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.{Logger, LoggerFactory}
@@ -71,13 +71,14 @@ class AstCreator(
       .fullName(fullName)
 
     scope.pushNewScope(NamespaceScope(fullName))
-    val rubyFileMethod = astInFakeMethod(rootStatements)
+    val (rubyFakeMethod, rubyFakeMethodAst) = astInFakeMethod(rootStatements)
+    val rubyFakeTypeDecl                    = astInFakeTypeDecl(rootStatements, rubyFakeMethod)
     scope.popScope()
 
-    Ast(fileNode).withChild(Ast(namespaceBlock).withChild(rubyFileMethod))
+    Ast(fileNode).withChild(Ast(namespaceBlock).withChild(rubyFakeMethodAst).withChild(rubyFakeTypeDecl))
   }
 
-  private def astInFakeMethod(rootNode: StatementList): Ast = {
+  private def astInFakeMethod(rootNode: StatementList): (NewMethod, Ast) = {
     val name     = Defines.Program
     val fullName = computeMethodFullName(name)
     val code     = rootNode.text
@@ -91,7 +92,7 @@ class AstCreator(
     )
     val methodReturn = methodReturnNode(rootNode, Defines.Any)
 
-    scope.newProgramScope
+    methodNode_ -> scope.newProgramScope
       .map { moduleScope =>
         scope.pushNewScope(moduleScope)
         val block = blockNode(rootNode)
@@ -103,6 +104,34 @@ class AstCreator(
         methodAst(methodNode_, Seq.empty, bodyAst, methodReturn, newModifierNode(ModifierTypes.MODULE) :: Nil)
       }
       .getOrElse(Ast())
+  }
+
+  private def astInFakeTypeDecl(rootNode: StatementList, method: NewMethod): Ast = {
+    val typeDeclNode_ = typeDeclNode(rootNode, method.name, method.fullName, method.filename, Nil, None)
+    val members = rootNode.statements
+      .collect {
+        case m: MethodDeclaration =>
+          val methodName = m.methodName
+          NewMember()
+            .name(methodName)
+            .code(methodName)
+            .typeFullName(Defines.Any)
+            .dynamicTypeHintFullName(s"${method.fullName}:$methodName" :: Nil)
+        case t: TypeDeclaration =>
+          val typeName = t.name.text
+          NewMember()
+            .name(t.name.text)
+            .code(typeName)
+            .typeFullName(Defines.Any)
+            .dynamicTypeHintFullName(s"${method.fullName}.$typeName" :: Nil)
+      }
+      .map(Ast.apply)
+
+    val bindingNode = newBindingNode("", "", method.fullName)
+    diffGraph.addEdge(typeDeclNode_, bindingNode, EdgeTypes.BINDS)
+    diffGraph.addEdge(bindingNode, method, EdgeTypes.REF)
+
+    Ast(typeDeclNode_).withChild(Ast(newModifierNode(ModifierTypes.MODULE))).withChildren(members)
   }
 
 }

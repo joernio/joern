@@ -29,7 +29,7 @@ class ClassTests extends RubyCode2CpgFixture {
     classC.fullName shouldBe "Test0.rb:<global>::program.C"
     classC.lineNumber shouldBe Some(2)
     classC.baseType.l shouldBe List()
-    classC.member.l shouldBe List()
+    classC.member.name.l shouldBe List("<init>", "<clinit>")
     classC.method.name.l shouldBe List("<init>", "<clinit>")
   }
 
@@ -45,7 +45,7 @@ class ClassTests extends RubyCode2CpgFixture {
     classC.inheritsFromTypeFullName shouldBe List("D")
     classC.fullName shouldBe "Test0.rb:<global>::program.C"
     classC.lineNumber shouldBe Some(2)
-    classC.member.l shouldBe List()
+    classC.member.name.l shouldBe List("<init>", "<clinit>")
     classC.method.name.l shouldBe List("<init>", "<clinit>")
 
     val List(typeD) = classC.baseType.l
@@ -60,9 +60,8 @@ class ClassTests extends RubyCode2CpgFixture {
                      |""".stripMargin)
 
     val List(classC)  = cpg.typeDecl.name("C").l
-    val List(aMember) = classC.member.l
+    val List(aMember) = classC.member.nameExact("@a").l
 
-    aMember.name shouldBe "@a"
     aMember.code shouldBe "attr_reader :a"
     aMember.lineNumber shouldBe Some(3)
   }
@@ -181,6 +180,9 @@ class ClassTests extends RubyCode2CpgFixture {
     val List(methodF) = classC.method.name("f").l
 
     methodF.fullName shouldBe "Test0.rb:<global>::program.C:f"
+
+    val List(memberF) = classC.member.nameExact("f").l
+    memberF.dynamicTypeHintFullName.toSet should contain(methodF.fullName)
   }
 
   "`def initialize() ... end` directly inside a class has method name `<init>`" in {
@@ -443,7 +445,7 @@ class ClassTests extends RubyCode2CpgFixture {
     "create respective member nodes" in {
       inside(cpg.typeDecl.name("Foo").l) {
         case fooType :: Nil =>
-          inside(fooType.member.l) {
+          inside(fooType.member.name("@.*").l) {
             case aMember :: bMember :: cMember :: dMember :: oMember :: Nil =>
               // Test that all members in class are present
               aMember.code shouldBe "@a"
@@ -520,7 +522,7 @@ class ClassTests extends RubyCode2CpgFixture {
     "create respective member nodes" in {
       inside(cpg.typeDecl.name("Foo").l) {
         case fooType :: Nil =>
-          inside(fooType.member.l) {
+          inside(fooType.member.name("@.*").l) {
             case aMember :: bMember :: cMember :: dMember :: oMember :: Nil =>
               // Test that all members in class are present
               aMember.code shouldBe "@@a"
