@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.querying
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.joern.rubysrc2cpg.passes.Defines as RDefines
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, NodeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, ModifierTypes, NodeTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   Call,
   Identifier,
@@ -45,6 +45,17 @@ class MethodTests extends RubyCode2CpgFixture {
       fType.astParentType shouldBe NodeTypes.METHOD
       val List(fMethod) = fType.iterator.boundMethod.l
       fType.fullName shouldBe "Test0.rb:<global>::program:f"
+    }
+
+    "create a 'fake' method for the file" in {
+      val List(m) = cpg.method.nameExact(RDefines.Program).l
+      m.fullName shouldBe "Test0.rb:<global>::program"
+      m.isModule.nonEmpty shouldBe true
+
+      val List(t) = cpg.typeDecl.nameExact(RDefines.Program).l
+      m.fullName shouldBe "Test0.rb:<global>::program"
+      m.isModule.nonEmpty shouldBe true
+      t.methodBinding.methodFullName.toSet should contain(m.fullName)
     }
   }
 

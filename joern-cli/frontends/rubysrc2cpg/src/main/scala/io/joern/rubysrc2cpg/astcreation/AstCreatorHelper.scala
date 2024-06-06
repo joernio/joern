@@ -108,6 +108,10 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     callAst(assignment, Seq(lhs, rhs))
   }
 
+  protected def memberForMethod(method: NewMethod): NewMember = {
+    NewMember().name(method.name).code(method.name).dynamicTypeHintFullName(Seq(method.fullName))
+  }
+
   protected val UnaryOperatorNames: Map[String, String] = Map(
     "!"   -> Operators.logicalNot,
     "not" -> Operators.logicalNot,

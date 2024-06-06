@@ -116,10 +116,13 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     createMethodTypeBindings(method, refs)
 
-    val prefixAsts = if isClosure then Ast() else createMethodRefPointer(method)
+    val prefixMemberAst =
+      if isClosure || scope.isSurroundedByProgramScope then Ast() // program scope members are set elsewhere
+      else Ast(memberForMethod(method))
+    val prefixRefAssignAst = if isClosure then Ast() else createMethodRefPointer(method)
     // For closures, we also want the method/type refs for upstream use
     val suffixAsts = if isClosure then refs else refs.filter(_.root.exists(_.isInstanceOf[NewTypeDecl]))
-    val methodAsts = prefixAsts ::
+    val methodAsts = prefixMemberAst :: prefixRefAssignAst ::
       methodAst(
         method,
         parameterAsts ++ anonProcParam,
