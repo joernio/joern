@@ -281,35 +281,19 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
   }
 
   private[statements] def astsForTry(stmt: TryStmt): Seq[Ast] = {
-    val tryNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.TRY)
-      .code("try")
-      .lineNumber(line(stmt))
-      .columnNumber(column(stmt))
-
+    val tryNode   = controlStructureNode(stmt, ControlStructureTypes.TRY, "try")
     val resources = stmt.getResources.asScala.flatMap(astsForExpression(_, expectedType = ExpectedType.empty)).toList
 
     val tryAst = astForBlockStatement(stmt.getTryBlock, codeStr = "try")
     val catchAsts = stmt.getCatchClauses.asScala.toList.map { catchClause =>
-      val catchNode = NewControlStructure()
-        .controlStructureType(ControlStructureTypes.CATCH)
-        .code("catch")
-        .lineNumber(line(catchClause))
-        .columnNumber(column(catchClause))
+      val catchNode = controlStructureNode(catchClause, ControlStructureTypes.CATCH, "catch")
       Ast(catchNode).withChild(astForCatchClause(catchClause))
     }
     val finallyAst = stmt.getFinallyBlock.toScala.map { finallyBlock =>
-      val finallyNode = NewControlStructure()
-        .controlStructureType(ControlStructureTypes.FINALLY)
-        .code("finally")
-        .lineNumber(line(finallyBlock))
-        .columnNumber(column(finallyBlock))
+      val finallyNode = controlStructureNode(finallyBlock, ControlStructureTypes.FINALLY, "finally")
       Ast(finallyNode).withChild(astForBlockStatement(finallyBlock, "finally"))
-    }.toList
-
-    val childrenAsts = tryAst +: (catchAsts ++ finallyAst)
-    setArgumentIndices(childrenAsts)
-    val controlStructureAst = Ast(tryNode).withChildren(childrenAsts)
+    }
+    val controlStructureAst = tryCatchAst(tryNode, tryAst, catchAsts, finallyAst)
     resources.appended(controlStructureAst)
   }
 }

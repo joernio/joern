@@ -431,7 +431,6 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
     }
 
     val tryNode = controlStructureNode(stmt, ControlStructureTypes.TRY, "try { ... }")
-    setArgumentIndices(tryBody +: (catches ++ finallyBody.toSeq))
     tryCatchAst(tryNode, tryBody, catches, finallyBody)
   }
 

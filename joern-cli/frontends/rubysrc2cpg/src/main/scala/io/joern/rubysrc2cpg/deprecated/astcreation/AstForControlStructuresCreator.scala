@@ -129,7 +129,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
       .toSeq
 
     val tryNode = controlStructureNode(ctx, ControlStructureTypes.TRY, "try")
-    tryCatchAst(tryNode, tryBodyAst, catchAsts, finallyAst)
+    tryCatchAstWithOrder(tryNode, tryBodyAst, catchAsts, finallyAst)
   }
 
 }

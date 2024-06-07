@@ -53,8 +53,7 @@ trait PythonAstVisitorHelpers(implicit withSchemaValidation: ValidationMode) { t
     orElseBlock: Iterable[NewNode],
     lineAndColumn: LineAndColumn
   ): NewNode = {
-    val controlStructureNode =
-      nodeBuilder.controlStructureNode("try: ...", ControlStructureTypes.TRY, lineAndColumn)
+    val controlStructureNode = nodeBuilder.controlStructureNode("try: ...", ControlStructureTypes.TRY, lineAndColumn)
 
     val bodyBlockNode      = createBlock(body, lineAndColumn).asInstanceOf[NewBlock]
     val handlersBlockNodes = handlers.map(x => createBlock(Iterable(x), lineAndColumn).asInstanceOf[NewBlock]).toSeq
