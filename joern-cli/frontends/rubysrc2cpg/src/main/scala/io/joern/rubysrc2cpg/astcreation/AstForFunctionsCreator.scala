@@ -215,8 +215,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         Ast(parameterIn)
       case node: CollectionParameter =>
         val typeFullName = node match {
-          case ArrayParameter(_) => prefixAsBuiltin("Array")
-          case HashParameter(_)  => prefixAsBuiltin("Hash")
+          case ArrayParameter(_) => prefixAsKernelDefined("Array")
+          case HashParameter(_)  => prefixAsKernelDefined("Hash")
         }
         val parameterIn = parameterInNode(
           node = node,

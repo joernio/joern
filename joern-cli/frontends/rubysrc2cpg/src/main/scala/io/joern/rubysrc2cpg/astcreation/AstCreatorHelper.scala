@@ -1,5 +1,4 @@
 package io.joern.rubysrc2cpg.astcreation
-import io.joern.rubysrc2cpg.astcreation.GlobalTypes.{builtinFunctions, builtinPrefix}
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   ClassFieldIdentifier,
   DummyNode,
@@ -9,11 +8,12 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   RubyNode
 }
 import io.joern.rubysrc2cpg.datastructures.{BlockScope, FieldDecl}
-import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
+import io.joern.rubysrc2cpg.passes.GlobalTypes
+import io.joern.rubysrc2cpg.passes.GlobalTypes.{kernelFunctions, kernelPrefix}
+import io.joern.x2cpg.{Ast, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
 
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -26,9 +26,11 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   override def lineEnd(node: RubyNode): Option[Integer]   = node.lineEnd
   override def code(node: RubyNode): String               = shortenCode(node.text)
 
-  protected def isBuiltin(x: String): Boolean      = builtinFunctions.contains(x)
-  protected def prefixAsBuiltin(x: String): String = s"$builtinPrefix$pathSep$x"
-  protected def pathSep                            = "."
+  protected def isBuiltin(x: String): Boolean            = kernelFunctions.contains(x)
+  protected def prefixAsKernelDefined(x: String): String = s"$kernelPrefix$pathSep$x"
+  protected def prefixAsBundledType(x: String): String   = s"<${GlobalTypes.builtinPrefix}.$x>"
+  protected def isBundledClass(x: String): Boolean       = GlobalTypes.bundledClasses.contains(x)
+  protected def pathSep                                  = "."
 
   private def astForFieldInstance(name: String, node: RubyNode & RubyFieldIdentifier): Ast = {
     val identName = node match {
@@ -159,94 +161,4 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     "||=" -> Operators.assignmentOr,
     "&&=" -> Operators.assignmentAnd
   )
-}
-
-// TODO: Move this to a more appropriate place?
-object GlobalTypes {
-  val builtinPrefix = "__builtin"
-
-  /* Sources:
-   * https://ruby-doc.org/docs/ruby-doc-bundle/Manual/man-1.4/function.html
-   * https://ruby-doc.org/3.2.2/Kernel.html
-   *
-   * We comment-out methods that require an explicit "receiver" (target of member access.)
-   */
-  val builtinFunctions: Set[String] = Set(
-    "Array",
-    "Complex",
-    "Float",
-    "Hash",
-    "Integer",
-    "Rational",
-    "String",
-    "__callee__",
-    "__dir__",
-    "__method__",
-    "abort",
-    "at_exit",
-    "autoload",
-    "autoload?",
-    "binding",
-    "block_given?",
-    "callcc",
-    "caller",
-    "caller_locations",
-    "catch",
-    "chomp",
-    "chomp!",
-    "chop",
-    "chop!",
-    // "class",
-    // "clone",
-    "eval",
-    "exec",
-    "exit",
-    "exit!",
-    "fail",
-    "fork",
-    "format",
-    // "frozen?",
-    "gets",
-    "global_variables",
-    "gsub",
-    "gsub!",
-    "iterator?",
-    "lambda",
-    "load",
-    "local_variables",
-    "loop",
-    "open",
-    "p",
-    "print",
-    "printf",
-    "proc",
-    "putc",
-    "puts",
-    "raise",
-    "rand",
-    "readline",
-    "readlines",
-    "require",
-    "require_relative",
-    "select",
-    "set_trace_func",
-    "sleep",
-    "spawn",
-    "sprintf",
-    "srand",
-    "sub",
-    "sub!",
-    "syscall",
-    "system",
-    "tap",
-    "test",
-    // "then",
-    "throw",
-    "trace_var",
-    // "trap",
-    "untrace_var",
-    "warn"
-    // "yield_self",
-  )
-
 }

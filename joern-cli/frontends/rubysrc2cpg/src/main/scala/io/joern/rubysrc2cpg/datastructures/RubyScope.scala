@@ -1,8 +1,8 @@
 package io.joern.rubysrc2cpg.datastructures
 
 import better.files.File
-import io.joern.rubysrc2cpg.astcreation.GlobalTypes
-import io.joern.rubysrc2cpg.astcreation.GlobalTypes.builtinPrefix
+import io.joern.rubysrc2cpg.passes.GlobalTypes
+import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelPrefix
 import io.joern.x2cpg.Defines
 import io.joern.rubysrc2cpg.passes.Defines as RDefines
 import io.joern.x2cpg.datastructures.*
@@ -17,25 +17,25 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
     extends Scope[String, DeclarationNew, TypedScopeElement]
     with TypedScope[RubyMethod, RubyField, RubyType](summary) {
 
-  private val builtinMethods = GlobalTypes.builtinFunctions
-    .map(m => RubyMethod(m, List.empty, Defines.Any, Some(GlobalTypes.builtinPrefix)))
+  private val builtinMethods = GlobalTypes.kernelFunctions
+    .map(m => RubyMethod(m, List.empty, Defines.Any, Some(GlobalTypes.kernelPrefix)))
     .toList
 
   override val typesInScope: mutable.Set[RubyType] =
-    mutable.Set(RubyType(GlobalTypes.builtinPrefix, builtinMethods, List.empty))
+    mutable.Set(RubyType(GlobalTypes.kernelPrefix, builtinMethods, List.empty))
 
   // Add some built-in methods that are significant
   // TODO: Perhaps create an offline pre-built list of methods
   typesInScope.addAll(
     Seq(
       RubyType(
-        s"$builtinPrefix.Array",
-        List(RubyMethod("[]", List.empty, s"$builtinPrefix.Array", Option(s"$builtinPrefix.Array"))),
+        s"$kernelPrefix.Array",
+        List(RubyMethod("[]", List.empty, s"$kernelPrefix.Array", Option(s"$kernelPrefix.Array"))),
         List.empty
       ),
       RubyType(
-        s"$builtinPrefix.Hash",
-        List(RubyMethod("[]", List.empty, s"$builtinPrefix.Hash", Option(s"$builtinPrefix.Hash"))),
+        s"$kernelPrefix.Hash",
+        List(RubyMethod("[]", List.empty, s"$kernelPrefix.Hash", Option(s"$kernelPrefix.Hash"))),
         List.empty
       )
     )
@@ -290,8 +290,8 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
       .orElse(tryResolveStubbedTypeReference(typeName))
       .orElse {
         super.tryResolveTypeReference(normalizedTypeName) match {
-          case None if GlobalTypes.builtinFunctions.contains(normalizedTypeName) =>
-            Option(RubyType(s"${GlobalTypes.builtinPrefix}.$normalizedTypeName", List.empty, List.empty))
+          case None if GlobalTypes.kernelFunctions.contains(normalizedTypeName) =>
+            Option(RubyType(s"${GlobalTypes.kernelPrefix}.$normalizedTypeName", List.empty, List.empty))
           case None =>
             summary.namespaceToType.flatMap(_._2).collectFirst {
               case x if x.name.split("[.]").endsWith(normalizedTypeName.split("[.]")) =>

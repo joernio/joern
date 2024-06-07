@@ -3,6 +3,7 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{Unknown, Block as RubyBlock, *}
 import io.joern.rubysrc2cpg.datastructures.BlockScope
 import io.joern.rubysrc2cpg.passes.Defines
+import io.joern.rubysrc2cpg.passes.GlobalTypes
 import io.joern.rubysrc2cpg.passes.Defines.{RubyOperators, getBuiltInType}
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
@@ -157,18 +158,21 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     // Use the scope type recovery to attempt to obtain a receiver type for the call
     // TODO: Type recovery should potentially resolve this
     val receiver = astForExpression(node.target)
-    val fullName = receiver.root match {
-      case Some(x: NewMethodRef) => x.methodFullName
+    val (receiverFullName, methodFullName) = receiver.root match {
+      case Some(x: NewMethodRef) => x.methodFullName -> x.methodFullName
       case _ =>
         typeFromCallTarget(node.target)
-          .map(x => s"$x:${node.methodName}")
-          .getOrElse(XDefines.DynamicCallUnknownFullName)
+          .map(x => x -> s"$x:${node.methodName}")
+          .getOrElse(XDefines.Any -> XDefines.DynamicCallUnknownFullName)
     }
     val argumentAsts = node.arguments.map(astForMethodCallArgument)
 
-    receiver.root.collect { case x: NewCall => x.typeFullName(fullName) }
+    receiver.root.collect { case x: NewCall => x.typeFullName(methodFullName) }
+    val dispatchType =
+      if receiverFullName.startsWith(s"<${GlobalTypes.builtinPrefix}") then DispatchTypes.STATIC_DISPATCH
+      else DispatchTypes.DYNAMIC_DISPATCH
 
-    val fieldAccessCall = callNode(node, code(node), node.methodName, fullName, DispatchTypes.DYNAMIC_DISPATCH)
+    val fieldAccessCall = callNode(node, code(node), node.methodName, methodFullName, dispatchType)
 
     callAst(fieldAccessCall, argumentAsts, Option(receiver))
   }
@@ -367,11 +371,16 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   protected def astForSimpleIdentifier(node: RubyNode & RubyIdentifier): Ast = {
     val name = code(node)
 
-    scope.lookupVariable(name) match {
-      case Some(_) => handleVariableOccurrence(node)
-      case None if scope.tryResolveMethodInvocation(node.text).isDefined =>
-        astForSimpleCall(SimpleCall(node, List())(node.span))
-      case None => handleVariableOccurrence(node)
+    if (isBundledClass(name)) {
+      val typeFullName = prefixAsBundledType(name)
+      Ast(typeRefNode(node, typeFullName, typeFullName))
+    } else {
+      scope.lookupVariable(name) match {
+        case Some(_) => handleVariableOccurrence(node)
+        case None if scope.tryResolveMethodInvocation(node.text).isDefined =>
+          astForSimpleCall(SimpleCall(node, List())(node.span))
+        case None => handleVariableOccurrence(node)
+      }
     }
   }
 
@@ -519,13 +528,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     (node.lowerBound, node.upperBound) match {
       case (lb: StaticLiteral, ub: StaticLiteral) =>
         (lb.typeFullName, ub.typeFullName) match {
-          case ("__builtin.Integer", "__builtin.Integer") =>
+          case (s"${GlobalTypes.`kernelPrefix`}.Integer", s"${GlobalTypes.`kernelPrefix`}.Integer") =>
             generateRange(lb.span.text.toInt, ub.span.text.toInt, node.rangeOperator.exclusive)
               .map(x =>
                 StaticLiteral(lb.typeFullName)(TextSpan(lb.line, lb.column, lb.lineEnd, lb.columnEnd, x.toString))
               )
               .toList
-          case ("__builtin.String", "__builtin.String") =>
+          case (s"${GlobalTypes.`kernelPrefix`}.String", s"${GlobalTypes.`kernelPrefix`}.String") =>
             val lbVal = lb.span.text.replaceAll("['\"]", "")
             val ubVal = ub.span.text.replaceAll("['\"]", "")
 
@@ -663,8 +672,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astForMethodCallWithoutBlock(node: SimpleCall, methodIdentifier: SimpleIdentifier): Ast = {
-    val methodName = methodIdentifier.text
-
+    val methodName         = methodIdentifier.text
     lazy val defaultResult = Defines.Any -> XDefines.DynamicCallUnknownFullName
 
     val (receiverType, methodFullName) =
@@ -681,8 +689,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           scope.typeForMethod(m).map(t => t.name -> s"${t.name}:${m.name}").getOrElse(defaultResult)
         case None => defaultResult
       }
+
     val argumentAst = node.arguments.map(astForMethodCallArgument)
-    val call        = callNode(node, code(node), methodName, methodFullName, DispatchTypes.DYNAMIC_DISPATCH)
+    val dispatchType =
+      if receiverType.startsWith(s"<${GlobalTypes.builtinPrefix}") then DispatchTypes.STATIC_DISPATCH
+      else DispatchTypes.DYNAMIC_DISPATCH
+
+    val call = callNode(node, code(node), methodName, methodFullName, dispatchType)
     val receiverAst = {
       val fi   = Ast(fieldIdentifierNode(node, call.name, call.name))
       val self = Ast(identifierNode(node, Defines.Self, Defines.Self, receiverType))
