@@ -2,7 +2,7 @@ package io.joern.rubysrc2cpg.passes
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines as XDefines
-import io.joern.rubysrc2cpg.passes.GlobalTypes.builtinPrefix
+import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelPrefix
 import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.semanticcpg.language.importresolver.*
 import io.shiftleft.semanticcpg.language.*
@@ -58,9 +58,9 @@ class RubyInternalTypeRecoveryTests extends RubyCode2CpgFixture(withPostProcessi
 
     "resolve 'print' and 'puts' StubbedRubyType calls" in {
       val List(printCall) = cpg.call("print").l
-      printCall.methodFullName shouldBe s"$builtinPrefix:print"
+      printCall.methodFullName shouldBe s"$kernelPrefix:print"
       val List(maxCall) = cpg.call("puts").l
-      maxCall.methodFullName shouldBe s"$builtinPrefix:puts"
+      maxCall.methodFullName shouldBe s"$kernelPrefix:puts"
     }
 
     "present the declared method name when a built-in with the same name is used in the same compilation unit" in {
@@ -87,8 +87,8 @@ class RubyInternalTypeRecoveryTests extends RubyCode2CpgFixture(withPostProcessi
     "propagate function return types" in {
       inside(cpg.method.name("func2?").l) {
         case func :: func2 :: Nil =>
-          func.methodReturn.typeFullName shouldBe s"$builtinPrefix.String"
-          func2.methodReturn.typeFullName shouldBe s"$builtinPrefix.String"
+          func.methodReturn.typeFullName shouldBe s"$kernelPrefix.String"
+          func2.methodReturn.typeFullName shouldBe s"$kernelPrefix.String"
         case xs => fail(s"Expected 2 functions, got [${xs.name.mkString(",")}]")
       }
     }
@@ -96,7 +96,7 @@ class RubyInternalTypeRecoveryTests extends RubyCode2CpgFixture(withPostProcessi
     "propagate return type to identifier c" in {
       inside(cpg.identifier.name("c").l) {
         case cIdent :: Nil =>
-          cIdent.typeFullName shouldBe s"$builtinPrefix.String"
+          cIdent.typeFullName shouldBe s"$kernelPrefix.String"
         case xs => fail(s"Expected one identifier for c, got [${xs.name.mkString(",")}]")
       }
     }
@@ -133,7 +133,7 @@ class RubyInternalTypeRecoveryTests extends RubyCode2CpgFixture(withPostProcessi
         case funcAssignment :: constructAssignment :: tmpAssignment :: Nil =>
           inside(funcAssignment.argument.l) {
             case (lhs: Identifier) :: rhs :: Nil =>
-              lhs.typeFullName shouldBe s"$builtinPrefix.String"
+              lhs.typeFullName shouldBe s"$kernelPrefix.String"
             case xs => fail(s"Expected lhs and rhs, got [${xs.code.mkString(",")}] ")
           }
 
@@ -235,9 +235,9 @@ class RubyExternalTypeRecoveryTests
 
     "resolve 'x' and 'y' locally under foo.rb" in {
       val Some(x) = cpg.identifier("x").where(_.file.name(".*foo.*")).headOption: @unchecked
-      x.typeFullName shouldBe s"$builtinPrefix.Integer"
+      x.typeFullName shouldBe s"$kernelPrefix.Integer"
       val Some(y) = cpg.identifier("y").where(_.file.name(".*foo.*")).headOption: @unchecked
-      y.typeFullName shouldBe s"$builtinPrefix.String"
+      y.typeFullName shouldBe s"$kernelPrefix.String"
     }
 
     "resolve 'FooModule.x' and 'FooModule.y' field access primitive types correctly" in {
@@ -248,9 +248,9 @@ class RubyExternalTypeRecoveryTests
         .name("z")
         .l
       z1.typeFullName shouldBe "ANY"
-      z1.dynamicTypeHintFullName shouldBe Seq(s"$builtinPrefix.Integer", s"$builtinPrefix.String")
+      z1.dynamicTypeHintFullName shouldBe Seq(s"$kernelPrefix.Integer", s"$kernelPrefix.String")
       z2.typeFullName shouldBe "ANY"
-      z2.dynamicTypeHintFullName shouldBe Seq(s"$builtinPrefix.Integer", s"$builtinPrefix.String")
+      z2.dynamicTypeHintFullName shouldBe Seq(s"$kernelPrefix.Integer", s"$kernelPrefix.String")
     }
 
     "resolve 'FooModule.d' field access object types correctly" ignore {

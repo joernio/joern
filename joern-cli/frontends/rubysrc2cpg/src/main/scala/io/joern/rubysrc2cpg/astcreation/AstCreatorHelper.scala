@@ -9,7 +9,8 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
 }
 import io.joern.rubysrc2cpg.datastructures.{BlockScope, FieldDecl}
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.rubysrc2cpg.passes.GlobalTypes.{builtinFunctions, builtinPrefix}
+import io.joern.rubysrc2cpg.passes.GlobalTypes
+import io.joern.rubysrc2cpg.passes.GlobalTypes.{kernelFunctions, kernelPrefix}
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
@@ -25,9 +26,11 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   override def lineEnd(node: RubyNode): Option[Integer]   = node.lineEnd
   override def code(node: RubyNode): String               = shortenCode(node.text)
 
-  protected def isBuiltin(x: String): Boolean      = builtinFunctions.contains(x)
-  protected def prefixAsBuiltin(x: String): String = s"$builtinPrefix$pathSep$x"
-  protected def pathSep                            = "."
+  protected def isBuiltin(x: String): Boolean            = kernelFunctions.contains(x)
+  protected def prefixAsKernelDefined(x: String): String = s"$kernelPrefix$pathSep$x"
+  protected def prefixAsBundledType(x: String): String   = s"<${GlobalTypes.builtinPrefix}.$x>"
+  protected def isBundledClass(x: String): Boolean       = GlobalTypes.bundledClasses.contains(x)
+  protected def pathSep                                  = "."
 
   private def astForFieldInstance(name: String, node: RubyNode & RubyFieldIdentifier): Ast = {
     val identName = node match {

@@ -2,11 +2,7 @@ package io.joern.rubysrc2cpg.parser
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.parser.AntlrContextHelpers.*
-import io.joern.rubysrc2cpg.parser.RubyParser.{
-  CommandWithDoBlockContext,
-  ConstantVariableReferenceContext,
-  MethodCallOrVariableReferenceContext
-}
+import io.joern.rubysrc2cpg.parser.RubyParser.{CommandWithDoBlockContext, ConstantVariableReferenceContext}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator

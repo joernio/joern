@@ -1,6 +1,6 @@
 package io.joern.rubysrc2cpg.querying
 
-import io.joern.rubysrc2cpg.passes.GlobalTypes.builtinPrefix
+import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelPrefix
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.*
@@ -77,7 +77,7 @@ class ArrayTests extends RubyCode2CpgFixture {
 
     val List(foo) = arrayCall.argument.isLiteral.l
     foo.code shouldBe "foo"
-    foo.typeFullName shouldBe s"$builtinPrefix.String"
+    foo.typeFullName shouldBe s"$kernelPrefix.String"
   }
 
   "`%i(x y)` is represented by an `arrayInitializer` operator call with arguments `:x`, `:y`" in {
@@ -95,7 +95,7 @@ class ArrayTests extends RubyCode2CpgFixture {
     x.typeFullName shouldBe y.typeFullName
 
     y.code shouldBe "y"
-    y.typeFullName shouldBe s"$builtinPrefix.Symbol"
+    y.typeFullName shouldBe s"$kernelPrefix.Symbol"
   }
 
   "an implicit array constructor (Array::[]) should be lowered to an array initializer" in {
@@ -106,8 +106,8 @@ class ArrayTests extends RubyCode2CpgFixture {
     inside(cpg.call.nameExact("[]").l) {
       case bracketCall :: Nil =>
         bracketCall.name shouldBe "[]"
-        bracketCall.methodFullName shouldBe s"$builtinPrefix.Array:[]"
-        bracketCall.typeFullName shouldBe s"$builtinPrefix.Array"
+        bracketCall.methodFullName shouldBe s"$kernelPrefix.Array:[]"
+        bracketCall.typeFullName shouldBe s"$kernelPrefix.Array"
 
         inside(bracketCall.argument.l) {
           case _ :: one :: two :: three :: Nil =>

@@ -28,7 +28,7 @@ object Defines {
 
   val AnonymousProcParameter = "<anonymous-proc-param>"
 
-  def getBuiltInType(typeInString: String) = s"${GlobalTypes.builtinPrefix}.$typeInString"
+  def getBuiltInType(typeInString: String) = s"${GlobalTypes.kernelPrefix}.$typeInString"
 
   object RubyOperators {
     val hashInitializer = "<operator>.hashInitializer"
@@ -41,15 +41,30 @@ object Defines {
 
 object GlobalTypes {
   val Kernel        = "Kernel"
-  val builtinPrefix = s"<__builtin.$Kernel>"
+  val builtinPrefix = "__builtin"
+  val kernelPrefix  = s"<$builtinPrefix.$Kernel>"
 
-  /* Sources:
-   * https://ruby-doc.org/docs/ruby-doc-bundle/Manual/man-1.4/function.html
-   * https://ruby-doc.org/3.2.2/Kernel.html
+  /** Source: https://ruby-doc.org/docs/ruby-doc-bundle/Manual/man-1.4/function.html
+    */
+  val bundledClasses: Set[String] = Set(
+    "Comparable",
+    "Enumerable",
+    "Errno",
+    "FileTest",
+    "GC",
+    Kernel,
+    "Marshal",
+    "Math",
+    "ObjectSpace",
+    "Precision",
+    "Process"
+  )
+
+  /* Source: https://ruby-doc.org/3.2.2/Kernel.html
    *
    * We comment-out methods that require an explicit "receiver" (target of member access.)
    */
-  val builtinFunctions: Set[String] = Set(
+  val kernelFunctions: Set[String] = Set(
     "Array",
     "Complex",
     "Float",

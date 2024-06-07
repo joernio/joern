@@ -169,7 +169,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     receiver.root.collect { case x: NewCall => x.typeFullName(methodFullName) }
     val dispatchType =
-      if receiverFullName == GlobalTypes.builtinPrefix then DispatchTypes.STATIC_DISPATCH
+      if receiverFullName.startsWith(s"<${GlobalTypes.builtinPrefix}") then DispatchTypes.STATIC_DISPATCH
       else DispatchTypes.DYNAMIC_DISPATCH
 
     val fieldAccessCall = callNode(node, code(node), node.methodName, methodFullName, dispatchType)
@@ -371,8 +371,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   protected def astForSimpleIdentifier(node: RubyNode & RubyIdentifier): Ast = {
     val name = code(node)
 
-    if (name == GlobalTypes.Kernel) {
-      Ast(typeRefNode(node, GlobalTypes.builtinPrefix, GlobalTypes.builtinPrefix))
+    if (isBundledClass(name)) {
+      val typeFullName = prefixAsBundledType(name)
+      Ast(typeRefNode(node, typeFullName, typeFullName))
     } else {
       scope.lookupVariable(name) match {
         case Some(_) => handleVariableOccurrence(node)
@@ -527,13 +528,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     (node.lowerBound, node.upperBound) match {
       case (lb: StaticLiteral, ub: StaticLiteral) =>
         (lb.typeFullName, ub.typeFullName) match {
-          case (s"${GlobalTypes.builtinPrefix}.Integer", s"${GlobalTypes.builtinPrefix}.Integer") =>
+          case (s"${GlobalTypes.`kernelPrefix`}.Integer", s"${GlobalTypes.`kernelPrefix`}.Integer") =>
             generateRange(lb.span.text.toInt, ub.span.text.toInt, node.rangeOperator.exclusive)
               .map(x =>
                 StaticLiteral(lb.typeFullName)(TextSpan(lb.line, lb.column, lb.lineEnd, lb.columnEnd, x.toString))
               )
               .toList
-          case (s"${GlobalTypes.builtinPrefix}.String", s"${GlobalTypes.builtinPrefix}.String") =>
+          case (s"${GlobalTypes.`kernelPrefix`}.String", s"${GlobalTypes.`kernelPrefix`}.String") =>
             val lbVal = lb.span.text.replaceAll("['\"]", "")
             val ubVal = ub.span.text.replaceAll("['\"]", "")
 
@@ -689,10 +690,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         case None => defaultResult
       }
 
-    val isKernelFunction = receiverType == GlobalTypes.builtinPrefix
-    val argumentAst      = node.arguments.map(astForMethodCallArgument)
+    val argumentAst = node.arguments.map(astForMethodCallArgument)
     val dispatchType =
-      if isKernelFunction then DispatchTypes.STATIC_DISPATCH
+      if receiverType.startsWith(s"<${GlobalTypes.builtinPrefix}") then DispatchTypes.STATIC_DISPATCH
       else DispatchTypes.DYNAMIC_DISPATCH
 
     val call = callNode(node, code(node), methodName, methodFullName, dispatchType)
