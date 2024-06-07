@@ -2,6 +2,8 @@ package io.joern
 
 import io.shiftleft.codepropertygraph.generated.nodes.{Declaration, Expression, Identifier, Literal}
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.Assignment
+import io.shiftleft.semanticcpg.utils.MemberAccess.isFieldAccess
 
 package object dataflowengineoss {
 
@@ -14,10 +16,23 @@ package object dataflowengineoss {
     * @return
     *   the LHS of the assignment
     */
-  def globalFromLiteral(lit: Literal, recursive: Boolean = true): Iterator[Expression] = lit.start
-    .where(_.method.isModule)
-    .flatMap(t => if (recursive) t.inAssignment else t.inCall.isAssignment)
-    .target
+  def globalFromLiteral(lit: Literal, recursive: Boolean = true): Iterator[Expression] = {
+
+    /** Frontends often create three-address code representations of compound literals, e.g. in pysrc2cpg the dictionary
+      * literal `{"x": y}` is lowered as a block `{tmp0 = {}; tmp0["x"] = y; tmp0}`.
+      *
+      * In an assignment `foo = {"x": "y"}`, if [[lit]] is "y", we don't want to pick the intermediate assignment
+      * `tmp0["x"] = "y"`, since `tmp0` is never a global/module-level variable. Instead, we want to pick `foo`.
+      */
+    def skipLowLevelAssignments(assignments: Iterator[Assignment]): Iterator[Assignment] = {
+      assignments.repeat(_.parentBlock.inCall.isAssignment)(_.emit).lastOption.fold(assignments)(_.iterator)
+    }
+
+    lit.start
+      .where(_.method.isModule)
+      .flatMap(t => if (recursive) t.inAssignment else skipLowLevelAssignments(t.inCall.isAssignment))
+      .target
+  }
 
   def identifierToFirstUsages(node: Identifier): List[Identifier] = node.refsTo.flatMap(identifiersFromCapturedScopes).l
 
