@@ -2,7 +2,11 @@ package io.joern.rubysrc2cpg.parser
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.parser.AntlrContextHelpers.*
-import io.joern.rubysrc2cpg.parser.RubyParser.{CommandWithDoBlockContext, ConstantVariableReferenceContext}
+import io.joern.rubysrc2cpg.parser.RubyParser.{
+  CommandWithDoBlockContext,
+  ConstantVariableReferenceContext,
+  MethodCallOrVariableReferenceContext
+}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
@@ -635,6 +639,13 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   ): RubyNode = {
     val arguments = ctx.primaryValueList().primaryValue().asScala.map(visit).toList
     YieldExpr(arguments)(ctx.toTextSpan)
+  }
+
+  override def visitMemberAccessCommand(ctx: RubyParser.MemberAccessCommandContext): RubyNode = {
+    val arg        = visit(ctx.commandArgument())
+    val methodName = visit(ctx.methodName())
+    val base       = visit(ctx.primary())
+    MemberCall(base, ".", methodName.text, List(arg))(ctx.toTextSpan)
   }
 
   override def visitConstantIdentifierVariable(ctx: RubyParser.ConstantIdentifierVariableContext): RubyNode = {

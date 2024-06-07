@@ -5,8 +5,8 @@ import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.rubysrc2cpg.passes.GlobalTypes.builtinPrefix
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, NodeTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, FieldIdentifier, Identifier, Literal}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
 class CallTests extends RubyCode2CpgFixture {
@@ -42,6 +42,24 @@ class CallTests extends RubyCode2CpgFixture {
     baseSelf.name shouldBe RubyDefines.Self
     baseProperty.argumentIndex shouldBe 2
     baseProperty.canonicalName shouldBe "puts"
+  }
+
+  "a `Kernel` function call in a fully qualified way should have a type ref receiver" in {
+    val cpg = code("""
+        |Kernel.puts 'hello'
+        |""".stripMargin)
+
+    val List(puts) = cpg.call.name("puts").l
+    puts.astChildren.map(x => x.label -> x.code).foreach(println)
+    puts.lineNumber shouldBe Some(2)
+    puts.code shouldBe "Kernel.puts 'hello'"
+    puts.methodFullName shouldBe s"$builtinPrefix:puts"
+    puts.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+    val List(kernelRef: TypeRef) = puts.receiver.l: @unchecked
+    kernelRef.argumentIndex shouldBe 0
+    kernelRef.typeFullName shouldBe builtinPrefix
+    kernelRef.code shouldBe builtinPrefix
   }
 
   "`foo(1,2)` is represented by a CALL node" in {

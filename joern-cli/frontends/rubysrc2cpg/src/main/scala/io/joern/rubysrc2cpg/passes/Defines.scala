@@ -40,7 +40,8 @@ object Defines {
 }
 
 object GlobalTypes {
-  val builtinPrefix = "Kernel"
+  val Kernel        = "Kernel"
+  val builtinPrefix = s"<__builtin.$Kernel>"
 
   /* Sources:
    * https://ruby-doc.org/docs/ruby-doc-bundle/Manual/man-1.4/function.html

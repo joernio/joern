@@ -1,5 +1,4 @@
 package io.joern.rubysrc2cpg.astcreation
-import io.joern.rubysrc2cpg.passes.GlobalTypes.{builtinFunctions, builtinPrefix}
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   ClassFieldIdentifier,
   DummyNode,
@@ -9,11 +8,11 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   RubyNode
 }
 import io.joern.rubysrc2cpg.datastructures.{BlockScope, FieldDecl}
-import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
+import io.joern.rubysrc2cpg.passes.GlobalTypes.{builtinFunctions, builtinPrefix}
+import io.joern.x2cpg.{Ast, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
 
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
