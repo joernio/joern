@@ -152,6 +152,7 @@ mkdir -p $JOERN_INSTALL_DIR
 # Download and extract the Joern CLI
 
 check_installed "curl"
+check_installed "unzip"
 
 if [ $NO_DOWNLOAD = true ]; then
     sbt createDistribution
