@@ -1,0 +1,149 @@
+name: Monitoring Stability and Comparing Results
+
+# Triggers when a pull_request is created
+on:
+  pull_request: # TODO: change to target
+    branches:
+      - "**"
+
+jobs:
+  start_workflow:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send message to slack
+        id: initial-message
+        uses: archive/github-actions-slack@master
+        with:
+          slack-optional-parse: full
+          slack-bot-user-oauth-access-token: ${{ secrets.SLACK_TOKEN }}
+          slack-channel: ${{ secrets.SLACK_CHANNEL_ID }}
+          slack-text: "Comparison workflow started for ${{github.event.pull_request.html_url}}"
+
+      - name: Save output to env
+        id: save-output
+        run: echo "INIT_MSG_TS=${{ fromJson(steps.initial-message.outputs.slack-result).response.message.ts }}" >> $GITHUB_OUTPUT
+    outputs:
+      init_message_ts: ${{steps.save-output.outputs.INIT_MSG_TS}}
+  setup_and_scan:
+    needs: start_workflow
+    strategy:
+      matrix:
+        language: ['js', 'kotlin']
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install JDK-18
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '18'
+
+      - name: Export Java Home Path
+        run: export PATH=$JAVA_HOME/bin:$PATH
+
+      - name: Install sbt
+        run: mkdir -p ~/bin && curl -Ls https://raw.githubusercontent.com/dwijnand/sbt-extras/master/sbt > ~/bin/sbt && chmod 0755 ~/bin/sbt
+      - name: Install Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Clone standalone-monitoring-stability/main
+        uses: actions/checkout@v3
+        with:
+          repository: Privado-Inc/standalone-monitoring-stability
+          path: ./temp/standalone-monitoring-stability
+          ref: custom-joern-build
+
+      # langauge specific repository file
+      - name: Run the script for ${{github.head_ref}} and ${{github.base_ref}}
+        run: export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} && cd ./temp/standalone-monitoring-stability && pip install -r requirements.txt && python3 ./run.py -r ./repos/${{matrix.language}}.txt -b ${{github.base_ref}} -h ${{github.head_ref}} -bcr ${{ github.event.pull_request.base.repo.html_url }} -hcr ${{ github.event.pull_request.head.repo.html_url }} -guf --custom-joern True --custom-joern-branch ${{ github.head_ref }}
+
+      - name: Run aws-export
+        run: cd ./temp/standalone-monitoring-stability/ && python3 aws-export.py ${{matrix.language}}-${{github.event.number}}
+
+      - name: Move results to a folder
+        run: cd ./temp/standalone-monitoring-stability/ && mkdir results && mv output-${{matrix.language}}-${{github.event.number}}.xlsx ./results/output-${{matrix.language}}-${{github.event.number}}.xlsx && mv ./temp/result-${{matrix.language}}-${{github.event.number}}.zip ./results/result-${{matrix.language}}-${{github.event.number}}.zip && mv slack_summary.txt ./results/slack_summary.txt
+
+      # Zip the results by name
+      - name: Zip the results
+        run: cd /home/runner/work/privado-core/privado-core/temp/standalone-monitoring-stability && zip result-${{matrix.language}}-${{github.event.number}}.zip -r ./results
+
+      - name: Set summary variable
+        run: |
+          echo "MESSAGE<<EOF" >> $GITHUB_ENV
+          echo "$(cat /home/runner/work/privado-core/privado-core/temp/standalone-monitoring-stability/results/slack_summary.txt)" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Post results to slack
+        uses: adrey/slack-file-upload-action@master
+        with:
+          thread_ts: ${{needs.start_workflow.outputs.init_message_ts}}
+          channel: ${{ secrets.SLACK_CHANNEL_ID }} # check
+          path: "/home/runner/work/privado-core/privado-core/temp/standalone-monitoring-stability/result-${{matrix.language}}-${{github.event.number}}.zip"
+          initial_comment: "Comparison Results generated on ${{github.event.repository.name}} by PR ${{github.event.number}} from branch ${{github.head_ref}} to ${{github.base_ref}} \nPR link https://github.com/Privado-Inc/privado-core/pull/${{github.event.number}}\n Language: ${{matrix.language}} \nSummary Report:\n ${{ env.MESSAGE }}"
+          filetype: "zip"
+          token: ${{ secrets.SLACK_TOKEN }}
+
+      - name: Export workflow output
+        run: cd ./temp/standalone-monitoring-stability && python3 ./workflow_check.py /home/runner/work/privado-core/privado-core/temp/standalone-monitoring-stability/results/slack_summary.txt
+
+      - name: Set summary variable
+        run: |
+          echo "MESSAGE<<EOF" >> $GITHUB_ENV
+          echo "$(cat ./temp/standalone-monitoring-stability/action_result.txt)" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV 
+
+      - name: Print action result
+        run: cat ./temp/standalone-monitoring-stability/action_result.txt
+
+      - name: Upload summary file
+        uses: actions/upload-artifact@master
+        with:
+          name: ${{matrix.language}}
+          path: /home/runner/work/privado-core/privado-core/temp/standalone-monitoring-stability/results/slack_summary.txt
+
+      - name: Workflow report analysis
+        if: ${{ env.MESSAGE != 'true' }}
+        run: exit 1
+
+  collate_summary:
+    needs: [start_workflow, setup_and_scan]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download summary file
+        uses: actions/download-artifact@master
+        with:
+          path: ./language_summary
+
+      - name: Install Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Clone standalone-monitoring-stability/flow-test
+        uses: actions/checkout@v3
+        with:
+          repository: Privado-Inc/standalone-monitoring-stability
+          path: ./temp/standalone-monitoring-stability
+          ref: main
+
+      - name: Collate summary
+        run: cd ./temp/standalone-monitoring-stability && pip install -r requirements.txt && python3 ./collate_summary.py -s /home/runner/work/privado-core/privado-core/language_summary
+
+      - name: Set summary variable
+        run: |
+          echo "MESSAGE<<EOF" >> $GITHUB_ENV
+          echo "$(cat /home/runner/work/privado-core/privado-core/temp/standalone-monitoring-stability/global_summary.txt)" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Send summary to slack
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          update-ts: ${{needs.start_workflow.outputs.init_message_ts}}
+          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+          slack-message: "\nComparison Results generated on ${{github.event.repository.name}} by PR ${{github.event.number}} from branch ${{github.head_ref}} to ${{github.base_ref}} \nPR link https://github.com/Privado-Inc/privado-core/pull/${{github.event.number}}\nLanguage: All \nSummary Report:\n ${{ env.MESSAGE }}"
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_TOKEN }}
+
