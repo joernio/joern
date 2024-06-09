@@ -2,7 +2,7 @@ name: Monitoring Stability and Comparing Results
 
 # Triggers when a pull_request is created
 on:
-  pull_request: # TODO: change to target
+  pull_request_target: # TODO: change to target
     branches:
       - "**"
 
@@ -28,7 +28,7 @@ jobs:
     needs: start_workflow
     strategy:
       matrix:
-        language: ['js', 'kotlin']
+        language: ['java-1', 'java-2' ,'python', 'js', 'ruby-1', 'ruby-2', 'go', 'kotlin']
     continue-on-error: true
     runs-on: ubuntu-latest
     steps:
