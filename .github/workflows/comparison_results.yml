@@ -68,12 +68,12 @@ jobs:
 
       # Zip the results by name
       - name: Zip the results
-        run: cd /home/runner/work/privado-core/privado-core/temp/standalone-monitoring-stability && zip result-${{matrix.language}}-${{github.event.number}}.zip -r ./results
+        run: cd /home/runner/work/joern/joern/temp/standalone-monitoring-stability && zip result-${{matrix.language}}-${{github.event.number}}.zip -r ./results
 
       - name: Set summary variable
         run: |
           echo "MESSAGE<<EOF" >> $GITHUB_ENV
-          echo "$(cat /home/runner/work/privado-core/privado-core/temp/standalone-monitoring-stability/results/slack_summary.txt)" >> $GITHUB_ENV
+          echo "$(cat /home/runner/work/joern/joern/temp/standalone-monitoring-stability/results/slack_summary.txt)" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
       - name: Post results to slack
@@ -81,13 +81,13 @@ jobs:
         with:
           thread_ts: ${{needs.start_workflow.outputs.init_message_ts}}
           channel: ${{ secrets.SLACK_CHANNEL_ID }} # check
-          path: "/home/runner/work/privado-core/privado-core/temp/standalone-monitoring-stability/result-${{matrix.language}}-${{github.event.number}}.zip"
-          initial_comment: "Comparison Results generated on ${{github.event.repository.name}} by PR ${{github.event.number}} from branch ${{github.head_ref}} to ${{github.base_ref}} \nPR link https://github.com/Privado-Inc/privado-core/pull/${{github.event.number}}\n Language: ${{matrix.language}} \nSummary Report:\n ${{ env.MESSAGE }}"
+          path: "/home/runner/work/joern/joern/temp/standalone-monitoring-stability/result-${{matrix.language}}-${{github.event.number}}.zip"
+          initial_comment: "Comparison Results generated on ${{github.event.repository.name}} by PR ${{github.event.number}} from branch ${{github.head_ref}} to ${{github.base_ref}} \nPR link ${{github.event.pull_request.html_url}}\n Language: ${{matrix.language}} \nSummary Report:\n ${{ env.MESSAGE }}"
           filetype: "zip"
           token: ${{ secrets.SLACK_TOKEN }}
 
       - name: Export workflow output
-        run: cd ./temp/standalone-monitoring-stability && python3 ./workflow_check.py /home/runner/work/privado-core/privado-core/temp/standalone-monitoring-stability/results/slack_summary.txt
+        run: cd ./temp/standalone-monitoring-stability && python3 ./workflow_check.py /home/runner/work/joern/joern/temp/standalone-monitoring-stability/results/slack_summary.txt
 
       - name: Set summary variable
         run: |
@@ -102,7 +102,7 @@ jobs:
         uses: actions/upload-artifact@master
         with:
           name: ${{matrix.language}}
-          path: /home/runner/work/privado-core/privado-core/temp/standalone-monitoring-stability/results/slack_summary.txt
+          path: /home/runner/work/joern/joern/temp/standalone-monitoring-stability/results/slack_summary.txt
 
       - name: Workflow report analysis
         if: ${{ env.MESSAGE != 'true' }}
@@ -130,12 +130,12 @@ jobs:
           ref: main
 
       - name: Collate summary
-        run: cd ./temp/standalone-monitoring-stability && pip install -r requirements.txt && python3 ./collate_summary.py -s /home/runner/work/privado-core/privado-core/language_summary
+        run: cd ./temp/standalone-monitoring-stability && pip install -r requirements.txt && python3 ./collate_summary.py -s /home/runner/work/joern/joern/language_summary
 
       - name: Set summary variable
         run: |
           echo "MESSAGE<<EOF" >> $GITHUB_ENV
-          echo "$(cat /home/runner/work/privado-core/privado-core/temp/standalone-monitoring-stability/global_summary.txt)" >> $GITHUB_ENV
+          echo "$(cat /home/runner/work/joern/joern/temp/standalone-monitoring-stability/global_summary.txt)" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
       - name: Send summary to slack
@@ -143,7 +143,7 @@ jobs:
         with:
           update-ts: ${{needs.start_workflow.outputs.init_message_ts}}
           channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
-          slack-message: "\nComparison Results generated on ${{github.event.repository.name}} by PR ${{github.event.number}} from branch ${{github.head_ref}} to ${{github.base_ref}} \nPR link https://github.com/Privado-Inc/privado-core/pull/${{github.event.number}}\nLanguage: All \nSummary Report:\n ${{ env.MESSAGE }}"
+          slack-message: "\nComparison Results generated on ${{github.event.repository.name}} by PR ${{github.event.number}} from branch ${{github.head_ref}} to ${{github.base_ref}} \nPR link ${{github.event.pull_request.html_url}}\nLanguage: All \nSummary Report:\n ${{ env.MESSAGE }}"
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_TOKEN }}
 
