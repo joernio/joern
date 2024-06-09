@@ -233,7 +233,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
 
     val parameterNode = NewMethodParameterIn()
       .name(parameter.getName.toString)
-      .code(parameter.toString)
+      .code(code(parameter))
       .lineNumber(line(parameter))
       .columnNumber(column(parameter))
       .evaluationStrategy(evalStrat)
