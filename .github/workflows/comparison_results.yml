@@ -58,7 +58,7 @@ jobs:
 
       # langauge specific repository file
       - name: Run the script for ${{github.head_ref}} and ${{github.base_ref}}
-        run: export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} && cd ./temp/standalone-monitoring-stability && pip install -r requirements.txt && python3 ./run.py -r ./repos/${{matrix.language}}.txt -b ${{github.base_ref}} -h ${{github.head_ref}} -bcr ${{ github.event.pull_request.base.repo.html_url }} -hcr ${{ github.event.pull_request.head.repo.html_url }} -guf --custom-joern True --custom-joern-branch ${{ github.head_ref }}
+        run: export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} && cd ./temp/standalone-monitoring-stability && pip install -r requirements.txt && python3 ./run.py -r ./repos/${{matrix.language}}.txt -b main -h main -bcr ${{ github.event.pull_request.base.repo.html_url }} -hcr ${{ github.event.pull_request.head.repo.html_url }} -guf --custom-joern True --custom-joern-branch ${{ github.head_ref }}
 
       - name: Run aws-export
         run: cd ./temp/standalone-monitoring-stability/ && python3 aws-export.py ${{matrix.language}}-${{github.event.number}}
