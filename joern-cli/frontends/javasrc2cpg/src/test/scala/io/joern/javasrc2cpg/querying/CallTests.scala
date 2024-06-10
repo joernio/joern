@@ -400,6 +400,31 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
       }
     }
 
+    "be correct for chained call interspersed with a line comment" in {
+      val cpg = code("""
+          |class Foo {
+          | private String value;
+          |
+          | public String getValue() {
+          |   return value;
+          | }
+          |
+          | public static void test() {
+          |   String s = new Foo()
+          |     // some comment
+          |     .getValue();
+          | }
+          |}
+          |""".stripMargin)
+
+      cpg.call.name("getValue").l match {
+        case List(getValueCall) =>
+          getValueCall.code shouldBe "new Foo().getValue()"
+
+        case result => fail(s"Expected single getValue call but got $result")
+      }
+    }
+
     "be correct for constructor invocations" in {
       lazy val cpg = code("""
           |class Foo {
@@ -414,6 +439,47 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
           initCall.code shouldBe "new Foo()"
 
         case result => fail(s"Expected single init call but got $result")
+      }
+    }
+
+    "be correct when there are line comments between arguments of a call" in {
+      val cpg = code("""
+          |import foo.*;
+          |public class Main {
+          |  public static void main(String[] args) {
+          |    Foo foo = Foo.create(
+          |                    "username", // hehe silly comment
+          |                    "password");
+          |    }
+          |}
+          |""".stripMargin)
+
+      cpg.call.name("create").argument.argumentIndexGt(0).l match {
+        case List(username: Literal, password: Literal) =>
+          username.code shouldBe "\"username\""
+          password.code shouldBe "\"password\""
+        case result => fail(s"Expected two arguments but got $result")
+      }
+    }
+
+    "be correct when there are multi-line comments between arguments of a call" in {
+      val cpg = code("""
+          |import foo.*;
+          |public class Main {
+          |  public static void main(String[] args) {
+          |    Foo foo = Foo.create(
+          |                    // another comment
+          |                    "username", /* hehe silly comment */
+          |                    "password");
+          |    }
+          |}
+          |""".stripMargin)
+
+      cpg.call.name("create").argument.argumentIndexGt(0).l match {
+        case List(username: Literal, password: Literal) =>
+          username.code shouldBe "\"username\""
+          password.code shouldBe "\"password\""
+        case result => fail(s"Expected two arguments but got $result")
       }
     }
   }

@@ -89,7 +89,7 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
       .name("assert")
       .methodFullName("assert")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .code(stmt.toString)
+      .code(code(stmt))
       .lineNumber(line(stmt))
       .columnNumber(column(stmt))
 
@@ -102,7 +102,7 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
       .controlStructureType(ControlStructureTypes.BREAK)
       .lineNumber(line(stmt))
       .columnNumber(column(stmt))
-      .code(stmt.toString)
+      .code(code(stmt))
     Ast(node)
   }
 
@@ -111,7 +111,7 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
       .controlStructureType(ControlStructureTypes.CONTINUE)
       .lineNumber(line(stmt))
       .columnNumber(column(stmt))
-      .code(stmt.toString)
+      .code(code(stmt))
     Ast(node)
   }
 
@@ -245,7 +245,7 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
     val returnNode = NewReturn()
       .lineNumber(line(ret))
       .columnNumber(column(ret))
-      .code(ret.toString)
+      .code(code(ret))
     if (ret.getExpression.isPresent) {
       val expectedType = scope.enclosingMethodReturnType.getOrElse(ExpectedType.empty)
       val exprAsts     = astsForExpression(ret.getExpression.get(), expectedType)
@@ -268,7 +268,7 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
       .methodFullName("<operator>.throw")
       .lineNumber(line(stmt))
       .columnNumber(column(stmt))
-      .code(stmt.toString())
+      .code(code(stmt))
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
 
     val args = astsForExpression(stmt.getExpression, ExpectedType.empty)
