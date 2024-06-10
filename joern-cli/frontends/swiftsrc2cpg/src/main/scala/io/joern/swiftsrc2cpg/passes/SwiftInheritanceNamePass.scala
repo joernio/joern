@@ -1,7 +1,7 @@
 package io.joern.swiftsrc2cpg.passes
 
 import io.joern.x2cpg.passes.frontend.XInheritanceFullNamePass
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 /** Using some basic heuristics, will try to resolve type full names from types found within the CPG. Requires

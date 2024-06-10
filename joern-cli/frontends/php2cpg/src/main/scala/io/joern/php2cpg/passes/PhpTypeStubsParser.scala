@@ -3,7 +3,7 @@ package io.joern.php2cpg.passes
 import better.files.File
 import io.joern.x2cpg.X2CpgConfig
 import io.joern.x2cpg.passes.frontend.{XTypeStubsParserConfig, TypeStubsParserConfig}
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.PropertyNames

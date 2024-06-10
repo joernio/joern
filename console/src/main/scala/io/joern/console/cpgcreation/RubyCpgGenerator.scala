@@ -2,7 +2,7 @@ package io.joern.console.cpgcreation
 
 import io.joern.console.FrontendConfig
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 
 import java.nio.file.Path
 import scala.util.Try

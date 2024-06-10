@@ -7,7 +7,7 @@ import io.joern.jssrc2cpg.passes.AstCreationPass
 import io.joern.jssrc2cpg.utils.AstGenRunner
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.BeforeAndAfterAll
 

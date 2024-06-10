@@ -3,7 +3,7 @@ package io.joern.jssrc2cpg.passes.cfg
 import io.joern.jssrc2cpg.testfixtures.JsSrcCfgTestCpg
 import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg.AlwaysEdge
 import io.joern.x2cpg.testfixtures.CfgTestFixture
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 
 class DependencyCfgCreationPassTests extends CfgTestFixture(() => new JsSrcCfgTestCpg()) {
 

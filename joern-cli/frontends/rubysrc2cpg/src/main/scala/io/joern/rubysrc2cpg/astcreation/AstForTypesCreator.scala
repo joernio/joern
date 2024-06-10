@@ -4,19 +4,25 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.{BlockScope, MethodScope, ModuleScope, TypeScope}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewLocal, NewMethodParameterIn}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  NewCall,
+  NewFieldIdentifier,
+  NewIdentifier,
+  NewTypeDecl,
+  NewTypeRef
+}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, Operators}
 
 import scala.collection.immutable.List
 
 trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  protected def astForClassDeclaration(node: RubyNode & TypeDeclaration): Ast = {
+  protected def astForClassDeclaration(node: RubyNode & TypeDeclaration): Seq[Ast] = {
     node.name match
       case name: SimpleIdentifier => astForSimpleNamedClassDeclaration(node, name)
       case name =>
         logger.warn(s"Qualified class names are not supported yet: ${name.text} ($relativeFileName), skipping")
-        astForUnknown(node)
+        astForUnknown(node) :: Nil
   }
 
   private def getBaseClassName(node: RubyNode): Option[String] = {
@@ -44,7 +50,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   private def astForSimpleNamedClassDeclaration(
     node: RubyNode & TypeDeclaration,
     nameIdentifier: SimpleIdentifier
-  ): Ast = {
+  ): Seq[Ast] = {
     val className     = nameIdentifier.text
     val inheritsFrom  = node.baseClass.flatMap(getBaseClassName).toList
     val classFullName = computeClassFullName(className)
@@ -89,8 +95,40 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     }
 
     scope.popScope()
+    val prefixAst    = createTypeRefPointer(typeDecl)
+    val typeDeclAsts = prefixAst :: Ast(typeDecl).withChildren(fieldMemberNodes).withChildren(classBodyAsts) :: Nil
+    typeDeclAsts.filterNot(_.root.isEmpty)
+  }
 
-    Ast(typeDecl).withChildren(fieldMemberNodes).withChildren(classBodyAsts)
+  private def createTypeRefPointer(typeDecl: NewTypeDecl): Ast = {
+    if (scope.isSurroundedByProgramScope) {
+      val typeRefNode = Ast(
+        NewTypeRef()
+          .code(s"class ${typeDecl.name} (...)")
+          .typeFullName(typeDecl.fullName)
+          .lineNumber(typeDecl.lineNumber)
+          .columnNumber(typeDecl.columnNumber)
+      )
+
+      val typeRefIdent = {
+        val self = NewIdentifier().name(Defines.Self).code(Defines.Self).typeFullName(Defines.Any)
+        val fi = NewFieldIdentifier()
+          .code(typeDecl.name)
+          .canonicalName(typeDecl.name)
+          .lineNumber(typeDecl.lineNumber)
+          .columnNumber(typeDecl.columnNumber)
+        val fieldAccess = NewCall()
+          .name(Operators.fieldAccess)
+          .code(s"${Defines.Self}.${typeDecl.name}")
+          .methodFullName(Operators.fieldAccess)
+          .dispatchType(DispatchTypes.STATIC_DISPATCH)
+          .typeFullName(Defines.Any)
+        callAst(fieldAccess, Seq(Ast(self), Ast(fi)))
+      }
+      astForAssignment(typeRefIdent, typeRefNode, typeDecl.lineNumber, typeDecl.columnNumber)
+    } else {
+      Ast()
+    }
   }
 
   protected def astsForFieldDeclarations(node: FieldsDeclaration): Seq[Ast] = {

@@ -2,7 +2,7 @@ package io.joern.ghidra2cpg.fixtures
 
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.joern.x2cpg.testfixtures.LanguageFrontend
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.utils.ProjectRoot
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
@@ -12,7 +12,7 @@ import java.io.File
 
 class BinToCpgFixture(val frontend: LanguageFrontend) extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
-  var cpg: Cpg               = Cpg.emptyCpg
+  var cpg: Cpg               = Cpg.empty
   val binDirectory           = ProjectRoot.relativise("src/test/resources/testbinaries/")
   def passes(cpg: Cpg): Unit = applyDefaultOverlays(cpg)
 

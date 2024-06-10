@@ -543,7 +543,103 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture() {
     "resolve the correct full name for `setParameter` based on the QueryBuilder return value" in {
       inside(cpg.call.nameExact("setParameter").l) {
         case setParamCall :: Nil =>
-          setParamCall.methodFullName shouldBe "Doctrine\\ORM\\QueryBuilder->leftJoin-><returnValue>->setParameter"
+          setParamCall.methodFullName shouldBe "Doctrine\\ORM\\QueryBuilder->leftJoin->setParameter"
+        case xs => fail(s"Expected one call, instead got [$xs]")
+      }
+    }
+  }
+
+  "a reference to a field of some external type (propagated via inherited and chained calls)" should {
+    val cpg = code(
+      """
+        |<?php
+        |
+        |declare(strict_types=1);
+        |
+        |namespace Some\Repository;
+        |
+        |use Doctrine\ORM\EntityManagerInterface;
+        |use Doctrine\ORM\EntityRepository;
+        |use Doctrine\ORM\QueryBuilder;
+        |use Some\Repository\EntityRepositoryInterface;
+        |
+        |abstract class AbstractEntityRepository implements EntityRepositoryInterface
+        |{
+        |    protected AliasHelperInterface $aliasHelper;
+        |    private EntityManagerInterface $entityManager;
+        |
+        |    private string $entityClassName;
+        |
+        |    public function __construct(
+        |        EntityManagerInterface $entityManager,
+        |    ) {
+        |        $this->entityManager = $entityManager;
+        |    }
+        |
+        |    protected function createQueryBuilder(string $alias, ?string $indexBy = null): QueryBuilder
+        |    {
+        |        return $this->entityManager->createQueryBuilder()->select($alias)
+        |            ->from("ABC", $alias, $indexBy);
+        |    }
+        |}
+        |""".stripMargin,
+      "AbstractEntity.php"
+    ).moreCode(
+      """
+        |<?php
+        |
+        |declare(strict_types=1);
+        |
+        |namespace Some\Repository;
+        |
+        |use Some\Entity\User;
+        |use Some\Entity\EntityInterface;
+        |
+        |class SomeRepository extends AbstractEntityRepository
+        |{
+        |
+        |    public function findSomethingElse(): ?EntityInterface {
+        |       $rootAlias = $this->getRootAlias();
+        |       $userAlias = $this->aliasHelper->getAliasForClass(User::class);
+        |       $productAlias = $this->aliasHelper->getAliasForClass(Product::class);
+        |       $creditRedemptionAlias = $this->aliasHelper->getAliasForClass(CreditRedemption::class);
+        |       $accountAlias = $this->aliasHelper->getAliasForClass(Account::class);
+        |       $queryBuilder = $this->createQueryBuilder($rootAlias);
+        |
+        |       $queryBuilder
+        |            ->leftJoin(sprintf('%s.creditRedemptions', $rootAlias), $creditRedemptionAlias)
+        |            ->leftJoin(sprintf('%s.product', $rootAlias), $productAlias)
+        |            ->leftJoin(sprintf('%s.account', $rootAlias), $accountAlias)
+        |            ->andWhere(
+        |                $expr->andX(
+        |                    $expr->eq(sprintf('%s.account', $rootAlias), ':accountId'),
+        |                    $expr->eq(sprintf('%s.type', $productAlias), ':productType'),
+        |                    $expr->lte(sprintf('%s.validFrom', $rootAlias), ':date'),
+        |                    $expr->gte(sprintf('%s.validTo', $rootAlias), ':date')
+        |                )
+        |            )
+        |            ->groupBy(sprintf('%s.id', $rootAlias))
+        |            ->having(
+        |                $expr->gt(
+        |                    sprintf('%s.quantity', $rootAlias),
+        |                    $expr->count(sprintf('%s.id', $creditRedemptionAlias))
+        |                )
+        |            )
+        |            ->orderBy(sprintf('%s.validTo', $rootAlias), 'asc')
+        |            ->setParameter('accountId', $accountId);
+        |
+        |       return $queryBuilder->getQuery()->execute()[0] ?? null;
+        |    }
+        |}
+        |""".stripMargin,
+      "User.php"
+    )
+
+    "resolve the correct full name for `setParameter` in a long call chain based on the QueryBuilder return value" in {
+      inside(cpg.method("findSomethingElse").call.nameExact("setParameter").l) {
+        case setParamCall :: Nil =>
+          setParamCall.methodFullName shouldBe
+            "Doctrine\\ORM\\QueryBuilder->leftJoin->leftJoin->leftJoin->andWhere->groupBy->having->orderBy->setParameter"
         case xs => fail(s"Expected one call, instead got [$xs]")
       }
     }

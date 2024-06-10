@@ -1,6 +1,6 @@
 package io.joern.php2cpg.passes
 
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, NamespaceBlock, Method, TypeDecl}
 import io.shiftleft.passes.ConcurrentWriterCpgPass

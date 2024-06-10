@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.deprecated.passes.cfg
 import io.joern.rubysrc2cpg.testfixtures.RubyCfgTestCpg
 import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg.AlwaysEdge
 import io.joern.x2cpg.testfixtures.CfgTestFixture
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 
 class SimpleCfgCreationPassTest extends CfgTestFixture(() => new RubyCfgTestCpg(useDeprecatedFrontend = true)) {
 

@@ -2,7 +2,7 @@ package io.joern.x2cpg.passes.frontend
 
 import io.joern.x2cpg.passes.base.MethodStubCreator
 import io.joern.x2cpg.passes.frontend.XTypeRecovery.isDummyType
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, PropertyNames}
 import io.shiftleft.passes.CpgPass

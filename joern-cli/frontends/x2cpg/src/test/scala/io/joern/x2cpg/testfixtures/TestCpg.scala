@@ -2,7 +2,7 @@ package io.joern.x2cpg.testfixtures
 
 import io.joern.x2cpg.X2CpgConfig
 import io.joern.x2cpg.utils.TestCodeWriter
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import overflowdb.Graph
 
 import java.nio.file.{Files, Path}

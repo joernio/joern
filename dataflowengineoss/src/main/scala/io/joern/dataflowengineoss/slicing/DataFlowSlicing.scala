@@ -2,7 +2,7 @@ package io.joern.dataflowengineoss.slicing
 
 import io.joern.dataflowengineoss.language.*
 import io.joern.x2cpg.utils.ConcurrentTaskUtil
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*

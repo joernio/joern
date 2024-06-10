@@ -1,7 +1,7 @@
 package io.joern.x2cpg.passes.callgraph
 
 import io.joern.x2cpg.utils.LinkingUtil
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.passes.CpgPass
 import overflowdb.traversal.*

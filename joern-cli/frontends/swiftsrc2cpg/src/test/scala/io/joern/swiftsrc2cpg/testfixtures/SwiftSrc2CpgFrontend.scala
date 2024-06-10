@@ -3,7 +3,7 @@ package io.joern.swiftsrc2cpg.testfixtures
 import better.files.File
 import io.joern.swiftsrc2cpg.{Config, SwiftSrc2Cpg}
 import io.joern.x2cpg.testfixtures.LanguageFrontend
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 
 trait SwiftSrc2CpgFrontend extends LanguageFrontend {
   def execute(sourceCodePath: java.io.File): Cpg = {

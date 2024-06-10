@@ -1,7 +1,7 @@
 package io.joern.x2cpg.layers
 
 import io.joern.x2cpg.passes.typerelations.{AliasLinkerPass, FieldAccessLinkerPass, TypeHierarchyPass}
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.CpgPassBase
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
 

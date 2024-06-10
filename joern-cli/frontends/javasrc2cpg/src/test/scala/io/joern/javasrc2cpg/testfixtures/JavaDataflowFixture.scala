@@ -4,7 +4,7 @@ import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
 import io.joern.javasrc2cpg.JavaSrc2CpgTestContext
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Expression, Literal}
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.flatspec.AnyFlatSpec

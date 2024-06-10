@@ -10,7 +10,7 @@ import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
 import io.joern.x2cpg.utils.{HashUtil, Report}
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.CpgPassBase
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
@@ -62,7 +62,7 @@ object JsSrc2Cpg {
     List(new JavaScriptInheritanceNamePass(cpg), new ConstClosurePass(cpg), new JavaScriptImportResolverPass(cpg))
       ++
         new JavaScriptTypeRecoveryPassGenerator(cpg, typeRecoveryConfig).generate() ++
-        List(new JavaScriptTypeHintCallLinker(cpg), new NaiveCallLinker(cpg))
+        List(new JavaScriptTypeHintCallLinker(cpg), ObjectPropertyCallLinker(cpg), new NaiveCallLinker(cpg))
   }
 
 }

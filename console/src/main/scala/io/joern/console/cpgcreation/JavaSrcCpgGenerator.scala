@@ -3,7 +3,7 @@ package io.joern.console.cpgcreation
 import io.joern.console.FrontendConfig
 import io.joern.javasrc2cpg.{JavaSrc2Cpg, Main, Config}
 import io.joern.x2cpg.X2Cpg
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 
 import java.nio.file.Path
 import scala.util.Try

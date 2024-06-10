@@ -3,7 +3,7 @@ package io.joern.php2cpg.passes
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.passes.frontend.*
 import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, PropertyNames}
 import io.shiftleft.semanticcpg.language.*
@@ -285,34 +285,45 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
    * TODO: Are there methods / instances where this doesn't work? Static methods?
    * TODO: What if the first parameter could take multiple types?
    */
-  private def visitUnresolvedDynamicCall(c: Call): Unit = {
+  private def visitUnresolvedDynamicCall(c: Call): Option[String] = {
 
-    def setFromKnownTypes(i: CfgNode): Unit = {
+    def setNodeFullName(tgt: CfgNode, newFullName: String): Option[String] = {
+      if (tgt.isCall) builder.setNodeProperty(tgt, PropertyNames.METHOD_FULL_NAME, newFullName)
+      builder.setNodeProperty(
+        tgt,
+        PropertyNames.TYPE_FULL_NAME,
+        s"$newFullName$pathSep${XTypeRecovery.DummyReturnType}"
+      )
+      builder.setNodeProperty(tgt, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty)
+      Option(newFullName)
+    }
+
+    def setFromKnownTypes(i: CfgNode, tgt: CfgNode): Option[String] = {
       i.getKnownTypes.l match {
-        case t :: Nil =>
-          val newFullName = t + "->" + c.name
-          builder.setNodeProperty(c, PropertyNames.METHOD_FULL_NAME, newFullName)
-          builder.setNodeProperty(
-            c,
-            PropertyNames.TYPE_FULL_NAME,
-            s"$newFullName$pathSep${XTypeRecovery.DummyReturnType}"
-          )
-          builder.setNodeProperty(c, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty)
-        case _ =>
-        /* TODO: case where multiple possible types are identified */
-
+        case Nil      => None
+        case t :: Nil => setNodeFullName(tgt, s"$t->${c.name}")
+        case x        => None /* TODO: case where multiple possible types are identified */
       }
     }
 
-    if (c.argument.exists(_.argumentIndex == 0)) {
-      c.argument(0) match {
-        case rc: Call
-            if rc.methodFullName.startsWith("<operator") || rc.methodFullName.startsWith(Defines.UnresolvedNamespace) =>
-        // ignore calls with callees that are unknown
-        case p: Identifier => setFromKnownTypes(p)
-        case rc: Call      => setFromKnownTypes(rc)
-        case _             =>
-      }
+    c.argumentOption(0).flatMap {
+      case rc: Call if rc.methodFullName.startsWith("<operator")                 => None // ignore operators
+      case rc: Call if rc.methodFullName.startsWith(Defines.UnresolvedNamespace) =>
+        // Helps deal with with long call chains by attempting to perform an immediate resolve
+        visitUnresolvedDynamicCall(rc).flatMap { rcFullName =>
+          val newFullName = s"$rcFullName->${c.name}"
+          setNodeFullName(c, newFullName)
+        }
+      case p: Identifier if p.name == "this" =>
+        p.start.method.typeDecl
+          .flatMap(x => x +: x.baseTypeDeclTransitive.toSeq)
+          .where(_.method.nameExact(c.name))
+          .fullName
+          .headOption
+          .flatMap(tfn => setNodeFullName(c, s"$tfn->${c.name}"))
+      case p: Identifier => setFromKnownTypes(p, c)
+      case rc: Call      => setFromKnownTypes(rc, c)
+      case _             => None
     }
   }
 }

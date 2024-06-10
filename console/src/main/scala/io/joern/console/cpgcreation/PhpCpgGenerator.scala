@@ -4,7 +4,7 @@ import io.joern.console.FrontendConfig
 import io.joern.php2cpg.{Config, Frontend, Php2Cpg}
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 
 import java.nio.file.Path
 import scala.util.Try

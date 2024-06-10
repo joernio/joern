@@ -8,8 +8,8 @@ object Predefined {
     Seq(
       "import _root_.io.joern.console._",
       "import _root_.io.joern.joerncli.console.JoernConsole._",
-      "import _root_.io.shiftleft.codepropertygraph.Cpg",
       "import _root_.io.shiftleft.codepropertygraph.Cpg.docSearchPackages",
+      "import _root_.io.shiftleft.codepropertygraph.generated.Cpg",
       "import _root_.io.shiftleft.codepropertygraph.cpgloading._",
       "import _root_.io.shiftleft.codepropertygraph.generated._",
       "import _root_.io.shiftleft.codepropertygraph.generated.nodes._",

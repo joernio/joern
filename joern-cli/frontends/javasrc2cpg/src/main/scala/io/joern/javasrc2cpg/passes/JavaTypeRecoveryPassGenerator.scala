@@ -2,7 +2,7 @@ package io.joern.javasrc2cpg.passes
 
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.passes.frontend._
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._

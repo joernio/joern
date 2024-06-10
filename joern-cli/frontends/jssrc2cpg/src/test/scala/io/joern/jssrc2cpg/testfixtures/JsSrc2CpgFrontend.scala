@@ -4,7 +4,7 @@ import better.files.File
 import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.JsSrc2Cpg
 import io.joern.x2cpg.testfixtures.LanguageFrontend
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 
 trait JsSrc2CpgFrontend extends LanguageFrontend {
   def execute(sourceCodePath: java.io.File): Cpg = {

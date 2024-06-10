@@ -2,7 +2,7 @@ package io.joern.csharpsrc2cpg.passes
 
 import better.files.File
 import io.joern.semanticcpg.utils.SecureXmlParsing
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.NewDependency
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.slf4j.LoggerFactory

@@ -3,7 +3,7 @@ package io.joern.jimple2cpg.passes
 import io.joern.jimple2cpg.Config
 import io.joern.jimple2cpg.astcreation.AstCreator
 import io.joern.x2cpg.datastructures.Global
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import org.slf4j.LoggerFactory
 import soot.{Scene, SootClass, SourceLocator}

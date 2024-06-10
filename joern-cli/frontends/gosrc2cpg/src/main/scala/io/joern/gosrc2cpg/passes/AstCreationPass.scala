@@ -7,7 +7,7 @@ import io.joern.gosrc2cpg.parser.GoAstJsonParser
 import io.joern.x2cpg.astgen.ParserResult
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.utils.{Report, TimeUtils}
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.shiftleft.utils.IOUtils
 import org.slf4j.{Logger, LoggerFactory}

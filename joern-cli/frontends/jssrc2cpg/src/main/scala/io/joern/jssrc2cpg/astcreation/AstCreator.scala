@@ -79,7 +79,7 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
     val columnNumber    = astNodeInfo.columnNumber
     val lineNumberEnd   = astNodeInfo.lineNumberEnd
     val columnNumberEnd = astNodeInfo.columnNumberEnd
-    val name            = ":program"
+    val name            = Defines.Program
     val fullName        = s"$path:$name"
 
     val programMethod =

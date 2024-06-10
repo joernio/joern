@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg
 
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Languages, ModifierTypes}
 import io.shiftleft.passes.CpgPass
@@ -17,7 +17,7 @@ package object testing {
     def apply(f: (DiffGraphBuilder, Cpg) => Unit): MockCpg = new MockCpg().withCustom(f)
   }
 
-  case class MockCpg(cpg: Cpg = Cpg.emptyCpg) {
+  case class MockCpg(cpg: Cpg = Cpg.empty) {
 
     def withMetaData(language: String = Languages.C): MockCpg = withMetaData(language, Nil)
 

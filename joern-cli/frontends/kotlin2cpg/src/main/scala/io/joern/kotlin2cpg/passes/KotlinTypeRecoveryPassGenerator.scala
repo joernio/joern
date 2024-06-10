@@ -3,7 +3,7 @@ package io.joern.kotlin2cpg.passes
 import io.joern.kotlin2cpg.Constants
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.passes.frontend.*
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*

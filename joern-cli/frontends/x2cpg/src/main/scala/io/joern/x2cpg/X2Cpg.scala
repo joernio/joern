@@ -3,7 +3,7 @@ package io.joern.x2cpg
 import better.files.File
 import io.joern.x2cpg.X2Cpg.{applyDefaultOverlays, withErrorsToConsole}
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
 import org.slf4j.LoggerFactory
 import overflowdb.Config
@@ -121,8 +121,10 @@ abstract class X2CpgMain[T <: X2CpgConfig[T], X <: X2CpgFrontend[?]](val cmdLine
 
   private def logVersionAndArgs(args: Array[String]): Unit = {
     val frontendName = frontend.getClass.getSimpleName.stripSuffix("$")
-    val joernVersion = frontend.getClass.getPackage.getImplementationVersion
-    val logText      = s"Executing $frontendName (v$joernVersion) with arguments: ${args.mkString(" ")}"
+    val joernVersion =
+      // We only have a proper version there if joern was build using sbt assembly. Otherwise, it might be null.
+      Option(frontend.getClass.getPackage.getImplementationVersion).map(v => s"v$v").getOrElse("local build")
+    val logText = s"Executing $frontendName ($joernVersion) with arguments: ${args.mkString(" ")}"
     logger.debug(logText)
   }
 

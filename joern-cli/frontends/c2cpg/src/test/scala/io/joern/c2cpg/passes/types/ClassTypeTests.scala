@@ -129,6 +129,7 @@ class ClassTypeTests extends C2CpgSuite(FileDefaults.CPP_EXT) {
       cpg.typeDecl.file.filter(_.name.endsWith(FileDefaults.CPP_EXT)).l should not be empty
     }
   }
+
   "handling C++ classes (code example 3)" should {
     "generate correct call fullnames" in {
       val cpg = code("""
@@ -155,6 +156,24 @@ class ClassTypeTests extends C2CpgSuite(FileDefaults.CPP_EXT) {
 
       val List(call) = cpg.call("foo2").l
       call.methodFullName shouldBe "B.foo2"
+    }
+  }
+
+  "handling C++ class constructors" should {
+    "generate correct types" in {
+      val cpg = code("""
+          |class FooT : public Foo {
+          |  public:
+          |    FooT(
+          |      const std::string& a,
+          |      const Bar::SomeClass& b
+          |    ): Bar::Foo(a, b) {}
+          |}""".stripMargin)
+      val List(constructor) = cpg.typeDecl.nameExact("FooT").method.isConstructor.l
+      constructor.signature shouldBe "Bar.Foo FooT.FooT (std.string,Bar.SomeClass)"
+      val List(p1, p2) = constructor.parameter.l
+      p1.typ.fullName shouldBe "std.string"
+      p2.typ.fullName shouldBe "Bar.SomeClass"
     }
   }
 

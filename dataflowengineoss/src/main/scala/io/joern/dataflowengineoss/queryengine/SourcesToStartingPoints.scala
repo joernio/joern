@@ -2,7 +2,7 @@ package io.joern.dataflowengineoss.queryengine
 
 import io.joern.dataflowengineoss.globalFromLiteral
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.allAssignmentTypes
@@ -194,7 +194,7 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
         val usageInput = targetsToClassIdentifierPair(literalToInitializedMembers(lit), src)
         val uses       = usages(usageInput)
         val globals = globalFromLiteral(lit, recursive = false).flatMap {
-          case x: Identifier if x.isModuleVariable => x :: moduleVariableToFirstUsagesAcrossProgram(x)
+          case x: Identifier if x.isModuleVariable => moduleVariableToFirstUsagesAcrossProgram(x)
           case x                                   => x :: Nil
         }
         (lit :: (uses ++ globals), usageInput)

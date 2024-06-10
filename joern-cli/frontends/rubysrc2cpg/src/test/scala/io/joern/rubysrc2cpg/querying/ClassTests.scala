@@ -29,7 +29,7 @@ class ClassTests extends RubyCode2CpgFixture {
     classC.fullName shouldBe "Test0.rb:<global>::program.C"
     classC.lineNumber shouldBe Some(2)
     classC.baseType.l shouldBe List()
-    classC.member.l shouldBe List()
+    classC.member.name.l shouldBe List("<init>", "<clinit>")
     classC.method.name.l shouldBe List("<init>", "<clinit>")
   }
 
@@ -45,7 +45,7 @@ class ClassTests extends RubyCode2CpgFixture {
     classC.inheritsFromTypeFullName shouldBe List("D")
     classC.fullName shouldBe "Test0.rb:<global>::program.C"
     classC.lineNumber shouldBe Some(2)
-    classC.member.l shouldBe List()
+    classC.member.name.l shouldBe List("<init>", "<clinit>")
     classC.method.name.l shouldBe List("<init>", "<clinit>")
 
     val List(typeD) = classC.baseType.l
@@ -60,9 +60,8 @@ class ClassTests extends RubyCode2CpgFixture {
                      |""".stripMargin)
 
     val List(classC)  = cpg.typeDecl.name("C").l
-    val List(aMember) = classC.member.l
+    val List(aMember) = classC.member.nameExact("@a").l
 
-    aMember.name shouldBe "@a"
     aMember.code shouldBe "attr_reader :a"
     aMember.lineNumber shouldBe Some(3)
   }
@@ -181,6 +180,9 @@ class ClassTests extends RubyCode2CpgFixture {
     val List(methodF) = classC.method.name("f").l
 
     methodF.fullName shouldBe "Test0.rb:<global>::program.C:f"
+
+    val List(memberF) = classC.member.nameExact("f").l
+    memberF.dynamicTypeHintFullName.toSet should contain(methodF.fullName)
   }
 
   "`def initialize() ... end` directly inside a class has method name `<init>`" in {
@@ -443,7 +445,7 @@ class ClassTests extends RubyCode2CpgFixture {
     "create respective member nodes" in {
       inside(cpg.typeDecl.name("Foo").l) {
         case fooType :: Nil =>
-          inside(fooType.member.l) {
+          inside(fooType.member.name("@.*").l) {
             case aMember :: bMember :: cMember :: dMember :: oMember :: Nil =>
               // Test that all members in class are present
               aMember.code shouldBe "@a"
@@ -473,12 +475,12 @@ class ClassTests extends RubyCode2CpgFixture {
 
                   inside(aAssignment.argument.l) {
                     case (lhs: Call) :: (rhs: Literal) :: Nil =>
-                      lhs.code shouldBe "this.@a"
+                      lhs.code shouldBe s"${RubyDefines.Self}.@a"
                       lhs.methodFullName shouldBe Operators.fieldAccess
 
                       inside(lhs.argument.l) {
                         case (identifier: Identifier) :: (fieldIdentifier: FieldIdentifier) :: Nil =>
-                          identifier.code shouldBe RubyDefines.This
+                          identifier.code shouldBe RubyDefines.Self
                           fieldIdentifier.code shouldBe "@a"
                         case _ => fail("Expected identifier and fieldIdentifier for fieldAccess")
                       }
@@ -520,7 +522,7 @@ class ClassTests extends RubyCode2CpgFixture {
     "create respective member nodes" in {
       inside(cpg.typeDecl.name("Foo").l) {
         case fooType :: Nil =>
-          inside(fooType.member.l) {
+          inside(fooType.member.name("@.*").l) {
             case aMember :: bMember :: cMember :: dMember :: oMember :: Nil =>
               // Test that all members in class are present
               aMember.code shouldBe "@@a"
@@ -624,8 +626,8 @@ class ClassTests extends RubyCode2CpgFixture {
                   scopeCall.code shouldBe "scope :published, -> { where(status: \"Published\") }"
 
                   inside(scopeCall.argument.l) {
-                    case (scopeIdent: Identifier) :: (literalArg: Literal) :: unknownArg :: Nil =>
-                      scopeIdent.code shouldBe "scope"
+                    case (self: Identifier) :: (literalArg: Literal) :: unknownArg :: Nil =>
+                      self.code shouldBe "self"
                       literalArg.code shouldBe ":published"
                     case xs => fail(s"Expected three arguments, got ${xs.code.mkString(", ")} instead")
                   }
@@ -658,8 +660,9 @@ class ClassTests extends RubyCode2CpgFixture {
                   inside(methodBlock.astChildren.l) {
                     case methodCall :: Nil =>
                       inside(methodCall.astChildren.l) {
-                        case (identifier: Identifier) :: (literal: Literal) :: (methodRef: MethodRef) :: Nil =>
-                          identifier.code shouldBe "scope"
+                        case (base: Call) :: (self: Identifier) :: (literal: Literal) :: (methodRef: MethodRef) :: Nil =>
+                          base.code shouldBe "self.scope"
+                          self.name shouldBe "self"
                           literal.code shouldBe ":hits_by_ip"
                           methodRef.methodFullName shouldBe "Test0.rb:<global>::program.Foo:<init>:<lambda>0"
                           methodRef.referencedMethod.parameter.indexGt(0).name.l shouldBe List("ip", "col")

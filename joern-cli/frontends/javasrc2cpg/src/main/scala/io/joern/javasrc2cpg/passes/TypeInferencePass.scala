@@ -3,7 +3,7 @@ package io.joern.javasrc2cpg.passes
 import com.github.javaparser.symbolsolver.cache.GuavaCache
 import com.google.common.cache.CacheBuilder
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
 import io.shiftleft.passes.ConcurrentWriterCpgPass

@@ -7,7 +7,7 @@ import io.joern.dataflowengineoss.layers.dataflows.*
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.joern.joerncli.CpgBasedTool.exitIfInvalid
 import io.joern.x2cpg.layers.*
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.semanticcpg.language.{toAstNodeMethods, toNodeTypeStarters}
 import io.shiftleft.semanticcpg.layers.*

@@ -4,7 +4,7 @@ import io.joern.gosrc2cpg.Config
 import io.joern.gosrc2cpg.astcreation.AstForPackageConstructorCreator
 import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 
 import scala.jdk.CollectionConverters.*

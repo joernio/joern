@@ -1,6 +1,4 @@
-#!/usr/bin/env bash
-
-# Script starts here
+#!/usr/bin/env sh
 
 readonly SCRIPT_DIR=$(dirname "$(realpath "$0")")
 readonly BIN="${SCRIPT_DIR}/target/universal/stage/bin/kotlin2cpg"

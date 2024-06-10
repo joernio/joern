@@ -1,6 +1,6 @@
 package io.joern.console
 
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.StoredNode
 
 case class CodeSnippet(content: String, filename: String)

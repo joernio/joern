@@ -1,7 +1,7 @@
 package io.joern.c2cpg.passes
 
 import io.joern.c2cpg.astcreation.Defines
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.passes.CpgPass

@@ -18,11 +18,13 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTArrayRangeDesignator
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalMemberAccess
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFieldReference
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPMethod
+import org.eclipse.cdt.internal.core.dom.parser.cpp.ICPPEvaluation
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import java.nio.file.{Path, Paths}
 import scala.annotation.nowarn
 import scala.collection.mutable
+import scala.util.Try
 
 object AstCreatorHelper {
 
@@ -146,14 +148,18 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         val anonType =
           s"${uniqueName("type", "", "")._1}${t.substring(0, t.indexOf("{"))}${t.substring(t.indexOf("}") + 1)}"
         anonType.replace(" ", "")
-      case t if t.startsWith("[") && t.endsWith("]") => Defines.anyTypeName
-      case t if t.contains(Defines.qualifiedNameSeparator) =>
-        fixQualifiedName(t).split(".").lastOption.getOrElse(Defines.anyTypeName)
-      case t if t.startsWith("unsigned ")          => "unsigned " + t.substring(9).replace(" ", "")
-      case t if t.contains("[") && t.contains("]") => t.replace(" ", "")
-      case t if t.contains("*")                    => t.replace(" ", "")
-      case someType                                => someType
+      case t if t.startsWith("[") && t.endsWith("]")       => Defines.anyTypeName
+      case t if t.contains(Defines.qualifiedNameSeparator) => fixQualifiedName(t)
+      case t if t.startsWith("unsigned ")                  => "unsigned " + t.substring(9).replace(" ", "")
+      case t if t.contains("[") && t.contains("]")         => t.replace(" ", "")
+      case t if t.contains("*")                            => t.replace(" ", "")
+      case someType                                        => someType
     }
+  }
+
+  private def safeGetEvaluation(expr: ICPPASTExpression): Option[ICPPEvaluation] = {
+    // In case of unresolved includes etc. this may fail throwing an unrecoverable exception
+    Try(expr.getEvaluation).toOption
   }
 
   @nowarn
@@ -161,8 +167,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     import org.eclipse.cdt.core.dom.ast.ASTSignatureUtil.getNodeSignature
     node match {
       case f: CPPASTFieldReference =>
-        f.getFieldOwner.getEvaluation match {
-          case evaluation: EvalBinding => cleanType(evaluation.getType.toString, stripKeywords)
+        safeGetEvaluation(f.getFieldOwner) match {
+          case Some(evaluation: EvalBinding) => cleanType(evaluation.getType.toString, stripKeywords)
           case _ => cleanType(ASTTypeUtil.getType(f.getFieldOwner.getExpressionType), stripKeywords)
         }
       case f: IASTFieldReference =>
@@ -185,10 +191,10 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         }.mkString
         s"$tpe$arr"
       case s: CPPASTIdExpression =>
-        s.getEvaluation match {
-          case evaluation: EvalMemberAccess =>
+        safeGetEvaluation(s) match {
+          case Some(evaluation: EvalMemberAccess) =>
             cleanType(evaluation.getOwnerType.toString, stripKeywords)
-          case evalBinding: EvalBinding =>
+          case Some(evalBinding: EvalBinding) =>
             evalBinding.getBinding match {
               case m: CPPMethod => cleanType(fullName(m.getDefinition))
               case _            => cleanType(ASTTypeUtil.getNodeType(s), stripKeywords)
@@ -209,6 +215,11 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         cleanType(ASTTypeUtil.getType(l.getExpressionType))
       case e: IASTExpression =>
         cleanType(ASTTypeUtil.getNodeType(e), stripKeywords)
+      case c: ICPPASTConstructorInitializer if c.getParent.isInstanceOf[ICPPASTConstructorChainInitializer] =>
+        cleanType(
+          fullName(c.getParent.asInstanceOf[ICPPASTConstructorChainInitializer].getMemberInitializerId),
+          stripKeywords
+        )
       case _ =>
         cleanType(getNodeSignature(node), stripKeywords)
     }
@@ -273,16 +284,20 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   protected def fullName(node: IASTNode): String = {
     val qualifiedName: String = node match {
-      case d: CPPASTIdExpression if d.getEvaluation.isInstanceOf[EvalBinding] =>
-        val evaluation = d.getEvaluation.asInstanceOf[EvalBinding]
-        evaluation.getBinding match {
-          case f: CPPFunction if f.getDeclarations != null =>
-            f.getDeclarations.headOption.map(n => s"${fullName(n)}").getOrElse(f.getName)
-          case f: CPPFunction if f.getDefinition != null =>
-            s"${fullName(f.getDefinition)}"
-          case other =>
-            other.getName
+      case d: CPPASTIdExpression =>
+        safeGetEvaluation(d) match {
+          case Some(evalBinding: EvalBinding) =>
+            evalBinding.getBinding match {
+              case f: CPPFunction if f.getDeclarations != null =>
+                f.getDeclarations.headOption.map(n => s"${fullName(n)}").getOrElse(f.getName)
+              case f: CPPFunction if f.getDefinition != null =>
+                s"${fullName(f.getDefinition)}"
+              case other =>
+                other.getName
+            }
+          case _ => ASTStringUtil.getSimpleName(d.getName)
         }
+
       case alias: ICPPASTNamespaceAlias => alias.getMappingName.toString
       case namespace: ICPPASTNamespaceDefinition if ASTStringUtil.getSimpleName(namespace.getName).nonEmpty =>
         s"${fullName(namespace.getParent)}.${ASTStringUtil.getSimpleName(namespace.getName)}"
@@ -319,6 +334,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case d: IASTIdExpression                               => ASTStringUtil.getSimpleName(d.getName)
       case _: IASTTranslationUnit                            => ""
       case u: IASTUnaryExpression                            => code(u.getOperand)
+      case x: ICPPASTQualifiedName                           => ASTStringUtil.getQualifiedName(x)
       case other if other != null && other.getParent != null => fullName(other.getParent)
       case other if other != null                            => notHandledYet(other); ""
       case null                                              => ""
@@ -343,15 +359,18 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
             .isEmpty && f.getDeclarator.getNestedDeclarator != null =>
         shortName(f.getDeclarator.getNestedDeclarator)
       case f: IASTFunctionDefinition => ASTStringUtil.getSimpleName(f.getDeclarator.getName)
-      case d: CPPASTIdExpression if d.getEvaluation.isInstanceOf[EvalBinding] =>
-        val evaluation = d.getEvaluation.asInstanceOf[EvalBinding]
-        evaluation.getBinding match {
-          case f: CPPFunction if f.getDeclarations != null =>
-            f.getDeclarations.headOption.map(n => ASTStringUtil.getSimpleName(n.getName)).getOrElse(f.getName)
-          case f: CPPFunction if f.getDefinition != null =>
-            ASTStringUtil.getSimpleName(f.getDefinition.getName)
-          case other =>
-            other.getName
+      case d: CPPASTIdExpression =>
+        safeGetEvaluation(d) match {
+          case Some(evalBinding: EvalBinding) =>
+            evalBinding.getBinding match {
+              case f: CPPFunction if f.getDeclarations != null =>
+                f.getDeclarations.headOption.map(n => ASTStringUtil.getSimpleName(n.getName)).getOrElse(f.getName)
+              case f: CPPFunction if f.getDefinition != null =>
+                ASTStringUtil.getSimpleName(f.getDefinition.getName)
+              case other =>
+                other.getName
+            }
+          case _ => lastNameOfQualifiedName(ASTStringUtil.getSimpleName(d.getName))
         }
       case d: IASTIdExpression            => lastNameOfQualifiedName(ASTStringUtil.getSimpleName(d.getName))
       case u: IASTUnaryExpression         => shortName(u.getOperand)
@@ -506,7 +525,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case s: IASTNamedTypeSpecifier if s.getParent.isInstanceOf[IASTSimpleDeclaration] =>
         val parentDecl = s.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclarators.toList(index)
         pointersAsString(s, parentDecl, stripKeywords)
-      case s: IASTNamedTypeSpecifier => ASTStringUtil.getSimpleName(s.getName)
+      case s: IASTNamedTypeSpecifier =>
+        ASTStringUtil.getSimpleName(s.getName)
       case s: IASTCompositeTypeSpecifier if s.getParent.isInstanceOf[IASTSimpleDeclaration] =>
         val parentDecl = s.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclarators.toList(index)
         pointersAsString(s, parentDecl, stripKeywords)

@@ -299,7 +299,7 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataF
            | .bar(1)""".stripMargin,
         11
       ),
-      ("bar(this, x)", 3),
+      ("bar(self, x)", 3),
       ("return x", 4),
       ("RET", 3),
       (
@@ -340,7 +340,7 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataF
            |  bar(1)""".stripMargin,
         11
       ),
-      ("bar(this, x)", 3),
+      ("bar(self, x)", 3),
       ("return x", 4),
       ("RET", 3),
       (

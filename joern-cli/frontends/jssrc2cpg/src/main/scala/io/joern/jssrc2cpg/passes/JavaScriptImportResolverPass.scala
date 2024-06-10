@@ -2,7 +2,7 @@ package io.joern.jssrc2cpg.passes
 
 import io.joern.x2cpg.Defines as XDefines
 import io.joern.x2cpg.passes.frontend.XImportResolverPass
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Method, MethodRef}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.importresolver.*
@@ -49,7 +49,7 @@ class JavaScriptImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
         cpg
           .file(s"${Pattern.quote(resolvedPath)}\\.?.*")
           .method
-          .nameExact(":program")
+          .nameExact(Defines.Program)
       else
         Iterator.empty
     ) match {
@@ -60,7 +60,7 @@ class JavaScriptImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
     }
 
     def targetAssignments = targetModule
-      .nameExact(":program")
+      .nameExact(Defines.Program)
       .flatMap(_._callViaContainsOut)
       .assignment
 

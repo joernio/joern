@@ -2,7 +2,7 @@ package io.joern.pysrc2cpg
 
 import io.joern.x2cpg.passes.frontend.TypeRecoveryParserConfig
 import io.joern.x2cpg.{SourceFiles, X2Cpg, X2CpgConfig, X2CpgFrontend}
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 

@@ -1,7 +1,7 @@
 package io.joern.swiftsrc2cpg.passes
 
 import io.joern.x2cpg.X2Cpg
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.codepropertygraph.generated.nodes.NewDependency
 import io.shiftleft.passes.CpgPass

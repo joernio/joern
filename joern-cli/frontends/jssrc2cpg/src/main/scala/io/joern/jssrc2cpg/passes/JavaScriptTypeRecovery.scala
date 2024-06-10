@@ -1,9 +1,10 @@
 package io.joern.jssrc2cpg.passes
 
+import io.joern.jssrc2cpg.passes.Defines.OperatorsNew
 import io.joern.x2cpg.Defines as XDefines
 import io.joern.x2cpg.Defines.ConstructorMethodName
 import io.joern.x2cpg.passes.frontend.*
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
 import io.shiftleft.semanticcpg.language.*
@@ -94,7 +95,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
         }
         .flatMap {
           case (t, ts) if Set(t) == ts => Set(t)
-          case (_, ts)                 => ts.map(_.replaceAll("\\.(?!js::program)", pathSep))
+          case (_, ts)                 => ts.map(_.replaceAll(s"\\.(?!js:${Defines.Program})", pathSep))
         }
       p match {
         case _: MethodParameterIn => symbolTable.put(p, resolvedHints)
@@ -109,7 +110,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
   }
 
   private lazy val exportedIdentifiers = cu.method
-    .nameExact(":program")
+    .nameExact(Defines.Program)
     .flatMap(_._callViaContainsOut)
     .nameExact(Operators.assignment)
     .filter(_.code.startsWith("exports.*"))
@@ -123,11 +124,16 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
 
   override protected def visitIdentifierAssignedToConstructor(i: Identifier, c: Call): Set[String] = {
     val constructorPaths = if (c.methodFullName.endsWith(".alloc")) {
-      def newChildren = c.inAssignment.astSiblings.isCall.nameExact("<operator>.new").astChildren
+      val newOp       = c.inAssignment.astSiblings.isCall.nameExact(OperatorsNew).headOption
+      val newChildren = newOp.astChildren.l
+
       val possibleImportIdentifier = newChildren.isIdentifier.headOption match {
         case Some(id) if GlobalBuiltins.builtins.contains(id.name) => Set(s"__ecma.${id.name}")
-        case Some(id)                                              => symbolTable.get(id)
-        case None                                                  => Set.empty[String]
+        case Some(id) =>
+          val typs = symbolTable.get(CallAlias(id.name, Option("this")))
+          if typs.nonEmpty then newOp.foreach(symbolTable.put(_, typs))
+          symbolTable.get(id)
+        case None => Set.empty[String]
       }
       lazy val possibleConstructorPointer =
         newChildren.astChildren.isFieldIdentifier
@@ -146,7 +152,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
 
   override protected def visitIdentifierAssignedToOperator(i: Identifier, c: Call, operation: String): Set[String] = {
     operation match {
-      case "<operator>.new" =>
+      case OperatorsNew =>
         c.astChildren.l match {
           case ::(fa: Call, ::(id: Identifier, _)) if fa.name == Operators.fieldAccess =>
             symbolTable.append(

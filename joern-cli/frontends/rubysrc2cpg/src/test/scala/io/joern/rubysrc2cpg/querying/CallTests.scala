@@ -1,10 +1,12 @@
 package io.joern.rubysrc2cpg.querying
 
+import io.joern.rubysrc2cpg.passes.{GlobalTypes, Defines as RubyDefines}
 import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
+import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelPrefix
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, NodeTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
 class CallTests extends RubyCode2CpgFixture {
@@ -17,14 +19,58 @@ class CallTests extends RubyCode2CpgFixture {
     val List(puts) = cpg.call.name("puts").l
     puts.lineNumber shouldBe Some(2)
     puts.code shouldBe "puts 'hello'"
+    puts.methodFullName shouldBe s"$kernelPrefix:puts"
+    puts.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
-    val List(rec: Identifier, hello: Literal) = puts.argument.l: @unchecked
-    rec.argumentIndex shouldBe 0
-    rec.name shouldBe "puts"
+    val List(selfReceiver: Identifier, hello: Literal) = puts.argument.l: @unchecked
+    selfReceiver.argumentIndex shouldBe 0
+    selfReceiver.name shouldBe RubyDefines.Self
+    selfReceiver.code shouldBe RubyDefines.Self
 
     hello.argumentIndex shouldBe 1
     hello.code shouldBe "'hello'"
     hello.lineNumber shouldBe Some(2)
+
+    val List(callBase: Call) = puts.receiver.l: @unchecked
+    callBase.argumentIndex shouldBe -1
+    callBase.methodFullName shouldBe Operators.fieldAccess
+    callBase.name shouldBe Operators.fieldAccess
+    callBase.code shouldBe "self.puts"
+
+    val List(baseSelf: Identifier, baseProperty: FieldIdentifier) = callBase.argument.l: @unchecked
+    baseSelf.argumentIndex shouldBe 1
+    baseSelf.name shouldBe RubyDefines.Self
+    baseProperty.argumentIndex shouldBe 2
+    baseProperty.canonicalName shouldBe "puts"
+  }
+
+  "a `Kernel` or bundled class function call in a fully qualified way should have a type ref receiver" in {
+    val cpg = code("""
+        |Kernel.puts 'hello'
+        |Math.atan2(1, 1)
+        |""".stripMargin)
+
+    val List(puts) = cpg.call.name("puts").l
+    puts.lineNumber shouldBe Some(2)
+    puts.code shouldBe "Kernel.puts 'hello'"
+    puts.methodFullName shouldBe s"$kernelPrefix:puts"
+    puts.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+    val List(kernelRef: TypeRef) = puts.receiver.l: @unchecked
+    kernelRef.argumentIndex shouldBe 0
+    kernelRef.typeFullName shouldBe kernelPrefix
+    kernelRef.code shouldBe kernelPrefix
+
+    val List(atan2) = cpg.call.name("atan2").l
+    atan2.lineNumber shouldBe Some(3)
+    atan2.code shouldBe "Math.atan2(1, 1)"
+    atan2.methodFullName shouldBe s"<${GlobalTypes.builtinPrefix}.Math>:atan2"
+    atan2.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+    val List(mathRef: TypeRef) = atan2.receiver.l: @unchecked
+    mathRef.argumentIndex shouldBe 0
+    mathRef.typeFullName shouldBe s"<${GlobalTypes.builtinPrefix}.Math>"
+    mathRef.code shouldBe s"<${GlobalTypes.builtinPrefix}.Math>"
   }
 
   "`foo(1,2)` is represented by a CALL node" in {
@@ -80,9 +126,9 @@ class CallTests extends RubyCode2CpgFixture {
 
     "contain they keyword in the argumentName property" in {
       inside(cpg.call.nameExact("foo").argument.l) {
-        case (foo: Identifier) :: (hello: Literal) :: (baz: Literal) :: Nil =>
-          foo.name shouldBe "foo"
-          foo.argumentIndex shouldBe 0
+        case (self: Identifier) :: (hello: Literal) :: (baz: Literal) :: Nil =>
+          self.name shouldBe RubyDefines.Self
+          self.argumentIndex shouldBe 0
 
           hello.code shouldBe "\"hello\""
           hello.argumentIndex shouldBe 1
@@ -199,7 +245,7 @@ class CallTests extends RubyCode2CpgFixture {
 
   "named parameters in parenthesis-less call to a symbol value should create a correctly named argument" in {
     val cpg            = code("on in: :sequence")
-    val List(_, inArg) = cpg.call.argument.l: @unchecked
+    val List(_, inArg) = cpg.call.nameExact("on").argument.l: @unchecked
     inArg.code shouldBe ":sequence"
     inArg.argumentName shouldBe Option("in")
   }
@@ -207,7 +253,7 @@ class CallTests extends RubyCode2CpgFixture {
   "a call with a quoted regex literal should have a literal receiver" in {
     val cpg                         = code("%r{^/}.freeze")
     val List(regexLiteral: Literal) = cpg.call.nameExact("freeze").receiver.l: @unchecked
-    regexLiteral.typeFullName shouldBe "__builtin.Regexp"
+    regexLiteral.typeFullName shouldBe s"$kernelPrefix.Regexp"
     regexLiteral.code shouldBe "%r{^/}"
   }
 

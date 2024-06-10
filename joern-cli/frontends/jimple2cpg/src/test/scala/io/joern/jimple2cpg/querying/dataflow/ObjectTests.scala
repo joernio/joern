@@ -2,7 +2,7 @@ package io.joern.jimple2cpg.querying.dataflow
 
 import io.joern.dataflowengineoss.language.toExtendedCfgNode
 import io.joern.jimple2cpg.testfixtures.JimpleDataFlowCodeToCpgSuite
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 
 class ObjectTests extends JimpleDataFlowCodeToCpgSuite {
 

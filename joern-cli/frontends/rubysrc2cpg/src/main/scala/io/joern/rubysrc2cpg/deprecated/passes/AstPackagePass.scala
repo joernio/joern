@@ -5,7 +5,7 @@ import io.joern.rubysrc2cpg.deprecated.astcreation.{AstCreator, ResourceManagedP
 import io.joern.rubysrc2cpg.deprecated.utils.{PackageContext, PackageTable}
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Global
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import org.slf4j.LoggerFactory
 

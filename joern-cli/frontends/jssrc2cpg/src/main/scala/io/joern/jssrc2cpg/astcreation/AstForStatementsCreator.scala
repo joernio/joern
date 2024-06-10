@@ -11,7 +11,6 @@ import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.NewJumpLabel
-import io.shiftleft.codepropertygraph.generated.nodes.NewJumpTarget
 import ujson.Obj
 import ujson.Value
 
@@ -102,37 +101,31 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   protected def astForTryStatement(tryStmt: BabelNodeInfo): Ast = {
-    val tryNode = createControlStructureNode(tryStmt, ControlStructureTypes.TRY)
+    val tryNode = controlStructureNode(tryStmt, ControlStructureTypes.TRY, code(tryStmt))
     val bodyAst = astForNodeWithFunctionReference(tryStmt.json("block"))
-    val catchAst = safeObj(tryStmt.json, "handler")
+    val catchAst = safeObj(tryStmt.json, "handler").toList
       .map { handler =>
         val catchNodeInfo = createBabelNodeInfo(Obj(handler))
-        val catchNode     = createControlStructureNode(catchNodeInfo, ControlStructureTypes.CATCH)
+        val catchNode     = controlStructureNode(catchNodeInfo, ControlStructureTypes.CATCH, code(catchNodeInfo))
         val catchAst      = astForCatchClause(catchNodeInfo)
         Ast(catchNode).withChild(catchAst)
       }
-      .getOrElse(Ast())
     val finalizerAst = safeObj(tryStmt.json, "finalizer")
       .map { finalizer =>
         val finalNodeInfo = createBabelNodeInfo(Obj(finalizer))
-        val finalNode     = createControlStructureNode(finalNodeInfo, ControlStructureTypes.FINALLY)
+        val finalNode     = controlStructureNode(finalNodeInfo, ControlStructureTypes.FINALLY, code(finalNodeInfo))
         val finalAst      = astForNodeWithFunctionReference(finalNodeInfo.json)
         Ast(finalNode).withChild(finalAst)
       }
-      .getOrElse(Ast())
-    val childrenAsts = List(bodyAst, catchAst, finalizerAst)
-    setArgumentIndices(childrenAsts)
-    Ast(tryNode).withChildren(childrenAsts)
+    tryCatchAst(tryNode, bodyAst, catchAst, finalizerAst)
   }
 
   def astForIfStatement(ifStmt: BabelNodeInfo): Ast = {
-    val ifNode        = createControlStructureNode(ifStmt, ControlStructureTypes.IF)
+    val ifNode        = controlStructureNode(ifStmt, ControlStructureTypes.IF, code(ifStmt))
     val testAst       = astForNodeWithFunctionReference(ifStmt.json("test"))
     val consequentAst = astForNodeWithFunctionReference(ifStmt.json("consequent"))
     val alternateAst = safeObj(ifStmt.json, "alternate")
-      .map { alternate =>
-        astForNodeWithFunctionReference(Obj(alternate))
-      }
+      .map { alternate => astForNodeWithFunctionReference(Obj(alternate)) }
       .getOrElse(Ast())
     // The semantics of if statement children is partially defined by their order value.
     // The consequentAst must have order == 2 and alternateAst must have order == 3.
@@ -149,7 +142,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   protected def astForDoWhileStatement(doWhileStmt: BabelNodeInfo): Ast = {
-    val whileNode = createControlStructureNode(doWhileStmt, ControlStructureTypes.DO)
+    val whileNode = controlStructureNode(doWhileStmt, ControlStructureTypes.DO, code(doWhileStmt))
     val testAst   = astForNodeWithFunctionReference(doWhileStmt.json("test"))
     val bodyAst   = astForNodeWithFunctionReference(doWhileStmt.json("body"))
     // The semantics of do-while statement children is partially defined by their order value.
@@ -161,7 +154,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   protected def astForWhileStatement(whileStmt: BabelNodeInfo): Ast = {
-    val whileNode = createControlStructureNode(whileStmt, ControlStructureTypes.WHILE)
+    val whileNode = controlStructureNode(whileStmt, ControlStructureTypes.WHILE, code(whileStmt))
     val testAst   = astForNodeWithFunctionReference(whileStmt.json("test"))
     val bodyAst   = astForNodeWithFunctionReference(whileStmt.json("body"))
     // The semantics of while statement children is partially defined by their order value.
@@ -173,7 +166,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   protected def astForForStatement(forStmt: BabelNodeInfo): Ast = {
-    val forNode = createControlStructureNode(forStmt, ControlStructureTypes.FOR)
+    val forNode = controlStructureNode(forStmt, ControlStructureTypes.FOR, code(forStmt))
     val initAst = safeObj(forStmt.json, "init")
       .map { init =>
         astForNodeWithFunctionReference(Obj(init))
@@ -202,13 +195,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   protected def astForLabeledStatement(labelStmt: BabelNodeInfo): Ast = {
-    val labelName = code(labelStmt.json("label"))
-    val labeledNode = NewJumpTarget()
-      .parserTypeName(labelStmt.node.toString)
-      .name(labelName)
-      .code(s"$labelName:")
-      .lineNumber(labelStmt.lineNumber)
-      .columnNumber(labelStmt.columnNumber)
+    val labelName   = code(labelStmt.json("label"))
+    val labeledNode = jumpTargetNode(labelStmt, labelName, s"$labelName:", Option(labelStmt.node.toString))
 
     val blockNode = createBlockNode(labelStmt)
     scope.pushNewBlockScope(blockNode)
@@ -223,26 +211,24 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   protected def astForBreakStatement(breakStmt: BabelNodeInfo): Ast = {
-    val labelAst = safeObj(breakStmt.json, "label")
-      .map { label =>
-        val labelNode = Obj(label)
-        val labelCode = code(labelNode)
-        Ast(
-          NewJumpLabel()
-            .parserTypeName(breakStmt.node.toString)
-            .name(labelCode)
-            .code(labelCode)
-            .lineNumber(breakStmt.lineNumber)
-            .columnNumber(breakStmt.columnNumber)
-            .order(1)
-        )
-      }
-      .getOrElse(Ast())
-    Ast(createControlStructureNode(breakStmt, ControlStructureTypes.BREAK)).withChild(labelAst)
+    val labelAst = safeObj(breakStmt.json, "label").toList.map { label =>
+      val labelNode = Obj(label)
+      val labelCode = code(labelNode)
+      Ast(
+        NewJumpLabel()
+          .parserTypeName(breakStmt.node.toString)
+          .name(labelCode)
+          .code(labelCode)
+          .lineNumber(breakStmt.lineNumber)
+          .columnNumber(breakStmt.columnNumber)
+          .order(1)
+      )
+    }
+    Ast(controlStructureNode(breakStmt, ControlStructureTypes.BREAK, code(breakStmt))).withChildren(labelAst)
   }
 
   protected def astForContinueStatement(continueStmt: BabelNodeInfo): Ast = {
-    val labelAst = safeObj(continueStmt.json, "label")
+    val labelAst = safeObj(continueStmt.json, "label").toList
       .map { label =>
         val labelNode = Obj(label)
         val labelCode = code(labelNode)
@@ -256,8 +242,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
             .order(1)
         )
       }
-      .getOrElse(Ast())
-    Ast(createControlStructureNode(continueStmt, ControlStructureTypes.CONTINUE)).withChild(labelAst)
+    Ast(controlStructureNode(continueStmt, ControlStructureTypes.CONTINUE, code(continueStmt))).withChildren(labelAst)
   }
 
   protected def astForThrowStatement(throwStmt: BabelNodeInfo): Ast = {
@@ -276,7 +261,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   protected def astForSwitchStatement(switchStmt: BabelNodeInfo): Ast = {
-    val switchNode = createControlStructureNode(switchStmt, ControlStructureTypes.SWITCH)
+    val switchNode = controlStructureNode(switchStmt, ControlStructureTypes.SWITCH, code(switchStmt))
 
     // The semantics of switch statement children is partially defined by their order value.
     // The blockAst must have order == 2. Only to avoid collision we set switchExpressionAst to 1
@@ -287,10 +272,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val blockNode = createBlockNode(switchStmt).order(2)
     scope.pushNewBlockScope(blockNode)
     localAstParentStack.push(blockNode)
-
     val casesAsts = switchStmt.json("cases").arr.flatMap(c => astsForSwitchCase(createBabelNodeInfo(c)))
     setArgumentIndices(casesAsts.toList)
-
     scope.popScope()
     localAstParentStack.pop()
 
@@ -364,7 +347,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     scope.addVariableReference(loopVariableName, loopVariableNode)
 
     // while loop:
-    val whileLoopNode = createControlStructureNode(forInOfStmt, ControlStructureTypes.WHILE)
+    val whileLoopNode = controlStructureNode(forInOfStmt, ControlStructureTypes.WHILE, code(forInOfStmt))
 
     // while loop test:
     val testCallNode =
@@ -507,7 +490,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     scope.addVariableReference(resultName, resultNode)
 
     // while loop:
-    val whileLoopNode = createControlStructureNode(forInOfStmt, ControlStructureTypes.WHILE)
+    val whileLoopNode = controlStructureNode(forInOfStmt, ControlStructureTypes.WHILE, code(forInOfStmt))
 
     // while loop test:
     val testCallNode =
@@ -658,7 +641,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     }
 
     // while loop:
-    val whileLoopNode = createControlStructureNode(forInOfStmt, ControlStructureTypes.WHILE)
+    val whileLoopNode = controlStructureNode(forInOfStmt, ControlStructureTypes.WHILE, code(forInOfStmt))
 
     // while loop test:
     val testCallNode =
@@ -811,7 +794,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     }
 
     // while loop:
-    val whileLoopNode = createControlStructureNode(forInOfStmt, ControlStructureTypes.WHILE)
+    val whileLoopNode = controlStructureNode(forInOfStmt, ControlStructureTypes.WHILE, code(forInOfStmt))
 
     // while loop test:
     val testCallNode =

@@ -1,6 +1,6 @@
 package io.joern.jssrc2cpg.passes
 
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.BeforeAndAfterAll
@@ -14,7 +14,7 @@ import scala.jdk.CollectionConverters.*
 class JsMetaDataPassTests extends AnyWordSpec with Matchers with Inside {
 
   "MetaDataPass" should {
-    val cpg = Cpg.emptyCpg
+    val cpg = Cpg.empty
     new JavaScriptMetaDataPass(cpg, "somehash", "").createAndApply()
 
     "create exactly 1 node" in {

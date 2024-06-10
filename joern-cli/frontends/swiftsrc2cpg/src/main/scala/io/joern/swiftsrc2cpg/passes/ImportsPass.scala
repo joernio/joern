@@ -2,7 +2,7 @@ package io.joern.swiftsrc2cpg.passes
 
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.passes.frontend.XImportsPass
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.Assignment

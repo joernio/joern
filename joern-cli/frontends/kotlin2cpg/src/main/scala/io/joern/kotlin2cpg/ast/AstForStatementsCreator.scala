@@ -492,7 +492,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
 
   private def astForTryAsStatement(expr: KtTryExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val tryAst = astsForExpression(expr.getTryBlock, None).headOption.getOrElse(Ast())
-    val clauseAsts = expr.getCatchClauses.asScala.map { catchClause =>
+    val clauseAsts = expr.getCatchClauses.asScala.toSeq.map { catchClause =>
       val catchNode    = controlStructureNode(catchClause, ControlStructureTypes.CATCH, catchClause.getText)
       val childrenAsts = astsForExpression(catchClause.getCatchBody, None)
       Ast(catchNode).withChildren(childrenAsts)
@@ -504,9 +504,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
         val childrenAsts = astsForExpression(finallyBlock, None)
         Ast(finallyNode).withChildren(childrenAsts)
       }
-      .getOrElse(Ast())
-    val node = controlStructureNode(expr, ControlStructureTypes.TRY, expr.getText)
-    controlStructureAst(node, None, (tryAst +: clauseAsts :+ finallyAst).toList)
+    val tryNode = controlStructureNode(expr, ControlStructureTypes.TRY, expr.getText)
+    tryCatchAst(tryNode, tryAst, clauseAsts, finallyAst)
   }
 
   private def astForTryAsExpression(
