@@ -9,6 +9,7 @@ import io.joern.x2cpg.datastructures.*
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{DeclarationNew, NewLocal, NewMethodParameterIn}
 
+import java.io.File as JFile
 import scala.collection.mutable
 import scala.reflect.ClassTag
 import scala.util.Try
@@ -112,7 +113,7 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
     val resolvedPath =
       if (isRelative) {
         Try((File(currentFilePath).parent / path).pathAsString).toOption
-          .map(_.stripPrefix(s"$projectRoot/"))
+          .map(_.stripPrefix(s"$projectRoot${JFile.separator}"))
           .getOrElse(path)
       } else {
         path
@@ -123,7 +124,9 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
         val dir = File(projectRoot) / resolvedPath
         if (dir.isDirectory)
           dir.list
-            .map(_.pathAsString.stripPrefix(s"$projectRoot/").stripSuffix(".rb"))
+            .map(
+              _.pathAsString.stripPrefix(s"$projectRoot${JFile.separator}").stripSuffix(".rb").replaceAll("\\\\", "/")
+            )
             .toList
         else Nil
       } else {
@@ -292,15 +295,10 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
         super.tryResolveTypeReference(normalizedTypeName) match {
           case None if GlobalTypes.kernelFunctions.contains(normalizedTypeName) =>
             Option(RubyType(s"${GlobalTypes.kernelPrefix}.$normalizedTypeName", List.empty, List.empty))
+          case None if GlobalTypes.bundledClasses.contains(normalizedTypeName) =>
+            Option(RubyType(s"<${GlobalTypes.builtinPrefix}.$normalizedTypeName>", List.empty, List.empty))
           case None =>
-            summary.namespaceToType.flatMap(_._2).collectFirst {
-              case x if !x.isInstanceOf[RubyStubbedType] && x.name.split("[.]").endsWith(normalizedTypeName.split("[.]")) =>
-                typesInScope.addOne(x)
-                x
-              case x if x.name.split("[.]").lastOption.contains(normalizedTypeName) =>
-                typesInScope.addOne(x)
-                x
-            }
+            None
           case x => x
         }
       }

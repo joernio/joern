@@ -357,7 +357,7 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
     args.asScala
       .map {
         case _: LambdaExpr => "<lambda>"
-        case other         => other.toString
+        case other         => code(other)
       }
       .mkString(", ")
   }

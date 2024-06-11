@@ -15,6 +15,8 @@ import com.github.javaparser.ast.expr.{
 }
 import com.github.javaparser.ast.nodeTypes.{NodeWithName, NodeWithSimpleName}
 import com.github.javaparser.ast.{CompilationUnit, ImportDeclaration, Node, PackageDeclaration}
+import com.github.javaparser.printer.configuration.DefaultPrinterConfiguration.ConfigOption
+import com.github.javaparser.printer.configuration.{DefaultConfigurationOption, DefaultPrinterConfiguration}
 import com.github.javaparser.resolution.UnsolvedSymbolException
 import com.github.javaparser.resolution.declarations.{
   ResolvedMethodDeclaration,
@@ -125,11 +127,17 @@ class AstCreator(
       case _                        => None
     }
   }
+
+  /** Custom printer that omits comments. To be used by [[code]] */
+  private val codePrinterOptions = new DefaultPrinterConfiguration()
+    .removeOption(new DefaultConfigurationOption(ConfigOption.PRINT_COMMENTS))
+    .removeOption(new DefaultConfigurationOption(ConfigOption.PRINT_JAVADOC))
+
   protected def line(node: Node): Option[Integer]      = node.getBegin.map(x => Integer.valueOf(x.line)).toScala
   protected def column(node: Node): Option[Integer]    = node.getBegin.map(x => Integer.valueOf(x.column)).toScala
   protected def lineEnd(node: Node): Option[Integer]   = node.getEnd.map(x => Integer.valueOf(x.line)).toScala
   protected def columnEnd(node: Node): Option[Integer] = node.getEnd.map(x => Integer.valueOf(x.column)).toScala
-  protected def code(node: Node): String               = "" // TODO: javasrc2cpg uses custom code strings everywhere
+  protected def code(node: Node): String               = node.toString(codePrinterOptions)
 
   private val lineOffsetTable = OffsetUtils.getLineOffsetTable(fileContent)
 
