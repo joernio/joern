@@ -124,7 +124,9 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
         val dir = File(projectRoot) / resolvedPath
         if (dir.isDirectory)
           dir.list
-            .map(_.pathAsString.stripPrefix(s"$projectRoot${JFile.separator}").stripSuffix(".rb"))
+            .map(
+              _.pathAsString.stripPrefix(s"$projectRoot${JFile.separator}").stripSuffix(".rb").replaceAll("\\\\", "/")
+            )
             .toList
         else Nil
       } else {
