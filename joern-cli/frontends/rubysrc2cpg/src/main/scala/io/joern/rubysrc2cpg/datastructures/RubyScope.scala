@@ -9,6 +9,7 @@ import io.joern.x2cpg.datastructures.*
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{DeclarationNew, NewLocal, NewMethodParameterIn}
 
+import java.io.File as JFile
 import scala.collection.mutable
 import scala.reflect.ClassTag
 import scala.util.Try
@@ -112,7 +113,7 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
     val resolvedPath =
       if (isRelative) {
         Try((File(currentFilePath).parent / path).pathAsString).toOption
-          .map(_.stripPrefix(s"$projectRoot/"))
+          .map(_.stripPrefix(s"$projectRoot${JFile.separator}"))
           .getOrElse(path)
       } else {
         path
@@ -123,7 +124,7 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
         val dir = File(projectRoot) / resolvedPath
         if (dir.isDirectory)
           dir.list
-            .map(_.pathAsString.stripPrefix(s"$projectRoot/").stripSuffix(".rb"))
+            .map(_.pathAsString.stripPrefix(s"$projectRoot${JFile.separator}").stripSuffix(".rb"))
             .toList
         else Nil
       } else {
