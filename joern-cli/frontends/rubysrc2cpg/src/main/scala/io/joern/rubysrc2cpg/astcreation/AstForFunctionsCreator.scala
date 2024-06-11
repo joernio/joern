@@ -348,16 +348,16 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
         val (astParentType, astParentFullName, thisParamCode, addEdge) = targetNode match {
           case _: SelfIdentifier =>
-            (scope.surroundingAstLabel, scope.surroundingScopeFullName.map(x => s"$x<class>"), Defines.Self, false)
+            (scope.surroundingAstLabel, scope.surroundingScopeFullName, Defines.Self, false)
           case _: SimpleIdentifier =>
             val baseType = node.target.span.text
             scope.surroundingTypeFullName.map(_.split("[.]").last) match {
               case Some(typ) if typ == baseType =>
-                (scope.surroundingAstLabel, scope.surroundingScopeFullName.map(x => s"$x<class>"), baseType, false)
+                (scope.surroundingAstLabel, scope.surroundingScopeFullName, baseType, false)
               case Some(typ) =>
                 scope.tryResolveTypeReference(baseType) match {
                   case Some(typ) =>
-                    (Option(NodeTypes.TYPE_DECL), Option(s"${typ.name}<class>"), baseType, true)
+                    (Option(NodeTypes.TYPE_DECL), Option(typ.name), baseType, true)
                   case None => (None, None, Defines.Self, false)
                 }
               case None => (None, None, Defines.Self, false)
@@ -399,7 +399,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         scope.popScope()
 
         // The member for these types refers to the singleton class
-        val member = memberForMethod(method, Option(NodeTypes.TYPE_DECL), astParentFullName)
+        val member = memberForMethod(method, Option(NodeTypes.TYPE_DECL), astParentFullName.map(x => s"$x<class>"))
         diffGraph.addNode(member)
 
         val _methodAst =
