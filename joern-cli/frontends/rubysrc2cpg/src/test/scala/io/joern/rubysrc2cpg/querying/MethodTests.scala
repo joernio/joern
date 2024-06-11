@@ -376,6 +376,11 @@ class MethodTests extends RubyCode2CpgFixture {
       }
     }
 
+    "have bindings to the singleton module TYPE_DECL" in {
+      // Note: we cannot bind baz as this is a dynamic assignment to `F` which is trickier to determine
+      cpg.typeDecl.name("F<class>").methodBinding.methodFullName.l shouldBe List("Test0.rb:<global>::program.F:bar")
+    }
+
     "baz should not exist in the :program block" in {
       inside(cpg.method.name(":program").l) {
         case prog :: Nil =>

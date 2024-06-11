@@ -110,8 +110,15 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     callAst(assignment, Seq(lhs, rhs))
   }
 
-  protected def memberForMethod(method: NewMethod): NewMember = {
-    NewMember().name(method.name).code(method.name).dynamicTypeHintFullName(Seq(method.fullName))
+  protected def memberForMethod(
+    method: NewMethod,
+    astParentType: Option[String] = None,
+    astParentFullName: Option[String] = None
+  ): NewMember = {
+    val member = NewMember().name(method.name).code(method.name).dynamicTypeHintFullName(Seq(method.fullName))
+    astParentType.foreach(member.astParentType(_))
+    astParentFullName.foreach(member.astParentFullName(_))
+    member
   }
 
   protected val UnaryOperatorNames: Map[String, String] = Map(

@@ -54,7 +54,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       signature = None,
       fileName = relativeFileName,
       astParentType = scope.surroundingAstLabel,
-      astParentFullName = scope.surroundingScopeFullName
+      astParentFullName = scope.surroundingScopeFullName.map { tn => if isSingletonConstructor then s"$tn<class>" else tn }
     )
 
     if (isConstructor) scope.pushNewScope(ConstructorScope(fullName))
@@ -125,12 +125,14 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       if isClosure || scope.isSurroundedByProgramScope then Ast() // program scope members are set elsewhere
       else {
         // Singleton constructors that initialize @@ fields should have their members linked under the singleton class
-        val methodMember = memberForMethod(method)
+        val methodMember = scope.surroundingTypeFullName.map {
+          case x if isSingletonConstructor => s"$x<class>"
+          case x => x
+        } match {
+          case Some(astParentTfn) => memberForMethod(method, Option(NodeTypes.TYPE_DECL), Option(astParentTfn))
+          case None => memberForMethod(method)
+        }
         if (isSingletonConstructor) {
-          scope.surroundingTypeFullName.map(x => s"$x<class>").foreach { x =>
-            methodMember.astParentType(NodeTypes.TYPE_DECL).astParentFullName(x)
-            method.astParentType(NodeTypes.TYPE_DECL).astParentFullName(x)
-          }
           diffGraph.addNode(methodMember)
           Ast()
         } else {
@@ -344,16 +346,16 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
         val (astParentType, astParentFullName, thisParamCode, addEdge) = targetNode match {
           case _: SelfIdentifier =>
-            (scope.surroundingAstLabel, scope.surroundingScopeFullName, Defines.Self, false)
+            (scope.surroundingAstLabel, scope.surroundingScopeFullName.map(x => s"$x<class>"), Defines.Self, false)
           case _: SimpleIdentifier =>
             val baseType = node.target.span.text
             scope.surroundingTypeFullName.map(_.split("[.]").last) match {
               case Some(typ) if typ == baseType =>
-                (scope.surroundingAstLabel, scope.surroundingTypeFullName, baseType, false)
+                (scope.surroundingAstLabel, scope.surroundingScopeFullName.map(x => s"$x<class>"), baseType, false)
               case Some(typ) =>
                 scope.tryResolveTypeReference(baseType) match {
                   case Some(typ) =>
-                    (Option(NodeTypes.TYPE_DECL), Option(typ.name), baseType, true)
+                    (Option(NodeTypes.TYPE_DECL), Option(s"${typ.name}<class>"), baseType, true)
                   case None => (None, None, Defines.Self, false)
                 }
               case None => (None, None, Defines.Self, false)
@@ -395,10 +397,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         scope.popScope()
 
         // The member for these types refers to the singleton class
-        scope.surroundingTypeFullName.map(x => s"$x<class>").foreach { typeDeclFn =>
-          val member = memberForMethod(method).astParentType(NodeTypes.TYPE_DECL).astParentFullName(typeDeclFn)
-          diffGraph.addNode(member)
-        }
+        val member = memberForMethod(method, Option(NodeTypes.TYPE_DECL), astParentFullName)
+        diffGraph.addNode(member)
 
         val _methodAst =
           methodAst(
