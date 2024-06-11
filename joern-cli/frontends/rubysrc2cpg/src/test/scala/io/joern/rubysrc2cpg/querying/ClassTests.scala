@@ -3,18 +3,9 @@ package io.joern.rubysrc2cpg.querying
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  Block,
-  Call,
-  FieldIdentifier,
-  Identifier,
-  Literal,
-  MethodRef,
-  Modifier,
-  Return
-}
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, FieldIdentifier, Identifier, Literal, MethodRef, Modifier, Return}
 import io.shiftleft.semanticcpg.language.*
-import io.joern.rubysrc2cpg.passes.Defines as RubyDefines
+import io.joern.rubysrc2cpg.passes.{GlobalTypes, Defines as RubyDefines}
 
 class ClassTests extends RubyCode2CpgFixture {
 
@@ -598,7 +589,7 @@ class ClassTests extends RubyCode2CpgFixture {
     }
 
     "create the `StandardError` local variable" in {
-      cpg.local.nameExact("some_variable").dynamicTypeHintFullName.toList shouldBe List("__builtin.StandardError")
+      cpg.local.nameExact("some_variable").dynamicTypeHintFullName.toList shouldBe List(s"<${GlobalTypes.builtinPrefix}.StandardError>")
     }
 
     "create the splatted error local variable" in {

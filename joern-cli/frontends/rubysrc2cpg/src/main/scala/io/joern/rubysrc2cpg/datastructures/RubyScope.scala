@@ -292,15 +292,10 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
         super.tryResolveTypeReference(normalizedTypeName) match {
           case None if GlobalTypes.kernelFunctions.contains(normalizedTypeName) =>
             Option(RubyType(s"${GlobalTypes.kernelPrefix}.$normalizedTypeName", List.empty, List.empty))
+          case None if GlobalTypes.bundledClasses.contains(normalizedTypeName) =>
+            Option(RubyType(s"<${GlobalTypes.builtinPrefix}.$normalizedTypeName>", List.empty, List.empty))
           case None =>
-            summary.namespaceToType.flatMap(_._2).collectFirst {
-              case x if x.name.split("[.]").endsWith(normalizedTypeName.split("[.]")) =>
-                typesInScope.addOne(x)
-                x
-              case x if x.name.split("[.]").lastOption.contains(normalizedTypeName) =>
-                typesInScope.addOne(x)
-                x
-            }
+            None
           case x => x
         }
       }
