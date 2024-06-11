@@ -38,7 +38,7 @@ private class RecoverForRubyFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, 
   /** A heuristic method to determine if a call name is a constructor or not.
     */
   override protected def isConstructor(name: String): Boolean =
-    !name.isBlank && (name == "new" || name == XDefines.ConstructorMethodName)
+    !name.isBlank && (name == "new" || name == Defines.Initialize)
 
   override protected def hasTypes(node: AstNode): Boolean = node match {
     case x: Call if !x.methodFullName.startsWith("<operator>") =>

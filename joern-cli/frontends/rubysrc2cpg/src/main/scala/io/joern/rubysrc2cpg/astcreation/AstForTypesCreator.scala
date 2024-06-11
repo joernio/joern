@@ -78,6 +78,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val singletonTypeDecl = typeDecl.copy
       .name(s"$className<class>")
       .fullName(s"$classFullName<class>")
+      .inheritsFromTypeFullName(inheritsFrom.map(x => s"$x<class>"))
 
     val (typeDeclModifiers, singletonModifiers) = node match {
       case _: ModuleDeclaration =>

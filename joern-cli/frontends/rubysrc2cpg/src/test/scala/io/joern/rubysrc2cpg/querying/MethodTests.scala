@@ -1,20 +1,10 @@
 package io.joern.rubysrc2cpg.querying
 
-import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.joern.x2cpg.Defines
 import io.joern.rubysrc2cpg.passes.Defines as RDefines
 import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelPrefix
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, ModifierTypes, NodeTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  Call,
-  Identifier,
-  Literal,
-  Method,
-  MethodRef,
-  Return,
-  TypeDecl,
-  TypeRef
-}
+import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, NodeTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
 class MethodTests extends RubyCode2CpgFixture {
@@ -317,7 +307,7 @@ class MethodTests extends RubyCode2CpgFixture {
     "create a method under `Foo` for both `x=`, `x`, and `bar=`, where `bar=` forwards parameters to a call to `x=`" in {
       inside(cpg.typeDecl("Foo").l) {
         case foo :: Nil =>
-          inside(foo.method.nameNot(Defines.ConstructorMethodName, Defines.StaticInitMethodName).l) {
+          inside(foo.method.nameNot(RDefines.Initialize).l) {
             case xeq :: x :: bar :: Nil =>
               xeq.name shouldBe "x="
               x.name shouldBe "x"
@@ -666,7 +656,7 @@ class MethodTests extends RubyCode2CpgFixture {
 
     "be placed directly before each entity's definition" in {
       inside(cpg.method.name(RDefines.Program).filename("t1.rb").block.astChildren.l) {
-        case (a1: Call) :: (_: TypeDecl) :: (a2: Call) :: (_: TypeDecl) :: (a3: Call) :: (_: Method) :: (_: TypeDecl) :: Nil =>
+        case (a1: Call) :: (_: TypeDecl) :: (_: TypeDecl) :: (a2: Call) :: (_: TypeDecl) :: (_: TypeDecl) :: (a3: Call) :: (_: Method) :: (_: TypeDecl) :: Nil =>
           a1.code shouldBe "self.A = class A (...)"
           a2.code shouldBe "self.B = class B (...)"
           a3.code shouldBe "self.c = def c (...)"

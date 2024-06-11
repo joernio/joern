@@ -893,7 +893,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
         val clinitStmtList         = genSingleAssignmentStmtList(classFields, classFieldsInMethodDecls)
 
         val clinitMethod =
-          MethodDeclaration(XDefines.StaticInitMethodName, List.empty, StatementList(clinitStmtList)(stmtList.span))(
+          MethodDeclaration(Defines.InitializeClass, List.empty, StatementList(clinitStmtList)(stmtList.span))(
             stmtList.span
           )
 
@@ -911,7 +911,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
             }
           case None =>
             val newInitMethod =
-              MethodDeclaration("initialize", List.empty, StatementList(initStmtListStatements)(stmtList.span))(
+              MethodDeclaration(Defines.Initialize, List.empty, StatementList(initStmtListStatements)(stmtList.span))(
                 stmtList.span
               )
             val initializers = newInitMethod :: clinitMethod :: Nil

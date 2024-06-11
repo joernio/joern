@@ -39,9 +39,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   protected def astForMethodDeclaration(node: MethodDeclaration, isClosure: Boolean = false): Seq[Ast] = {
 
     // Special case constructor methods
-    val isInTypeDecl  = scope.surroundingAstLabel.contains(NodeTypes.TYPE_DECL)
-    val isConstructor = node.methodName == Defines.Initialize && isInTypeDecl
-    val methodName    = node.methodName
+    val isInTypeDecl = scope.surroundingAstLabel.contains(NodeTypes.TYPE_DECL)
+    val isConstructor =
+      (node.methodName == Defines.Initialize || node.methodName == Defines.InitializeClass) && isInTypeDecl
+    val isSingletonConstructor = node.methodName == Defines.InitializeClass && isInTypeDecl
+    val methodName             = if isSingletonConstructor then Defines.Initialize else node.methodName
     // TODO: body could be a try
     val fullName = computeMethodFullName(methodName)
     val method = methodNode(
@@ -80,7 +82,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           relativeFileName,
           code(node),
           astParentType = scope.surroundingAstLabel.getOrElse("<empty>"),
-          astParentFullName = scope.surroundingScopeFullName.getOrElse("<empty>")
+          astParentFullName = scope.surroundingScopeFullName
+            .map { tn => if isSingletonConstructor then s"$tn<class>" else tn }
+            .getOrElse("<empty>")
         ),
         typeRefNode(node, methodName, fullName),
         methodRefNode(node, methodName, fullName, methodReturn.typeFullName)
@@ -94,7 +98,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       val baseStmtBlockAst = astForMethodBody(node.body, optionalStatementList)
       transformAsClosureBody(refs, baseStmtBlockAst)
     } else {
-      if (methodName != Defines.Initialize && node.methodName != XDefines.StaticInitMethodName) {
+      if (methodName != Defines.Initialize && methodName != Defines.InitializeClass) {
         astForMethodBody(node.body, optionalStatementList)
       } else {
         astForConstructorMethodBody(node.body, optionalStatementList)
@@ -119,18 +123,40 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     val prefixMemberAst =
       if isClosure || scope.isSurroundedByProgramScope then Ast() // program scope members are set elsewhere
-      else Ast(memberForMethod(method))
+      else {
+        // Singleton constructors that initialize @@ fields should have their members linked under the singleton class
+        val methodMember = memberForMethod(method)
+        if (isSingletonConstructor) {
+          scope.surroundingTypeFullName.map(x => s"$x<class>").foreach { x =>
+            methodMember.astParentType(NodeTypes.TYPE_DECL).astParentFullName(x)
+            method.astParentType(NodeTypes.TYPE_DECL).astParentFullName(x)
+          }
+          diffGraph.addNode(methodMember)
+          Ast()
+        } else {
+          Ast(memberForMethod(method))
+        }
+      }
     val prefixRefAssignAst = if isClosure then Ast() else createMethodRefPointer(method)
     // For closures, we also want the method/type refs for upstream use
     val suffixAsts = if isClosure then refs else refs.filter(_.root.exists(_.isInstanceOf[NewTypeDecl]))
-    val methodAsts = prefixMemberAst :: prefixRefAssignAst ::
-      methodAst(
+    val methodAst_ = {
+      val mAst = methodAst(
         method,
         parameterAsts ++ anonProcParam,
         stmtBlockAst,
         methodReturn,
         modifiers.map(newModifierNode).toSeq
-      ) :: suffixAsts
+      )
+      // AstLinker will link the singleton as the parent
+      if isSingletonConstructor then {
+        Ast.storeInDiffGraph(mAst, diffGraph)
+        Ast()
+      } else {
+        mAst
+      }
+    }
+    val methodAsts = prefixMemberAst :: prefixRefAssignAst :: methodAst_ :: suffixAsts
     methodAsts.filterNot(_.root.isEmpty)
   }
 
@@ -295,8 +321,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     }
 
     // This will link the type decl to the surrounding context via base overlays
-    val typeDeclAst = astForClassDeclaration(node).last
+    val Seq(_, typeDeclAst, singletonAsts) = astForClassDeclaration(node).take(3)
     Ast.storeInDiffGraph(typeDeclAst, diffGraph)
+    Ast.storeInDiffGraph(singletonAsts, diffGraph)
 
     typeDeclAst.nodes
       .collectFirst { case typeDecl: NewTypeDecl =>
@@ -367,8 +394,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
         scope.popScope()
 
-        // The member for these types refer to the singleton class
-        scope.surroundingTypeFullName.foreach { typeDeclFn =>
+        // The member for these types refers to the singleton class
+        scope.surroundingTypeFullName.map(x => s"$x<class>").foreach { typeDeclFn =>
           val member = memberForMethod(method).astParentType(NodeTypes.TYPE_DECL).astParentFullName(typeDeclFn)
           diffGraph.addNode(member)
         }
