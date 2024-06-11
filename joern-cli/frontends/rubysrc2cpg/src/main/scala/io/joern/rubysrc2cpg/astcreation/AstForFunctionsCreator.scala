@@ -54,7 +54,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       signature = None,
       fileName = relativeFileName,
       astParentType = scope.surroundingAstLabel,
-      astParentFullName = scope.surroundingScopeFullName.map { tn => if isSingletonConstructor then s"$tn<class>" else tn }
+      astParentFullName = scope.surroundingScopeFullName.map { tn =>
+        if isSingletonConstructor then s"$tn<class>" else tn
+      }
     )
 
     if (isConstructor) scope.pushNewScope(ConstructorScope(fullName))
@@ -127,10 +129,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         // Singleton constructors that initialize @@ fields should have their members linked under the singleton class
         val methodMember = scope.surroundingTypeFullName.map {
           case x if isSingletonConstructor => s"$x<class>"
-          case x => x
+          case x                           => x
         } match {
           case Some(astParentTfn) => memberForMethod(method, Option(NodeTypes.TYPE_DECL), Option(astParentTfn))
-          case None => memberForMethod(method)
+          case None               => memberForMethod(method)
         }
         if (isSingletonConstructor) {
           diffGraph.addNode(methodMember)
