@@ -4,7 +4,6 @@ import io.joern.rubysrc2cpg.passes.{GlobalTypes, Defines as RubyDefines}
 import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelPrefix
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
@@ -157,7 +156,7 @@ class CallTests extends RubyCode2CpgFixture {
           inside(assignment.argument.l) {
             case (a: Identifier) :: (_: Block) :: Nil =>
               a.name shouldBe "a"
-              a.dynamicTypeHintFullName should contain("Test0.rb:<global>::program.A<class>")
+              a.dynamicTypeHintFullName should contain("Test0.rb:<global>::program.A")
             case xs => fail(s"Expected one identifier and one call argument, got [${xs.code.mkString(",")}]")
           }
         case xs => fail(s"Expected a single assignment, got [${xs.code.mkString(",")}]")
@@ -186,7 +185,7 @@ class CallTests extends RubyCode2CpgFixture {
           inside(constructor.argument.l) {
             case (a: Identifier) :: Nil =>
               a.name shouldBe "<tmp-0>"
-              a.typeFullName shouldBe "Test0.rb:<global>::program.A<class>"
+              a.typeFullName shouldBe "Test0.rb:<global>::program.A"
               a.argumentIndex shouldBe 0
             case xs => fail(s"Expected one identifier and one call argument, got [${xs.code.mkString(",")}]")
           }

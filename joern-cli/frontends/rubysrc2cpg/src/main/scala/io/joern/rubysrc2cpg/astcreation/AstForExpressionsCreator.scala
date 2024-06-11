@@ -226,7 +226,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val tmp = SimpleIdentifier(Option(className))(node.span.spanStart(tmpGen.fresh))
     def tmpIdentifier = {
       val tmpAst = astForSimpleIdentifier(tmp)
-      tmpAst.root.collect { case x: NewIdentifier => x.typeFullName(receiverTypeFullName) }
+      tmpAst.root.collect { case x: NewIdentifier => x.typeFullName(receiverTypeFullName.stripSuffix("<class>")) }
       tmpAst
     }
 
