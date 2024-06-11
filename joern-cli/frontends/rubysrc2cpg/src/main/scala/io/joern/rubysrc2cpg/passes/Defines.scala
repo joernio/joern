@@ -185,7 +185,7 @@ object GlobalTypes {
     "Warning",
     "ZeroDivisionError",
     "fatal",
-    "unknown",
+    "unknown"
   )
 
   /* Source: https://ruby-doc.org/3.2.2/Kernel.html
