@@ -14,7 +14,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   Return
 }
 import io.shiftleft.semanticcpg.language.*
-import io.joern.rubysrc2cpg.passes.Defines as RubyDefines
+import io.joern.rubysrc2cpg.passes.{GlobalTypes, Defines as RubyDefines}
 
 class ClassTests extends RubyCode2CpgFixture {
 
@@ -618,7 +618,9 @@ class ClassTests extends RubyCode2CpgFixture {
     }
 
     "create the `StandardError` local variable" in {
-      cpg.local.nameExact("some_variable").dynamicTypeHintFullName.toList shouldBe List("__builtin.StandardError")
+      cpg.local.nameExact("some_variable").dynamicTypeHintFullName.toList shouldBe List(
+        s"<${GlobalTypes.builtinPrefix}.StandardError>"
+      )
     }
 
     "create the splatted error local variable" in {
@@ -711,6 +713,27 @@ class ClassTests extends RubyCode2CpgFixture {
             case xs => fail(s"Expected one init method, got ${xs.code.mkString(", ")} instead")
           }
         case xs => fail(s"Expected one class, got ${xs.code.mkString(", ")} instead")
+      }
+    }
+  }
+
+  // TODO: Fix when implementing calls vs field accesses, currently handled as a MemberAccess where the target becomes "Encoding"
+  //  which is resolved as `<__builtin.Encoding>`, and then adds the `Converter` as a function call, so type ends up being
+  //  `<__builtin.Encoding>:Converter`
+  "GlobalTypes::BundledClasses" ignore {
+    val cpg = code("""
+        |a = Encoding::Converter.asciicompat_encoding("abc")
+        |""".stripMargin)
+
+    "resolve call type" in {
+      inside(cpg.call.nameExact(Operators.assignment).l) {
+        case assignCall :: Nil =>
+          inside(assignCall.argument.l) {
+            case lhs :: (rhs: Call) :: Nil =>
+              rhs.typeFullName shouldBe "<__builtin.Encoding.Converter>:asciicompat_encoding"
+            case xs => fail(s"Expected lhs and rhs for assignment call, got [${xs.code.mkString(",")}]")
+          }
+        case xs => fail(s"Expected one call for assignment, got [${xs.code.mkString(",")}]")
       }
     }
   }
