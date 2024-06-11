@@ -40,8 +40,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     // Special case constructor methods
     val isInTypeDecl  = scope.surroundingAstLabel.contains(NodeTypes.TYPE_DECL)
-    val isConstructor = node.methodName == "initialize" && isInTypeDecl
-    val methodName    = if isConstructor then XDefines.ConstructorMethodName else node.methodName
+    val isConstructor = node.methodName == Defines.Initialize && isInTypeDecl
+    val methodName    = node.methodName
     // TODO: body could be a try
     val fullName = computeMethodFullName(methodName)
     val method = methodNode(
@@ -101,6 +101,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       }
     }
 
+    // For yield statements where there isn't an explicit proc parameter
     val anonProcParam = scope.anonProcParam.map { param =>
       val paramNode = ProcParameter(param)(node.span.spanStart(s"&$param"))
       val nextIndex =
@@ -177,7 +178,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
   /** Creates the bindings between the method and its types. This is useful for resolving function pointers and imports.
     */
-  private def createMethodTypeBindings(method: NewMethod, refs: List[Ast]): Unit = {
+  protected def createMethodTypeBindings(method: NewMethod, refs: List[Ast]): Unit = {
     refs.flatMap(_.root).collectFirst { case typeRef: NewTypeDecl =>
       val bindingNode = newBindingNode("", "", method.fullName)
       diffGraph.addEdge(typeRef, bindingNode, EdgeTypes.BINDS)
@@ -310,7 +311,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   protected def astForSingletonMethodDeclaration(node: SingletonMethodDeclaration): Seq[Ast] = {
-    node.target match
+    node.target match {
       case targetNode: SingletonMethodIdentifier =>
         val fullName = computeMethodFullName(node.methodName)
 
@@ -366,6 +367,12 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
         scope.popScope()
 
+        // The member for these types refer to the singleton class
+        scope.surroundingTypeFullName.foreach { typeDeclFn =>
+          val member = memberForMethod(method).astParentType(NodeTypes.TYPE_DECL).astParentFullName(typeDeclFn)
+          diffGraph.addNode(member)
+        }
+
         val _methodAst =
           methodAst(
             method,
@@ -384,6 +391,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           s"Target node type for singleton method declarations are not supported yet: ${targetNode.text} (${targetNode.getClass.getSimpleName}), skipping"
         )
         astForUnknown(node) :: Nil
+    }
   }
 
   private def createMethodRefPointer(method: NewMethod): Ast = {

@@ -205,10 +205,15 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   protected def astForObjectInstantiation(node: RubyNode & ObjectInstantiation): Ast = {
     val className  = node.target.text
-    val methodName = XDefines.ConstructorMethodName
+    val callName   = "new"
+    val methodName = Defines.Initialize
+    /*
+      We short-cut the call edge from `new` call to `initialize` method, however we keep the modelling of the receiver
+      as referring to the singleton class.
+     */
     val (receiverTypeFullName, fullName) = scope.tryResolveTypeReference(className) match {
-      case Some(typeMetaData) => typeMetaData.name -> s"${typeMetaData.name}:$methodName"
-      case None               => XDefines.Any      -> XDefines.DynamicCallUnknownFullName
+      case Some(typeMetaData) => s"${typeMetaData.name}<class>" -> s"${typeMetaData.name}:$methodName"
+      case None               => XDefines.Any                   -> XDefines.DynamicCallUnknownFullName
     }
     /*
       Similarly to some other frontends, we lower the constructor into two operations, e.g.,
@@ -248,7 +253,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         x.arguments.map(astForMethodCallArgument) :+ methodRef
     }
 
-    val constructorCall    = callNode(node, code(node), methodName, fullName, DispatchTypes.DYNAMIC_DISPATCH)
+    val constructorCall    = callNode(node, code(node), callName, fullName, DispatchTypes.DYNAMIC_DISPATCH)
     val constructorCallAst = callAst(constructorCall, argumentAsts, Option(tmpIdentifier))
     scope.popScope()
 

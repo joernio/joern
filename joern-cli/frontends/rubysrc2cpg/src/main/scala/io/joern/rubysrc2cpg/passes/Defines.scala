@@ -21,6 +21,7 @@ object Defines {
   val Proc: String       = "proc"
   val Loop: String       = "loop"
   val Self: String       = "self"
+  val Initialize: String = "initialize"
 
   val Program: String = ":program"
 
