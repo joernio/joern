@@ -113,7 +113,7 @@ class DownloadDependencyTest extends RubyCode2CpgFixture(downloadDependencies = 
 
           inside(block.astChildren.isCall.name(Defines.ConstructorMethodName).headOption) {
             case Some(constructorCall) =>
-              constructorCall.methodFullName shouldBe "utils/help.rb:<global>::program.Help:<init>"
+              constructorCall.methodFullName shouldBe "utils/help.rb:<global>::program.Help:initialize"
             case None => fail(s"Expected constructor call, did not find one")
           }
         case xs => fail(s"Expected two arguments under the constructor assignment, got [${xs.code.mkString(", ")}]")

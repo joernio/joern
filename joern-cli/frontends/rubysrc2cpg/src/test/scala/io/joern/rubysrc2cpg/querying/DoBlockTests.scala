@@ -250,8 +250,8 @@ class DoBlockTests extends RubyCode2CpgFixture {
               tmpLocal.name shouldBe "<tmp-0>"
               tmpAssign.code shouldBe "<tmp-0> = Array.new(x) { |i| i += 1 }"
 
-              newCall.name shouldBe Defines.ConstructorMethodName
-              newCall.methodFullName shouldBe s"$kernelPrefix.Array:<init>"
+              newCall.name shouldBe "new"
+              newCall.methodFullName shouldBe s"$kernelPrefix.Array:initialize"
 
               inside(newCall.argument.l) {
                 case (_: Identifier) :: (x: Identifier) :: (closure: MethodRef) :: Nil =>

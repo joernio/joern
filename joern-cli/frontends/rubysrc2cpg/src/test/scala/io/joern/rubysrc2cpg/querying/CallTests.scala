@@ -157,7 +157,7 @@ class CallTests extends RubyCode2CpgFixture {
           inside(assignment.argument.l) {
             case (a: Identifier) :: (_: Block) :: Nil =>
               a.name shouldBe "a"
-              a.dynamicTypeHintFullName should contain("Test0.rb:<global>::program.A")
+              a.dynamicTypeHintFullName should contain("Test0.rb:<global>::program.A<class>")
             case xs => fail(s"Expected one identifier and one call argument, got [${xs.code.mkString(",")}]")
           }
         case xs => fail(s"Expected a single assignment, got [${xs.code.mkString(",")}]")
@@ -181,12 +181,12 @@ class CallTests extends RubyCode2CpgFixture {
     }
 
     "create a call to the object's constructor, with the temp variable receiver" in {
-      inside(cpg.call.nameExact(Defines.ConstructorMethodName).l) {
+      inside(cpg.call.nameExact("new").l) {
         case constructor :: Nil =>
           inside(constructor.argument.l) {
             case (a: Identifier) :: Nil =>
               a.name shouldBe "<tmp-0>"
-              a.typeFullName shouldBe "Test0.rb:<global>::program.A"
+              a.typeFullName shouldBe "Test0.rb:<global>::program.A<class>"
               a.argumentIndex shouldBe 0
             case xs => fail(s"Expected one identifier and one call argument, got [${xs.code.mkString(",")}]")
           }

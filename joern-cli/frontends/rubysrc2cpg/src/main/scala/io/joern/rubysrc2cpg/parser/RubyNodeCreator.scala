@@ -887,10 +887,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
 
         val (instanceFieldsInMethodDecls, classFieldsInMethodDecls) = partitionRubyFields(fieldsInMethodDecls)
 
-        val initializeMethod = methodDecls.collectFirst { x =>
-          x.methodName match
-            case "initialize" => x
-        }
+        val initializeMethod = methodDecls.collectFirst { case x if x.methodName == Defines.Initialize => x }
 
         val initStmtListStatements = genSingleAssignmentStmtList(instanceFields, instanceFieldsInMethodDecls)
         val clinitStmtList         = genSingleAssignmentStmtList(classFields, classFieldsInMethodDecls)

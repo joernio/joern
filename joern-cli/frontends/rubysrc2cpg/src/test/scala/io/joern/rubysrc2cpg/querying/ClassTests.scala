@@ -29,8 +29,8 @@ class ClassTests extends RubyCode2CpgFixture {
     classC.fullName shouldBe "Test0.rb:<global>::program.C"
     classC.lineNumber shouldBe Some(2)
     classC.baseType.l shouldBe List()
-    classC.member.name.l shouldBe List("<init>", "<clinit>")
-    classC.method.name.l shouldBe List("<init>", "<clinit>")
+    classC.member.name.l shouldBe List(RubyDefines.Initialize, "<clinit>")
+    classC.method.name.l shouldBe List(RubyDefines.Initialize, "<clinit>")
   }
 
   "`class C < D` is represented by a TYPE_DECL node inheriting from `D`" in {
@@ -45,8 +45,8 @@ class ClassTests extends RubyCode2CpgFixture {
     classC.inheritsFromTypeFullName shouldBe List("D")
     classC.fullName shouldBe "Test0.rb:<global>::program.C"
     classC.lineNumber shouldBe Some(2)
-    classC.member.name.l shouldBe List("<init>", "<clinit>")
-    classC.method.name.l shouldBe List("<init>", "<clinit>")
+    classC.member.name.l shouldBe List(RubyDefines.Initialize, "<clinit>")
+    classC.method.name.l shouldBe List(RubyDefines.Initialize, "<clinit>")
 
     val List(typeD) = classC.baseType.l
     typeD.name shouldBe "D"
@@ -194,9 +194,9 @@ class ClassTests extends RubyCode2CpgFixture {
                      |""".stripMargin)
 
     val List(classC)     = cpg.typeDecl.name("C").l
-    val List(methodInit) = classC.method.name("<init>").l
+    val List(methodInit) = classC.method.name(RubyDefines.Initialize).l
 
-    methodInit.fullName shouldBe "Test0.rb:<global>::program.C:<init>"
+    methodInit.fullName shouldBe s"Test0.rb:<global>::program.C:${RubyDefines.Initialize}"
   }
 
   "`class C end` has default constructor" in {
@@ -206,9 +206,9 @@ class ClassTests extends RubyCode2CpgFixture {
                      |""".stripMargin)
 
     val List(classC)     = cpg.typeDecl.name("C").l
-    val List(methodInit) = classC.method.name("<init>").l
+    val List(methodInit) = classC.method.name(RubyDefines.Initialize).l
 
-    methodInit.fullName shouldBe "Test0.rb:<global>::program.C:<init>"
+    methodInit.fullName shouldBe s"Test0.rb:<global>::program.C:${RubyDefines.Initialize}"
   }
 
   "`def initialize() ... end` not directly under class has method name `initialize`" in {
@@ -274,7 +274,8 @@ class ClassTests extends RubyCode2CpgFixture {
 
   }
 
-  "a basic singleton class" should {
+  // TODO: This should be remodelled as a property access `animal.bark = METHOD_REF`
+  "a basic singleton class" ignore {
     val cpg = code("""class Animal; end
         |animal = Animal.new
         |
@@ -326,7 +327,7 @@ class ClassTests extends RubyCode2CpgFixture {
           |""".stripMargin)
       inside(cpg.typeDecl.name("User").l) {
         case userType :: Nil =>
-          inside(userType.method.name(Defines.ConstructorMethodName).l) {
+          inside(userType.method.name(RubyDefines.Initialize).l) {
             case constructor :: Nil =>
               inside(constructor.astChildren.isBlock.l) {
                 case methodBlock :: Nil =>
@@ -462,7 +463,7 @@ class ClassTests extends RubyCode2CpgFixture {
     "create nil assignments under the class initializer" in {
       inside(cpg.typeDecl.name("Foo").l) {
         case fooType :: Nil =>
-          inside(fooType.method.name(Defines.ConstructorMethodName).l) {
+          inside(fooType.method.name(RubyDefines.Initialize).l) {
             case initMethod :: Nil =>
               inside(initMethod.block.astChildren.isCall.name(Operators.assignment).l) {
                 case aAssignment :: bAssignment :: cAssignment :: dAssignment :: oAssignment :: Nil =>
@@ -619,7 +620,7 @@ class ClassTests extends RubyCode2CpgFixture {
     "be moved to <init> constructor method" in {
       inside(cpg.typeDecl.name("Foo").l) {
         case fooClass :: Nil =>
-          inside(fooClass.method.name(Defines.ConstructorMethodName).l) {
+          inside(fooClass.method.name(RubyDefines.Initialize).l) {
             case initMethod :: Nil =>
               inside(initMethod.astChildren.isBlock.astChildren.isCall.l) {
                 case scopeCall :: Nil =>

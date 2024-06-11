@@ -94,7 +94,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       val baseStmtBlockAst = astForMethodBody(node.body, optionalStatementList)
       transformAsClosureBody(refs, baseStmtBlockAst)
     } else {
-      if (methodName != XDefines.ConstructorMethodName && node.methodName != XDefines.StaticInitMethodName) {
+      if (methodName != Defines.Initialize && node.methodName != XDefines.StaticInitMethodName) {
         astForMethodBody(node.body, optionalStatementList)
       } else {
         astForConstructorMethodBody(node.body, optionalStatementList)

@@ -5,6 +5,7 @@ import io.joern.x2cpg.Defines as XDefines
 import io.joern.x2cpg.datastructures.{FieldLike, MethodLike, ProgramSummary, StubbedType, TypeLike}
 import io.joern.x2cpg.typestub.{TypeStubMetaData, TypeStubUtil}
 import org.slf4j.LoggerFactory
+import io.joern.rubysrc2cpg.passes.Defines
 import upickle.default.*
 
 import java.io.{ByteArrayInputStream, InputStream}
@@ -165,7 +166,7 @@ case class RubyType(name: String, methods: List[RubyMethod], fields: List[RubyFi
   }
 
   def hasConstructor: Boolean = {
-    methods.exists(_.name == XDefines.ConstructorMethodName)
+    methods.exists(_.name == Defines.Initialize)
   }
 }
 

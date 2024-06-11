@@ -109,11 +109,9 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       case n => astsForStatement(n)
     } match {
       case bodyAsts if scope.shouldGenerateDefaultConstructor && this.parseLevel == AstParseLevel.FULL_AST =>
-        val bodyStart = classBody.span.spanStart()
-        val initBody  = StatementList(List())(bodyStart)
-        val methodDecl = astForMethodDeclaration(
-          MethodDeclaration(XDefines.ConstructorMethodName, List(), initBody)(bodyStart)
-        )
+        val bodyStart  = classBody.span.spanStart()
+        val initBody   = StatementList(List())(bodyStart)
+        val methodDecl = astForMethodDeclaration(MethodDeclaration(Defines.Initialize, List(), initBody)(bodyStart))
         methodDecl ++ bodyAsts
       case bodyAsts => bodyAsts
     }
