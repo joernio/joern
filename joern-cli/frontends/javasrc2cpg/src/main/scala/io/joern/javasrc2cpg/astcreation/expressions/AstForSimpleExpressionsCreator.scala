@@ -324,7 +324,7 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
     val typeFullName = expressionReturnTypeFullName(expr).map(typeInfoCalc.registerType).getOrElse(TypeConstants.Any)
     val literalNode =
       NewLiteral()
-        .code(expr.toString)
+        .code(code(expr))
         .lineNumber(line(expr))
         .columnNumber(column(expr))
         .typeFullName(typeFullName)
