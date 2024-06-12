@@ -94,24 +94,23 @@ class DownloadDependencyTest extends RubyCode2CpgFixture(downloadDependencies = 
         case (v: Identifier) :: (block: Block) :: Nil =>
           v.dynamicTypeHintFullName should contain("dummy_logger.Main_module.Main_outer_class")
 
-          inside(block.astChildren.isCall.name(Defines.ConstructorMethodName).headOption) {
+          inside(block.astChildren.isCall.nameExact("new").headOption) {
             case Some(constructorCall) =>
-              constructorCall.methodFullName shouldBe s"dummy_logger.Main_module.Main_outer_class:${Defines.ConstructorMethodName}"
+              constructorCall.methodFullName shouldBe s"dummy_logger.Main_module.Main_outer_class:${RubyDefines.Initialize}"
             case None => fail(s"Expected constructor call, did not find one")
           }
         case xs => fail(s"Expected two arguments under the constructor assignment, got [${xs.code.mkString(", ")}]")
       }
     }
 
-    // TODO: Double check this test during review!
     "recognize the full method name of the imported Help's constructor" in {
       inside(cpg.assignment.where(_.target.isIdentifier.name("g")).argument.l) {
         case (g: Identifier) :: (block: Block) :: Nil =>
           g.dynamicTypeHintFullName should contain("dummy_logger.Help")
 
-          inside(block.astChildren.isCall.name(Defines.ConstructorMethodName).headOption) {
+          inside(block.astChildren.isCall.name("new").headOption) {
             case Some(constructorCall) =>
-              constructorCall.methodFullName shouldBe s"dummy_logger.Help:${Defines.ConstructorMethodName}"
+              constructorCall.methodFullName shouldBe s"dummy_logger.Help:${RubyDefines.Initialize}"
             case None => fail(s"Expected constructor call, did not find one")
           }
         case xs => fail(s"Expected two arguments under the constructor assignment, got [${xs.code.mkString(", ")}]")

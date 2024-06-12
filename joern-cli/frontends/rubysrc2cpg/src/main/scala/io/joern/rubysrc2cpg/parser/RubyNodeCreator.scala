@@ -887,16 +887,13 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
 
         val (instanceFieldsInMethodDecls, classFieldsInMethodDecls) = partitionRubyFields(fieldsInMethodDecls)
 
-        val initializeMethod = methodDecls.collectFirst { x =>
-          x.methodName match
-            case "initialize" => x
-        }
+        val initializeMethod = methodDecls.collectFirst { case x if x.methodName == Defines.Initialize => x }
 
         val initStmtListStatements = genSingleAssignmentStmtList(instanceFields, instanceFieldsInMethodDecls)
         val clinitStmtList         = genSingleAssignmentStmtList(classFields, classFieldsInMethodDecls)
 
         val clinitMethod =
-          MethodDeclaration(XDefines.StaticInitMethodName, List.empty, StatementList(clinitStmtList)(stmtList.span))(
+          MethodDeclaration(Defines.InitializeClass, List.empty, StatementList(clinitStmtList)(stmtList.span))(
             stmtList.span
           )
 
@@ -914,7 +911,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
             }
           case None =>
             val newInitMethod =
-              MethodDeclaration("initialize", List.empty, StatementList(initStmtListStatements)(stmtList.span))(
+              MethodDeclaration(Defines.Initialize, List.empty, StatementList(initStmtListStatements)(stmtList.span))(
                 stmtList.span
               )
             val initializers = newInitMethod :: clinitMethod :: Nil

@@ -200,14 +200,15 @@ class RubyExternalTypeRecoveryTests
         case sendgridImport :: Nil =>
           inside(
             sendgridImport.tag._toEvaluatedImport
-              .filter(_.label == "RESOLVED_METHOD")
+              .filter(_.label == EvaluatedImport.RESOLVED_METHOD)
               .map(_.asInstanceOf[ResolvedMethod])
               .filter(_.fullName.startsWith("sendgrid-ruby.SendGrid.API"))
               .l
           ) {
-            case apiInit :: Nil =>
-              apiInit.fullName shouldBe s"sendgrid-ruby.SendGrid.API.${XDefines.ConstructorMethodName}"
-            case xs => fail(s"Only one ResolvedMethod expected")
+            case apiClassInit :: apiInit :: Nil =>
+              apiInit.fullName shouldBe s"sendgrid-ruby.SendGrid.API.${Defines.Initialize}"
+              apiClassInit.fullName shouldBe s"sendgrid-ruby.SendGrid.API<class>.${Defines.Initialize}"
+            case xs => fail(s"Two ResolvedMethods expected, got [${xs.mkString(",")}]")
           }
         case xs => fail(s"Only sendgrid-ruby should be referenced, got [${xs.name.mkString}]")
       }
@@ -319,14 +320,14 @@ class RubyExternalTypeRecoveryTests
         case loggerImport :: Nil =>
           inside(
             loggerImport.tag._toEvaluatedImport
-              .filter(_.label == "RESOLVED_METHOD")
+              .filter(_.label == EvaluatedImport.RESOLVED_METHOD)
               .map(_.asInstanceOf[ResolvedMethod])
-              .filter(_.fullName == s"logger.Logger.${XDefines.ConstructorMethodName}")
+              .filter(_.fullName == s"logger.Logger.${Defines.Initialize}")
               .l
           ) {
             case loggerInit :: Nil =>
-              loggerInit.fullName shouldBe s"logger.Logger.${XDefines.ConstructorMethodName}"
-            case xs => fail(s"Only one ResolvedMethod expected")
+              loggerInit.fullName shouldBe s"logger.Logger.${Defines.Initialize}"
+            case xs => fail(s"Two ResolvedMethods expected, got [${xs.mkString(",")}]")
           }
         case xs => fail(s"Only logger library should be referenced, got [${xs.name.mkString}]")
       }
