@@ -96,7 +96,7 @@ class DownloadDependencyTest extends RubyCode2CpgFixture(downloadDependencies = 
 
           inside(block.astChildren.isCall.name(Defines.ConstructorMethodName).headOption) {
             case Some(constructorCall) =>
-              constructorCall.methodFullName shouldBe "dummy_logger.Main_module.Main_outer_class:<init>"
+              constructorCall.methodFullName shouldBe s"dummy_logger.Main_module.Main_outer_class:${Defines.ConstructorMethodName}"
             case None => fail(s"Expected constructor call, did not find one")
           }
         case xs => fail(s"Expected two arguments under the constructor assignment, got [${xs.code.mkString(", ")}]")
@@ -111,7 +111,7 @@ class DownloadDependencyTest extends RubyCode2CpgFixture(downloadDependencies = 
 
           inside(block.astChildren.isCall.name(Defines.ConstructorMethodName).headOption) {
             case Some(constructorCall) =>
-              constructorCall.methodFullName shouldBe "dummy_logger.Help:<init>"
+              constructorCall.methodFullName shouldBe s"dummy_logger.Help:${Defines.ConstructorMethodName}"
             case None => fail(s"Expected constructor call, did not find one")
           }
         case xs => fail(s"Expected two arguments under the constructor assignment, got [${xs.code.mkString(", ")}]")
