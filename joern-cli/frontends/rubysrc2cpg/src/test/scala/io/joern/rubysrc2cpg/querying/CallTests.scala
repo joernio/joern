@@ -4,7 +4,6 @@ import io.joern.rubysrc2cpg.passes.{GlobalTypes, Defines as RubyDefines}
 import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelPrefix
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
@@ -181,7 +180,7 @@ class CallTests extends RubyCode2CpgFixture {
     }
 
     "create a call to the object's constructor, with the temp variable receiver" in {
-      inside(cpg.call.nameExact(Defines.ConstructorMethodName).l) {
+      inside(cpg.call.nameExact("new").l) {
         case constructor :: Nil =>
           inside(constructor.argument.l) {
             case (a: Identifier) :: Nil =>

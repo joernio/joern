@@ -59,7 +59,7 @@ class ImportTests extends RubyCode2CpgFixture with Inspectors {
       )
 
       val List(newCall) =
-        cpg.method.name(":program").filename("t1.rb").ast.isCall.methodFullName(".*:<init>").methodFullName.l
+        cpg.method.name(":program").filename("t1.rb").ast.isCall.methodFullName(".*:initialize").methodFullName.l
       newCall should startWith(s"${path}.rb:")
     }
   }
@@ -173,7 +173,7 @@ class ImportTests extends RubyCode2CpgFixture with Inspectors {
         case csvParseCall :: csvTableInitCall :: ppCall :: Nil =>
           csvParseCall.methodFullName shouldBe "csv.CSV:parse"
           ppCall.methodFullName shouldBe "pp.PP:pp"
-          csvTableInitCall.methodFullName shouldBe "csv.CSV.Table:<init>"
+          csvTableInitCall.methodFullName shouldBe "csv.CSV.Table:initialize"
         case xs => fail(s"Expected three calls, got [${xs.code.mkString(",")}] instead")
       }
     }

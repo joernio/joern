@@ -94,9 +94,9 @@ class DownloadDependencyTest extends RubyCode2CpgFixture(downloadDependencies = 
         case (v: Identifier) :: (block: Block) :: Nil =>
           v.dynamicTypeHintFullName should contain("dummy_logger.rb:<global>::program.Main_module.Main_outer_class")
 
-          inside(block.astChildren.isCall.name(Defines.ConstructorMethodName).headOption) {
+          inside(block.astChildren.isCall.nameExact("new").headOption) {
             case Some(constructorCall) =>
-              constructorCall.methodFullName shouldBe "dummy_logger.rb:<global>::program.Main_module.Main_outer_class:<init>"
+              constructorCall.methodFullName shouldBe s"dummy_logger.rb:<global>::program.Main_module.Main_outer_class:${RubyDefines.Initialize}"
             case None => fail(s"Expected constructor call, did not find one")
           }
         case xs => fail(s"Expected two arguments under the constructor assignment, got [${xs.code.mkString(", ")}]")
@@ -113,7 +113,7 @@ class DownloadDependencyTest extends RubyCode2CpgFixture(downloadDependencies = 
 
           inside(block.astChildren.isCall.name(Defines.ConstructorMethodName).headOption) {
             case Some(constructorCall) =>
-              constructorCall.methodFullName shouldBe "utils/help.rb:<global>::program.Help:<init>"
+              constructorCall.methodFullName shouldBe "utils/help.rb:<global>::program.Help:initialize"
             case None => fail(s"Expected constructor call, did not find one")
           }
         case xs => fail(s"Expected two arguments under the constructor assignment, got [${xs.code.mkString(", ")}]")
