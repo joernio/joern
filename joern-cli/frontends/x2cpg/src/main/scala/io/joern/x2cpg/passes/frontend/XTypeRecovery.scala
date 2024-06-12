@@ -716,6 +716,10 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   protected def getIndexAccessTypes(ia: Call): Set[String] = indexAccessToCollectionVar(ia) match {
     case Some(cVar) if symbolTable.contains(cVar) =>
       symbolTable.get(cVar)
+    case Some(cVar) if ia.argument(1).isCall && symbolTable.contains(CallAlias(cVar.identifier)) =>
+      symbolTable
+        .get(CallAlias(cVar.identifier))
+        .map(x => s"$x$pathSep${XTypeRecovery.DummyReturnType}$pathSep${XTypeRecovery.DummyIndexAccess}")
     case Some(cVar) if symbolTable.contains(LocalVar(cVar.identifier)) =>
       symbolTable.get(LocalVar(cVar.identifier)).map(x => s"$x$pathSep${XTypeRecovery.DummyIndexAccess}")
     case _ => Set.empty
