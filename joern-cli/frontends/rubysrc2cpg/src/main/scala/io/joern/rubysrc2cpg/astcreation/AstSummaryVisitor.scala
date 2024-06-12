@@ -116,8 +116,9 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
         val typeEntries = namespace.method.collectFirst {
           case m: Method if m.name == Defines.Program =>
             val childrenTypes = m.block.astChildren.collectAll[TypeDecl].l
-            val fullName      = if childrenTypes.nonEmpty then buildFullName(childrenTypes.head) else s"${m.fullName}"
-            val nestedTypes   = childrenTypes.flatMap(handleNestedTypes(_, fullName))
+            val fullName =
+              if childrenTypes.nonEmpty && asExternal then buildFullName(childrenTypes.head) else s"${m.fullName}"
+            val nestedTypes = childrenTypes.flatMap(handleNestedTypes(_, fullName))
             (path, fullName) -> (childrenTypes.whereNot(_.methodBinding).map(toType).toSet ++ nestedTypes.flatMap(_._2))
         }.toSeq
 
