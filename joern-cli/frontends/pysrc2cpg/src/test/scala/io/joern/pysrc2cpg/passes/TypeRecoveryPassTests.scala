@@ -2,6 +2,7 @@ package io.joern.pysrc2cpg.passes
 
 import io.joern.pysrc2cpg.PySrc2CpgFixture
 import io.joern.x2cpg.passes.frontend.XTypeHintCallLinker
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Member}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.importresolver.*
@@ -1454,6 +1455,49 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       cpg.call("foo").l match {
         case List(fooCall) => fooCall.methodFullName shouldBe "<unknownFullName>"
         case result        => fail(s"Expected single foo call but got $result")
+      }
+    }
+  }
+
+  "assignment to imported method call" should {
+    val cpg = code("""
+        |from helpers import foo
+        |x = foo()
+        |""".stripMargin)
+
+    "provide meaningful typeFullName for the target of the assignment" in {
+      cpg.assignment.target.isIdentifier.name("x").l match {
+        case List(x) => x.typeFullName shouldBe "helpers.py:<module>.foo.<returnValue>"
+        case result  => fail(s"Expected single assignment to x, but got $result")
+      }
+    }
+  }
+
+  "assignment to non-chained index access of an imported method call" should {
+    val cpg = code("""
+        |from helpers import foo
+        |x = foo()
+        |y = x[0]
+        |""".stripMargin)
+
+    "provide meaningful typeFullName for the target of the assignment" in {
+      cpg.assignment.target.isIdentifier.name("y").l match {
+        case List(y) => y.typeFullName shouldBe "helpers.py:<module>.foo.<returnValue>.<indexAccess>"
+        case result  => fail(s"Expected single assignment to y, but got $result")
+      }
+    }
+  }
+
+  "assignment to chained index access of an imported method call" should {
+    val cpg = code("""
+        |from helpers import foo
+        |x = foo()[0]
+        |""".stripMargin)
+
+    "provide meaningful typeFullName for the target of the assignment" in {
+      cpg.assignment.target.isIdentifier.name("x").l match {
+        case List(x) => x.typeFullName shouldBe "helpers.py:<module>.foo.<returnValue>.<indexAccess>"
+        case result  => fail(s"Expected single assignment to x, but got $result")
       }
     }
   }
