@@ -174,7 +174,7 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
   }
 
   "If the dependency is not getting used then it " should {
-    val goGlobal = GoGlobal()
+    val goGlobal = GoGlobal(testflag = true)
     val config   = Config().withFetchDependencies(true).withIgnoredFilesRegex(IGNORE_TEST_FILE_REGEX)
     val cpg = code(
       """
@@ -242,7 +242,7 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
   }
 
   "The dependency is getting imported somewhere but not getting used then it" should {
-    val goGlobal = GoGlobal()
+    val goGlobal = GoGlobal(testflag = true)
     val config   = Config().withFetchDependencies(true).withIgnoredFilesRegex(IGNORE_TEST_FILE_REGEX)
     val cpg = code(
       """
@@ -317,7 +317,7 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
   }
 
   "The dependency is getting imported and used in the code then it" should {
-    val goGlobal = GoGlobal()
+    val goGlobal = GoGlobal(testflag = true)
     val config   = Config().withFetchDependencies(true).withIgnoredFilesRegex(IGNORE_TEST_FILE_REGEX)
     val cpg = code(
       """

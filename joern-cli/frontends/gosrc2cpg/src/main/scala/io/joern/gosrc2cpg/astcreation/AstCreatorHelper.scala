@@ -1,13 +1,12 @@
 package io.joern.gosrc2cpg.astcreation
 
-import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserAst, ParserKeys, ParserNodeInfo}
+import io.joern.x2cpg.astgen.ParserResult
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.joern.x2cpg.{Ast, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewModifier, NewNode}
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, ModifierTypes, PropertyNames}
-import org.apache.commons.lang3.StringUtils
 import ujson.Value
 
 import scala.collection.mutable
@@ -15,8 +14,6 @@ import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 
 trait AstCreatorHelper { this: AstCreator =>
-
-  private val parserNodeCache = mutable.TreeMap[Long, ParserNodeInfo]()
 
   protected def createParserNodeInfo(json: Value): ParserNodeInfo = {
     Try(json(ParserKeys.NodeReferenceId).num.toLong) match
@@ -98,7 +95,6 @@ trait AstCreatorHelper { this: AstCreator =>
     val colNumber     = column(node).get - 1
     val lineEndNumber = lineEndNo(node).get
     val colEndNumber  = columnEndNo(node).get - 1
-
     if (lineNumber == lineEndNumber) {
       lineNumberMapping(lineNumber).substring(colNumber, colEndNumber)
     } else {
@@ -121,14 +117,20 @@ trait AstCreatorHelper { this: AstCreator =>
 
   protected def columnEndNo(node: Value): Option[Integer] = Try(node(ParserKeys.NodeColEndNo).num).toOption.map(_.toInt)
 
-  protected def positionLookupTables(source: String): Map[Int, String] = {
-    source
-      .split("\n")
-      .zipWithIndex
-      .map { case (sourceLine, lineNumber) =>
-        (lineNumber + 1, sourceLine)
-      }
-      .toMap
+  protected def positionLookupTables(parserResult: ParserResult): Map[Int, String] = {
+    if (!goGlobal.processingDependencies) {
+      val map = parserResult.fileContent
+        .split("\n")
+        .zipWithIndex
+        .map { case (sourceLine, lineNumber) =>
+          (lineNumber + 1, sourceLine)
+        }
+        .toMap
+      parserResult.fileContent = ""
+      map
+    } else {
+      Map[Int, String]()
+    }
   }
 
   protected def resolveAliasToFullName(alias: String): String = {
