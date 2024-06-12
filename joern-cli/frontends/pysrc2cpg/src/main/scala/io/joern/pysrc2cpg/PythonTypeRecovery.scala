@@ -58,7 +58,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
             .member
             .nameExact(memberName)
             .flatMap(m => m.typeFullName +: m.dynamicTypeHintFullName)
-            .filterNot(_ == "ANY")
+            .filterNot(_ == Constants.ANY)
             .toSet
           symbolTable.put(LocalVar(entityName), memberTypes)
         case UnknownMethod(fullName, alias, receiver, _) =>
@@ -96,7 +96,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
   /** If the parent method is module then it can be used as a field.
     */
   override def isFieldUncached(i: Identifier): Boolean =
-    i.method.name.matches("(<module>|__init__)") || super.isFieldUncached(i)
+    i.method.name.matches(s"(${Constants.moduleName}|${Constants.initName})") || super.isFieldUncached(i)
 
   override def visitIdentifierAssignedToOperator(i: Identifier, c: Call, operation: String): Set[String] = {
     operation match {
@@ -110,7 +110,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
   }
 
   override def visitIdentifierAssignedToConstructor(i: Identifier, c: Call): Set[String] = {
-    val constructorPaths = symbolTable.get(c).map(_.stripSuffix(s"${pathSep}__init__"))
+    val constructorPaths = symbolTable.get(c).map(_.stripSuffix(s"$pathSep${Constants.initName}"))
     associateTypes(i, constructorPaths)
   }
 
@@ -143,7 +143,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
   }
 
   override def getFieldParents(fa: FieldAccess): Set[String] = {
-    if (fa.method.name == "<module>") {
+    if (fa.method.name == Constants.moduleName) {
       Set(fa.method.fullName)
     } else if (fa.method.typeDecl.nonEmpty) {
       val parentTypes       = fa.method.typeDecl.fullName.toSet
@@ -203,7 +203,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
           .foreach { cls =>
             val clsPath = classMethod.typeDecl.fullName.toSet
             symbolTable.put(LocalVar(cls.name), clsPath)
-            if (cls.typeFullName == "ANY")
+            if (cls.typeFullName == Constants.ANY)
               builder.setNodeProperty(cls, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, clsPath.toSeq)
           }
     }
@@ -223,7 +223,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
     funcName: String,
     baseName: Option[String]
   ): Unit = {
-    if (funcName != "<module>")
+    if (funcName != Constants.moduleName)
       super.handlePotentialFunctionPointer(funcPtr, baseTypes, funcName, baseName)
   }
 

@@ -92,7 +92,7 @@ class PythonAstVisitor(
     edgeBuilder.astEdge(namespaceBlockNode, fileNode, 1)
     contextStack.setFileNamespaceBlock(namespaceBlockNode)
 
-    val methodFullName = calculateFullNameFromContext("<module>")
+    val methodFullName = calculateFullNameFromContext(Constants.moduleName)
 
     val firstLineAndCol = module.stmts.headOption.map(lineAndColOf)
     val lastLineAndCol  = module.stmts.lastOption.map(lineAndColOf)
@@ -105,9 +105,9 @@ class PythonAstVisitor(
 
     val moduleMethodNode =
       createMethod(
-        "<module>",
+        Constants.moduleName,
         methodFullName,
-        Some("<module>"),
+        Some(Constants.moduleName),
         ModifierTypes.VIRTUAL :: ModifierTypes.MODULE :: Nil,
         parameterProvider = () => MethodParameters.empty(),
         bodyProvider = () => createBuiltinIdentifiers(memOpCalculator.names) ++ module.stmts.map(convert),
@@ -402,7 +402,7 @@ class PythonAstVisitor(
 
     // For every method that is a module, the local variables can be imported by other modules. This behaviour is
     // much like fields so they are to be linked as fields to this method type
-    if (name == "<module>") contextStack.createMemberLinks(typeDeclNode, edgeBuilder.astEdge)
+    if (name == Constants.moduleName) contextStack.createMemberLinks(typeDeclNode, edgeBuilder.astEdge)
 
     contextStack.pop()
     edgeBuilder.astEdge(typeDeclNode, contextStack.astParent, contextStack.order.getAndInc)
@@ -487,7 +487,7 @@ class PythonAstVisitor(
     val functions = classDef.body.collect { case func: ast.FunctionDef => func }
 
     // __init__ method has to be in functions because "async def __init__" is invalid.
-    val initFunctionOption = functions.find(_.name == "__init__")
+    val initFunctionOption = functions.find(_.name == Constants.initName)
 
     val initParameters = initFunctionOption.map(_.args).getOrElse {
       // Create arguments of a default __init__ function.
@@ -773,7 +773,7 @@ class PythonAstVisitor(
 
         val initCall = createXDotYCall(
           () => createIdentifierNode("cls", Load, lineAndColumn),
-          "__init__",
+          Constants.initName,
           xMayHaveSideEffects = false,
           lineAndColumn,
           argumentWithInstance,

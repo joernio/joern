@@ -8,7 +8,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
   */
 class PythonInheritanceNamePass(cpg: Cpg) extends XInheritanceFullNamePass(cpg) {
 
-  override val moduleName: String = "<module>"
+  override val moduleName: String = Constants.moduleName
   override val fileExt: String    = ".py"
 
 }
