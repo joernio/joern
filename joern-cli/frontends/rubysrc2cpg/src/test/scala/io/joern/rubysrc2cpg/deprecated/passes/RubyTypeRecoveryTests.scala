@@ -3,6 +3,7 @@ package io.joern.rubysrc2cpg.deprecated.passes
 import io.joern.rubysrc2cpg.deprecated.utils.PackageTable
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines as XDefines
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language.importresolver.*
 import io.shiftleft.semanticcpg.language.*
 
@@ -40,8 +41,9 @@ class RubyTypeRecoveryTests
       "main.rb"
     )
 
-    "be present in (Case 1)" in {
+    "be present in (Case 1)" ignore {
       cpg.identifier("sg").lineNumber(5).typeFullName.l shouldBe List("sendgrid-ruby::program.SendGrid.API")
+      cpg.call("client").dispatchType.l shouldBe List(DispatchTypes.DYNAMIC_DISPATCH)
       cpg.call("client").methodFullName.l shouldBe List("sendgrid-ruby::program.SendGrid.API.client")
     }
 
@@ -205,7 +207,9 @@ class RubyTypeRecoveryTests
       logging.fullName shouldBe s"logger::program.Logger.${XDefines.ConstructorMethodName}"
     }
 
-    "provide a dummy type" in {
+    "provide a dummy type" ignore {
+      val List(error) = cpg.call("error").l: @unchecked
+      error.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       val Some(log) = cpg.identifier("log").headOption: @unchecked
       log.typeFullName shouldBe "logger::program.Logger"
       val List(errorCall) = cpg.call("error").l

@@ -1,9 +1,8 @@
 package io.joern.x2cpg.passes.frontend
 
 import io.joern.x2cpg.{Defines, X2CpgConfig}
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, DispatchTypes, EdgeTypes, NodeTypes, Operators, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, Operators, PropertyNames}
 import io.shiftleft.passes.{CpgPass, CpgPassBase, ForkJoinParallelCpgPass}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.importresolver.*
@@ -999,7 +998,11 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         setTypeForIdentifierAssignedToDefault(call, i)
       // Case 2: 'i' is the receiver of 'call'
       case (Some(call: Call), ::(i: Identifier, _)) if call.name != Operators.fieldAccess =>
-        setTypeForDynamicDispatchCall(call, i)
+        (i.argumentIndex, call.dispatchType) match {
+          case (0, DispatchTypes.DYNAMIC_DISPATCH) => setTypeForDynamicDispatchCall(call, i)
+          case (1, DispatchTypes.STATIC_DISPATCH)  => setTypeForStaticDispatchCall(call, i)
+          case _                                   =>
+        }
       // Case 3: 'i' is the receiver for a field access on member 'f'
       case (Some(fieldAccess: Call), ::(i: Identifier, ::(f: FieldIdentifier, _)))
           if fieldAccess.name == Operators.fieldAccess =>
@@ -1037,6 +1040,11 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     else {
       persistType(call, callTypes)
     }
+  }
+
+  protected def setTypeForStaticDispatchCall(call: Call, i: Identifier): Unit = {
+    // TODO: Should it have special handling?
+    setTypeForDynamicDispatchCall(call, i)
   }
 
   protected def setTypeForIdentifierAssignedToDefault(call: Call, i: Identifier): Unit = {
