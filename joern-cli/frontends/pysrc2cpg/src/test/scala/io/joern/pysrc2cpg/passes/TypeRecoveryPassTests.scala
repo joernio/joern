@@ -1370,4 +1370,91 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     }
   }
 
+  "`__builtin.print` call with a `+` binary operation for argument" should {
+    val cpg = code("""
+        |print(1 + 2)
+        |""".stripMargin)
+
+    "have correct methodFullName for `print`" in {
+      cpg.call("print").l match {
+        case List(printCall) => printCall.methodFullName shouldBe "__builtin.print"
+        case result          => fail(s"Expected single print call but got $result")
+      }
+    }
+
+    "have correct methodFullName for `+`" in {
+      cpg.call("print").argument(1).isCall.l match {
+        case List(plusCall) => plusCall.methodFullName shouldBe "<operator>.addition"
+        case result         => fail(s"Expected single + call but got $result")
+      }
+    }
+  }
+
+  "`__builtin.print` call with an external non-imported call for argument" should {
+    val cpg = code("""
+        |print(foo(10))
+        |""".stripMargin)
+
+    "have correct methodFullName for `print`" in {
+      cpg.call("print").l match {
+        case List(printCall) => printCall.methodFullName shouldBe "__builtin.print"
+        case result          => fail(s"Expected single print call but got $result")
+      }
+    }
+
+    "have correct methodFullName for `foo`" in {
+      cpg.call("foo").l match {
+        case List(fooCall) => fooCall.methodFullName shouldBe "<unknownFullName>"
+        case result        => fail(s"Expected single foo call but got $result")
+      }
+    }
+  }
+
+  "`__builtin.print` call with an external non-imported call result variable for argument" should {
+    val cpg = code("""
+        |a = foo(10)
+        |print(a)
+        |""".stripMargin)
+
+    "have correct methodFullName for `print`" in {
+      cpg.call("print").l match {
+        case List(printCall) => printCall.methodFullName shouldBe "__builtin.print"
+        case result          => fail(s"Expected single print call but got $result")
+      }
+    }
+
+    "have correct methodFullName for `foo`" in {
+      cpg.call("foo").l match {
+        case List(fooCall) => fooCall.methodFullName shouldBe "<unknownFullName>"
+        case result        => fail(s"Expected single foo call but got $result")
+      }
+    }
+  }
+
+  "external non imported call with int variable for argument" should {
+    val cpg = code("""
+        |a = 10
+        |foo(a)
+        |""".stripMargin)
+
+    "have correct methodFullName for `foo`" in {
+      cpg.call("foo").l match {
+        case List(fooCall) => fooCall.methodFullName shouldBe "<unknownFullName>"
+        case result        => fail(s"Expected single foo call but got $result")
+      }
+    }
+  }
+
+  "external non-imported call with int literal for argument" should {
+    val cpg = code("""
+        |foo(10)
+        |""".stripMargin)
+
+    "have correct methodFullName for `foo`" in {
+      cpg.call("foo").l match {
+        case List(fooCall) => fooCall.methodFullName shouldBe "<unknownFullName>"
+        case result        => fail(s"Expected single foo call but got $result")
+      }
+    }
+  }
 }
