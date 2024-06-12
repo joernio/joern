@@ -40,12 +40,22 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
   }
 
   private def summarize(cpg: Cpg, asExternal: Boolean): RubyProgramSummary = {
+    val gemName =
+      if relativeFileName.nonEmpty && relativeFileName.contains(JavaFile.separator) then
+        relativeFileName.substring(0, relativeFileName.indexOf(JavaFile.separator))
+      else Option(relativeFileName).getOrElse("")
+
     def toMethod(m: Method): RubyMethod = {
+      val definingTypeDeclFullName =
+        if asExternal then
+          Option(m.definingTypeDecl.map(buildFullName)).getOrElse(m.definingTypeDecl.fullName.headOption)
+        else m.definingTypeDecl.fullName.headOption
+
       RubyMethod(
         m.name,
         m.parameter.map(x => x.name -> x.typeFullName).l,
         m.methodReturn.typeFullName,
-        m.definingTypeDecl.fullName.headOption
+        definingTypeDeclFullName
       )
     }
 
@@ -58,9 +68,19 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
     }
 
     def toType(m: TypeDecl): RubyType = {
-      if asExternal then RubyStubbedType(m.fullName, m.method.map(toMethod).l, m.member.map(toField).l)
+      if asExternal then RubyStubbedType(buildFullName(m), m.method.map(toMethod).l, m.member.map(toField).l)
       else RubyType(m.fullName, m.method.map(toMethod).l, m.member.map(toField).l)
     }
+
+    def buildFullName(m: TypeDecl): String = if asExternal then
+      m.start
+        .repeat(_.astParent)(_.until(_.isMethod.isModule))
+        .cast[Method]
+        .fullName
+        .map(mfn => s"$gemName${m.fullName.stripPrefix(mfn)}")
+        .headOption
+        .getOrElse(m.fullName)
+    else m.fullName
 
     def handleNestedTypes(t: TypeDecl, parentScope: String): Seq[(String, Set[RubyType])] = {
       val typeFullName     = s"$parentScope.${t.name}"
@@ -75,10 +95,18 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
           .replaceAll(Matcher.quoteReplacement(JavaFile.separator), "/") // handle Windows paths
           .stripSuffix(".rb")
         // Map module functions/variables
-        val moduleEntry = (path, namespace.fullName) -> namespace.method.map { module =>
+        val namespaceFullName =
+          if asExternal then gemName
+          else namespace.fullName
+
+        val moduleEntry = (path, namespaceFullName) -> namespace.method.map { module =>
+          val moduleFullName =
+            if asExternal then gemName
+            else module.fullName
+
           val moduleTypeMap =
             RubyType(
-              module.fullName,
+              moduleFullName,
               module.block.astChildren.collectAll[Method].map(toMethod).l,
               module.local.map(toModuleVariable).l
             )
@@ -88,8 +116,9 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
         val typeEntries = namespace.method.collectFirst {
           case m: Method if m.name == Defines.Program =>
             val childrenTypes = m.block.astChildren.collectAll[TypeDecl].l
-            val fullName      = s"${namespace.fullName}:${m.name}"
-            val nestedTypes   = childrenTypes.flatMap(handleNestedTypes(_, fullName))
+            val fullName =
+              if childrenTypes.nonEmpty && asExternal then buildFullName(childrenTypes.head) else s"${m.fullName}"
+            val nestedTypes = childrenTypes.flatMap(handleNestedTypes(_, fullName))
             (path, fullName) -> (childrenTypes.whereNot(_.methodBinding).map(toType).toSet ++ nestedTypes.flatMap(_._2))
         }.toSeq
 

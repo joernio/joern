@@ -29,7 +29,6 @@ class RubyImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
   }
 
   private def resolveEntities(expEntity: String, importCall: Call, fileName: String): Set[EvaluatedImport] = {
-    // TODO: Currently only working on internal dependencies, will be fixed for external dependencies once the dependency linking is done
     val expResolvedPath =
       if (expEntity.contains("."))
         getResolvedPath(expEntity, fileName)
@@ -43,11 +42,12 @@ class RubyImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
       val filePattern = s"${Pattern.quote(expResolvedPath)}\\.?.*"
       val resolvedTypeDecls = cpg.typeDecl
         .where(_.file.name(filePattern))
+        .whereNot(_.isModule)
         .fullName
         .flatMap(fullName =>
           Seq(
             ResolvedTypeDecl(fullName),
-            ResolvedMethod(s"$fullName.${XDefines.ConstructorMethodName}", "new", fullName.split("[.]").lastOption)
+            ResolvedMethod(s"$fullName.${Defines.Initialize}", "new", fullName.split("[.]").lastOption)
           )
         )
         .toSet

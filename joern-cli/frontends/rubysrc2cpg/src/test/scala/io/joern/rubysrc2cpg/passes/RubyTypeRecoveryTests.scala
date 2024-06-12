@@ -38,6 +38,7 @@ object RubyExternalTypeRecoveryTests {
       |ruby "2.6.5"
       |
       |gem "logger"
+      |gem "dummy_logger"
       |""".stripMargin
 }
 
@@ -182,7 +183,6 @@ class RubyExternalTypeRecoveryTests
         |
         |def func
         |   sg = SendGrid::API.new(api_key: ENV['SENDGRID_API_KEY'])
-        |   sg2 = SendGrid::MailSettingsDto.fetch
         |   response = sg.client.mail._('send').post(request_body: data)
         |end
         |""".stripMargin,
@@ -190,12 +190,28 @@ class RubyExternalTypeRecoveryTests
     )
       .moreCode(RubyExternalTypeRecoveryTests.SENDGRID_GEMFILE, "Gemfile")
 
-    // TODO: Should be fixed when external dependency solver is done
-    "be present in (Case 1)" ignore {
-      cpg.identifier("sg").lineNumber(5).typeFullName.l shouldBe List(
-        "sendgrid/sendgrid.rb:<global>::program.SendGrid.API"
-      )
-      cpg.call("client").methodFullName.l shouldBe List("sendgrid/sendgrid.rb:<global>::program.SendGrid.API:client")
+    "be present in (Case 1)" in {
+      cpg.identifier("sg").lineNumber(5).typeFullName.l shouldBe List("sendgrid-ruby.SendGrid.API")
+      cpg.call("client").methodFullName.l shouldBe List("sendgrid-ruby.SendGrid.API:client")
+    }
+
+    "resolve correct imports via tag nodes" in {
+      inside(cpg.call.where(_.referencedImports).l) {
+        case sendgridImport :: Nil =>
+          inside(
+            sendgridImport.tag._toEvaluatedImport
+              .filter(_.label == EvaluatedImport.RESOLVED_METHOD)
+              .map(_.asInstanceOf[ResolvedMethod])
+              .filter(_.fullName.startsWith("sendgrid-ruby.SendGrid.API"))
+              .l
+          ) {
+            case apiClassInit :: apiInit :: Nil =>
+              apiInit.fullName shouldBe s"sendgrid-ruby.SendGrid.API.${Defines.Initialize}"
+              apiClassInit.fullName shouldBe s"sendgrid-ruby.SendGrid.API<class>.${Defines.Initialize}"
+            case xs => fail(s"Two ResolvedMethods expected, got [${xs.mkString(",")}]")
+          }
+        case xs => fail(s"Only sendgrid-ruby should be referenced, got [${xs.name.mkString}]")
+      }
     }
 
     "be present in (Case 2)" ignore {
@@ -299,22 +315,34 @@ class RubyExternalTypeRecoveryTests
                           |""".stripMargin)
       .moreCode(RubyExternalTypeRecoveryTests.LOGGER_GEMFILE, "Gemfile")
 
-    // TODO: Fix when external dependency resolving is complete
-    "resolve correct imports via tag nodes" ignore {
-      val List(logging: ResolvedMethod, _) =
-        cpg.call.where(_.referencedImports).tag._toEvaluatedImport.toList: @unchecked
-      logging.fullName shouldBe s"logger::program.Logger.${XDefines.ConstructorMethodName}"
+    "resolve correct imports via tag nodes" in {
+      inside(cpg.call.where(_.referencedImports).l) {
+        case loggerImport :: Nil =>
+          inside(
+            loggerImport.tag._toEvaluatedImport
+              .filter(_.label == EvaluatedImport.RESOLVED_METHOD)
+              .map(_.asInstanceOf[ResolvedMethod])
+              .filter(_.fullName == s"logger.Logger.${Defines.Initialize}")
+              .l
+          ) {
+            case loggerInit :: Nil =>
+              loggerInit.fullName shouldBe s"logger.Logger.${Defines.Initialize}"
+            case xs => fail(s"Two ResolvedMethods expected, got [${xs.mkString(",")}]")
+          }
+        case xs => fail(s"Only logger library should be referenced, got [${xs.name.mkString}]")
+      }
     }
 
     "provide a dummy type" in {
       val Some(log) = cpg.identifier("log").headOption: @unchecked
-      log.typeFullName shouldBe "logger.rb:<global>::program.Logger"
+      log.typeFullName shouldBe "logger.Logger"
       val List(errorCall) = cpg.call("error").l
-      errorCall.methodFullName shouldBe "logger.rb:<global>::program.Logger:error"
+      errorCall.methodFullName shouldBe "logger.Logger:error"
     }
   }
 
-  "assignment from a call to a identifier inside an imported module using methodCall" should {
+  // TODO: Fix parsing errors on Stripe library
+  "assignment from a call to a identifier inside an imported module using methodCall" ignore {
     lazy val cpg = code(
       """
                           |require 'stripe'
@@ -326,12 +354,12 @@ class RubyExternalTypeRecoveryTests
     )
       .moreCode(RubyExternalTypeRecoveryTests.STRIPE_GEMFILE, "Gemfile")
 
-    "resolved the type of call" ignore {
+    "resolved the type of call" in {
       val Some(create) = cpg.call("create").headOption: @unchecked
       create.methodFullName shouldBe "stripe.rb:<global>::program.Stripe.Customer:create"
     }
 
-    "resolved the type of identifier" ignore {
+    "resolved the type of identifier" in {
       val Some(customer) = cpg.identifier("customer").headOption: @unchecked
       customer.typeFullName shouldBe "stripe::program.Stripe.Customer.create.<returnValue>"
     }
@@ -351,11 +379,11 @@ class RubyExternalTypeRecoveryTests
       .moreCode(RubyExternalTypeRecoveryTests.LOGGER_GEMFILE, "Gemfile")
 
     "have a correct type for call `connect`" in {
-      cpg.call("error").methodFullName.l shouldBe List("logger.rb:<global>::program.Logger:error")
+      cpg.call("error").methodFullName.l shouldBe List("logger.Logger:error")
     }
 
     "have a correct type for identifier `d`" in {
-      cpg.identifier("e").typeFullName.l shouldBe List("logger.rb:<global>::program.Logger:error.<returnValue>")
+      cpg.identifier("e").typeFullName.l shouldBe List("logger.Logger:error.<returnValue>")
     }
   }
 }

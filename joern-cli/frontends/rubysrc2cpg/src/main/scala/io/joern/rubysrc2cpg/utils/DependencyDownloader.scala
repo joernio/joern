@@ -22,7 +22,7 @@ import scala.util.{Failure, Success, Try, Using}
   * @see
   *   <a href="https://guides.rubygems.org/rubygems-org-api/">Ruby Gems API</a>
   */
-class DependencyDownloader(cpg: Cpg, internalProgramSummary: RubyProgramSummary) {
+class DependencyDownloader(cpg: Cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
   private val RESOLVER_BASE_URL =
@@ -39,7 +39,7 @@ class DependencyDownloader(cpg: Cpg, internalProgramSummary: RubyProgramSummary)
         downloadDependency(dir, dependency)
       }
       untarDependencies(dir)
-      summarizeDependencies(dir / "lib") ++= internalProgramSummary
+      summarizeDependencies(dir / "lib")
     }
   }
 
@@ -71,7 +71,8 @@ class DependencyDownloader(cpg: Cpg, internalProgramSummary: RubyProgramSummary)
 
     versionOpt match {
       case Some(version) =>
-        downloadPackage(targetDir, dependency, createUrl(version))
+        (targetDir / dependency.name).createDirectoryIfNotExists()
+        downloadPackage(targetDir / dependency.name, dependency, createUrl(version))
       case None =>
         logger.error(s"Unable to determine package version for ${dependency.name}, skipping")
     }
@@ -140,43 +141,48 @@ class DependencyDownloader(cpg: Cpg, internalProgramSummary: RubyProgramSummary)
     *   the temporary directory containing all of the successfully downloaded dependencies.
     */
   private def untarDependencies(targetDir: File): Unit = {
-    targetDir.list.foreach { pkg =>
-      Using.resource(pkg.newInputStream) { pkgIs =>
-        // Will unzip to `targetDir/lib` and clean-up
-        val tarGemStream = new TarArchiveInputStream(pkgIs)
-        Iterator
-          .continually(tarGemStream.getNextEntry)
-          .takeWhile(_ != null)
-          .filter(_.getName == "data.tar.gz")
-          .foreach { _ =>
-            val gzStream      = new GZIPInputStream(tarGemStream)
-            val dataTarStream = new TarArchiveInputStream(gzStream)
+    targetDir.list.foreach { pkgDir =>
+      pkgDir.list.foreach { pkg =>
+        {
+          Using.resource(pkg.newInputStream) { pkgIs =>
+            // Will unzip to `targetDir/lib` and clean-up
+            val tarGemStream = new TarArchiveInputStream(pkgIs)
             Iterator
-              .continually(dataTarStream.getNextEntry)
+              .continually(tarGemStream.getNextEntry)
               .takeWhile(_ != null)
-              .filter(sourceEntry =>
-                val entryName = sourceEntry.getName
-                !entryName.contains("..") && entryName.startsWith("lib/") && entryName.endsWith(".rb")
-              )
-              .foreach { rubyFile =>
-                try {
-                  val target = targetDir / rubyFile.getName
-                  target.createIfNotExists(createParents = true)
-                  Using.resource(new FileOutputStream(target.pathAsString)) { fos =>
-                    val buffer = new Array[Byte](4096)
-                    Iterator
-                      .continually(dataTarStream.read(buffer))
-                      .takeWhile(_ != -1)
-                      .foreach(bytesRead => fos.write(buffer, 0, bytesRead))
+              .filter(_.getName == "data.tar.gz")
+              .foreach { _ =>
+                val gzStream      = new GZIPInputStream(tarGemStream)
+                val dataTarStream = new TarArchiveInputStream(gzStream)
+                Iterator
+                  .continually(dataTarStream.getNextEntry)
+                  .takeWhile(_ != null)
+                  .filter(sourceEntry =>
+                    val entryName = sourceEntry.getName
+                    !entryName.contains("..") && entryName.startsWith("lib/") && entryName.endsWith(".rb")
+                  )
+                  .foreach { rubyFile =>
+                    try {
+                      val fName  = s"lib/${pkgDir.name}/${rubyFile.getName.stripPrefix("lib/")}"
+                      val target = targetDir / fName
+                      target.createIfNotExists(createParents = true)
+                      Using.resource(new FileOutputStream(target.pathAsString)) { fos =>
+                        val buffer = new Array[Byte](4096)
+                        Iterator
+                          .continually(dataTarStream.read(buffer))
+                          .takeWhile(_ != -1)
+                          .foreach(bytesRead => fos.write(buffer, 0, bytesRead))
+                      }
+                    } catch {
+                      case exception: Throwable =>
+                        logger.error(s"Exception occurred while unpacking ${rubyFile.getName}", exception)
+                    }
                   }
-                } catch {
-                  case exception: Throwable =>
-                    logger.error(s"Exception occurred while unpacking ${rubyFile.getName}", exception)
-                }
               }
           }
-
-        pkg.delete(swallowIOExceptions = true)
+          pkg.delete(swallowIOExceptions = true)
+        }
+        pkgDir.delete(swallowIOExceptions = true)
       }
     }
   }
