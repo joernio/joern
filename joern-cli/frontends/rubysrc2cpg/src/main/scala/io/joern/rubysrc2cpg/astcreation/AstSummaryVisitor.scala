@@ -41,8 +41,8 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
 
   private def summarize(cpg: Cpg, asExternal: Boolean): RubyProgramSummary = {
     val gemName =
-      if relativeFileName.nonEmpty && relativeFileName.contains("/") then
-        relativeFileName.substring(0, relativeFileName.indexOf("/"))
+      if relativeFileName.nonEmpty && relativeFileName.contains(JavaFile.separator) then
+        relativeFileName.substring(0, relativeFileName.indexOf(JavaFile.separator))
       else Option(relativeFileName).getOrElse("")
 
     def toMethod(m: Method): RubyMethod = {
