@@ -172,8 +172,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           )
         )
       case target: MemberAccess => {
-        val receiverAst = astForExpression(target) // this wil be something like self.Foo
-        val baseAst     = astForExpression(MemberAccess(target, ".", node.methodName)(node.span))
+        val baseAst     = astForExpression(target) // this wil be something like self.Foo
+        val receiverAst = astForExpression(MemberAccess(target, ".", node.methodName)(node.span))
         val (receiverFullName, methodFullName) = receiverAst.nodes.collectFirst { case x: NewMethodRef => x } match {
           case Some(x) => x.methodFullName -> x.methodFullName
           case _ =>
@@ -187,7 +187,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           else DispatchTypes.DYNAMIC_DISPATCH
 
         val call = callNode(node, code(node), node.methodName, methodFullName, dispatchType)
-        callAst(call, argumentAsts, Option(baseAst), Option(receiverAst))
+        callAst(call, argumentAsts, base = Option(baseAst), receiver = Option(receiverAst))
       }
       case x =>
         logger.warn(s"Unhandled target for MemberCall: ${x.getClass} ${x.text}")
@@ -670,7 +670,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astForSelfIdentifier(node: SelfIdentifier): Ast = {
-    val thisIdentifier = identifierNode(node, Defines.Self, code(node), scope.surroundingTypeFullName.getOrElse(Defines.Any))
+    val thisIdentifier =
+      identifierNode(node, Defines.Self, code(node), scope.surroundingTypeFullName.getOrElse(Defines.Any))
     Ast(thisIdentifier)
   }
 

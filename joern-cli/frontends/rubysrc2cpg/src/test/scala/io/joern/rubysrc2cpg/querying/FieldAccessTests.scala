@@ -1,8 +1,8 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, TypeRef}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
 class FieldAccessTests extends RubyCode2CpgFixture {
@@ -18,10 +18,24 @@ class FieldAccessTests extends RubyCode2CpgFixture {
         xyCall.lineNumber shouldBe Some(2)
         xyCall.code shouldBe "x.y"
 
+        inside(xyCall.argumentOption(0)) {
+          case Some(receiver: Call) =>
+            receiver.name shouldBe Operators.fieldAccess
+            receiver.code shouldBe "self.x"
+          case _ => fail("Expected an field access receiver")
+        }
+
         inside(xyCall.receiver.headOption) {
-          case Some(x: Identifier) =>
-            x.name shouldBe "x"
-          case _ => fail("Expected an identifier receiver")
+          case Some(xyBase: Call) =>
+            xyBase.name shouldBe Operators.fieldAccess
+            xyBase.code shouldBe "x.y"
+
+            val selfX = xyBase.argument(1).asInstanceOf[Call]
+            selfX.code shouldBe "self.x"
+
+            val yIdentifier = xyBase.argument(2).asInstanceOf[FieldIdentifier]
+            yIdentifier.code shouldBe "y"
+          case _ => fail("Expected an field access receiver")
         }
       case None => fail("Expected a call with the name `y`")
     }
@@ -111,11 +125,11 @@ class FieldAccessTests extends RubyCode2CpgFixture {
       val externalCall = cpg.method.isModule.call.codeExact("Base64::decode64").head
       externalCall.name shouldBe "decode64"
 
-      val decodeReceiver = externalCall.receiver.isCall.head
+      val decodeReceiver = externalCall.argument(0).asInstanceOf[Call]
       decodeReceiver.name shouldBe Operators.fieldAccess
       decodeReceiver.code shouldBe "self.Base64"
 
-      val selfArg = externalCall.argument(0).asInstanceOf[Call]
+      val selfArg = externalCall.receiver.isCall.head
       selfArg.name shouldBe Operators.fieldAccess
       selfArg.code shouldBe "Base64.decode64"
 
@@ -129,14 +143,14 @@ class FieldAccessTests extends RubyCode2CpgFixture {
     }
 
     "give internal type accesses on script-level the `self.` base" in {
-      val externalCall = cpg.method.isModule.call.codeExact("Baz::func1").head
-      externalCall.name shouldBe "func1"
+      val call = cpg.method.isModule.call.codeExact("Baz::func1").head
+      call.name shouldBe "func1"
 
-      val decodeReceiver = externalCall.receiver.isCall.head
-      decodeReceiver.name shouldBe Operators.fieldAccess
-      decodeReceiver.code shouldBe "self.Baz"
+      val receiverCall = call.argument(0).asInstanceOf[Call]
+      receiverCall.name shouldBe Operators.fieldAccess
+      receiverCall.code shouldBe "self.Baz"
 
-      val selfArg = externalCall.argument(0).asInstanceOf[Call]
+      val selfArg = call.receiver.isCall.head
       selfArg.name shouldBe Operators.fieldAccess
       selfArg.code shouldBe "Baz.func1"
 
@@ -150,14 +164,14 @@ class FieldAccessTests extends RubyCode2CpgFixture {
     }
 
     "give method call accesses on script-level the `self.` base" in {
-      val externalCall = cpg.method.isModule.call.nameExact("func").head
-      externalCall.name shouldBe "func"
+      val call = cpg.method.isModule.call.nameExact("func").head
+      call.name shouldBe "func"
 
-      val decodeReceiver = externalCall.receiver.isCall.head
-      decodeReceiver.name shouldBe Operators.fieldAccess
-      decodeReceiver.code shouldBe "self.f"
+      val receiver = call.argument(0).asInstanceOf[Call]
+      receiver.name shouldBe Operators.fieldAccess
+      receiver.code shouldBe "self.f"
 
-      val selfArg = externalCall.argument(0).asInstanceOf[Call]
+      val selfArg = call.receiver.isCall.head
       selfArg.name shouldBe Operators.fieldAccess
       selfArg.code shouldBe "f.func"
 
