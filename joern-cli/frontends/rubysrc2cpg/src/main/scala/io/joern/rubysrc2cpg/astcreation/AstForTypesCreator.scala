@@ -144,8 +144,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     if (scope.isSurroundedByProgramScope) {
       val typeRefNode = Ast(
         NewTypeRef()
-          .code(s"class ${typeDecl.name} (...)")
-          .typeFullName(typeDecl.fullName)
+          .code(s"${typeDecl.code.takeWhile(_ != '\n')} (...)")
+          .typeFullName(s"${typeDecl.fullName}<class>") // Everything will be dispatched on the singleton
           .lineNumber(typeDecl.lineNumber)
           .columnNumber(typeDecl.columnNumber)
       )

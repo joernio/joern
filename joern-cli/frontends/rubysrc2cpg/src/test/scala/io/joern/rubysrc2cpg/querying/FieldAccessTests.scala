@@ -1,8 +1,8 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, TypeRef}
 import io.shiftleft.semanticcpg.language.*
 
 class FieldAccessTests extends RubyCode2CpgFixture {
@@ -56,6 +56,57 @@ class FieldAccessTests extends RubyCode2CpgFixture {
         }
       case Nil => fail("Expected at least one call with `self` base, but got none.")
     }
+  }
+
+  "script-level type properties accessed at various lexical scopes" should {
+
+    val cpg = code("""
+        |require 'base64'
+        |
+        |# self.Baz = TYPE_REF Baz<class>
+        |module Baz
+        |  def func2()
+        |  end
+        |  def self.func1()
+        |  end
+        |end
+        |
+        |Base64::decode64 # self.Base64.decode64
+        |Baz::func1       # self.Baz.func1
+        |
+        |# self.Foo = TYPE_REF Foo<class>
+        |class Foo
+        |  def func()
+        |    Baz.func1()  # self.Baz.func1
+        |  end
+        |end
+        |
+        |f = Foo.new
+        |f.func           # self.f.func
+        |""".stripMargin)
+
+    "assign an alias for type declarations to the singleton" in {
+      inside(cpg.method.isModule.assignment.where(_.source.isTypeRef).l) {
+        case baz :: foo :: Nil =>
+          val bazAssign = baz.argument(1).asInstanceOf[Call]
+          bazAssign.name shouldBe Operators.fieldAccess
+          bazAssign.code shouldBe "self.Baz"
+
+          val bazTypeRef = baz.argument(2).asInstanceOf[TypeRef]
+          bazTypeRef.typeFullName shouldBe "Test0.rb:<global>::program.Baz<class>"
+          bazTypeRef.code shouldBe "module Baz (...)"
+
+          val fooAssign = foo.argument(1).asInstanceOf[Call]
+          fooAssign.name shouldBe Operators.fieldAccess
+          fooAssign.code shouldBe "self.Foo"
+
+          val fooTypeRef = foo.argument(2).asInstanceOf[TypeRef]
+          fooTypeRef.typeFullName shouldBe "Test0.rb:<global>::program.Foo<class>"
+          fooTypeRef.code shouldBe "class Foo (...)"
+        case _ => fail(s"Expected two type ref assignments on the module level")
+      }
+    }
+
   }
 
 }
