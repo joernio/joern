@@ -2,7 +2,7 @@ package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, TypeRef}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, TypeRef}
 import io.shiftleft.semanticcpg.language.*
 
 class FieldAccessTests extends RubyCode2CpgFixture {
@@ -82,7 +82,7 @@ class FieldAccessTests extends RubyCode2CpgFixture {
         |end
         |
         |f = Foo.new
-        |f.func           # self.f.func
+        |f.func()           # self.f.func
         |""".stripMargin)
 
     "assign an alias for type declarations to the singleton" in {
@@ -107,11 +107,67 @@ class FieldAccessTests extends RubyCode2CpgFixture {
       }
     }
 
-    "give both internal and external type accesses on script-level the `self.` base" in {
+    "give external type accesses on script-level the `self.` base" in {
       val externalCall = cpg.method.isModule.call.codeExact("Base64::decode64").head
-//      val decodeReceiver = externalCall.receiver.isCall.head
-      externalCall.dotAst.foreach(println)
-      externalCall.astChildren.map(x => x.label -> x.code).foreach(println)
+      externalCall.name shouldBe "decode64"
+
+      val decodeReceiver = externalCall.receiver.isCall.head
+      decodeReceiver.name shouldBe Operators.fieldAccess
+      decodeReceiver.code shouldBe "self.Base64"
+
+      val selfArg = externalCall.argument(0).asInstanceOf[Call]
+      selfArg.name shouldBe Operators.fieldAccess
+      selfArg.code shouldBe "Base64.decode64"
+
+      val selfArg1 = selfArg.argument(1).asInstanceOf[Call]
+      selfArg1.name shouldBe Operators.fieldAccess
+      selfArg1.code shouldBe "self.Base64"
+
+      val selfArg2 = selfArg.argument(2).asInstanceOf[FieldIdentifier]
+      selfArg2.canonicalName shouldBe "decode64"
+      selfArg2.code shouldBe "decode64"
+    }
+
+    "give internal type accesses on script-level the `self.` base" in {
+      val externalCall = cpg.method.isModule.call.codeExact("Baz::func1").head
+      externalCall.name shouldBe "func1"
+
+      val decodeReceiver = externalCall.receiver.isCall.head
+      decodeReceiver.name shouldBe Operators.fieldAccess
+      decodeReceiver.code shouldBe "self.Baz"
+
+      val selfArg = externalCall.argument(0).asInstanceOf[Call]
+      selfArg.name shouldBe Operators.fieldAccess
+      selfArg.code shouldBe "Baz.func1"
+
+      val selfArg1 = selfArg.argument(1).asInstanceOf[Call]
+      selfArg1.name shouldBe Operators.fieldAccess
+      selfArg1.code shouldBe "self.Baz"
+
+      val selfArg2 = selfArg.argument(2).asInstanceOf[FieldIdentifier]
+      selfArg2.canonicalName shouldBe "func1"
+      selfArg2.code shouldBe "func1"
+    }
+
+    "give method call accesses on script-level the `self.` base" in {
+      val externalCall = cpg.method.isModule.call.nameExact("func").head
+      externalCall.name shouldBe "func"
+
+      val decodeReceiver = externalCall.receiver.isCall.head
+      decodeReceiver.name shouldBe Operators.fieldAccess
+      decodeReceiver.code shouldBe "self.f"
+
+      val selfArg = externalCall.argument(0).asInstanceOf[Call]
+      selfArg.name shouldBe Operators.fieldAccess
+      selfArg.code shouldBe "f.func"
+
+      val selfArg1 = selfArg.argument(1).asInstanceOf[Call]
+      selfArg1.name shouldBe Operators.fieldAccess
+      selfArg1.code shouldBe "self.f"
+
+      val selfArg2 = selfArg.argument(2).asInstanceOf[FieldIdentifier]
+      selfArg2.canonicalName shouldBe "func"
+      selfArg2.code shouldBe "func"
     }
 
   }
