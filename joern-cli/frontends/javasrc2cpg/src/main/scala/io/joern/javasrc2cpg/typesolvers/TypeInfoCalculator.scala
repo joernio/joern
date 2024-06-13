@@ -108,7 +108,8 @@ class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver, keepTyp
         } else {
           val extendsBoundOption = Try(typeParamDecl.getBounds.asScala.find(_.isExtends)).toOption.flatten
           extendsBoundOption
-            .flatMap(bound => nameOrFullName(bound.getType, typeParamValues, fullyQualified))
+            .flatMap(bound => Try(bound.getType).toOption)
+            .flatMap(boundType => nameOrFullName(boundType, typeParamValues, fullyQualified))
             .orElse(objectType(fullyQualified))
         }
       case lambdaConstraintType: ResolvedLambdaConstraintType =>

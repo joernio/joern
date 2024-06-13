@@ -33,7 +33,7 @@ import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
 
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 trait AstForSimpleExpressionsCreator { this: AstCreator =>
 
@@ -174,8 +174,8 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
 
   private[expressions] def astForCastExpr(expr: CastExpr, expectedType: ExpectedType): Ast = {
     val typeFullName =
-      typeInfoCalc
-        .fullName(expr.getType)
+      Try(expr.getType).toOption
+        .flatMap(typeInfoCalc.fullName)
         .orElse(expectedType.fullName)
         .getOrElse(TypeConstants.Any)
 
@@ -188,7 +188,7 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
     )
 
     val typeNode = NewTypeRef()
-      .code(expr.getType.toString)
+      .code(Try(expr.getType.toString).getOrElse(code(expr)))
       .lineNumber(line(expr))
       .columnNumber(column(expr))
       .typeFullName(typeFullName)
@@ -203,13 +203,11 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
     val someTypeFullName = Some(TypeConstants.Class)
     val callNode = newOperatorCallNode(Operators.fieldAccess, expr.toString, someTypeFullName, line(expr), column(expr))
 
-    val identifierType = typeInfoCalc.fullName(expr.getType)
-    val identifier = identifierNode(
-      expr,
-      Util.stripGenericTypes(expr.getTypeAsString),
-      expr.getTypeAsString,
-      identifierType.getOrElse("ANY")
-    )
+    val identifierType = Try(expr.getType).toOption.flatMap(typeInfoCalc.fullName)
+    val exprTypeString =
+      Try(expr.getTypeAsString).toOption.orElse(identifierType).getOrElse(code(expr).stripSuffix(".class"))
+    val identifier =
+      identifierNode(expr, Util.stripGenericTypes(exprTypeString), exprTypeString, identifierType.getOrElse("ANY"))
     val idAst = Ast(identifier)
 
     val fieldIdentifier = NewFieldIdentifier()
@@ -273,12 +271,13 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
       newOperatorCallNode(Operators.instanceOf, expr.toString, booleanTypeFullName, line(expr), column(expr))
 
     val exprAst      = astsForExpression(expr.getExpression, ExpectedType.empty)
-    val typeFullName = typeInfoCalc.fullName(expr.getType).getOrElse(TypeConstants.Any)
+    val exprType     = Try(expr.getType).toOption
+    val typeFullName = exprType.flatMap(typeInfoCalc.fullName).getOrElse(TypeConstants.Any)
     val typeNode =
       NewTypeRef()
-        .code(expr.getType.toString)
+        .code(exprType.map(_.toString).getOrElse(code(expr).split("instanceof").lastOption.getOrElse("")))
         .lineNumber(line(expr))
-        .columnNumber(column(expr.getType))
+        .columnNumber(exprType.map(column(_)).getOrElse(column(expr)))
         .typeFullName(typeFullName)
     val typeAst = Ast(typeNode)
 
@@ -393,9 +392,9 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
   private[expressions] def astForMethodReferenceExpr(expr: MethodReferenceExpr, expectedType: ExpectedType): Ast = {
     val typeFullName = expr.getScope match {
       case typeExpr: TypeExpr =>
-        val rawType = Util.stripGenericTypes(typeExpr.getTypeAsString)
+        val rawType = Try(typeExpr.getTypeAsString).map(Util.stripGenericTypes).toOption
         // JavaParser wraps the "type" scope of a MethodReferenceExpr in a TypeExpr, but this also catches variable names.
-        scope.lookupVariableOrType(rawType).orElse(expressionReturnTypeFullName(typeExpr))
+        rawType.flatMap(scope.lookupVariableOrType).orElse(expressionReturnTypeFullName(typeExpr))
       case scopeExpr => expressionReturnTypeFullName(scopeExpr)
     }
 
