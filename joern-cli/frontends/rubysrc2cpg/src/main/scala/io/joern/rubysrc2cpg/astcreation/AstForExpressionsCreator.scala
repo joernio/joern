@@ -670,7 +670,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astForSelfIdentifier(node: SelfIdentifier): Ast = {
-    val thisIdentifier = identifierNode(node, "this", code(node), scope.surroundingTypeFullName.getOrElse(Defines.Any))
+    val thisIdentifier = identifierNode(node, Defines.Self, code(node), scope.surroundingTypeFullName.getOrElse(Defines.Any))
     Ast(thisIdentifier)
   }
 
