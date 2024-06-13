@@ -214,6 +214,17 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
     x.fullName
   }
 
+  /** Searches the surrounding classes for a class that matches the given value. Returns it if found.
+    */
+  def getSurroundingType(value: String): Option[TypeLikeScope] = {
+    stack
+      .collect { case ScopeElement(x: TypeLikeScope, _) => x }
+      .collectFirst {
+        case x: TypeLikeScope if x.fullName.split('.').toSeq.endsWith(value.split('.')) =>
+          x
+      }
+  }
+
   /** @return
     *   the corresponding node label according to the scope element.
     */

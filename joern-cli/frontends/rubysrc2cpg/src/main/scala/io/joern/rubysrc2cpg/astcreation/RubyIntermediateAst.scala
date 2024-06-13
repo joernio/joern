@@ -229,6 +229,12 @@ object RubyIntermediateAst {
     override def toString: String = s"SimpleIdentifier(${span.text}, $typeFullName)"
   }
 
+  /** Represents a type reference successfully determined, e.g. module A; end; A
+    */
+  final case class TypeIdentifier(typeFullName: String)(span: TextSpan) extends RubyNode(span) with RubyIdentifier {
+    override def toString: String = s"TypeIdentifier(${span.text}, $typeFullName)"
+  }
+
   /** Represents a InstanceFieldIdentifier e.g `@x` */
   final case class InstanceFieldIdentifier()(span: TextSpan) extends RubyNode(span) with RubyFieldIdentifier
 

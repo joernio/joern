@@ -32,6 +32,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case node: IndexAccess              => astForIndexAccess(node)
     case node: SingleAssignment         => astForSingleAssignment(node)
     case node: AttributeAssignment      => astForAttributeAssignment(node)
+    case node: TypeIdentifier           => astForTypeIdentifier(node)
     case node: RubyIdentifier           => astForSimpleIdentifier(node)
     case node: SimpleCall               => astForSimpleCall(node)
     case node: RequireCall              => astForRequireCall(node)
@@ -134,7 +135,17 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   // Member accesses are checked in RubyNodeCreator, i.e. `x.y` is the call of `y` of `x` without any arguments.
   //  where x.Y is considered a constant access as Y is capitalized.
   protected def astForMemberAccess(node: MemberAccess): Ast = {
-    astForFieldAccess(node)
+    node.target match {
+      case x: SimpleIdentifier =>
+        val newTarget = scope.getSurroundingType(x.text).map(_.fullName) match {
+          case Some(surroundingType) =>
+            val typeName = surroundingType.split('.').last
+            TypeIdentifier(s"$surroundingType<class>")(x.span.spanStart(typeName))
+          case None => node
+        }
+        astForMemberAccess(node.copy(target = newTarget)(node.span))
+      case _ => astForFieldAccess(node)
+    }
   }
 
   /** Attempts to extract a type from the base of a member call.
@@ -155,40 +166,42 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     }
   }
 
-  protected def astForMemberCall(node: MemberCall): Ast = {
-    // Use the scope type recovery to attempt to obtain a receiver type for the call
-    node.target match {
-      case x: SimpleIdentifier if scope.isSurroundedByProgramScope =>
-        astForMemberCall(
-          node.copy(target = MemberAccess(SelfIdentifier()(x.span.spanStart(Defines.Self)), ".", x.text)(x.span))(
-            node.span
-          )
-        )
-      case x: SimpleIdentifier =>
-        // TODO: Check lexical scope to determine if `self` is the correct target here
-        astForMemberCall(
-          node.copy(target = MemberAccess(SelfIdentifier()(x.span.spanStart(Defines.Self)), ".", x.text)(x.span))(
-            node.span
-          )
-        )
-      case target: MemberAccess => {
-        val baseAst     = astForExpression(target) // this wil be something like self.Foo
-        val receiverAst = astForExpression(MemberAccess(target, ".", node.methodName)(node.span))
-        val (receiverFullName, methodFullName) = receiverAst.nodes.collectFirst { case x: NewMethodRef => x } match {
-          case Some(x) => x.methodFullName -> x.methodFullName
-          case _ =>
-            typeFromCallTarget(node.target)
-              .map(x => x -> s"$x:${node.methodName}")
-              .getOrElse(XDefines.Any -> XDefines.DynamicCallUnknownFullName)
-        }
-        val argumentAsts = node.arguments.map(astForMethodCallArgument)
-        val dispatchType =
-          if receiverFullName.startsWith(s"<${GlobalTypes.builtinPrefix}") then DispatchTypes.STATIC_DISPATCH
-          else DispatchTypes.DYNAMIC_DISPATCH
+  private def astForTypeIdentifier(node: TypeIdentifier): Ast = {
+    Ast(typeRefNode(node, code(node), node.typeFullName))
+  }
 
-        val call = callNode(node, code(node), node.methodName, methodFullName, dispatchType)
-        callAst(call, argumentAsts, base = Option(baseAst), receiver = Option(receiverAst))
+  protected def astForMemberCall(node: MemberCall): Ast = {
+
+    def createMemberCall(n: MemberCall): Ast = {
+      val baseAst     = astForExpression(n.target) // this wil be something like self.Foo
+      val receiverAst = astForExpression(MemberAccess(n.target, ".", n.methodName)(n.span))
+      val (receiverFullName, methodFullName) = receiverAst.nodes.collectFirst { case x: NewMethodRef => x } match {
+        case Some(x) => x.methodFullName -> x.methodFullName
+        case _ =>
+          typeFromCallTarget(n.target)
+            .map(x => x -> s"$x:${n.methodName}")
+            .getOrElse(XDefines.Any -> XDefines.DynamicCallUnknownFullName)
       }
+      val argumentAsts = n.arguments.map(astForMethodCallArgument)
+      val dispatchType =
+        if receiverFullName.startsWith(s"<${GlobalTypes.builtinPrefix}") then DispatchTypes.STATIC_DISPATCH
+        else DispatchTypes.DYNAMIC_DISPATCH
+
+      val call = callNode(n, code(n), n.methodName, methodFullName, dispatchType)
+      callAst(call, argumentAsts, base = Option(baseAst), receiver = Option(receiverAst))
+    }
+
+    node.target match {
+      case x: SimpleIdentifier =>
+        val newTarget = scope.getSurroundingType(x.text).map(_.fullName) match {
+          case Some(surroundingType) =>
+            val typeName = surroundingType.split('.').last
+            MemberAccess(TypeIdentifier(s"$surroundingType<class>")(x.span.spanStart(typeName)), ".", x.text)(x.span)
+          case None => MemberAccess(SelfIdentifier()(x.span.spanStart(Defines.Self)), ".", x.text)(x.span)
+        }
+        createMemberCall(node.copy(target = newTarget)(node.span))
+      case target: MemberAccess =>
+        createMemberCall(node)
       case x =>
         logger.warn(s"Unhandled target for MemberCall: ${x.getClass} ${x.text}")
         Ast()
