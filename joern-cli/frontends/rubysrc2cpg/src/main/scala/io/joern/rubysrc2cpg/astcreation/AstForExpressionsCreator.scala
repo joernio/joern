@@ -141,9 +141,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           case Some(surroundingType) =>
             val typeName = surroundingType.split('.').last
             TypeIdentifier(s"$surroundingType<class>")(x.span.spanStart(typeName))
-          case None => node
+          case None => x
         }
-        astForMemberAccess(node.copy(target = newTarget)(node.span))
+        astForFieldAccess(node.copy(target = newTarget)(node.span))
       case _ => astForFieldAccess(node)
     }
   }
@@ -733,20 +733,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       else DispatchTypes.DYNAMIC_DISPATCH
 
     val call = callNode(node, code(node), methodName, methodFullName, dispatchType)
-    val receiverAst = {
-      val fi   = Ast(fieldIdentifierNode(node, call.name, call.name))
-      val self = Ast(identifierNode(node, Defines.Self, Defines.Self, receiverType))
-      val baseAccess = callNode(
-        node,
-        s"${Defines.Self}.${call.name}",
-        Operators.fieldAccess,
-        Operators.fieldAccess,
-        DispatchTypes.STATIC_DISPATCH,
-        None,
-        Option(Defines.Any)
-      )
-      callAst(baseAccess, Seq(self, fi))
-    }
+    val receiverAst = astForExpression(
+      MemberAccess(SelfIdentifier()(node.span.spanStart(Defines.Self)), ".", call.name)(node.span)
+    )
     val baseAst = Ast(identifierNode(node, Defines.Self, Defines.Self, receiverType))
     callAst(call, argumentAst, Option(baseAst), Option(receiverAst))
   }
