@@ -131,9 +131,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         callAst(call, Seq(lhsAst, rhsAst))
   }
 
-  // Member accesses are lowered as calls, i.e. `x.y` is the call of `y` of `x` without any arguments.
+  // Member accesses are checked in RubyNodeCreator, i.e. `x.y` is the call of `y` of `x` without any arguments.
+  //  where x.Y is considered a constant access as Y is capitalized.
   protected def astForMemberAccess(node: MemberAccess): Ast = {
-    astForMemberCall(MemberCall(node.target, node.op, node.memberName, List.empty)(node.span))
+    astForFieldAccess(node)
   }
 
   /** Attempts to extract a type from the base of a member call.
@@ -156,25 +157,42 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   protected def astForMemberCall(node: MemberCall): Ast = {
     // Use the scope type recovery to attempt to obtain a receiver type for the call
-    // TODO: Type recovery should potentially resolve this
-    val receiver = astForExpression(node.target)
-    val (receiverFullName, methodFullName) = receiver.root match {
-      case Some(x: NewMethodRef) => x.methodFullName -> x.methodFullName
-      case _ =>
-        typeFromCallTarget(node.target)
-          .map(x => x -> s"$x:${node.methodName}")
-          .getOrElse(XDefines.Any -> XDefines.DynamicCallUnknownFullName)
+    node.target match {
+      case x: SimpleIdentifier if scope.isSurroundedByProgramScope =>
+        astForMemberCall(
+          node.copy(target = MemberAccess(SelfIdentifier()(x.span.spanStart(Defines.Self)), ".", x.text)(x.span))(
+            node.span
+          )
+        )
+      case x: SimpleIdentifier =>
+        // TODO: Check lexical scope to determine if `self` is the correct target here
+        astForMemberCall(
+          node.copy(target = MemberAccess(SelfIdentifier()(x.span.spanStart(Defines.Self)), ".", x.text)(x.span))(
+            node.span
+          )
+        )
+      case target: MemberAccess => {
+        val receiverAst = astForExpression(target) // this wil be something like self.Foo
+        val baseAst     = astForExpression(MemberAccess(target, ".", node.methodName)(node.span))
+        val (receiverFullName, methodFullName) = receiverAst.nodes.collectFirst { case x: NewMethodRef => x } match {
+          case Some(x) => x.methodFullName -> x.methodFullName
+          case _ =>
+            typeFromCallTarget(node.target)
+              .map(x => x -> s"$x:${node.methodName}")
+              .getOrElse(XDefines.Any -> XDefines.DynamicCallUnknownFullName)
+        }
+        val argumentAsts = node.arguments.map(astForMethodCallArgument)
+        val dispatchType =
+          if receiverFullName.startsWith(s"<${GlobalTypes.builtinPrefix}") then DispatchTypes.STATIC_DISPATCH
+          else DispatchTypes.DYNAMIC_DISPATCH
+
+        val call = callNode(node, code(node), node.methodName, methodFullName, dispatchType)
+        callAst(call, argumentAsts, Option(baseAst), Option(receiverAst))
+      }
+      case x =>
+        logger.warn(s"Unhandled target for MemberCall: ${x.getClass} ${x.text}")
+        Ast()
     }
-    val argumentAsts = node.arguments.map(astForMethodCallArgument)
-
-    receiver.root.collect { case x: NewCall => x.typeFullName(methodFullName) }
-    val dispatchType =
-      if receiverFullName.startsWith(s"<${GlobalTypes.builtinPrefix}") then DispatchTypes.STATIC_DISPATCH
-      else DispatchTypes.DYNAMIC_DISPATCH
-
-    val fieldAccessCall = callNode(node, code(node), node.methodName, methodFullName, dispatchType)
-
-    callAst(fieldAccessCall, argumentAsts, Option(receiver))
   }
 
   protected def astForIndexAccess(node: IndexAccess): Ast = {

@@ -142,9 +142,11 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
   private def createTypeRefPointer(typeDecl: NewTypeDecl): Ast = {
     if (scope.isSurroundedByProgramScope) {
+      // We aim to preserve whether it's a `class` or `module` in the `code` property
+      val typeRefCode = s"${typeDecl.code.strip().takeWhile(_ != ' ')} ${typeDecl.name} (...)"
       val typeRefNode = Ast(
         NewTypeRef()
-          .code(s"${typeDecl.code.takeWhile(_ != '\n')} (...)")
+          .code(typeRefCode)
           .typeFullName(s"${typeDecl.fullName}<class>") // Everything will be dispatched on the singleton
           .lineNumber(typeDecl.lineNumber)
           .columnNumber(typeDecl.columnNumber)

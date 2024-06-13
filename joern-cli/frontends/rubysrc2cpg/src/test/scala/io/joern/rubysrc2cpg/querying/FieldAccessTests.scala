@@ -71,8 +71,8 @@ class FieldAccessTests extends RubyCode2CpgFixture {
         |  end
         |end
         |
-        |Base64::decode64 # self.Base64.decode64
-        |Baz::func1       # self.Baz.func1
+        |Base64::decode64 # self.Base64.decode64()
+        |Baz::func1       # self.Baz.func1()
         |
         |# self.Foo = TYPE_REF Foo<class>
         |class Foo
@@ -105,6 +105,13 @@ class FieldAccessTests extends RubyCode2CpgFixture {
           fooTypeRef.code shouldBe "class Foo (...)"
         case _ => fail(s"Expected two type ref assignments on the module level")
       }
+    }
+
+    "give both internal and external type accesses on script-level the `self.` base" in {
+      val externalCall = cpg.method.isModule.call.codeExact("Base64::decode64").head
+//      val decodeReceiver = externalCall.receiver.isCall.head
+      externalCall.dotAst.foreach(println)
+      externalCall.astChildren.map(x => x.label -> x.code).foreach(println)
     }
 
   }

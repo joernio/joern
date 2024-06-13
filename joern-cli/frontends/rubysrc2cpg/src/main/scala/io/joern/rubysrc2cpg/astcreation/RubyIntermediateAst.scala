@@ -361,7 +361,6 @@ object RubyIntermediateAst {
   /** Represents index accesses, e.g. `x[0]`, `self.x.y[1, 2]` */
   final case class IndexAccess(target: RubyNode, indices: List[RubyNode])(span: TextSpan) extends RubyNode(span)
 
-  // TODO: Might be replaced by MemberCall simply?
   final case class MemberAccess(target: RubyNode, op: String, memberName: String)(span: TextSpan)
       extends RubyNode(span) {
     override def toString: String = s"${target.text}.$memberName"

@@ -540,7 +540,11 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   override def visitSimpleCommand(ctx: RubyParser.SimpleCommandContext): RubyNode = {
     if (Option(ctx.commandArgument()).map(_.getText).exists(_.startsWith("::"))) {
       val memberName = ctx.commandArgument().getText.stripPrefix("::")
-      MemberAccess(visit(ctx.methodIdentifier()), "::", memberName)(ctx.toTextSpan)
+      if (memberName.headOption.exists(_.isUpper)) { // Constant accesses are upper-case 1st letter
+        MemberAccess(visit(ctx.methodIdentifier()), "::", memberName)(ctx.toTextSpan)
+      } else {
+        MemberCall(visit(ctx.methodIdentifier()), "::", memberName, Nil)(ctx.toTextSpan)
+      }
     } else if (!ctx.methodIdentifier().isAttrDeclaration) {
       val identifierCtx = ctx.methodIdentifier()
       val arguments     = ctx.commandArgument().arguments.map(visit)
@@ -714,7 +718,11 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
         }
       } else {
         if (!hasArguments) {
-          return MemberAccess(target, ctx.op.getText, methodName)(ctx.toTextSpan)
+          if (methodName.headOption.exists(_.isUpper)) {
+            return MemberAccess(target, ctx.op.getText, methodName)(ctx.toTextSpan)
+          } else {
+            return MemberCall(target, ctx.op.getText, methodName, Nil)(ctx.toTextSpan)
+          }
         } else {
           return MemberCall(target, ctx.op.getText, methodName, ctx.argumentWithParentheses().arguments.map(visit))(
             ctx.toTextSpan
