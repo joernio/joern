@@ -217,11 +217,11 @@ class AstCreator(
       scope.popNamespaceScope()
       Ast(namespaceBlock).withChildren(typeDeclAsts).withChildren(importNodes)
     } catch {
-      case t: UnsolvedSymbolException =>
-        logger.error(s"Unsolved symbol exception caught in $filename")
+      case exception: UnsolvedSymbolException =>
+        logger.warn(s"Unsolved symbol exception caught in $filename", exception)
         Ast()
       case t: Throwable =>
-        logger.error(s"Parsing file $filename failed", t)
+        logger.warn(s"Parsing file $filename failed", t)
         Ast()
     }
   }
