@@ -3,13 +3,13 @@ package io.joern.csharpsrc2cpg.utils
 import better.files.File
 import io.joern.csharpsrc2cpg.Config
 import io.joern.x2cpg.SourceFiles
-import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, DefaultAstGenRunnerResult, getClass}
+import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, getClass}
 import io.joern.x2cpg.astgen.AstGenRunnerBase
 import io.joern.x2cpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 class DotNetAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
 
@@ -60,7 +60,7 @@ class DotNetAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
     }.toList
   }
 
-  override def runAstGenNative(in: String, out: File, exclude: String)(implicit
+  override def runAstGenNative(in: String, out: File, exclude: String, include: String)(implicit
     metaData: AstGenProgramMetaData
   ): Try[Seq[String]] = {
     val excludeCommand = if (exclude.isEmpty) "" else s"-e \"$exclude\""

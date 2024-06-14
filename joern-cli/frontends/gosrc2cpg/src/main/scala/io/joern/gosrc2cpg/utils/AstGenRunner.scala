@@ -1,7 +1,6 @@
 package io.joern.gosrc2cpg.utils
 
 import better.files.File
-import com.typesafe.config.ConfigFactory
 import io.joern.gosrc2cpg.Config
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, AstGenRunnerResult}
@@ -10,9 +9,8 @@ import io.joern.x2cpg.utils.Environment.ArchitectureType.ArchitectureType
 import io.joern.x2cpg.utils.Environment.OperatingSystemType.OperatingSystemType
 import io.joern.x2cpg.utils.{Environment, ExternalCommand}
 import org.slf4j.LoggerFactory
-import versionsort.VersionHelper
 
-import java.nio.file.Paths
+import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 
 object AstGenRunner {
@@ -24,7 +22,7 @@ object AstGenRunner {
   ) extends AstGenRunnerResult
 }
 
-class AstGenRunner(config: Config) extends AstGenRunnerBase(config) {
+class AstGenRunner(config: Config, includeFileRegex: String = "") extends AstGenRunnerBase(config) {
   import io.joern.gosrc2cpg.utils.AstGenRunner.*
 
   override val WinX86   = "windows.exe"
@@ -70,18 +68,19 @@ class AstGenRunner(config: Config) extends AstGenRunnerBase(config) {
     }
   }
 
-  override def runAstGenNative(in: String, out: File, exclude: String)(implicit
+  override def runAstGenNative(in: String, out: File, exclude: String, include: String)(implicit
     metaData: AstGenProgramMetaData
   ): Try[Seq[String]] = {
     val excludeCommand = if (exclude.isEmpty) "" else s"-exclude \"$exclude\""
-    ExternalCommand.run(s"$astGenCommand $excludeCommand -out ${out.toString()} $in", ".")
+    val includeCommand = if (include.isEmpty) "" else s"-include \"$include\""
+    ExternalCommand.run(s"$astGenCommand $excludeCommand $includeCommand -out ${out.toString()} $in", ".")
   }
 
   override def execute(out: File): AstGenRunnerResult = {
     implicit val metaData: AstGenProgramMetaData = config.astGenMetaData
     val in                                       = File(config.inputPath)
     logger.info(s"Running goastgen in '$config.inputPath' ...")
-    runAstGenNative(config.inputPath, out, config.ignoredFilesRegex.toString()) match {
+    runAstGenNative(config.inputPath, out, config.ignoredFilesRegex.toString(), includeFileRegex.toString()) match {
       case Success(result) =>
         val srcFiles = SourceFiles.determine(
           out.toString(),

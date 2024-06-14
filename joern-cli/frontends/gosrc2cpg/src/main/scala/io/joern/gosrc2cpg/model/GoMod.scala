@@ -54,7 +54,7 @@ class GoModHelper(config: Option[Config] = None, meta: Option[GoMod] = None) {
           for (dependency <- mod.dependencies) {
             if (importStmt.startsWith(dependency.module)) {
               dependency.beingUsed = true
-              dependency.usedPackages.add(importStmt)
+              dependency.usedPackages.add(importStmt.replace(dependency.module, ""))
             }
           }
         }
@@ -129,7 +129,10 @@ case class GoModDependency(
   endLineNo: Option[Int] = None,
   endColNo: Option[Int] = None,
   usedPackages: util.Set[String] = new ConcurrentSkipListSet[String]()
-)
+) {
+  def getIncludePackageRegex(): String = usedPackages.toArray.mkString("(", "|", ")")
+  def dependencyStr(): String          = s"$module@$version"
+}
 
 implicit val javaSetRw: ReadWriter[util.Set[String]] = {
   import scala.jdk.CollectionConverters.*

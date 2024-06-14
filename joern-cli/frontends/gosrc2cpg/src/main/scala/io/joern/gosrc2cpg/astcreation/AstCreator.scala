@@ -3,23 +3,24 @@ package io.joern.gosrc2cpg.astcreation
 import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.model.GoModHelper
 import io.joern.gosrc2cpg.parser.ParserAst.*
-import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
+import io.joern.gosrc2cpg.parser.{GoAstJsonParser, ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.astgen.{AstGenNodeBuilder, ParserResult}
 import io.joern.x2cpg.datastructures.Scope
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
-import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode, AstNodeBuilder as X2CpgAstNodeBuilder}
+import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes}
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import ujson.Value
 
+import java.nio.file.Paths
 import scala.collection.mutable
 
 class AstCreator(
+  val jsonAstFilePath: String,
   val relPathFileName: String,
-  val parserResult: ParserResult,
   val goMod: GoModHelper,
   val goGlobal: GoGlobal
 )(implicit withSchemaValidation: ValidationMode)
@@ -36,9 +37,10 @@ class AstCreator(
     with AstForLambdaCreator
     with AstGenNodeBuilder[AstCreator] {
 
-  protected val logger: Logger                                       = LoggerFactory.getLogger(classOf[AstCreator])
-  protected val methodAstParentStack: Stack[NewNode]                 = new Stack()
-  protected val scope: Scope[String, (NewNode, String), NewNode]     = new Scope()
+  protected val logger: Logger                                   = LoggerFactory.getLogger(classOf[AstCreator])
+  val parserResult                                               = GoAstJsonParser.readFile(Paths.get(jsonAstFilePath))
+  protected val methodAstParentStack: Stack[NewNode]             = new Stack()
+  protected val scope: Scope[String, (NewNode, String), NewNode] = new Scope()
   protected val aliasToNameSpaceMapping: mutable.Map[String, String] = mutable.Map.empty
   protected val lineNumberMapping: Map[Int, String]                  = positionLookupTables(parserResult.fileContent)
   protected val declaredPackageName = parserResult.json(ParserKeys.Name)(ParserKeys.Name).str

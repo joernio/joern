@@ -122,13 +122,19 @@ trait AstCreatorHelper { this: AstCreator =>
   protected def columnEndNo(node: Value): Option[Integer] = Try(node(ParserKeys.NodeColEndNo).num).toOption.map(_.toInt)
 
   protected def positionLookupTables(source: String): Map[Int, String] = {
-    source
-      .split("\n")
-      .zipWithIndex
-      .map { case (sourceLine, lineNumber) =>
-        (lineNumber + 1, sourceLine)
-      }
-      .toMap
+    if (!goGlobal.processingDependencies) {
+      val map = parserResult.fileContent
+        .split("\n")
+        .zipWithIndex
+        .map { case (sourceLine, lineNumber) =>
+          (lineNumber + 1, sourceLine)
+        }
+        .toMap
+      parserResult.fileContent = ""
+      map
+    } else {
+      Map[Int, String]()
+    }
   }
 
   protected def resolveAliasToFullName(alias: String): String = {

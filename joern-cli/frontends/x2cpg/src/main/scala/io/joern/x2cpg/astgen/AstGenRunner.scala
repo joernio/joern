@@ -160,7 +160,7 @@ trait AstGenRunnerBase(config: X2CpgConfig[?] & AstGenConfig[?]) {
 
   protected def skippedFiles(in: File, astGenOut: List[String]): List[String]
 
-  protected def runAstGenNative(in: String, out: File, exclude: String)(implicit
+  protected def runAstGenNative(in: String, out: File, exclude: String, include: String)(implicit
     metaData: AstGenProgramMetaData
   ): Try[Seq[String]]
 
@@ -178,7 +178,7 @@ trait AstGenRunnerBase(config: X2CpgConfig[?] & AstGenConfig[?]) {
     implicit val metaData: AstGenProgramMetaData = config.astGenMetaData
     val in                                       = File(config.inputPath)
     logger.info(s"Running ${metaData.name} on '${config.inputPath}'")
-    runAstGenNative(config.inputPath, out, config.ignoredFilesRegex.toString()) match {
+    runAstGenNative(config.inputPath, out, config.ignoredFilesRegex.toString(), "") match {
       case Success(result) =>
         val srcFiles = SourceFiles.determine(
           out.toString(),
