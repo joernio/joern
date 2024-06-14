@@ -222,10 +222,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         createMemberCall(node.copy(target = determineMemberAccessBase(x))(node.span))
       case memAccess: MemberAccess =>
         createMemberCall(node.copy(target = determineMemberAccessBase(memAccess))(node.span))
-      case _: (LiteralExpr | SelfIdentifier) => createMemberCall(node)
-      case x =>
-        logger.warn(s"Unhandled target for MemberCall: ${x.getClass.getSimpleName} ${x.text}")
-        createMemberCall(node)
+      case x => createMemberCall(node)
     }
   }
 
