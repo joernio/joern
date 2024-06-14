@@ -151,7 +151,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
   private def getIdentifiersForTypeParameters(methodDeclaration: MethodDeclaration): List[NewIdentifier] = {
     methodDeclaration.getTypeParameters.asScala.map { typeParameter =>
       val name = typeParameter.getNameAsString
-      val typeFullName = Try(typeParameter.getTypeBound.asScala.headOption).toOption.flatten
+      val typeFullName = tryWithSafeStackOverflow(typeParameter.getTypeBound.asScala.headOption).toOption.flatten
         .flatMap(typeInfoCalc.fullName)
         .getOrElse(TypeConstants.Object)
       typeInfoCalc.registerType(typeFullName)
