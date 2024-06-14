@@ -257,19 +257,12 @@ class AstCreator(
         case failure: Failure[_] =>
           val exceptionType = failure.exception.getClass
 
-          val shouldLog = loggedExceptionCounts.get(exceptionType) match {
-            case Some(count) if count <= 3 =>
-              loggedExceptionCounts.put(exceptionType, count + 1)
-              true
-
-            case None =>
-              loggedExceptionCounts.put(exceptionType, 1)
-              true
-
-            case _ => false
+          val loggedCount = loggedExceptionCounts.updateWith(exceptionType) {
+            case Some(value) => Some(value + 1)
+            case None        => Some(1)
           }
 
-          if (shouldLog) {
+          if (loggedCount.exists(_ <= 3)) {
             logger.debug("tryWithFailureLogging encountered exception", failure.exception)
           }
 
