@@ -53,6 +53,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{NewClosureBinding, NewFil
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
+import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
@@ -87,7 +88,8 @@ class AstCreator(
   fileContent: Option[String],
   global: Global,
   val symbolSolver: JavaSymbolSolver,
-  protected val keepTypeArguments: Boolean
+  protected val keepTypeArguments: Boolean,
+  val loggedExceptionCounts: scala.collection.concurrent.Map[Class[?], Int]
 )(implicit val withSchemaValidation: ValidationMode)
     extends AstCreatorBase(filename)
     with AstNodeBuilder[Node, AstCreator]
@@ -246,13 +248,31 @@ class AstCreator(
     try {
 
       /** JavaParser throws UnsolvedSymbolExceptions if a type cannot be solved, which is usually an expected occurrence
-        * that does not warrant specific failure logging. In some cases, such as node.getType, this can be unexpected,
-        * so log such instances (regular resolution is handled in the TypeInfoCalculator and does not use this method).
+        * that does not warrant specific failure logging. Since it's impossible to tell whether these are legitimately
+        * unresolved types or a bug, don't log them.
         */
       Try(expr) match {
         case success: Success[_] => success
+        // case Failure(exception: UnsolvedSymbolException) => Failure(exception)
         case failure: Failure[_] =>
-          logger.debug("tryWithFailureLogging encountered exception", failure.exception)
+          val exceptionType = failure.exception.getClass
+
+          val shouldLog = loggedExceptionCounts.get(exceptionType) match {
+            case Some(count) if count <= 3 =>
+              loggedExceptionCounts.put(exceptionType, count + 1)
+              true
+
+            case None =>
+              loggedExceptionCounts.put(exceptionType, 1)
+              true
+
+            case _ => false
+          }
+
+          if (shouldLog) {
+            logger.debug("tryWithFailureLogging encountered exception", failure.exception)
+          }
+
           failure
       }
     } catch {
