@@ -407,7 +407,7 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
       case Failure(_) => Defines.UnresolvedSignature
 
       case Success(resolvedMethod) =>
-        val returnType     = typeInfoCalc.fullName(resolvedMethod.getReturnType)
+        val returnType = tryWithSafeStackOverflow(resolvedMethod.getReturnType).toOption.flatMap(typeInfoCalc.fullName)
         val parameterTypes = argumentTypesForMethodLike(Success(resolvedMethod))
         composeSignature(returnType, parameterTypes, resolvedMethod.getNumberOfParams)
     }

@@ -252,8 +252,8 @@ class AstCreator(
         * unresolved types or a bug, don't log them.
         */
       Try(expr) match {
-        case success: Success[_] => success
-        // case Failure(exception: UnsolvedSymbolException) => Failure(exception)
+        case success: Success[_]                         => success
+        case Failure(exception: UnsolvedSymbolException) => Failure(exception)
         case failure: Failure[_] =>
           val exceptionType = failure.exception.getClass
 
