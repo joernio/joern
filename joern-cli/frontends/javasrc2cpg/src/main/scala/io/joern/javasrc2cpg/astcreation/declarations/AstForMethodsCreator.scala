@@ -33,7 +33,7 @@ import io.joern.javasrc2cpg.scope.JavaScopeElement.fullName
 
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 import io.shiftleft.codepropertygraph.generated.nodes.AstNodeNew
 import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 import io.shiftleft.codepropertygraph.generated.Operators
@@ -42,7 +42,7 @@ import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import com.github.javaparser.ast.Node
 import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserParameterDeclaration
 import io.joern.javasrc2cpg.astcreation.declarations.AstForMethodsCreator.PartialConstructorDeclaration
-import io.joern.javasrc2cpg.util.Util
+import io.joern.javasrc2cpg.util.{NameConstants, Util}
 
 private[declarations] trait AstForMethodsCreator { this: AstCreator =>
   def astForMethod(methodDeclaration: MethodDeclaration): Ast = {
@@ -50,16 +50,21 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
 
     val typeParameters = getIdentifiersForTypeParameters(methodDeclaration)
 
-    val maybeResolved      = tryWithSafeStackOverflow(methodDeclaration.resolve())
-    val expectedReturnType = Try(symbolSolver.toResolvedType(methodDeclaration.getType, classOf[ResolvedType])).toOption
-    val simpleMethodReturnType = Util.stripGenericTypes(methodDeclaration.getTypeAsString())
+    val maybeResolved = tryWithSafeStackOverflow(methodDeclaration.resolve())
+    val expectedReturnType = tryWithSafeStackOverflow(
+      symbolSolver.toResolvedType(methodDeclaration.getType, classOf[ResolvedType])
+    ).toOption
+    val simpleMethodReturnType =
+      tryWithSafeStackOverflow(methodDeclaration.getTypeAsString).map(Util.stripGenericTypes).toOption
     val returnTypeFullName = expectedReturnType
       .flatMap(typeInfoCalc.fullName)
-      .orElse(scope.lookupType(simpleMethodReturnType))
+      .orElse(simpleMethodReturnType.flatMap(scope.lookupType(_)))
       .orElse(
-        Try(methodDeclaration.getType.asClassOrInterfaceType).toOption.flatMap(t => scope.lookupType(t.getNameAsString))
+        tryWithSafeStackOverflow(methodDeclaration.getType.asClassOrInterfaceType).toOption.flatMap(t =>
+          scope.lookupType(t.getNameAsString)
+        )
       )
-      .orElse(typeParameters.find(_.name == simpleMethodReturnType).map(_.typeFullName))
+      .orElse(typeParameters.find(typeParam => simpleMethodReturnType.contains(typeParam.name)).map(_.typeFullName))
 
     scope.pushMethodScope(
       methodNode,
@@ -89,12 +94,11 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     }
 
     val bodyAst = methodDeclaration.getBody.toScala.map(astForBlockStatement(_)).getOrElse(Ast(NewBlock()))
-    val methodReturn = newMethodReturnNode(
-      returnTypeFullName.getOrElse(TypeConstants.Any),
-      None,
-      line(methodDeclaration.getType),
-      column(methodDeclaration.getType)
-    )
+    val (lineNr, columnNr) = tryWithSafeStackOverflow(methodDeclaration.getType) match {
+      case Success(typ) => (line(typ), column(typ))
+      case Failure(_)   => (line(methodDeclaration), column(methodDeclaration))
+    }
+    val methodReturn = newMethodReturnNode(returnTypeFullName.getOrElse(TypeConstants.Any), None, lineNr, columnNr)
 
     val annotationAsts = methodDeclaration.getAnnotations.asScala.map(astForAnnotationExpr).toSeq
 
@@ -147,7 +151,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
   private def getIdentifiersForTypeParameters(methodDeclaration: MethodDeclaration): List[NewIdentifier] = {
     methodDeclaration.getTypeParameters.asScala.map { typeParameter =>
       val name = typeParameter.getNameAsString
-      val typeFullName = typeParameter.getTypeBound.asScala.headOption
+      val typeFullName = tryWithSafeStackOverflow(typeParameter.getTypeBound.asScala.headOption).toOption.flatten
         .flatMap(typeInfoCalc.fullName)
         .getOrElse(TypeConstants.Object)
       typeInfoCalc.registerType(typeFullName)
@@ -219,16 +223,18 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
   }
 
   private def astForParameter(parameter: Parameter, childNum: Int): Ast = {
-    val maybeArraySuffix     = if (parameter.isVarArgs) "[]" else ""
-    val rawParameterTypeName = Util.stripGenericTypes(parameter.getTypeAsString)
+    val maybeArraySuffix = if (parameter.isVarArgs) "[]" else ""
+    val rawParameterTypeName =
+      tryWithSafeStackOverflow(parameter.getTypeAsString).map(Util.stripGenericTypes).getOrElse(NameConstants.Unknown)
+    val parameterType = tryWithSafeStackOverflow(parameter.getType).toOption
     val typeFullName =
-      typeInfoCalc
-        .fullName(parameter.getType)
+      parameterType
+        .flatMap(typeInfoCalc.fullName)
         .orElse(scope.lookupType(rawParameterTypeName))
         .map(_ ++ maybeArraySuffix)
         .getOrElse(s"${Defines.UnresolvedNamespace}.$rawParameterTypeName")
     val evalStrat =
-      if (parameter.getType.isPrimitiveType) EvaluationStrategies.BY_VALUE else EvaluationStrategies.BY_SHARING
+      if (parameterType.exists(_.isPrimitiveType)) EvaluationStrategies.BY_VALUE else EvaluationStrategies.BY_SHARING
     typeInfoCalc.registerType(typeFullName)
 
     val parameterNode = NewMethodParameterIn()
@@ -258,7 +264,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
           Try(methodLike.getParam(index)).toOption
         }
         .map { param =>
-          Try(param.getType).toOption
+          tryWithSafeStackOverflow(param.getType).toOption
             .flatMap(paramType => typeInfoCalc.fullName(paramType, typeParamValues))
             // In a scenario where we have an import of an external type e.g. `import foo.bar.Baz` and
             // this parameter's type is e.g. `Baz<String>`, the lookup will fail. However, if we lookup
@@ -292,7 +298,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
 
     val maybeReturnType =
       Try(method.getReturnType).toOption
-        .flatMap(returnType => typeInfoCalc.fullName(returnType, typeParamValues))
+        .flatMap(typeInfoCalc.fullName(_, typeParamValues))
 
     composeSignature(maybeReturnType, maybeParameterTypes, method.getNumberOfParams)
   }

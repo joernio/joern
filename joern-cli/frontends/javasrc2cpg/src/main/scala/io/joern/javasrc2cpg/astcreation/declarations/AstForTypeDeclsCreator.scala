@@ -568,18 +568,21 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     // TODO: Should be able to find expected type here
     val annotations = fieldDeclaration.getAnnotations
 
-    val rawTypeName = Util.stripGenericTypes(v.getTypeAsString)
+    val rawTypeName =
+      tryWithSafeStackOverflow(v.getTypeAsString).map(Util.stripGenericTypes).getOrElse(NameConstants.Unknown)
 
-    val typeFullName = typeInfoCalc
-      .fullName(v.getType)
-      .orElse(scope.lookupType(rawTypeName))
-      .getOrElse(s"${Defines.UnresolvedNamespace}.$rawTypeName")
+    val typeFullName =
+      tryWithSafeStackOverflow(v.getType).toOption
+        .flatMap(typeInfoCalc.fullName)
+        .orElse(scope.lookupType(rawTypeName))
+        .getOrElse(s"${Defines.UnresolvedNamespace}.$rawTypeName")
 
     val name = v.getName.toString
     // Use type name without generics stripped in code
-    val node           = memberNode(v, name, s"${v.getTypeAsString} $name", typeFullName)
-    val memberAst      = Ast(node)
-    val annotationAsts = annotations.asScala.map(astForAnnotationExpr)
+    val variableTypeString = tryWithSafeStackOverflow(v.getTypeAsString).getOrElse("")
+    val node               = memberNode(v, name, s"$variableTypeString $name", typeFullName)
+    val memberAst          = Ast(node)
+    val annotationAsts     = annotations.asScala.map(astForAnnotationExpr)
 
     val fieldDeclModifiers = modifiersForFieldDeclaration(fieldDeclaration)
 
