@@ -107,7 +107,7 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
 
   def astsForVariableDeclarator(variableDeclarator: VariableDeclarator, originNode: Node): Seq[Ast] = {
 
-    val declaratorType = Try(variableDeclarator.getType).toOption
+    val declaratorType = tryWithSafeStackOverflow(variableDeclarator.getType).toOption
     // If generics are in the type name, we may be unable to resolve the type
     val (variableTypeString, maybeTypeArgs) = declaratorType match {
       case Some(typ: ClassOrInterfaceType) =>
@@ -176,7 +176,8 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
               symbolSolver.toResolvedType(variableDeclarator.getType, classOf[ResolvedType])
             ).toOption
 
-          val strippedType = Try(variableDeclarator.getTypeAsString).map(Util.stripGenericTypes).toOption
+          val strippedType =
+            tryWithSafeStackOverflow(variableDeclarator.getTypeAsString).map(Util.stripGenericTypes).toOption
           astsForAssignment(
             variableDeclarator,
             assignmentTarget,

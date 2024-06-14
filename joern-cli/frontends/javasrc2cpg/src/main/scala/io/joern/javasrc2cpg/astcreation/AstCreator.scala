@@ -244,7 +244,17 @@ class AstCreator(
 
   private[astcreation] def tryWithSafeStackOverflow[T](expr: => T): Try[T] = {
     try {
-      Try(expr)
+
+      /** JavaParser throws UnsolvedSymbolExceptions if a type cannot be solved, which is usually an expected occurrence
+        * that does not warrant specific failure logging. In some cases, such as node.getType, this can be unexpected,
+        * so log such instances (regular resolution is handled in the TypeInfoCalculator and does not use this method).
+        */
+      Try(expr) match {
+        case success: Success[_] => success
+        case failure: Failure[_] =>
+          logger.debug("tryWithFailureLogging encountered exception", failure.exception)
+          failure
+      }
     } catch {
       // This is really, really ugly, but there's a bug in the JavaParser symbol solver that can lead to
       // unterminated recursion in some cases where types cannot be resolved.

@@ -352,7 +352,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
         // this will yield the erased types which is why the actual lambda
         // expression parameters are only used as a fallback.
         lambdaParameters
-          .flatMap(param => Try(typeInfoCalc.fullName(param.getType)).toOption)
+          .flatMap(param => tryWithSafeStackOverflow(typeInfoCalc.fullName(param.getType)).toOption)
     }
 
     if (paramTypesList.sizeIs != lambdaParameters.size) {
@@ -367,7 +367,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
         val typeFullName = maybeType.getOrElse(TypeConstants.Any)
         val code         = s"$typeFullName $name"
         val evalStrat =
-          if (Try(param.getType).toOption.exists(_.isPrimitiveType)) EvaluationStrategies.BY_VALUE
+          if (tryWithSafeStackOverflow(param.getType).toOption.exists(_.isPrimitiveType)) EvaluationStrategies.BY_VALUE
           else EvaluationStrategies.BY_SHARING
         val paramNode = NewMethodParameterIn()
           .name(name)

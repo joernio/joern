@@ -50,14 +50,19 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
 
     val typeParameters = getIdentifiersForTypeParameters(methodDeclaration)
 
-    val maybeResolved      = tryWithSafeStackOverflow(methodDeclaration.resolve())
-    val expectedReturnType = Try(symbolSolver.toResolvedType(methodDeclaration.getType, classOf[ResolvedType])).toOption
-    val simpleMethodReturnType = Try(methodDeclaration.getTypeAsString).map(Util.stripGenericTypes).toOption
+    val maybeResolved = tryWithSafeStackOverflow(methodDeclaration.resolve())
+    val expectedReturnType = tryWithSafeStackOverflow(
+      symbolSolver.toResolvedType(methodDeclaration.getType, classOf[ResolvedType])
+    ).toOption
+    val simpleMethodReturnType =
+      tryWithSafeStackOverflow(methodDeclaration.getTypeAsString).map(Util.stripGenericTypes).toOption
     val returnTypeFullName = expectedReturnType
       .flatMap(typeInfoCalc.fullName)
       .orElse(simpleMethodReturnType.flatMap(scope.lookupType(_)))
       .orElse(
-        Try(methodDeclaration.getType.asClassOrInterfaceType).toOption.flatMap(t => scope.lookupType(t.getNameAsString))
+        tryWithSafeStackOverflow(methodDeclaration.getType.asClassOrInterfaceType).toOption.flatMap(t =>
+          scope.lookupType(t.getNameAsString)
+        )
       )
       .orElse(typeParameters.find(typeParam => simpleMethodReturnType.contains(typeParam.name)).map(_.typeFullName))
 
@@ -89,7 +94,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     }
 
     val bodyAst = methodDeclaration.getBody.toScala.map(astForBlockStatement(_)).getOrElse(Ast(NewBlock()))
-    val (lineNr, columnNr) = Try(methodDeclaration.getType) match {
+    val (lineNr, columnNr) = tryWithSafeStackOverflow(methodDeclaration.getType) match {
       case Success(typ) => (line(typ), column(typ))
       case Failure(_)   => (line(methodDeclaration), column(methodDeclaration))
     }
@@ -220,8 +225,8 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
   private def astForParameter(parameter: Parameter, childNum: Int): Ast = {
     val maybeArraySuffix = if (parameter.isVarArgs) "[]" else ""
     val rawParameterTypeName =
-      Try(parameter.getTypeAsString).map(Util.stripGenericTypes).getOrElse(NameConstants.Unknown)
-    val parameterType = Try(parameter.getType).toOption
+      tryWithSafeStackOverflow(parameter.getTypeAsString).map(Util.stripGenericTypes).getOrElse(NameConstants.Unknown)
+    val parameterType = tryWithSafeStackOverflow(parameter.getType).toOption
     val typeFullName =
       parameterType
         .flatMap(typeInfoCalc.fullName)
@@ -259,7 +264,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
           Try(methodLike.getParam(index)).toOption
         }
         .map { param =>
-          Try(param.getType).toOption
+          tryWithSafeStackOverflow(param.getType).toOption
             .flatMap(paramType => typeInfoCalc.fullName(paramType, typeParamValues))
             // In a scenario where we have an import of an external type e.g. `import foo.bar.Baz` and
             // this parameter's type is e.g. `Baz<String>`, the lookup will fail. However, if we lookup

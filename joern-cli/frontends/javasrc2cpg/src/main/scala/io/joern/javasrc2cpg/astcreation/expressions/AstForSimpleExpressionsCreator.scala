@@ -174,7 +174,7 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
 
   private[expressions] def astForCastExpr(expr: CastExpr, expectedType: ExpectedType): Ast = {
     val typeFullName =
-      Try(expr.getType).toOption
+      tryWithSafeStackOverflow(expr.getType).toOption
         .flatMap(typeInfoCalc.fullName)
         .orElse(expectedType.fullName)
         .getOrElse(TypeConstants.Any)
@@ -188,7 +188,7 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
     )
 
     val typeNode = NewTypeRef()
-      .code(Try(expr.getType.toString).getOrElse(code(expr)))
+      .code(tryWithSafeStackOverflow(expr.getType.toString).getOrElse(code(expr)))
       .lineNumber(line(expr))
       .columnNumber(column(expr))
       .typeFullName(typeFullName)
@@ -203,9 +203,11 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
     val someTypeFullName = Some(TypeConstants.Class)
     val callNode = newOperatorCallNode(Operators.fieldAccess, expr.toString, someTypeFullName, line(expr), column(expr))
 
-    val identifierType = Try(expr.getType).toOption.flatMap(typeInfoCalc.fullName)
+    val identifierType = tryWithSafeStackOverflow(expr.getType).toOption.flatMap(typeInfoCalc.fullName)
     val exprTypeString =
-      Try(expr.getTypeAsString).toOption.orElse(identifierType).getOrElse(code(expr).stripSuffix(".class"))
+      tryWithSafeStackOverflow(expr.getTypeAsString).toOption
+        .orElse(identifierType)
+        .getOrElse(code(expr).stripSuffix(".class"))
     val identifier =
       identifierNode(expr, Util.stripGenericTypes(exprTypeString), exprTypeString, identifierType.getOrElse("ANY"))
     val idAst = Ast(identifier)
@@ -271,7 +273,7 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
       newOperatorCallNode(Operators.instanceOf, expr.toString, booleanTypeFullName, line(expr), column(expr))
 
     val exprAst      = astsForExpression(expr.getExpression, ExpectedType.empty)
-    val exprType     = Try(expr.getType).toOption
+    val exprType     = tryWithSafeStackOverflow(expr.getType).toOption
     val typeFullName = exprType.flatMap(typeInfoCalc.fullName).getOrElse(TypeConstants.Any)
     val typeNode =
       NewTypeRef()
@@ -392,7 +394,7 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
   private[expressions] def astForMethodReferenceExpr(expr: MethodReferenceExpr, expectedType: ExpectedType): Ast = {
     val typeFullName = expr.getScope match {
       case typeExpr: TypeExpr =>
-        val rawType = Try(typeExpr.getTypeAsString).map(Util.stripGenericTypes).toOption
+        val rawType = tryWithSafeStackOverflow(typeExpr.getTypeAsString).map(Util.stripGenericTypes).toOption
         // JavaParser wraps the "type" scope of a MethodReferenceExpr in a TypeExpr, but this also catches variable names.
         rawType.flatMap(scope.lookupVariableOrType).orElse(expressionReturnTypeFullName(typeExpr))
       case scopeExpr => expressionReturnTypeFullName(scopeExpr)

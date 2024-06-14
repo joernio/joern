@@ -326,8 +326,9 @@ trait AstForForLoopsCreator { this: AstCreator =>
 
     maybeVariable match {
       case Some(variable) =>
-        val name         = variable.getNameAsString
-        val typeFullName = Try(variable.getType).toOption.flatMap(typeInfoCalc.fullName).getOrElse("ANY")
+        val name = variable.getNameAsString
+        val typeFullName =
+          tryWithSafeStackOverflow(variable.getType).toOption.flatMap(typeInfoCalc.fullName).getOrElse("ANY")
         val localNode = partialLocalNode
           .name(name)
           .code(variable.getNameAsString)
