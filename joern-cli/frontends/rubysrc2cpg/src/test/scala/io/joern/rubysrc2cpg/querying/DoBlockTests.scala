@@ -3,6 +3,7 @@ package io.joern.rubysrc2cpg.querying
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelPrefix
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
@@ -98,9 +99,10 @@ class DoBlockTests extends RubyCode2CpgFixture {
 
     "specify the closure reference as an argument to the member call with block" in {
       inside(cpg.call("each").argument.l) {
-        case (myArray: Identifier) :: (lambdaRef: MethodRef) :: Nil =>
+        case (myArray: Call) :: (lambdaRef: MethodRef) :: Nil =>
           myArray.argumentIndex shouldBe 0
-          myArray.name shouldBe "my_array"
+          myArray.name shouldBe Operators.fieldAccess
+          myArray.code shouldBe "self.my_array"
 
           lambdaRef.argumentIndex shouldBe 1
           lambdaRef.methodFullName shouldBe "Test0.rb:<global>::program:<lambda>0"
@@ -162,9 +164,10 @@ class DoBlockTests extends RubyCode2CpgFixture {
 
     "specify the closure reference as an argument to the member call with block" in {
       inside(cpg.call("each").argument.l) {
-        case (hash: Identifier) :: (lambdaRef: MethodRef) :: Nil =>
+        case (hash: Call) :: (lambdaRef: MethodRef) :: Nil =>
           hash.argumentIndex shouldBe 0
-          hash.name shouldBe "hash"
+          hash.name shouldBe Operators.fieldAccess
+          hash.code shouldBe "self.hash"
 
           lambdaRef.argumentIndex shouldBe 1
           lambdaRef.methodFullName shouldBe "Test0.rb:<global>::program:<lambda>0"

@@ -1,6 +1,6 @@
 package io.joern.rubysrc2cpg.astcreation
 
-import io.joern.rubysrc2cpg.passes.Defines
+import io.joern.rubysrc2cpg.passes.{Defines, GlobalTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 
 import scala.annotation.tailrec
@@ -232,6 +232,7 @@ object RubyIntermediateAst {
   /** Represents a type reference successfully determined, e.g. module A; end; A
     */
   final case class TypeIdentifier(typeFullName: String)(span: TextSpan) extends RubyNode(span) with RubyIdentifier {
+    def isBuiltin: Boolean        = typeFullName.startsWith(s"<${GlobalTypes.builtinPrefix}")
     override def toString: String = s"TypeIdentifier(${span.text}, $typeFullName)"
   }
 

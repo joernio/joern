@@ -63,7 +63,7 @@ class FieldAccessTests extends RubyCode2CpgFixture {
 
         inside(sickDays.argument.l) {
           case (self: Identifier) :: Nil =>
-            self.name shouldBe "this"
+            self.name shouldBe "self"
             self.code shouldBe "self"
             self.typeFullName should endWith("PaidTimeOff")
           case xs => fail(s"Expected exactly two field access arguments, instead got [${xs.code.mkString(", ")}]")
@@ -222,7 +222,6 @@ class FieldAccessTests extends RubyCode2CpgFixture {
 
     "create `TYPE_REF` targets for the field accesses" in {
       val call = cpg.call.nameExact("func").head
-
       val base = call.argument(0).asInstanceOf[Call]
       base.name shouldBe Operators.fieldAccess
       base.code shouldBe "A::B"

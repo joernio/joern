@@ -701,7 +701,7 @@ class ClassTests extends RubyCode2CpgFixture {
     }
 
     "correct method def under initialize method" in {
-      inside(cpg.typeDecl.name("Foo<class>").l) {
+      inside(cpg.typeDecl.name("Foo").l) {
         case fooClass :: Nil =>
           inside(fooClass.method.name(RubyDefines.Initialize).l) {
             case initMethod :: Nil =>

@@ -4,6 +4,7 @@ import io.joern.rubysrc2cpg.passes.{GlobalTypes, Defines as RubyDefines}
 import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelPrefix
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
@@ -55,10 +56,17 @@ class CallTests extends RubyCode2CpgFixture {
     puts.methodFullName shouldBe s"$kernelPrefix:puts"
     puts.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
-    val List(kernelRef: TypeRef) = puts.receiver.l: @unchecked
-    kernelRef.argumentIndex shouldBe 0
-    kernelRef.typeFullName shouldBe kernelPrefix
-    kernelRef.code shouldBe kernelPrefix
+    val List(kernelRec: Call) = puts.receiver.l: @unchecked
+    kernelRec.argumentIndex shouldBe -1
+    kernelRec.typeFullName shouldBe Defines.Any
+    kernelRec.code shouldBe "Kernel.puts"
+
+    kernelRec.argument(1).asInstanceOf[TypeRef].typeFullName shouldBe kernelPrefix
+    kernelRec.argument(2).asInstanceOf[FieldIdentifier].canonicalName shouldBe "puts"
+
+    val kernelBase = puts.argument(0).asInstanceOf[TypeRef]
+    kernelBase.typeFullName shouldBe kernelPrefix
+    kernelBase.code shouldBe "Kernel"
 
     val List(atan2) = cpg.call.name("atan2").l
     atan2.lineNumber shouldBe Some(3)
@@ -66,10 +74,13 @@ class CallTests extends RubyCode2CpgFixture {
     atan2.methodFullName shouldBe s"<${GlobalTypes.builtinPrefix}.Math>:atan2"
     atan2.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
-    val List(mathRef: TypeRef) = atan2.receiver.l: @unchecked
-    mathRef.argumentIndex shouldBe 0
-    mathRef.typeFullName shouldBe s"<${GlobalTypes.builtinPrefix}.Math>"
-    mathRef.code shouldBe s"<${GlobalTypes.builtinPrefix}.Math>"
+    val List(mathRec: Call) = atan2.receiver.l: @unchecked
+    mathRec.argumentIndex shouldBe -1
+    mathRec.typeFullName shouldBe Defines.Any
+    mathRec.code shouldBe s"Math.atan2"
+
+    mathRec.argument(1).asInstanceOf[TypeRef].typeFullName shouldBe s"<${GlobalTypes.builtinPrefix}.Math>"
+    mathRec.argument(2).asInstanceOf[FieldIdentifier].canonicalName shouldBe "atan2"
   }
 
   "`foo(1,2)` is represented by a CALL node" in {
@@ -250,18 +261,24 @@ class CallTests extends RubyCode2CpgFixture {
   }
 
   "a call with a quoted regex literal should have a literal receiver" in {
-    val cpg                         = code("%r{^/}.freeze")
-    val List(regexLiteral: Literal) = cpg.call.nameExact("freeze").receiver.l: @unchecked
+    val cpg          = code("%r{^/}.freeze")
+    val regexLiteral = cpg.call.nameExact("freeze").receiver.fieldAccess.argument(1).head.asInstanceOf[Literal]
     regexLiteral.typeFullName shouldBe s"$kernelPrefix.Regexp"
     regexLiteral.code shouldBe "%r{^/}"
   }
 
   "a call with a double colon receiver" in {
-    val cpg                = code("::Augeas.open { |aug| aug.get('/augeas/version') }")
-    val List(augeas: Call) = cpg.call.nameExact("open").receiver.l: @unchecked
-    // TODO: Right now this is seen as a "getter" but should _probably_ be a field access, e.g. self.Augeas
-    augeas.methodFullName shouldBe "Test0.rb:<global>::program:Augeas"
-    augeas.code shouldBe "::Augeas"
+    val cpg          = code("::Augeas.open { |aug| aug.get('/augeas/version') }")
+    val augeasReceiv = cpg.call.nameExact("open").receiver.head.asInstanceOf[Call]
+    augeasReceiv.methodFullName shouldBe Operators.fieldAccess
+    augeasReceiv.code shouldBe "::Augeas.open"
+
+    val selfAugeas = augeasReceiv.argument(1).asInstanceOf[Call]
+
+    selfAugeas.argument(1).asInstanceOf[Identifier].name shouldBe RubyDefines.Self
+    selfAugeas.argument(2).asInstanceOf[FieldIdentifier].canonicalName shouldBe "Augeas"
+
+    augeasReceiv.argument(2).asInstanceOf[FieldIdentifier].canonicalName shouldBe "open"
   }
 
 }

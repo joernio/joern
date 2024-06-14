@@ -175,36 +175,57 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     def createMemberCall(n: MemberCall): Ast = {
       val baseAst     = astForExpression(n.target) // this wil be something like self.Foo
       val receiverAst = astForExpression(MemberAccess(n.target, ".", n.methodName)(n.span))
-      val (receiverFullName, methodFullName) = receiverAst.nodes.collectFirst { case x: NewMethodRef => x } match {
-        case Some(x) => x.methodFullName -> x.methodFullName
-        case _ =>
-          typeFromCallTarget(n.target)
-            .map(x => x -> s"$x:${n.methodName}")
-            .getOrElse(XDefines.Any -> XDefines.DynamicCallUnknownFullName)
+      val builtinType = n.target match {
+        case MemberAccess(_: SelfIdentifier, _, memberName) if isBundledClass(memberName) =>
+          Option(prefixAsBundledType(memberName))
+        case x: TypeIdentifier if x.isBuiltin => Option(x.typeFullName)
+        case _                                => None
       }
+      val (receiverFullName, methodFullName) = receiverAst.nodes
+        .collectFirst {
+          case _ if builtinType.isDefined => builtinType.get  -> s"${builtinType.get}:${n.methodName}"
+          case x: NewMethodRef            => x.methodFullName -> x.methodFullName
+          case _ =>
+            (n.target match {
+              case ma: MemberAccess => scope.tryResolveTypeReference(ma.memberName).map(_.name)
+              case _                => typeFromCallTarget(n.target)
+            }).map(x => x -> s"$x:${n.methodName}")
+              .getOrElse(XDefines.Any -> XDefines.DynamicCallUnknownFullName)
+        }
+        .getOrElse(XDefines.Any -> XDefines.DynamicCallUnknownFullName)
       val argumentAsts = n.arguments.map(astForMethodCallArgument)
       val dispatchType =
-        if receiverFullName.startsWith(s"<${GlobalTypes.builtinPrefix}") then DispatchTypes.STATIC_DISPATCH
+        if builtinType.isDefined then DispatchTypes.STATIC_DISPATCH
         else DispatchTypes.DYNAMIC_DISPATCH
 
       val call = callNode(n, code(n), n.methodName, methodFullName, dispatchType)
       callAst(call, argumentAsts, base = Option(baseAst), receiver = Option(receiverAst))
     }
 
-    node.target match {
+    def determineMemberAccessBase(target: RubyNode): RubyNode = target match {
+      case MemberAccess(SelfIdentifier(), _, _) => target
       case x: SimpleIdentifier =>
-        val newTarget = scope.getSurroundingType(x.text).map(_.fullName) match {
+        scope.getSurroundingType(x.text).map(_.fullName) match {
           case Some(surroundingType) =>
             val typeName = surroundingType.split('.').last
-            MemberAccess(TypeIdentifier(s"$surroundingType<class>")(x.span.spanStart(typeName)), ".", x.text)(x.span)
+            TypeIdentifier(s"$surroundingType<class>")(x.span.spanStart(typeName))
           case None => MemberAccess(SelfIdentifier()(x.span.spanStart(Defines.Self)), ".", x.text)(x.span)
         }
-        createMemberCall(node.copy(target = newTarget)(node.span))
-      case target: MemberAccess =>
-        createMemberCall(node)
+      case x @ MemberAccess(ma, op, memberName) => x.copy(target = determineMemberAccessBase(ma))(x.span)
+      case _                                    => target
+    }
+
+    node.target match {
+      case x: SimpleIdentifier if isBundledClass(x.text) =>
+        createMemberCall(node.copy(target = TypeIdentifier(prefixAsBundledType(x.text))(x.span))(node.span))
+      case x: SimpleIdentifier =>
+        createMemberCall(node.copy(target = determineMemberAccessBase(x))(node.span))
+      case memAccess: MemberAccess =>
+        createMemberCall(node.copy(target = determineMemberAccessBase(memAccess))(node.span))
+      case _: (LiteralExpr | SelfIdentifier) => createMemberCall(node)
       case x =>
-        logger.warn(s"Unhandled target for MemberCall: ${x.getClass} ${x.text}")
-        Ast()
+        logger.warn(s"Unhandled target for MemberCall: ${x.getClass.getSimpleName} ${x.text}")
+        createMemberCall(node)
     }
   }
 
