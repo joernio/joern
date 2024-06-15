@@ -99,10 +99,10 @@ class DoBlockTests extends RubyCode2CpgFixture {
 
     "specify the closure reference as an argument to the member call with block" in {
       inside(cpg.call("each").argument.l) {
-        case (myArray: Call) :: (lambdaRef: MethodRef) :: Nil =>
+        case (myArray: Identifier) :: (lambdaRef: MethodRef) :: Nil =>
           myArray.argumentIndex shouldBe 0
-          myArray.name shouldBe Operators.fieldAccess
-          myArray.code shouldBe "self.my_array"
+          myArray.name shouldBe "my_array"
+          myArray.code shouldBe "my_array"
 
           lambdaRef.argumentIndex shouldBe 1
           lambdaRef.methodFullName shouldBe "Test0.rb:<global>::program:<lambda>0"
@@ -164,10 +164,10 @@ class DoBlockTests extends RubyCode2CpgFixture {
 
     "specify the closure reference as an argument to the member call with block" in {
       inside(cpg.call("each").argument.l) {
-        case (hash: Call) :: (lambdaRef: MethodRef) :: Nil =>
+        case (hash: Identifier) :: (lambdaRef: MethodRef) :: Nil =>
           hash.argumentIndex shouldBe 0
-          hash.name shouldBe Operators.fieldAccess
-          hash.code shouldBe "self.hash"
+          hash.name shouldBe "hash"
+          hash.code shouldBe "hash"
 
           lambdaRef.argumentIndex shouldBe 1
           lambdaRef.methodFullName shouldBe "Test0.rb:<global>::program:<lambda>0"

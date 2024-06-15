@@ -80,7 +80,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       .fullName(s"$classFullName<class>")
       .inheritsFromTypeFullName(inheritsFrom.map(x => s"$x<class>"))
 
-    val (typeDeclModifiers, singletonModifiers) = node match {
+    val (classModifiers, singletonModifiers) = node match {
       case _: ModuleDeclaration =>
         scope.pushNewScope(ModuleScope(classFullName))
         (
@@ -98,17 +98,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val classBody =
       node.body.asInstanceOf[StatementList] // for now (bodyStatement is a superset of stmtList)
 
-    val classBodyAsts = classBody.statements.flatMap {
-      case n: SingletonMethodDeclaration =>
-        val singletonMethodAst = astsForStatement(n)
-        // Create binding from singleton methods to singleton type decls
-        singletonMethodAst.flatMap(_.root).collectFirst { case n: NewMethod =>
-          createMethodTypeBindings(n, Ast(singletonTypeDecl) :: Nil)
-        }
-        // Method declaration remains in the normal type decl body
-        singletonMethodAst
-      case n => astsForStatement(n)
-    } match {
+    def handleDefaultConstructor(bodyAsts: Seq[Ast]): Seq[Ast] = bodyAsts match {
       case bodyAsts if scope.shouldGenerateDefaultConstructor && this.parseLevel == AstParseLevel.FULL_AST =>
         val bodyStart  = classBody.span.spanStart()
         val initBody   = StatementList(List())(bodyStart)
@@ -117,25 +107,50 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       case bodyAsts => bodyAsts
     }
 
-    val (fieldTypeMemberNodes, fieldSingletonMemberNodes) = node match {
-      case classDecl: ClassDeclaration =>
-        classDecl.fields
-          .map { x =>
-            val name = code(x)
-            x.isInstanceOf[InstanceFieldIdentifier] -> Ast(memberNode(x, name, name, Defines.Any))
+    val PART_OF_SINGLETON = true
+    val (singletonBodyAsts, classBodyAsts) = classBody.statements
+      .map {
+        case n: SingletonMethodDeclaration =>
+          val singletonMethodAst = astsForStatement(n)
+          // Create binding from singleton methods to singleton type decls
+          singletonMethodAst.flatMap(_.root).collectFirst { case n: NewMethod =>
+            createMethodTypeBindings(n, Ast(singletonTypeDecl) :: Nil)
           }
-          .partition(_._1)
-      case _ => Seq.empty -> Seq.empty
+          // Method declaration remains in the normal type decl body
+          singletonMethodAst -> !PART_OF_SINGLETON
+        case n: MethodDeclaration if n.methodName == Defines.InitializeClass =>
+          astsForStatement(n.copy(methodName = Defines.Initialize)(n.span)) -> PART_OF_SINGLETON
+        case n => astsForStatement(n) -> !PART_OF_SINGLETON
+      }
+      .groupBy(_._2)
+      .map { case (partOfSingleton, xs) =>
+        partOfSingleton -> handleDefaultConstructor(xs.flatMap(_._1))
+      }
+      .partition(_._1)
+
+    val fields = node match {
+      case classDecl: ClassDeclaration   => classDecl.fields
+      case moduleDecl: ModuleDeclaration => moduleDecl.fields
+      case _                             => Seq.empty
     }
+    val (fieldTypeMemberNodes, fieldSingletonMemberNodes) = fields
+      .map { x =>
+        val name = code(x)
+        x.isInstanceOf[InstanceFieldIdentifier] -> Ast(memberNode(x, name, name, Defines.Any))
+      }
+      .partition(_._1)
 
     scope.popScope()
     val prefixAst = createTypeRefPointer(typeDecl)
     val typeDeclAst = Ast(typeDecl)
-      .withChildren(typeDeclModifiers)
+      .withChildren(classModifiers)
       .withChildren(fieldTypeMemberNodes.map(_._2))
-      .withChildren(classBodyAsts)
+      .withChildren(classBodyAsts.values.flatten.toSeq)
     val singletonTypeDeclAst =
-      Ast(singletonTypeDecl).withChildren(singletonModifiers).withChildren(fieldSingletonMemberNodes.map(_._2))
+      Ast(singletonTypeDecl)
+        .withChildren(singletonModifiers)
+        .withChildren(fieldSingletonMemberNodes.map(_._2))
+        .withChildren(singletonBodyAsts.values.flatten.toSeq)
 
     prefixAst :: typeDeclAst :: singletonTypeDeclAst :: Nil filterNot (_.root.isEmpty)
   }

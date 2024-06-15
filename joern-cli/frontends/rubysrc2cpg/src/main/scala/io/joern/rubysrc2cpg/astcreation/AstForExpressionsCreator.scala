@@ -12,6 +12,7 @@ import io.shiftleft.codepropertygraph.generated.{
   ControlStructureTypes,
   DispatchTypes,
   EdgeTypes,
+  NodeTypes,
   Operators,
   PropertyNames
 }
@@ -209,6 +210,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           case Some(surroundingType) =>
             val typeName = surroundingType.split('.').last
             TypeIdentifier(s"$surroundingType<class>")(x.span.spanStart(typeName))
+          case None if scope.lookupVariable(x.text).isDefined => x
           case None => MemberAccess(SelfIdentifier()(x.span.spanStart(Defines.Self)), ".", x.text)(x.span)
         }
       case x @ MemberAccess(ma, op, memberName) => x.copy(target = determineMemberAccessBase(ma))(x.span)
@@ -786,6 +788,19 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         Ast.storeInDiffGraph(typeDecl, diffGraph)
 
         methodRef
+      case selfMethod: SingletonMethodDeclaration =>
+        // Last element is the method declaration, the prefix methods would be `foo = def foo (...)` pointers in other
+        // contexts, but this would be empty as a method call argument
+        val Seq(_, methodDeclAst) = astForSingletonMethodDeclaration(selfMethod)
+        scope.surroundingTypeFullName.foreach { tfn =>
+          methodDeclAst.root.collect { case m: NewMethod =>
+            m.astParentType(NodeTypes.TYPE_DECL).astParentFullName(s"$tfn<class>")
+          }
+        }
+        Ast.storeInDiffGraph(methodDeclAst, diffGraph)
+        scope.surroundingScopeFullName
+          .map(s => Ast(methodRefNode(node, selfMethod.span.text, s"$s:${selfMethod.methodName}", Defines.Any)))
+          .getOrElse(Ast())
       case _ => astForExpression(node)
   }
 

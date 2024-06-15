@@ -54,8 +54,9 @@ object RubyIntermediateAst {
     def body: RubyNode
   }
 
-  final case class ModuleDeclaration(name: RubyNode, body: RubyNode)(span: TextSpan)
-      extends RubyNode(span)
+  final case class ModuleDeclaration(name: RubyNode, body: RubyNode, fields: List[RubyNode & RubyFieldIdentifier])(
+    span: TextSpan
+  ) extends RubyNode(span)
       with TypeDeclaration {
     def baseClass: Option[RubyNode] = None
   }

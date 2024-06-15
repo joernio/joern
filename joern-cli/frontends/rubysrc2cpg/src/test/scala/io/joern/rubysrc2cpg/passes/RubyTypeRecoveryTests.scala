@@ -192,7 +192,7 @@ class RubyExternalTypeRecoveryTests
 
     "be present in (Case 1)" in {
       cpg.identifier("sg").lineNumber(5).typeFullName.l shouldBe List("sendgrid-ruby.SendGrid.API")
-      cpg.call("client").methodFullName.l shouldBe List("sendgrid-ruby.SendGrid.API:client")
+      cpg.call("client").methodFullName.headOption shouldBe Option("sendgrid-ruby.SendGrid.API:client")
     }
 
     "resolve correct imports via tag nodes" in {

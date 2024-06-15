@@ -823,7 +823,8 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitModuleDefinition(ctx: RubyParser.ModuleDefinitionContext): RubyNode = {
-    ModuleDeclaration(visit(ctx.classPath()), visit(ctx.bodyStatement()))(ctx.toTextSpan)
+    val (nonFieldStmts, fields) = genInitFieldStmts(ctx.bodyStatement())
+    ModuleDeclaration(visit(ctx.classPath()), nonFieldStmts, fields)(ctx.toTextSpan)
   }
 
   override def visitSingletonClassDefinition(ctx: RubyParser.SingletonClassDefinitionContext): RubyNode = {
@@ -880,10 +881,23 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
 
     loweredClassDecls match {
       case stmtList: StatementList =>
-        val (rubyFieldIdentifiers, rest) = stmtList.statements.partition {
+        val (rubyFieldIdentifiers, otherStructures) = stmtList.statements.partition {
           case x: (RubyNode & RubyFieldIdentifier) => true
           case _                                   => false
         }
+        val (fieldAssignments, rest) = otherStructures
+          .map {
+            case x @ SingleAssignment(lhs: SimpleIdentifier, op, rhs) =>
+              SingleAssignment(ClassFieldIdentifier()(lhs.span), op, rhs)(x.span)
+            case x @ SingleAssignment(lhs: RubyFieldIdentifier, op, rhs) =>
+              // Perhaps non-intuitive, but @ fields assigned under a type belong to the singleton class
+              SingleAssignment(ClassFieldIdentifier()(lhs.span), op, rhs)(x.span)
+            case x => x
+          }
+          .partition {
+            case x: SingleAssignment => true
+            case _                   => false
+          }
 
         val (instanceFields, classFields) = partitionRubyFields(rubyFieldIdentifiers)
 
@@ -898,7 +912,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
         val initializeMethod = methodDecls.collectFirst { case x if x.methodName == Defines.Initialize => x }
 
         val initStmtListStatements = genSingleAssignmentStmtList(instanceFields, instanceFieldsInMethodDecls)
-        val clinitStmtList         = genSingleAssignmentStmtList(classFields, classFieldsInMethodDecls)
+        val clinitStmtList = genSingleAssignmentStmtList(classFields, classFieldsInMethodDecls) ++ fieldAssignments
 
         val clinitMethod =
           MethodDeclaration(Defines.InitializeClass, List.empty, StatementList(clinitStmtList)(stmtList.span))(
@@ -925,7 +939,8 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
             val initializers = newInitMethod :: clinitMethod :: Nil
             StatementList(initializers ++ rest)(stmtList.span)
         }
-        val combinedFields = rubyFieldIdentifiers ++ fieldsInMethodDecls
+        val combinedFields = rubyFieldIdentifiers ++ fieldsInMethodDecls ++
+          fieldAssignments.collect { case SingleAssignment(lhs: RubyFieldIdentifier, _, _) => lhs }
 
         (updatedStmtList, combinedFields.asInstanceOf[List[RubyNode & RubyFieldIdentifier]])
       case decls => (decls, List.empty)

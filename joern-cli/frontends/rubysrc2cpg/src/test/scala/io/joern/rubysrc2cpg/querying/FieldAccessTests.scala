@@ -165,17 +165,17 @@ class FieldAccessTests extends RubyCode2CpgFixture {
       val call = cpg.method.isModule.call.nameExact("func").head
       call.name shouldBe "func"
 
-      val base = call.argument(0).asInstanceOf[Call]
-      base.name shouldBe Operators.fieldAccess
-      base.code shouldBe "self.f"
+      val base = call.argument(0).asInstanceOf[Identifier]
+      base.name shouldBe "f"
+      base.code shouldBe "f"
 
       val receiver = call.receiver.isCall.head
       receiver.name shouldBe Operators.fieldAccess
       receiver.code shouldBe "f.func"
 
-      val selfArg1 = receiver.argument(1).asInstanceOf[Call]
-      selfArg1.name shouldBe Operators.fieldAccess
-      selfArg1.code shouldBe "self.f"
+      val selfArg1 = receiver.argument(1).asInstanceOf[Identifier]
+      selfArg1.name shouldBe "f"
+      selfArg1.code shouldBe "f"
 
       val selfArg2 = receiver.argument(2).asInstanceOf[FieldIdentifier]
       selfArg2.canonicalName shouldBe "func"

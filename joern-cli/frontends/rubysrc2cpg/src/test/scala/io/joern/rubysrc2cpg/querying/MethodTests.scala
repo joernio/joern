@@ -351,7 +351,7 @@ class MethodTests extends RubyCode2CpgFixture {
 
     "exist under the module TYPE_DECL" in {
       inside(cpg.typeDecl.name("F").method.l) {
-        case bar :: baz :: Nil =>
+        case init :: bar :: baz :: Nil =>
           inside(bar.parameter.l) {
             case thisParam :: xParam :: Nil =>
               thisParam.name shouldBe "this"
