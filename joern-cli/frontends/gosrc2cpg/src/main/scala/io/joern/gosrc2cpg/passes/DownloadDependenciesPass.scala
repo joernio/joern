@@ -18,9 +18,9 @@ import scala.util.{Failure, Success, Try}
 class DownloadDependenciesPass(parentGoMod: GoModHelper, goGlobal: GoGlobal, config: Config) {
   private val logger = LoggerFactory.getLogger(getClass)
   def process(): Unit = {
-    val writer       = new Writer()
-    val writerThread = new Thread(writer)
-    writerThread.start()
+    val processor       = new DependencyProcessorQueue()
+    val processorThread = new Thread(processor)
+    processorThread.start()
     File.usingTemporaryDirectory("go-temp-download") { tmpDir =>
       val projDir = tmpDir.pathAsString
       parentGoMod
@@ -36,7 +36,7 @@ class DownloadDependenciesPass(parentGoMod: GoModHelper, goGlobal: GoGlobal, con
                   results match {
                     case Success(_) =>
                       print(". ")
-                      writer.queue.put(Some(dependency))
+                      processor.queue.put(Some(dependency))
                     case Failure(f) =>
                       logger.error(s"\t- command '$cmd' failed", f)
                   }
@@ -46,11 +46,11 @@ class DownloadDependenciesPass(parentGoMod: GoModHelper, goGlobal: GoGlobal, con
           }
         })
     }
-    writer.queue.put(None)
-    writerThread.join()
+    processor.queue.put(None)
+    processorThread.join()
   }
 
-  private class Writer extends Runnable {
+  private class DependencyProcessorQueue extends Runnable {
     val queue =
       new LinkedBlockingQueue[Option[GoModDependency]]()
     override def run(): Unit = {
