@@ -192,8 +192,12 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
 
     val anonymousClassBody = expr.getAnonymousClassBody.toScala.map(_.asScala.toList)
     val nameSuffix         = if (anonymousClassBody.isEmpty) "" else s"$$${scope.getNextAnonymousClassIndex()}"
-    val rawType            = Util.stripGenericTypes(expr.getTypeAsString)
-    val typeName           = s"$rawType$nameSuffix"
+    val rawType =
+      tryWithSafeStackOverflow(expr.getTypeAsString)
+        .map(Util.stripGenericTypes)
+        .toOption
+        .getOrElse(NameConstants.Unknown)
+    val typeName = s"$rawType$nameSuffix"
 
     val baseTypeFromScope = scope.lookupScopeType(rawType)
     // These will be the same for non-anonymous type decls, but in that case only the typeFullName will be used.
@@ -314,9 +318,9 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
         val paramCount = methodDecl.getNumberOfParams
 
         val resolvedType = if (idx < paramCount) {
-          Some(methodDecl.getParam(idx).getType)
+          tryWithSafeStackOverflow(methodDecl.getParam(idx).getType).toOption
         } else if (paramCount > 0 && methodDecl.getParam(paramCount - 1).isVariadic) {
-          Some(methodDecl.getParam(paramCount - 1).getType)
+          tryWithSafeStackOverflow(methodDecl.getParam(paramCount - 1).getType).toOption
         } else {
           None
         }
@@ -457,7 +461,7 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
 
       case objectCreationExpr: ObjectCreationExpr =>
         // Use type name with generics for code
-        val typeName        = objectCreationExpr.getTypeAsString
+        val typeName = tryWithSafeStackOverflow(objectCreationExpr.getTypeAsString).getOrElse(NameConstants.Unknown)
         val argumentsString = getArgumentCodeString(objectCreationExpr.getArguments)
         someWithDotSuffix(s"new $typeName($argumentsString)")
 

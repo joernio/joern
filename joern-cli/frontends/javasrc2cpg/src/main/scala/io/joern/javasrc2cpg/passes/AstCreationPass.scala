@@ -30,7 +30,9 @@ import org.slf4j.LoggerFactory
 
 import java.net.URLClassLoader
 import java.nio.file.{Path, Paths}
+import java.util.concurrent.ConcurrentHashMap
 import scala.collection.parallel.CollectionConverters.*
+import scala.collection.concurrent
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
 import scala.util.{Success, Try}
@@ -38,8 +40,9 @@ import scala.util.{Success, Try}
 class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[String]] = None)
     extends ConcurrentWriterCpgPass[String](cpg) {
 
-  val global: Global = new Global()
-  private val logger = LoggerFactory.getLogger(classOf[AstCreationPass])
+  val global: Global                = new Global()
+  private val logger                = LoggerFactory.getLogger(classOf[AstCreationPass])
+  private val loggedExceptionCounts = new ConcurrentHashMap[Class[?], Int]().asScala
 
   val (sourceParser, symbolSolver) = initParserAndUtils(config)
 
@@ -50,10 +53,17 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
       case Some(compilationUnit, fileContent) =>
         symbolSolver.inject(compilationUnit)
         val contentToUse = if (!config.disableFileContent) fileContent else None
+
         diffGraph.absorb(
-          new AstCreator(filename, compilationUnit, contentToUse, global, symbolSolver, config.keepTypeArguments)(
-            config.schemaValidation
-          )
+          new AstCreator(
+            filename,
+            compilationUnit,
+            contentToUse,
+            global,
+            symbolSolver,
+            config.keepTypeArguments,
+            loggedExceptionCounts
+          )(config.schemaValidation)
             .createAst()
         )
 
