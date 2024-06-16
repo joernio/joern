@@ -18,8 +18,8 @@ lazy val astGenVersion = settingKey[String]("astgen version")
 astGenVersion := appProperties.value.getString("jssrc2cpg.astgen_version")
 
 libraryDependencies ++= Seq(
-  "io.shiftleft"              %% "codepropertygraph" % Versions.cpg,
-  "org.scalatest"             %% "scalatest"         % Versions.scalatest % Test
+  "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
+  "org.scalatest" %% "scalatest"         % Versions.scalatest % Test
 )
 
 Compile / doc / scalacOptions ++= Seq("-doc-title", "semanticcpg apidocs", "-doc-version", version.value)
