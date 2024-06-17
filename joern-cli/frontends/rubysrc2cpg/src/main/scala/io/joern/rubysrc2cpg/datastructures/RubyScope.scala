@@ -112,13 +112,13 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
           case x @ ScopeElement(_: ProgramScope, _)    => x
         } match {
           case Some(target) =>
-            target.addVariable(identifier, variable)
+            val newTarget = target.addVariable(identifier, variable)
 
-            val targetIdx = stack.indexOf(target)
+            val targetIdx = stack.indexOf(newTarget)
             val prefix    = stack.take(targetIdx)
             val suffix    = stack.takeRight(stack.size - targetIdx - 1)
-            stack = prefix ++ List(target) ++ suffix
-            prefix.lastOption.map(_.scopeNode).getOrElse(target.scopeNode)
+            stack = prefix ++ List(newTarget) ++ suffix
+            prefix.lastOption.map(_.scopeNode).getOrElse(newTarget.scopeNode)
           case None => super.addToScope(identifier, variable)
         }
     }
