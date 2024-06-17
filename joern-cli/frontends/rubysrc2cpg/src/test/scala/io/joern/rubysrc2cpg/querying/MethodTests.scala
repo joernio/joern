@@ -536,6 +536,7 @@ class MethodTests extends RubyCode2CpgFixture {
         |class Foo
         | def authenticate(email, password)
         |   auth = nil
+        |   a = getPass()
         |   if a == Digest::MD5.hexdigest(password)
         |     auth = a
         |   end
@@ -548,6 +549,8 @@ class MethodTests extends RubyCode2CpgFixture {
         case Some(ifCond: Call) =>
           inside(ifCond.argument.l) {
             case (leftArg: Identifier) :: (rightArg: Call) :: Nil =>
+              leftArg.name shouldBe "a"
+
               rightArg.name shouldBe "hexdigest"
               rightArg.code shouldBe "Digest::MD5.hexdigest(password)"
 

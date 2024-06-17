@@ -146,7 +146,7 @@ class HashTests extends RubyCode2CpgFixture {
     inside(cpg.call.name(RubyOperators.hashInitializer).l) {
       case hashInitializer :: Nil =>
         inside(hashInitializer.inCall.astSiblings.l) {
-          case _ :: (firstCall: Call) :: (secondCall: Call) :: (tmp: Identifier) :: Nil =>
+          case (firstCall: Call) :: (secondCall: Call) :: (tmp: Identifier) :: Nil =>
             firstCall.code shouldBe "<tmp-0>[1] = \"abc\""
             secondCall.code shouldBe "<tmp-0>[2] = \"abc\""
             tmp.name shouldBe "<tmp-0>"

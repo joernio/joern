@@ -100,6 +100,30 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
     super.pushNewScope(mappedScopeNode)
   }
 
+  /** Variables entering children scope persist into parent scopes, so the variables should be transferred to the
+    * top-level method, returning the next block so that locals can be attached.
+    */
+  override def addToScope(identifier: String, variable: DeclarationNew): TypedScopeElement = {
+    variable match {
+      case _: NewMethodParameterIn => super.addToScope(identifier, variable)
+      case _ =>
+        stack.collectFirst {
+          case x @ ScopeElement(_: MethodLikeScope, _) => x
+          case x @ ScopeElement(_: ProgramScope, _)    => x
+        } match {
+          case Some(target) =>
+            target.addVariable(identifier, variable)
+
+            val targetIdx = stack.indexOf(target)
+            val prefix    = stack.take(targetIdx)
+            val suffix    = stack.takeRight(stack.size - targetIdx - 1)
+            stack = prefix ++ List(target) ++ suffix
+            prefix.lastOption.map(_.scopeNode).getOrElse(target.scopeNode)
+          case None => super.addToScope(identifier, variable)
+        }
+    }
+  }
+
   def addRequire(
     projectRoot: String,
     currentFilePath: String,
