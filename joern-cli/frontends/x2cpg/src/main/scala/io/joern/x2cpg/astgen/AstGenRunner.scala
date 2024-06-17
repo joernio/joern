@@ -98,11 +98,11 @@ trait AstGenRunnerBase(config: X2CpgConfig[?] & AstGenConfig[?]) {
     */
   protected val SupportedBinaries: Set[(OperatingSystemType, ArchitectureType)] = Set(
     Environment.OperatingSystemType.Windows -> Environment.ArchitectureType.X86,
-    Environment.OperatingSystemType.Windows -> Environment.ArchitectureType.ARM,
+    Environment.OperatingSystemType.Windows -> Environment.ArchitectureType.ARMv8,
     Environment.OperatingSystemType.Linux   -> Environment.ArchitectureType.X86,
-    Environment.OperatingSystemType.Linux   -> Environment.ArchitectureType.ARM,
+    Environment.OperatingSystemType.Linux   -> Environment.ArchitectureType.ARMv8,
     Environment.OperatingSystemType.Mac     -> Environment.ArchitectureType.X86,
-    Environment.OperatingSystemType.Mac     -> Environment.ArchitectureType.ARM
+    Environment.OperatingSystemType.Mac     -> Environment.ArchitectureType.ARMv8
   )
 
   /** Determines the name of the executable to run, based on the host system. Usually, AST GEN binaries support three
@@ -130,7 +130,7 @@ trait AstGenRunnerBase(config: X2CpgConfig[?] & AstGenConfig[?]) {
     } else {
       Environment.architecture match {
         case Environment.ArchitectureType.X86 => s"${metaData.name}-$x86Suffix"
-        case Environment.ArchitectureType.ARM => s"${metaData.name}-$armSuffix"
+        case Environment.ArchitectureType.ARMv8 => s"${metaData.name}-$armSuffix"
       }
     }
   }
