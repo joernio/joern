@@ -408,7 +408,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
             method,
             (thisParameterAst +: parameterAsts) ++ anonProcParam,
             stmtBlockAst,
-            methodReturnNode(node, Defines.Any)
+            methodReturnNode(node, Defines.Any),
+            newModifierNode(ModifierTypes.VIRTUAL) :: Nil
           )
         if (addEdge) {
           Ast.storeInDiffGraph(_methodAst, diffGraph)
