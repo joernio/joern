@@ -34,9 +34,9 @@ class AstGenRunner(config: Config) extends AstGenRunnerBase(config) {
   override val SupportedBinaries: Set[(OperatingSystemType, ArchitectureType)] = Set(
     Environment.OperatingSystemType.Windows -> Environment.ArchitectureType.X86,
     Environment.OperatingSystemType.Linux   -> Environment.ArchitectureType.X86,
-    Environment.OperatingSystemType.Linux   -> Environment.ArchitectureType.ARM,
+    Environment.OperatingSystemType.Linux   -> Environment.ArchitectureType.ARMv8,
     Environment.OperatingSystemType.Mac     -> Environment.ArchitectureType.X86,
-    Environment.OperatingSystemType.Mac     -> Environment.ArchitectureType.ARM
+    Environment.OperatingSystemType.Mac     -> Environment.ArchitectureType.ARMv8
   )
 
   override def skippedFiles(in: File, astGenOut: List[String]): List[String] = {

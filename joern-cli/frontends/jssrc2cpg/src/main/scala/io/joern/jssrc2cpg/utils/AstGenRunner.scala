@@ -95,16 +95,14 @@ object AstGenRunner {
     case _                              => None
   }
 
-  lazy private val executableName = Environment.operatingSystem match {
-    case Environment.OperatingSystemType.Windows => "astgen-win.exe"
-    case Environment.OperatingSystemType.Linux   => "astgen-linux"
-    case Environment.OperatingSystemType.Mac =>
-      Environment.architecture match {
-        case Environment.ArchitectureType.X86 => "astgen-macos"
-        case Environment.ArchitectureType.ARM => "astgen-macos-arm"
-      }
-    case Environment.OperatingSystemType.Unknown =>
-      logger.warn("Could not detect OS version! Defaulting to 'Linux'.")
+  lazy private val executableName = (Environment.operatingSystem, Environment.architecture) match {
+    case (Environment.OperatingSystemType.Windows, _)                                => "astgen-win.exe"
+    case (Environment.OperatingSystemType.Linux, Environment.ArchitectureType.X86)   => "astgen-linux"
+    case (Environment.OperatingSystemType.Linux, Environment.ArchitectureType.ARMv8) => "astgen-linux-arm"
+    case (Environment.OperatingSystemType.Mac, Environment.ArchitectureType.X86)     => "astgen-macos"
+    case (Environment.OperatingSystemType.Mac, Environment.ArchitectureType.ARMv8)   => "astgen-macos-arm"
+    case _ =>
+      logger.warn("Could not detect OS version! Defaulting to Linux/x86_64.")
       "astgen-linux"
   }
 

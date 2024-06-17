@@ -20,8 +20,8 @@ lazy val astGenVersion = settingKey[String]("dotnetastgen version")
 astGenVersion := appProperties.value.getString("csharpsrc2cpg.dotnetastgen_version")
 
 libraryDependencies ++= Seq(
-  "io.shiftleft"              %% "codepropertygraph" % Versions.cpg,
-  "org.scalatest"             %% "scalatest"         % Versions.scalatest % Test
+  "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
+  "org.scalatest" %% "scalatest"         % Versions.scalatest % Test
 )
 
 Compile / doc / scalacOptions ++= Seq("-doc-title", "semanticcpg apidocs", "-doc-version", version.value)
@@ -60,8 +60,8 @@ astGenBinaryNames := {
       case Environment.OperatingSystemType.Windows => Seq(AstgenWin)
       case Environment.OperatingSystemType.Linux =>
         Environment.architecture match {
-          case Environment.ArchitectureType.X86 => Seq(AstgenLinux)
-          case Environment.ArchitectureType.ARM => Seq(AstgenLinuxArm)
+          case Environment.ArchitectureType.X86   => Seq(AstgenLinux)
+          case Environment.ArchitectureType.ARMv8 => Seq(AstgenLinuxArm)
         }
       case Environment.OperatingSystemType.Mac => Seq(AstgenMac)
       case Environment.OperatingSystemType.Unknown =>
