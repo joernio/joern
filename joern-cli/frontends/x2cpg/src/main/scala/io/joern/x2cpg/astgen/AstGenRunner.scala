@@ -129,7 +129,7 @@ trait AstGenRunnerBase(config: X2CpgConfig[?] & AstGenConfig[?]) {
       s"${metaData.name}-$x86Suffix"
     } else {
       Environment.architecture match {
-        case Environment.ArchitectureType.X86 => s"${metaData.name}-$x86Suffix"
+        case Environment.ArchitectureType.X86   => s"${metaData.name}-$x86Suffix"
         case Environment.ArchitectureType.ARMv8 => s"${metaData.name}-$armSuffix"
       }
     }
