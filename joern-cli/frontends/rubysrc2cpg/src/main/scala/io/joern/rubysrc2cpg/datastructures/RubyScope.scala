@@ -114,7 +114,7 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
           case Some(target) =>
             val newTarget = target.addVariable(identifier, variable)
 
-            val targetIdx = stack.indexOf(newTarget)
+            val targetIdx = stack.indexOf(target)
             val prefix    = stack.take(targetIdx)
             val suffix    = stack.takeRight(stack.size - targetIdx - 1)
             stack = prefix ++ List(newTarget) ++ suffix
