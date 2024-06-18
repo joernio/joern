@@ -18,8 +18,8 @@ lazy val astGenVersion = settingKey[String]("astgen version")
 astGenVersion := appProperties.value.getString("jssrc2cpg.astgen_version")
 
 libraryDependencies ++= Seq(
-  "io.shiftleft"              %% "codepropertygraph" % Versions.cpg,
-  "org.scalatest"             %% "scalatest"         % Versions.scalatest % Test
+  "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
+  "org.scalatest" %% "scalatest"         % Versions.scalatest % Test
 )
 
 Compile / doc / scalacOptions ++= Seq("-doc-title", "semanticcpg apidocs", "-doc-version", version.value)
@@ -29,10 +29,11 @@ Test / fork := false
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 
-lazy val AstgenWin    = "astgen-win.exe"
-lazy val AstgenLinux  = "astgen-linux"
-lazy val AstgenMac    = "astgen-macos"
-lazy val AstgenMacArm = "astgen-macos-arm"
+lazy val AstgenWinAmd64   = "astgen-win.exe"
+lazy val AstgenLinuxAmd64 = "astgen-linux"
+lazy val AstgenLinuxArmV8 = "astgen-linux-arm"
+lazy val AstgenMacAmd64   = "astgen-macos"
+lazy val AstgenMacArmV8   = "astgen-macos-arm"
 
 lazy val astGenDlUrl = settingKey[String]("astgen download url")
 astGenDlUrl := s"https://github.com/joernio/astgen/releases/download/v${astGenVersion.value}/"
@@ -50,20 +51,15 @@ astGenBinaryNames := {
   if (hasCompatibleAstGenVersion(astGenVersion.value)) {
     Seq.empty
   } else if (sys.props.get("ALL_PLATFORMS").contains("TRUE")) {
-    Seq(AstgenWin, AstgenLinux, AstgenMac, AstgenMacArm)
+    Seq(AstgenWinAmd64, AstgenLinuxAmd64, AstgenLinuxArmV8, AstgenMacAmd64, AstgenMacArmV8)
   } else {
-    Environment.operatingSystem match {
-      case Environment.OperatingSystemType.Windows =>
-        Seq(AstgenWin)
-      case Environment.OperatingSystemType.Linux =>
-        Seq(AstgenLinux)
-      case Environment.OperatingSystemType.Mac =>
-        Environment.architecture match {
-          case Environment.ArchitectureType.X86 => Seq(AstgenMac)
-          case Environment.ArchitectureType.ARM => Seq(AstgenMacArm)
-        }
-      case Environment.OperatingSystemType.Unknown =>
-        Seq(AstgenWin, AstgenLinux, AstgenMac, AstgenMacArm)
+    (Environment.operatingSystem, Environment.architecture) match {
+      case (Environment.OperatingSystemType.Windows, _)                                => Seq(AstgenWinAmd64)
+      case (Environment.OperatingSystemType.Linux, Environment.ArchitectureType.X86)   => Seq(AstgenLinuxAmd64)
+      case (Environment.OperatingSystemType.Linux, Environment.ArchitectureType.ARMv8) => Seq(AstgenLinuxArmV8)
+      case (Environment.OperatingSystemType.Mac, Environment.ArchitectureType.X86)     => Seq(AstgenMacAmd64)
+      case (Environment.OperatingSystemType.Mac, Environment.ArchitectureType.ARMv8)   => Seq(AstgenMacArmV8)
+      case _ => Seq(AstgenWinAmd64, AstgenLinuxAmd64, AstgenLinuxArmV8, AstgenMacAmd64, AstgenMacArmV8)
     }
   }
 }

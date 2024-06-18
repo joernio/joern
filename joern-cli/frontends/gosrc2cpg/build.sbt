@@ -9,9 +9,9 @@ name := "gosrc2cpg"
 dependsOn(Projects.dataflowengineoss % "compile->compile;test->test", Projects.x2cpg % "compile->compile;test->test")
 
 libraryDependencies ++= Seq(
-  "io.shiftleft"              %% "codepropertygraph" % Versions.cpg,
-  "org.scalatest"             %% "scalatest"         % Versions.scalatest % Test,
-  "com.lihaoyi"               %% "os-lib"            % Versions.osLib
+  "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
+  "org.scalatest" %% "scalatest"         % Versions.scalatest % Test,
+  "com.lihaoyi"   %% "os-lib"            % Versions.osLib
 )
 
 scalacOptions ++= Seq(
@@ -59,13 +59,13 @@ goAstGenBinaryNames := {
         Seq(GoAstgenWin)
       case Environment.OperatingSystemType.Linux =>
         Environment.architecture match {
-          case Environment.ArchitectureType.X86 => Seq(GoAstgenLinux)
-          case Environment.ArchitectureType.ARM => Seq(GoAstgenLinuxArm)
+          case Environment.ArchitectureType.X86   => Seq(GoAstgenLinux)
+          case Environment.ArchitectureType.ARMv8 => Seq(GoAstgenLinuxArm)
         }
       case Environment.OperatingSystemType.Mac =>
         Environment.architecture match {
-          case Environment.ArchitectureType.X86 => Seq(GoAstgenMac)
-          case Environment.ArchitectureType.ARM => Seq(GoAstgenMacArm)
+          case Environment.ArchitectureType.X86   => Seq(GoAstgenMac)
+          case Environment.ArchitectureType.ARMv8 => Seq(GoAstgenMacArm)
         }
       case Environment.OperatingSystemType.Unknown =>
         Seq(GoAstgenWin, GoAstgenLinux, GoAstgenLinuxArm, GoAstgenMac, GoAstgenMacArm)

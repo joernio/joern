@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
-import scala.util.Try
+import scala.util.{Failure, Try}
 
 class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver, keepTypeArguments: Boolean) {
   private val logger               = LoggerFactory.getLogger(this.getClass)
@@ -108,7 +108,15 @@ class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver, keepTyp
         } else {
           val extendsBoundOption = Try(typeParamDecl.getBounds.asScala.find(_.isExtends)).toOption.flatten
           extendsBoundOption
-            .flatMap(bound => nameOrFullName(bound.getType, typeParamValues, fullyQualified))
+            .flatMap(bound =>
+              Try(bound.getType)
+                .recoverWith(throwable => {
+                  logger.debug("Error getting bound type", throwable)
+                  Failure(throwable)
+                })
+                .toOption
+            )
+            .flatMap(boundType => nameOrFullName(boundType, typeParamValues, fullyQualified))
             .orElse(objectType(fullyQualified))
         }
       case lambdaConstraintType: ResolvedLambdaConstraintType =>

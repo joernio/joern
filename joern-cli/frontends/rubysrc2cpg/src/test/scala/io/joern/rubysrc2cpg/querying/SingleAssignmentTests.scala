@@ -213,4 +213,24 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
     }
   }
 
+  "in a method body" in {
+    val cpg = code("""
+        |def f(p)
+        |  y = p
+        |  y
+        |end
+        |""".stripMargin)
+
+    inside(cpg.assignment.code("y = p").l) {
+      case assign :: Nil =>
+        inside(assign.argument.l) {
+          case (y: Identifier) :: (p: Identifier) :: Nil =>
+            y.name shouldBe "y"
+            p.name shouldBe "p"
+          case _ => fail(s"Expected two assigment identifiers arguments")
+        }
+      case _ => fail("Unable to find assignment `y = p`")
+    }
+  }
+
 }

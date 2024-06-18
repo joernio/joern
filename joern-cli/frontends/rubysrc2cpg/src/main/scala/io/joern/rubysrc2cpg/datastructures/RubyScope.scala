@@ -100,6 +100,30 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
     super.pushNewScope(mappedScopeNode)
   }
 
+  /** Variables entering children scope persist into parent scopes, so the variables should be transferred to the
+    * top-level method, returning the next block so that locals can be attached.
+    */
+  override def addToScope(identifier: String, variable: DeclarationNew): TypedScopeElement = {
+    variable match {
+      case _: NewMethodParameterIn => super.addToScope(identifier, variable)
+      case _ =>
+        stack.collectFirst {
+          case x @ ScopeElement(_: MethodLikeScope, _) => x
+          case x @ ScopeElement(_: ProgramScope, _)    => x
+        } match {
+          case Some(target) =>
+            val newTarget = target.addVariable(identifier, variable)
+
+            val targetIdx = stack.indexOf(target)
+            val prefix    = stack.take(targetIdx)
+            val suffix    = stack.takeRight(stack.size - targetIdx - 1)
+            stack = prefix ++ List(newTarget) ++ suffix
+            prefix.lastOption.map(_.scopeNode).getOrElse(newTarget.scopeNode)
+          case None => super.addToScope(identifier, variable)
+        }
+    }
+  }
+
   def addRequire(
     projectRoot: String,
     currentFilePath: String,
@@ -212,6 +236,17 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
 
   def surroundingTypeFullName: Option[String] = stack.collectFirst { case ScopeElement(x: TypeLikeScope, _) =>
     x.fullName
+  }
+
+  /** Searches the surrounding classes for a class that matches the given value. Returns it if found.
+    */
+  def getSurroundingType(value: String): Option[TypeLikeScope] = {
+    stack
+      .collect { case ScopeElement(x: TypeLikeScope, _) => x }
+      .collectFirst {
+        case x: TypeLikeScope if x.fullName.split('.').toSeq.endsWith(value.split('.')) =>
+          x
+      }
   }
 
   /** @return

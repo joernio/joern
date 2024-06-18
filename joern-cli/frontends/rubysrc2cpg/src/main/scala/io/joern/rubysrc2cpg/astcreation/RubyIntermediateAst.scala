@@ -1,6 +1,6 @@
 package io.joern.rubysrc2cpg.astcreation
 
-import io.joern.rubysrc2cpg.passes.Defines
+import io.joern.rubysrc2cpg.passes.{Defines, GlobalTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 
 import scala.annotation.tailrec
@@ -54,8 +54,9 @@ object RubyIntermediateAst {
     def body: RubyNode
   }
 
-  final case class ModuleDeclaration(name: RubyNode, body: RubyNode)(span: TextSpan)
-      extends RubyNode(span)
+  final case class ModuleDeclaration(name: RubyNode, body: RubyNode, fields: List[RubyNode & RubyFieldIdentifier])(
+    span: TextSpan
+  ) extends RubyNode(span)
       with TypeDeclaration {
     def baseClass: Option[RubyNode] = None
   }
@@ -229,6 +230,13 @@ object RubyIntermediateAst {
     override def toString: String = s"SimpleIdentifier(${span.text}, $typeFullName)"
   }
 
+  /** Represents a type reference successfully determined, e.g. module A; end; A
+    */
+  final case class TypeIdentifier(typeFullName: String)(span: TextSpan) extends RubyNode(span) with RubyIdentifier {
+    def isBuiltin: Boolean        = typeFullName.startsWith(s"<${GlobalTypes.builtinPrefix}")
+    override def toString: String = s"TypeIdentifier(${span.text}, $typeFullName)"
+  }
+
   /** Represents a InstanceFieldIdentifier e.g `@x` */
   final case class InstanceFieldIdentifier()(span: TextSpan) extends RubyNode(span) with RubyFieldIdentifier
 
@@ -361,7 +369,6 @@ object RubyIntermediateAst {
   /** Represents index accesses, e.g. `x[0]`, `self.x.y[1, 2]` */
   final case class IndexAccess(target: RubyNode, indices: List[RubyNode])(span: TextSpan) extends RubyNode(span)
 
-  // TODO: Might be replaced by MemberCall simply?
   final case class MemberAccess(target: RubyNode, op: String, memberName: String)(span: TextSpan)
       extends RubyNode(span) {
     override def toString: String = s"${target.text}.$memberName"

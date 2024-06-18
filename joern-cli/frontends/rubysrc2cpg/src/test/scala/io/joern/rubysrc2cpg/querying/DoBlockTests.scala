@@ -3,6 +3,7 @@ package io.joern.rubysrc2cpg.querying
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelPrefix
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
@@ -101,6 +102,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
         case (myArray: Identifier) :: (lambdaRef: MethodRef) :: Nil =>
           myArray.argumentIndex shouldBe 0
           myArray.name shouldBe "my_array"
+          myArray.code shouldBe "my_array"
 
           lambdaRef.argumentIndex shouldBe 1
           lambdaRef.methodFullName shouldBe "Test0.rb:<global>::program:<lambda>0"
@@ -165,6 +167,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
         case (hash: Identifier) :: (lambdaRef: MethodRef) :: Nil =>
           hash.argumentIndex shouldBe 0
           hash.name shouldBe "hash"
+          hash.code shouldBe "hash"
 
           lambdaRef.argumentIndex shouldBe 1
           lambdaRef.methodFullName shouldBe "Test0.rb:<global>::program:<lambda>0"

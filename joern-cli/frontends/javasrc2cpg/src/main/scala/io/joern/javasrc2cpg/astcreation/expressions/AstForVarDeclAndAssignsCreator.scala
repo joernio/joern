@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 import io.joern.javasrc2cpg.scope.JavaScopeElement.PartialInit
 
 trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
@@ -107,19 +107,20 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
 
   def astsForVariableDeclarator(variableDeclarator: VariableDeclarator, originNode: Node): Seq[Ast] = {
 
-    val variableDeclaratorType = variableDeclarator.getType
+    val declaratorType = tryWithSafeStackOverflow(variableDeclarator.getType).toOption
     // If generics are in the type name, we may be unable to resolve the type
-    val (variableTypeString, maybeTypeArgs) = variableDeclaratorType match {
-      case typ: ClassOrInterfaceType =>
+    val (variableTypeString, maybeTypeArgs) = declaratorType match {
+      case Some(typ: ClassOrInterfaceType) =>
         val typeParams = typ.getTypeArguments.toScala.map(_.asScala.flatMap(typeInfoCalc.fullName))
-        (typ.getName.asString(), typeParams)
-      case _ => (Util.stripGenericTypes(variableDeclarator.getTypeAsString), None)
+        (Some(typ.getName.asString()), typeParams)
+      case Some(typ) => (Some(Util.stripGenericTypes(typ.toString)), None)
+      case None      => (None, None)
     }
 
     val typeFullName = tryWithSafeStackOverflow(
-      scope
-        .lookupType(variableTypeString, includeWildcards = false)
-        .orElse(typeInfoCalc.fullName(variableDeclarator.getType))
+      variableTypeString
+        .flatMap(scope.lookupType(_, includeWildcards = false))
+        .orElse(declaratorType.flatMap(typeInfoCalc.fullName))
     ).toOption.flatten.map { typ =>
       maybeTypeArgs match {
         case Some(typeArgs) if keepTypeArguments => s"$typ<${typeArgs.mkString(",")}>"
@@ -132,7 +133,7 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
       scope.lookupVariable(variableName).variableNode
     } else {
       // Use type name with generics for code
-      val localCode = s"${variableDeclarator.getTypeAsString} ${variableDeclarator.getNameAsString}"
+      val localCode = s"${declaratorType.map(_.toString).getOrElse("")} ${variableDeclarator.getNameAsString}"
 
       val local =
         localNode(originNode, variableDeclarator.getNameAsString, localCode, typeFullName.getOrElse(TypeConstants.Any))
@@ -175,6 +176,8 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
               symbolSolver.toResolvedType(variableDeclarator.getType, classOf[ResolvedType])
             ).toOption
 
+          val strippedType =
+            tryWithSafeStackOverflow(variableDeclarator.getTypeAsString).map(Util.stripGenericTypes).toOption
           astsForAssignment(
             variableDeclarator,
             assignmentTarget,
@@ -182,7 +185,7 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
             Operators.assignment,
             "=",
             ExpectedType(typeFullName, expectedType),
-            Some(Util.stripGenericTypes(variableDeclarator.getTypeAsString))
+            strippedType
           )
         }
 

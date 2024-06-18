@@ -38,7 +38,7 @@ trait ProgramSummary[T <: TypeLike[M, F], M <: MethodLike, F <: FieldLike] {
     *   the set of matching types' meta data.
     */
   def matchingTypes(typeName: String): List[T] = {
-    namespaceToType.values.flatten.filter(_.name.endsWith(typeName)).toList
+    namespaceToType.values.flatten.filter(t => t.name.split('.').endsWith(typeName.split('.'))).toList
   }
 
   /** Absorbs the given program summary information into this program summary.

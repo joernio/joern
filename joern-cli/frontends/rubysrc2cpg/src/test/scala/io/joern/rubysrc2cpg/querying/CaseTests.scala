@@ -38,7 +38,7 @@ class CaseTests extends RubyCode2CpgFixture {
         .l
       orConds.map {
         case mExpr: Call if mExpr.name == "include?" =>
-          val List(lhs, rhs) = mExpr.astChildren.l
+          val List(_, lhs, rhs) = mExpr.astChildren.l
           rhs.code shouldBe "<tmp-0>"
           s"splat:${lhs.code}"
         case mExpr: Call if mExpr.name == Operators.equals =>
@@ -80,7 +80,7 @@ class CaseTests extends RubyCode2CpgFixture {
         .l
       orConds.map {
         case c: Call if c.name == "any?" =>
-          val List(lhs) = c.astChildren.l
+          val List(_, lhs) = c.astChildren.l
           s"splat:${lhs.code}"
         case e: Expression =>
           s"expr:${e.code}"

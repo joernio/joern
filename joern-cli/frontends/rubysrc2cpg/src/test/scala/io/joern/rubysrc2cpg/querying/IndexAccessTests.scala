@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.language.*
 class IndexAccessTests extends RubyCode2CpgFixture {
 
   "`x[1]` is represented by an `indexAccess` operator call" in {
-    val cpg = code("""
+    val cpg = code("""x = Array()
                      |x[1]
                      |""".stripMargin)
 
@@ -29,7 +29,7 @@ class IndexAccessTests extends RubyCode2CpgFixture {
   }
 
   "`x[1,2]` is represented by an `indexAccess` operator call" in {
-    val cpg = code("""
+    val cpg = code("""x = Array()
         |x[1,2]
         |""".stripMargin)
 

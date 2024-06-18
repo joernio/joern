@@ -53,6 +53,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{NewClosureBinding, NewFil
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
+import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
@@ -87,7 +88,8 @@ class AstCreator(
   fileContent: Option[String],
   global: Global,
   val symbolSolver: JavaSymbolSolver,
-  protected val keepTypeArguments: Boolean
+  protected val keepTypeArguments: Boolean,
+  val loggedExceptionCounts: scala.collection.concurrent.Map[Class[?], Int]
 )(implicit val withSchemaValidation: ValidationMode)
     extends AstCreatorBase(filename)
     with AstNodeBuilder[Node, AstCreator]
@@ -217,11 +219,11 @@ class AstCreator(
       scope.popNamespaceScope()
       Ast(namespaceBlock).withChildren(typeDeclAsts).withChildren(importNodes)
     } catch {
-      case t: UnsolvedSymbolException =>
-        logger.error(s"Unsolved symbol exception caught in $filename")
+      case exception: UnsolvedSymbolException =>
+        logger.warn(s"Unsolved symbol exception caught in $filename", exception)
         Ast()
       case t: Throwable =>
-        logger.error(s"Parsing file $filename failed", t)
+        logger.warn(s"Parsing file $filename failed", t)
         Ast()
     }
   }
@@ -244,7 +246,28 @@ class AstCreator(
 
   private[astcreation] def tryWithSafeStackOverflow[T](expr: => T): Try[T] = {
     try {
-      Try(expr)
+
+      /** JavaParser throws UnsolvedSymbolExceptions if a type cannot be solved, which is usually an expected occurrence
+        * that does not warrant specific failure logging. Since it's impossible to tell whether these are legitimately
+        * unresolved types or a bug, don't log them.
+        */
+      Try(expr) match {
+        case success: Success[_]                         => success
+        case Failure(exception: UnsolvedSymbolException) => Failure(exception)
+        case failure: Failure[_] =>
+          val exceptionType = failure.exception.getClass
+
+          val loggedCount = loggedExceptionCounts.updateWith(exceptionType) {
+            case Some(value) => Some(value + 1)
+            case None        => Some(1)
+          }
+
+          if (loggedCount.exists(_ <= 3)) {
+            logger.debug("tryWithFailureLogging encountered exception", failure.exception)
+          }
+
+          failure
+      }
     } catch {
       // This is really, really ugly, but there's a bug in the JavaParser symbol solver that can lead to
       // unterminated recursion in some cases where types cannot be resolved.

@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
+import scala.util.Try
 
 trait AstForForLoopsCreator { this: AstCreator =>
 
@@ -325,8 +326,9 @@ trait AstForForLoopsCreator { this: AstCreator =>
 
     maybeVariable match {
       case Some(variable) =>
-        val name         = variable.getNameAsString
-        val typeFullName = typeInfoCalc.fullName(variable.getType).getOrElse("ANY")
+        val name = variable.getNameAsString
+        val typeFullName =
+          tryWithSafeStackOverflow(variable.getType).toOption.flatMap(typeInfoCalc.fullName).getOrElse("ANY")
         val localNode = partialLocalNode
           .name(name)
           .code(variable.getNameAsString)

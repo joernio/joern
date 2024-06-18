@@ -1,12 +1,11 @@
 package io.joern.javasrc2cpg
 
 import io.joern.javasrc2cpg.Frontend.*
-import io.joern.x2cpg.passes.frontend.{TypeRecoveryParserConfig, XTypeRecovery}
-import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
-import scopt.OParser
-import scala.util.matching.Regex
-import io.joern.javasrc2cpg.typesolvers.SimpleCombinedTypeSolver
 import io.joern.javasrc2cpg.jpastprinter.JavaParserAstPrinter
+import io.joern.x2cpg.frontendspecific.javasrc2cpg
+import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
+import io.joern.x2cpg.passes.frontend.{TypeRecoveryParserConfig, XTypeRecovery}
+import scopt.OParser
 
 /** Command line configuration parameters
   */
@@ -80,7 +79,7 @@ private object Frontend {
 
   val cmdLineParser: OParser[Unit, Config] = {
     val builder = OParser.builder[Config]
-    import builder._
+    import builder.*
     OParser.sequence(
       programName("javasrc2cpg"),
       opt[Seq[String]]("inference-jar-paths")
@@ -101,7 +100,7 @@ private object Frontend {
                  | run-delombok => run delombok and use delomboked source for both analysis and type information.""".stripMargin
         )
         .action((mode, c) => c.withDelombokMode(mode)),
-      opt[Unit]("enable-type-recovery")
+      opt[Unit](javasrc2cpg.ParameterNames.EnableTypeRecovery)
         .hidden()
         .action((_, c) => c.withEnableTypeRecovery(true))
         .text("enable generic type recovery"),
