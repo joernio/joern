@@ -1,18 +1,11 @@
 package io.joern.javasrc2cpg
 
-import better.files.File
-import io.joern.javasrc2cpg.passes.{
-  AstCreationPass,
-  JavaTypeHintCallLinker,
-  JavaTypeRecoveryPassGenerator,
-  TypeInferencePass
-}
+import io.joern.javasrc2cpg.passes.{AstCreationPass, TypeInferencePass}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
-import io.joern.x2cpg.passes.frontend.{JavaConfigFileCreationPass, MetaDataPass, TypeNodePass, XTypeRecoveryConfig}
+import io.joern.x2cpg.passes.frontend.{JavaConfigFileCreationPass, MetaDataPass, TypeNodePass}
 import io.joern.x2cpg.X2CpgFrontend
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
-import io.shiftleft.passes.CpgPassBase
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.*
@@ -55,12 +48,6 @@ object JavaSrc2Cpg {
     Config().withDefaultIgnoredFilesRegex(DefaultIgnoredFilesRegex)
 
   def apply(): JavaSrc2Cpg = new JavaSrc2Cpg()
-
-  def typeRecoveryPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] = {
-    new JavaTypeRecoveryPassGenerator(cpg, XTypeRecoveryConfig(enabledDummyTypes = !config.exists(_.disableDummyTypes)))
-      .generate() ++
-      List(new JavaTypeHintCallLinker(cpg))
-  }
 
   def showEnv(): Unit = {
     val value =

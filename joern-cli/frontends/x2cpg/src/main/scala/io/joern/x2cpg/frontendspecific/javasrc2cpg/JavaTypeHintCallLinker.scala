@@ -1,12 +1,10 @@
-package io.joern.javasrc2cpg.passes
+package io.joern.x2cpg.frontendspecific.javasrc2cpg
 
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.passes.frontend.XTypeHintCallLinker
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Call
-import io.shiftleft.semanticcpg.language._
-
-import java.util.regex.Pattern
+import io.shiftleft.semanticcpg.language.*
 
 class JavaTypeHintCallLinker(cpg: Cpg) extends XTypeHintCallLinker(cpg) {
 

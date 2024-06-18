@@ -186,6 +186,9 @@ abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg, state: XT
 }
 
 object XTypeRecovery {
+  object ParameterNames {
+    val NoDummyTypes = "no-dummyTypes"
+  }
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -209,7 +212,7 @@ object XTypeRecovery {
     val builder = OParser.builder[R]
     import builder.*
     OParser.sequence(
-      opt[Unit]("no-dummyTypes")
+      opt[Unit](ParameterNames.NoDummyTypes)
         .hidden()
         .action((_, c) => c.withDisableDummyTypes(true))
         .text("disable generation of dummy types during type propagation"),
