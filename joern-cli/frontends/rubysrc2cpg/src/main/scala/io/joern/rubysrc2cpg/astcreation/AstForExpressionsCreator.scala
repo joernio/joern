@@ -84,7 +84,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           methodFullName = Operators.formattedValue,
           dispatchType = DispatchTypes.STATIC_DISPATCH,
           signature = None,
-          typeFullName = Option(node.typeFullName)
+          typeFullName = Some(node.typeFullName)
         )
         callAst(call, Seq(expressionAst))
       case stmtList: StatementList if stmtList.size > 1 =>
@@ -104,7 +104,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         methodFullName = Operators.formatString,
         dispatchType = DispatchTypes.STATIC_DISPATCH,
         signature = None,
-        typeFullName = Option(node.typeFullName)
+        typeFullName = Some(node.typeFullName)
       ),
       fmtValueAsts
     )
