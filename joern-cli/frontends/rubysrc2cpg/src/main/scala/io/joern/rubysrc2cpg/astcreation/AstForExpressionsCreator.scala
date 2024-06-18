@@ -766,7 +766,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         (DispatchTypes.STATIC_DISPATCH, methodFullNameHint)
       else (DispatchTypes.DYNAMIC_DISPATCH, XDefines.DynamicCallUnknownFullName)
 
-    val call = callNode(node, code(node), methodName, methodFullNameHint, dispatchType)
+    val call = callNode(node, code(node), methodName, methodFullName, dispatchType)
 
     if methodFullName != methodFullNameHint then call.possibleTypes(IndexedSeq(methodFullNameHint))
 
