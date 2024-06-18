@@ -7,8 +7,7 @@ import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelPrefix
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal}
 import io.shiftleft.semanticcpg.language.*
 
-class HashTests extends RubyCode2CpgFixture {
-
+class HashTests extends RubyCode2CpgFixture(withPostProcessing = true) {
   "`{}` is represented by a `hashInitializer` operator call" in {
     val cpg = code("""
                      |{}
@@ -197,7 +196,7 @@ class HashTests extends RubyCode2CpgFixture {
         hashCall.code shouldBe "Hash [1 => \"a\", 2 => \"b\", 3 => \"c\"]"
         hashCall.lineNumber shouldBe Some(2)
         hashCall.methodFullName shouldBe s"$kernelPrefix.Hash:[]"
-        hashCall.typeFullName shouldBe s"$kernelPrefix.Hash"
+        hashCall.typeFullName shouldBe s"$kernelPrefix.Hash:[]"
 
         inside(hashCall.astChildren.l) {
           case _ :: (one: Call) :: (two: Call) :: (three: Call) :: Nil =>

@@ -194,7 +194,7 @@ object XTypeRecovery {
   val DummyIndexAccess                      = "<indexAccess>"
   private lazy val DummyTokens: Set[String] = Set(DummyReturnType, DummyMemberLoad, DummyIndexAccess)
 
-  val unknownTypePattern: Regex = s"(i?)(UNKNOWN|ANY|${Defines.UnresolvedNamespace}).*".r
+  val unknownTypePattern: Regex = s"(i?)(UNKNOWN|ANY|<empty>|${Defines.UnresolvedNamespace}).*".r
 
   def dummyMemberType(prefix: String, memberName: String, sep: String = "."): String =
     s"$prefix$sep$DummyMemberLoad($memberName)"

@@ -18,8 +18,9 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataF
         |end
         |""".stripMargin)
 
-    val src  = cpg.method.name("foo").parameter.where(_.index(1)).argument.l
-    val sink = cpg.method.name("puts").callIn.argument(1).l
+    val src       = cpg.method.name("foo").parameter.where(_.index(1)).argument.l
+    val methodust = cpg.method.name("puts").l
+    val sink      = cpg.method.name("puts").callIn.argument(1).l
     sink.reachableByFlows(src).size shouldBe 1
   }
 

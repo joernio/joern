@@ -82,8 +82,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           methodFullName = Operators.formattedValue,
           dispatchType = DispatchTypes.STATIC_DISPATCH,
           signature = None,
-          typeFullName = Some(node.typeFullName)
-        )
+          typeFullName = None
+        ).possibleTypes(IndexedSeq(node.typeFullName))
         callAst(call, Seq(expressionAst))
       case stmtList: StatementList if stmtList.size > 1 =>
         logger.warn(
@@ -102,8 +102,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         methodFullName = Operators.formatString,
         dispatchType = DispatchTypes.STATIC_DISPATCH,
         signature = None,
-        typeFullName = Some(node.typeFullName)
-      ),
+        typeFullName = None
+      ).possibleTypes(IndexedSeq(node.typeFullName)),
       fmtValueAsts
     )
   }
@@ -167,12 +167,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     }
     val argumentAsts = node.arguments.map(astForMethodCallArgument)
 
-    receiver.root.collect { case x: NewCall => x.typeFullName(methodFullName) }
+    receiver.root.collect { case x: NewCall => x.possibleTypes(IndexedSeq(methodFullName)) }
     val dispatchType =
       if receiverFullName.startsWith(s"<${GlobalTypes.builtinPrefix}") then DispatchTypes.STATIC_DISPATCH
       else DispatchTypes.DYNAMIC_DISPATCH
 
-    val fieldAccessCall = callNode(node, code(node), node.methodName, methodFullName, dispatchType)
+    val fieldAccessCall = callNode(node, code(node), node.methodName, XDefines.DynamicCallUnknownFullName, dispatchType)
+      .possibleTypes(IndexedSeq(methodFullName))
 
     callAst(fieldAccessCall, argumentAsts, Option(receiver))
   }
@@ -193,8 +194,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           .map { m =>
             val expr = astForExpression(MemberCall(node.target, "::", "[]", node.indices)(node.span))
             expr.root.collect { case x: NewCall =>
-              x.methodFullName(s"$typeReference:${m.name}")
-              scope.tryResolveTypeReference(m.returnType).map(_.name).foreach(x.typeFullName(_))
+              x.possibleTypes(IndexedSeq(s"$typeReference:${m.name}"))
+//              scope.tryResolveTypeReference(m.returnType).map(_.name).foreach(x.typeFullName(_))
             }
             expr
           }
@@ -671,7 +672,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .map(x => s"$x:$methodName")
       .getOrElse(XDefines.DynamicCallUnknownFullName)
     val argumentAsts = node.arguments.map(astForMethodCallArgument)
-    val call         = callNode(node, code(node), methodName, methodFullName, DispatchTypes.DYNAMIC_DISPATCH)
+    val call =
+      callNode(node, code(node), methodName, XDefines.DynamicCallUnknownFullName, DispatchTypes.DYNAMIC_DISPATCH)
+        .possibleTypes(IndexedSeq(methodFullName))
 
     callAst(call, argumentAsts, Some(receiverAst))
   }
@@ -680,7 +683,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val methodName         = methodIdentifier.text
     lazy val defaultResult = Defines.Any -> XDefines.DynamicCallUnknownFullName
 
-    val (receiverType, methodFullName) =
+    val (receiverType, methodFullNameHint) =
       scope
         .tryResolveMethodInvocation(
           methodName,
@@ -700,7 +703,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       if receiverType.startsWith(s"<${GlobalTypes.builtinPrefix}") then DispatchTypes.STATIC_DISPATCH
       else DispatchTypes.DYNAMIC_DISPATCH
 
+    val methodFullName =
+      if receiverType.startsWith(s"<${GlobalTypes.builtinPrefix}") then methodFullNameHint
+      else XDefines.DynamicCallUnknownFullName
+
     val call = callNode(node, code(node), methodName, methodFullName, dispatchType)
+
+    if methodFullName != methodFullNameHint then call.possibleTypes(IndexedSeq(methodFullNameHint))
+
     val receiverAst = {
       val fi   = Ast(fieldIdentifierNode(node, call.name, call.name))
       val self = Ast(identifierNode(node, Defines.Self, Defines.Self, receiverType))
@@ -782,8 +792,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       Operators.fieldAccess,
       DispatchTypes.STATIC_DISPATCH,
       signature = None,
-      typeFullName = memberType
-    )
+      typeFullName = None
+    ).possibleTypes(IndexedSeq(memberType.get))
     callAst(fieldAccess, Seq(targetAst, fieldIdentifierAst))
   }
 

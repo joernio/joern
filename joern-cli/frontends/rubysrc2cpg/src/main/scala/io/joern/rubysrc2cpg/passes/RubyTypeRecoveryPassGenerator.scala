@@ -2,9 +2,10 @@ package io.joern.rubysrc2cpg.passes
 
 import io.joern.x2cpg.Defines as XDefines
 import io.joern.x2cpg.passes.frontend.*
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
+import io.shiftleft.codepropertygraph.generated.{Cpg, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.language.{types, *}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 class RubyTypeRecoveryPassGenerator(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
@@ -42,10 +43,23 @@ private class RecoverForRubyFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, 
 
   override protected def hasTypes(node: AstNode): Boolean = node match {
     case x: Call if !x.methodFullName.startsWith("<operator>") =>
-      !x.methodFullName.toLowerCase().matches("(<unknownfullname>|any)")
+      x.getKnownTypes.nonEmpty
     case x: Call if x.methodFullName.startsWith("<operator>") =>
       x.typeFullName != "<empty>" && super.hasTypes(node)
-    case x => super.hasTypes(node)
+    case x =>
+      x.getKnownTypes.nonEmpty
+  }
+
+  override def prepopulateSymbolTableEntry(x: AstNode): Unit = x match {
+    case x @ (_: Identifier | _: Local | _: MethodParameterIn) => symbolTable.append(x, x.getKnownTypes)
+    case call: Call =>
+      val tnfs =
+        if call.methodFullName == XDefines.DynamicCallUnknownFullName then
+          (call.dynamicTypeHintFullName ++ call.possibleTypes).distinct
+        else (call.methodFullName +: (call.dynamicTypeHintFullName ++ call.possibleTypes)).distinct
+
+      symbolTable.append(call, tnfs.toSet)
+    case _ =>
   }
 
   override def visitImport(i: Import): Unit = for {
