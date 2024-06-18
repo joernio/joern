@@ -54,8 +54,8 @@ private class RecoverForRubyFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, 
     case x @ (_: Identifier | _: Local | _: MethodParameterIn) => symbolTable.append(x, x.getKnownTypes)
     case call: Call =>
       val tnfs =
-        if call.methodFullName == XDefines.DynamicCallUnknownFullName then
-          (call.dynamicTypeHintFullName ++ call.possibleTypes).distinct
+        if call.methodFullName == XDefines.DynamicCallUnknownFullName || call.methodFullName.startsWith("<operator>")
+        then (call.dynamicTypeHintFullName ++ call.possibleTypes).distinct
         else (call.methodFullName +: (call.dynamicTypeHintFullName ++ call.possibleTypes)).distinct
 
       symbolTable.append(call, tnfs.toSet)

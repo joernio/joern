@@ -196,7 +196,7 @@ class HashTests extends RubyCode2CpgFixture(withPostProcessing = true) {
         hashCall.code shouldBe "Hash [1 => \"a\", 2 => \"b\", 3 => \"c\"]"
         hashCall.lineNumber shouldBe Some(2)
         hashCall.methodFullName shouldBe s"$kernelPrefix.Hash:[]"
-        hashCall.typeFullName shouldBe s"$kernelPrefix.Hash:[]"
+        hashCall.typeFullName shouldBe s"$kernelPrefix.Hash"
 
         inside(hashCall.astChildren.l) {
           case (_: Call) :: (_: TypeRef) :: (one: Call) :: (two: Call) :: (three: Call) :: Nil =>

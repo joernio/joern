@@ -84,8 +84,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           methodFullName = Operators.formattedValue,
           dispatchType = DispatchTypes.STATIC_DISPATCH,
           signature = None,
-          typeFullName = None
-        ).possibleTypes(IndexedSeq(node.typeFullName))
+          typeFullName = Option(node.typeFullName)
+        )
         callAst(call, Seq(expressionAst))
       case stmtList: StatementList if stmtList.size > 1 =>
         logger.warn(
@@ -104,8 +104,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         methodFullName = Operators.formatString,
         dispatchType = DispatchTypes.STATIC_DISPATCH,
         signature = None,
-        typeFullName = None
-      ).possibleTypes(IndexedSeq(node.typeFullName)),
+        typeFullName = Option(node.typeFullName)
+      ),
       fmtValueAsts
     )
   }
@@ -863,7 +863,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       Operators.fieldAccess,
       DispatchTypes.STATIC_DISPATCH,
       signature = None,
-      typeFullName = None
+      typeFullName = Option(Defines.Any)
     ).possibleTypes(IndexedSeq(memberType.get))
     callAst(fieldAccess, Seq(targetAst, fieldIdentifierAst))
   }
