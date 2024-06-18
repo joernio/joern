@@ -23,6 +23,7 @@ object Defines {
   val Self: String            = "self"
   val Initialize: String      = "initialize"
   val InitializeClass: String = "initialize<class>" // simply contains the @@ field initialization
+  val TypeDeclBody: String    = "<body>"
 
   val Program: String = ":program"
 

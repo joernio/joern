@@ -16,6 +16,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, ModifierTypes, Operators}
 
 import scala.collection.immutable.List
+import scala.collection.mutable
 
 trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -107,26 +108,35 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       case bodyAsts => bodyAsts
     }
 
-    val PART_OF_SINGLETON = true
-    val (singletonBodyAsts, classBodyAsts) = classBody.statements
+    // TODO: Test the <body> method and give fields a home within them
+    val PART_OF_BODY      = 0
+    val PART_OF_SINGLETON = 1
+    val PART_OF_CLASS     = 2
+
+    val singletonBodyAsts = mutable.Buffer.empty[Ast]
+    val classBodyAsts     = mutable.Buffer.empty[Ast]
+    classBody.statements
       .map {
-        case n: SingletonMethodDeclaration =>
-          val singletonMethodAst = astsForStatement(n)
-          // Create binding from singleton methods to singleton type decls
-          singletonMethodAst.flatMap(_.root).collectFirst { case n: NewMethod =>
-            createMethodTypeBindings(n, Ast(singletonTypeDecl) :: Nil)
-          }
-          // Method declaration remains in the normal type decl body
-          singletonMethodAst -> !PART_OF_SINGLETON
         case n: MethodDeclaration if n.methodName == Defines.InitializeClass =>
-          astsForStatement(n.copy(methodName = Defines.Initialize)(n.span)) -> PART_OF_SINGLETON
-        case n => astsForStatement(n) -> !PART_OF_SINGLETON
+          n.copy(methodName = Defines.Initialize)(n.span) -> PART_OF_SINGLETON
+        case n: (SingletonMethodDeclaration | MethodDeclaration | FieldsDeclaration | TypeDeclaration) =>
+          n -> PART_OF_CLASS
+        case n => n -> PART_OF_BODY
       }
       .groupBy(_._2)
-      .map { case (partOfSingleton, xs) =>
-        partOfSingleton -> handleDefaultConstructor(xs.flatMap(_._1))
+      .map { case (x, xs) => x -> xs.map(_._1) }
+      .foreach {
+        case (PART_OF_SINGLETON, xs) =>
+          singletonBodyAsts.appendAll(handleDefaultConstructor(xs.flatMap(astsForStatement)))
+        case (PART_OF_CLASS, xs) => classBodyAsts.appendAll(handleDefaultConstructor(xs.flatMap(astsForStatement)))
+        case (_, xs) =>
+          val fakeBodyAst = astsForStatement(
+            MethodDeclaration(Defines.TypeDeclBody, Nil, StatementList(xs)(node.span))(
+              node.span.spanStart(s"${node.name.text}<body>")
+            )
+          )
+          classBodyAsts.prependAll(fakeBodyAst)
       }
-      .partition(_._1)
 
     val fields = node match {
       case classDecl: ClassDeclaration   => classDecl.fields
@@ -145,12 +155,12 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val typeDeclAst = Ast(typeDecl)
       .withChildren(classModifiers)
       .withChildren(fieldTypeMemberNodes.map(_._2))
-      .withChildren(classBodyAsts.values.flatten.toSeq)
+      .withChildren(classBodyAsts.toSeq)
     val singletonTypeDeclAst =
       Ast(singletonTypeDecl)
         .withChildren(singletonModifiers)
         .withChildren(fieldSingletonMemberNodes.map(_._2))
-        .withChildren(singletonBodyAsts.values.flatten.toSeq)
+        .withChildren(singletonBodyAsts.toSeq)
 
     prefixAst :: typeDeclAst :: singletonTypeDeclAst :: Nil filterNot (_.root.isEmpty)
   }
