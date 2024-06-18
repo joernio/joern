@@ -5,6 +5,7 @@ import ghidra.app.plugin.core.analysis.AutoAnalysisManager
 import ghidra.app.util.importer.{AutoImporter, MessageLog}
 import ghidra.app.util.opinion.{Loaded, LoadResults}
 import ghidra.framework.model.{Project, ProjectLocator}
+import ghidra.base.project.{GhidraProject}
 import ghidra.framework.project.{DefaultProject, DefaultProjectManager}
 import ghidra.framework.protocol.ghidra.{GhidraURLConnection, Handler}
 import ghidra.framework.{Application, HeadlessGhidraApplicationConfiguration}
@@ -26,54 +27,109 @@ import utilities.util.FileUtilities
 
 import java.io.File
 import scala.collection.mutable
+import scala.util.matching.Regex
 import scala.jdk.CollectionConverters._
 import scala.util.Try
 
 class Ghidra2Cpg extends X2CpgFrontend[Config] {
 
+  val UseGprSignature = "gpr::"
+
+  // project folder, project name, program folder, program name
+  // call_folder/gpr::/home/user/abc/ghidra_project::/interesting/binary1
+  val GprPathRegularExpression: Regex = ".*gpr::(.*/)([^/]+)::(.*/)([^/]+)".r
+
   /** Create a CPG representing the given input file. The CPG is stored at the given output file. The caller must close
     * the CPG.
     */
   override def createCpg(config: Config): Try[Cpg] = {
-    val inputFile = new File(config.inputPath)
+    X2Cpg.withNewEmptyCpg(config.outputPath, config) { (cpg, _) =>
+      {
+        if (config.inputPath.contains(UseGprSignature)) {
+          createCpgFromGhidraProject(cpg, config.inputPath)
+        } else {
+          createCpgFromBinaryFile(cpg, config.inputPath)
+        }
+      }
+    }
+  }
+
+  /** Performes ghidra auto-analyze with auto-import before CPG generating
+    */
+  private def createCpgFromBinaryFile(cpg: Cpg, inputPath: String) = {
+    val inputFile = new File(inputPath)
     if (!inputFile.isDirectory && !inputFile.isFile) {
       throw new InvalidInputException(s"$inputFile is not a valid directory or file.")
     }
 
-    X2Cpg.withNewEmptyCpg(config.outputPath, config) { (cpg, _) =>
-      better.files.File.usingTemporaryDirectory("ghidra2cpg_tmp") { tempWorkingDir =>
-        initGhidra()
-        val locator = new ProjectLocator(tempWorkingDir.path.toAbsolutePath.toString, CommandLineConfig.projectName)
-        var program: Program = null
-        var project: Project = null
+    better.files.File.usingTemporaryDirectory("ghidra2cpg_tmp") { tempWorkingDir =>
+      initGhidra()
+      val locator = new ProjectLocator(tempWorkingDir.path.toAbsolutePath.toString, CommandLineConfig.projectName)
+      var program: Program = null
+      var project: Project = null
 
-        try {
-          val projectManager = new HeadlessGhidraProjectManager
-          project = projectManager.createProject(locator, null, false)
-          val programResults = AutoImporter.importByUsingBestGuess(
-            inputFile,
-            null,
-            tempWorkingDir.path.toAbsolutePath.toString,
-            this,
-            new MessageLog,
-            TaskMonitor.DUMMY
-          )
-          if (programResults != null && programResults.size() > 0) {
-            program = programResults.getPrimary().getDomainObject();
-            addProgramToCpg(program, inputFile.getCanonicalPath, cpg)
-          }
-        } catch {
-          case e: Exception =>
-            e.printStackTrace()
-        } finally {
-          if (program != null) {
-            AutoAnalysisManager.getAnalysisManager(program).dispose()
-            program.release(this)
-          }
-          project.close()
-          FileUtilities.deleteDir(locator.getProjectDir)
-          locator.getMarkerFile.delete
+      try {
+        val projectManager = new HeadlessGhidraProjectManager
+        project = projectManager.createProject(locator, null, false)
+        val programResults = AutoImporter.importByUsingBestGuess(
+          inputFile,
+          null,
+          tempWorkingDir.path.toAbsolutePath.toString,
+          this,
+          new MessageLog,
+          TaskMonitor.DUMMY
+        )
+        if (programResults != null && programResults.size() > 0) {
+          program = programResults.getPrimary().getDomainObject();
+          addProgramToCpg(program, inputFile.getCanonicalPath, cpg)
         }
+      } catch {
+        case e: Exception =>
+          e.printStackTrace()
+      } finally {
+        if (program != null) {
+          AutoAnalysisManager.getAnalysisManager(program).dispose()
+          program.release(this)
+        }
+        project.close()
+        FileUtilities.deleteDir(locator.getProjectDir)
+        locator.getMarkerFile.delete
+      }
+    }
+  }
+
+  /** Doesn't performes any analysis in ghidra project (just imports existing analysis) before CPG generation
+    */
+  private def createCpgFromGhidraProject(cgp: Cpg, inputPath: String) = {
+    var inputPathMatch: Regex.Match = null
+
+    GprPathRegularExpression.findFirstMatchIn(inputPath) match
+      case None => throw new InvalidInputException(s"$inputPath is not a valid ghidra path: $GprPathRegularExpression")
+      case Some(value) => inputPathMatch = value
+
+    val ghidraProjectPathFolder = inputPathMatch.group(1)
+    val ghidraProjectPathName   = inputPathMatch.group(2)
+    val ghidraProgramPathFolder = inputPathMatch.group(3)
+    val ghidraProgramPathName   = inputPathMatch.group(4)
+
+    val openReadOnly                 = true
+    var ghidraProject: GhidraProject = null
+
+    initGhidra()
+    println(
+      s"Loading ghidra project: projdir=$ghidraProjectPathFolder projname=$ghidraProjectPathName programFolder=$ghidraProgramPathFolder programName=$ghidraProgramPathName"
+    )
+
+    try {
+      ghidraProject = GhidraProject.openProject(ghidraProjectPathFolder, ghidraProjectPathName)
+      var ghidraProgram = ghidraProject.openProgram(ghidraProgramPathFolder, ghidraProgramPathName, openReadOnly)
+      handleProgram(ghidraProgram, inputPath, cgp)
+    } catch {
+      case e: Exception =>
+        e.printStackTrace()
+    } finally {
+      if (ghidraProject != null) {
+        ghidraProject.close()
       }
     }
   }
