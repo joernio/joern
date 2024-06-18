@@ -54,7 +54,7 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
     puts.lineNumber shouldBe Some(2)
     puts.code shouldBe "Kernel.puts 'hello'"
     puts.methodFullName shouldBe s"$kernelPrefix:puts"
-    puts.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+    puts.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
 
     val List(kernelRec: Call) = puts.receiver.l: @unchecked
     kernelRec.argumentIndex shouldBe -1

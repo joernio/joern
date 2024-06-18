@@ -6,7 +6,7 @@ import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.Literal
 import io.shiftleft.semanticcpg.language.*
 
-class RegexTests extends RubyCode2CpgFixture {
+class RegexTests extends RubyCode2CpgFixture(withPostProcessing = true) {
   "`'x' =~ y` is a member call `'x'.=~ /y/" in {
     val cpg = code("""|'x' =~ /y/
        |0
