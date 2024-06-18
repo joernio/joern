@@ -6,7 +6,7 @@ import io.shiftleft.semanticcpg.language.*
 class SetterTests extends RubyCode2CpgFixture {
 
   "`x.y=1` is represented by a `x.y=` CALL with argument `1`" in {
-    val cpg = code("""
+    val cpg = code("""x = Foo.new
                      |x.y = 1
                      |""".stripMargin)
 

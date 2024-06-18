@@ -9,7 +9,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.Call
 class ConditionalTests extends RubyCode2CpgFixture {
 
   "`x ? y : z` is lowered into an if-else expression" in {
-    val cpg = code("""
+    val cpg = code("""x, y, z = false, true, false
                      |x ? y : z
                      |""".stripMargin)
 
@@ -27,11 +27,11 @@ class ConditionalTests extends RubyCode2CpgFixture {
 
         inside(ifStmt.astChildren.isBlock.l) {
           case ifBlock :: elseBlock :: Nil =>
-            val (_: Local) :: (y: Identifier) :: Nil = ifBlock.astChildren.l: @unchecked
+            val (y: Identifier) :: Nil = ifBlock.astChildren.l: @unchecked
             y.name shouldBe "y"
             y.lineNumber shouldBe Some(2)
 
-            val (_: Local) :: (z: Identifier) :: Nil = elseBlock.astChildren.l: @unchecked
+            val (z: Identifier) :: Nil = elseBlock.astChildren.l: @unchecked
             z.name shouldBe "z"
             z.lineNumber shouldBe Some(2)
           case xs => fail(s"Expected exactly two blocks under the if-structure, got [${xs.code.mkString(",")}]")
@@ -41,7 +41,7 @@ class ConditionalTests extends RubyCode2CpgFixture {
   }
 
   "`f(x ? y : z)` is lowered into conditional operator" in {
-    val cpg = code("""
+    val cpg = code("""x, y, z = false, true, false
                      |f(x ? y : z)
                      |""".stripMargin)
     inside(cpg.call(Operators.conditional).l) {
@@ -58,7 +58,7 @@ class ConditionalTests extends RubyCode2CpgFixture {
   }
 
   "`f(unless x then y else z end)` is lowered into conditional operator" in {
-    val cpg = code("""
+    val cpg = code("""x, y, z = false, true, false
                      |f(unless x then y else z end)
                      |""".stripMargin)
     inside(cpg.call(Operators.conditional).l) {

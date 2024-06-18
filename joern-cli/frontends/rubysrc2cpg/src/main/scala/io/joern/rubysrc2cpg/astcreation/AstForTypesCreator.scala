@@ -16,6 +16,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, ModifierTypes, Operators}
 
 import scala.collection.immutable.List
+import scala.collection.mutable
 
 trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -80,7 +81,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       .fullName(s"$classFullName<class>")
       .inheritsFromTypeFullName(inheritsFrom.map(x => s"$x<class>"))
 
-    val (typeDeclModifiers, singletonModifiers) = node match {
+    val (classModifiers, singletonModifiers) = node match {
       case _: ModuleDeclaration =>
         scope.pushNewScope(ModuleScope(classFullName))
         (
@@ -98,17 +99,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val classBody =
       node.body.asInstanceOf[StatementList] // for now (bodyStatement is a superset of stmtList)
 
-    val classBodyAsts = classBody.statements.flatMap {
-      case n: SingletonMethodDeclaration =>
-        val singletonMethodAst = astsForStatement(n)
-        // Create binding from singleton methods to singleton type decls
-        singletonMethodAst.flatMap(_.root).collectFirst { case n: NewMethod =>
-          createMethodTypeBindings(n, Ast(singletonTypeDecl) :: Nil)
-        }
-        // Method declaration remains in the normal type decl body
-        singletonMethodAst
-      case n => astsForStatement(n)
-    } match {
+    def handleDefaultConstructor(bodyAsts: Seq[Ast]): Seq[Ast] = bodyAsts match {
       case bodyAsts if scope.shouldGenerateDefaultConstructor && this.parseLevel == AstParseLevel.FULL_AST =>
         val bodyStart  = classBody.span.spanStart()
         val initBody   = StatementList(List())(bodyStart)
@@ -117,35 +108,71 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       case bodyAsts => bodyAsts
     }
 
-    val (fieldTypeMemberNodes, fieldSingletonMemberNodes) = node match {
-      case classDecl: ClassDeclaration =>
-        classDecl.fields
-          .map { x =>
-            val name = code(x)
-            x.isInstanceOf[InstanceFieldIdentifier] -> Ast(memberNode(x, name, name, Defines.Any))
-          }
-          .partition(_._1)
-      case _ => Seq.empty -> Seq.empty
+    // TODO: Test the <body> method and give fields a home within them
+    val PART_OF_BODY      = 0
+    val PART_OF_SINGLETON = 1
+    val PART_OF_CLASS     = 2
+
+    val singletonBodyAsts = mutable.Buffer.empty[Ast]
+    val classBodyAsts     = mutable.Buffer.empty[Ast]
+    classBody.statements
+      .map {
+        case n: MethodDeclaration if n.methodName == Defines.InitializeClass =>
+          n.copy(methodName = Defines.Initialize)(n.span) -> PART_OF_SINGLETON
+        case n: (SingletonMethodDeclaration | MethodDeclaration | FieldsDeclaration | TypeDeclaration) =>
+          n -> PART_OF_CLASS
+        case n => n -> PART_OF_BODY
+      }
+      .groupBy(_._2)
+      .map { case (x, xs) => x -> xs.map(_._1) }
+      .foreach {
+        case (PART_OF_SINGLETON, xs) =>
+          singletonBodyAsts.appendAll(handleDefaultConstructor(xs.flatMap(astsForStatement)))
+        case (PART_OF_CLASS, xs) => classBodyAsts.appendAll(handleDefaultConstructor(xs.flatMap(astsForStatement)))
+        case (_, xs) =>
+          val fakeBodyAst = astsForStatement(
+            MethodDeclaration(Defines.TypeDeclBody, Nil, StatementList(xs)(node.span))(
+              node.span.spanStart(s"${node.name.text}<body>")
+            )
+          )
+          classBodyAsts.prependAll(fakeBodyAst)
+      }
+
+    val fields = node match {
+      case classDecl: ClassDeclaration   => classDecl.fields
+      case moduleDecl: ModuleDeclaration => moduleDecl.fields
+      case _                             => Seq.empty
     }
+    val (fieldTypeMemberNodes, fieldSingletonMemberNodes) = fields
+      .map { x =>
+        val name = code(x)
+        x.isInstanceOf[InstanceFieldIdentifier] -> Ast(memberNode(x, name, name, Defines.Any))
+      }
+      .partition(_._1)
 
     scope.popScope()
     val prefixAst = createTypeRefPointer(typeDecl)
     val typeDeclAst = Ast(typeDecl)
-      .withChildren(typeDeclModifiers)
+      .withChildren(classModifiers)
       .withChildren(fieldTypeMemberNodes.map(_._2))
-      .withChildren(classBodyAsts)
+      .withChildren(classBodyAsts.toSeq)
     val singletonTypeDeclAst =
-      Ast(singletonTypeDecl).withChildren(singletonModifiers).withChildren(fieldSingletonMemberNodes.map(_._2))
+      Ast(singletonTypeDecl)
+        .withChildren(singletonModifiers)
+        .withChildren(fieldSingletonMemberNodes.map(_._2))
+        .withChildren(singletonBodyAsts.toSeq)
 
     prefixAst :: typeDeclAst :: singletonTypeDeclAst :: Nil filterNot (_.root.isEmpty)
   }
 
   private def createTypeRefPointer(typeDecl: NewTypeDecl): Ast = {
     if (scope.isSurroundedByProgramScope) {
+      // We aim to preserve whether it's a `class` or `module` in the `code` property
+      val typeRefCode = s"${typeDecl.code.strip().takeWhile(_ != ' ')} ${typeDecl.name} (...)"
       val typeRefNode = Ast(
         NewTypeRef()
-          .code(s"class ${typeDecl.name} (...)")
-          .typeFullName(typeDecl.fullName)
+          .code(typeRefCode)
+          .typeFullName(s"${typeDecl.fullName}<class>") // Everything will be dispatched on the singleton
           .lineNumber(typeDecl.lineNumber)
           .columnNumber(typeDecl.columnNumber)
       )

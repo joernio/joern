@@ -53,9 +53,12 @@ class ImplicitRequirePass(cpg: Cpg, programSummary: RubyProgramSummary) extends 
         case x if x.name == Operators.alloc =>
           x.argument.isIdentifier
         case x =>
-          x.receiver.isIdentifier
+          x.receiver.fieldAccess.fieldIdentifier
       }
-      .map(i => i -> programSummary.matchingTypes(i.name))
+      .map {
+        case fi: FieldIdentifier => fi -> programSummary.matchingTypes(fi.canonicalName)
+        case i: Identifier       => i  -> programSummary.matchingTypes(i.name)
+      }
       .distinct
       .foreach { case (identifier, rubyTypes) =>
         val requireCalls = rubyTypes.flatMap { rubyType =>

@@ -572,12 +572,12 @@ class ClassTests extends RubyCode2CpgFixture {
 
                   inside(aAssignment.argument.l) {
                     case (lhs: Call) :: (rhs: Literal) :: Nil =>
-                      lhs.code shouldBe "Foo.@@a"
+                      lhs.code shouldBe s"${RubyDefines.Self}.@@a"
                       lhs.methodFullName shouldBe Operators.fieldAccess
 
                       inside(lhs.argument.l) {
                         case (identifier: Identifier) :: (fieldIdentifier: FieldIdentifier) :: Nil =>
-                          identifier.code shouldBe "Foo"
+                          identifier.code shouldBe RubyDefines.Self
                           fieldIdentifier.code shouldBe "@@a"
                         case _ => fail("Expected identifier and fieldIdentifier for fieldAccess")
                       }

@@ -4,7 +4,7 @@ import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelPrefix
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, TypeRef}
 import io.shiftleft.semanticcpg.language.*
 
 class HashTests extends RubyCode2CpgFixture {
@@ -146,7 +146,7 @@ class HashTests extends RubyCode2CpgFixture {
     inside(cpg.call.name(RubyOperators.hashInitializer).l) {
       case hashInitializer :: Nil =>
         inside(hashInitializer.inCall.astSiblings.l) {
-          case _ :: (firstCall: Call) :: (secondCall: Call) :: (tmp: Identifier) :: Nil =>
+          case (firstCall: Call) :: (secondCall: Call) :: (tmp: Identifier) :: Nil =>
             firstCall.code shouldBe "<tmp-0>[1] = \"abc\""
             secondCall.code shouldBe "<tmp-0>[2] = \"abc\""
             tmp.name shouldBe "<tmp-0>"
@@ -200,7 +200,7 @@ class HashTests extends RubyCode2CpgFixture {
         hashCall.typeFullName shouldBe s"$kernelPrefix.Hash"
 
         inside(hashCall.astChildren.l) {
-          case _ :: (one: Call) :: (two: Call) :: (three: Call) :: Nil =>
+          case (_: Call) :: (_: TypeRef) :: (one: Call) :: (two: Call) :: (three: Call) :: Nil =>
             one.code shouldBe "1 => \"a\""
             two.code shouldBe "2 => \"b\""
             three.code shouldBe "3 => \"c\""

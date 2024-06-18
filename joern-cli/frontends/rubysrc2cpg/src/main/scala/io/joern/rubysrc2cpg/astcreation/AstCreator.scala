@@ -101,7 +101,13 @@ class AstCreator(
         scope.popScope()
         val bodyAst = blockAst(block, statementAsts)
         scope.popScope()
-        methodAst(methodNode_, Seq.empty, bodyAst, methodReturn, newModifierNode(ModifierTypes.MODULE) :: Nil)
+        methodAst(
+          methodNode_,
+          Seq.empty,
+          bodyAst,
+          methodReturn,
+          newModifierNode(ModifierTypes.MODULE) :: newModifierNode(ModifierTypes.VIRTUAL) :: Nil
+        )
       }
       .getOrElse(Ast())
   }
@@ -131,7 +137,9 @@ class AstCreator(
     diffGraph.addEdge(typeDeclNode_, bindingNode, EdgeTypes.BINDS)
     diffGraph.addEdge(bindingNode, method, EdgeTypes.REF)
 
-    Ast(typeDeclNode_).withChild(Ast(newModifierNode(ModifierTypes.MODULE))).withChildren(members)
+    Ast(typeDeclNode_)
+      .withChildren(Ast(newModifierNode(ModifierTypes.MODULE)) :: Ast(newModifierNode(ModifierTypes.VIRTUAL)) :: Nil)
+      .withChildren(members)
   }
 
 }

@@ -59,6 +59,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       }
     )
 
+    val isSurroundedByProgramScope = scope.isSurroundedByProgramScope
     if (isConstructor) scope.pushNewScope(ConstructorScope(fullName))
     else scope.pushNewScope(MethodScope(fullName, procParamGen.fresh))
 
@@ -124,7 +125,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     createMethodTypeBindings(method, refs)
 
     val prefixMemberAst =
-      if isClosure || scope.isSurroundedByProgramScope then Ast() // program scope members are set elsewhere
+      if isClosure || isSurroundedByProgramScope then Ast() // program scope members are set elsewhere
       else {
         // Singleton constructors that initialize @@ fields should have their members linked under the singleton class
         val methodMember = scope.surroundingTypeFullName.map {
@@ -407,7 +408,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
             method,
             (thisParameterAst +: parameterAsts) ++ anonProcParam,
             stmtBlockAst,
-            methodReturnNode(node, Defines.Any)
+            methodReturnNode(node, Defines.Any),
+            newModifierNode(ModifierTypes.VIRTUAL) :: Nil
           )
         if (addEdge) {
           Ast.storeInDiffGraph(_methodAst, diffGraph)

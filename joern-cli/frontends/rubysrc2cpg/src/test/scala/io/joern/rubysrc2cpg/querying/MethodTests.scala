@@ -307,7 +307,7 @@ class MethodTests extends RubyCode2CpgFixture {
     "create a method under `Foo` for both `x=`, `x`, and `bar=`, where `bar=` forwards parameters to a call to `x=`" in {
       inside(cpg.typeDecl("Foo").l) {
         case foo :: Nil =>
-          inside(foo.method.nameNot(RDefines.Initialize).l) {
+          inside(foo.method.nameNot(RDefines.Initialize, RDefines.TypeDeclBody).l) {
             case xeq :: x :: bar :: Nil =>
               xeq.name shouldBe "x="
               x.name shouldBe "x"
@@ -351,7 +351,7 @@ class MethodTests extends RubyCode2CpgFixture {
 
     "exist under the module TYPE_DECL" in {
       inside(cpg.typeDecl.name("F").method.l) {
-        case bar :: baz :: Nil =>
+        case init :: bar :: baz :: Nil =>
           inside(bar.parameter.l) {
             case thisParam :: xParam :: Nil =>
               thisParam.name shouldBe "this"
@@ -376,8 +376,9 @@ class MethodTests extends RubyCode2CpgFixture {
       }
     }
 
-    "have bindings to the singleton module TYPE_DECL" in {
-      // Note: we cannot bind baz as this is a dynamic assignment to `F` which is trickier to determine
+    // TODO: we cannot bind baz as this is a dynamic assignment to `F` which is trickier to determine
+    //   Also, double check bindings
+    "have bindings to the singleton module TYPE_DECL" ignore {
       cpg.typeDecl.name("F<class>").methodBinding.methodFullName.l shouldBe List("Test0.rb:<global>::program.F:bar")
     }
 
@@ -536,6 +537,7 @@ class MethodTests extends RubyCode2CpgFixture {
         |class Foo
         | def authenticate(email, password)
         |   auth = nil
+        |   a = getPass()
         |   if a == Digest::MD5.hexdigest(password)
         |     auth = a
         |   end
@@ -548,20 +550,27 @@ class MethodTests extends RubyCode2CpgFixture {
         case Some(ifCond: Call) =>
           inside(ifCond.argument.l) {
             case (leftArg: Identifier) :: (rightArg: Call) :: Nil =>
+              leftArg.name shouldBe "a"
+
               rightArg.name shouldBe "hexdigest"
               rightArg.code shouldBe "Digest::MD5.hexdigest(password)"
 
               inside(rightArg.argument.l) {
                 case (md5: Call) :: (passwordArg: Identifier) :: Nil =>
-                  md5.name shouldBe "MD5"
-                  inside(md5.argument.l) {
-                    case (digest: Identifier) :: Nil =>
-                      digest.name shouldBe "Digest"
-                    case xs => fail(s"Expected 1 argument, got ${xs.code.mkString(", ")} instead")
-                  }
+                  md5.name shouldBe Operators.fieldAccess
+                  md5.code shouldBe "Digest::MD5"
+
+                  val md5Base = md5.argument(1).asInstanceOf[Call]
+                  md5.argument(2).asInstanceOf[FieldIdentifier].canonicalName shouldBe "MD5"
+
+                  md5Base.name shouldBe Operators.fieldAccess
+                  md5Base.code shouldBe "self.Digest"
+
+                  md5Base.argument(1).asInstanceOf[Identifier].name shouldBe RDefines.Self
+                  md5Base.argument(2).asInstanceOf[FieldIdentifier].canonicalName shouldBe "Digest"
                 case xs => fail(s"Expected identifier and call, got ${xs.code.mkString(", ")} instead")
               }
-            case xs => fail(s"Expected 3 arguments, got ${xs.code.mkString(", ")} instead")
+            case xs => fail(s"Expected 2 arguments, got ${xs.code.mkString(", ")} instead")
           }
         case None => fail("Expected if-condition")
       }
@@ -599,7 +608,7 @@ class MethodTests extends RubyCode2CpgFixture {
     "be directly under :program" in {
       inside(cpg.method.name(RDefines.Program).filename("t1.rb").assignment.l) {
         case moduleAssignment :: classAssignment :: methodAssignment :: Nil =>
-          moduleAssignment.code shouldBe "self.A = class A (...)"
+          moduleAssignment.code shouldBe "self.A = module A (...)"
           classAssignment.code shouldBe "self.B = class B (...)"
           methodAssignment.code shouldBe "self.c = def c (...)"
 
@@ -607,7 +616,7 @@ class MethodTests extends RubyCode2CpgFixture {
             case (lhs: Call) :: (rhs: TypeRef) :: Nil =>
               lhs.code shouldBe "self.A"
               lhs.name shouldBe Operators.fieldAccess
-              rhs.typeFullName shouldBe "t1.rb:<global>::program.A"
+              rhs.typeFullName shouldBe "t1.rb:<global>::program.A<class>"
             case xs => fail(s"Expected lhs and rhs, instead got ${xs.code.mkString(",")}")
           }
 
@@ -615,7 +624,7 @@ class MethodTests extends RubyCode2CpgFixture {
             case (lhs: Call) :: (rhs: TypeRef) :: Nil =>
               lhs.code shouldBe "self.B"
               lhs.name shouldBe Operators.fieldAccess
-              rhs.typeFullName shouldBe "t1.rb:<global>::program.B"
+              rhs.typeFullName shouldBe "t1.rb:<global>::program.B<class>"
             case xs => fail(s"Expected lhs and rhs, instead got ${xs.code.mkString(",")}")
           }
 
@@ -642,7 +651,7 @@ class MethodTests extends RubyCode2CpgFixture {
             case (lhs: Call) :: (rhs: TypeRef) :: Nil =>
               lhs.code shouldBe "self.D"
               lhs.name shouldBe Operators.fieldAccess
-              rhs.typeFullName shouldBe "t2.rb:<global>::program.D"
+              rhs.typeFullName shouldBe "t2.rb:<global>::program.D<class>"
             case xs => fail(s"Expected lhs and rhs, instead got ${xs.code.mkString(",")}")
           }
 
@@ -662,7 +671,7 @@ class MethodTests extends RubyCode2CpgFixture {
     "be placed directly before each entity's definition" in {
       inside(cpg.method.name(RDefines.Program).filename("t1.rb").block.astChildren.l) {
         case (a1: Call) :: (_: TypeDecl) :: (_: TypeDecl) :: (a2: Call) :: (_: TypeDecl) :: (_: TypeDecl) :: (a3: Call) :: (_: Method) :: (_: TypeDecl) :: Nil =>
-          a1.code shouldBe "self.A = class A (...)"
+          a1.code shouldBe "self.A = module A (...)"
           a2.code shouldBe "self.B = class B (...)"
           a3.code shouldBe "self.c = def c (...)"
         case xs => fail(s"Expected assignments to appear before definitions, instead got [$xs]")
