@@ -1,6 +1,5 @@
 package io.joern.x2cpg.passes.frontend
 
-import io.joern.x2cpg.passes.frontend.XTypeRecovery.{ParameterNames, getClass}
 import io.joern.x2cpg.{Defines, X2CpgConfig}
 import io.shiftleft.codepropertygraph.generated.{Cpg, DispatchTypes, EdgeTypes, NodeTypes, Operators, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -59,11 +58,11 @@ object XTypeRecoveryConfig {
     val builder = OParser.builder[C]
     import builder.*
     OParser.sequence(
-      opt[Unit](ParameterNames.NoDummyTypes)
+      opt[Unit]("no-dummyTypes")
         .hidden()
         .action((_, c) => configureNoDummyTypes(c))
         .text("disable generation of dummy types during type propagation"),
-      opt[Int](ParameterNames.TypePropagationIterations)
+      opt[Int]("type-prop-iterations")
         .hidden()
         .action((x, c) => configureIterations(x, c))
         .text("maximum iterations of type propagation")
@@ -242,11 +241,6 @@ abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg, state: XT
 }
 
 object XTypeRecovery {
-  object ParameterNames {
-    val NoDummyTypes              = "no-dummyTypes"
-    val TypePropagationIterations = "type-prop-iterations"
-  }
-
   private val logger = LoggerFactory.getLogger(getClass)
 
   val DummyReturnType                       = "<returnValue>"
