@@ -10,7 +10,6 @@ lazy val console           = Projects.console
 lazy val dataflowengineoss = Projects.dataflowengineoss
 lazy val macros            = Projects.macros
 lazy val semanticcpg       = Projects.semanticcpg
-lazy val benchmarks        = Projects.benchmarks
 lazy val c2cpg             = Projects.c2cpg
 lazy val ghidra2cpg        = Projects.ghidra2cpg
 lazy val x2cpg             = Projects.x2cpg
@@ -24,28 +23,6 @@ lazy val rubysrc2cpg       = Projects.rubysrc2cpg
 lazy val gosrc2cpg         = Projects.gosrc2cpg
 lazy val swiftsrc2cpg      = Projects.swiftsrc2cpg
 lazy val csharpsrc2cpg     = Projects.csharpsrc2cpg
-
-lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
-  joerncli,
-  querydb,
-  console,
-  dataflowengineoss,
-  macros,
-  semanticcpg,
-  c2cpg,
-  x2cpg,
-  pysrc2cpg,
-  php2cpg,
-  ghidra2cpg,
-  jssrc2cpg,
-  javasrc2cpg,
-  jimple2cpg,
-  kotlin2cpg,
-  rubysrc2cpg,
-  gosrc2cpg,
-  swiftsrc2cpg,
-  csharpsrc2cpg
-)
 
 ThisBuild / libraryDependencies ++= Seq(
   "org.slf4j"                % "slf4j-api"         % Versions.slf4j,
@@ -106,10 +83,5 @@ ThisBuild / developers := List(
 )
 
 publish / skip := true // don't publish the root project
-
-// Avoids running root tasks on the benchmarks project
-lazy val root = project
-  .in(file("."))
-  .aggregate(aggregatedProjects *)
 
 ThisBuild / Test / packageBin / publishArtifact := true
