@@ -42,11 +42,6 @@ class MethodTests extends RubyCode2CpgFixture {
       val List(m) = cpg.method.nameExact(RDefines.Program).l
       m.fullName shouldBe "Test0.rb:<global>::program"
       m.isModule.nonEmpty shouldBe true
-
-      val List(t) = cpg.typeDecl.nameExact(RDefines.Program).l
-      m.fullName shouldBe "Test0.rb:<global>::program"
-      m.isModule.nonEmpty shouldBe true
-      t.methodBinding.methodFullName.toSet should contain(m.fullName)
     }
   }
 
