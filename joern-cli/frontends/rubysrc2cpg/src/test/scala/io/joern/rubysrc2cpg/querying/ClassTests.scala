@@ -240,7 +240,7 @@ class ClassTests extends RubyCode2CpgFixture {
     val methodTypeDecl = cpg.typeDecl.fullNameExact(method.fullName).head
     val methodMember   = singletonTypeDecl.member.nameExact("method").head
 
-    nestedTypeDeclMember.typeDecl.name shouldBe "MMM"
+    nestedTypeDeclMember.typeDecl.name shouldBe "MMM<class>"
     nestedTypeDeclMember.dynamicTypeHintFullName.toSet should contain(nestedTypeDecl.fullName)
 
     singletonTypeDecl.astParent.asInstanceOf[TypeDecl].name shouldBe "MMM"

@@ -6,7 +6,13 @@ import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, ModifierTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{
+  DispatchTypes,
+  EvaluationStrategies,
+  ModifierTypes,
+  NodeTypes,
+  Operators
+}
 
 import scala.collection.immutable.List
 import scala.collection.mutable
@@ -144,10 +150,18 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       .partition(_._1)
 
     scope.popScope()
+
+    if scope.surroundingAstLabel.contains(NodeTypes.TYPE_DECL) then {
+      val typeDeclMember = NewMember()
+        .name(className)
+        .code(className)
+        .dynamicTypeHintFullName(Seq(classFullName))
+        .astParentType(NodeTypes.TYPE_DECL)
+      scope.surroundingScopeFullName.map(x => s"$x<class>").foreach(typeDeclMember.astParentFullName(_))
+      diffGraph.addNode(typeDeclMember)
+    }
+
     val prefixAst = createTypeRefPointer(typeDecl)
-    val memberAst =
-      if scope.isSurroundedByProgramScope then Ast()
-      else Ast(NewMember().name(className).code(className).dynamicTypeHintFullName(Seq(classFullName)))
     val typeDeclAst = Ast(typeDecl)
       .withChildren(classModifiers)
       .withChildren(fieldTypeMemberNodes.map(_._2))
@@ -158,7 +172,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         .withChildren(fieldSingletonMemberNodes.map(_._2))
         .withChildren(singletonBodyAsts.toSeq)
 
-    prefixAst :: memberAst :: typeDeclAst :: singletonTypeDeclAst :: Nil filterNot (_.root.isEmpty)
+    prefixAst :: typeDeclAst :: singletonTypeDeclAst :: Nil filterNot (_.root.isEmpty)
   }
 
   private def createTypeRefPointer(typeDecl: NewTypeDecl): Ast = {
