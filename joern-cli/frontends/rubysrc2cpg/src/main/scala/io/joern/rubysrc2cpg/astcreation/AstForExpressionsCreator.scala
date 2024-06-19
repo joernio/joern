@@ -195,11 +195,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         }
         .getOrElse(XDefines.Any -> XDefines.DynamicCallUnknownFullName)
       val argumentAsts = n.arguments.map(astForMethodCallArgument)
-      val dispatchType =
-        if builtinType.isDefined then DispatchTypes.STATIC_DISPATCH
-        else DispatchTypes.DYNAMIC_DISPATCH
+      val dispatchType = DispatchTypes.DYNAMIC_DISPATCH
 
-      val call = callNode(n, code(n), n.methodName, methodFullName, dispatchType)
+      val call = callNode(n, code(n), n.methodName, XDefines.DynamicCallUnknownFullName, dispatchType)
+      if methodFullName != XDefines.DynamicCallUnknownFullName then call.possibleTypes(Seq(methodFullName))
       callAst(call, argumentAsts, base = Option(baseAst), receiver = Option(receiverAst))
     }
 
@@ -734,7 +733,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .map(x => s"$x:$methodName")
       .getOrElse(XDefines.DynamicCallUnknownFullName)
     val argumentAsts = node.arguments.map(astForMethodCallArgument)
-    val call         = callNode(node, code(node), methodName, methodFullName, DispatchTypes.DYNAMIC_DISPATCH)
+    val call =
+      callNode(node, code(node), methodName, XDefines.DynamicCallUnknownFullName, DispatchTypes.DYNAMIC_DISPATCH)
+        .possibleTypes(IndexedSeq(methodFullName))
+
     callAst(call, argumentAsts, Some(receiverAst))
   }
 
@@ -742,7 +744,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val methodName         = methodIdentifier.text
     lazy val defaultResult = Defines.Any -> XDefines.DynamicCallUnknownFullName
 
-    val (receiverType, methodFullName) =
+    val (receiverType, methodFullNameHint) =
       scope
         .tryResolveMethodInvocation(
           methodName,
@@ -758,11 +760,15 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       }
 
     val argumentAst = node.arguments.map(astForMethodCallArgument)
-    val dispatchType =
-      if receiverType.startsWith(s"<${GlobalTypes.builtinPrefix}") then DispatchTypes.STATIC_DISPATCH
-      else DispatchTypes.DYNAMIC_DISPATCH
+    val (dispatchType, methodFullName) =
+      if receiverType.startsWith(s"<${GlobalTypes.builtinPrefix}") then
+        (DispatchTypes.STATIC_DISPATCH, methodFullNameHint)
+      else (DispatchTypes.DYNAMIC_DISPATCH, XDefines.DynamicCallUnknownFullName)
 
     val call = callNode(node, code(node), methodName, methodFullName, dispatchType)
+
+    if methodFullName != methodFullNameHint then call.possibleTypes(IndexedSeq(methodFullNameHint))
+
     val receiverAst = astForExpression(
       MemberAccess(SelfIdentifier()(node.span.spanStart(Defines.Self)), ".", call.name)(node.span)
     )
@@ -849,8 +855,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       Operators.fieldAccess,
       DispatchTypes.STATIC_DISPATCH,
       signature = None,
-      typeFullName = memberType
-    )
+      typeFullName = Option(Defines.Any)
+    ).possibleTypes(IndexedSeq(memberType.get))
     callAst(fieldAccess, Seq(targetAst, fieldIdentifierAst))
   }
 
