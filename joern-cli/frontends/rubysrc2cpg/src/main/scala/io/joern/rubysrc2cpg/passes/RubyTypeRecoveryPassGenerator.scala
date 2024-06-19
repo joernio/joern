@@ -84,9 +84,7 @@ private class RecoverForRubyFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, 
 
       // Only necessary if we have more than 1 type and want to try and resolve to a single type
       val finalTypes = if (types.size > 1 && c.receiver.nonEmpty) {
-        val recCallOpt = c.receiver.l.isCall.headOption
-
-        recCallOpt match {
+        c.receiver.l.isCall.headOption match {
           case Some(recCall) =>
             if (recCall.methodFullName == Operators.fieldAccess) {
               val fieldAccessCall = recCall.asInstanceOf[FieldAccess]
