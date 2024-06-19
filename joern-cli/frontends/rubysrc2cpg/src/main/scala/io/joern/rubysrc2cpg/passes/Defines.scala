@@ -251,6 +251,7 @@ object GlobalTypes {
     "readline",
     "readlines",
     "require",
+    "require_all",
     "require_relative",
     "select",
     "set_trace_func",

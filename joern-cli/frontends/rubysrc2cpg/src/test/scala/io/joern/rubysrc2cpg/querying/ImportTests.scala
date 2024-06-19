@@ -7,7 +7,7 @@ import io.joern.rubysrc2cpg.Config
 import scala.util.{Success, Failure}
 import org.scalatest.Inspectors
 
-class ImportTests extends RubyCode2CpgFixture with Inspectors {
+class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with Inspectors {
 
   "`require 'test'` is a CALL node with an IMPORT node pointing to it" in {
     val cpg = code("""

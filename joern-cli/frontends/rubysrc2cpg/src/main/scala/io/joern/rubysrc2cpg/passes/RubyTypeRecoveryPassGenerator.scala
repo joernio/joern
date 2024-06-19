@@ -3,8 +3,9 @@ package io.joern.rubysrc2cpg.passes
 import io.joern.x2cpg.Defines as XDefines
 import io.joern.x2cpg.passes.frontend.*
 import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
-import io.shiftleft.codepropertygraph.generated.{Cpg, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{Cpg, Operators, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
 import io.shiftleft.semanticcpg.language.{types, *}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
@@ -77,4 +78,39 @@ private class RecoverForRubyFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, 
   override def visitIdentifierAssignedToConstructor(i: Identifier, c: Call): Set[String] = {
     associateTypes(i, Set(i.typeFullName))
   }
+
+  override def storeCallTypeInfo(c: Call, types: Seq[String]): Unit =
+    if (types.nonEmpty) {
+
+      // Only necessary if we have more than 1 type and want to try and resolve to a single type
+      val finalTypes = if (types.size > 1 && c.receiver.nonEmpty) {
+        val recCallOpt = c.receiver.l.isCall.headOption
+
+        recCallOpt match {
+          case Some(recCall) =>
+            if (recCall.methodFullName == Operators.fieldAccess) {
+              val fieldAccessCall = recCall.asInstanceOf[FieldAccess]
+              val fn              = getFieldName(fieldAccessCall) // Returns Module1.foo for ex when it can be resolved
+              val sfp             = getFieldParents(fieldAccessCall)
+              // Some FieldAccess return unknown (ex regex: 'x' =~ /y/) so we return types since we cannot resolve further
+              if (fn == "<unknown>")
+                types
+              else
+                sfp.filter(_.endsWith(fn.stripSuffix(s".${c.name}"))).map(x => s"$x:${c.name}")
+            } else {
+              types
+            }
+          case None =>
+            types
+        }
+      } else {
+        types
+      }
+
+      builder.setNodeProperty(
+        c,
+        PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
+        (c.dynamicTypeHintFullName ++ finalTypes).distinct
+      )
+    }
 }

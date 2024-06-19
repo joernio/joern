@@ -72,7 +72,7 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
     atan2.lineNumber shouldBe Some(3)
     atan2.code shouldBe "Math.atan2(1, 1)"
     atan2.methodFullName shouldBe s"<${GlobalTypes.builtinPrefix}.Math>:atan2"
-    atan2.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+    atan2.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
 
     val List(mathRec: Call) = atan2.receiver.l: @unchecked
     mathRec.argumentIndex shouldBe -1

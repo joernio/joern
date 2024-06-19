@@ -170,9 +170,10 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
   }
 
   def addImportedFunctions(importName: String): Unit = {
-    val matchingTypes = summary.namespaceToType.values.flatten.filter(x =>
-      x.name.startsWith(importName) && x.name.endsWith(RDefines.Program)
-    )
+    val matchingTypes = summary.namespaceToType.values.flatten.filter { x =>
+      x.name.startsWith(importName)
+    }
+
     typesInScope.addAll(matchingTypes)
   }
 
