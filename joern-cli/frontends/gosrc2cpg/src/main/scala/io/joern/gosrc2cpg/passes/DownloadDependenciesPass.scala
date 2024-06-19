@@ -8,6 +8,7 @@ import io.joern.gosrc2cpg.parser.GoAstJsonParser
 import io.joern.gosrc2cpg.utils.AstGenRunner
 import io.joern.gosrc2cpg.utils.AstGenRunner.{GoAstGenRunnerResult, getClass}
 import io.joern.x2cpg.utils.ExternalCommand
+import io.shiftleft.codepropertygraph.generated.Cpg
 import org.slf4j.LoggerFactory
 
 import java.io.File as JFile
@@ -15,7 +16,7 @@ import java.nio.file.Paths
 import java.util.concurrent.LinkedBlockingQueue
 import scala.util.{Failure, Success, Try}
 
-class DownloadDependenciesPass(parentGoMod: GoModHelper, goGlobal: GoGlobal, config: Config) {
+class DownloadDependenciesPass(cpg: Cpg, parentGoMod: GoModHelper, goGlobal: GoGlobal, config: Config) {
   private val logger = LoggerFactory.getLogger(getClass)
   def process(): Unit = {
     val processor       = new DependencyProcessorQueue()
@@ -88,8 +89,8 @@ class DownloadDependenciesPass(parentGoMod: GoModHelper, goGlobal: GoGlobal, con
           Some(depConfig),
           astGenResult.parsedModFile.flatMap(modFile => GoAstJsonParser.readModFile(Paths.get(modFile)).map(x => x))
         )
-        new MethodAndTypeCacheBuilderPass(None, astGenResult.parsedFiles, depConfig, goMod, goGlobal, astLocation)
-          .process()
+        DependencySrcProcessorPass(cpg, astGenResult.parsedFiles, depConfig, goMod, goGlobal, astLocation)
+          .createAndApply()
       }
     }
   }

@@ -39,12 +39,17 @@ class GoGlobal {
     val existingVal = aliasToNameSpaceMapping.putIfAbsent(alias, namespace)
     // NOTE: !namespace.startsWith(mainModule.get) this check will not add the mapping for main source code imports.
     // This will make sure to add the entry in CacheBuilder, which in turn creates the required Package level TypeDecl AST structure as well.
-    if (existingVal == null && (mainModule == None || (mainModule != None && !namespace.startsWith(mainModule.get)))) {
-      recordForThisNamespace(namespace)
+    if (existingVal == null) {
+      recordForThisNamespaceThroughImports(namespace)
     } else if (existingVal != namespace) {
       // TODO: This might need better way of recording the information.
       logger.warn(s"more than one namespaces are found for given alias `$alias` -> `$existingVal` and `$namespace`")
     }
+  }
+
+  def recordForThisNamespaceThroughImports(namespace: String): Unit = {
+    if (mainModule == None || (mainModule != None && !namespace.startsWith(mainModule.get)))
+      recordForThisNamespace(namespace)
   }
 
   def recordForThisNamespace(namespace: String): Boolean = {

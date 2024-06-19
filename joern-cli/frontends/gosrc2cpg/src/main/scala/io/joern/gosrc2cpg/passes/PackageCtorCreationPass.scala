@@ -11,12 +11,16 @@ import scala.jdk.CollectionConverters.*
 
 class PackageCtorCreationPass(cpg: Cpg, config: Config, goGlobal: GoGlobal)
     extends ConcurrentWriterCpgPass[(String, Set[(Ast, String)])](cpg) {
-  override def generateParts(): Array[(String, Set[(Ast, String)])] =
-    goGlobal.pkgLevelVarAndConstantAstMap
+  override def generateParts(): Array[(String, Set[(Ast, String)])] = {
+    val parts = goGlobal.pkgLevelVarAndConstantAstMap
       .keys()
       .asScala
       .map(key => (key, goGlobal.pkgLevelVarAndConstantAstMap.get(key)))
       .toArray
+    // Clearing the cache once its used.
+    goGlobal.pkgLevelVarAndConstantAstMap.clear()
+    parts
+  }
 
   override def runOnPart(diffGraph: DiffGraphBuilder, part: (String, Set[(Ast, String)])): Unit = {
     val (packageStr, statementAsts) = part

@@ -4,7 +4,7 @@ import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.model.GoModHelper
 import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{GoAstJsonParser, ParserKeys, ParserNodeInfo}
-import io.joern.x2cpg.astgen.{AstGenNodeBuilder, ParserResult}
+import io.joern.x2cpg.astgen.AstGenNodeBuilder
 import io.joern.x2cpg.datastructures.Scope
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
@@ -33,8 +33,10 @@ class AstCreator(
     with AstForStatementsCreator
     with AstForTypeDeclCreator
     with AstForMethodCallExpressionCreator
-    with CacheBuilder
+    with CommonCacheBuilder
     with AstForLambdaCreator
+    with InitialMainSrcProcessor
+    with DepdencySrcProcessor
     with AstGenNodeBuilder[AstCreator] {
 
   protected val logger: Logger                                   = LoggerFactory.getLogger(classOf[AstCreator])
@@ -42,14 +44,15 @@ class AstCreator(
   protected val methodAstParentStack: Stack[NewNode]             = new Stack()
   protected val scope: Scope[String, (NewNode, String), NewNode] = new Scope()
   protected val aliasToNameSpaceMapping: mutable.Map[String, String] = mutable.Map.empty
-  protected val lineNumberMapping: Map[Int, String]                  = positionLookupTables(parserResult.fileContent)
+  protected val lineNumberMapping: Map[Int, String]                  = positionLookupTables
   protected val declaredPackageName = parserResult.json(ParserKeys.Name)(ParserKeys.Name).str
   protected val fullyQualifiedPackage =
     goMod.getNameSpace(parserResult.fullPath, declaredPackageName)
 
   override def createAst(): DiffGraphBuilder = {
     val rootNode = createParserNodeInfo(parserResult.json)
-    val ast      = astForTranslationUnit(rootNode)
+    preProcessParserNodeCache(parserResult.json)
+    val ast = astForTranslationUnit(rootNode)
     Ast.storeInDiffGraph(ast, diffGraph)
     diffGraph
   }
