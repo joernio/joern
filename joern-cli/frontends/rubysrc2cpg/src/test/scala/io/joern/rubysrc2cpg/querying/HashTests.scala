@@ -8,7 +8,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal
 import io.shiftleft.semanticcpg.language.*
 
 class HashTests extends RubyCode2CpgFixture {
-
   "`{}` is represented by a `hashInitializer` operator call" in {
     val cpg = code("""
                      |{}
