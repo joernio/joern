@@ -32,7 +32,7 @@ object XTypeRecoveryConfig {
 
   def parse(cmdLineArgs: Seq[String]): XTypeRecoveryConfig = {
     OParser
-      .parse(parserOptions1, cmdLineArgs, XTypeRecoveryConfig())
+      .parse(parserOptions, cmdLineArgs, XTypeRecoveryConfig())
       .getOrElse(
         throw new RuntimeException(
           s"unable to parse XTypeRecoveryConfig from commandline arguments ${cmdLineArgs.mkString(" ")}"
@@ -40,7 +40,7 @@ object XTypeRecoveryConfig {
       )
   }
 
-  def parserOptions1: OParser[Unit, XTypeRecoveryConfig] = {
+  def parserOptions: OParser[Unit, XTypeRecoveryConfig] = {
     _parserOptions[XTypeRecoveryConfig](
       configureNoDummyTypes = _.copy(enabledDummyTypes = false),
       configureIterations = (iterations, config) => config.copy(iterations = iterations)
