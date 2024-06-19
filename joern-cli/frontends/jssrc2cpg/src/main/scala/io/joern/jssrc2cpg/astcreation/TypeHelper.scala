@@ -2,7 +2,7 @@ package io.joern.jssrc2cpg.astcreation
 
 import io.joern.jssrc2cpg.parser.BabelAst._
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
-import io.joern.jssrc2cpg.passes.Defines
+import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 
 import java.util.regex.Pattern
 

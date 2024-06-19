@@ -1,4 +1,4 @@
-package io.joern.jssrc2cpg.passes
+package io.joern.x2cpg.frontendspecific.jssrc2cpg
 
 import io.joern.x2cpg.Defines as XDefines
 import io.joern.x2cpg.passes.frontend.XImportResolverPass

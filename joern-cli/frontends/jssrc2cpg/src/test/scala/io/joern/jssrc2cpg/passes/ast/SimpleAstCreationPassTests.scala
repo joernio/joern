@@ -1,7 +1,8 @@
 package io.joern.jssrc2cpg.passes.ast
 
-import io.joern.jssrc2cpg.passes.{Defines, EcmaBuiltins}
+import io.joern.jssrc2cpg.passes.EcmaBuiltins
 import io.joern.jssrc2cpg.testfixtures.AstJsSrc2CpgSuite
+import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*

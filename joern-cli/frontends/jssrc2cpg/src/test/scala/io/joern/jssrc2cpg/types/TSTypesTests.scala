@@ -1,8 +1,8 @@
 package io.joern.jssrc2cpg.types
 
 import io.joern.jssrc2cpg.testfixtures.AstJsSrc2CpgSuite
-import io.joern.jssrc2cpg.passes.Defines
 import io.joern.jssrc2cpg.Config
+import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.*
 

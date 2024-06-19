@@ -1,4 +1,4 @@
-package io.joern.jssrc2cpg.passes
+package io.joern.x2cpg.frontendspecific.jssrc2cpg
 
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 

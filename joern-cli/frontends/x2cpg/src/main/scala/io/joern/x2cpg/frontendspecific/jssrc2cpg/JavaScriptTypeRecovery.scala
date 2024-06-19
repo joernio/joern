@@ -1,6 +1,5 @@
-package io.joern.jssrc2cpg.passes
+package io.joern.x2cpg.frontendspecific.jssrc2cpg
 
-import io.joern.jssrc2cpg.passes.Defines.OperatorsNew
 import io.joern.x2cpg.Defines as XDefines
 import io.joern.x2cpg.Defines.ConstructorMethodName
 import io.joern.x2cpg.passes.frontend.*
@@ -124,7 +123,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
 
   override protected def visitIdentifierAssignedToConstructor(i: Identifier, c: Call): Set[String] = {
     val constructorPaths = if (c.methodFullName.endsWith(".alloc")) {
-      val newOp       = c.inAssignment.astSiblings.isCall.nameExact(OperatorsNew).headOption
+      val newOp       = c.inAssignment.astSiblings.isCall.nameExact(Defines.OperatorsNew).headOption
       val newChildren = newOp.astChildren.l
 
       val possibleImportIdentifier = newChildren.isIdentifier.headOption match {
@@ -152,7 +151,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
 
   override protected def visitIdentifierAssignedToOperator(i: Identifier, c: Call, operation: String): Set[String] = {
     operation match {
-      case OperatorsNew =>
+      case Defines.OperatorsNew =>
         c.astChildren.l match {
           case ::(fa: Call, ::(id: Identifier, _)) if fa.name == Operators.fieldAccess =>
             symbolTable.append(
