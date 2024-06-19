@@ -4,16 +4,15 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.{BlockScope, MethodScope, ModuleScope, TypeScope}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
-import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  NewCall,
-  NewFieldIdentifier,
-  NewIdentifier,
-  NewMethod,
-  NewTypeDecl,
-  NewTypeRef
+import io.joern.x2cpg.{Ast, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{
+  DispatchTypes,
+  EvaluationStrategies,
+  ModifierTypes,
+  NodeTypes,
+  Operators
 }
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, ModifierTypes, Operators}
 
 import scala.collection.immutable.List
 import scala.collection.mutable
@@ -151,6 +150,17 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       .partition(_._1)
 
     scope.popScope()
+
+    if scope.surroundingAstLabel.contains(NodeTypes.TYPE_DECL) then {
+      val typeDeclMember = NewMember()
+        .name(className)
+        .code(className)
+        .dynamicTypeHintFullName(Seq(s"$classFullName<class>"))
+        .astParentType(NodeTypes.TYPE_DECL)
+      scope.surroundingScopeFullName.map(x => s"$x<class>").foreach(typeDeclMember.astParentFullName(_))
+      diffGraph.addNode(typeDeclMember)
+    }
+
     val prefixAst = createTypeRefPointer(typeDecl)
     val typeDeclAst = Ast(typeDecl)
       .withChildren(classModifiers)

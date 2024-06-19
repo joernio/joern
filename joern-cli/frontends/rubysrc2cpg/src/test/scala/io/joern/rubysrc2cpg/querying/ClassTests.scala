@@ -1,20 +1,11 @@
 package io.joern.rubysrc2cpg.querying
 
+import io.joern.rubysrc2cpg.passes.{GlobalTypes, Defines as RubyDefines}
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  Block,
-  Call,
-  FieldIdentifier,
-  Identifier,
-  Literal,
-  MethodRef,
-  Modifier,
-  Return
-}
+import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
-import io.joern.rubysrc2cpg.passes.{GlobalTypes, Defines as RubyDefines}
 
 class ClassTests extends RubyCode2CpgFixture {
 
@@ -204,6 +195,61 @@ class ClassTests extends RubyCode2CpgFixture {
     memberF.dynamicTypeHintFullName.toSet should contain(methodF.fullName)
   }
 
+  "`M.method` in a module `M` should have a method bound to a member under the module's singleton type declaration" in {
+    val cpg = code("""
+        |module M
+        | def M.method(x)
+        |   x
+        | end
+        |end
+        |def main(p)
+        | M::method(p)
+        |end
+        |""".stripMargin)
+
+    // Obtain the nodes first
+    val regularTypeDecl   = cpg.typeDecl.nameExact("M").head
+    val singletonTypeDecl = cpg.typeDecl.nameExact("M<class>").head
+    val method            = regularTypeDecl.method.nameExact("method").head
+    val methodTypeDecl    = cpg.typeDecl.fullNameExact(method.fullName).head
+    val methodMember      = singletonTypeDecl.member.nameExact("method").head
+    // Now determine the properties and potential edges
+    methodMember.dynamicTypeHintFullName.toSet should contain(method.fullName)
+    methodTypeDecl.methodBinding.flatMap(_.boundMethod).head shouldBe method
+  }
+
+  "a method in a nested module should have the nested module's member-type and nested types' method" in {
+    val cpg = code("""
+        |module MMM
+        | module Nested
+        |   def self.method(x)
+        |     x
+        |   end
+        | end
+        |end
+        |def outer(aaa)
+        | MMM::Nested::method(aaa)
+        |end
+        |""".stripMargin)
+
+    val nestedTypeDecl       = cpg.typeDecl("Nested").head
+    val nestedSingleton      = cpg.typeDecl("Nested<class>").head
+    val nestedTypeDeclMember = cpg.member("Nested").head
+    val singletonTypeDecl    = cpg.typeDecl.nameExact("Nested<class>").head
+
+    val method         = nestedTypeDecl.method.nameExact("method").head
+    val methodTypeDecl = cpg.typeDecl.fullNameExact(method.fullName).head
+    val methodMember   = singletonTypeDecl.member.nameExact("method").head
+
+    nestedTypeDeclMember.typeDecl.name shouldBe "MMM<class>"
+    nestedTypeDeclMember.dynamicTypeHintFullName.toSet should contain(nestedSingleton.fullName)
+
+    singletonTypeDecl.astParent.asInstanceOf[TypeDecl].name shouldBe "MMM"
+
+    methodMember.dynamicTypeHintFullName.toSet should contain(method.fullName)
+    methodTypeDecl.methodBinding.flatMap(_.boundMethod).head shouldBe method
+  }
+
   "`def initialize() ... end` directly inside a class has the constructor modifier" in {
     val cpg = code("""
                      |class C
@@ -253,6 +299,21 @@ class ClassTests extends RubyCode2CpgFixture {
                      |""".stripMargin)
 
     cpg.method.nameExact(RubyDefines.Initialize).where(_.isConstructor).literal.code.l should be(empty)
+  }
+
+  "Constants should be defined under the respective singleton" in {
+    val cpg = code("""
+        |module MMM
+        | MConst = 2
+        | module Nested
+        |   NConst = 4
+        | end
+        |end
+        |
+        |""".stripMargin)
+
+    cpg.member("MConst").typeDecl.fullName.head shouldBe "Test0.rb:<global>::program.MMM<class>"
+    cpg.member("NConst").typeDecl.fullName.head shouldBe "Test0.rb:<global>::program.MMM.Nested<class>"
   }
 
   "a basic anonymous class" should {

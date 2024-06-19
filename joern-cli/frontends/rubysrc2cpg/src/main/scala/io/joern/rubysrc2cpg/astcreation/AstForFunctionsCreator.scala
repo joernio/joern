@@ -376,6 +376,18 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           astParentType = astParentType,
           astParentFullName = astParentFullName
         )
+        val methodTypeDecl = Ast(
+          typeDeclNode(
+            node,
+            node.methodName,
+            fullName,
+            relativeFileName,
+            code(node),
+            astParentType = astParentType.getOrElse("<empty>"),
+            astParentFullName = astParentFullName.getOrElse("<empty>")
+          )
+        )
+        createMethodTypeBindings(method, methodTypeDecl :: Nil)
 
         val thisParameterAst = Ast(
           newThisParameterNode(
@@ -415,7 +427,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           Ast.storeInDiffGraph(_methodAst, diffGraph)
           Nil
         } else {
-          createMethodRefPointer(method) :: _methodAst :: Nil
+          createMethodRefPointer(method) :: _methodAst :: methodTypeDecl :: Nil
         }
       case targetNode =>
         logger.warn(
