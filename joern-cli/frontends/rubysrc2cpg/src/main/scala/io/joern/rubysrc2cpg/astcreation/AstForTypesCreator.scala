@@ -155,7 +155,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       val typeDeclMember = NewMember()
         .name(className)
         .code(className)
-        .dynamicTypeHintFullName(Seq(classFullName))
+        .dynamicTypeHintFullName(Seq(s"$classFullName<class>"))
         .astParentType(NodeTypes.TYPE_DECL)
       scope.surroundingScopeFullName.map(x => s"$x<class>").foreach(typeDeclMember.astParentFullName(_))
       diffGraph.addNode(typeDeclMember)
