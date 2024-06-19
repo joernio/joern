@@ -22,7 +22,8 @@ object EdgeValidator {
       case (childNode: Expression, parentNode)
           if isCallRetval(parentNode) || !isValidEdgeToExpression(parentNode, childNode) =>
         false
-      case (childNode: Call, parentNode: Expression) if isCallRetval(childNode) =>
+      case (childNode: Call, parentNode: Expression)
+          if isCallRetval(childNode) && childNode.argument.contains(parentNode) =>
         // e.g. foo(x), but there are semantics for `foo` that don't taint its return value
         // in which case we don't want `x` to taint `foo(x)`.
         false
