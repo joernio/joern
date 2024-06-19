@@ -192,7 +192,6 @@ class ClassTests extends RubyCode2CpgFixture {
     methodF.fullName shouldBe "Test0.rb:<global>::program.C:f"
 
     val List(memberF) = classC.member.nameExact("f").l
-    println(memberF.dynamicTypeHintFullName)
     memberF.dynamicTypeHintFullName.toSet should contain(methodF.fullName)
   }
 
