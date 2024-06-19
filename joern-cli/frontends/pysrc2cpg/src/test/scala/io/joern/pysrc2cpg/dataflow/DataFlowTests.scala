@@ -83,7 +83,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     flows shouldBe empty
   }
 
-  "no flow from aliased literal to imported external method call return value given argument1-only semantics" ignore {
+  "no flow from aliased literal to imported external method call return value given argument1-only semantics" in {
     val cpg = code("""
         |from helpers import foo
         |a = 20
@@ -96,7 +96,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     flows shouldBe empty
   }
 
-  "no flow from literal to imported external method return value given empty semantics" ignore {
+  "no flow from literal to imported external method return value given empty semantics" in {
     val cpg = code("""
         |from helpers import foo
         |print(foo(20))
@@ -108,7 +108,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     flows shouldBe empty
   }
 
-  "no flow from literal to imported external method return value given receiver-only semantics" ignore {
+  "no flow from literal to imported external method return value given receiver-only semantics" in {
     val cpg = code("""
         |from helpers import foo
         |print(foo(20))
@@ -120,7 +120,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     flows shouldBe empty
   }
 
-  "no flow from literal to imported external method return value given argument1-only semantics" ignore {
+  "no flow from literal to imported external method return value given argument1-only semantics" in {
     val cpg = code("""
         |from helpers import foo
         |print(foo(20))
