@@ -300,6 +300,21 @@ class ClassTests extends RubyCode2CpgFixture {
     cpg.method.nameExact(RubyDefines.Initialize).where(_.isConstructor).literal.code.l should be(empty)
   }
 
+  "Constants should be defined under the respective singleton" in {
+    val cpg = code("""
+        |module MMM
+        | MConst = 2
+        | module Nested
+        |   NConst = 4
+        | end
+        |end
+        |
+        |""".stripMargin)
+
+    cpg.member("MConst").typeDecl.fullName.head shouldBe "Test0.rb:<global>::program.MMM<class>"
+    cpg.member("NConst").typeDecl.fullName.head shouldBe "Test0.rb:<global>::program.MMM.Nested<class>"
+  }
+
   "a basic anonymous class" should {
     val cpg = code("""
         |a = Class.new do
