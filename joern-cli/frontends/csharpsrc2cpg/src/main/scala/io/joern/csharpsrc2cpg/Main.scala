@@ -34,7 +34,7 @@ object Frontend {
     OParser.sequence(
       programName("csharpsrc2cpg"),
       DependencyDownloadConfig.parserOptions,
-      XTypeRecoveryConfig.parserOptions
+      XTypeRecoveryConfig.parserOptionsForParserConfig
     )
   }
 

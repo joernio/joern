@@ -28,7 +28,7 @@ object Frontend {
         .hidden()
         .action((_, c) => c.withTsTypes(false))
         .text("disable generation of types via Typescript"),
-      XTypeRecoveryConfig.parserOptions
+      XTypeRecoveryConfig.parserOptionsForParserConfig
     )
   }
 

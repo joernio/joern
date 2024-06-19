@@ -33,7 +33,7 @@ private object Frontend {
           "Excludes all files where the relative path from input-dir contains at least one of names specified here."
         )
         .action((value, config) => config.withIgnoreDirNames(value)),
-      XTypeRecoveryConfig.parserOptions
+      XTypeRecoveryConfig.parserOptionsForParserConfig
     )
   }
 }

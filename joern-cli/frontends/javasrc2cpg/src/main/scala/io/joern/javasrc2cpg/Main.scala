@@ -104,7 +104,7 @@ private object Frontend {
         .hidden()
         .action((_, c) => c.withEnableTypeRecovery(true))
         .text("enable generic type recovery"),
-      XTypeRecoveryConfig.parserOptions,
+      XTypeRecoveryConfig.parserOptionsForParserConfig,
       opt[String]("jdk-path")
         .action((path, c) => c.withJdkPath(path))
         .text("JDK used for resolving builtin Java types. If not set, current classpath will be used"),

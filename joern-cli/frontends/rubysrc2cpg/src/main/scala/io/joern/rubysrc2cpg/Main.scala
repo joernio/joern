@@ -62,7 +62,7 @@ private object Frontend {
         .action((_, c) => c.withUseDeprecatedFrontend(true))
         .text("uses the original (but deprecated) Ruby frontend (default false)"),
       DependencyDownloadConfig.parserOptions,
-      XTypeRecoveryConfig.parserOptions,
+      XTypeRecoveryConfig.parserOptionsForParserConfig,
       TypeStubConfig.parserOptions
     )
   }

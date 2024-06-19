@@ -24,7 +24,7 @@ object Frontend {
     import builder.*
     OParser.sequence(
       programName("swiftsrc2cpg"),
-      XTypeRecoveryConfig.parserOptions,
+      XTypeRecoveryConfig.parserOptionsForParserConfig,
       opt[String]("define")
         .unbounded()
         .text("define a name")

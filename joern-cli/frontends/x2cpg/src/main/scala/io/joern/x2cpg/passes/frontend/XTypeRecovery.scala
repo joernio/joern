@@ -1,6 +1,6 @@
 package io.joern.x2cpg.passes.frontend
 
-import io.joern.x2cpg.passes.frontend.XTypeRecovery.{ParameterNames, getClass, logger}
+import io.joern.x2cpg.passes.frontend.XTypeRecovery.{ParameterNames, getClass}
 import io.joern.x2cpg.{Defines, X2CpgConfig}
 import io.shiftleft.codepropertygraph.generated.{Cpg, DispatchTypes, EdgeTypes, NodeTypes, Operators, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -40,20 +40,32 @@ object XTypeRecoveryConfig {
       )
   }
 
-  // TODO merge with the one below for generic TypeRecoveryParserConfig[R] - e.g. by creating a `TypeRecoveryParserConfig` impl for XTypeRecoveryConfig?
   def parserOptions1: OParser[Unit, XTypeRecoveryConfig] = {
-    val builder = OParser.builder[XTypeRecoveryConfig]
+    _parserOptions[XTypeRecoveryConfig](
+      configureNoDummyTypes = _.copy(enabledDummyTypes = false),
+      configureIterations = (iterations, config) => config.copy(iterations = iterations)
+    )
+  }
+
+  /** Parser options for languages implementing this pass. */
+  def parserOptionsForParserConfig[R <: X2CpgConfig[R] & TypeRecoveryParserConfig[R]]: OParser[?, R] = {
+    _parserOptions[R](
+      configureNoDummyTypes = _.withDisableDummyTypes(true),
+      configureIterations = (iterations, config) => config.withTypePropagationIterations(iterations)
+    )
+  }
+
+  private def _parserOptions[C](configureNoDummyTypes: C => C, configureIterations: (Int, C) => C): OParser[Unit, C] = {
+    val builder = OParser.builder[C]
     import builder.*
     OParser.sequence(
       opt[Unit](ParameterNames.NoDummyTypes)
         .hidden()
-        //        .action((_, c) => c.withDisableDummyTypes(true))
-        .action((_, c) => c.copy(enabledDummyTypes = false))
+        .action((_, c) => configureNoDummyTypes(c))
         .text("disable generation of dummy types during type propagation"),
       opt[Int](ParameterNames.TypePropagationIterations)
         .hidden()
-        //        .action((x, c) => c.withTypePropagationIterations(x))
-        .action((x, c) => c.copy(iterations = x))
+        .action((x, c) => configureIterations(x, c))
         .text("maximum iterations of type propagation")
         .validate { x =>
           if (x <= 0) {
@@ -68,32 +80,6 @@ object XTypeRecoveryConfig {
     )
   }
 
-  /** Parser options for languages implementing this pass.
-    */
-  def parserOptions[R <: X2CpgConfig[R] & TypeRecoveryParserConfig[R]]: OParser[?, R] = {
-    val builder = OParser.builder[R]
-    import builder.*
-    OParser.sequence(
-      opt[Unit](ParameterNames.NoDummyTypes)
-        .hidden()
-        .action((_, c) => c.withDisableDummyTypes(true))
-        .text("disable generation of dummy types during type propagation"),
-      opt[Int](ParameterNames.TypePropagationIterations)
-        .hidden()
-        .action((x, c) => c.withTypePropagationIterations(x))
-        .text("maximum iterations of type propagation")
-        .validate { x =>
-          if (x <= 0) {
-            logger.info("Disabling type propagation as the given iteration count is <= 0")
-          } else if (x == 1) {
-            logger.info("Intra-procedural type propagation enabled")
-          } else if (x > 5) {
-            logger.warn(s"Large iteration count of $x will take a while to terminate")
-          }
-          success
-        }
-    )
-  }
 }
 
 /** @param config
