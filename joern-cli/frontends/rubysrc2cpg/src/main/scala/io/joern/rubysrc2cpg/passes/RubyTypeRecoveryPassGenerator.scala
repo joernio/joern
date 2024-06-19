@@ -90,13 +90,15 @@ private class RecoverForRubyFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, 
           case Some(recCall) =>
             if (recCall.methodFullName == Operators.fieldAccess) {
               val fieldAccessCall = recCall.asInstanceOf[FieldAccess]
-              val fn              = getFieldName(fieldAccessCall) // Returns Module1.foo for ex when it can be resolved
-              val sfp             = getFieldParents(fieldAccessCall)
+              val fieldAccessName = getFieldName(fieldAccessCall) // Returns Module1.foo for ex when it can be resolved
+              val fieldAccessParents = getFieldParents(fieldAccessCall)
               // Some FieldAccess return unknown (ex regex: 'x' =~ /y/) so we return types since we cannot resolve further
-              if (fn == "<unknown>")
+              if (fieldAccessName == "<unknown>")
                 types
               else
-                sfp.filter(_.endsWith(fn.stripSuffix(s".${c.name}"))).map(x => s"$x:${c.name}")
+                fieldAccessParents
+                  .filter(_.endsWith(fieldAccessName.stripSuffix(s".${c.name}")))
+                  .map(x => s"$x:${c.name}")
             } else {
               types
             }
