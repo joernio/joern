@@ -115,9 +115,13 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     astParentType: Option[String] = None,
     astParentFullName: Option[String] = None
   ): NewMember = {
-    val member = NewMember().name(method.name).code(method.name).dynamicTypeHintFullName(Seq(method.fullName))
+    val member = NewMember().name(method.name).code(method.name)
     astParentType.foreach(member.astParentType(_))
-    astParentFullName.foreach(member.astParentFullName(_))
+    astParentFullName.foreach { tfn =>
+      val methodTypeDecl = s"${tfn.stripSuffix("<class>")}:${method.name}"
+      member.astParentFullName(tfn)
+      member.dynamicTypeHintFullName(Seq(methodTypeDecl))
+    }
     member
   }
 
