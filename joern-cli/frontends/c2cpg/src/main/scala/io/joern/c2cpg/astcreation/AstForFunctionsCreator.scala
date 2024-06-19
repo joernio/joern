@@ -7,11 +7,15 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, ModifierTypes}
 import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast.*
-import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTLambdaExpression
+import org.eclipse.cdt.core.dom.ast.cpp.{ICPPASTLambdaExpression, ICPPFunction}
 import org.eclipse.cdt.core.dom.ast.gnu.c.ICASTKnRFunctionDeclarator
-import org.eclipse.cdt.internal.core.dom.parser.c.{CASTFunctionDeclarator, CASTParameterDeclaration}
-import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTFunctionDeclarator, CPPASTParameterDeclaration}
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFunctionDefinition
+import org.eclipse.cdt.internal.core.dom.parser.c.{CASTFunctionDeclarator, CASTParameterDeclaration, CTypedef}
+import org.eclipse.cdt.internal.core.dom.parser.cpp.{
+  CPPASTFunctionDeclarator,
+  CPPASTFunctionDefinition,
+  CPPASTParameterDeclaration,
+  CPPFunction
+}
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import scala.annotation.tailrec
@@ -19,7 +23,7 @@ import scala.collection.mutable
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  private val seenFunctionSignatures = mutable.HashSet.empty[String]
+  private val seenFunctionFullnames = mutable.HashSet.empty[String]
 
   private def createFunctionTypeAndTypeDecl(
     node: IASTNode,
@@ -105,7 +109,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     }
     val name        = nextClosureName()
     val fullname    = s"${fullName(lambdaExpression)}$name"
-    val signature   = s"$returnType $fullname ${parameterListSignature(lambdaExpression)}"
+    val signature   = s"$returnType${parameterListSignature(lambdaExpression)}"
     val codeString  = code(lambdaExpression)
     val methodNode_ = methodNode(lambdaExpression, name, codeString, fullname, Some(signature), filename)
 
@@ -131,34 +135,53 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   protected def astForFunctionDeclarator(funcDecl: IASTFunctionDeclarator): Ast = {
-    val returnType     = typeForDeclSpecifier(funcDecl.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclSpecifier)
-    val fullname       = fullName(funcDecl)
-    val templateParams = templateParameters(funcDecl).getOrElse("")
-    val signature =
-      s"$returnType $fullname$templateParams ${parameterListSignature(funcDecl)}"
+    funcDecl.getName.resolveBinding() match {
+      case function: IFunction =>
+        val returnType = typeForDeclSpecifier(funcDecl.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclSpecifier)
+        val fullname   = fullName(funcDecl)
+        val templateParams = templateParameters(funcDecl).getOrElse("")
+        val signature =
+          s"$returnType${parameterListSignature(funcDecl)}"
 
-    if (seenFunctionSignatures.add(signature)) {
-      val name        = shortName(funcDecl)
-      val codeString  = code(funcDecl.getParent)
-      val filename    = fileName(funcDecl)
-      val methodNode_ = methodNode(funcDecl, name, codeString, fullname, Some(signature), filename)
+        if (seenFunctionFullnames.add(fullname)) {
+          val name        = shortName(funcDecl)
+          val codeString  = code(funcDecl.getParent)
+          val filename    = fileName(funcDecl)
+          val methodNode_ = methodNode(funcDecl, name, codeString, fullname, Some(signature), filename)
 
-      scope.pushNewScope(methodNode_)
+          scope.pushNewScope(methodNode_)
 
-      val parameterNodes = withIndex(parameters(funcDecl)) { (p, i) =>
-        parameterNode(p, i)
-      }
-      setVariadic(parameterNodes, funcDecl)
+          val parameterNodes = withIndex(parameters(funcDecl)) { (p, i) =>
+            parameterNode(p, i)
+          }
+          setVariadic(parameterNodes, funcDecl)
 
-      scope.popScope()
+          scope.popScope()
 
-      val stubAst =
-        methodStubAst(methodNode_, parameterNodes.map(Ast(_)), newMethodReturnNode(funcDecl, registerType(returnType)))
-      val typeDeclAst = createFunctionTypeAndTypeDecl(funcDecl, methodNode_, name, fullname, signature)
-      stubAst.merge(typeDeclAst)
-    } else {
-      Ast()
+          val stubAst =
+            methodStubAst(
+              methodNode_,
+              parameterNodes.map(Ast(_)),
+              newMethodReturnNode(funcDecl, registerType(returnType))
+            )
+          val typeDeclAst = createFunctionTypeAndTypeDecl(funcDecl, methodNode_, name, fullname, signature)
+          stubAst.merge(typeDeclAst)
+        } else {
+          Ast()
+        }
+      case field: IField =>
+        // TODO create a member for the field
+        // We get here a least for function pointer member declarations in classes like:
+        // class A {
+        //   public:
+        //     void (*foo)(int);
+        // };
+        Ast()
+      case typeDef: ITypedef =>
+        // TODO handle typeDecl for now we just ignore this.
+        Ast()
     }
+
   }
 
   private def isCppConstructor(funcDef: IASTFunctionDefinition): Boolean = {
@@ -178,8 +201,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val templateParams = templateParameters(funcDef).getOrElse("")
 
     val signature =
-      s"$returnType $fullname$templateParams ${parameterListSignature(funcDef)}"
-    seenFunctionSignatures.add(signature)
+      s"$returnType${parameterListSignature(funcDef)}"
+    seenFunctionFullnames.add(fullname)
 
     val codeString  = code(funcDef)
     val methodNode_ = methodNode(funcDef, name, codeString, fullname, Some(signature), filename)
