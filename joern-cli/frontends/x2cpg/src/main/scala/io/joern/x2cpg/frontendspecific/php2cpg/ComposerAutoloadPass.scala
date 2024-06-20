@@ -1,4 +1,4 @@
-package io.joern.php2cpg.passes
+package io.joern.x2cpg.frontendspecific.php2cpg
 
 import io.joern.x2cpg.{Defines, X2Cpg}
 import io.shiftleft.codepropertygraph.generated.{Cpg, PropertyNames}
