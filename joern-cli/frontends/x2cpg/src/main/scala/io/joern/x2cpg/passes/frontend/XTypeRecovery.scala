@@ -257,6 +257,10 @@ object XTypeRecovery {
     */
   def isDummyType(typ: String): Boolean = DummyTokens.exists(typ.contains)
 
+  @deprecated("please use XTypeRecoveryConfig.parserOptionsForParserConfig", since = "2.0.415")
+  def parserOptions[R <: X2CpgConfig[R] & TypeRecoveryParserConfig[R]]: OParser[?, R] =
+    XTypeRecoveryConfig.parserOptionsForParserConfig
+
   // The below are convenience calls for accessing type properties, one day when this pass uses `Tag` nodes instead of
   // the symbol table then perhaps this would work out better
   implicit class AllNodeTypesFromNodeExt(x: StoredNode) {
