@@ -39,7 +39,7 @@ class PhpTypeStubsParserPass(cpg: Cpg, config: XTypeStubsParserConfig = XTypeStu
     val typeStubsFile = config.typeStubsFilePath
     val source = typeStubsFile match {
       case Some(file) => Source.fromFile(file)
-      case _          => Source.fromResource("known_function_signatures.txt")
+      case _          => Source.fromResource("php_known_function_signatures.txt")
     }
     val contents = source.getLines().filterNot(_.startsWith("//"))
     val arr      = contents.flatMap(line => createKnownFunctionFromLine(line)).toArray
