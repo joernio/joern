@@ -1,4 +1,4 @@
-package io.joern.pysrc2cpg
+package io.joern.x2cpg.frontendspecific.pysrc2cpg
 
 object Constants {
   val builtinPrefix = "__builtin."

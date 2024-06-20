@@ -1,4 +1,4 @@
-package io.joern.pysrc2cpg
+package io.joern.x2cpg.frontendspecific.pysrc2cpg
 
 import better.files.File
 import io.joern.x2cpg.passes.frontend.XImportResolverPass
