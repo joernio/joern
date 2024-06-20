@@ -6,7 +6,6 @@ dependsOn(
   Projects.semanticcpg,
   Projects.macros,
   Projects.rubysrc2cpg,
-  Projects.swiftsrc2cpg,
   Projects.x2cpg % "compile->compile;test->test"
 )
 

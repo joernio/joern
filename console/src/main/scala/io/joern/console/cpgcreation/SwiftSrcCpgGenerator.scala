@@ -2,17 +2,18 @@ package io.joern.console.cpgcreation
 
 import better.files.File
 import io.joern.console.FrontendConfig
-import io.joern.swiftsrc2cpg.{Config, Frontend, SwiftSrc2Cpg}
-import io.joern.x2cpg.X2Cpg
+import io.joern.x2cpg.frontendspecific.swiftsrc2cpg
+import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
 import io.shiftleft.codepropertygraph.generated.Cpg
 
 import java.nio.file.Path
+import scala.compiletime.uninitialized
 import scala.util.Try
 
 case class SwiftSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGenerator {
   private lazy val command: Path =
     if (isWin) rootPath.resolve("swiftsrc2cpg.bat") else rootPath.resolve("swiftsrc2cpg.sh")
-  private var swiftConfig: Option[Config] = None
+  private var typeRecoveryConfig: XTypeRecoveryConfig = uninitialized
 
   /** Generate a CPG for the given input path. Returns the output path, or None, if no CPG was generated.
     */
@@ -28,7 +29,7 @@ case class SwiftSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends 
 
   private def invoke(inputPath: String, outputPath: String): Try[String] = {
     val arguments = Seq(inputPath, "--output", outputPath) ++ config.cmdLineParams
-    swiftConfig = X2Cpg.parseCommandLine(arguments.toArray, Frontend.cmdLineParser, Config())
+    typeRecoveryConfig = XTypeRecoveryConfig.parse(config.cmdLineParams.toSeq)
     runShellCommand(command.toString, arguments).map(_ => outputPath)
   }
 
@@ -36,7 +37,7 @@ case class SwiftSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends 
     command.toFile.exists
 
   override def applyPostProcessingPasses(cpg: Cpg): Cpg = {
-    SwiftSrc2Cpg.postProcessingPasses(cpg, swiftConfig).foreach(_.createAndApply())
+    swiftsrc2cpg.postProcessingPasses(cpg, typeRecoveryConfig).foreach(_.createAndApply())
     cpg
   }
 

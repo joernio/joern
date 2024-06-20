@@ -1,4 +1,4 @@
-package io.joern.swiftsrc2cpg.passes
+package io.joern.x2cpg.frontendspecific.swiftsrc2cpg
 
 import io.joern.x2cpg.passes.frontend.XInheritanceFullNamePass
 import io.shiftleft.codepropertygraph.generated.Cpg

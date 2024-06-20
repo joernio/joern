@@ -4,11 +4,11 @@ import io.joern.swiftsrc2cpg.Config
 import io.joern.swiftsrc2cpg.datastructures.Scope
 import io.joern.swiftsrc2cpg.parser.SwiftJsonParser.ParseResult
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
-import io.joern.swiftsrc2cpg.passes.Defines
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode, AstNodeBuilder as X2CpgAstNodeBuilder}
 import io.joern.x2cpg.datastructures.Global
+import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.joern.x2cpg.utils.OffsetUtils
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
