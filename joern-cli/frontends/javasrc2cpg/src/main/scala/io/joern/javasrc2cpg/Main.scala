@@ -4,7 +4,7 @@ import io.joern.javasrc2cpg.Frontend.*
 import io.joern.javasrc2cpg.jpastprinter.JavaParserAstPrinter
 import io.joern.x2cpg.frontendspecific.javasrc2cpg
 import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
-import io.joern.x2cpg.passes.frontend.{TypeRecoveryParserConfig, XTypeRecovery}
+import io.joern.x2cpg.passes.frontend.{TypeRecoveryParserConfig, XTypeRecovery, XTypeRecoveryConfig}
 import scopt.OParser
 
 /** Command line configuration parameters
@@ -104,7 +104,7 @@ private object Frontend {
         .hidden()
         .action((_, c) => c.withEnableTypeRecovery(true))
         .text("enable generic type recovery"),
-      XTypeRecovery.parserOptions,
+      XTypeRecoveryConfig.parserOptionsForParserConfig,
       opt[String]("jdk-path")
         .action((path, c) => c.withJdkPath(path))
         .text("JDK used for resolving builtin Java types. If not set, current classpath will be used"),

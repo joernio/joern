@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg
 
 import io.joern.rubysrc2cpg.Frontend.*
-import io.joern.x2cpg.passes.frontend.{TypeRecoveryParserConfig, XTypeRecovery}
+import io.joern.x2cpg.passes.frontend.{TypeRecoveryParserConfig, XTypeRecovery, XTypeRecoveryConfig}
 import io.joern.x2cpg.typestub.TypeStubConfig
 import io.joern.x2cpg.{DependencyDownloadConfig, X2CpgConfig, X2CpgMain}
 import scopt.OParser
@@ -62,7 +62,7 @@ private object Frontend {
         .action((_, c) => c.withUseDeprecatedFrontend(true))
         .text("uses the original (but deprecated) Ruby frontend (default false)"),
       DependencyDownloadConfig.parserOptions,
-      XTypeRecovery.parserOptions,
+      XTypeRecoveryConfig.parserOptionsForParserConfig,
       TypeStubConfig.parserOptions
     )
   }

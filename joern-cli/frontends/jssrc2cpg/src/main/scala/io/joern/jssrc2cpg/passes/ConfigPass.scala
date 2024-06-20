@@ -3,6 +3,7 @@ package io.joern.jssrc2cpg.passes
 import better.files.File
 import io.joern.jssrc2cpg.Config
 import io.joern.x2cpg.SourceFiles
+import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.joern.x2cpg.utils.{Report, TimeUtils}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.NewConfigFile
