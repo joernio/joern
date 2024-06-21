@@ -3,6 +3,7 @@ package io.joern.jssrc2cpg.passes
 import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.utils.PackageJsonParser
 import io.joern.x2cpg.SourceFiles
+import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.NewDependency
 import io.shiftleft.passes.CpgPass

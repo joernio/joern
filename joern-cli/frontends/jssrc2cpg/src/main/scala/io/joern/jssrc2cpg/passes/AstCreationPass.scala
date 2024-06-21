@@ -6,6 +6,7 @@ import io.joern.jssrc2cpg.parser.BabelJsonParser
 import io.joern.jssrc2cpg.utils.AstGenRunner.AstGenRunnerResult
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Global
+import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.joern.x2cpg.utils.{Report, TimeUtils}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass

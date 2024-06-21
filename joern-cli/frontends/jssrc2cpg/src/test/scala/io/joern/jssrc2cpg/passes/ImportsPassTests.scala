@@ -3,8 +3,10 @@ package io.joern.jssrc2cpg.passes
 import io.joern.jssrc2cpg.JsSrc2Cpg
 import io.joern.jssrc2cpg.testfixtures.JsSrc2CpgFrontend
 import io.joern.x2cpg.X2Cpg
+import io.joern.x2cpg.frontendspecific.jssrc2cpg
+import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, TestCpg}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class ImportsPassTests extends Code2CpgFixture(() => new TestCpgWithoutDataFlow()) {
 
@@ -47,6 +49,6 @@ class TestCpgWithoutDataFlow extends TestCpg with JsSrc2CpgFrontend {
   override val fileSuffix: String = ".js"
   override def applyPasses(): Unit = {
     X2Cpg.applyDefaultOverlays(this)
-    JsSrc2Cpg.postProcessingPasses(this).foreach(_.createAndApply())
+    jssrc2cpg.postProcessingPasses(this, XTypeRecoveryConfig()).foreach(_.createAndApply())
   }
 }

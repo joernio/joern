@@ -1,7 +1,7 @@
 package io.joern.swiftsrc2cpg
 
 import io.joern.swiftsrc2cpg.Frontend.*
-import io.joern.x2cpg.passes.frontend.{TypeRecoveryParserConfig, XTypeRecovery}
+import io.joern.x2cpg.passes.frontend.{TypeRecoveryParserConfig, XTypeRecovery, XTypeRecoveryConfig}
 import io.joern.x2cpg.utils.Environment
 import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
 import scopt.OParser
@@ -24,7 +24,7 @@ object Frontend {
     import builder.*
     OParser.sequence(
       programName("swiftsrc2cpg"),
-      XTypeRecovery.parserOptions,
+      XTypeRecoveryConfig.parserOptionsForParserConfig,
       opt[String]("define")
         .unbounded()
         .text("define a name")

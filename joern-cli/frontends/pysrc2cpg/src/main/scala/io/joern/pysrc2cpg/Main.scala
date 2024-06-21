@@ -2,7 +2,7 @@ package io.joern.pysrc2cpg
 
 import io.joern.pysrc2cpg.Frontend.cmdLineParser
 import io.joern.x2cpg.X2CpgMain
-import io.joern.x2cpg.passes.frontend.XTypeRecovery
+import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
 import scopt.OParser
 
 import java.nio.file.Paths
@@ -33,7 +33,7 @@ private object Frontend {
           "Excludes all files where the relative path from input-dir contains at least one of names specified here."
         )
         .action((value, config) => config.withIgnoreDirNames(value)),
-      XTypeRecovery.parserOptions
+      XTypeRecoveryConfig.parserOptionsForParserConfig
     )
   }
 }

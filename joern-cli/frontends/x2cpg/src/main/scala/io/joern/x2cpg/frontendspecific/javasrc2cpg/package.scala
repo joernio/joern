@@ -10,8 +10,8 @@ package object javasrc2cpg {
     val EnableTypeRecovery = "enable-type-recovery"
   }
 
-  def typeRecoveryPasses(cpg: Cpg, disableDummyTypes: Boolean): List[CpgPassBase] = {
-    new JavaTypeRecoveryPassGenerator(cpg, XTypeRecoveryConfig(enabledDummyTypes = !disableDummyTypes)).generate() :+
+  def typeRecoveryPasses(cpg: Cpg, xtypeRecoveryConfig: XTypeRecoveryConfig): List[CpgPassBase] = {
+    new JavaTypeRecoveryPassGenerator(cpg, xtypeRecoveryConfig).generate() :+
       new JavaTypeHintCallLinker(cpg)
   }
 
