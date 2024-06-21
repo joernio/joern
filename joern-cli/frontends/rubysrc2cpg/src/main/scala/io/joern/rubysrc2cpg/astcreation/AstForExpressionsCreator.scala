@@ -51,7 +51,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case node: SplattingRubyNode        => astForSplattingRubyNode(node)
     case node: AnonymousTypeDeclaration => astForAnonymousTypeDeclaration(node)
     case node: ProcOrLambdaExpr         => astForProcOrLambdaExpr(node)
-    case node: RubyCallWithBlock[_]     => astsForCallWithBlockInExpr(node)
+    case node: RubyCallWithBlock[_]     => astForCallWithBlock(node)
     case node: SelfIdentifier           => astForSelfIdentifier(node)
     case node: BreakStatement           => astForBreakStatement(node)
     case node: StatementList            => astForStatementList(node)
@@ -777,15 +777,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   private def astForProcOrLambdaExpr(node: ProcOrLambdaExpr): Ast = {
     val Seq(_, methodRef) = astForDoBlock(node.block): @unchecked
     methodRef
-  }
-
-  private def astsForCallWithBlockInExpr[C <: RubyCall](node: RubyNode & RubyCallWithBlock[C]): Ast = {
-    val Seq(methodDecl, typeDecl, callWithLambdaArg) = astsForCallWithBlock(node): @unchecked
-
-    Ast.storeInDiffGraph(methodDecl, diffGraph)
-    Ast.storeInDiffGraph(typeDecl, diffGraph)
-
-    callWithLambdaArg
   }
 
   private def astForMethodCallArgument(node: RubyNode): Ast = {

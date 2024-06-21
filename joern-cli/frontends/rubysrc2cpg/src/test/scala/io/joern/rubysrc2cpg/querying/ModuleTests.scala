@@ -12,7 +12,7 @@ class ModuleTests extends RubyCode2CpgFixture {
                      |end
                      |""".stripMargin)
 
-    val List(m) = cpg.typeDecl.name("M").baseTypeDeclTransitive.l
+    val List(m) = cpg.typeDecl.name("M").l
 
     m.fullName shouldBe "Test0.rb:<global>::program.M"
     m.lineNumber shouldBe Some(2)

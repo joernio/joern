@@ -120,14 +120,13 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           .map { tn => if isSingletonConstructor then s"$tn<class>" else tn }
           .getOrElse("<empty>")
       )
+      createMethodTypeBindings(method, typeDeclNode_)
       if isClosure then Ast(typeDeclNode_).withChild(Ast(newModifierNode(ModifierTypes.LAMBDA))) else Ast(typeDeclNode_)
     }
 
     val modifiers = mutable.Buffer(ModifierTypes.VIRTUAL)
     if (isClosure) modifiers.addOne(ModifierTypes.LAMBDA)
     if (isConstructor) modifiers.addOne(ModifierTypes.CONSTRUCTOR)
-
-    createMethodTypeBindings(method, refs)
 
     val prefixMemberAst =
       if isClosure || isSurroundedByProgramScope then Ast() // program scope members are set elsewhere
@@ -216,12 +215,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
   /** Creates the bindings between the method and its types. This is useful for resolving function pointers and imports.
     */
-  protected def createMethodTypeBindings(method: NewMethod, refs: List[Ast]): Unit = {
-    refs.flatMap(_.root).collectFirst { case typeRef: NewTypeDecl =>
-      val bindingNode = newBindingNode("", "", method.fullName)
-      diffGraph.addEdge(typeRef, bindingNode, EdgeTypes.BINDS)
-      diffGraph.addEdge(bindingNode, method, EdgeTypes.REF)
-    }
+  protected def createMethodTypeBindings(method: NewMethod, typeDecl: NewTypeDecl): Unit = {
+    val bindingNode = newBindingNode("", "", method.fullName)
+    diffGraph.addEdge(typeDecl, bindingNode, EdgeTypes.BINDS)
+    diffGraph.addEdge(bindingNode, method, EdgeTypes.REF)
   }
 
   // TODO: remaining cases
@@ -313,7 +310,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   protected def astForAnonymousTypeDeclaration(node: AnonymousTypeDeclaration): Ast = {
 
     // This will link the type decl to the surrounding context via base overlays
-    val Seq(typeRefAst) = astForClassDeclaration(node).take(3)
+    val Seq(typeRefAst) = astForClassDeclaration(node).take(1)
 
     typeRefAst.nodes
       .collectFirst { case typRef: NewTypeRef =>
@@ -355,7 +352,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           fullName = fullName,
           code = code(node),
           signature = None,
-          fileName = relativeFileName,
+          fileName = relativeFileName
         )
         val methodTypeDecl_   = typeDeclNode(node, node.methodName, fullName, relativeFileName, code(node))
         val methodTypeDeclAst = Ast(methodTypeDecl_)
@@ -368,7 +365,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           method.astParentFullName(fn)
         }
 
-        createMethodTypeBindings(method, methodTypeDeclAst :: Nil)
+        createMethodTypeBindings(method, methodTypeDecl_)
 
         val thisParameterAst = Ast(
           newThisParameterNode(
@@ -406,11 +403,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
             newModifierNode(ModifierTypes.VIRTUAL) :: Nil
           )
 
-        _methodAst :: methodTypeDeclAst :: Nil foreach(Ast.storeInDiffGraph(_, diffGraph))
+        _methodAst :: methodTypeDeclAst :: Nil foreach (Ast.storeInDiffGraph(_, diffGraph))
         if (addEdge) {
           Nil
         } else {
-          createMethodRefPointer(method)  :: Nil
+          createMethodRefPointer(method) :: Nil
         }
       case targetNode =>
         logger.warn(

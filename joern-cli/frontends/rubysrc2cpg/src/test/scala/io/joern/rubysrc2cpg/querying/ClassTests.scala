@@ -20,8 +20,8 @@ class ClassTests extends RubyCode2CpgFixture {
     classC.fullName shouldBe "Test0.rb:<global>::program.C"
     classC.lineNumber shouldBe Some(2)
     classC.baseType.l shouldBe List()
-    classC.member.name.l shouldBe List(RubyDefines.Initialize, RubyDefines.TypeDeclBody)
-    classC.method.name.l shouldBe List(RubyDefines.Initialize, RubyDefines.TypeDeclBody)
+    classC.member.name.l shouldBe List(RubyDefines.TypeDeclBody, RubyDefines.Initialize)
+    classC.method.name.l shouldBe List(RubyDefines.TypeDeclBody, RubyDefines.Initialize)
 
     val List(singletonC) = cpg.typeDecl.nameExact("C<class>").l
     singletonC.inheritsFromTypeFullName shouldBe List()
@@ -44,8 +44,8 @@ class ClassTests extends RubyCode2CpgFixture {
     classC.inheritsFromTypeFullName shouldBe List("D")
     classC.fullName shouldBe "Test0.rb:<global>::program.C"
     classC.lineNumber shouldBe Some(2)
-    classC.member.name.l shouldBe List(RubyDefines.Initialize, RubyDefines.TypeDeclBody)
-    classC.method.name.l shouldBe List(RubyDefines.Initialize, RubyDefines.TypeDeclBody)
+    classC.member.name.l shouldBe List(RubyDefines.TypeDeclBody, RubyDefines.Initialize)
+    classC.method.name.l shouldBe List(RubyDefines.TypeDeclBody, RubyDefines.Initialize)
 
     val List(typeD) = classC.baseType.l
     typeD.name shouldBe "D"
@@ -331,7 +331,7 @@ class ClassTests extends RubyCode2CpgFixture {
           anonClass.name shouldBe "<anon-class-0>"
           anonClass.fullName shouldBe "Test0.rb:<global>::program.<anon-class-0>"
           inside(anonClass.method.l) {
-            case defaultConstructor :: hello :: Nil =>
+            case hello :: defaultConstructor :: Nil =>
               defaultConstructor.name shouldBe RubyDefines.Initialize
               defaultConstructor.fullName shouldBe s"Test0.rb:<global>::program.<anon-class-0>:${RubyDefines.Initialize}"
 
@@ -347,7 +347,7 @@ class ClassTests extends RubyCode2CpgFixture {
       inside(cpg.method(":program").assignment.l) {
         case aAssignment :: Nil =>
           aAssignment.target.code shouldBe "a"
-          aAssignment.source.code shouldBe "Class.new"
+          aAssignment.source.code shouldBe "Class.new <anon-class-0> (...)"
         case xs => fail(s"Expected a single assignment, but got [${xs.map(x => x.label -> x.code).mkString(",")}]")
       }
     }
