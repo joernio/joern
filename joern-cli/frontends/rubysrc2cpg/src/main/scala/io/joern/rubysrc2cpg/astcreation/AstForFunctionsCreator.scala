@@ -101,7 +101,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       val baseStmtBlockAst = astForMethodBody(node.body, optionalStatementList)
       transformAsClosureBody(refs, baseStmtBlockAst)
     } else {
-      if (methodName != Defines.Initialize && methodName != Defines.InitializeClass) {
+      if (
+        methodName != Defines.Initialize && methodName != Defines.InitializeClass && methodName != Defines.TypeDeclBody
+      ) {
         astForMethodBody(node.body, optionalStatementList)
       } else {
         astForConstructorMethodBody(node.body, optionalStatementList)
