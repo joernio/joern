@@ -4,7 +4,6 @@ import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
 import io.joern.dataflowengineoss.testfixtures.{SemanticCpgTestFixture, SemanticTestCpg}
 import io.joern.php2cpg.{Config, Php2Cpg}
 import io.joern.x2cpg.frontendspecific.php2cpg
-import io.joern.x2cpg.passes.frontend.{XTypeRecoveryConfig, XTypeStubsParserConfig}
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, LanguageFrontend, DefaultTestCpg}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
@@ -28,7 +27,7 @@ class PhpTestCpg extends DefaultTestCpg with PhpFrontend with SemanticTestCpg {
   }
 
   override protected def applyPostProcessingPasses(): Unit =
-    php2cpg.postProcessingPasses(this, XTypeRecoveryConfig(), XTypeStubsParserConfig()).foreach(_.createAndApply())
+    php2cpg.postProcessingPasses(this).foreach(_.createAndApply())
 
 }
 

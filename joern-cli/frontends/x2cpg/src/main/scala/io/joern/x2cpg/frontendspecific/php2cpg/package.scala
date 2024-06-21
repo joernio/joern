@@ -8,8 +8,8 @@ package object php2cpg {
 
   def postProcessingPasses(
     cpg: Cpg,
-    typeRecoveryConfig: XTypeRecoveryConfig,
-    setKnownTypesConfig: XTypeStubsParserConfig
+    typeRecoveryConfig: XTypeRecoveryConfig = XTypeRecoveryConfig(iterations = 3),
+    setKnownTypesConfig: XTypeStubsParserConfig = XTypeStubsParserConfig()
   ): List[CpgPassBase] = {
     List(
       new ComposerAutoloadPass(cpg),
