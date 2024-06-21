@@ -1048,11 +1048,13 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
 
   private def createBodyMemberCall(name: String, textSpan: TextSpan): MemberCall = {
     MemberCall(
-      MemberAccess(SelfIdentifier()(textSpan.spanStart("self")), "::", name)(textSpan.spanStart(s"self::$name")),
+      MemberAccess(SelfIdentifier()(textSpan.spanStart(Defines.Self)), "::", name)(
+        textSpan.spanStart(s"${Defines.Self}::$name")
+      ),
       "::",
-      "<body>",
+      Defines.TypeDeclBody,
       List.empty
-    )(textSpan.spanStart(s"self::$name::<body>"))
+    )(textSpan.spanStart(s"${Defines.Self}::$name::<body>"))
   }
 
   /** Lowers all MethodDeclaration found in SingletonClassDeclaration to SingletonMethodDeclaration.

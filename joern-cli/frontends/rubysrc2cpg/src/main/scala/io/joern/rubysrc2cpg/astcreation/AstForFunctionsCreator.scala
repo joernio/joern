@@ -102,7 +102,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       transformAsClosureBody(refs, baseStmtBlockAst)
     } else {
       if (methodName == Defines.TypeDeclBody) {
-        astForMethodBody(node.body, optionalStatementList, returnLastExpression = false)
+        val stmtList = node.body.asInstanceOf[StatementList]
+        astForStatementList(StatementList(stmtList.statements ++ optionalStatementList.statements)(stmtList.span))
       } else if (methodName != Defines.Initialize) {
         astForMethodBody(node.body, optionalStatementList)
       } else {
