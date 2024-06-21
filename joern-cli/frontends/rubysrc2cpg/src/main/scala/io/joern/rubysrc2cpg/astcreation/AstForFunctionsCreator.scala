@@ -101,7 +101,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       val baseStmtBlockAst = astForMethodBody(node.body, optionalStatementList)
       transformAsClosureBody(refs, baseStmtBlockAst)
     } else {
-      if (methodName != Defines.Initialize && methodName != Defines.InitializeClass) {
+      if (methodName == Defines.TypeDeclBody) {
+        val stmtList = node.body.asInstanceOf[StatementList]
+        astForStatementList(StatementList(stmtList.statements ++ optionalStatementList.statements)(stmtList.span))
+      } else if (methodName != Defines.Initialize) {
         astForMethodBody(node.body, optionalStatementList)
       } else {
         astForConstructorMethodBody(node.body, optionalStatementList)
@@ -486,22 +489,28 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     )(TextSpan(None, None, None, None, ""))
   }
 
-  private def astForMethodBody(body: RubyNode, optionalStatementList: StatementList): Ast = {
+  private def astForMethodBody(
+    body: RubyNode,
+    optionalStatementList: StatementList,
+    returnLastExpression: Boolean = true
+  ): Ast = {
     if (this.parseLevel == AstParseLevel.SIGNATURES) {
       Ast()
     } else {
       body match
         case stmtList: StatementList =>
-          astForStatementListReturningLastExpression(
+          val combinedStmtList =
             StatementList(optionalStatementList.statements ++ stmtList.statements)(stmtList.span)
-          )
+          if returnLastExpression then astForStatementListReturningLastExpression(combinedStmtList)
+          else astForStatementList(combinedStmtList)
         case rescueExpr: RescueExpression =>
           astForRescueExpression(rescueExpr)
         case _: (StaticLiteral | BinaryExpression | SingleAssignment | SimpleIdentifier | ArrayLiteral | HashLiteral |
               SimpleCall | MemberAccess | MemberCall) =>
-          astForStatementListReturningLastExpression(
+          val combinedStmtList =
             StatementList(optionalStatementList.statements ++ List(body))(body.span)
-          )
+          if returnLastExpression then astForStatementListReturningLastExpression(combinedStmtList)
+          else astForStatementList(combinedStmtList)
         case body =>
           logger.warn(
             s"Non-linear method bodies are not supported yet: ${body.text} (${body.getClass.getSimpleName}) ($relativeFileName), skipping"

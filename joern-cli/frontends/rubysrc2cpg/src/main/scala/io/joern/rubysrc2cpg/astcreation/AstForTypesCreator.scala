@@ -172,7 +172,13 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         .withChildren(fieldSingletonMemberNodes.map(_._2))
         .withChildren(singletonBodyAsts.toSeq)
 
-    prefixAst :: typeDeclAst :: singletonTypeDeclAst :: Nil filterNot (_.root.isEmpty)
+    val bodyMemberCall =
+      node.bodyMemberCall match {
+        case Some(bodyMemberCall) => astForMemberCall(bodyMemberCall)
+        case None                 => Ast()
+      }
+
+    prefixAst :: typeDeclAst :: singletonTypeDeclAst :: bodyMemberCall :: Nil filterNot (_.root.isEmpty)
   }
 
   private def createTypeRefPointer(typeDecl: NewTypeDecl): Ast = {

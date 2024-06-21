@@ -52,11 +52,16 @@ object RubyIntermediateAst {
     def name: RubyNode
     def baseClass: Option[RubyNode]
     def body: RubyNode
+    def bodyMemberCall: Option[MemberCall]
   }
 
-  final case class ModuleDeclaration(name: RubyNode, body: RubyNode, fields: List[RubyNode & RubyFieldIdentifier])(
-    span: TextSpan
-  ) extends RubyNode(span)
+  final case class ModuleDeclaration(
+    name: RubyNode,
+    body: RubyNode,
+    fields: List[RubyNode & RubyFieldIdentifier],
+    bodyMemberCall: Option[MemberCall]
+  )(span: TextSpan)
+      extends RubyNode(span)
       with TypeDeclaration {
     def baseClass: Option[RubyNode] = None
   }
@@ -65,21 +70,30 @@ object RubyIntermediateAst {
     name: RubyNode,
     baseClass: Option[RubyNode],
     body: RubyNode,
-    fields: List[RubyNode & RubyFieldIdentifier]
+    fields: List[RubyNode & RubyFieldIdentifier],
+    bodyMemberCall: Option[MemberCall]
   )(span: TextSpan)
       extends RubyNode(span)
       with TypeDeclaration
 
   sealed trait AnonymousTypeDeclaration extends RubyNode with TypeDeclaration
 
-  final case class AnonymousClassDeclaration(name: RubyNode, baseClass: Option[RubyNode], body: RubyNode)(
-    span: TextSpan
-  ) extends RubyNode(span)
+  final case class AnonymousClassDeclaration(
+    name: RubyNode,
+    baseClass: Option[RubyNode],
+    body: RubyNode,
+    bodyMemberCall: Option[MemberCall] = None
+  )(span: TextSpan)
+      extends RubyNode(span)
       with AnonymousTypeDeclaration
 
-  final case class SingletonClassDeclaration(name: RubyNode, baseClass: Option[RubyNode], body: RubyNode)(
-    span: TextSpan
-  ) extends RubyNode(span)
+  final case class SingletonClassDeclaration(
+    name: RubyNode,
+    baseClass: Option[RubyNode],
+    body: RubyNode,
+    bodyMemberCall: Option[MemberCall] = None
+  )(span: TextSpan)
+      extends RubyNode(span)
       with AnonymousTypeDeclaration
 
   final case class FieldsDeclaration(fieldNames: List[RubyNode])(span: TextSpan)

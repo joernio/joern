@@ -665,11 +665,13 @@ class MethodTests extends RubyCode2CpgFixture {
 
     "be placed directly before each entity's definition" in {
       inside(cpg.method.name(RDefines.Program).filename("t1.rb").block.astChildren.l) {
-        case (a1: Call) :: (_: TypeDecl) :: (_: TypeDecl) :: (a2: Call) :: (_: TypeDecl) :: (_: TypeDecl) :: (a3: Call) :: (_: Method) :: (_: TypeDecl) :: Nil =>
+        case (a1: Call) :: (_: TypeDecl) :: (_: TypeDecl) :: (a2: Call) :: (a3: Call) :: (_: TypeDecl) :: (_: TypeDecl) :: (a4: Call) :: (a5: Call) :: (_: Method) :: (_: TypeDecl) :: Nil =>
           a1.code shouldBe "self.A = module A (...)"
-          a2.code shouldBe "self.B = class B (...)"
-          a3.code shouldBe "self.c = def c (...)"
-        case xs => fail(s"Expected assignments to appear before definitions, instead got [$xs]")
+          a2.code shouldBe "self::A::<body>"
+          a3.code shouldBe "self.B = class B (...)"
+          a4.code shouldBe "self::B::<body>"
+          a5.code shouldBe "self.c = def c (...)"
+        case xs => fail(s"Expected assignments to appear before definitions, instead got [${xs.mkString("\n")}]")
       }
     }
   }
