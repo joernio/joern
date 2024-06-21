@@ -1430,6 +1430,13 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         case result        => fail(s"Expected single foo call but got $result")
       }
     }
+
+    "provide meaningful typeFullName for the target of assignment" in {
+      cpg.assignment.target.isIdentifier.name("a").l match {
+        case List(a) => a.typeFullName shouldBe "foo.<returnValue>"
+        case result  => fail(s"Expected single assignment to a, but got $result")
+      }
+    }
   }
 
   "external non imported call with int variable for argument" should {
@@ -1442,6 +1449,27 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       cpg.call("foo").l match {
         case List(fooCall) => fooCall.methodFullName shouldBe "<unknownFullName>"
         case result        => fail(s"Expected single foo call but got $result")
+      }
+    }
+  }
+
+  "assignment to non imported call with int variable for argument" should {
+    val cpg = code("""
+        |a = 10
+        |b = foo(a)
+        |""".stripMargin)
+
+    "have correct methodFullName for `foo`" in {
+      cpg.call("foo").l match {
+        case List(fooCall) => fooCall.methodFullName shouldBe "<unknownFullName>"
+        case result        => fail(s"Expected single foo call but got $result")
+      }
+    }
+
+    "provide meaningful typeFullName for the target of the assignment" in {
+      cpg.assignment.target.isIdentifier.name("b").l match {
+        case List(b) => b.typeFullName shouldBe "foo.<returnValue>"
+        case result  => fail(s"Expected single assignment to b, but got $result")
       }
     }
   }
