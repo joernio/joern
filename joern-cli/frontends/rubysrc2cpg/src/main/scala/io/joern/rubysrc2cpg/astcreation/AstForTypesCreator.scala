@@ -171,16 +171,12 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         .withChildren(singletonModifiers)
         .withChildren(fieldSingletonMemberNodes.map(_._2))
         .withChildren(singletonBodyAsts.toSeq)
-    val bodyMemberCall = astForMemberCall(
-      MemberCall(
-        MemberAccess(SelfIdentifier()(TextSpan(None, None, None, None, "self")), "::", className)(
-          node.span.spanStart(s"self::$className")
-        ),
-        "::",
-        "<body>",
-        List.empty
-      )(node.span.spanStart(s"self::$className::<body>"))
-    )
+
+    val bodyMemberCall =
+      node.bodyMemberCall match {
+        case Some(bodyMemberCall) => astForMemberCall(bodyMemberCall)
+        case None                 => Ast()
+      }
 
     prefixAst :: typeDeclAst :: singletonTypeDeclAst :: bodyMemberCall :: Nil filterNot (_.root.isEmpty)
   }

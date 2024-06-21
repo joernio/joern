@@ -824,7 +824,11 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
 
   override def visitModuleDefinition(ctx: RubyParser.ModuleDefinitionContext): RubyNode = {
     val (nonFieldStmts, fields) = genInitFieldStmts(ctx.bodyStatement())
-    ModuleDeclaration(visit(ctx.classPath()), nonFieldStmts, fields)(ctx.toTextSpan)
+
+    val moduleName = visit(ctx.classPath())
+    val memberCall = createBodyMemberCall(moduleName.span.text, ctx.toTextSpan)
+
+    ModuleDeclaration(visit(ctx.classPath()), nonFieldStmts, fields, Option(memberCall))(ctx.toTextSpan)
   }
 
   override def visitSingletonClassDefinition(ctx: RubyParser.SingletonClassDefinitionContext): RubyNode = {
@@ -993,8 +997,8 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     */
   private def filterNonAllowedTypeDeclChildren(stmts: StatementList): RubyNode = {
     val (initMethod, nonInitStmts) = stmts.statements.partition {
-      case x: MethodDeclaration if x.methodName == "initialize" => true
-      case _                                                    => false
+      case x: MethodDeclaration if x.methodName == Defines.Initialize => true
+      case _                                                          => false
     }
 
     val (allowedTypeDeclChildren, nonAllowedTypeDeclChildren) = nonInitStmts.partition {
@@ -1029,10 +1033,26 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     val stmts = lowerAliasStatementsToMethods(nonFieldStmts)
 
     val classBody = filterNonAllowedTypeDeclChildren(stmts)
+    val className = visit(ctx.classPath())
 
-    ClassDeclaration(visit(ctx.classPath()), Option(ctx.commandOrPrimaryValueClass()).map(visit), classBody, fields)(
-      ctx.toTextSpan
-    )
+    val memberCall = createBodyMemberCall(className.span.text, ctx.toTextSpan)
+
+    ClassDeclaration(
+      visit(ctx.classPath()),
+      Option(ctx.commandOrPrimaryValueClass()).map(visit),
+      classBody,
+      fields,
+      Option(memberCall)
+    )(ctx.toTextSpan)
+  }
+
+  private def createBodyMemberCall(name: String, textSpan: TextSpan): MemberCall = {
+    MemberCall(
+      MemberAccess(SelfIdentifier()(textSpan.spanStart("self")), "::", name)(textSpan.spanStart(s"self::$name")),
+      "::",
+      "<body>",
+      List.empty
+    )(textSpan.spanStart(s"self::$name::<body>"))
   }
 
   /** Lowers all MethodDeclaration found in SingletonClassDeclaration to SingletonMethodDeclaration.
