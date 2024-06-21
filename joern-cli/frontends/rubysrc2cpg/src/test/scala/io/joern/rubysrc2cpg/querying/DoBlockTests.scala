@@ -44,6 +44,12 @@ class DoBlockTests extends RubyCode2CpgFixture {
       }
     }
 
+    "create a method ref argument with populated type full name, which corresponds to the method type" in {
+      val methodRefArg   = cpg.call("foo").argument(1).head.asInstanceOf[MethodRef]
+      val lambdaTypeDecl = cpg.typeDecl("<lambda>0").head
+      methodRefArg.typeFullName shouldBe lambdaTypeDecl.fullName
+    }
+
     "have no parameters in the closure declaration" in {
       inside(cpg.method("<lambda>0").parameter.indexGt(0).l) {
         case Nil => // pass

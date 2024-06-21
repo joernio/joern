@@ -37,13 +37,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     *   a method declaration with additional refs and types if specified.
     */
   protected def astForMethodDeclaration(node: MethodDeclaration, isClosure: Boolean = false): Seq[Ast] = {
-
-    // Special case constructor methods
-    val isInTypeDecl = scope.surroundingAstLabel.contains(NodeTypes.TYPE_DECL)
-    val isConstructor =
-      (node.methodName == Defines.Initialize || node.methodName == Defines.InitializeClass) && isInTypeDecl
-    val isSingletonConstructor = node.methodName == Defines.InitializeClass && isInTypeDecl
-    val methodName             = if isSingletonConstructor then Defines.Initialize else node.methodName
+    val isInTypeDecl  = scope.surroundingAstLabel.contains(NodeTypes.TYPE_DECL)
+    val isConstructor = (node.methodName == Defines.Initialize) && isInTypeDecl
+    val methodName    = node.methodName
     // TODO: body could be a try
     val fullName = computeMethodFullName(methodName)
     val method = methodNode(
@@ -54,9 +50,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       signature = None,
       fileName = relativeFileName,
       astParentType = scope.surroundingAstLabel,
-      astParentFullName = scope.surroundingScopeFullName.map { tn =>
-        if isSingletonConstructor then s"$tn<class>" else tn
-      }
+      astParentFullName = scope.surroundingScopeFullName
     )
 
     val isSurroundedByProgramScope = scope.isSurroundedByProgramScope
@@ -78,10 +72,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val methodReturn = methodReturnNode(node, Defines.Any)
 
     val refs =
-      List(
-        typeRefNode(node, methodName, fullName),
-        methodRefNode(node, methodName, fullName, methodReturn.typeFullName)
-      ).map(Ast.apply)
+      List(typeRefNode(node, methodName, fullName), methodRefNode(node, methodName, fullName, fullName)).map(Ast.apply)
 
     // Consider which variables are captured from the outer scope
     val stmtBlockAst = if (isClosure) {
@@ -109,17 +100,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     scope.popScope()
 
     val methodTypeDeclAst = {
-      val typeDeclNode_ = typeDeclNode(
-        node,
-        methodName,
-        fullName,
-        relativeFileName,
-        code(node),
-        astParentType = scope.surroundingAstLabel.getOrElse("<empty>"),
-        astParentFullName = scope.surroundingScopeFullName
-          .map { tn => if isSingletonConstructor then s"$tn<class>" else tn }
-          .getOrElse("<empty>")
-      )
+      val typeDeclNode_ = typeDeclNode(node, methodName, fullName, relativeFileName, code(node))
+      scope.surroundingAstLabel.foreach(typeDeclNode_.astParentType(_))
+      scope.surroundingScopeFullName.foreach(typeDeclNode_.astParentFullName(_))
       createMethodTypeBindings(method, typeDeclNode_)
       if isClosure then Ast(typeDeclNode_).withChild(Ast(newModifierNode(ModifierTypes.LAMBDA))) else Ast(typeDeclNode_)
     }
@@ -132,19 +115,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       if isClosure || isSurroundedByProgramScope then Ast() // program scope members are set elsewhere
       else {
         // Singleton constructors that initialize @@ fields should have their members linked under the singleton class
-        val methodMember = scope.surroundingTypeFullName.map {
-          case x if isSingletonConstructor => s"$x<class>"
-          case x                           => x
-        } match {
+        val methodMember = scope.surroundingTypeFullName match {
           case Some(astParentTfn) => memberForMethod(method, Option(NodeTypes.TYPE_DECL), Option(astParentTfn))
           case None               => memberForMethod(method, scope.surroundingAstLabel, scope.surroundingScopeFullName)
         }
-        if (isSingletonConstructor) {
-          diffGraph.addNode(methodMember)
-          Ast()
-        } else {
-          Ast(memberForMethod(method, scope.surroundingAstLabel, scope.surroundingScopeFullName))
-        }
+        Ast(memberForMethod(method, scope.surroundingAstLabel, scope.surroundingScopeFullName))
       }
     // For closures, we also want the method/type refs for upstream use
     val methodAst_ = {
@@ -155,13 +130,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         methodReturn,
         modifiers.map(newModifierNode).toSeq
       )
-      // AstLinker will link the singleton as the parent
-      if isSingletonConstructor then {
-        Ast.storeInDiffGraph(mAst, diffGraph)
-        Ast()
-      } else {
-        mAst
-      }
+      mAst
     }
 
     // Each of these ASTs are linked via AstLinker as per the astParent* properties
