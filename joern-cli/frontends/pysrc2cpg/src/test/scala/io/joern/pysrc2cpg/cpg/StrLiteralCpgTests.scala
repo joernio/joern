@@ -1,6 +1,7 @@
 package io.joern.pysrc2cpg.cpg
 
-import io.joern.pysrc2cpg.{Constants, Py2CpgTestContext}
+import io.joern.pysrc2cpg.Py2CpgTestContext
+import io.joern.x2cpg.frontendspecific.pysrc2cpg.Constants
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers

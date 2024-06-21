@@ -3,8 +3,9 @@ package io.joern.swiftsrc2cpg.testfixtures
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
-import io.joern.swiftsrc2cpg.SwiftSrc2Cpg
 import io.joern.x2cpg.X2Cpg
+import io.joern.x2cpg.frontendspecific.swiftsrc2cpg
+import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, TestCpg}
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
@@ -16,7 +17,7 @@ class DataFlowTestCpg extends TestCpg with SwiftSrc2CpgFrontend {
     val context = new LayerCreatorContext(this)
     val options = new OssDataFlowOptions()
     new OssDataFlow(options).run(context)
-    SwiftSrc2Cpg.postProcessingPasses(this).foreach(_.createAndApply())
+    swiftsrc2cpg.postProcessingPasses(this, XTypeRecoveryConfig()).foreach(_.createAndApply())
   }
 
 }

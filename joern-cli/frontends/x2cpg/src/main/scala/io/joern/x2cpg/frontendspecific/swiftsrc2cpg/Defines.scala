@@ -1,4 +1,4 @@
-package io.joern.swiftsrc2cpg.passes
+package io.joern.x2cpg.frontendspecific.swiftsrc2cpg
 
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal

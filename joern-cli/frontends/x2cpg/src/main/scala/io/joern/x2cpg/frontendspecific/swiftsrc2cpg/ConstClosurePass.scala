@@ -1,10 +1,9 @@
-package io.joern.swiftsrc2cpg.passes
+package io.joern.x2cpg.frontendspecific.swiftsrc2cpg
 
-import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.PropertyNames
+import io.shiftleft.codepropertygraph.generated.{Cpg, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Method, MethodRef}
 import io.shiftleft.passes.CpgPass
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 /** A pass that identifies assignments of closures to constants and updates `METHOD` nodes accordingly.
   */

@@ -1,4 +1,4 @@
-package io.joern.pysrc2cpg
+package io.joern.x2cpg.frontendspecific.pysrc2cpg
 
 import io.joern.x2cpg.passes.frontend.XTypeHintCallLinker
 import io.joern.x2cpg.passes.frontend.XTypeRecovery.isDummyType

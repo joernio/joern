@@ -1,9 +1,9 @@
 package io.joern.swiftsrc2cpg.astcreation
 
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
-import io.joern.swiftsrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
+import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 
 import scala.annotation.unused
 

@@ -1,22 +1,20 @@
-package io.joern.php2cpg.passes
+package io.joern.x2cpg.frontendspecific.php2cpg
 
 import better.files.File
 import io.joern.x2cpg.X2CpgConfig
-import io.joern.x2cpg.passes.frontend.{XTypeStubsParserConfig, TypeStubsParserConfig}
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.joern.x2cpg.passes.frontend.{TypeStubsParserConfig, XTypeStubsParserConfig}
+import io.shiftleft.codepropertygraph.generated.{Cpg, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.passes.ForkJoinParallelCpgPass
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.PropertyNames
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate
 import scopt.OParser
 
-import scala.io.Source
-import java.io.{File => JFile}
+import java.io.File as JFile
 import java.nio.file.Paths
+import scala.io.Source
 
 // Corresponds to a parsed row in the known functions file
 case class KnownFunction(
@@ -41,7 +39,7 @@ class PhpTypeStubsParserPass(cpg: Cpg, config: XTypeStubsParserConfig = XTypeStu
     val typeStubsFile = config.typeStubsFilePath
     val source = typeStubsFile match {
       case Some(file) => Source.fromFile(file)
-      case _          => Source.fromResource("known_function_signatures.txt")
+      case _          => Source.fromResource("php_known_function_signatures.txt")
     }
     val contents = source.getLines().filterNot(_.startsWith("//"))
     val arr      = contents.flatMap(line => createKnownFunctionFromLine(line)).toArray

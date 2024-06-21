@@ -5,10 +5,7 @@ enablePlugins(JavaAppPackaging)
 dependsOn(
   Projects.semanticcpg,
   Projects.macros,
-  Projects.php2cpg,
-  Projects.pysrc2cpg,
   Projects.rubysrc2cpg,
-  Projects.swiftsrc2cpg,
   Projects.x2cpg % "compile->compile;test->test"
 )
 

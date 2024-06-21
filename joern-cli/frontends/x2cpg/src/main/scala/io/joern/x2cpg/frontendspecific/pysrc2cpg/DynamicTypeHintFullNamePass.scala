@@ -1,11 +1,10 @@
-package io.joern.pysrc2cpg
+package io.joern.x2cpg.frontendspecific.pysrc2cpg
 
 import io.joern.x2cpg.passes.frontend.ImportStringHandling
-import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.PropertyNames
+import io.shiftleft.codepropertygraph.generated.{Cpg, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, MethodParameterIn, MethodReturn, StoredNode}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import overflowdb.BatchedUpdate
 
 import java.io.File
