@@ -62,11 +62,11 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       fullName = classFullName,
       filename = relativeFileName,
       code = code(node),
-      astParentType = scope.surroundingAstLabel.getOrElse(""),
-      astParentFullName = scope.surroundingScopeFullName.getOrElse(""),
       inherits = inheritsFrom,
       alias = None
     )
+    scope.surroundingAstLabel.foreach(typeDecl.astParentType(_))
+    scope.surroundingScopeFullName.foreach(typeDecl.astParentFullName(_))
     /*
       In Ruby, there are semantic differences between the ordinary class and singleton class (think "meta" class in
       Python). Similar to how Java allows both static and dynamic methods/fields/etc. within the same type declaration,
@@ -156,8 +156,10 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         .name(className)
         .code(className)
         .dynamicTypeHintFullName(Seq(s"$classFullName<class>"))
-        .astParentType(NodeTypes.TYPE_DECL)
-      scope.surroundingScopeFullName.map(x => s"$x<class>").foreach(typeDeclMember.astParentFullName(_))
+      scope.surroundingScopeFullName.map(x => s"$x<class>").foreach { tfn =>
+        typeDeclMember.astParentFullName(tfn)
+        typeDeclMember.astParentType(NodeTypes.TYPE_DECL)
+      }
       diffGraph.addNode(typeDeclMember)
     }
 
@@ -171,14 +173,14 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         .withChildren(singletonModifiers)
         .withChildren(fieldSingletonMemberNodes.map(_._2))
         .withChildren(singletonBodyAsts.toSeq)
-
-    val bodyMemberCall =
+    val bodyMemberCallAst =
       node.bodyMemberCall match {
         case Some(bodyMemberCall) => astForMemberCall(bodyMemberCall)
         case None                 => Ast()
       }
 
-    prefixAst :: typeDeclAst :: singletonTypeDeclAst :: bodyMemberCall :: Nil filterNot (_.root.isEmpty)
+    (typeDeclAst :: singletonTypeDeclAst :: Nil).foreach(Ast.storeInDiffGraph(_, diffGraph))
+    prefixAst :: bodyMemberCallAst :: Nil
   }
 
   private def createTypeRefPointer(typeDecl: NewTypeDecl): Ast = {

@@ -195,8 +195,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
    * ```
    */
   protected def astsForCallWithBlock[C <: RubyCall](node: RubyNode & RubyCallWithBlock[C]): Seq[Ast] = {
-    val Seq(methodDecl, typeDecl, _, methodRef) = astForDoBlock(node.block): @unchecked
-    val methodRefDummyNode                      = methodRef.root.map(DummyNode(_)(node.span)).toList
+    val Seq(_, methodRefAst) = astForDoBlock(node.block): @unchecked
+    val methodRefDummyNode                      = methodRefAst.root.map(DummyNode(_)(node.span)).toList
 
     // Create call with argument referencing the MethodRef
     val callWithLambdaArg = node.withoutBlock match {
@@ -207,7 +207,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         Ast()
     }
 
-    methodDecl :: typeDecl :: callWithLambdaArg :: Nil
+    callWithLambdaArg :: Nil
   }
 
   protected def astForDoBlock(block: Block & RubyNode): Seq[Ast] = {
