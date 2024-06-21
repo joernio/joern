@@ -55,10 +55,6 @@ object RubyIntermediateAst {
     def bodyMemberCall: Option[MemberCall]
   }
 
-  sealed trait SpecialBodyCall {
-    def bodyMemberCall: RubyNode
-  }
-
   final case class ModuleDeclaration(
     name: RubyNode,
     body: RubyNode,
