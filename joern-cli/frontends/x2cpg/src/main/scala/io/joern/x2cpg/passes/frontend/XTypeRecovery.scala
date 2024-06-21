@@ -471,7 +471,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       visitIdentifierAssignedToConstructor(i, c)
     } else if (symbolTable.contains(c)) {
       visitIdentifierAssignedToCallRetVal(i, c)
-    } else if (c.argument.headOption.exists(symbolTable.contains)) {
+    } else if (c.argument.argumentIndex(0).headOption.exists(symbolTable.contains)) {
       setCallMethodFullNameFromBase(c)
       // Repeat this method now that the call has a type
       visitIdentifierAssignedToCall(i, c)
