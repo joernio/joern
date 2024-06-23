@@ -103,7 +103,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
       case "<operator>.dictLiteral"  => associateTypes(i, Set(s"${Constants.builtinPrefix}dict"))
       case "<operator>.setLiteral"   => associateTypes(i, Set(s"${Constants.builtinPrefix}set"))
       case Operators.conditional     => associateTypes(i, Set(s"${Constants.builtinPrefix}bool"))
-      case Operators.indexAccess     =>
+      case Operators.indexAccess =>
         c.argument.argumentIndex(1).isCall.foreach(setCallMethodFullNameFromBase)
         visitIdentifierAssignedToIndexAccess(i, c)
       case _ => super.visitIdentifierAssignedToOperator(i, c, operation)
