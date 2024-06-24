@@ -23,7 +23,7 @@ trait InitialMainSrcProcessor(implicit withSchemaValidation: ValidationMode) { t
       identifyAndRecordPackagesWithDifferentName()
       findAndProcess(parserResult.json)
       // NOTE: For dependencies we are just caching the global variables Types.
-      processPackageLevelGolbalVaraiblesAndConstants(parserResult.json)
+      processPackageLevelGlobalVariablesAndConstants(parserResult.json)
     } catch {
       case ex: Exception =>
         logger.warn(s"Error: While processing - ${parserResult.fullPath}", ex)

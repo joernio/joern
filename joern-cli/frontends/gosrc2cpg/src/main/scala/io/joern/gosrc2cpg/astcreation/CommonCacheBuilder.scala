@@ -16,7 +16,7 @@ trait CommonCacheBuilder(implicit withSchemaValidation: ValidationMode) { this: 
       goGlobal.recordAliasToNamespaceMapping(declaredPackageName, fullyQualifiedPackage)
   }
 
-  protected def processPackageLevelGolbalVaraiblesAndConstants(json: Value): Unit = {
+  protected def processPackageLevelGlobalVariablesAndConstants(json: Value): Unit = {
     json(ParserKeys.Decls).arrOpt
       .getOrElse(List())
       .map(createParserNodeInfo)

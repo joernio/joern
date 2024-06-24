@@ -31,7 +31,7 @@ class GoGlobal {
     */
   val lambdaSignatureToLambdaTypeMap: ConcurrentHashMap[String, java.util.Set[LambdaTypeInfo]] = new ConcurrentHashMap()
 
-  val pkgLevelVarAndConstantAstMap: ConcurrentHashMap[String, Set[(Ast, String)]] = new ConcurrentHashMap()
+  val pkgLevelVarAndConstantAstMap: ConcurrentHashMap[String, Set[PackageMemberAst]] = new ConcurrentHashMap()
 
   val nameSpaceMetaDataMap: ConcurrentHashMap[String, NameSpaceMetaData] = new ConcurrentHashMap()
 
@@ -102,12 +102,11 @@ class GoGlobal {
     }
   }
 
-  def recordPkgLevelVarAndConstantAst(pkg: String, ast: Ast, filePath: String): Unit = synchronized {
+  def recordPkgLevelVarAndConstantAst(pkg: String, memberAst: PackageMemberAst): Unit = synchronized {
     Option(pkgLevelVarAndConstantAstMap.get(pkg)) match {
       case Some(existingList) =>
-        val t = (ast, filePath)
-        pkgLevelVarAndConstantAstMap.put(pkg, existingList + t)
-      case None => pkgLevelVarAndConstantAstMap.put(pkg, Set((ast, filePath)))
+        pkgLevelVarAndConstantAstMap.put(pkg, existingList + memberAst)
+      case None => pkgLevelVarAndConstantAstMap.put(pkg, Set(memberAst))
     }
   }
 
@@ -182,3 +181,5 @@ case class LambdaTypeInfo(lambdaStructTypeFullName: String, returnTypeFullname: 
     }
   }
 }
+
+case class PackageMemberAst(ast: Ast, filePath: String)

@@ -4,14 +4,14 @@ import io.joern.gosrc2cpg.parser.ParserKeys
 import io.joern.x2cpg.ValidationMode
 import ujson.{Arr, Obj, Value}
 
-trait DepdencySrcProcessor(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
+trait DependencySrcProcessor(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   def buildCacheFromDepSrc(): Unit = {
     try {
       identifyAndRecordPackagesWithDifferentName()
       findAndProcess(parserResult.json)
       // NOTE: For dependencies we are just caching the global variables Types.
-      processPackageLevelGolbalVaraiblesAndConstants(parserResult.json)
+      processPackageLevelGlobalVariablesAndConstants(parserResult.json)
     } catch {
       case ex: Exception =>
         logger.warn(s"Error: While processing dependency source- ${parserResult.fullPath}", ex)
