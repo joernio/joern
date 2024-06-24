@@ -8,7 +8,7 @@ import io.joern.x2cpg.passes.base.MethodStubCreator
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewTypeDecl}
 import io.shiftleft.codepropertygraph.generated.{Cpg, DispatchTypes, NodeTypes}
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.LoggerFactory
 
@@ -20,7 +20,7 @@ import scala.util.{Failure, Success}
   * @param dependencyDir
   *   the directory holding the downloaded dependencies.
   */
-class DependencySymbolsPass(cpg: Cpg, dependencyDir: File) extends ConcurrentWriterCpgPass[ClassParserClass](cpg) {
+class DependencySymbolsPass(cpg: Cpg, dependencyDir: File) extends ForkJoinParallelCpgPass[ClassParserClass](cpg) {
 
   private val logger                          = LoggerFactory.getLogger(this.getClass)
   implicit val validationMode: ValidationMode = ValidationMode.Disabled

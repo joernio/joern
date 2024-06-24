@@ -4,12 +4,12 @@ import ghidra.program.flatapi.FlatProgramAPI
 import ghidra.program.util.DefinedDataIterator
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 
 import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
 
-class LiteralPass(cpg: Cpg, flatProgramAPI: FlatProgramAPI) extends ConcurrentWriterCpgPass[String](cpg) {
+class LiteralPass(cpg: Cpg, flatProgramAPI: FlatProgramAPI) extends ForkJoinParallelCpgPass[String](cpg) {
 
   override def generateParts(): Array[String] = {
     val address2Literals: Map[Long, String] = DefinedDataIterator

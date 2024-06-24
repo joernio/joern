@@ -2,14 +2,14 @@ package io.joern.php2cpg.passes
 
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{ClosureBinding, Method, MethodRef}
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode
 import io.shiftleft.codepropertygraph.generated.nodes.Local
 
-class ClosureRefPass(cpg: Cpg) extends ConcurrentWriterCpgPass[ClosureBinding](cpg) {
+class ClosureRefPass(cpg: Cpg) extends ForkJoinParallelCpgPass[ClosureBinding](cpg) {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   override def generateParts(): Array[ClosureBinding] = cpg.all.collectAll[ClosureBinding].toArray

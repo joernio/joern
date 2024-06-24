@@ -5,7 +5,7 @@ import io.joern.jimple2cpg.astcreation.AstCreator
 import io.joern.jimple2cpg.util.ProgramHandlingUtil.ClassFile
 import io.joern.x2cpg.datastructures.Global
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.slf4j.LoggerFactory
 import better.files.{DefaultCharset, File}
 import io.shiftleft.utils.IOUtils
@@ -21,7 +21,7 @@ import scala.util.Try
   *   The CPG to add to
   */
 class AstCreationPass(classFiles: List[ClassFile], cpg: Cpg, config: Config)
-    extends ConcurrentWriterCpgPass[ClassFile](cpg) {
+    extends ForkJoinParallelCpgPass[ClassFile](cpg) {
 
   val global: Global = new Global()
   private val logger = LoggerFactory.getLogger(classOf[AstCreationPass])

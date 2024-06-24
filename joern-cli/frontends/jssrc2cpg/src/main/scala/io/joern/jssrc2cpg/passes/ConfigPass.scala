@@ -7,11 +7,11 @@ import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.joern.x2cpg.utils.{Report, TimeUtils}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.NewConfigFile
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.utils.IOUtils
 import org.slf4j.{Logger, LoggerFactory}
 
-class ConfigPass(cpg: Cpg, config: Config, report: Report = new Report()) extends ConcurrentWriterCpgPass[File](cpg) {
+class ConfigPass(cpg: Cpg, config: Config, report: Report = new Report()) extends ForkJoinParallelCpgPass[File](cpg) {
 
   private val logger: Logger = LoggerFactory.getLogger(getClass)
 

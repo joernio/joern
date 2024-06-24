@@ -5,12 +5,12 @@ import io.joern.gosrc2cpg.astcreation.AstForPackageConstructorCreator
 import io.joern.gosrc2cpg.datastructures.{GoGlobal, PackageMemberAst}
 import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 
 import scala.jdk.CollectionConverters.*
 
 class PackageCtorCreationPass(cpg: Cpg, config: Config, goGlobal: GoGlobal)
-    extends ConcurrentWriterCpgPass[(String, Set[PackageMemberAst])](cpg) {
+    extends ForkJoinParallelCpgPass[(String, Set[PackageMemberAst])](cpg) {
   override def generateParts(): Array[(String, Set[PackageMemberAst])] = {
     val parts = goGlobal.pkgLevelVarAndConstantAstMap
       .keys()

@@ -3,11 +3,11 @@ package io.joern.kotlin2cpg.passes
 import io.joern.kotlin2cpg.FileContentAtPath
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.NewConfigFile
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.slf4j.LoggerFactory
 
 class ConfigPass(fileContentsAtPath: Iterable[FileContentAtPath], cpg: Cpg)
-    extends ConcurrentWriterCpgPass[FileContentAtPath](cpg) {
+    extends ForkJoinParallelCpgPass[FileContentAtPath](cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
