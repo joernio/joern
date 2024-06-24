@@ -3,10 +3,29 @@ package io.joern.c2cpg.astcreation
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewIdentifier, NewMethodRef}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.joern.x2cpg.{Ast, ValidationMode}
+import io.joern.x2cpg.Defines as X2CpgDefines
+import org.eclipse.cdt.core.dom.ast
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.cpp.*
 import org.eclipse.cdt.core.dom.ast.gnu.IGNUASTCompoundStatementExpression
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTQualifiedName
+import org.eclipse.cdt.core.model.IMethod
+import org.eclipse.cdt.internal.core.dom.parser.c.{
+  CASTFieldReference,
+  CASTFunctionCallExpression,
+  CASTIdExpression,
+  CBasicType,
+  CFunctionType,
+  CPointerType
+}
+import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.{EvalBinding, EvalFunctionCall}
+import org.eclipse.cdt.internal.core.dom.parser.cpp.{
+  CPPASTIdExpression,
+  CPPASTQualifiedName,
+  CPPClosureType,
+  CPPField,
+  CPPFunction,
+  CPPFunctionType
+}
 
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -63,66 +82,265 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     callAst(callNode_, childAsts.toIndexedSeq)
   }
 
-  private def astForCallExpression(call: IASTFunctionCallExpression): Ast = {
-    val rec = call.getFunctionNameExpression match {
-      case unaryExpression: IASTUnaryExpression if unaryExpression.getOperand.isInstanceOf[IASTBinaryExpression] =>
-        astForBinaryExpression(unaryExpression.getOperand.asInstanceOf[IASTBinaryExpression])
-      case unaryExpression: IASTUnaryExpression if unaryExpression.getOperand.isInstanceOf[IASTFieldReference] =>
-        astForFieldReference(unaryExpression.getOperand.asInstanceOf[IASTFieldReference])
-      case unaryExpression: IASTUnaryExpression
-          if unaryExpression.getOperand.isInstanceOf[IASTArraySubscriptExpression] =>
-        astForArrayIndexExpression(unaryExpression.getOperand.asInstanceOf[IASTArraySubscriptExpression])
-      case unaryExpression: IASTUnaryExpression if unaryExpression.getOperand.isInstanceOf[IASTConditionalExpression] =>
-        astForUnaryExpression(unaryExpression)
-      case unaryExpression: IASTUnaryExpression if unaryExpression.getOperand.isInstanceOf[IASTUnaryExpression] =>
-        astForUnaryExpression(unaryExpression.getOperand.asInstanceOf[IASTUnaryExpression])
-      case lambdaExpression: ICPPASTLambdaExpression =>
-        astForMethodRefForLambda(lambdaExpression)
-      case other => astForExpression(other)
-    }
+  private def astForCppCallExpression(call: ICPPASTFunctionCallExpression): Ast = {
+    val functionNameExpr = call.getFunctionNameExpression
+    val typ              = functionNameExpr.getExpressionType
+    typ match {
+      case pointerType: IPointerType =>
+        createPointerCallAst(call, cleanType(ASTTypeUtil.getType(call.getExpressionType)))
+      case functionType: ICPPFunctionType =>
+        functionNameExpr match {
+          case idExpr: CPPASTIdExpression =>
+            val function = idExpr.getName.getBinding.asInstanceOf[ICPPFunction]
+            val name     = idExpr.getName.getLastName.toString
+            val signature =
+              if (function.isExternC) {
+                ""
+              } else {
+                functionTypeToSignature(functionType)
+              }
 
-    val (dd, name) = call.getFunctionNameExpression match {
-      case _: ICPPASTLambdaExpression =>
-        (DispatchTypes.STATIC_DISPATCH, rec.root.get.asInstanceOf[NewMethodRef].methodFullName)
-      case _ if rec.root.exists(_.isInstanceOf[NewIdentifier]) =>
-        (DispatchTypes.STATIC_DISPATCH, rec.root.get.asInstanceOf[NewIdentifier].name)
-      case _
-          if rec.root.exists(_.isInstanceOf[NewCall]) && call.getFunctionNameExpression
-            .isInstanceOf[IASTFieldReference] =>
-        (
+            val fullName =
+              if (function.isExternC) {
+                name
+              } else {
+                val fullNameNoSig = function.getQualifiedName.mkString(".")
+                s"$fullNameNoSig:$signature"
+              }
+
+            val dispatchType = DispatchTypes.STATIC_DISPATCH
+
+            val callCpgNode = callNode(
+              call,
+              code(call),
+              name,
+              fullName,
+              dispatchType,
+              Some(signature),
+              Some(cleanType(ASTTypeUtil.getType(call.getExpressionType)))
+            )
+            val args = call.getArguments.toList.map(a => astForNode(a))
+
+            createCallAst(callCpgNode, args)
+          case fieldRefExpr: ICPPASTFieldReference =>
+            val instanceAst = astForExpression(fieldRefExpr.getFieldOwner)
+            val args        = call.getArguments.toList.map(a => astForNode(a))
+
+            // TODO This wont do if the name is a reference.
+            val name      = fieldRefExpr.getFieldName.toString
+            val signature = functionTypeToSignature(functionType)
+
+            val classFullName = cleanType(ASTTypeUtil.getType(fieldRefExpr.getFieldOwnerType))
+            val fullName      = s"$classFullName.$name:$signature"
+
+            fieldRefExpr.getFieldName.resolveBinding()
+            val method = fieldRefExpr.getFieldName.getBinding().asInstanceOf[ICPPMethod]
+            val (dispatchType, receiver) =
+              if (method.isVirtual || method.isPureVirtual) {
+                (DispatchTypes.DYNAMIC_DISPATCH, Some(instanceAst))
+              } else {
+                (DispatchTypes.STATIC_DISPATCH, None)
+              }
+            val callCpgNode = callNode(
+              call,
+              code(call),
+              name,
+              fullName,
+              dispatchType,
+              Some(signature),
+              Some(cleanType(ASTTypeUtil.getType(call.getExpressionType)))
+            )
+
+            createCallAst(callCpgNode, args, base = Some(instanceAst), receiver)
+        }
+      case classType: ICPPClassType =>
+        val evaluation   = call.getEvaluation.asInstanceOf[EvalFunctionCall]
+        val functionType = evaluation.getOverload.getType
+        val signature    = functionTypeToSignature(functionType)
+        val name         = "<operator>()"
+
+        classType match {
+          case closureType: CPPClosureType =>
+            val fullName     = s"$name:$signature"
+            val dispatchType = DispatchTypes.DYNAMIC_DISPATCH
+
+            val callCpgNode = callNode(
+              call,
+              code(call),
+              name,
+              fullName,
+              dispatchType,
+              Some(signature),
+              Some(cleanType(ASTTypeUtil.getType(call.getExpressionType)))
+            )
+
+            val receiverAst = astForExpression(functionNameExpr)
+            val args        = call.getArguments.toList.map(a => astForNode(a))
+
+            createCallAst(callCpgNode, args, receiver = Some(receiverAst))
+          case _ =>
+            val classFullName = cleanType(ASTTypeUtil.getType(classType))
+            val fullName      = s"$classFullName.$name:$signature"
+
+            val method = evaluation.getOverload.asInstanceOf[ICPPMethod]
+            val dispatchType =
+              if (method.isVirtual || method.isPureVirtual) {
+                DispatchTypes.DYNAMIC_DISPATCH
+              } else {
+                DispatchTypes.STATIC_DISPATCH
+              }
+
+            val callCpgNode = callNode(
+              call,
+              code(call),
+              name,
+              fullName,
+              dispatchType,
+              Some(signature),
+              Some(cleanType(ASTTypeUtil.getType(call.getExpressionType)))
+            )
+
+            val instanceAst = astForExpression(functionNameExpr)
+            val args        = call.getArguments.toList.map(a => astForNode(a))
+
+            createCallAst(callCpgNode, args, base = Some(instanceAst), receiver = Some(instanceAst))
+        }
+      case _: IProblemType =>
+        astForCppCallExpressionUntyped(call)
+      case _: IProblemBinding =>
+        astForCppCallExpressionUntyped(call)
+    }
+  }
+
+  private def astForCppCallExpressionUntyped(call: ICPPASTFunctionCallExpression): Ast = {
+    val functionNameExpr = call.getFunctionNameExpression
+
+    functionNameExpr match {
+      case fieldRefExpr: ICPPASTFieldReference =>
+        val instanceAst = astForExpression(fieldRefExpr.getFieldOwner)
+        val args        = call.getArguments.toList.map(a => astForNode(a))
+
+        val name      = fieldRefExpr.getFieldName.toString
+        val signature = X2CpgDefines.UnresolvedSignature
+        val fullName  = s"${X2CpgDefines.UnresolvedNamespace}.$name:$signature(${args.size})"
+
+        val callCpgNode = callNode(
+          call,
+          code(call),
+          name,
+          fullName,
           DispatchTypes.STATIC_DISPATCH,
-          code(call.getFunctionNameExpression.asInstanceOf[IASTFieldReference].getFieldName)
+          Some(signature),
+          Some(X2CpgDefines.Any)
         )
-      case _ if rec.root.exists(_.isInstanceOf[NewCall]) =>
-        (DispatchTypes.STATIC_DISPATCH, rec.root.get.asInstanceOf[NewCall].code)
-      case reference: IASTIdExpression =>
-        (DispatchTypes.STATIC_DISPATCH, code(reference))
-      case _ =>
-        (DispatchTypes.STATIC_DISPATCH, "")
-    }
 
-    val shortName = fixQualifiedName(name)
-    val fullName = typeFor(call.getFunctionNameExpression) match {
-      case t if t == shortName || t.endsWith(s".$shortName") => dereferenceTypeFullName(t)
-      case t if t != Defines.anyTypeName                     => s"${dereferenceTypeFullName(t)}.$shortName"
-      case _                                                 => shortName
+        createCallAst(callCpgNode, args, base = Some(instanceAst), receiver = Some(instanceAst))
+      case idExpr: CPPASTIdExpression =>
+        val args = call.getArguments.toList.map(a => astForNode(a))
+
+        val name      = idExpr.getName.getLastName.toString
+        val signature = X2CpgDefines.UnresolvedSignature
+        val fullName  = s"${X2CpgDefines.UnresolvedNamespace}.$name:$signature(${args.size})"
+
+        val callCpgNode = callNode(
+          call,
+          code(call),
+          name,
+          fullName,
+          DispatchTypes.STATIC_DISPATCH,
+          Some(signature),
+          Some(X2CpgDefines.Any)
+        )
+
+        createCallAst(callCpgNode, args)
+      case other =>
+        // This could either be a pointer or an operator() call we dont know at this point
+        // but since it is CPP we opt for the later.
+        val args = call.getArguments.toList.map(a => astForNode(a))
+
+        val name      = "<operator>()"
+        val signature = X2CpgDefines.UnresolvedSignature
+        val fullName  = s"${X2CpgDefines.UnresolvedNamespace}.$name:$signature(${args.size})"
+
+        val callCpgNode = callNode(
+          call,
+          code(call),
+          name,
+          fullName,
+          DispatchTypes.STATIC_DISPATCH,
+          Some(signature),
+          Some(X2CpgDefines.Any)
+        )
+
+        val instanceAst = astForExpression(functionNameExpr)
+        createCallAst(callCpgNode, args, base = Some(instanceAst), receiver = Some(instanceAst))
     }
-    val cpgCall = callNode(call, code(call), shortName, fullName, dd)
-    val args    = call.getArguments.toList.map(a => astForNode(a))
-    rec.root match {
-      // Optimization: do not include the receiver if the receiver is just the function name,
-      // e.g., for `f(x)`, don't include an `f` identifier node as a first child. Since we
-      // have so many call sites in CPGs, this drastically reduces the number of nodes.
-      // Moreover, the data flow tracker does not need to track `f`, which would not make
-      // much sense anyway.
-      case Some(r: NewIdentifier) if r.name == shortName =>
-        callAst(cpgCall, args)
-      case Some(r: NewMethodRef) if r.code == shortName =>
-        callAst(cpgCall, args)
-      case Some(_) =>
-        callAst(cpgCall, args, Option(rec))
-      case None =>
-        callAst(cpgCall, args)
+  }
+
+  private def astForCCallExpression(call: CASTFunctionCallExpression): Ast = {
+    val functionNameExpr = call.getFunctionNameExpression
+    val typ              = functionNameExpr.getExpressionType
+    typ match {
+      case pointerType: CPointerType =>
+        createPointerCallAst(call, cleanType(ASTTypeUtil.getType(call.getExpressionType)))
+      case functionType: CFunctionType =>
+        functionNameExpr match {
+          case idExpr: CASTIdExpression =>
+            createCFunctionCallAst(call, idExpr, cleanType(ASTTypeUtil.getType(call.getExpressionType)))
+          case _ =>
+            createPointerCallAst(call, cleanType(ASTTypeUtil.getType(call.getExpressionType)))
+        }
+      case _ =>
+        astForCCallExpressionUntyped(call)
+    }
+  }
+
+  private def createCFunctionCallAst(
+    call: CASTFunctionCallExpression,
+    idExpr: CASTIdExpression,
+    callTypeFullName: String
+  ): Ast = {
+    val name      = idExpr.getName.getLastName.toString
+    val signature = ""
+
+    val dispatchType = DispatchTypes.STATIC_DISPATCH
+
+    val callCpgNode = callNode(call, code(call), name, name, dispatchType, Some(signature), Some(callTypeFullName))
+    val args        = call.getArguments.toList.map(a => astForNode(a))
+
+    createCallAst(callCpgNode, args)
+  }
+
+  private def createPointerCallAst(call: IASTFunctionCallExpression, callTypeFullName: String): Ast = {
+    val functionNameExpr = call.getFunctionNameExpression
+    val name             = Defines.operatorPointerCall
+    val signature        = ""
+
+    val callCpgNode =
+      callNode(call, code(call), name, name, DispatchTypes.DYNAMIC_DISPATCH, Some(signature), Some(callTypeFullName))
+
+    val args        = call.getArguments.toList.map(a => astForNode(a))
+    val receiverAst = astForExpression(functionNameExpr)
+    createCallAst(callCpgNode, args, receiver = Some(receiverAst))
+  }
+
+  private def astForCCallExpressionUntyped(call: CASTFunctionCallExpression): Ast = {
+    val functionNameExpr = call.getFunctionNameExpression
+
+    functionNameExpr match {
+      case idExpr: CASTIdExpression =>
+        createCFunctionCallAst(call, idExpr, X2CpgDefines.Any)
+      case _ =>
+        createPointerCallAst(call, X2CpgDefines.Any)
+    }
+  }
+
+  private def astForCallExpression(call: IASTFunctionCallExpression): Ast = {
+    call match {
+      case cppCall: ICPPASTFunctionCallExpression =>
+        astForCppCallExpression(cppCall)
+      case cCall: CASTFunctionCallExpression =>
+        astForCCallExpression(cCall)
     }
   }
 
