@@ -103,7 +103,10 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
       case "<operator>.dictLiteral"  => associateTypes(i, Set(s"${Constants.builtinPrefix}dict"))
       case "<operator>.setLiteral"   => associateTypes(i, Set(s"${Constants.builtinPrefix}set"))
       case Operators.conditional     => associateTypes(i, Set(s"${Constants.builtinPrefix}bool"))
-      case _                         => super.visitIdentifierAssignedToOperator(i, c, operation)
+      case Operators.indexAccess =>
+        c.argument.argumentIndex(1).isCall.foreach(setCallMethodFullNameFromBase)
+        visitIdentifierAssignedToIndexAccess(i, c)
+      case _ => super.visitIdentifierAssignedToOperator(i, c, operation)
     }
   }
 
@@ -223,6 +226,13 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
   ): Unit = {
     if (funcName != "<module>")
       super.handlePotentialFunctionPointer(funcPtr, baseTypes, funcName, baseName)
+  }
+
+  override protected def getIndexAccessTypes(ia: Call): Set[String] = {
+    ia.argument.argumentIndex(1).isCall.headOption match {
+      case Some(c) => getTypesFromCall(c).map(x => s"$x$pathSep${XTypeRecovery.DummyIndexAccess}")
+      case _       => super.getIndexAccessTypes(ia)
+    }
   }
 
 }
