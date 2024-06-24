@@ -58,17 +58,6 @@ class NamespaceTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
 
     }
 
-    "foo" in {
-      val cpg = code("""
-                       |namespace NNN {
-                       |  extern void hhh();
-                       |  void fff();
-                       |}
-                       |""".stripMargin)
-      val foo = cpg.method.l
-      println(foo.fullName.l)
-    }
-
     "be correct for nested namespaces in C++17 style" in {
       val cpg = code("""
         |namespace Q::V {

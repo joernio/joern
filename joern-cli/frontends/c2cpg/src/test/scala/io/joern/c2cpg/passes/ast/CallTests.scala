@@ -1,7 +1,8 @@
 package io.joern.c2cpg.passes.ast
 
+import io.joern.c2cpg.astcreation.Defines
 import io.joern.c2cpg.testfixtures.C2CpgSuite
-import io.joern.x2cpg.Defines
+import io.joern.x2cpg.Defines as X2CpgDefines
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.codepropertygraph.generated.nodes.Literal
@@ -340,9 +341,9 @@ class CallTests extends C2CpgSuite {
         "test.cpp"
       )
 
-      val List(call) = cpg.call.nameExact("<operator>.pointerCall").l
+      val List(call) = cpg.call.nameExact(Defines.operatorPointerCall).l
       call.signature shouldBe ""
-      call.methodFullName shouldBe "<operator>.pointerCall"
+      call.methodFullName shouldBe Defines.operatorPointerCall
       call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       call.typeFullName shouldBe "void"
 
@@ -407,9 +408,9 @@ class CallTests extends C2CpgSuite {
         "test.c"
       )
 
-      val List(call) = cpg.call.nameExact("<operator>.pointerCall").l
+      val List(call) = cpg.call.nameExact(Defines.operatorPointerCall).l
       call.signature shouldBe ""
-      call.methodFullName shouldBe "<operator>.pointerCall"
+      call.methodFullName shouldBe Defines.operatorPointerCall
       call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       call.typeFullName shouldBe "void"
 
@@ -486,10 +487,10 @@ class CallTests extends C2CpgSuite {
       )
 
       val List(call) = cpg.call.nameExact("foo").l
-      call.signature shouldBe Defines.UnresolvedSignature
-      call.methodFullName shouldBe s"${Defines.UnresolvedNamespace}.foo:${Defines.UnresolvedSignature}(1)"
+      call.signature shouldBe X2CpgDefines.UnresolvedSignature
+      call.methodFullName shouldBe s"${X2CpgDefines.UnresolvedNamespace}.foo:${X2CpgDefines.UnresolvedSignature}(1)"
       call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      call.typeFullName shouldBe Defines.Any
+      call.typeFullName shouldBe X2CpgDefines.Any
 
       val List(instArg, arg1) = call.argument.l
       instArg.code shouldBe "a"
@@ -512,10 +513,10 @@ class CallTests extends C2CpgSuite {
       )
 
       val List(call) = cpg.call.nameExact("foo").l
-      call.signature shouldBe Defines.UnresolvedSignature
-      call.methodFullName shouldBe s"${Defines.UnresolvedNamespace}.foo:${Defines.UnresolvedSignature}(1)"
+      call.signature shouldBe X2CpgDefines.UnresolvedSignature
+      call.methodFullName shouldBe s"${X2CpgDefines.UnresolvedNamespace}.foo:${X2CpgDefines.UnresolvedSignature}(1)"
       call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      call.typeFullName shouldBe Defines.Any
+      call.typeFullName shouldBe X2CpgDefines.Any
 
       val List(arg1) = call.argument.l
       arg1.code shouldBe "1"
@@ -535,10 +536,10 @@ class CallTests extends C2CpgSuite {
       )
 
       val List(call) = cpg.call.nameExact("<operator>()").l
-      call.signature shouldBe Defines.UnresolvedSignature
-      call.methodFullName shouldBe s"${Defines.UnresolvedNamespace}.<operator>():${Defines.UnresolvedSignature}(1)"
+      call.signature shouldBe X2CpgDefines.UnresolvedSignature
+      call.methodFullName shouldBe s"${X2CpgDefines.UnresolvedNamespace}.<operator>():${X2CpgDefines.UnresolvedSignature}(1)"
       call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      call.typeFullName shouldBe Defines.Any
+      call.typeFullName shouldBe X2CpgDefines.Any
 
       val List(instArg, arg1) = call.argument.l
       instArg.code shouldBe "getX()"
@@ -561,11 +562,11 @@ class CallTests extends C2CpgSuite {
         "test.c"
       )
 
-      val List(call) = cpg.call.nameExact("<operator>.pointerCall").l
+      val List(call) = cpg.call.nameExact(Defines.operatorPointerCall).l
       call.signature shouldBe ""
-      call.methodFullName shouldBe "<operator>.pointerCall"
+      call.methodFullName shouldBe Defines.operatorPointerCall
       call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-      call.typeFullName shouldBe Defines.Any
+      call.typeFullName shouldBe X2CpgDefines.Any
 
       val List(arg1) = call.argument.l
       arg1.code shouldBe "1"
@@ -590,7 +591,7 @@ class CallTests extends C2CpgSuite {
       call.signature shouldBe ""
       call.methodFullName shouldBe s"foo"
       call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      call.typeFullName shouldBe Defines.Any
+      call.typeFullName shouldBe X2CpgDefines.Any
 
       val List(arg1) = call.argument.l
       arg1.code shouldBe "1"
@@ -609,11 +610,11 @@ class CallTests extends C2CpgSuite {
         "test.c"
       )
 
-      val List(call) = cpg.call.nameExact("<operator>.pointerCall").l
+      val List(call) = cpg.call.nameExact(Defines.operatorPointerCall).l
       call.signature shouldBe ""
-      call.methodFullName shouldBe "<operator>.pointerCall"
+      call.methodFullName shouldBe Defines.operatorPointerCall
       call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-      call.typeFullName shouldBe Defines.Any
+      call.typeFullName shouldBe X2CpgDefines.Any
 
       val List(arg1) = call.argument.l
       arg1.code shouldBe "1"

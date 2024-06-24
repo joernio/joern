@@ -313,7 +313,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   private def createPointerCallAst(call: IASTFunctionCallExpression, callTypeFullName: String): Ast = {
     val functionNameExpr = call.getFunctionNameExpression
-    val name             = "<operator>.pointerCall"
+    val name             = Defines.operatorPointerCall
     val signature        = ""
 
     val callCpgNode =

@@ -1,5 +1,6 @@
 package io.joern.c2cpg.passes.ast
 
+import io.joern.c2cpg.astcreation.Defines
 import io.joern.c2cpg.testfixtures.AstC2CpgSuite
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
@@ -7,8 +8,8 @@ import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import overflowdb.traversal.toNodeTraversal
@@ -909,8 +910,8 @@ class AstCreationPassTests extends AstC2CpgSuite {
        |}
       """.stripMargin)
       inside(cpg.method.name("main").ast.isCall.codeExact("(*strLenFunc)(\"123\")").l) { case List(call) =>
-        call.name shouldBe "<operator>.pointerCall"
-        call.methodFullName shouldBe "<operator>.pointerCall"
+        call.name shouldBe Defines.operatorPointerCall
+        call.methodFullName shouldBe Defines.operatorPointerCall
       }
     }
 
