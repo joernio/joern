@@ -33,6 +33,7 @@ MODIFIED_BRANCH=$(echo "$BRANCH" | sed 's/[v.]//g')
 git fetch upstream
 
 git checkout -b "$MODIFIED_BRANCH"
+git pull origin "$MODIFIED_BRANCH"
 git merge upstream/master
 git push origin "$MODIFIED_BRANCH"
 
