@@ -7,7 +7,7 @@ import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.model.GoModHelper
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.slf4j.{Logger, LoggerFactory}
 
 abstract class BasePassForAstProcessing(
@@ -17,7 +17,7 @@ abstract class BasePassForAstProcessing(
   goMod: GoModHelper,
   goGlobal: GoGlobal,
   tmpDir: File
-) extends ConcurrentWriterCpgPass[String](cpg) {
+) extends ForkJoinParallelCpgPass[String](cpg) {
   protected val logger: Logger                = LoggerFactory.getLogger(classOf[BasePassForAstProcessing])
   override def generateParts(): Array[String] = astFiles.toArray
   override def runOnPart(diffGraph: DiffGraphBuilder, ast: String): Unit = {
