@@ -7,7 +7,7 @@ import overflowdb.traversal.help.Table
 import overflowdb.traversal.help.Table.AvailableWidthProvider
 
 case class Path(elements: List[AstNode]) {
-  def resultPairs(): List[(String, Option[Integer])] = {
+  def resultPairs(): List[(String, Option[Int])] = {
     val pairs = elements.map {
       case point: MethodParameterIn =>
         val method      = point.method

@@ -102,9 +102,9 @@ object CodeDumper {
     */
   def code(
     filename: String,
-    startLine: Integer,
-    endLine: Integer,
-    lineToHighlight: Option[Integer] = None,
+    startLine: Int,
+    endLine: Int,
+    lineToHighlight: Option[Int] = None,
     locationFullName: Option[String] = None
   ): String = {
     Try(IOUtils.readLinesInFile(Paths.get(filename))) match {
@@ -117,9 +117,9 @@ object CodeDumper {
 
   private def sliceCode(
     lines: Seq[String],
-    startLine: Integer,
-    endLine: Integer,
-    lineToHighlight: Option[Integer] = None,
+    startLine: Int,
+    endLine: Int,
+    lineToHighlight: Option[Int] = None,
     locationFullName: Option[String] = None
   ): String = {
     lines

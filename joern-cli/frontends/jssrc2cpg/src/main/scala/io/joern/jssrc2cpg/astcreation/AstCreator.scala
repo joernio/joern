@@ -253,11 +253,11 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
 
   private def astsForProgram(program: BabelNodeInfo): List[Ast] = createBlockStatementAsts(program.json("body"))
 
-  protected def line(node: BabelNodeInfo): Option[Integer]      = node.lineNumber
-  protected def column(node: BabelNodeInfo): Option[Integer]    = node.columnNumber
-  protected def lineEnd(node: BabelNodeInfo): Option[Integer]   = node.lineNumberEnd
-  protected def columnEnd(node: BabelNodeInfo): Option[Integer] = node.columnNumberEnd
-  protected def code(node: BabelNodeInfo): String               = node.code
+  protected def line(node: BabelNodeInfo): Option[Int]      = node.lineNumber
+  protected def column(node: BabelNodeInfo): Option[Int]    = node.columnNumber
+  protected def lineEnd(node: BabelNodeInfo): Option[Int]   = node.lineNumberEnd
+  protected def columnEnd(node: BabelNodeInfo): Option[Int] = node.columnNumberEnd
+  protected def code(node: BabelNodeInfo): String           = node.code
 
   protected def nodeOffsets(node: Value): Option[(Int, Int)] = {
     for {
