@@ -13,7 +13,7 @@ import overflowdb.BatchedUpdate
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import scopt.OParser
 
-import java.util.regex.{Matcher, Pattern}
+import java.util.regex.Pattern
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
@@ -25,6 +25,61 @@ import scala.util.matching.Regex
   *   whether to enable placeholder dummy values for partially resolved types during the final iteration.
   */
 case class XTypeRecoveryConfig(iterations: Int = 2, enabledDummyTypes: Boolean = true)
+
+object XTypeRecoveryConfig {
+  private val logger = LoggerFactory.getLogger(getClass)
+
+  def parse(cmdLineArgs: Seq[String]): XTypeRecoveryConfig = {
+    OParser
+      .parse(parserOptions, cmdLineArgs, XTypeRecoveryConfig())
+      .getOrElse(
+        throw new RuntimeException(
+          s"unable to parse XTypeRecoveryConfig from commandline arguments ${cmdLineArgs.mkString(" ")}"
+        )
+      )
+  }
+
+  def parserOptions: OParser[Unit, XTypeRecoveryConfig] = {
+    _parserOptions[XTypeRecoveryConfig](
+      configureNoDummyTypes = _.copy(enabledDummyTypes = false),
+      configureIterations = (iterations, config) => config.copy(iterations = iterations)
+    )
+  }
+
+  /** Parser options for languages implementing this pass. */
+  def parserOptionsForParserConfig[R <: X2CpgConfig[R] & TypeRecoveryParserConfig[R]]: OParser[?, R] = {
+    _parserOptions[R](
+      configureNoDummyTypes = _.withDisableDummyTypes(true),
+      configureIterations = (iterations, config) => config.withTypePropagationIterations(iterations)
+    )
+  }
+
+  private def _parserOptions[C](configureNoDummyTypes: C => C, configureIterations: (Int, C) => C): OParser[Unit, C] = {
+    val builder = OParser.builder[C]
+    import builder.*
+    OParser.sequence(
+      opt[Unit]("no-dummyTypes")
+        .hidden()
+        .action((_, c) => configureNoDummyTypes(c))
+        .text("disable generation of dummy types during type propagation"),
+      opt[Int]("type-prop-iterations")
+        .hidden()
+        .action((x, c) => configureIterations(x, c))
+        .text("maximum iterations of type propagation")
+        .validate { x =>
+          if (x <= 0) {
+            logger.info("Disabling type propagation as the given iteration count is <= 0")
+          } else if (x == 1) {
+            logger.info("Intra-procedural type propagation enabled")
+          } else if (x > 5) {
+            logger.warn(s"Large iteration count of $x will take a while to terminate")
+          }
+          success
+        }
+    )
+  }
+
+}
 
 /** @param config
   *   the user defined config.
@@ -186,10 +241,6 @@ abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg, state: XT
 }
 
 object XTypeRecovery {
-  object ParameterNames {
-    val NoDummyTypes = "no-dummyTypes"
-  }
-
   private val logger = LoggerFactory.getLogger(getClass)
 
   val DummyReturnType                       = "<returnValue>"
@@ -206,32 +257,9 @@ object XTypeRecovery {
     */
   def isDummyType(typ: String): Boolean = DummyTokens.exists(typ.contains)
 
-  /** Parser options for languages implementing this pass.
-    */
-  def parserOptions[R <: X2CpgConfig[R] & TypeRecoveryParserConfig[R]]: OParser[?, R] = {
-    val builder = OParser.builder[R]
-    import builder.*
-    OParser.sequence(
-      opt[Unit](ParameterNames.NoDummyTypes)
-        .hidden()
-        .action((_, c) => c.withDisableDummyTypes(true))
-        .text("disable generation of dummy types during type propagation"),
-      opt[Int]("type-prop-iterations")
-        .hidden()
-        .action((x, c) => c.withTypePropagationIterations(x))
-        .text("maximum iterations of type propagation")
-        .validate { x =>
-          if (x <= 0) {
-            logger.info("Disabling type propagation as the given iteration count is <= 0")
-          } else if (x == 1) {
-            logger.info("Intra-procedural type propagation enabled")
-          } else if (x > 5) {
-            logger.warn(s"Large iteration count of $x will take a while to terminate")
-          }
-          success
-        }
-    )
-  }
+  @deprecated("please use XTypeRecoveryConfig.parserOptionsForParserConfig", since = "2.0.415")
+  def parserOptions[R <: X2CpgConfig[R] & TypeRecoveryParserConfig[R]]: OParser[?, R] =
+    XTypeRecoveryConfig.parserOptionsForParserConfig
 
   // The below are convenience calls for accessing type properties, one day when this pass uses `Tag` nodes instead of
   // the symbol table then perhaps this would work out better
@@ -471,7 +499,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       visitIdentifierAssignedToConstructor(i, c)
     } else if (symbolTable.contains(c)) {
       visitIdentifierAssignedToCallRetVal(i, c)
-    } else if (c.argument.headOption.exists(symbolTable.contains)) {
+    } else if (c.argument.argumentIndex(0).headOption.exists(symbolTable.contains)) {
       setCallMethodFullNameFromBase(c)
       // Repeat this method now that the call has a type
       visitIdentifierAssignedToCall(i, c)

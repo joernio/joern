@@ -17,7 +17,7 @@ class ModuleTests extends RubyCode2CpgFixture {
     m.fullName shouldBe "Test0.rb:<global>::program.M"
     m.lineNumber shouldBe Some(2)
     m.baseType.l shouldBe List()
-    m.member.name.l shouldBe List(Defines.Initialize)
-    m.method.name.l shouldBe List(Defines.Initialize)
+    m.member.name.l shouldBe List(Defines.TypeDeclBody)
+    m.method.name.l shouldBe List(Defines.TypeDeclBody)
   }
 }

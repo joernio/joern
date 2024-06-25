@@ -2,28 +2,27 @@ package io.joern.rubysrc2cpg.passes
 
 object Defines {
 
-  val Any: String             = "ANY"
-  val Undefined: String       = "Undefined"
-  val Object: String          = "Object"
-  val NilClass: String        = "NilClass"
-  val TrueClass: String       = "TrueClass"
-  val FalseClass: String      = "FalseClass"
-  val Numeric: String         = "Numeric"
-  val Integer: String         = "Integer"
-  val Float: String           = "Float"
-  val String: String          = "String"
-  val Symbol: String          = "Symbol"
-  val Array: String           = "Array"
-  val Hash: String            = "Hash"
-  val Encoding: String        = "Encoding"
-  val Regexp: String          = "Regexp"
-  val Lambda: String          = "lambda"
-  val Proc: String            = "proc"
-  val Loop: String            = "loop"
-  val Self: String            = "self"
-  val Initialize: String      = "initialize"
-  val InitializeClass: String = "initialize<class>" // simply contains the @@ field initialization
-  val TypeDeclBody: String    = "<body>"
+  val Any: String          = "ANY"
+  val Undefined: String    = "Undefined"
+  val Object: String       = "Object"
+  val NilClass: String     = "NilClass"
+  val TrueClass: String    = "TrueClass"
+  val FalseClass: String   = "FalseClass"
+  val Numeric: String      = "Numeric"
+  val Integer: String      = "Integer"
+  val Float: String        = "Float"
+  val String: String       = "String"
+  val Symbol: String       = "Symbol"
+  val Array: String        = "Array"
+  val Hash: String         = "Hash"
+  val Encoding: String     = "Encoding"
+  val Regexp: String       = "Regexp"
+  val Lambda: String       = "lambda"
+  val Proc: String         = "proc"
+  val Loop: String         = "loop"
+  val Self: String         = "self"
+  val Initialize: String   = "initialize"
+  val TypeDeclBody: String = "<body>"
 
   val Program: String = ":program"
 
@@ -251,6 +250,7 @@ object GlobalTypes {
     "readline",
     "readlines",
     "require",
+    "require_all",
     "require_relative",
     "select",
     "set_trace_func",

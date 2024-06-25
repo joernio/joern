@@ -2,8 +2,8 @@ package io.joern.jssrc2cpg.astcreation
 
 import io.joern.jssrc2cpg.parser.BabelAst.*
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
-import io.joern.jssrc2cpg.passes.Defines.OperatorsNew
-import io.joern.jssrc2cpg.passes.{Defines, EcmaBuiltins, GlobalBuiltins}
+import io.joern.jssrc2cpg.passes.EcmaBuiltins
+import io.joern.x2cpg.frontendspecific.jssrc2cpg.{Defines, GlobalBuiltins}
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.datastructures.Stack.*
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
@@ -130,7 +130,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     val receiverNode = astForNodeWithFunctionReference(callee)
 
-    val callAst = handleCallNodeArgs(newExpr, receiverNode, tmpAllocNode2, OperatorsNew)
+    val callAst = handleCallNodeArgs(newExpr, receiverNode, tmpAllocNode2, Defines.OperatorsNew)
 
     val tmpAllocReturnNode = Ast(identifierNode(newExpr, tmpAllocName))
 

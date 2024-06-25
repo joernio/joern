@@ -824,7 +824,11 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
 
   override def visitModuleDefinition(ctx: RubyParser.ModuleDefinitionContext): RubyNode = {
     val (nonFieldStmts, fields) = genInitFieldStmts(ctx.bodyStatement())
-    ModuleDeclaration(visit(ctx.classPath()), nonFieldStmts, fields)(ctx.toTextSpan)
+
+    val moduleName = visit(ctx.classPath())
+    val memberCall = createBodyMemberCall(moduleName.span.text, ctx.toTextSpan)
+
+    ModuleDeclaration(visit(ctx.classPath()), nonFieldStmts, fields, Option(memberCall))(ctx.toTextSpan)
   }
 
   override def visitSingletonClassDefinition(ctx: RubyParser.SingletonClassDefinitionContext): RubyNode = {
@@ -914,35 +918,23 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
         val initStmtListStatements = genSingleAssignmentStmtList(instanceFields, instanceFieldsInMethodDecls)
         val clinitStmtList = genSingleAssignmentStmtList(classFields, classFieldsInMethodDecls) ++ fieldAssignments
 
-        val clinitMethod =
-          MethodDeclaration(Defines.InitializeClass, List.empty, StatementList(clinitStmtList)(stmtList.span))(
+        val bodyMethodStmtList =
+          StatementList(initStmtListStatements ++ clinitStmtList)(
             stmtList.span
+              .spanStart(initStmtListStatements.map(_.span.text).concat(clinitStmtList.map(_.span.text)).mkString("\n"))
           )
 
-        val updatedStmtList = initializeMethod match {
-          case Some(initMethod) =>
-            initMethod.body match {
-              // TODO: Filter out instance fields that are assigned an initial value in the constructor method. Current
-              //  implementation leads to "double" assignment happening when the instance field is assigned a value
-              //   where you end up having
-              //   <instanceField> = nil; <instanceField> = ...;
-              case stmtList: StatementList =>
-                val initializers = initStmtListStatements :+ clinitMethod
-                StatementList(initializers ++ rest)(stmtList.span)
-              case x => x
-            }
-          case None =>
-            val newInitMethod =
-              MethodDeclaration(Defines.Initialize, List.empty, StatementList(initStmtListStatements)(stmtList.span))(
-                stmtList.span
-              )
-            val initializers = newInitMethod :: clinitMethod :: Nil
-            StatementList(initializers ++ rest)(stmtList.span)
-        }
+        val bodyMethod = MethodDeclaration(Defines.TypeDeclBody, List.empty, bodyMethodStmtList)(
+          stmtList.span.spanStart(s"def <body>\n${bodyMethodStmtList.span.text}\nend")
+        )
+
         val combinedFields = rubyFieldIdentifiers ++ fieldsInMethodDecls ++
           fieldAssignments.collect { case SingleAssignment(lhs: RubyFieldIdentifier, _, _) => lhs }
 
-        (updatedStmtList, combinedFields.asInstanceOf[List[RubyNode & RubyFieldIdentifier]])
+        (
+          StatementList(bodyMethod +: rest)(bodyMethod.span),
+          combinedFields.asInstanceOf[List[RubyNode & RubyFieldIdentifier]]
+        )
       case decls => (decls, List.empty)
     }
   }
@@ -1003,10 +995,10 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     *   - `initialize` MethodDeclaration with all non-allowed children nodes added
     *   - list of all nodes allowed directly under type decl
     */
-  private def filterNonAllowedTypeDeclChildren(stmts: StatementList): (RubyNode, List[RubyNode]) = {
+  private def filterNonAllowedTypeDeclChildren(stmts: StatementList): RubyNode = {
     val (initMethod, nonInitStmts) = stmts.statements.partition {
-      case x: MethodDeclaration if x.methodName == "initialize" => true
-      case _                                                    => false
+      case x: MethodDeclaration if x.methodName == Defines.Initialize => true
+      case _                                                          => false
     }
 
     val (allowedTypeDeclChildren, nonAllowedTypeDeclChildren) = nonInitStmts.partition {
@@ -1014,19 +1006,25 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
       case _                              => false
     }
 
-    val initMethodDecl = initMethod.headOption match {
-      case Some(initMethodOpt) =>
-        val castInitMethod = initMethodOpt.asInstanceOf[MethodDeclaration]
-        val updatedMethodBody = StatementList(
-          castInitMethod.body.asStatementList.statements ++ nonAllowedTypeDeclChildren
-        )(castInitMethod.body.span)
-        MethodDeclaration("initialize", List.empty, updatedMethodBody)(castInitMethod.span)
-      case None =>
-        logger.warn("Could not find initialize method")
-        defaultResult()
+    val (bodyMethod, otherTypeDeclChildren) = allowedTypeDeclChildren.partition {
+      case x: MethodDeclaration if x.methodName == Defines.TypeDeclBody => true
+      case _                                                            => false
     }
 
-    (initMethodDecl, allowedTypeDeclChildren)
+    val updatedBodyMethod = bodyMethod
+      .asInstanceOf[List[MethodDeclaration]]
+      .map { x =>
+        val methodDeclStmts =
+          StatementList(x.body.asInstanceOf[StatementList].statements ++ nonAllowedTypeDeclChildren)(
+            x.span.spanStart(s"${x.body.span.text}${nonAllowedTypeDeclChildren.map(_.span.text).mkString("\n")}")
+          )
+
+        MethodDeclaration(x.methodName, x.parameters, methodDeclStmts)(
+          x.span.spanStart(s"def <body>\n${methodDeclStmts.span.text}\nend")
+        )
+      }
+
+    StatementList(otherTypeDeclChildren ++ updatedBodyMethod)(stmts.span)
   }
 
   override def visitClassDefinition(ctx: RubyParser.ClassDefinitionContext): RubyNode = {
@@ -1034,14 +1032,29 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
 
     val stmts = lowerAliasStatementsToMethods(nonFieldStmts)
 
-    val (initMethodDecl, allowedTypeDeclChildren) = filterNonAllowedTypeDeclChildren(stmts)
+    val classBody = filterNonAllowedTypeDeclChildren(stmts)
+    val className = visit(ctx.classPath())
+
+    val memberCall = createBodyMemberCall(className.span.text, ctx.toTextSpan)
 
     ClassDeclaration(
       visit(ctx.classPath()),
       Option(ctx.commandOrPrimaryValueClass()).map(visit),
-      StatementList(initMethodDecl +: allowedTypeDeclChildren)(stmts.span),
-      fields
+      classBody,
+      fields,
+      Option(memberCall)
     )(ctx.toTextSpan)
+  }
+
+  private def createBodyMemberCall(name: String, textSpan: TextSpan): MemberCall = {
+    MemberCall(
+      MemberAccess(SelfIdentifier()(textSpan.spanStart(Defines.Self)), "::", name)(
+        textSpan.spanStart(s"${Defines.Self}::$name")
+      ),
+      "::",
+      Defines.TypeDeclBody,
+      List.empty
+    )(textSpan.spanStart(s"${Defines.Self}::$name::<body>"))
   }
 
   /** Lowers all MethodDeclaration found in SingletonClassDeclaration to SingletonMethodDeclaration.

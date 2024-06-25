@@ -1,7 +1,7 @@
 package io.joern.jssrc2cpg
 
 import io.joern.jssrc2cpg.Frontend.*
-import io.joern.x2cpg.passes.frontend.{TypeRecoveryParserConfig, XTypeRecovery}
+import io.joern.x2cpg.passes.frontend.{TypeRecoveryParserConfig, XTypeRecovery, XTypeRecoveryConfig}
 import io.joern.x2cpg.utils.Environment
 import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
 import scopt.OParser
@@ -28,7 +28,7 @@ object Frontend {
         .hidden()
         .action((_, c) => c.withTsTypes(false))
         .text("disable generation of types via Typescript"),
-      XTypeRecovery.parserOptions
+      XTypeRecoveryConfig.parserOptionsForParserConfig
     )
   }
 

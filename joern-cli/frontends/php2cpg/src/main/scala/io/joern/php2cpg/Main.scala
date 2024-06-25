@@ -44,7 +44,7 @@ object Frontend {
       opt[String]("php-parser-bin")
         .action((x, c) => c.withPhpParserBin(x))
         .text("path to php-parser.phar binary. Defaults to php-parser shipped with Joern."),
-      XTypeRecovery.parserOptions,
+      XTypeRecoveryConfig.parserOptionsForParserConfig,
       XTypeStubsParser.parserOptions,
       DependencyDownloadConfig.parserOptions
     )

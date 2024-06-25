@@ -71,14 +71,13 @@ class AstCreator(
       .fullName(fullName)
 
     scope.pushNewScope(NamespaceScope(fullName))
-    val (rubyFakeMethod, rubyFakeMethodAst) = astInFakeMethod(rootStatements)
-    val rubyFakeTypeDecl                    = astInFakeTypeDecl(rootStatements, rubyFakeMethod)
+    val rubyFakeMethodAst = astInFakeMethod(rootStatements)
     scope.popScope()
 
-    Ast(fileNode).withChild(Ast(namespaceBlock).withChild(rubyFakeMethodAst).withChild(rubyFakeTypeDecl))
+    Ast(fileNode).withChild(Ast(namespaceBlock).withChild(rubyFakeMethodAst))
   }
 
-  private def astInFakeMethod(rootNode: StatementList): (NewMethod, Ast) = {
+  private def astInFakeMethod(rootNode: StatementList): Ast = {
     val name     = Defines.Program
     val fullName = computeMethodFullName(name)
     val code     = rootNode.text
@@ -92,7 +91,7 @@ class AstCreator(
     )
     val methodReturn = methodReturnNode(rootNode, Defines.Any)
 
-    methodNode_ -> scope.newProgramScope
+    scope.newProgramScope
       .map { moduleScope =>
         scope.pushNewScope(moduleScope)
         val block = blockNode(rootNode)
@@ -110,36 +109,6 @@ class AstCreator(
         )
       }
       .getOrElse(Ast())
-  }
-
-  private def astInFakeTypeDecl(rootNode: StatementList, method: NewMethod): Ast = {
-    val typeDeclNode_ = typeDeclNode(rootNode, method.name, method.fullName, method.filename, Nil, None)
-    val members = rootNode.statements
-      .collect {
-        case m: MethodDeclaration =>
-          val methodName = m.methodName
-          NewMember()
-            .name(methodName)
-            .code(methodName)
-            .typeFullName(Defines.Any)
-            .dynamicTypeHintFullName(s"${method.fullName}:$methodName" :: Nil)
-        case t: TypeDeclaration =>
-          val typeName = t.name.text
-          NewMember()
-            .name(t.name.text)
-            .code(typeName)
-            .typeFullName(Defines.Any)
-            .dynamicTypeHintFullName(s"${method.fullName}.$typeName" :: Nil)
-      }
-      .map(Ast.apply)
-
-    val bindingNode = newBindingNode("", "", method.fullName)
-    diffGraph.addEdge(typeDeclNode_, bindingNode, EdgeTypes.BINDS)
-    diffGraph.addEdge(bindingNode, method, EdgeTypes.REF)
-
-    Ast(typeDeclNode_)
-      .withChildren(Ast(newModifierNode(ModifierTypes.MODULE)) :: Ast(newModifierNode(ModifierTypes.VIRTUAL)) :: Nil)
-      .withChildren(members)
   }
 
 }

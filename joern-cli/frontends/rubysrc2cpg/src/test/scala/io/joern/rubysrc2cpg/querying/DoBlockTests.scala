@@ -23,9 +23,9 @@ class DoBlockTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "create an anonymous method with associated type declaration" in {
-      inside(cpg.method.nameExact(":program").l) {
+      inside(cpg.method.isModule.l) {
         case program :: Nil =>
-          inside(program.block.astChildren.collectAll[Method].l) {
+          inside(program.astChildren.collectAll[Method].l) {
             case foo :: closureMethod :: Nil =>
               foo.name shouldBe "foo"
 
@@ -34,7 +34,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
             case xs => fail(s"Expected a two method nodes, instead got [${xs.code.mkString(", ")}]")
           }
 
-          inside(program.block.astChildren.collectAll[TypeDecl].isLambda.l) {
+          inside(program.astChildren.collectAll[TypeDecl].isLambda.l) {
             case closureType :: Nil =>
               closureType.name shouldBe "<lambda>0"
               closureType.fullName shouldBe "Test0.rb:<global>::program:<lambda>0"
@@ -42,6 +42,12 @@ class DoBlockTests extends RubyCode2CpgFixture {
           }
         case xs => fail(s"Expected a single program module, instead got [${xs.code.mkString(", ")}]")
       }
+    }
+
+    "create a method ref argument with populated type full name, which corresponds to the method type" in {
+      val methodRefArg   = cpg.call("foo").argument(1).head.asInstanceOf[MethodRef]
+      val lambdaTypeDecl = cpg.typeDecl("<lambda>0").head
+      methodRefArg.typeFullName shouldBe lambdaTypeDecl.fullName
     }
 
     "have no parameters in the closure declaration" in {
@@ -72,14 +78,14 @@ class DoBlockTests extends RubyCode2CpgFixture {
     "create an anonymous method with associated type declaration" in {
       inside(cpg.method.nameExact(":program").l) {
         case program :: Nil =>
-          inside(program.block.astChildren.collectAll[Method].l) {
+          inside(program.astChildren.collectAll[Method].l) {
             case closureMethod :: Nil =>
               closureMethod.name shouldBe "<lambda>0"
               closureMethod.fullName shouldBe "Test0.rb:<global>::program:<lambda>0"
             case xs => fail(s"Expected a one method nodes, instead got [${xs.code.mkString(", ")}]")
           }
 
-          inside(program.block.astChildren.collectAll[TypeDecl].l) {
+          inside(program.astChildren.collectAll[TypeDecl].l) {
             case closureType :: Nil =>
               closureType.name shouldBe "<lambda>0"
               closureType.fullName shouldBe "Test0.rb:<global>::program:<lambda>0"
@@ -134,7 +140,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
     "create an anonymous method with associated type declaration" in {
       inside(cpg.method.nameExact(":program").l) {
         case program :: Nil =>
-          inside(program.block.astChildren.collectAll[Method].l) {
+          inside(program.astChildren.collectAll[Method].l) {
             case closureMethod :: Nil =>
               closureMethod.name shouldBe "<lambda>0"
               closureMethod.fullName shouldBe "Test0.rb:<global>::program:<lambda>0"
@@ -142,7 +148,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
             case xs => fail(s"Expected a one method nodes, instead got [${xs.code.mkString(", ")}]")
           }
 
-          inside(program.block.astChildren.collectAll[TypeDecl].l) {
+          inside(program.astChildren.collectAll[TypeDecl].l) {
             case closureType :: Nil =>
               closureType.name shouldBe "<lambda>0"
               closureType.fullName shouldBe "Test0.rb:<global>::program:<lambda>0"
