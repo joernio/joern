@@ -281,8 +281,7 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
 
     "not create any entry in package to namespace mapping" in {
       // it should not add `main` in the mapping as well as it should not contain any dependency mapping
-      goGlobal.aliasToNameSpaceMapping.size() shouldBe 1
-      goGlobal.aliasToNameSpaceMapping.values().toArray shouldBe Array("github.com/rs/zerolog")
+      goGlobal.aliasToNameSpaceMapping.size() shouldBe 0
     }
 
     "not create any entry in lambda signature to return type mapping" in {
@@ -374,11 +373,7 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
 
     "not create any entry in package to namespace mapping" in {
       // it should not add `main` in the mapping as well as it should not contain any dependency mapping unless the folder name and package name is different.
-      goGlobal.aliasToNameSpaceMapping.size() shouldBe 2
-      goGlobal.aliasToNameSpaceMapping.values().toArray shouldBe Array(
-        "github.com/rs/zerolog",
-        "github.com/rs/zerolog/log"
-      )
+      goGlobal.aliasToNameSpaceMapping.size() shouldBe 0
     }
 
     "not create any entry in lambda signature to return type mapping" in {
