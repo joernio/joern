@@ -291,8 +291,8 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
     identifierType: Option[String],
     fieldIdentifierName: String,
     returnType: Option[String],
-    lineNo: Option[Integer],
-    columnNo: Option[Integer]
+    lineNo: Option[Int],
+    columnNo: Option[Int]
   ): Ast = {
     val typeFullName     = identifierType.orElse(Some(TypeConstants.Any)).map(typeInfoCalc.registerType)
     val identifier       = newIdentifierNode(identifierName, typeFullName.getOrElse("ANY"))
