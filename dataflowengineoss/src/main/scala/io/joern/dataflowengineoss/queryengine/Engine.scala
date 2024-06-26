@@ -207,7 +207,7 @@ object Engine {
   ): Option[PathElement] = {
     val curNode  = e.inNode().asInstanceOf[CfgNode]
     val parNode  = e.outNode().asInstanceOf[CfgNode]
-    val outLabel = Some(e.property(Properties.VARIABLE)).getOrElse("")
+    val outLabel = Some(e.property(Properties.Variable)).getOrElse("")
 
     if (!EdgeValidator.isValidEdge(curNode, parNode)) {
       return None

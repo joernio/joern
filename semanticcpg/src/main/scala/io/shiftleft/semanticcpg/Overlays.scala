@@ -13,7 +13,7 @@ object Overlays {
         cpg.metaData.headOption match {
           case Some(metaData) =>
             val newValue = metaData.overlays :+ overlayName
-            diffGraph.setNodeProperty(metaData, Properties.OVERLAYS.name, newValue)
+            diffGraph.setNodeProperty(metaData, Properties.Overlays.name, newValue)
           case None =>
             System.err.println("Missing metaData block")
         }
@@ -27,7 +27,7 @@ object Overlays {
         cpg.metaData.headOption match {
           case Some(metaData) =>
             val newValue = metaData.overlays.dropRight(1)
-            diffGraph.setNodeProperty(metaData, Properties.OVERLAYS.name, newValue)
+            diffGraph.setNodeProperty(metaData, Properties.Overlays.name, newValue)
           case None =>
             System.err.println("Missing metaData block")
         }
