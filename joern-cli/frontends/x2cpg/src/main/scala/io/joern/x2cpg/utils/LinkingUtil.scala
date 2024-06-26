@@ -79,7 +79,7 @@ trait LinkingUtil {
             }
           }
       } else {
-        srcNode.out(edgeType).property(Properties.FULL_NAME).nextOption() match {
+        srcNode.out(edgeType).property(Properties.FullName).nextOption() match {
           case Some(dstFullName) =>
             dstGraph.setNodeProperty(
               srcNode.asInstanceOf[StoredNode],
@@ -125,7 +125,7 @@ trait LinkingUtil {
           }
         }
       } else {
-        val dstFullNames = srcNode.out(edgeType).property(Properties.FULL_NAME).l
+        val dstFullNames = srcNode.out(edgeType).property(Properties.FullName).l
         dstGraph.setNodeProperty(srcNode, dstFullNameKey, dstFullNames.map(dereference.dereferenceTypeFullName))
         if (!loggedDeprecationWarning) {
           logger.info(
