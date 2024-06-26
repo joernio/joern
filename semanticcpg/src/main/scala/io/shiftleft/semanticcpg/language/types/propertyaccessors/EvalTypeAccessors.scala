@@ -41,6 +41,6 @@ class EvalTypeAccessors[A <: AstNode](val traversal: Iterator[A]) extends AnyVal
     }
 
   private def evalType(traversal: Iterator[A]): Iterator[String] =
-    traversal.flatMap(_._evalTypeOut).flatMap(_._refOut).property(Properties.FULL_NAME)
+    traversal.flatMap(_._evalTypeOut).flatMap(_._refOut).property(Properties.FullName)
 
 }

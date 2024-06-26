@@ -26,29 +26,29 @@ class AccessPathUsageTests extends AnyWordSpec {
 
   private def genCALL(graph: Graph, op: String, args: Node*): Call = {
     val ret = graph + NodeTypes.CALL // (NodeTypes.CALL, Properties.NAME -> op)
-    ret.setProperty(Properties.NAME, op)
+    ret.setProperty(Properties.Name, op)
     args.reverse.zipWithIndex.foreach { case (arg, idx) =>
       ret --- EdgeTypes.ARGUMENT --> arg
-      arg.setProperty(Properties.ARGUMENT_INDEX, idx + 1)
+      arg.setProperty(Properties.ArgumentIndex, idx + 1)
     }
     ret.asInstanceOf[Call]
   }
 
   private def genLit(graph: Graph, payload: String): Literal = {
     val ret = graph + NodeTypes.LITERAL
-    ret.setProperty(Properties.CODE, payload)
+    ret.setProperty(Properties.Code, payload)
     ret.asInstanceOf[Literal]
   }
 
   private def genID(graph: Graph, payload: String): Identifier = {
     val ret = graph + NodeTypes.IDENTIFIER
-    ret.setProperty(Properties.NAME, payload)
+    ret.setProperty(Properties.Name, payload)
     ret.asInstanceOf[Identifier]
   }
 
   private def genFID(graph: Graph, payload: String): FieldIdentifier = {
     val ret = graph + NodeTypes.FIELD_IDENTIFIER
-    ret.setProperty(Properties.CANONICAL_NAME, payload)
+    ret.setProperty(Properties.CanonicalName, payload)
     ret.asInstanceOf[FieldIdentifier]
   }
 
