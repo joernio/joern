@@ -1,6 +1,6 @@
 package io.joern.rubysrc2cpg.querying
 
-import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelPrefix
+import io.joern.rubysrc2cpg.passes.GlobalTypes.{builtinPrefix, kernelPrefix}
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.*
@@ -106,8 +106,8 @@ class ArrayTests extends RubyCode2CpgFixture {
     inside(cpg.call.nameExact("[]").l) {
       case bracketCall :: Nil =>
         bracketCall.name shouldBe "[]"
-        bracketCall.methodFullName shouldBe s"$kernelPrefix.Array:[]"
-        bracketCall.typeFullName shouldBe s"$kernelPrefix.Array"
+        bracketCall.methodFullName shouldBe s"$builtinPrefix.Array.[]"
+        bracketCall.typeFullName shouldBe s"$builtinPrefix.Array"
 
         inside(bracketCall.argument.l) {
           case _ :: one :: two :: three :: Nil =>

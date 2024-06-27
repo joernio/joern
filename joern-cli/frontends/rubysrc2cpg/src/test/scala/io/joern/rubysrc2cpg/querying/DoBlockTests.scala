@@ -1,9 +1,7 @@
 package io.joern.rubysrc2cpg.querying
 
+import io.joern.rubysrc2cpg.passes.GlobalTypes.builtinPrefix
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.joern.x2cpg.Defines
-import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelPrefix
-import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
@@ -260,7 +258,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
               tmpAssign.code shouldBe "<tmp-0> = Array.new(x) { |i| i += 1 }"
 
               newCall.name shouldBe "new"
-              newCall.methodFullName shouldBe s"$kernelPrefix.Array:initialize"
+              newCall.methodFullName shouldBe s"$builtinPrefix.Array:initialize"
 
               inside(newCall.argument.l) {
                 case (_: Identifier) :: (x: Identifier) :: (closure: MethodRef) :: Nil =>
