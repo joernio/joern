@@ -1,5 +1,6 @@
 package io.joern.console
 
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
