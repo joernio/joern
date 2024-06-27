@@ -6,13 +6,13 @@ import io.joern.php2cpg.astcreation.AstCreator
 import io.joern.php2cpg.parser.PhpParser
 import io.joern.x2cpg.{SourceFiles, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.*
 
 class AstCreationPass(config: Config, cpg: Cpg, parser: PhpParser)(implicit withSchemaValidation: ValidationMode)
-    extends ConcurrentWriterCpgPass[String](cpg) {
+    extends ForkJoinParallelCpgPass[String](cpg) {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
