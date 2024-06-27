@@ -11,7 +11,7 @@ class MethodRefMethods(val methodRef: MethodRef) extends AnyVal with NodeExtensi
       methodRef.code,
       methodRef.label,
       methodRef.lineNumber,
-      methodRef._methodViaContainsIn.next()
+      methodRef.methodViaContainsIn.next()
     )
   }
 }

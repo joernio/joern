@@ -110,7 +110,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
 
   private lazy val exportedIdentifiers = cu.method
     .nameExact(Defines.Program)
-    .flatMap(_._callViaContainsOut)
+    .flatMap(_.callViaContainsOut)
     .nameExact(Operators.assignment)
     .filter(_.code.startsWith("exports.*"))
     .argument
@@ -210,7 +210,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
   override protected def postSetTypeInformation(): Unit = {
     // often there are "this" identifiers with type hints but this can be set to a type hint if they meet the criteria
     cu.method
-      .flatMap(_._identifierViaContainsOut)
+      .flatMap(_.identifierViaContainsOut)
       .nameExact("this")
       .where(_.typeFullNameExact(Defines.Any))
       .filterNot(_.dynamicTypeHintFullName.isEmpty)

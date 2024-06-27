@@ -13,8 +13,8 @@ class NamespaceBlockTraversal(val traversal: Iterator[NamespaceBlock]) extends A
   /** The type declarations defined in this namespace
     */
   def typeDecl: Iterator[TypeDecl] =
-    traversal.flatMap(_._typeDeclViaAstOut)
+    traversal.flatMap(_.typeDeclViaAstOut)
 
   def method: Iterator[Method] =
-    traversal.flatMap(_._methodViaAstOut)
+    traversal.flatMap(_.methodViaAstOut)
 }
