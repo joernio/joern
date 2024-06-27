@@ -14,8 +14,9 @@ object SourceFiles {
 
   private def isIgnoredByFileList(filePath: String, ignoredFiles: Seq[String]): Boolean = {
     val isInIgnoredFiles = ignoredFiles.exists {
-      case ignorePath if File(ignorePath).isDirectory => filePath.startsWith(ignorePath)
-      case ignorePath                                 => filePath == ignorePath
+      case ignorePath if File(ignorePath).isDirectory =>
+        filePath.regionMatches(true, 0, ignorePath, 0, ignorePath.length)
+      case ignorePath => filePath.equalsIgnoreCase(ignorePath)
     }
     if (isInIgnoredFiles) {
       logger.debug(s"'$filePath' ignored (--exclude)")
