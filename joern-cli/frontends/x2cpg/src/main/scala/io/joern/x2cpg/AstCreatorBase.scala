@@ -9,7 +9,7 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 abstract class AstCreatorBase(filename: String)(implicit withSchemaValidation: ValidationMode) {
-  val diffGraph: DiffGraphBuilder = new DiffGraphBuilder
+  val diffGraph: DiffGraphBuilder = Cpg.newDiffGraphBuilder
 
   private val closureKeyPool = new IntervalKeyPool(first = 0, last = Long.MaxValue)
 

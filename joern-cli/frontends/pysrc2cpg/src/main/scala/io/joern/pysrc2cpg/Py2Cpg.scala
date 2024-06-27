@@ -33,7 +33,7 @@ class Py2Cpg(
   schemaValidationMode: ValidationMode,
   enableFileContent: Boolean
 ) {
-  private val diffGraph   = new DiffGraphBuilder()
+  private val diffGraph   = Cpg.newDiffGraphBuilder
   private val nodeBuilder = new NodeBuilder(diffGraph)
   private val edgeBuilder = new EdgeBuilder(diffGraph)
 

@@ -219,7 +219,7 @@ package object testing {
     }
 
     def withCustom(f: (DiffGraphBuilder, Cpg) => Unit): MockCpg = {
-      val diffGraph = new DiffGraphBuilder
+      val diffGraph = Cpg.newDiffGraphBuilder
       f(diffGraph, cpg)
       class MyPass extends CpgPass(cpg) {
         override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {

@@ -7,7 +7,7 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
 object Commit {
   val overlayName: String = "commit"
   val description: String = "Apply current custom diffgraph"
-  def defaultOpts         = new CommitOptions(new DiffGraphBuilder)
+  def defaultOpts         = new CommitOptions(Cpg.newDiffGraphBuilder)
 }
 
 class CommitOptions(var diffGraphBuilder: DiffGraphBuilder) extends LayerCreatorOptions
@@ -26,7 +26,7 @@ class Commit(opts: CommitOptions) extends LayerCreator {
       }
     }
     runPass(pass, context)
-    opts.diffGraphBuilder = new DiffGraphBuilder
+    opts.diffGraphBuilder = Cpg.newDiffGraphBuilder
   }
 
 }

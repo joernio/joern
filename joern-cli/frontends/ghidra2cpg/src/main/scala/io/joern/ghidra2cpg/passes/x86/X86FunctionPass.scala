@@ -51,7 +51,7 @@ class X86FunctionPass(
     val blockNode: NewBlock = nodes.NewBlock().code("").order(0)
     val methodNode =
       createMethodNode(decompiler, function, filename, checkIfExternal(currentProgram, function.getName))
-    val localGraphBuilder = new DiffGraphBuilder()
+    val localGraphBuilder = Cpg.newDiffGraphBuilder
     val methodReturn      = createReturnNode()
     localGraphBuilder.addNode(methodNode)
     localGraphBuilder.addNode(blockNode)

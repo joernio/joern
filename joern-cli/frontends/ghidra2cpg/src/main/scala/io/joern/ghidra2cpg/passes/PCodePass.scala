@@ -116,7 +116,7 @@ class PCodePass(currentProgram: Program, fileName: String, functions: List[Funct
   }
 
   override def runOnPart(diffGraphBuilder: DiffGraphBuilder, function: Function): Unit = {
-    val localDiffGraph = new DiffGraphBuilder
+    val localDiffGraph = Cpg.newDiffGraphBuilder
     // we need it just once with default settings
     val blockNode  = nodes.NewBlock().code("").order(0)
     val methodNode = createMethodNode(decompiler, function, fileName, checkIfExternal(currentProgram, function.getName))

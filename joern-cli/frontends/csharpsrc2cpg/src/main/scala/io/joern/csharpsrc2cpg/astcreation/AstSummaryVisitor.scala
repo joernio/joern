@@ -37,7 +37,7 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
 
       // Simulate AST Linker for global namespace
       val globalNode      = NewNamespaceBlock().fullName(Constants.Global).name(Constants.Global)
-      val globalDiffGraph = new DiffGraphBuilder
+      val globalDiffGraph = Cpg.newDiffGraphBuilder
       cpg.typeDecl
         .where(_.astParentFullNameExact(Constants.Global))
         .foreach(globalDiffGraph.addEdge(globalNode, _, EdgeTypes.AST))
