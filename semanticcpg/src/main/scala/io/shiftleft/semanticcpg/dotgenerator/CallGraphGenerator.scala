@@ -2,10 +2,6 @@ package io.shiftleft.semanticcpg.dotgenerator
 
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Method, StoredNode}
-// TODO cleanup imports
-import io.shiftleft.codepropertygraph.generated.accessors.Lang.*
-import io.shiftleft.codepropertygraph.generated.neighboraccessors.Lang.*
-
 import io.shiftleft.semanticcpg.dotgenerator.DotSerializer.{Edge, Graph}
 import io.shiftleft.semanticcpg.language.*
 

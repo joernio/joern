@@ -1,8 +1,6 @@
 package io.shiftleft.semanticcpg.language
 
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.accessors.Lang.*
-import io.shiftleft.codepropertygraph.generated.neighboraccessors.Lang.*
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.{Logger, LoggerFactory}
 
