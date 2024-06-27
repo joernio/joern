@@ -10,12 +10,12 @@ trait AstGenNodeBuilder[NodeProcessor] extends AstNodeBuilder[BaseNodeInfo[?], N
 
   override def code(node: BaseNodeInfo[?]): String = Option(node).map(_.code).getOrElse(PropertyDefaults.Code)
 
-  override def line(node: BaseNodeInfo[?]): Option[Integer] = Option(node).flatMap(_.lineNumber)
+  override def line(node: BaseNodeInfo[?]): Option[Int] = Option(node).flatMap(_.lineNumber)
 
-  override def lineEnd(node: BaseNodeInfo[?]): Option[Integer] = Option(node).flatMap(_.lineNumberEnd)
+  override def lineEnd(node: BaseNodeInfo[?]): Option[Int] = Option(node).flatMap(_.lineNumberEnd)
 
-  override def column(node: BaseNodeInfo[?]): Option[Integer] = Option(node).flatMap(_.columnNumber)
+  override def column(node: BaseNodeInfo[?]): Option[Int] = Option(node).flatMap(_.columnNumber)
 
-  override def columnEnd(node: BaseNodeInfo[?]): Option[Integer] = Option(node).flatMap(_.columnNumberEnd)
+  override def columnEnd(node: BaseNodeInfo[?]): Option[Int] = Option(node).flatMap(_.columnNumberEnd)
 
 }
