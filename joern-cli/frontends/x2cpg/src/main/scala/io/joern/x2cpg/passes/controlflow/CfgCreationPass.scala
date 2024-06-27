@@ -19,7 +19,7 @@ class CfgCreationPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg) {
   override def generateParts(): Array[Method] = cpg.method.toArray
 
   override def runOnPart(diffGraph: DiffGraphBuilder, method: Method): Unit = {
-    val localDiff = new DiffGraphBuilder
+    val localDiff = Cpg.newDiffGraphBuilder
     new CfgCreator(method, localDiff).run()
     diffGraph.absorb(localDiff)
   }
