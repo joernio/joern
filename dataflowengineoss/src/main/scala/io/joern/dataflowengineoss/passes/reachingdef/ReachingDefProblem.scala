@@ -228,7 +228,7 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph)
 
     val allIdentifiers: Map[String, List[CfgNode]] = {
       val results             = mutable.Map.empty[String, List[CfgNode]]
-      val identifierName2Node = method.identifierViaContainsOut.map { identifier => (identifier.name, identifier) }
+      val identifierName2Node = method._identifierViaContainsOut.map { identifier => (identifier.name, identifier) }
       val paramName2Node      = method.parameter.map { parameter => (parameter.name, parameter) }
       (identifierName2Node ++ paramName2Node)
         .foreach { case (name, node) =>
@@ -309,7 +309,7 @@ class OptimizedReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph)
     extends ReachingDefTransferFunction(flowGraph) {
 
   lazy val loneIdentifiers: Map[Call, List[Definition]] = {
-    val identifiersInReturns = method.returnViaContainsOut.ast.isIdentifier.name.l
+    val identifiersInReturns = method._returnViaContainsOut.ast.isIdentifier.name.l
     val paramAndLocalNames   = method.parameter.name.l ++ method.local.name.l
     val callArgPairs = method.call.flatMap { call =>
       call.argument.isIdentifier

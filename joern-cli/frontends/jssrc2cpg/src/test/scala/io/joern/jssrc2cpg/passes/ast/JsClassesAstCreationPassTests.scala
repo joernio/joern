@@ -172,7 +172,7 @@ class JsClassesAstCreationPassTests extends AstJsSrc2CpgSuite {
       val List(program)         = cpg.method.nameExact(":program").l
       val List(programBlock)    = program.astChildren.isBlock.l
       val List(assignmentToTmp) = programBlock.astChildren.isCall.l
-      val List(rhs)             = assignmentToTmp.typeRefViaAstOut.l
+      val List(rhs)             = assignmentToTmp._typeRefViaAstOut.l
       rhs.typeFullName shouldBe "Test0.js::program:ClassA"
     }
 

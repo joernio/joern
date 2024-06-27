@@ -95,7 +95,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         inside(allocAssign.astChildren.l) { case List(tmpIdentifier: Identifier, allocCall: Call) =>
           tmpIdentifier.name shouldBe "tmp0"
           tmpIdentifier.code shouldBe "$tmp0"
-          tmpIdentifier.localViaRefOut should contain(tmpLocal)
+          tmpIdentifier._localViaRefOut should contain(tmpLocal)
 
           allocCall.name shouldBe Operators.alloc
           allocCall.methodFullName shouldBe Operators.alloc
@@ -111,7 +111,7 @@ class TypeDeclTests extends PhpCode2CpgFixture {
           tmpIdentifier.name shouldBe "tmp0"
           tmpIdentifier.code shouldBe "$tmp0"
           tmpIdentifier.argumentIndex shouldBe 0
-          tmpIdentifier.localViaRefOut should contain(tmpLocal)
+          tmpIdentifier._localViaRefOut should contain(tmpLocal)
           literal.code shouldBe "42"
           literal.argumentIndex shouldBe 1
         }

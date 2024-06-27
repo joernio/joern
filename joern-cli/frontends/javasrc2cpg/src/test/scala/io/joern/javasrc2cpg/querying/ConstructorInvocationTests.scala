@@ -274,7 +274,7 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
 
         init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
         init.methodFullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int,int)"
-        init.methodViaCallOut.head.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int,int)"
+        init._methodViaCallOut.head.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int,int)"
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
         init.typeFullName shouldBe "void"
         init.signature shouldBe "void(int,int)"
@@ -315,7 +315,7 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
 
         init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
         init.methodFullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int,int)"
-        init.methodViaCallOut.head.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int,int)"
+        init._methodViaCallOut.head.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int,int)"
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
         init.typeFullName shouldBe "void"
         init.signature shouldBe "void(int,int)"
@@ -368,7 +368,7 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
 
         init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
         init.methodFullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
-        init.methodViaCallOut.head.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
+        init._methodViaCallOut.head.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
         init.signature shouldBe "void(int)"
         init.code shouldBe "new Bar(42)"
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
@@ -417,7 +417,7 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
 
         init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
         init.methodFullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
-        init.methodViaCallOut.head.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
+        init._methodViaCallOut.head.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
         init.signature shouldBe "void(int)"
         init.code shouldBe "new Bar(42)"
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()

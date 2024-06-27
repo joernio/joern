@@ -11,7 +11,7 @@ class TypeDeclTraversal(val traversal: Iterator[TypeDecl]) extends AnyVal {
   /** Annotations of the type declaration
     */
   def annotation: Iterator[Annotation] =
-    traversal.flatMap(_.annotationViaAstOut)
+    traversal.flatMap(_._annotationViaAstOut)
 
   /** Types referencing to this type declaration.
     */
@@ -26,7 +26,7 @@ class TypeDeclTraversal(val traversal: Iterator[TypeDecl]) extends AnyVal {
   /** Methods defined as part of this type
     */
   def method: Iterator[Method] =
-    canonicalType.flatMap(_.methodViaAstOut)
+    canonicalType.flatMap(_._methodViaAstOut)
 
   /** Filter for type declarations contained in the analyzed code.
     */
@@ -41,12 +41,12 @@ class TypeDeclTraversal(val traversal: Iterator[TypeDecl]) extends AnyVal {
   /** Member variables
     */
   def member: Iterator[Member] =
-    canonicalType.flatMap(_.memberViaAstOut)
+    canonicalType.flatMap(_._memberViaAstOut)
 
   /** Direct base types in the inheritance graph.
     */
   def baseType: Iterator[Type] =
-    canonicalType.flatMap(_.typeViaInheritsFromOut)
+    canonicalType.flatMap(_._typeViaInheritsFromOut)
 
   /** Direct base type declaration.
     */

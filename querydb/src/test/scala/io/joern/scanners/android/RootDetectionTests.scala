@@ -9,7 +9,7 @@ class RootDetectionTests extends KotlinQueryTestSuite(RootDetection) {
 
   "the `rootDetectionViaFileChecks` query" when {
     "should match on all multi-file positive examples" in {
-      val q = queryBundle.rootDetectionViaFileChecks()
+      val q = queryBundle._rootDetectionViaFileChecks()
       q.multiFileCodeExamples.positive.filter(_.nonEmpty).foreach { snippets =>
         val cpg = cpgForSnippets(snippets)
         findMatchingMethods(cpg, q).size shouldBe 1
@@ -17,7 +17,7 @@ class RootDetectionTests extends KotlinQueryTestSuite(RootDetection) {
     }
 
     "should not match on all multi-file negative examples" in {
-      val q = queryBundle.rootDetectionViaFileChecks()
+      val q = queryBundle._rootDetectionViaFileChecks()
       q.multiFileCodeExamples.negative.filter(_.nonEmpty).foreach { snippets =>
         val cpg = cpgForSnippets(snippets)
         findMatchingMethods(cpg, q).size shouldBe 0

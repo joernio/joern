@@ -61,7 +61,7 @@ class JavaScriptImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
 
     def targetAssignments = targetModule
       .nameExact(Defines.Program)
-      .flatMap(_.callViaContainsOut)
+      .flatMap(_._callViaContainsOut)
       .assignment
 
     val matchingExports = if (isImportingModule) {

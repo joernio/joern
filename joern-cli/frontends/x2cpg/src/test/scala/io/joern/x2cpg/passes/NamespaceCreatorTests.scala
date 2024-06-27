@@ -23,7 +23,7 @@ class NamespaceCreatorTests extends AnyWordSpec with Matchers {
     namespaces.size shouldBe 2
     namespaces.map(_.name).toSet shouldBe Set("namespace1", "namespace2")
 
-    val namspaceBlocks = cpg.namespace.flatMap(_.namespaceBlockViaRefIn).toSet
+    val namspaceBlocks = cpg.namespace.flatMap(_._namespaceBlockViaRefIn).toSet
     namspaceBlocks shouldBe Set(block1, block2, block3)
   }
 }

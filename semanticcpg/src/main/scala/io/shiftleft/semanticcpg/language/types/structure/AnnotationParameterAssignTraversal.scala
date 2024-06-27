@@ -10,7 +10,7 @@ class AnnotationParameterAssignTraversal(val traversal: Iterator[AnnotationParam
   /** Traverse to all annotation parameters
     */
   def parameter: Iterator[AnnotationParameter] =
-    traversal.flatMap(_.annotationParameterViaAstOut)
+    traversal.flatMap(_._annotationParameterViaAstOut)
 
   /** Traverse to all values of annotation parameters
     */

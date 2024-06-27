@@ -29,7 +29,7 @@ class CallGraphGenerator {
   }
 
   def storeInSubgraph(method: Method, subgraph: mutable.Map[String, Seq[StoredNode]]): Unit = {
-    method.typeDeclViaAstIn match {
+    method._typeDeclViaAstIn match {
       case Some(typeDeclName) =>
         subgraph.put(typeDeclName.fullName, subgraph.getOrElse(typeDeclName.fullName, Seq()) ++ Seq(method))
       case None =>

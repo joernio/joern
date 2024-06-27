@@ -10,11 +10,11 @@ class MemberTraversal(val traversal: Iterator[Member]) extends AnyVal {
   /** Traverse to annotations of member
     */
   def annotation: Iterator[Annotation] =
-    traversal.flatMap(_.annotationViaAstOut)
+    traversal.flatMap(_._annotationViaAstOut)
 
   /** Places where
     */
   def ref: Iterator[Call] =
-    traversal.flatMap(_.callViaRefIn)
+    traversal.flatMap(_._callViaRefIn)
 
 }

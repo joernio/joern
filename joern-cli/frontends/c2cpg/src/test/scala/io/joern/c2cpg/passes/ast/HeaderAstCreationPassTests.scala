@@ -64,7 +64,7 @@ class HeaderAstCreationPassTests extends C2CpgSuite {
           mainImport.code shouldBe "#include \"main.h\""
           mainImport.importedEntity shouldBe Some("main.h")
           mainImport.importedAs shouldBe Some("main.h")
-          mainImport.dependencyViaImportsOut.head shouldBe mainDep
+          mainImport._dependencyViaImportsOut.head shouldBe mainDep
           mainImport.file.name.l shouldBe List("main.c")
         }
       }

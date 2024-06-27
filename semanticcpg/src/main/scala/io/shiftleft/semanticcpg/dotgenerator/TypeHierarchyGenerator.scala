@@ -15,14 +15,14 @@ class TypeHierarchyGenerator {
     val typeToIsExternal = vertices.map { t => t.fullName -> t.isExternal }.toMap
     val edges = for {
       srcTypeDecl <- vertices
-      srcType     <- srcTypeDecl.typeViaRefIn.l
+      srcType     <- srcTypeDecl._typeViaRefIn.l
       _ = storeInSubgraph(srcType, subgraph, typeToIsExternal)
       tgtType <- srcTypeDecl.inheritsFromOut
     } yield {
       storeInSubgraph(tgtType, subgraph, typeToIsExternal)
       Edge(tgtType, srcType)
     }
-    Graph(vertices.flatMap(_.typeViaRefIn.l), edges.distinct, subgraph.toMap)
+    Graph(vertices.flatMap(_._typeViaRefIn.l), edges.distinct, subgraph.toMap)
   }
 
   def storeInSubgraph(

@@ -169,7 +169,7 @@ class DdgGenerator(semantics: Semantics) {
 
     def addEdgesToCapturedIdentifiersAndParameters(): Unit = {
       val identifierDestPairs =
-        method.identifierViaContainsOut
+        method._identifierViaContainsOut
           .flatMap { identifier =>
             identifierToFirstUsages(identifier).map(usage => (identifier, usage))
           }
@@ -191,7 +191,7 @@ class DdgGenerator(semantics: Semantics) {
       // modelling data-flow is unsound as the engine assumes REACHING_DEF edges are intraprocedural.
       // See PR #3735 on Joern for details
       val globalIdentifiers =
-        (method.callViaContainsOut ++ method.returnViaContainsOut).ast.isLiteral
+        (method._callViaContainsOut ++ method._returnViaContainsOut).ast.isLiteral
           .flatMap(globalFromLiteral(_))
           .collectAll[Identifier]
           .l

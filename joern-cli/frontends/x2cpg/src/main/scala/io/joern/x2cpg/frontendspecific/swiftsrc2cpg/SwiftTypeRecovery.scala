@@ -93,7 +93,7 @@ private class RecoverForSwiftFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder,
 
   private lazy val exportedIdentifiers = cu.method
     .nameExact("<global>")
-    .flatMap(_.callViaContainsOut)
+    .flatMap(_._callViaContainsOut)
     .nameExact(Operators.assignment)
     .filter(_.code.startsWith("@_exported"))
     .argument
@@ -183,7 +183,7 @@ private class RecoverForSwiftFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder,
   override protected def postSetTypeInformation(): Unit = {
     // often there are "this" identifiers with type hints but this can be set to a type hint if they meet the criteria
     cu.method
-      .flatMap(_.identifierViaContainsOut)
+      .flatMap(_._identifierViaContainsOut)
       .nameExact("this")
       .where(_.typeFullNameExact(Defines.Any))
       .filterNot(_.dynamicTypeHintFullName.isEmpty)

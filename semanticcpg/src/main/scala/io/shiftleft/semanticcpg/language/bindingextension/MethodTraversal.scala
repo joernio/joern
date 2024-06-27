@@ -13,5 +13,5 @@ class MethodTraversal(val traversal: Iterator[Method]) extends AnyVal {
   /** Traverse to bindings which reference to this method.
     */
   def referencingBinding: Iterator[Binding] =
-    traversal.flatMap(_.bindingViaRefIn)
+    traversal.flatMap(_._bindingViaRefIn)
 }

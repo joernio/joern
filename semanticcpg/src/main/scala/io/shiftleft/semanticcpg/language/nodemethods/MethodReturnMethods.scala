@@ -10,7 +10,7 @@ class MethodReturnMethods(val node: MethodReturn) extends AnyVal with NodeExtens
   }
 
   def returnUser(implicit callResolver: ICallResolver): Iterator[Call] = {
-    val method    = node.methodViaAstIn
+    val method    = node._methodViaAstIn
     val callsites = callResolver.getMethodCallsites(method)
     // TODO for now we filter away all implicit calls because a change of the
     // return type to CallRepr would lead to a break in the API aka

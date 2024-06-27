@@ -13,7 +13,7 @@ class MethodParameterTraversal(val traversal: Iterator[MethodParameterIn]) exten
   /** Traverse to parameter annotations */
   @Doc(info = "Traverse to parameter annotations")
   def annotation: Iterator[Annotation] =
-    traversal.flatMap(_.annotationViaAstOut)
+    traversal.flatMap(_._annotationViaAstOut)
 
   /** Traverse to all parameters with index greater or equal than `num` */
   @Doc(info = "Traverse to all parameters with index greater or equal than `num`")

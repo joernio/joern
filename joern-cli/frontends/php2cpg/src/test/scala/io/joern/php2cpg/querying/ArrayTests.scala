@@ -86,7 +86,7 @@ class ArrayTests extends PhpCode2CpgFixture {
 
         tmpIdent.name shouldBe "tmp0"
         tmpIdent.code shouldBe "$tmp0"
-        tmpIdent.localViaRefOut should contain(tmpLocal)
+        tmpIdent._localViaRefOut should contain(tmpLocal)
       }
     }
   }
@@ -112,7 +112,7 @@ class ArrayTests extends PhpCode2CpgFixture {
 
         tmpIdent.name shouldBe "tmp0"
         tmpIdent.code shouldBe "$tmp0"
-        tmpIdent.localViaRefOut should contain(tmpLocal)
+        tmpIdent._localViaRefOut should contain(tmpLocal)
       }
     }
   }
@@ -140,7 +140,7 @@ class ArrayTests extends PhpCode2CpgFixture {
 
         tmpIdent.name shouldBe "tmp0"
         tmpIdent.code shouldBe "$tmp0"
-        tmpIdent.localViaRefOut should contain(tmpLocal)
+        tmpIdent._localViaRefOut should contain(tmpLocal)
       }
     }
   }
@@ -183,7 +183,7 @@ class ArrayTests extends PhpCode2CpgFixture {
 
           tmpIdent.name shouldBe "tmp0"
           tmpIdent.code shouldBe "$tmp0"
-          tmpIdent.localViaRefOut should contain(tmpLocal)
+          tmpIdent._localViaRefOut should contain(tmpLocal)
       }
     }
   }

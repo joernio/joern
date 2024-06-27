@@ -13,7 +13,7 @@ class MethodTraversal(val traversal: Iterator[Method]) extends AnyVal {
   /** Traverse to annotations of method
     */
   def annotation: Iterator[nodes.Annotation] =
-    traversal.flatMap(_.annotationViaAstOut)
+    traversal.flatMap(_._annotationViaAstOut)
 
   /** All control structures of this method
     */
