@@ -34,7 +34,7 @@ git fetch upstream
 
 git checkout backup_sync
 git checkout -b "$MODIFIED_BRANCH"
-git pull origin "$MODIFIED_BRANCH" --ff-only
+git pull origin "$MODIFIED_BRANCH"
 git merge upstream/master
 git push origin "$MODIFIED_BRANCH"
 
