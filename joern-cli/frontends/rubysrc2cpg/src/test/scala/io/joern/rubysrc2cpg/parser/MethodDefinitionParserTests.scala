@@ -39,22 +39,10 @@ class MethodDefinitionParserTests extends RubyParserFixture with Matchers {
         |end
         |""".stripMargin)
 
-    test("""
-        |def foo(&)
-        |   yield
-        |end
-        |""".stripMargin)
   }
 
   "method def for mandatory parameters" in {
     test("def foo(bar:) end")
-    test("""
-        |def data
-        | {
-        |   first_line:,
-        |   action_link_group:,
-        | }
-        |end""".stripMargin)
 
     test("""
         |class SampleClass

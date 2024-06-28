@@ -89,9 +89,6 @@ class RubyParserFixture
     ast match {
       case Some(ast) =>
         val compareTo = if (expected != null) expected else code
-        println(ast)
-        println(ast.span.text)
-        println(compareTo)
         ast.span.text shouldBe compareTo
       case None => fail("AST generation failed")
     }

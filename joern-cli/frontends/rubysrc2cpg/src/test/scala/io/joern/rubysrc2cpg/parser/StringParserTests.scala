@@ -56,7 +56,6 @@ class StringParserTests extends RubyParserFixture with Matchers {
 
   // TODO: Failing tests
   "Text and numeric literal interpolation" ignore {
-    test("""text=#{1}""")
     test("#{1}#{2}")
     test("""#{10} \
         | "is a number."""".stripMargin)
