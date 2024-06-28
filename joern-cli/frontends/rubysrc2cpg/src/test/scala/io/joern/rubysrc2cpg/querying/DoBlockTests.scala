@@ -2,6 +2,7 @@ package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.passes.GlobalTypes.builtinPrefix
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
@@ -36,6 +37,10 @@ class DoBlockTests extends RubyCode2CpgFixture {
             case closureType :: Nil =>
               closureType.name shouldBe "<lambda>0"
               closureType.fullName shouldBe "Test0.rb:<global>::program:<lambda>0"
+
+              val callMember = closureType.member.nameExact("call").head
+              callMember.typeFullName shouldBe Defines.Any
+              callMember.dynamicTypeHintFullName shouldBe Seq("Test0.rb:<global>::program:<lambda>0")
             case xs => fail(s"Expected a one closure type node, instead got [${xs.code.mkString(", ")}]")
           }
         case xs => fail(s"Expected a single program module, instead got [${xs.code.mkString(", ")}]")
