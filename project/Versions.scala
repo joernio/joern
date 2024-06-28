@@ -20,7 +20,7 @@ object Versions {
   val jacksonDatabind        = "2.17.0"
   val javaParser             = "3.25.9"
   val json4s                 = "4.0.7"
-  val lombok                 = "1.18.32"
+  val lombok                 = "1.18.34"
   val mavenArcheologist      = "0.0.10"
   val pPrint                 = "0.8.1"
   val reflection             = "0.10.2"
