@@ -161,8 +161,8 @@ package object slicing {
     typeFullName: String = "",
     parentMethod: String = "",
     parentFile: String = "",
-    lineNumber: Option[Integer] = None,
-    columnNumber: Option[Integer] = None
+    lineNumber: Option[Int] = None,
+    columnNumber: Option[Int] = None
   ) derives ReadWriter
 
   case class SliceEdge(src: Long, dst: Long, label: String) derives ReadWriter

@@ -1,9 +1,8 @@
 package io.joern.rubysrc2cpg.querying
 
+import io.joern.rubysrc2cpg.passes.GlobalTypes.builtinPrefix
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
-import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelPrefix
-import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
@@ -38,6 +37,10 @@ class DoBlockTests extends RubyCode2CpgFixture {
             case closureType :: Nil =>
               closureType.name shouldBe "<lambda>0"
               closureType.fullName shouldBe "Test0.rb:<global>::program:<lambda>0"
+
+              val callMember = closureType.member.nameExact("call").head
+              callMember.typeFullName shouldBe Defines.Any
+              callMember.dynamicTypeHintFullName shouldBe Seq("Test0.rb:<global>::program:<lambda>0")
             case xs => fail(s"Expected a one closure type node, instead got [${xs.code.mkString(", ")}]")
           }
         case xs => fail(s"Expected a single program module, instead got [${xs.code.mkString(", ")}]")
@@ -260,7 +263,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
               tmpAssign.code shouldBe "<tmp-0> = Array.new(x) { |i| i += 1 }"
 
               newCall.name shouldBe "new"
-              newCall.methodFullName shouldBe s"$kernelPrefix.Array:initialize"
+              newCall.methodFullName shouldBe s"$builtinPrefix.Array:initialize"
 
               inside(newCall.argument.l) {
                 case (_: Identifier) :: (x: Identifier) :: (closure: MethodRef) :: Nil =>

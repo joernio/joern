@@ -18,7 +18,7 @@ class AstCreationPass(cpg: Cpg, astCreators: List[AstCreator]) extends ForkJoinP
   override def init(): Unit = {
     // The first entry will be the <empty> type, which is often found on fieldAccess nodes
     //   (which may be receivers to calls)
-    val diffGraph = new DiffGraphBuilder
+    val diffGraph = Cpg.newDiffGraphBuilder
     val emptyType =
       NewTypeDecl()
         .astParentType(NodeTypes.NAMESPACE_BLOCK)

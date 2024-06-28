@@ -34,7 +34,7 @@ class PythonAstVisitor(
     extends AstCreatorBase(relFileName)
     with PythonAstVisitorHelpers {
 
-  private val diffGraph     = new DiffGraphBuilder()
+  private val diffGraph     = Cpg.newDiffGraphBuilder
   protected val nodeBuilder = new NodeBuilder(diffGraph)
   protected val edgeBuilder = new EdgeBuilder(diffGraph)
 
