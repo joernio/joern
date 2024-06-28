@@ -34,8 +34,7 @@ git fetch upstream
 
 git checkout backup_sync
 git checkout -b "$MODIFIED_BRANCH"
-git pull origin "$MODIFIED_BRANCH"
-git merge upstream/master
+git pull upstream master --no-ff
 git push origin "$MODIFIED_BRANCH"
 
 if [ "$PUBLISH" = true ]; then
