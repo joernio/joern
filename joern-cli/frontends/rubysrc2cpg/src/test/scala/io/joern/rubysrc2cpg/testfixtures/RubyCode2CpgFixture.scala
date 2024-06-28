@@ -5,15 +5,25 @@ import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
 import io.joern.dataflowengineoss.testfixtures.{SemanticCpgTestFixture, SemanticTestCpg}
 import io.joern.rubysrc2cpg.deprecated.utils.PackageTable
+import io.joern.rubysrc2cpg.parser.{ResourceManagedParser, RubyNodeCreator, RubyParser}
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
 import io.joern.x2cpg.testfixtures.*
-import io.joern.x2cpg.{ValidationMode, X2Cpg}
+import io.joern.x2cpg.utils.{ConcurrentTaskUtil, ConcurrentTaskUtilTests, TestCodeWriter}
+import io.joern.x2cpg.{SourceFiles, ValidationMode, X2Cpg}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
 import org.scalatest.Tag
+import better.files.File as BFile
 
 import java.io.File
 import org.scalatest.Inside
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.{AnyWordSpec, AnyWordSpecLike}
+import org.slf4j.LoggerFactory
+
+import java.nio.charset.StandardCharsets
+import java.nio.file.{Files, Path as FPath}
+import scala.util.{Failure, Success, Using}
 
 trait RubyFrontend(useDeprecatedFrontend: Boolean, withDownloadDependencies: Boolean) extends LanguageFrontend {
   override val fileSuffix: String = ".rb"
@@ -26,6 +36,7 @@ trait RubyFrontend(useDeprecatedFrontend: Boolean, withDownloadDependencies: Boo
       .withDownloadDependencies(withDownloadDependencies)
 
   override def execute(sourceCodeFile: File): Cpg = {
+    println(sourceCodeFile.getAbsolutePath)
     new RubySrc2Cpg().createCpg(sourceCodeFile.getAbsolutePath).get
   }
 
@@ -52,7 +63,6 @@ class DefaultTestCpgWithRuby(
     }
     RubySrc2Cpg.postProcessingPasses(this, config).foreach(_.createAndApply())
   }
-
 }
 
 class RubyCode2CpgFixture(
