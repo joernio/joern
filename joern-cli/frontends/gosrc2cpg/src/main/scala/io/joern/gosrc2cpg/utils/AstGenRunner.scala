@@ -72,7 +72,7 @@ class AstGenRunner(config: Config, includeFileRegex: String = "") extends AstGen
     metaData: AstGenProgramMetaData
   ): Try[Seq[String]] = {
     val excludeCommand = if (exclude.isEmpty) "" else s"-exclude \"$exclude\""
-    val includeCommand = if (include.isEmpty) "" else s"-include \"$include\""
+    val includeCommand = if (include.isEmpty) "" else s"-include-packages \"$include\""
     ExternalCommand.run(s"$astGenCommand $excludeCommand $includeCommand -out ${out.toString()} $in", ".")
   }
 
