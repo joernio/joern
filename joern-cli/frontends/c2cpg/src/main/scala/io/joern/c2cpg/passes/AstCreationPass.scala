@@ -25,7 +25,7 @@ class AstCreationPass(cpg: Cpg, config: Config, report: Report = new Report())
 
   private val global = new Global()
 
-  def typesSeen(): List[String] = global.usedTypes.keys().asScala.filterNot(_ == Defines.anyTypeName).toList
+  def typesSeen(): List[String] = global.usedTypes.keys().asScala.filterNot(_ == Defines.Any).toList
 
   override def generateParts(): Array[String] = {
     val sourceFileExtensions = FileDefaults.SOURCE_FILE_EXTENSIONS

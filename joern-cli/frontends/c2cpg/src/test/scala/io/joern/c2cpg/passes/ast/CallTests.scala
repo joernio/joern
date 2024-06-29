@@ -341,9 +341,9 @@ class CallTests extends C2CpgSuite {
         "test.cpp"
       )
 
-      val List(call) = cpg.call.nameExact(Defines.operatorPointerCall).l
+      val List(call) = cpg.call.nameExact(Defines.OperatorPointerCall).l
       call.signature shouldBe ""
-      call.methodFullName shouldBe Defines.operatorPointerCall
+      call.methodFullName shouldBe Defines.OperatorPointerCall
       call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       call.typeFullName shouldBe "void"
 
@@ -408,9 +408,9 @@ class CallTests extends C2CpgSuite {
         "test.c"
       )
 
-      val List(call) = cpg.call.nameExact(Defines.operatorPointerCall).l
+      val List(call) = cpg.call.nameExact(Defines.OperatorPointerCall).l
       call.signature shouldBe ""
-      call.methodFullName shouldBe Defines.operatorPointerCall
+      call.methodFullName shouldBe Defines.OperatorPointerCall
       call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       call.typeFullName shouldBe "void"
 
@@ -562,9 +562,9 @@ class CallTests extends C2CpgSuite {
         "test.c"
       )
 
-      val List(call) = cpg.call.nameExact(Defines.operatorPointerCall).l
+      val List(call) = cpg.call.nameExact(Defines.OperatorPointerCall).l
       call.signature shouldBe ""
-      call.methodFullName shouldBe Defines.operatorPointerCall
+      call.methodFullName shouldBe Defines.OperatorPointerCall
       call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       call.typeFullName shouldBe X2CpgDefines.Any
 
@@ -610,9 +610,9 @@ class CallTests extends C2CpgSuite {
         "test.c"
       )
 
-      val List(call) = cpg.call.nameExact(Defines.operatorPointerCall).l
+      val List(call) = cpg.call.nameExact(Defines.OperatorPointerCall).l
       call.signature shouldBe ""
-      call.methodFullName shouldBe Defines.operatorPointerCall
+      call.methodFullName shouldBe Defines.OperatorPointerCall
       call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       call.typeFullName shouldBe X2CpgDefines.Any
 

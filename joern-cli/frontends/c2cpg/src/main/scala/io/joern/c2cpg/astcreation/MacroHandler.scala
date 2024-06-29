@@ -53,7 +53,7 @@ trait MacroHandler(implicit withSchemaValidation: ValidationMode) { this: AstCre
           case Some(_: NewBlock) =>
             newAst
           case _ =>
-            val b = NewBlock().argumentIndex(1).typeFullName(registerType(Defines.voidTypeName))
+            val b = NewBlock().argumentIndex(1).typeFullName(registerType(Defines.Void))
             blockAst(b, List(newAst))
         }
         callAst.withChildren(lostLocals).withChild(childAst)
