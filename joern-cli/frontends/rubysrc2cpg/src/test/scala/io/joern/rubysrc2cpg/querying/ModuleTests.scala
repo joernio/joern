@@ -17,7 +17,25 @@ class ModuleTests extends RubyCode2CpgFixture {
     m.fullName shouldBe "Test0.rb:<global>::program.M"
     m.lineNumber shouldBe Some(2)
     m.baseType.l shouldBe List()
-    m.member.name.l shouldBe List(Defines.Initialize)
-    m.method.name.l shouldBe List(Defines.Initialize)
+    m.member.name.l shouldBe List(Defines.TypeDeclBody)
+    m.method.name.l shouldBe List(Defines.TypeDeclBody)
   }
+
+  "nested modules are represented by nested TYPE_DECL nodes" in {
+    val cpg = code("""
+        |module M1
+        | module M2
+        | end
+        |end
+        |""".stripMargin)
+
+    val List(m) = cpg.typeDecl.name("M1").l
+
+    m.fullName shouldBe "Test0.rb:<global>::program.M1"
+    m.lineNumber shouldBe Some(2)
+    m.baseType.l shouldBe List()
+    m.member.name.l shouldBe List(Defines.TypeDeclBody)
+    m.method.name.l shouldBe List(Defines.TypeDeclBody)
+  }
+
 }

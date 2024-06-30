@@ -70,8 +70,8 @@ object NodeBuilders {
     dispatchType: String,
     argumentTypes: Iterable[String] = Nil,
     code: String = PropertyDefaults.Code,
-    lineNumber: Option[Integer] = None,
-    columnNumber: Option[Integer] = None
+    lineNumber: Option[Int] = None,
+    columnNumber: Option[Int] = None
   ): NewCall = {
     val signature      = composeCallSignature(returnTypeFullName, argumentTypes)
     val methodFullName = composeMethodFullName(typeDeclFullName, methodName, signature)
@@ -92,11 +92,7 @@ object NodeBuilders {
       .dependencyGroupId(groupId)
       .version(version)
 
-  def newFieldIdentifierNode(
-    name: String,
-    line: Option[Integer] = None,
-    column: Option[Integer] = None
-  ): NewFieldIdentifier = {
+  def newFieldIdentifierNode(name: String, line: Option[Int] = None, column: Option[Int] = None): NewFieldIdentifier = {
     NewFieldIdentifier()
       .canonicalName(name)
       .code(name)
@@ -114,7 +110,7 @@ object NodeBuilders {
     name: String,
     typeFullName: String,
     dynamicTypeHints: Seq[String],
-    line: Option[Integer]
+    line: Option[Int]
   ): NewIdentifier = {
     NewIdentifier()
       .code(name)
@@ -128,8 +124,8 @@ object NodeBuilders {
     name: String,
     code: String,
     typeFullName: Option[String] = None,
-    line: Option[Integer] = None,
-    column: Option[Integer] = None
+    line: Option[Int] = None,
+    column: Option[Int] = None
   ): NewCall = {
     NewCall()
       .name(name)
@@ -147,8 +143,8 @@ object NodeBuilders {
     code: String = "this",
     typeFullName: String,
     dynamicTypeHintFullName: Seq[String] = Seq.empty,
-    line: Option[Integer] = None,
-    column: Option[Integer] = None,
+    line: Option[Int] = None,
+    column: Option[Int] = None,
     evaluationStrategy: String = EvaluationStrategies.BY_SHARING
   ): NewMethodParameterIn = {
     NewMethodParameterIn()
@@ -168,8 +164,8 @@ object NodeBuilders {
   def newMethodReturnNode(
     typeFullName: String,
     dynamicTypeHintFullName: Option[String] = None,
-    line: Option[Integer],
-    column: Option[Integer]
+    line: Option[Int],
+    column: Option[Int]
   ): NewMethodReturn =
     NewMethodReturn()
       .typeFullName(typeFullName)

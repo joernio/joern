@@ -2,6 +2,7 @@ package io.joern.x2cpg
 
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, ModifierTypes}
 import io.shiftleft.passes.IntervalKeyPool
@@ -9,7 +10,7 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 abstract class AstCreatorBase(filename: String)(implicit withSchemaValidation: ValidationMode) {
-  val diffGraph: DiffGraphBuilder = new DiffGraphBuilder
+  val diffGraph: DiffGraphBuilder = Cpg.newDiffGraphBuilder
 
   private val closureKeyPool = new IntervalKeyPool(first = 0, last = Long.MaxValue)
 
@@ -97,8 +98,8 @@ abstract class AstCreatorBase(filename: String)(implicit withSchemaValidation: V
     signature: Option[String],
     returnType: String,
     fileName: Option[String] = None,
-    lineNumber: Option[Integer] = None,
-    columnNumber: Option[Integer] = None
+    lineNumber: Option[Int] = None,
+    columnNumber: Option[Int] = None
   ): Ast = {
     val methodNode = NewMethod()
       .name(Defines.StaticInitMethodName)
@@ -147,7 +148,7 @@ abstract class AstCreatorBase(filename: String)(implicit withSchemaValidation: V
     }
   }
 
-  def wrapMultipleInBlock(asts: Seq[Ast], lineNumber: Option[Integer]): Ast = {
+  def wrapMultipleInBlock(asts: Seq[Ast], lineNumber: Option[Int]): Ast = {
     asts.toList match {
       case Nil        => blockAst(NewBlock().lineNumber(lineNumber))
       case ast :: Nil => ast
@@ -159,8 +160,8 @@ abstract class AstCreatorBase(filename: String)(implicit withSchemaValidation: V
     condition: Option[Ast],
     body: Seq[Ast],
     code: Option[String] = None,
-    lineNumber: Option[Integer] = None,
-    columnNumber: Option[Integer] = None
+    lineNumber: Option[Int] = None,
+    columnNumber: Option[Int] = None
   ): Ast = {
     var whileNode = NewControlStructure()
       .controlStructureType(ControlStructureTypes.WHILE)
@@ -176,8 +177,8 @@ abstract class AstCreatorBase(filename: String)(implicit withSchemaValidation: V
     condition: Option[Ast],
     body: Seq[Ast],
     code: Option[String] = None,
-    lineNumber: Option[Integer] = None,
-    columnNumber: Option[Integer] = None
+    lineNumber: Option[Int] = None,
+    columnNumber: Option[Int] = None
   ): Ast = {
     var doWhileNode = NewControlStructure()
       .controlStructureType(ControlStructureTypes.DO)

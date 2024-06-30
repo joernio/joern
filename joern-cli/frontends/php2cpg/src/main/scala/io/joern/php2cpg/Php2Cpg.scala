@@ -4,12 +4,10 @@ import io.joern.php2cpg.parser.PhpParser
 import io.joern.php2cpg.passes.*
 import io.joern.php2cpg.utils.DependencyDownloader
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
-import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass, XTypeRecoveryConfig, XTypeStubsParserConfig}
+import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.joern.x2cpg.utils.ExternalCommand
 import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
-import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.Languages
-import io.shiftleft.passes.CpgPassBase
+import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
@@ -88,21 +86,5 @@ class Php2Cpg extends X2CpgFrontend[Config] {
         Option(config.ignoredFiles)
       )
       .filter(_.endsWith("composer.json"))
-  }
-}
-
-object Php2Cpg {
-
-  def postProcessingPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] = {
-    val typeRecoveryConfig = config
-      .map(c => XTypeRecoveryConfig(c.typePropagationIterations, !c.disableDummyTypes))
-      .getOrElse(XTypeRecoveryConfig(iterations = 3))
-    val setKnownTypesConfig = config
-      .map(c => XTypeStubsParserConfig(c.typeStubsFilePath))
-      .getOrElse(XTypeStubsParserConfig())
-    List(
-      new ComposerAutoloadPass(cpg),
-      new PhpTypeStubsParserPass(cpg, setKnownTypesConfig)
-    ) ++ new PhpTypeRecoveryPassGenerator(cpg, typeRecoveryConfig).generate() :+ PhpTypeHintCallLinker(cpg)
   }
 }

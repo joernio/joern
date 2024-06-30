@@ -1430,6 +1430,13 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         case result        => fail(s"Expected single foo call but got $result")
       }
     }
+
+    "provide meaningful typeFullName for the target of assignment" in {
+      cpg.assignment.target.isIdentifier.name("a").l match {
+        case List(a) => a.typeFullName shouldBe "foo.<returnValue>"
+        case result  => fail(s"Expected single assignment to a, but got $result")
+      }
+    }
   }
 
   "external non imported call with int variable for argument" should {
@@ -1442,6 +1449,27 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       cpg.call("foo").l match {
         case List(fooCall) => fooCall.methodFullName shouldBe "<unknownFullName>"
         case result        => fail(s"Expected single foo call but got $result")
+      }
+    }
+  }
+
+  "assignment to non imported call with int variable for argument" should {
+    val cpg = code("""
+        |a = 10
+        |b = foo(a)
+        |""".stripMargin)
+
+    "have correct methodFullName for `foo`" in {
+      cpg.call("foo").l match {
+        case List(fooCall) => fooCall.methodFullName shouldBe "<unknownFullName>"
+        case result        => fail(s"Expected single foo call but got $result")
+      }
+    }
+
+    "provide meaningful typeFullName for the target of the assignment" in {
+      cpg.assignment.target.isIdentifier.name("b").l match {
+        case List(b) => b.typeFullName shouldBe "foo.<returnValue>"
+        case result  => fail(s"Expected single assignment to b, but got $result")
       }
     }
   }
@@ -1498,6 +1526,118 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       cpg.assignment.target.isIdentifier.name("x").l match {
         case List(x) => x.typeFullName shouldBe "helpers.py:<module>.foo.<returnValue>.<indexAccess>"
         case result  => fail(s"Expected single assignment to x, but got $result")
+      }
+    }
+  }
+
+  "assignment to non-chained index access of an imported member method call" should {
+    val cpg = code("""
+        |import foo
+        |x = foo.bar()
+        |y = x[0]
+        |""".stripMargin)
+
+    "provide meaningful typeFullName for the target of the first assignment" in {
+      cpg.assignment.target.isIdentifier.name("x").l match {
+        case List(x) => x.typeFullName shouldBe "foo.py:<module>.bar.<returnValue>"
+        case result  => fail(s"Expected single assignment to x, but got $result")
+      }
+    }
+
+    "provide meaningful typeFullName for the target of the second assignment" in {
+      cpg.assignment.target.isIdentifier.name("y").l match {
+        case List(y) => y.typeFullName shouldBe "foo.py:<module>.bar.<returnValue>.<indexAccess>"
+        case result  => fail(s"Expected single assignment to y, but got $result")
+      }
+    }
+  }
+
+  "assignment to chained index access of an imported member method call" should {
+    val cpg = code("""
+        |import foo
+        |y = foo.bar()[0]
+        |""".stripMargin)
+
+    "provide meaningful typeFullName for the target of the assignment" in {
+      cpg.assignment.target.isIdentifier.name("y").l match {
+        case List(y) => y.typeFullName shouldBe "foo.py:<module>.bar.<returnValue>.<indexAccess>"
+        case result  => fail(s"Expected single assignment to y, but got $result")
+      }
+    }
+  }
+
+  "assignment to interspersed index access with imported method calls" should {
+    val cpg = code("""
+        |import foo
+        |x = foo.bar()[0].baz()
+        |""".stripMargin)
+
+    "have correct methodFullName for `bar`" in {
+      cpg.call.name("bar").l match {
+        case List(bar) => bar.methodFullName shouldBe "foo.py:<module>.bar"
+        case result    => fail(s"Expected single call to bar, but got $result")
+      }
+    }
+
+    "have correct methodFullName for `baz`" in {
+      cpg.call.name("baz").l match {
+        case List(baz) => baz.methodFullName shouldBe "foo.py:<module>.bar.<returnValue>.<indexAccess>.baz"
+        case result    => fail(s"Expected single call to baz, but got $result")
+      }
+    }
+
+    // TODO: Missing the last <returnValue>. Needs to take into account the lowering of consecutive
+    //  field accesses into three-address code blocks.
+    "provide meaningful typeFullName for the target of the assignment" ignore {
+      cpg.assignment.target.isIdentifier.name("x").l match {
+        case List(x) => x.typeFullName shouldBe "foo.py:<module>.bar.<returnValue>.<indexAccess>.baz.<returnValue>"
+        case result  => fail(s"Expected single assignment to x, but got $result")
+      }
+    }
+  }
+
+  "call to interspersed index access with imported method calls and constructors" should {
+    val cpg = code("""
+        |import boto3
+        |sqs = boto3.resource('sqs')
+        |queue = sqs.Queue('url')
+        |queue.receive_messages()[0].delete()
+        |""".stripMargin)
+
+    "have correct methodFullName for `delete`" in {
+      cpg.call.name("delete").l match {
+        case List(delete) =>
+          delete.methodFullName shouldBe "boto3.py:<module>.resource.<returnValue>.Queue.receive_messages.<returnValue>.<indexAccess>.delete"
+        case result => fail(s"Expected single call to delete, but got $result")
+      }
+    }
+
+    "have correct methodFullName for `resource`" in {
+      cpg.call.name("resource").l match {
+        case List(resource) => resource.methodFullName shouldBe "boto3.py:<module>.resource"
+        case result         => fail(s"Expected single call to resource, but got $result")
+      }
+    }
+
+    "have correct methodFullName for `receive_messages`" in {
+      cpg.call.name("receive_messages").l match {
+        case List(recv) =>
+          recv.methodFullName shouldBe "boto3.py:<module>.resource.<returnValue>.Queue.receive_messages"
+        case result => fail(s"Expected single call to receive_messages, but got $result")
+      }
+    }
+
+    "provide meaningful typeFullName for `sqs`" in {
+      cpg.assignment.target.isIdentifier.name("sqs").l match {
+        case List(sqs) => sqs.typeFullName shouldBe "boto3.py:<module>.resource.<returnValue>"
+        case result    => fail(s"Expected single assignment to sqs, but got $result")
+      }
+    }
+
+    "provide meaningful typeFullName for `queue`" in {
+      cpg.assignment.target.isIdentifier.name("queue").l match {
+        case List(queue) => queue.typeFullName shouldBe "boto3.py:<module>.resource.<returnValue>.Queue"
+        case result      => fail(s"Expected single assignment to queue, but got $result")
       }
     }
   }

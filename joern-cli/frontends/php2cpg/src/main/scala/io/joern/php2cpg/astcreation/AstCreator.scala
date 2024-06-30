@@ -166,7 +166,7 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
     Ast(thisNode)
   }
 
-  private def thisIdentifier(lineNumber: Option[Integer]): NewIdentifier = {
+  private def thisIdentifier(lineNumber: Option[Int]): NewIdentifier = {
     val typ = scope.getEnclosingTypeDeclTypeName
     newIdentifierNode(NameConstants.This, typ.getOrElse("ANY"), typ.toList, lineNumber)
       .code(s"$$${NameConstants.This}")
@@ -562,7 +562,7 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
     wrapMultipleInBlock(imports, line(stmt))
   }
 
-  private def astForKeyValPair(key: PhpExpr, value: PhpExpr, lineNo: Option[Integer]): Ast = {
+  private def astForKeyValPair(key: PhpExpr, value: PhpExpr, lineNo: Option[Int]): Ast = {
     val keyAst   = astForExpr(key)
     val valueAst = astForExpr(value)
 
@@ -661,7 +661,7 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
     simpleAssignAst(assignItemTargetAst, valueAst, line(stmt))
   }
 
-  private def simpleAssignAst(target: Ast, source: Ast, lineNo: Option[Integer]): Ast = {
+  private def simpleAssignAst(target: Ast, source: Ast, lineNo: Option[Int]): Ast = {
     val code     = s"${target.rootCodeOrEmpty} = ${source.rootCodeOrEmpty}"
     val callNode = newOperatorCallNode(Operators.assignment, code, line = lineNo)
     callAst(callNode, target :: source :: Nil)
@@ -1723,11 +1723,11 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
     }
   }
 
-  protected def line(phpNode: PhpNode): Option[Integer]      = phpNode.attributes.lineNumber
-  protected def column(phpNode: PhpNode): Option[Integer]    = None
-  protected def lineEnd(phpNode: PhpNode): Option[Integer]   = None
-  protected def columnEnd(phpNode: PhpNode): Option[Integer] = None
-  protected def code(phpNode: PhpNode): String               = "" // Sadly, the Php AST does not carry any code fields
+  protected def line(phpNode: PhpNode): Option[Int]      = phpNode.attributes.lineNumber
+  protected def column(phpNode: PhpNode): Option[Int]    = None
+  protected def lineEnd(phpNode: PhpNode): Option[Int]   = None
+  protected def columnEnd(phpNode: PhpNode): Option[Int] = None
+  protected def code(phpNode: PhpNode): String           = "" // Sadly, the Php AST does not carry any code fields
 
   override protected def offset(phpNode: PhpNode): Option[(Int, Int)] = {
     Option.when(!disableFileContent) {

@@ -91,7 +91,7 @@ class DdgGenerator {
     val allInEdges = v
       .inE(EdgeTypes.REACHING_DEF)
       .map(x =>
-        Edge(x.outNode.asInstanceOf[StoredNode], v, srcVisible = true, x.property(Properties.VARIABLE), edgeType)
+        Edge(x.outNode.asInstanceOf[StoredNode], v, srcVisible = true, x.property(Properties.Variable), edgeType)
       )
 
     v match {

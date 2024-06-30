@@ -19,8 +19,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     case node: ForExpression              => astForForExpression(node) :: Nil
     case node: CaseExpression             => astsForCaseExpression(node)
     case node: StatementList              => astForStatementList(node) :: Nil
-    case node: SimpleCallWithBlock        => astsForCallWithBlock(node)
-    case node: MemberCallWithBlock        => astsForCallWithBlock(node)
+    case node: SimpleCallWithBlock        => astForCallWithBlock(node) :: Nil
+    case node: MemberCallWithBlock        => astForCallWithBlock(node) :: Nil
     case node: ReturnExpression           => astForReturnStatement(node) :: Nil
     case node: AnonymousTypeDeclaration   => astForAnonymousTypeDeclaration(node) :: Nil
     case node: TypeDeclaration            => astForClassDeclaration(node)
@@ -194,9 +194,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
    * foo(<args>, <method_ref>)
    * ```
    */
-  protected def astsForCallWithBlock[C <: RubyCall](node: RubyNode & RubyCallWithBlock[C]): Seq[Ast] = {
-    val Seq(methodDecl, typeDecl, _, methodRef) = astForDoBlock(node.block): @unchecked
-    val methodRefDummyNode                      = methodRef.root.map(DummyNode(_)(node.span)).toList
+  protected def astForCallWithBlock[C <: RubyCall](node: RubyNode & RubyCallWithBlock[C]): Ast = {
+    val Seq(_, methodRefAst) = astForDoBlock(node.block): @unchecked
+    val methodRefDummyNode   = methodRefAst.root.map(DummyNode(_)(node.span)).toList
 
     // Create call with argument referencing the MethodRef
     val callWithLambdaArg = node.withoutBlock match {
@@ -207,7 +207,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         Ast()
     }
 
-    methodDecl :: typeDecl :: callWithLambdaArg :: Nil
+    callWithLambdaArg
   }
 
   protected def astForDoBlock(block: Block & RubyNode): Seq[Ast] = {
@@ -291,11 +291,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def returnAstForRubyCall[C <: RubyCall](node: RubyNode & RubyCallWithBlock[C]): Seq[Ast] = {
-    val Seq(methodDecl, typeDecl, callAst) = astsForCallWithBlock(node): @unchecked
-
-    Ast.storeInDiffGraph(methodDecl, diffGraph)
-    Ast.storeInDiffGraph(typeDecl, diffGraph)
-
+    val callAst = astForCallWithBlock(node)
     returnAst(returnNode(node, code(node)), List(callAst)) :: Nil
   }
 

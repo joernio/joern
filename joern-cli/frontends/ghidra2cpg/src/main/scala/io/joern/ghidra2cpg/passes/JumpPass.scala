@@ -3,12 +3,12 @@ package io.joern.ghidra2cpg.passes
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 
 import scala.util.Try
 
-class JumpPass(cpg: Cpg) extends ConcurrentWriterCpgPass[Method](cpg) {
+class JumpPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg) {
 
   override def generateParts(): Array[Method] =
     cpg.method.toArray

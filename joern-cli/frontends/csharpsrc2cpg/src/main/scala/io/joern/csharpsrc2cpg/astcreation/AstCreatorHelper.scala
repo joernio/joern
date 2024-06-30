@@ -170,10 +170,10 @@ object AstCreatorHelper {
     */
   def createDotNetNodeInfo(json: Value, relativeFileName: Option[String] = None): DotNetNodeInfo = {
     val metaData = json(ParserKeys.MetaData)
-    val ln       = metaData(ParserKeys.LineStart).numOpt.map(_.toInt.asInstanceOf[Integer])
-    val cn       = metaData(ParserKeys.ColumnStart).numOpt.map(_.toInt.asInstanceOf[Integer])
-    val lnEnd    = metaData(ParserKeys.LineEnd).numOpt.map(_.toInt.asInstanceOf[Integer])
-    val cnEnd    = metaData(ParserKeys.ColumnEnd).numOpt.map(_.toInt.asInstanceOf[Integer])
+    val ln       = metaData(ParserKeys.LineStart).numOpt.map(_.toInt)
+    val cn       = metaData(ParserKeys.ColumnStart).numOpt.map(_.toInt)
+    val lnEnd    = metaData(ParserKeys.LineEnd).numOpt.map(_.toInt)
+    val cnEnd    = metaData(ParserKeys.ColumnEnd).numOpt.map(_.toInt)
     val node     = nodeType(metaData, relativeFileName)
     val c = node.toString match
       case "Attribute" =>

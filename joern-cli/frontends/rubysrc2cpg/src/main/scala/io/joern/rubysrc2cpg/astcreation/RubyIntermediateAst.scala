@@ -8,23 +8,23 @@ import scala.annotation.tailrec
 object RubyIntermediateAst {
 
   case class TextSpan(
-    line: Option[Integer],
-    column: Option[Integer],
-    lineEnd: Option[Integer],
-    columnEnd: Option[Integer],
+    line: Option[Int],
+    column: Option[Int],
+    lineEnd: Option[Int],
+    columnEnd: Option[Int],
     text: String
   ) {
     def spanStart(newText: String = ""): TextSpan = TextSpan(line, column, line, column, newText)
   }
 
   sealed class RubyNode(val span: TextSpan) {
-    def line: Option[Integer] = span.line
+    def line: Option[Int] = span.line
 
-    def column: Option[Integer] = span.column
+    def column: Option[Int] = span.column
 
-    def lineEnd: Option[Integer] = span.lineEnd
+    def lineEnd: Option[Int] = span.lineEnd
 
-    def columnEnd: Option[Integer] = span.columnEnd
+    def columnEnd: Option[Int] = span.columnEnd
 
     def text: String = span.text
   }
@@ -52,11 +52,16 @@ object RubyIntermediateAst {
     def name: RubyNode
     def baseClass: Option[RubyNode]
     def body: RubyNode
+    def bodyMemberCall: Option[MemberCall]
   }
 
-  final case class ModuleDeclaration(name: RubyNode, body: RubyNode, fields: List[RubyNode & RubyFieldIdentifier])(
-    span: TextSpan
-  ) extends RubyNode(span)
+  final case class ModuleDeclaration(
+    name: RubyNode,
+    body: RubyNode,
+    fields: List[RubyNode & RubyFieldIdentifier],
+    bodyMemberCall: Option[MemberCall]
+  )(span: TextSpan)
+      extends RubyNode(span)
       with TypeDeclaration {
     def baseClass: Option[RubyNode] = None
   }
@@ -65,21 +70,30 @@ object RubyIntermediateAst {
     name: RubyNode,
     baseClass: Option[RubyNode],
     body: RubyNode,
-    fields: List[RubyNode & RubyFieldIdentifier]
+    fields: List[RubyNode & RubyFieldIdentifier],
+    bodyMemberCall: Option[MemberCall]
   )(span: TextSpan)
       extends RubyNode(span)
       with TypeDeclaration
 
   sealed trait AnonymousTypeDeclaration extends RubyNode with TypeDeclaration
 
-  final case class AnonymousClassDeclaration(name: RubyNode, baseClass: Option[RubyNode], body: RubyNode)(
-    span: TextSpan
-  ) extends RubyNode(span)
+  final case class AnonymousClassDeclaration(
+    name: RubyNode,
+    baseClass: Option[RubyNode],
+    body: RubyNode,
+    bodyMemberCall: Option[MemberCall] = None
+  )(span: TextSpan)
+      extends RubyNode(span)
       with AnonymousTypeDeclaration
 
-  final case class SingletonClassDeclaration(name: RubyNode, baseClass: Option[RubyNode], body: RubyNode)(
-    span: TextSpan
-  ) extends RubyNode(span)
+  final case class SingletonClassDeclaration(
+    name: RubyNode,
+    baseClass: Option[RubyNode],
+    body: RubyNode,
+    bodyMemberCall: Option[MemberCall] = None
+  )(span: TextSpan)
+      extends RubyNode(span)
       with AnonymousTypeDeclaration
 
   final case class FieldsDeclaration(fieldNames: List[RubyNode])(span: TextSpan)
@@ -233,7 +247,7 @@ object RubyIntermediateAst {
   /** Represents a type reference successfully determined, e.g. module A; end; A
     */
   final case class TypeIdentifier(typeFullName: String)(span: TextSpan) extends RubyNode(span) with RubyIdentifier {
-    def isBuiltin: Boolean        = typeFullName.startsWith(s"<${GlobalTypes.builtinPrefix}")
+    def isBuiltin: Boolean        = typeFullName.startsWith(GlobalTypes.builtinPrefix)
     override def toString: String = s"TypeIdentifier(${span.text}, $typeFullName)"
   }
 

@@ -32,7 +32,7 @@ class MethodTests extends RubyCode2CpgFixture {
       val List(fType) = cpg.typeDecl("f").l
       fType.fullName shouldBe "Test0.rb:<global>::program:f"
       fType.code shouldBe "def f(x) = 1"
-      fType.astParentFullName shouldBe "Test0.rb:<global>::program:f"
+      fType.astParentFullName shouldBe "Test0.rb:<global>::program"
       fType.astParentType shouldBe NodeTypes.METHOD
       val List(fMethod) = fType.iterator.boundMethod.l
       fType.fullName shouldBe "Test0.rb:<global>::program:f"
@@ -42,11 +42,6 @@ class MethodTests extends RubyCode2CpgFixture {
       val List(m) = cpg.method.nameExact(RDefines.Program).l
       m.fullName shouldBe "Test0.rb:<global>::program"
       m.isModule.nonEmpty shouldBe true
-
-      val List(t) = cpg.typeDecl.nameExact(RDefines.Program).l
-      m.fullName shouldBe "Test0.rb:<global>::program"
-      m.isModule.nonEmpty shouldBe true
-      t.methodBinding.methodFullName.toSet should contain(m.fullName)
     }
   }
 
@@ -350,11 +345,11 @@ class MethodTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "exist under the module TYPE_DECL" in {
-      inside(cpg.typeDecl.name("F").method.l) {
-        case init :: bar :: baz :: Nil =>
+      inside(cpg.typeDecl.name("F").method.nameExact("bar", "baz").l) {
+        case bar :: baz :: Nil =>
           inside(bar.parameter.l) {
             case thisParam :: xParam :: Nil =>
-              thisParam.name shouldBe "this"
+              thisParam.name shouldBe RDefines.Self
               thisParam.code shouldBe "F"
               thisParam.typeFullName shouldBe "Test0.rb:<global>::program.F"
 
@@ -364,7 +359,7 @@ class MethodTests extends RubyCode2CpgFixture {
 
           inside(baz.parameter.l) {
             case thisParam :: xParam :: Nil =>
-              thisParam.name shouldBe "this"
+              thisParam.name shouldBe RDefines.Self
               thisParam.code shouldBe "F"
               thisParam.typeFullName shouldBe "Test0.rb:<global>::program.F"
 
@@ -668,13 +663,15 @@ class MethodTests extends RubyCode2CpgFixture {
       }
     }
 
-    "be placed directly before each entity's definition" in {
+    "be placed in order of definition" in {
       inside(cpg.method.name(RDefines.Program).filename("t1.rb").block.astChildren.l) {
-        case (a1: Call) :: (_: TypeDecl) :: (_: TypeDecl) :: (a2: Call) :: (_: TypeDecl) :: (_: TypeDecl) :: (a3: Call) :: (_: Method) :: (_: TypeDecl) :: Nil =>
+        case (a1: Call) :: (a2: Call) :: (a3: Call) :: (a4: Call) :: (a5: Call) :: Nil =>
           a1.code shouldBe "self.A = module A (...)"
-          a2.code shouldBe "self.B = class B (...)"
-          a3.code shouldBe "self.c = def c (...)"
-        case xs => fail(s"Expected assignments to appear before definitions, instead got [$xs]")
+          a2.code shouldBe "self::A::<body>"
+          a3.code shouldBe "self.B = class B (...)"
+          a4.code shouldBe "self::B::<body>"
+          a5.code shouldBe "self.c = def c (...)"
+        case xs => fail(s"Expected assignments to appear before definitions, instead got [${xs.mkString("\n")}]")
       }
     }
   }

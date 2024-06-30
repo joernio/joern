@@ -4,12 +4,12 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.PropertyNames
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language.*
 
 import java.io.File
 
-class ExtensionInheritancePass(cpg: Cpg) extends ConcurrentWriterCpgPass[TypeDecl](cpg) {
+class ExtensionInheritancePass(cpg: Cpg) extends ForkJoinParallelCpgPass[TypeDecl](cpg) {
 
   private val SourceFolder: String = "/Source/"
 

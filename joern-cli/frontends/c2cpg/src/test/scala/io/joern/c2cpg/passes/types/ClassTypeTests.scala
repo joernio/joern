@@ -155,7 +155,7 @@ class ClassTypeTests extends C2CpgSuite(FileDefaults.CPP_EXT) {
         |}""".stripMargin)
 
       val List(call) = cpg.call("foo2").l
-      call.methodFullName shouldBe "B.foo2"
+      call.methodFullName shouldBe "B.foo2:void()"
     }
   }
 
@@ -170,7 +170,7 @@ class ClassTypeTests extends C2CpgSuite(FileDefaults.CPP_EXT) {
           |    ): Bar::Foo(a, b) {}
           |}""".stripMargin)
       val List(constructor) = cpg.typeDecl.nameExact("FooT").method.isConstructor.l
-      constructor.signature shouldBe "Bar.Foo FooT.FooT (std.string,Bar.SomeClass)"
+      constructor.signature shouldBe "Bar.Foo(std.string,Bar.SomeClass)"
       val List(p1, p2) = constructor.parameter.l
       p1.typ.fullName shouldBe "std.string"
       p2.typ.fullName shouldBe "Bar.SomeClass"

@@ -31,7 +31,7 @@ class GoGlobal {
     */
   val lambdaSignatureToLambdaTypeMap: ConcurrentHashMap[String, java.util.Set[LambdaTypeInfo]] = new ConcurrentHashMap()
 
-  val pkgLevelVarAndConstantAstMap: ConcurrentHashMap[String, Set[(Ast, String)]] = new ConcurrentHashMap()
+  val pkgLevelVarAndConstantAstMap: ConcurrentHashMap[String, Set[PackageMemberAst]] = new ConcurrentHashMap()
 
   val nameSpaceMetaDataMap: ConcurrentHashMap[String, NameSpaceMetaData] = new ConcurrentHashMap()
 
@@ -39,12 +39,17 @@ class GoGlobal {
     val existingVal = aliasToNameSpaceMapping.putIfAbsent(alias, namespace)
     // NOTE: !namespace.startsWith(mainModule.get) this check will not add the mapping for main source code imports.
     // This will make sure to add the entry in CacheBuilder, which in turn creates the required Package level TypeDecl AST structure as well.
-    if (existingVal == null && (mainModule == None || (mainModule != None && !namespace.startsWith(mainModule.get)))) {
-      recordForThisNamespace(namespace)
+    if (existingVal == null) {
+      recordForThisNamespaceThroughImports(namespace)
     } else if (existingVal != namespace) {
       // TODO: This might need better way of recording the information.
       logger.warn(s"more than one namespaces are found for given alias `$alias` -> `$existingVal` and `$namespace`")
     }
+  }
+
+  def recordForThisNamespaceThroughImports(namespace: String): Unit = {
+    if (mainModule == None || (mainModule != None && !namespace.startsWith(mainModule.get)))
+      recordForThisNamespace(namespace)
   }
 
   def recordForThisNamespace(namespace: String): Boolean = {
@@ -97,12 +102,11 @@ class GoGlobal {
     }
   }
 
-  def recordPkgLevelVarAndConstantAst(pkg: String, ast: Ast, filePath: String): Unit = synchronized {
+  def recordPkgLevelVarAndConstantAst(pkg: String, memberAst: PackageMemberAst): Unit = synchronized {
     Option(pkgLevelVarAndConstantAstMap.get(pkg)) match {
       case Some(existingList) =>
-        val t = (ast, filePath)
-        pkgLevelVarAndConstantAstMap.put(pkg, existingList + t)
-      case None => pkgLevelVarAndConstantAstMap.put(pkg, Set((ast, filePath)))
+        pkgLevelVarAndConstantAstMap.put(pkg, existingList + memberAst)
+      case None => pkgLevelVarAndConstantAstMap.put(pkg, Set(memberAst))
     }
   }
 
@@ -177,3 +181,5 @@ case class LambdaTypeInfo(lambdaStructTypeFullName: String, returnTypeFullname: 
     }
   }
 }
+
+case class PackageMemberAst(ast: Ast, filePath: String)

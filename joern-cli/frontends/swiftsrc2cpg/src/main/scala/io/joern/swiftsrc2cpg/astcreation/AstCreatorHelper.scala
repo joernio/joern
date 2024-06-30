@@ -9,7 +9,7 @@ import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.FunctionDeclSyntax
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.GuardStmtSyntax
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.InitializerDeclSyntax
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.SwiftNode
-import io.joern.swiftsrc2cpg.passes.Defines
+import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.utils.NodeBuilders.{newClosureBindingNode, newLocalNode}
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode

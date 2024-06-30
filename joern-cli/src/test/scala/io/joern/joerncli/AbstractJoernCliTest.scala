@@ -3,7 +3,8 @@ package io.joern.joerncli
 import better.files.File
 import io.joern.console.FrontendConfig
 import io.joern.console.cpgcreation.{CCpgGenerator, JsSrcCpgGenerator}
-import io.joern.jssrc2cpg.{JsSrc2Cpg, Config as JsConfig}
+import io.joern.x2cpg.frontendspecific.jssrc2cpg
+import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.utils.ProjectRoot
@@ -35,7 +36,7 @@ trait AbstractJoernCliTest {
     val cpg = DefaultOverlays.create(cpgOutFileName)
     language match {
       case Languages.JSSRC | Languages.JAVASCRIPT =>
-        JsSrc2Cpg.postProcessingPasses(cpg, Option(JsConfig().withDisableDummyTypes(true))).foreach(_.createAndApply())
+        jssrc2cpg.postProcessingPasses(cpg, XTypeRecoveryConfig(enabledDummyTypes = false)).foreach(_.createAndApply())
       case _ =>
     }
     (cpg, cpgOutFileName)

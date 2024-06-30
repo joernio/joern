@@ -2,7 +2,6 @@ package io.joern.rubysrc2cpg.deprecated.astcreation
 
 import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser.*
 import io.joern.rubysrc2cpg.deprecated.passes.Defines as RubyDefines
-import io.joern.rubysrc2cpg.deprecated.utils.MethodTableModel
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
@@ -17,15 +16,17 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   import io.joern.rubysrc2cpg.deprecated.astcreation.GlobalTypes.*
 
-  protected def line(ctx: ParserRuleContext): Option[Integer] = Try[Integer](ctx.getStart.getLine).toOption
+  protected def line(ctx: ParserRuleContext): Option[Int] =
+    Try(ctx.getStart.getLine).toOption
 
-  protected def column(ctx: ParserRuleContext): Option[Integer] =
-    Try[Integer](ctx.getStart.getCharPositionInLine).toOption
+  protected def column(ctx: ParserRuleContext): Option[Int] =
+    Try(ctx.getStart.getCharPositionInLine).toOption
 
-  protected def lineEnd(ctx: ParserRuleContext): Option[Integer] = Try[Integer](ctx.getStop.getLine).toOption
+  protected def lineEnd(ctx: ParserRuleContext): Option[Int] =
+    Try(ctx.getStop.getLine).toOption
 
-  protected def columnEnd(ctx: ParserRuleContext): Option[Integer] =
-    Try[Integer](ctx.getStop.getCharPositionInLine).toOption
+  protected def columnEnd(ctx: ParserRuleContext): Option[Int] =
+    Try(ctx.getStop.getCharPositionInLine).toOption
 
   override def code(node: ParserRuleContext): String = shortenCode(text(node))
 
@@ -91,8 +92,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     code: String,
     typeFullName: String,
     dynamicTypeHints: Seq[String],
-    lineNumber: Option[Integer],
-    columnNumber: Option[Integer],
+    lineNumber: Option[Int],
+    columnNumber: Option[Int],
     definitelyIdentifier: Boolean
   ): NewNode = {
     methodsWithName(name) match
@@ -145,8 +146,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def astForAssignment(
     lhs: NewNode,
     rhs: NewNode,
-    lineNumber: Option[Integer] = None,
-    colNumber: Option[Integer] = None
+    lineNumber: Option[Int] = None,
+    colNumber: Option[Int] = None
   ): Ast = {
     val code = Seq(lhs, rhs).collect { case x: AstNodeNew => x.code }.mkString(" = ")
     val assignment = NewCall()
@@ -187,8 +188,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   protected def createMethodParameterIn(
     name: String,
-    lineNumber: Option[Integer] = None,
-    colNumber: Option[Integer] = None,
+    lineNumber: Option[Int] = None,
+    colNumber: Option[Int] = None,
     typeFullName: String = RubyDefines.Any,
     order: Int = -1,
     index: Int = -1

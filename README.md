@@ -125,19 +125,3 @@ sbt stage
 ```
 The last command prints all available queries - add your own in querydb, run the above commands again to see that your query got deployed.
 More details in the [separate querydb readme](querydb/README.md)
-
-## Benchmarks
-
-Various static analysis benchmarks that measure Joern are contained under the `benchmarks`. The benchmarks are
-implemented in ScalaTest and can be run using the `joern-benchmarks` script. The benchmark results can be found on
-the `benchmarks` subproject's `README`. The currently implemented benchmarks along with the language frontends tested
-are:
-
-* [Securibench Micro](http://too4words.github.io/securibench-micro/) [`javasrc2cpg`, `jimple2cpg`]
-* [IFSpec](https://link.springer.com/chapter/10.1007/978-3-030-03638-6_27) ([paper](https://pp.ipd.kit.edu/uploads/publikationen/ifspec18nordsec.pdf)) [`javasrc2cpg`, `jimple2cpg`]
-* [JInfoFlow](https://github.com/plast-lab/JInfoFlow-bench) ([paper](https://yanniss.github.io/ptaint-oopsla17-prelim.pdf)) [`javasrc2cpg`, `jimple2cpg`]
-
-For more instructions on how to run benchmarks individually head over to the `benchmarks` subproject. If you would
-like the benchmark results to be written to a file instead of printed to STDOUT, set the path to the environment
-variable `JOERN_BENCHMARK_RESULT_FILE`.
-

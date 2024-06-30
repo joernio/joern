@@ -336,8 +336,8 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
     argumentTypes: Option[List[String]],
     argsSize: Int,
     code: String,
-    lineNumber: Option[Integer] = None,
-    columnNumber: Option[Integer] = None
+    lineNumber: Option[Int] = None,
+    columnNumber: Option[Int] = None
   ): NewCall = {
     val initSignature = argumentTypes match {
       case Some(tpe)          => composeMethodLikeSignature(TypeConstants.Void, tpe)

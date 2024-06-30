@@ -1,14 +1,13 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
+import io.joern.rubysrc2cpg.passes.GlobalTypes.{builtinPrefix, kernelPrefix}
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelPrefix
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, TypeRef}
 import io.shiftleft.semanticcpg.language.*
 
 class HashTests extends RubyCode2CpgFixture {
-
   "`{}` is represented by a `hashInitializer` operator call" in {
     val cpg = code("""
                      |{}
@@ -196,8 +195,8 @@ class HashTests extends RubyCode2CpgFixture {
       case hashCall :: Nil =>
         hashCall.code shouldBe "Hash [1 => \"a\", 2 => \"b\", 3 => \"c\"]"
         hashCall.lineNumber shouldBe Some(2)
-        hashCall.methodFullName shouldBe s"$kernelPrefix.Hash:[]"
-        hashCall.typeFullName shouldBe s"$kernelPrefix.Hash"
+        hashCall.methodFullName shouldBe s"$builtinPrefix.Hash.[]"
+        hashCall.typeFullName shouldBe s"$builtinPrefix.Hash"
 
         inside(hashCall.astChildren.l) {
           case (_: Call) :: (_: TypeRef) :: (one: Call) :: (two: Call) :: (three: Call) :: Nil =>
