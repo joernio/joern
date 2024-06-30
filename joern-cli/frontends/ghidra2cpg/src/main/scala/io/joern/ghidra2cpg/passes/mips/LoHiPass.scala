@@ -3,10 +3,10 @@ package io.joern.ghidra2cpg.passes.mips
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 
-class LoHiPass(cpg: Cpg) extends ConcurrentWriterCpgPass[(Call, Call)](cpg) {
+class LoHiPass(cpg: Cpg) extends ForkJoinParallelCpgPass[(Call, Call)](cpg) {
   override def generateParts(): Array[(Call, Call)] = {
     val readFromLoHiRegsRegex = "_?(mflo|mfhi).*"
 

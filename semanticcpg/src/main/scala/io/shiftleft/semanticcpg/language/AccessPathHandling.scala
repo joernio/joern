@@ -44,7 +44,7 @@ object AccessPathHandling {
             case node: Identifier => ConstantAccess(node.name)
             case other if other.propertyOption(PropertyNames.NAME).isPresent =>
               logger.warn(s"unexpected/deprecated node encountered: $other with properties: ${other.propertiesMap()}")
-              ConstantAccess(other.property(Properties.NAME))
+              ConstantAccess(other.property(Properties.Name))
           }
           .getOrElse(VariableAccess) :: tail
 

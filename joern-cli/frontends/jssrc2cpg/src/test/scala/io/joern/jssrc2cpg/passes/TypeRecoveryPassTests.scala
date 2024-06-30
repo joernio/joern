@@ -1,7 +1,7 @@
 package io.joern.jssrc2cpg.passes
 
-import io.joern.jssrc2cpg.passes.Defines.OperatorsNew
 import io.joern.jssrc2cpg.testfixtures.DataFlowCodeToCpgSuite
+import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.importresolver.*
 import io.shiftleft.semanticcpg.language.*
@@ -474,7 +474,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         |new Print("Hello")
         |""".stripMargin)
 
-    cpg.call.nameExact(OperatorsNew).methodFullName.head shouldBe "Test0.js::program:Print"
+    cpg.call.nameExact(Defines.OperatorsNew).methodFullName.head shouldBe "Test0.js::program:Print"
   }
 
   "A function assigned to a member should have it's full name resolved" in {

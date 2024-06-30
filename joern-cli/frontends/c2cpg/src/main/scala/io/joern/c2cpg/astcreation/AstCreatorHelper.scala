@@ -1,6 +1,6 @@
 package io.joern.c2cpg.astcreation
 
-import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewCall, NewNode}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.joern.x2cpg.{Ast, SourceFiles, ValidationMode}
 import io.joern.x2cpg.utils.NodeBuilders.newDependencyNode
@@ -11,14 +11,18 @@ import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.c.{ICASTArrayDesignator, ICASTDesignatedInitializer, ICASTFieldDesignator}
 import org.eclipse.cdt.core.dom.ast.cpp.*
 import org.eclipse.cdt.core.dom.ast.gnu.c.ICASTKnRFunctionDeclarator
-import org.eclipse.cdt.internal.core.dom.parser.c.CASTArrayRangeDesignator
+import org.eclipse.cdt.internal.core.dom.parser.c.{CASTArrayRangeDesignator, CASTFunctionDeclarator}
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalBinding
-import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTIdExpression, CPPFunction}
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTArrayRangeDesignator
+import org.eclipse.cdt.internal.core.dom.parser.cpp.{
+  CPPASTArrayRangeDesignator,
+  CPPASTFieldReference,
+  CPPASTFunctionDeclarator,
+  CPPASTIdExpression,
+  CPPFunction,
+  CPPMethod,
+  ICPPEvaluation
+}
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalMemberAccess
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFieldReference
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPMethod
-import org.eclipse.cdt.internal.core.dom.parser.cpp.ICPPEvaluation
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import java.nio.file.{Path, Paths}
@@ -282,7 +286,37 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     cleanedName.split(Defines.qualifiedNameSeparator).lastOption.getOrElse(cleanedName)
   }
 
+  protected def functionTypeToSignature(typ: IFunctionType): String = {
+    val returnType     = ASTTypeUtil.getType(typ.getReturnType)
+    val parameterTypes = typ.getParameterTypes.map(ASTTypeUtil.getType)
+    s"$returnType(${parameterTypes.mkString(",")})"
+  }
+
   protected def fullName(node: IASTNode): String = {
+    node match {
+      case declarator: CPPASTFunctionDeclarator =>
+        declarator.getName.resolveBinding() match {
+          case function: ICPPFunction =>
+            val fullNameNoSig = function.getQualifiedName.mkString(".")
+            val fn =
+              if (function.isExternC) {
+                function.getName
+              } else {
+                s"$fullNameNoSig:${functionTypeToSignature(function.getType)}"
+              }
+            return fn
+          case field: ICPPField =>
+          case _: IProblemBinding =>
+            return ""
+        }
+      case declarator: CASTFunctionDeclarator =>
+        val fn = declarator.getName.toString
+        return fn
+      case definition: ICPPASTFunctionDefinition =>
+        return fullName(definition.getDeclarator)
+      case x =>
+    }
+
     val qualifiedName: String = node match {
       case d: CPPASTIdExpression =>
         safeGetEvaluation(d) match {
@@ -318,13 +352,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         s"${fullName(enumSpecifier.getParent)}.${ASTStringUtil.getSimpleName(enumSpecifier.getName)}"
       case f: ICPPASTLambdaExpression =>
         s"${fullName(f.getParent)}."
-      case f: IASTFunctionDeclarator
-          if ASTStringUtil.getSimpleName(f.getName).isEmpty && f.getNestedDeclarator != null =>
-        s"${fullName(f.getParent)}.${shortName(f.getNestedDeclarator)}"
-      case f: IASTFunctionDeclarator if f.getParent.isInstanceOf[IASTFunctionDefinition] =>
-        s"${fullName(f.getParent)}"
-      case f: IASTFunctionDeclarator =>
-        s"${fullName(f.getParent)}.${ASTStringUtil.getSimpleName(f.getName)}"
       case f: IASTFunctionDefinition if f.getDeclarator != null =>
         s"${fullName(f.getParent)}.${ASTStringUtil.getQualifiedName(f.getDeclarator.getName)}"
       case f: IASTFunctionDefinition =>
@@ -548,4 +575,44 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     if (tpe.isEmpty) Defines.anyTypeName else tpe
   }
 
+  // We use our own call ast creation function since the version in x2cpg treats
+  // base as receiver if no receiver is given which does not fit the needs of this
+  // frontend.
+  def createCallAst(
+    callNode: NewCall,
+    arguments: Seq[Ast] = List(),
+    base: Option[Ast] = None,
+    receiver: Option[Ast] = None
+  ): Ast = {
+
+    setArgumentIndices(arguments)
+
+    val baseRoot = base.flatMap(_.root).toList
+    val bse      = base.getOrElse(Ast())
+    baseRoot match {
+      case List(x: ExpressionNew) =>
+        x.argumentIndex = 0
+      case _ =>
+    }
+
+    var ast =
+      Ast(callNode)
+        .withChild(bse)
+
+    if (receiver.isDefined && receiver != base) {
+      receiver.get.root.get.asInstanceOf[ExpressionNew].argumentIndex = -1
+      ast = ast.withChild(receiver.get)
+    }
+
+    ast = ast
+      .withChildren(arguments)
+      .withArgEdges(callNode, baseRoot)
+      .withArgEdges(callNode, arguments.flatMap(_.root))
+
+    if (receiver.isDefined) {
+      ast = ast.withReceiverEdge(callNode, receiver.get.root.get)
+    }
+
+    ast
+  }
 }

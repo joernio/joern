@@ -2,8 +2,9 @@ package io.joern.pysrc2cpg
 
 import PythonAstVisitor.{logger, metaClassSuffix, noLineAndColumn}
 import io.joern.pysrc2cpg.memop.*
-import io.joern.pysrc2cpg.Constants.builtinPrefix
+import io.joern.x2cpg.frontendspecific.pysrc2cpg.Constants.builtinPrefix
 import io.joern.pythonparser.ast
+import io.joern.x2cpg.frontendspecific.pysrc2cpg.Constants
 import io.joern.x2cpg.{AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewIdentifier, NewNode, NewTypeDecl}
@@ -33,7 +34,7 @@ class PythonAstVisitor(
     extends AstCreatorBase(relFileName)
     with PythonAstVisitorHelpers {
 
-  private val diffGraph     = new DiffGraphBuilder()
+  private val diffGraph     = Cpg.newDiffGraphBuilder
   protected val nodeBuilder = new NodeBuilder(diffGraph)
   protected val edgeBuilder = new EdgeBuilder(diffGraph)
 

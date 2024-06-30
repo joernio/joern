@@ -1,20 +1,11 @@
 package io.joern.rubysrc2cpg.querying
 
+import io.joern.rubysrc2cpg.passes.{GlobalTypes, Defines as RubyDefines}
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  Block,
-  Call,
-  FieldIdentifier,
-  Identifier,
-  Literal,
-  MethodRef,
-  Modifier,
-  Return
-}
+import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
-import io.joern.rubysrc2cpg.passes.{GlobalTypes, Defines as RubyDefines}
 
 class ClassTests extends RubyCode2CpgFixture {
 
@@ -29,16 +20,16 @@ class ClassTests extends RubyCode2CpgFixture {
     classC.fullName shouldBe "Test0.rb:<global>::program.C"
     classC.lineNumber shouldBe Some(2)
     classC.baseType.l shouldBe List()
-    classC.member.name.l shouldBe List(RubyDefines.Initialize)
-    classC.method.name.l shouldBe List(RubyDefines.Initialize)
+    classC.member.name.l shouldBe List(RubyDefines.TypeDeclBody, RubyDefines.Initialize)
+    classC.method.name.l shouldBe List(RubyDefines.TypeDeclBody, RubyDefines.Initialize)
 
     val List(singletonC) = cpg.typeDecl.nameExact("C<class>").l
     singletonC.inheritsFromTypeFullName shouldBe List()
     singletonC.fullName shouldBe "Test0.rb:<global>::program.C<class>"
     singletonC.lineNumber shouldBe Some(2)
     singletonC.baseType.l shouldBe List()
-    singletonC.member.name.l shouldBe List(RubyDefines.Initialize)
-    singletonC.method.name.l shouldBe List(RubyDefines.Initialize)
+    singletonC.member.name.l shouldBe List()
+    singletonC.method.name.l shouldBe List()
   }
 
   "`class C < D` is represented by a TYPE_DECL node inheriting from `D`" in {
@@ -53,8 +44,8 @@ class ClassTests extends RubyCode2CpgFixture {
     classC.inheritsFromTypeFullName shouldBe List("D")
     classC.fullName shouldBe "Test0.rb:<global>::program.C"
     classC.lineNumber shouldBe Some(2)
-    classC.member.name.l shouldBe List(RubyDefines.Initialize)
-    classC.method.name.l shouldBe List(RubyDefines.Initialize)
+    classC.member.name.l shouldBe List(RubyDefines.TypeDeclBody, RubyDefines.Initialize)
+    classC.method.name.l shouldBe List(RubyDefines.TypeDeclBody, RubyDefines.Initialize)
 
     val List(typeD) = classC.baseType.l
     typeD.name shouldBe "D"
@@ -64,8 +55,8 @@ class ClassTests extends RubyCode2CpgFixture {
     singletonC.inheritsFromTypeFullName shouldBe List("D<class>")
     singletonC.fullName shouldBe "Test0.rb:<global>::program.C<class>"
     singletonC.lineNumber shouldBe Some(2)
-    singletonC.member.name.l shouldBe List(RubyDefines.Initialize)
-    singletonC.method.name.l shouldBe List(RubyDefines.Initialize)
+    singletonC.member.name.l shouldBe List()
+    singletonC.method.name.l shouldBe List()
   }
 
   "`attr_reader :a` is represented by a `@a` MEMBER node" in {
@@ -204,6 +195,61 @@ class ClassTests extends RubyCode2CpgFixture {
     memberF.dynamicTypeHintFullName.toSet should contain(methodF.fullName)
   }
 
+  "`M.method` in a module `M` should have a method bound to a member under the module's singleton type declaration" in {
+    val cpg = code("""
+        |module M
+        | def M.method(x)
+        |   x
+        | end
+        |end
+        |def main(p)
+        | M::method(p)
+        |end
+        |""".stripMargin)
+
+    // Obtain the nodes first
+    val regularTypeDecl   = cpg.typeDecl.nameExact("M").head
+    val singletonTypeDecl = cpg.typeDecl.nameExact("M<class>").head
+    val method            = regularTypeDecl.method.nameExact("method").head
+    val methodTypeDecl    = cpg.typeDecl.fullNameExact(method.fullName).head
+    val methodMember      = singletonTypeDecl.member.nameExact("method").head
+    // Now determine the properties and potential edges
+    methodMember.dynamicTypeHintFullName.toSet should contain(method.fullName)
+    methodTypeDecl.methodBinding.flatMap(_.boundMethod).head shouldBe method
+  }
+
+  "a method in a nested module should have the nested module's member-type and nested types' method" in {
+    val cpg = code("""
+        |module MMM
+        | module Nested
+        |   def self.method(x)
+        |     x
+        |   end
+        | end
+        |end
+        |def outer(aaa)
+        | MMM::Nested::method(aaa)
+        |end
+        |""".stripMargin)
+
+    val nestedTypeDecl       = cpg.typeDecl("Nested").head
+    val nestedSingleton      = cpg.typeDecl("Nested<class>").head
+    val nestedTypeDeclMember = cpg.member("Nested").head
+    val singletonTypeDecl    = cpg.typeDecl.nameExact("Nested<class>").head
+
+    val method         = nestedTypeDecl.method.nameExact("method").head
+    val methodTypeDecl = cpg.typeDecl.fullNameExact(method.fullName).head
+    val methodMember   = singletonTypeDecl.member.nameExact("method").head
+
+    nestedTypeDeclMember.typeDecl.name shouldBe "MMM<class>"
+    nestedTypeDeclMember.dynamicTypeHintFullName.toSet should contain(nestedSingleton.fullName)
+
+    singletonTypeDecl.astParent.asInstanceOf[TypeDecl].name shouldBe "MMM"
+
+    methodMember.dynamicTypeHintFullName.toSet should contain(method.fullName)
+    methodTypeDecl.methodBinding.flatMap(_.boundMethod).head shouldBe method
+  }
+
   "`def initialize() ... end` directly inside a class has the constructor modifier" in {
     val cpg = code("""
                      |class C
@@ -255,6 +301,21 @@ class ClassTests extends RubyCode2CpgFixture {
     cpg.method.nameExact(RubyDefines.Initialize).where(_.isConstructor).literal.code.l should be(empty)
   }
 
+  "Constants should be defined under the respective singleton" in {
+    val cpg = code("""
+        |module MMM
+        | MConst = 2
+        | module Nested
+        |   NConst = 4
+        | end
+        |end
+        |
+        |""".stripMargin)
+
+    cpg.member("MConst").typeDecl.fullName.head shouldBe "Test0.rb:<global>::program.MMM<class>"
+    cpg.member("NConst").typeDecl.fullName.head shouldBe "Test0.rb:<global>::program.MMM.Nested<class>"
+  }
+
   "a basic anonymous class" should {
     val cpg = code("""
         |a = Class.new do
@@ -270,7 +331,7 @@ class ClassTests extends RubyCode2CpgFixture {
           anonClass.name shouldBe "<anon-class-0>"
           anonClass.fullName shouldBe "Test0.rb:<global>::program.<anon-class-0>"
           inside(anonClass.method.l) {
-            case defaultConstructor :: hello :: Nil =>
+            case hello :: defaultConstructor :: Nil =>
               defaultConstructor.name shouldBe RubyDefines.Initialize
               defaultConstructor.fullName shouldBe s"Test0.rb:<global>::program.<anon-class-0>:${RubyDefines.Initialize}"
 
@@ -286,7 +347,7 @@ class ClassTests extends RubyCode2CpgFixture {
       inside(cpg.method(":program").assignment.l) {
         case aAssignment :: Nil =>
           aAssignment.target.code shouldBe "a"
-          aAssignment.source.code shouldBe "Class.new"
+          aAssignment.source.code shouldBe "Class.new <anon-class-0> (...)"
         case xs => fail(s"Expected a single assignment, but got [${xs.map(x => x.label -> x.code).mkString(",")}]")
       }
     }
@@ -346,7 +407,7 @@ class ClassTests extends RubyCode2CpgFixture {
           |""".stripMargin)
       inside(cpg.typeDecl.name("User").l) {
         case userType :: Nil =>
-          inside(userType.method.name(RubyDefines.Initialize).l) {
+          inside(userType.method.name(RubyDefines.TypeDeclBody).l) {
             case constructor :: Nil =>
               inside(constructor.astChildren.isBlock.l) {
                 case methodBlock :: Nil =>
@@ -380,7 +441,7 @@ class ClassTests extends RubyCode2CpgFixture {
 
       inside(cpg.typeDecl.name("AdminController").l) {
         case adminTypeDecl :: Nil =>
-          inside(adminTypeDecl.method.name(RubyDefines.Initialize).l) {
+          inside(adminTypeDecl.method.name(RubyDefines.TypeDeclBody).l) {
             case constructor :: Nil =>
               inside(constructor.astChildren.isBlock.l) {
                 case methodBlock :: Nil =>
@@ -482,7 +543,7 @@ class ClassTests extends RubyCode2CpgFixture {
     "create nil assignments under the class initializer" in {
       inside(cpg.typeDecl.name("Foo").l) {
         case fooType :: Nil =>
-          inside(fooType.method.name(RubyDefines.Initialize).l) {
+          inside(fooType.method.name(RubyDefines.TypeDeclBody).l) {
             case initMethod :: Nil =>
               inside(initMethod.block.astChildren.isCall.name(Operators.assignment).l) {
                 case aAssignment :: bAssignment :: cAssignment :: dAssignment :: oAssignment :: Nil =>
@@ -508,7 +569,7 @@ class ClassTests extends RubyCode2CpgFixture {
                       rhs.code shouldBe "nil"
                     case _ => fail("Expected only LHS and RHS for assignment call")
                   }
-                case _ => fail("")
+                case xs => fail(s"Expected assignments, got [${xs.code.mkString}]")
               }
             case xs => fail(s"Expected one method for init, instead got ${xs.name.mkString(", ")}")
           }
@@ -557,9 +618,9 @@ class ClassTests extends RubyCode2CpgFixture {
     }
 
     "create nil assignments under the class initializer" in {
-      inside(cpg.typeDecl.name("Foo<class>").l) {
+      inside(cpg.typeDecl.name("Foo").l) {
         case fooType :: Nil =>
-          inside(fooType.method.name(RubyDefines.Initialize).l) {
+          inside(fooType.method.name(RubyDefines.TypeDeclBody).l) {
             case clinitMethod :: Nil =>
               inside(clinitMethod.block.astChildren.isCall.name(Operators.assignment).l) {
                 case aAssignment :: bAssignment :: cAssignment :: dAssignment :: oAssignment :: Nil =>
@@ -641,7 +702,7 @@ class ClassTests extends RubyCode2CpgFixture {
     "be moved to <init> constructor method" in {
       inside(cpg.typeDecl.name("Foo").l) {
         case fooClass :: Nil =>
-          inside(fooClass.method.name(RubyDefines.Initialize).l) {
+          inside(fooClass.method.name(RubyDefines.TypeDeclBody).l) {
             case initMethod :: Nil =>
               inside(initMethod.astChildren.isBlock.astChildren.isCall.l) {
                 case scopeCall :: Nil =>
@@ -664,19 +725,20 @@ class ClassTests extends RubyCode2CpgFixture {
 
   "Scope call with Lambda Expression" should {
     val cpg = code("""
-         |class Foo
-         |  scope :hits_by_ip, ->(ip, col = "*") { select("#{col}").where(ip_address: ip).order("id DESC") }
-         |  def bar
-         |    puts 1
-         |  end
-         |end
-         |""".stripMargin)
+        |class Foo
+        |  scope :hits_by_ip, ->(ip, col = "*") { select("#{col}").where(ip_address: ip).order("id DESC") }
+        |  def bar
+        |    puts 1
+        |  end
+        |end
+        |""".stripMargin)
 
     "correct method full name for method ref under call" in {
       inside(cpg.typeDecl.name("Foo").l) {
         case fooClass :: Nil =>
-          inside(fooClass.method.name(RubyDefines.Initialize).l) {
+          inside(fooClass.method.name(RubyDefines.TypeDeclBody).l) {
             case initMethod :: Nil =>
+              initMethod.code shouldBe "def <body>\nscope :hits_by_ip, ->(ip, col = \"*\") { select(\"#{col}\").where(ip_address: ip).order(\"id DESC\") }\nend"
               inside(initMethod.astChildren.isBlock.l) {
                 case methodBlock :: Nil =>
                   inside(methodBlock.astChildren.l) {
@@ -686,29 +748,13 @@ class ClassTests extends RubyCode2CpgFixture {
                           base.code shouldBe "self.scope"
                           self.name shouldBe "self"
                           literal.code shouldBe ":hits_by_ip"
-                          methodRef.methodFullName shouldBe s"Test0.rb:<global>::program.Foo:${RubyDefines.Initialize}:<lambda>0"
+                          methodRef.methodFullName shouldBe s"Test0.rb:<global>::program.Foo:${RubyDefines.TypeDeclBody}:<lambda>0"
                           methodRef.referencedMethod.parameter.indexGt(0).name.l shouldBe List("ip", "col")
                         case xs => fail(s"Expected three children, got ${xs.code.mkString(", ")} instead")
                       }
                     case xs => fail(s"Expected one call, got ${xs.code.mkString(", ")} instead")
                   }
                 case xs => fail(s"Expected one block under method, got ${xs.code.mkString(", ")} instead")
-              }
-            case xs => fail(s"Expected one init method, got ${xs.code.mkString(", ")} instead")
-          }
-        case xs => fail(s"Expected one class, got ${xs.code.mkString(", ")} instead")
-      }
-    }
-
-    "correct method def under initialize method" in {
-      inside(cpg.typeDecl.name("Foo<class>").l) {
-        case fooClass :: Nil =>
-          inside(fooClass.method.name(RubyDefines.Initialize).l) {
-            case initMethod :: Nil =>
-              inside(initMethod.astChildren.isMethod.l) {
-                case lambdaMethod :: Nil =>
-                  lambdaMethod.fullName shouldBe s"Test0.rb:<global>::program.Foo:${RubyDefines.Initialize}:<lambda>0"
-                case xs => fail(s"Expected method decl for lambda, got ${xs.code.mkString(", ")} instead")
               }
             case xs => fail(s"Expected one init method, got ${xs.code.mkString(", ")} instead")
           }

@@ -51,7 +51,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case node: SplattingRubyNode        => astForSplattingRubyNode(node)
     case node: AnonymousTypeDeclaration => astForAnonymousTypeDeclaration(node)
     case node: ProcOrLambdaExpr         => astForProcOrLambdaExpr(node)
-    case node: RubyCallWithBlock[_]     => astsForCallWithBlockInExpr(node)
+    case node: RubyCallWithBlock[_]     => astForCallWithBlock(node)
     case node: SelfIdentifier           => astForSelfIdentifier(node)
     case node: BreakStatement           => astForBreakStatement(node)
     case node: StatementList            => astForStatementList(node)
@@ -195,11 +195,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         }
         .getOrElse(XDefines.Any -> XDefines.DynamicCallUnknownFullName)
       val argumentAsts = n.arguments.map(astForMethodCallArgument)
-      val dispatchType =
-        if builtinType.isDefined then DispatchTypes.STATIC_DISPATCH
-        else DispatchTypes.DYNAMIC_DISPATCH
+      val dispatchType = DispatchTypes.DYNAMIC_DISPATCH
 
-      val call = callNode(n, code(n), n.methodName, methodFullName, dispatchType)
+      val call = callNode(n, code(n), n.methodName, XDefines.DynamicCallUnknownFullName, dispatchType)
+      if methodFullName != XDefines.DynamicCallUnknownFullName then call.possibleTypes(Seq(methodFullName))
       callAst(call, argumentAsts, base = Option(baseAst), receiver = Option(receiverAst))
     }
 
@@ -242,9 +241,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         scope
           .tryResolveMethodInvocation("[]", typeFullName = Option(typeReference))
           .map { m =>
-            val expr = astForExpression(MemberCall(node.target, "::", "[]", node.indices)(node.span))
+            val expr = astForExpression(MemberCall(node.target, ".", "[]", node.indices)(node.span))
             expr.root.collect { case x: NewCall =>
-              x.methodFullName(s"$typeReference:${m.name}")
+              x.methodFullName(s"$typeReference.${m.name}")
               scope.tryResolveTypeReference(m.returnType).map(_.name).foreach(x.typeFullName(_))
             }
             expr
@@ -303,9 +302,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val argumentAsts = node match {
       case x: SimpleObjectInstantiation => x.arguments.map(astForMethodCallArgument)
       case x: ObjectInstantiationWithBlock =>
-        val Seq(methodDecl, typeDecl, _, methodRef) = astForDoBlock(x.block): @unchecked
-        Ast.storeInDiffGraph(methodDecl, diffGraph)
-        Ast.storeInDiffGraph(typeDecl, diffGraph)
+        val Seq(_, methodRef) = astForDoBlock(x.block): @unchecked
         x.arguments.map(astForMethodCallArgument) :+ methodRef
     }
 
@@ -734,7 +731,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .map(x => s"$x:$methodName")
       .getOrElse(XDefines.DynamicCallUnknownFullName)
     val argumentAsts = node.arguments.map(astForMethodCallArgument)
-    val call         = callNode(node, code(node), methodName, methodFullName, DispatchTypes.DYNAMIC_DISPATCH)
+    val call =
+      callNode(node, code(node), methodName, XDefines.DynamicCallUnknownFullName, DispatchTypes.DYNAMIC_DISPATCH)
+        .possibleTypes(IndexedSeq(methodFullName))
+
     callAst(call, argumentAsts, Some(receiverAst))
   }
 
@@ -742,7 +742,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val methodName         = methodIdentifier.text
     lazy val defaultResult = Defines.Any -> XDefines.DynamicCallUnknownFullName
 
-    val (receiverType, methodFullName) =
+    val (receiverType, methodFullNameHint) =
       scope
         .tryResolveMethodInvocation(
           methodName,
@@ -758,11 +758,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       }
 
     val argumentAst = node.arguments.map(astForMethodCallArgument)
-    val dispatchType =
-      if receiverType.startsWith(s"<${GlobalTypes.builtinPrefix}") then DispatchTypes.STATIC_DISPATCH
-      else DispatchTypes.DYNAMIC_DISPATCH
+    val (dispatchType, methodFullName) =
+      if receiverType.startsWith(GlobalTypes.builtinPrefix) then (DispatchTypes.STATIC_DISPATCH, methodFullNameHint)
+      else (DispatchTypes.DYNAMIC_DISPATCH, XDefines.DynamicCallUnknownFullName)
 
     val call = callNode(node, code(node), methodName, methodFullName, dispatchType)
+
+    if methodFullName != methodFullNameHint then call.possibleTypes(IndexedSeq(methodFullNameHint))
+
     val receiverAst = astForExpression(
       MemberAccess(SelfIdentifier()(node.span.spanStart(Defines.Self)), ".", call.name)(node.span)
     )
@@ -771,21 +774,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astForProcOrLambdaExpr(node: ProcOrLambdaExpr): Ast = {
-    val Seq(methodDecl, typeDecl, _, methodRef) = astForDoBlock(node.block): @unchecked
-
-    Ast.storeInDiffGraph(methodDecl, diffGraph)
-    Ast.storeInDiffGraph(typeDecl, diffGraph)
-
+    val Seq(_, methodRef) = astForDoBlock(node.block): @unchecked
     methodRef
-  }
-
-  private def astsForCallWithBlockInExpr[C <: RubyCall](node: RubyNode & RubyCallWithBlock[C]): Ast = {
-    val Seq(methodDecl, typeDecl, callWithLambdaArg) = astsForCallWithBlock(node): @unchecked
-
-    Ast.storeInDiffGraph(methodDecl, diffGraph)
-    Ast.storeInDiffGraph(typeDecl, diffGraph)
-
-    callWithLambdaArg
   }
 
   private def astForMethodCallArgument(node: RubyNode): Ast = {
@@ -849,8 +839,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       Operators.fieldAccess,
       DispatchTypes.STATIC_DISPATCH,
       signature = None,
-      typeFullName = memberType
-    )
+      typeFullName = Option(Defines.Any)
+    ).possibleTypes(IndexedSeq(memberType.get))
     callAst(fieldAccess, Seq(targetAst, fieldIdentifierAst))
   }
 

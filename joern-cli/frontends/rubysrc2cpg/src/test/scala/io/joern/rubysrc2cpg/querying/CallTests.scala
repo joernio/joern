@@ -9,7 +9,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
-class CallTests extends RubyCode2CpgFixture {
+class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
 
   "`puts 'hello'` is represented by a CALL node" in {
     val cpg = code("""
@@ -54,7 +54,7 @@ class CallTests extends RubyCode2CpgFixture {
     puts.lineNumber shouldBe Some(2)
     puts.code shouldBe "Kernel.puts 'hello'"
     puts.methodFullName shouldBe s"$kernelPrefix:puts"
-    puts.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+    puts.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
 
     val List(kernelRec: Call) = puts.receiver.l: @unchecked
     kernelRec.argumentIndex shouldBe -1
@@ -71,15 +71,15 @@ class CallTests extends RubyCode2CpgFixture {
     val List(atan2) = cpg.call.name("atan2").l
     atan2.lineNumber shouldBe Some(3)
     atan2.code shouldBe "Math.atan2(1, 1)"
-    atan2.methodFullName shouldBe s"<${GlobalTypes.builtinPrefix}.Math>:atan2"
-    atan2.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+    atan2.methodFullName shouldBe s"${GlobalTypes.builtinPrefix}.Math:atan2"
+    atan2.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
 
     val List(mathRec: Call) = atan2.receiver.l: @unchecked
     mathRec.argumentIndex shouldBe -1
     mathRec.typeFullName shouldBe Defines.Any
     mathRec.code shouldBe s"Math.atan2"
 
-    mathRec.argument(1).asInstanceOf[TypeRef].typeFullName shouldBe s"<${GlobalTypes.builtinPrefix}.Math>"
+    mathRec.argument(1).asInstanceOf[TypeRef].typeFullName shouldBe s"${GlobalTypes.builtinPrefix}.Math"
     mathRec.argument(2).asInstanceOf[FieldIdentifier].canonicalName shouldBe "atan2"
   }
 

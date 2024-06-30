@@ -4,11 +4,11 @@ import io.joern.swiftsrc2cpg.Config
 import io.joern.swiftsrc2cpg.datastructures.Scope
 import io.joern.swiftsrc2cpg.parser.SwiftJsonParser.ParseResult
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
-import io.joern.swiftsrc2cpg.passes.Defines
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode, AstNodeBuilder as X2CpgAstNodeBuilder}
 import io.joern.x2cpg.datastructures.Global
+import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.joern.x2cpg.utils.OffsetUtils
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
@@ -121,10 +121,10 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
     case null                               => notHandledYet(node)
   }
 
-  override protected def line(node: SwiftNode): Option[Integer]      = node.startLine.map(Integer.valueOf)
-  override protected def column(node: SwiftNode): Option[Integer]    = node.startColumn.map(Integer.valueOf)
-  override protected def lineEnd(node: SwiftNode): Option[Integer]   = node.endLine.map(Integer.valueOf)
-  override protected def columnEnd(node: SwiftNode): Option[Integer] = node.endColumn.map(Integer.valueOf)
+  override protected def line(node: SwiftNode): Option[Int]      = node.startLine.map(Integer.valueOf)
+  override protected def column(node: SwiftNode): Option[Int]    = node.startColumn.map(Integer.valueOf)
+  override protected def lineEnd(node: SwiftNode): Option[Int]   = node.endLine.map(Integer.valueOf)
+  override protected def columnEnd(node: SwiftNode): Option[Int] = node.endColumn.map(Integer.valueOf)
 
   private val lineOffsetTable =
     OffsetUtils.getLineOffsetTable(Option(parserResult.fileContent))

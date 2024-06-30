@@ -1,11 +1,14 @@
 package io.joern.rubysrc2cpg.astcreation
 
+import better.files.File
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.StatementList
 import io.joern.rubysrc2cpg.datastructures.{RubyField, RubyMethod, RubyProgramSummary, RubyStubbedType, RubyType}
 import io.joern.rubysrc2cpg.parser.RubyNodeCreator
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.x2cpg.passes.base.AstLinkerPass
+import io.joern.x2cpg.layers.Base
+import io.joern.x2cpg.passes.base.{AstLinkerPass, FileCreationPass}
 import io.joern.x2cpg.{Ast, ValidationMode}
+import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Local, Member, Method, TypeDecl}
 import io.shiftleft.semanticcpg.language.*
@@ -20,16 +23,15 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
 
   def summarize(asExternal: Boolean = false): RubyProgramSummary = {
     this.parseLevel = AstParseLevel.SIGNATURES
-    Using.resource(Cpg.withConfig(Config.withoutOverflow())) { cpg =>
+    Using.resource(Cpg.empty) { cpg =>
       // Build and store compilation unit AST
       val rootNode = new RubyNodeCreator().visit(programCtx).asInstanceOf[StatementList]
       val ast      = astForRubyFile(rootNode)
       Ast.storeInDiffGraph(ast, diffGraph)
       BatchedUpdate.applyDiff(cpg.graph, diffGraph)
-
+      CpgLoader.createIndexes(cpg)
       // Link basic AST elements
       AstLinkerPass(cpg).createAndApply()
-
       // Summarize findings
       summarize(cpg, asExternal)
     }
@@ -107,7 +109,7 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
           val moduleTypeMap =
             RubyType(
               moduleFullName,
-              module.block.astChildren.collectAll[Method].map(toMethod).l,
+              module.astChildren.collectAll[Method].map(toMethod).l,
               module.local.map(toModuleVariable).l
             )
           moduleTypeMap
@@ -115,7 +117,7 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
         // Map module types
         val typeEntries = namespace.method.collectFirst {
           case m: Method if m.name == Defines.Program =>
-            val childrenTypes = m.block.astChildren.collectAll[TypeDecl].l
+            val childrenTypes = m.astChildren.collectAll[TypeDecl].l
             val fullName =
               if childrenTypes.nonEmpty && asExternal then buildFullName(childrenTypes.head) else s"${m.fullName}"
             val nestedTypes = childrenTypes.flatMap(handleNestedTypes(_, fullName))

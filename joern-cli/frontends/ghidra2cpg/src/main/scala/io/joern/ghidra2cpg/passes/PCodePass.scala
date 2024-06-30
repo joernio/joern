@@ -8,13 +8,13 @@ import io.joern.ghidra2cpg.utils.{Decompiler, PCodeMapper}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewMethod}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 
 import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
 
 class PCodePass(currentProgram: Program, fileName: String, functions: List[Function], cpg: Cpg, decompiler: Decompiler)
-    extends ConcurrentWriterCpgPass[Function](cpg) {
+    extends ForkJoinParallelCpgPass[Function](cpg) {
 
   val address2Literals: Map[Long, String] = DefinedDataIterator
     .definedStrings(currentProgram)
@@ -116,7 +116,7 @@ class PCodePass(currentProgram: Program, fileName: String, functions: List[Funct
   }
 
   override def runOnPart(diffGraphBuilder: DiffGraphBuilder, function: Function): Unit = {
-    val localDiffGraph = new DiffGraphBuilder
+    val localDiffGraph = Cpg.newDiffGraphBuilder
     // we need it just once with default settings
     val blockNode  = nodes.NewBlock().code("").order(0)
     val methodNode = createMethodNode(decompiler, function, fileName, checkIfExternal(currentProgram, function.getName))

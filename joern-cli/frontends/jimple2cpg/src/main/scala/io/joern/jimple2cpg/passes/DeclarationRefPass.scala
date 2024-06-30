@@ -3,13 +3,13 @@ package io.joern.jimple2cpg.passes
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{Declaration, Method}
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language.*
 
 /** Links declarations to their identifier nodes. Due to the flat AST of bytecode, we don't need to account for varying
   * scope.
   */
-class DeclarationRefPass(cpg: Cpg) extends ConcurrentWriterCpgPass[Method](cpg) {
+class DeclarationRefPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg) {
 
   override def generateParts(): Array[Method] = cpg.method.toArray
 

@@ -25,7 +25,7 @@ import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
 import io.joern.x2cpg.utils.dependency.DependencyResolver
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.slf4j.LoggerFactory
 
 import java.net.URLClassLoader
@@ -38,7 +38,7 @@ import scala.jdk.OptionConverters.RichOptional
 import scala.util.{Success, Try}
 
 class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[String]] = None)
-    extends ConcurrentWriterCpgPass[String](cpg) {
+    extends ForkJoinParallelCpgPass[String](cpg) {
 
   val global: Global                = new Global()
   private val logger                = LoggerFactory.getLogger(classOf[AstCreationPass])

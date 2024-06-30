@@ -6,11 +6,10 @@ import io.joern.swiftsrc2cpg.passes.*
 import io.joern.swiftsrc2cpg.utils.AstGenRunner
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
-import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
+import io.joern.x2cpg.frontendspecific.swiftsrc2cpg
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
 import io.joern.x2cpg.utils.{HashUtil, Report}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.CpgPassBase
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 import scala.util.Try
@@ -46,23 +45,10 @@ class SwiftSrc2Cpg extends X2CpgFrontend[Config] {
     val maybeCpg = createCpgWithOverlays(config)
     maybeCpg.map { cpg =>
       new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
-      SwiftSrc2Cpg.postProcessingPasses(cpg, Option(config)).foreach(_.createAndApply())
+      val typeRecoveryConfig = XTypeRecoveryConfig(config.typePropagationIterations, !config.disableDummyTypes)
+      swiftsrc2cpg.postProcessingPasses(cpg, typeRecoveryConfig).foreach(_.createAndApply())
       cpg
     }
-  }
-
-}
-
-object SwiftSrc2Cpg {
-
-  def postProcessingPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] = {
-    val typeRecoveryConfig =
-      config.fold(XTypeRecoveryConfig())(c => XTypeRecoveryConfig(c.typePropagationIterations, !c.disableDummyTypes))
-    List(new SwiftInheritanceNamePass(cpg), new ConstClosurePass(cpg)) ++
-      new SwiftTypeRecoveryPassGenerator(cpg, typeRecoveryConfig).generate() ++ List(
-        new SwiftTypeHintCallLinker(cpg),
-        new NaiveCallLinker(cpg)
-      )
   }
 
 }

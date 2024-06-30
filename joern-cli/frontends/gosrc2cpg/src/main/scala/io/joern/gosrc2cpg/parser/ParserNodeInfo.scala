@@ -8,8 +8,8 @@ case class ParserNodeInfo(
   node: ParserNode,
   json: Value,
   code: String,
-  lineNumber: Option[Integer],
-  columnNumber: Option[Integer],
-  lineNumberEnd: Option[Integer],
-  columnNumberEnd: Option[Integer]
+  lineNumber: Option[Int],
+  columnNumber: Option[Int],
+  lineNumberEnd: Option[Int],
+  columnNumberEnd: Option[Int]
 ) extends BaseNodeInfo[ParserNode]

@@ -18,7 +18,7 @@ class MethodTests extends C2CpgSuite {
         x.name shouldBe "main"
         x.fullName shouldBe "main"
         x.code should startWith("int main(int argc, char **argv) {")
-        x.signature shouldBe "int main (int,char**)"
+        x.signature shouldBe "int(int,char**)"
         x.isExternal shouldBe false
         x.order shouldBe 1
         x.filename shouldBe "Test0.c"
@@ -111,8 +111,8 @@ class MethodTests extends C2CpgSuite {
     "should be correct for methods with line breaks / whitespace" in {
       inside(cpg.method("foo").l) { case List(foo) =>
         foo.name shouldBe "foo"
-        foo.fullName shouldBe "foo<A,B,C>"
-        foo.signature shouldBe "void foo<A,B,C> ()"
+        foo.fullName shouldBe "foo<A, B, C>:void()"
+        foo.signature shouldBe "void()"
       }
     }
   }
@@ -128,7 +128,7 @@ class MethodTests extends C2CpgSuite {
       val List(method) = cpg.method.nameExact("foo").l
       method.isExternal shouldBe false
       method.fullName shouldBe "foo"
-      method.signature shouldBe "int foo (int,int)"
+      method.signature shouldBe "int(int,int)"
       method.lineNumber shouldBe Option(2)
       method.columnNumber shouldBe Option(1)
       method.lineNumberEnd shouldBe Option(4)
@@ -264,10 +264,69 @@ class MethodTests extends C2CpgSuite {
     )
 
     "deduplicate method forward declarations correctly" in {
-      cpg.method.fullName("abs").size shouldBe 1
+      cpg.method.fullNameExact("abs:int(int)").size shouldBe 1
       cpg.call.name("abs").callee(NoResolve).size shouldBe 1
     }
 
   }
 
+  "Method name, signature and full name tests" should {
+    "be correct for plain method C" in {
+      val cpg = code(
+        """
+          |int method(int);
+          |""".stripMargin,
+        "test.c"
+      )
+      val List(method) = cpg.method.nameExact("method").l
+      method.signature shouldBe "int(int)"
+      method.fullName shouldBe "method"
+    }
+
+    "be correct for plain method CPP" in {
+      val cpg = code(
+        """
+          |namespace NNN {
+          |  int method(int);
+          |}
+          |""".stripMargin,
+        "test.cpp"
+      )
+      val List(method) = cpg.method.nameExact("method").l
+      method.signature shouldBe "int(int)"
+      method.fullName shouldBe "NNN.method:int(int)"
+    }
+
+    "be correct for plain extern C method" in {
+      val cpg = code(
+        """
+          |namespace NNN {
+          |  extern "C" {
+          |    int method(int);
+          |  }
+          |}
+          |""".stripMargin,
+        "test.cpp"
+      )
+      val List(method) = cpg.method.nameExact("method").l
+      method.signature shouldBe "int(int)"
+      method.fullName shouldBe "method"
+    }
+
+    "be correct for class method" in {
+      val cpg = code(
+        """
+          |namespace NNN {
+          |  class CCC {
+          |    int method(int);
+          |  }
+          |}
+          |""".stripMargin,
+        "test.cpp"
+      )
+      val List(method) = cpg.method.nameExact("method").l
+      method.signature shouldBe "int(int)"
+      method.fullName shouldBe "NNN.CCC.method:int(int)"
+    }
+  }
 }

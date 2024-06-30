@@ -4,13 +4,13 @@ import io.joern.jimple2cpg.Config
 import io.joern.jimple2cpg.astcreation.AstCreator
 import io.joern.x2cpg.datastructures.Global
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.slf4j.LoggerFactory
 import soot.{Scene, SootClass, SourceLocator}
 
 /** Creates the AST layer from the given class file and stores all types in the given global parameter.
   */
-class SootAstCreationPass(cpg: Cpg, config: Config) extends ConcurrentWriterCpgPass[SootClass](cpg) {
+class SootAstCreationPass(cpg: Cpg, config: Config) extends ForkJoinParallelCpgPass[SootClass](cpg) {
 
   val global: Global = new Global()
   private val logger = LoggerFactory.getLogger(classOf[AstCreationPass])

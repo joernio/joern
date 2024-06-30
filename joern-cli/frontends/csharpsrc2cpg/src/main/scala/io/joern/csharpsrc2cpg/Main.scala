@@ -2,7 +2,7 @@ package io.joern.csharpsrc2cpg
 
 import io.joern.csharpsrc2cpg.Frontend.{cmdLineParser, defaultConfig}
 import io.joern.x2cpg.astgen.AstGenConfig
-import io.joern.x2cpg.passes.frontend.{TypeRecoveryParserConfig, XTypeRecovery}
+import io.joern.x2cpg.passes.frontend.{TypeRecoveryParserConfig, XTypeRecovery, XTypeRecoveryConfig}
 import io.joern.x2cpg.utils.Environment
 import io.joern.x2cpg.{DependencyDownloadConfig, X2CpgConfig, X2CpgMain}
 import org.slf4j.LoggerFactory
@@ -31,7 +31,11 @@ object Frontend {
   val cmdLineParser: OParser[Unit, Config] = {
     val builder = OParser.builder[Config]
     import builder.*
-    OParser.sequence(programName("csharpsrc2cpg"), DependencyDownloadConfig.parserOptions, XTypeRecovery.parserOptions)
+    OParser.sequence(
+      programName("csharpsrc2cpg"),
+      DependencyDownloadConfig.parserOptions,
+      XTypeRecoveryConfig.parserOptionsForParserConfig
+    )
   }
 
 }

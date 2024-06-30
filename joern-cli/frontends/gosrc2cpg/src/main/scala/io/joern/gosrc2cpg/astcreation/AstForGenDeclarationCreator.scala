@@ -1,5 +1,6 @@
 package io.joern.gosrc2cpg.astcreation
 
+import io.joern.gosrc2cpg.datastructures.PackageMemberAst
 import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg
@@ -145,7 +146,10 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
           None,
           Some(typeFullName)
         )
-        goGlobal.recordPkgLevelVarAndConstantAst(fullyQualifiedPackage, callAst(cNode, arguments), relPathFileName)
+        goGlobal.recordPkgLevelVarAndConstantAst(
+          fullyQualifiedPackage,
+          PackageMemberAst(callAst(cNode, arguments), relPathFileName)
+        )
       case _ =>
 
   }

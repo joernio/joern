@@ -12,7 +12,7 @@ class NewNodeStepsTest extends AnyWordSpec with Matchers {
   import io.shiftleft.semanticcpg.language.NewNodeNodeStepsTest._
 
   "stores NewNodes" in {
-    implicit val diffGraphBuilder: DiffGraphBuilder = new DiffGraphBuilder
+    implicit val diffGraphBuilder: DiffGraphBuilder = Cpg.newDiffGraphBuilder
     val newNode                                     = newTestNode()
     val cpg                                         = Cpg.empty
     new NewNodeSteps(newNode.start).store()
@@ -29,7 +29,7 @@ class NewNodeStepsTest extends AnyWordSpec with Matchers {
 
   "stores containedNodes and connecting edge" when {
     "embedding a StoredNode and a NewNode" in {
-      implicit val diffGraphBuilder: DiffGraphBuilder = new DiffGraphBuilder
+      implicit val diffGraphBuilder: DiffGraphBuilder = Cpg.newDiffGraphBuilder
       val cpg                                         = Cpg.empty
       val existingContainedNode                       = cpg.graph.addNode(42L, "MODIFIER").asInstanceOf[StoredNode]
       cpg.graph.V().asScala.toSet shouldBe Set(existingContainedNode)
@@ -43,7 +43,7 @@ class NewNodeStepsTest extends AnyWordSpec with Matchers {
     }
 
     "embedding a NewNode recursively" in {
-      implicit val diffGraphBuilder: DiffGraphBuilder = new DiffGraphBuilder
+      implicit val diffGraphBuilder: DiffGraphBuilder = Cpg.newDiffGraphBuilder
       val cpg                                         = Cpg.empty
       val newContainedNodeL1                          = newTestNode()
       val newContainedNodeL0                          = newTestNode(evidence = List(newContainedNodeL1))
