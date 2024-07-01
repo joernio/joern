@@ -54,12 +54,10 @@ class StringParserTests extends RubyParserFixture with Matchers {
         | "y"""".stripMargin)
   }
 
-  // TODO: Failing tests
-  "fix tests" ignore {
-//    test("#{1}#{2}")
-    test("#{a}")
-//    test("""#{10} \
-//        | "is a number."""".stripMargin)
+  "double quoted string interpolation" in {
+    test("\"#{1}#{2}\"")
+    test(""""#{10} \
+        |  is a number."""".stripMargin)
   }
 
   "Expanded `%x` external command literal" in {

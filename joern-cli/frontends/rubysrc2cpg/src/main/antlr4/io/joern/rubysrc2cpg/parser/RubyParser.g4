@@ -591,7 +591,9 @@ associationList
     
 association
     :   associationKey (EQGT | COLON) NL* operatorExpression
+        # associationElement
     |   hashParameter
+        # associationHashParameter
     ;
     
 associationKey
