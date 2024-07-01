@@ -31,6 +31,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     currentResult.isInstanceOf[Unknown]
 
   override def visit(tree: ParseTree): RubyNode = {
+    println(s"Visiting: ${tree.getClass}")
     Option(tree).map(super.visit).getOrElse(defaultResult())
   }
 
@@ -814,11 +815,17 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitAssociation(ctx: RubyParser.AssociationContext): RubyNode = {
-    ctx.associationKey().getText match {
-      case "if" =>
-        Association(SimpleIdentifier()(ctx.toTextSpan.spanStart("if")), visit(ctx.operatorExpression()))(ctx.toTextSpan)
-      case _ =>
-        Association(visit(ctx.associationKey()), visit(ctx.operatorExpression()))(ctx.toTextSpan)
+    ctx.associationKey() match {
+      case null => visit(ctx.hashParameter())
+      case assocKey =>
+        assocKey.getText match {
+          case "if" =>
+            Association(SimpleIdentifier()(ctx.toTextSpan.spanStart("if")), visit(ctx.operatorExpression()))(
+              ctx.toTextSpan
+            )
+          case _ =>
+            Association(visit(ctx.associationKey()), visit(ctx.operatorExpression()))(ctx.toTextSpan)
+        }
     }
   }
 

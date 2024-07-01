@@ -208,7 +208,7 @@ argumentWithParentheses
 argumentList
     :   blockArgument
         # blockArgumentArgumentList
-    |   splattingArgument (COMMA NL* blockArgument)?
+    |   splattingArgument (COMMA NL* blockArgument)? (COMMA NL* operatorExpressionList)?
         # splattingArgumentArgumentList
     |   operatorExpressionList (COMMA NL* associationList)? (COMMA NL* splattingArgument)? (COMMA NL* blockArgument)?
         # operatorsArgumentList
@@ -282,7 +282,7 @@ primaryValue
         # assignmentWithRescue
         
         // Definitions
-    |   CLASS classPath (LT commandOrPrimaryValueClass)? (SEMI | NL) bodyStatement END
+    |   CLASS classPath (LT commandOrPrimaryValueClass)? (SEMI | NL)? bodyStatement END
         # classDefinition
     |   CLASS LT2 commandOrPrimaryValueClass (SEMI | NL) bodyStatement END
         # singletonClassDefinition
@@ -586,11 +586,12 @@ variableReference
     ;
 
 associationList
-    :   association (COMMA NL* association)*
+    :   (association) (COMMA NL* (association))*
     ;
     
 association
     :   associationKey (EQGT | COLON) NL* operatorExpression
+    |   hashParameter
     ;
     
 associationKey

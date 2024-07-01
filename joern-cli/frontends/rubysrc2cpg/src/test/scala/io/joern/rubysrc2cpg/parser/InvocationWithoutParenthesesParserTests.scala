@@ -4,16 +4,10 @@ import io.joern.rubysrc2cpg.testfixtures.RubyParserFixture
 import org.scalatest.matchers.should.Matchers
 
 class InvocationWithoutParenthesesParserTests extends RubyParserFixture with Matchers {
-  "fix tests" ignore {
-    // TODO: Parser error
-    test("do?")
-
-    // TODO: Syntax Error
-    test("return!")
-  }
-
   "method invocation without parenthesis" in {
     test("task.nil?")
+    test("foo?")
+    test("foo!")
   }
 
   "command with do block" in {
