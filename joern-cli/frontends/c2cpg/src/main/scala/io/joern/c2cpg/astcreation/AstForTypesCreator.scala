@@ -151,7 +151,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   protected def astForASMDeclaration(asm: IASTASMDeclaration): Ast = Ast(unknownNode(asm, code(asm)))
 
   private def astForStructuredBindingDeclaration(decl: ICPPASTStructuredBindingDeclaration): Ast = {
-    val node = blockNode(decl, Defines.empty, Defines.voidTypeName)
+    val node = blockNode(decl, Defines.Empty, Defines.Void)
     scope.pushNewScope(node)
     val childAsts = decl.getNames.toList.map { name =>
       astForNode(name)
@@ -272,7 +272,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         calls,
         s"$fullname:${io.joern.x2cpg.Defines.StaticInitMethodName}",
         None,
-        Defines.anyTypeName,
+        Defines.Any,
         Some(filename),
         lineNumber,
         columnNumber
@@ -370,7 +370,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         calls,
         s"$deAliasedFullName:${io.joern.x2cpg.Defines.StaticInitMethodName}",
         None,
-        Defines.anyTypeName,
+        Defines.Any,
         Some(filename),
         lineNumber,
         columnNumber

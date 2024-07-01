@@ -1,21 +1,21 @@
 package io.joern.c2cpg.astcreation
 
-import io.joern.x2cpg.{Ast, ValidationMode}
+import io.joern.x2cpg.Ast
+import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
+import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
+import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, ModifierTypes}
 import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast.*
-import org.eclipse.cdt.core.dom.ast.cpp.{ICPPASTLambdaExpression, ICPPFunction}
+import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTLambdaExpression
 import org.eclipse.cdt.core.dom.ast.gnu.c.ICASTKnRFunctionDeclarator
-import org.eclipse.cdt.internal.core.dom.parser.c.{CASTFunctionDeclarator, CASTParameterDeclaration, CTypedef}
-import org.eclipse.cdt.internal.core.dom.parser.cpp.{
-  CPPASTFunctionDeclarator,
-  CPPASTFunctionDefinition,
-  CPPASTParameterDeclaration,
-  CPPFunction
-}
+import org.eclipse.cdt.internal.core.dom.parser.c.CASTFunctionDeclarator
+import org.eclipse.cdt.internal.core.dom.parser.c.CASTParameterDeclaration
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFunctionDeclarator
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFunctionDefinition
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTParameterDeclaration
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import scala.annotation.tailrec
@@ -103,9 +103,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       case declarator: IASTDeclarator =>
         declarator.getTrailingReturnType match {
           case id: IASTTypeId => typeForDeclSpecifier(id.getDeclSpecifier)
-          case null           => Defines.anyTypeName
+          case null           => Defines.Any
         }
-      case null => Defines.anyTypeName
+      case null => Defines.Any
     }
     val name        = nextClosureName()
     val fullname    = s"${fullName(lambdaExpression)}$name"
@@ -125,7 +125,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       methodNode_,
       parameterNodes.map(Ast(_)),
       astForMethodBody(Option(lambdaExpression.getBody)),
-      newMethodReturnNode(lambdaExpression, registerType(returnType)),
+      methodReturnNode(lambdaExpression, registerType(returnType)),
       newModifierNode(ModifierTypes.LAMBDA) :: Nil
     )
     val typeDeclAst = createFunctionTypeAndTypeDecl(lambdaExpression, methodNode_, name, fullname, signature)
@@ -159,11 +159,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           scope.popScope()
 
           val stubAst =
-            methodStubAst(
-              methodNode_,
-              parameterNodes.map(Ast(_)),
-              newMethodReturnNode(funcDecl, registerType(returnType))
-            )
+            methodStubAst(methodNode_, parameterNodes.map(Ast(_)), methodReturnNode(funcDecl, registerType(returnType)))
           val typeDeclAst = createFunctionTypeAndTypeDecl(funcDecl, methodNode_, name, fullname, signature)
           stubAst.merge(typeDeclAst)
         } else {
@@ -223,7 +219,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       methodNode_,
       parameterNodes.map(Ast(_)),
       astForMethodBody(Option(funcDef.getBody)),
-      newMethodReturnNode(funcDef, registerType(returnType)),
+      methodReturnNode(funcDef, registerType(returnType)),
       modifiers = modifiers
     )
 
