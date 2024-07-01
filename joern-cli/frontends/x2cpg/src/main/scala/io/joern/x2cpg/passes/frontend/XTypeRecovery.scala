@@ -1,7 +1,15 @@
 package io.joern.x2cpg.passes.frontend
 
 import io.joern.x2cpg.{Defines, X2CpgConfig}
-import io.shiftleft.codepropertygraph.generated.{Cpg, DispatchTypes, EdgeTypes, NodeTypes, Operators, PropertyKeys, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{
+  Cpg,
+  DispatchTypes,
+  EdgeTypes,
+  NodeTypes,
+  Operators,
+  PropertyKeys,
+  PropertyNames
+}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.passes.{CpgPass, CpgPassBase, ForkJoinParallelCpgPass}
 import io.shiftleft.semanticcpg.language.*

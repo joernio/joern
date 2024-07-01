@@ -317,8 +317,8 @@ class StepsTest extends AnyWordSpec with Matchers {
 //    def cfg: Iterator[CfgNode] = cpg.method.name("add")
 
     def ast: Iterator[AstNode] = cpg.method.name("foo").cast[AstNode]
-    ast.astParent.property(Properties.Name).head shouldBe "AClass"
-    ast.head.astParent.property(Properties.Name) shouldBe "AClass"
+    ast.astParent.property(PropertyKeys.Name).head shouldBe "AClass"
+    ast.head.astParent.property(PropertyKeys.Name) shouldBe "AClass"
 
     // methodForCallGraph
     method.call.size shouldBe 1
@@ -360,34 +360,34 @@ class StepsTest extends AnyWordSpec with Matchers {
     val (Seq(emptyCall), Seq(callWithProperties)) = cpg.call.l.partition(_.argumentName.isEmpty)
 
     // Cardinality.One
-    emptyCall.property(Properties.TypeFullName) shouldBe "<empty>"
-    emptyCall.propertyOption(Properties.TypeFullName) shouldBe Some("<empty>")
-    emptyCall.propertyOption(Properties.TypeFullName.name) shouldBe Some("<empty>")
+    emptyCall.property(PropertyKeys.TypeFullName) shouldBe "<empty>"
+    emptyCall.propertyOption(PropertyKeys.TypeFullName) shouldBe Some("<empty>")
+    emptyCall.propertyOption(PropertyKeys.TypeFullName.name) shouldBe Some("<empty>")
     // Cardinality.ZeroOrOne
-    emptyCall.property(Properties.ArgumentName) shouldBe None
-    emptyCall.propertyOption(Properties.ArgumentName) shouldBe None
-    emptyCall.propertyOption(Properties.ArgumentName.name) shouldBe None
+    emptyCall.property(PropertyKeys.ArgumentName) shouldBe None
+    emptyCall.propertyOption(PropertyKeys.ArgumentName) shouldBe None
+    emptyCall.propertyOption(PropertyKeys.ArgumentName.name) shouldBe None
     // Cardinality.List
     // these ones are rather a historic accident it'd be better and more consistent to return `None` here -
     // we'll defer that change until after the flatgraph port though and just document it for now
-    emptyCall.property(Properties.DynamicTypeHintFullName) shouldBe Seq.empty
-    emptyCall.propertyOption(Properties.DynamicTypeHintFullName) shouldBe Some(Seq.empty)
-    emptyCall.propertyOption(Properties.DynamicTypeHintFullName.name) shouldBe Some(Seq.empty)
+    emptyCall.property(PropertyKeys.DynamicTypeHintFullName) shouldBe Seq.empty
+    emptyCall.propertyOption(PropertyKeys.DynamicTypeHintFullName) shouldBe Some(Seq.empty)
+    emptyCall.propertyOption(PropertyKeys.DynamicTypeHintFullName.name) shouldBe Some(Seq.empty)
 
     // Cardinality.One
-    callWithProperties.property(Properties.TypeFullName) shouldBe "aa"
-    callWithProperties.propertyOption(Properties.TypeFullName) shouldBe Some("aa")
-    callWithProperties.propertyOption(Properties.TypeFullName.name) shouldBe Some("aa")
+    callWithProperties.property(PropertyKeys.TypeFullName) shouldBe "aa"
+    callWithProperties.propertyOption(PropertyKeys.TypeFullName) shouldBe Some("aa")
+    callWithProperties.propertyOption(PropertyKeys.TypeFullName.name) shouldBe Some("aa")
 
     // Cardinality.ZeroOrOne
-    callWithProperties.property(Properties.ArgumentName) shouldBe Some("bb")
-    callWithProperties.propertyOption(Properties.ArgumentName) shouldBe Some("bb")
-    callWithProperties.propertyOption(Properties.ArgumentName.name) shouldBe Some("bb")
+    callWithProperties.property(PropertyKeys.ArgumentName) shouldBe Some("bb")
+    callWithProperties.propertyOption(PropertyKeys.ArgumentName) shouldBe Some("bb")
+    callWithProperties.propertyOption(PropertyKeys.ArgumentName.name) shouldBe Some("bb")
 
     // Cardinality.List
-    callWithProperties.property(Properties.DynamicTypeHintFullName) shouldBe Seq("cc", "dd")
-    callWithProperties.propertyOption(Properties.DynamicTypeHintFullName) shouldBe Some(Seq("cc", "dd"))
-    callWithProperties.propertyOption(Properties.DynamicTypeHintFullName.name) shouldBe Some(Seq("cc", "dd"))
+    callWithProperties.property(PropertyKeys.DynamicTypeHintFullName) shouldBe Seq("cc", "dd")
+    callWithProperties.propertyOption(PropertyKeys.DynamicTypeHintFullName) shouldBe Some(Seq("cc", "dd"))
+    callWithProperties.propertyOption(PropertyKeys.DynamicTypeHintFullName.name) shouldBe Some(Seq("cc", "dd"))
   }
 
 }

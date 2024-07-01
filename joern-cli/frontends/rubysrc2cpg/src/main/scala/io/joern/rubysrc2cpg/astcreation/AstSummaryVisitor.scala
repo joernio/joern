@@ -27,13 +27,8 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
       val rootNode = new RubyNodeCreator().visit(programCtx).asInstanceOf[StatementList]
       val ast      = astForRubyFile(rootNode)
       Ast.storeInDiffGraph(ast, diffGraph)
-<<<<<<< variant A
-      BatchedUpdate.applyDiff(cpg.graph, diffGraph)
-      CpgLoader.createIndexes(cpg)
->>>>>>> variant B
       DiffGraphApplier.applyDiff(cpg.graph, diffGraph)
 
-======= end
       // Link basic AST elements
       AstLinkerPass(cpg).createAndApply()
       // Summarize findings
