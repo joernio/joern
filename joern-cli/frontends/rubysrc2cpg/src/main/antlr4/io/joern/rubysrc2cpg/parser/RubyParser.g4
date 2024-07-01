@@ -516,7 +516,7 @@ methodParameterPart
 
 parameterList
     :   mandatoryOrOptionalParameterList (COMMA NL* arrayParameter)? (COMMA NL* hashParameter)? (COMMA NL* procParameter)?
-    |   arrayParameter (COMMA NL* hashParameter)? (COMMA NL* procParameter)?
+    |   arrayParameter (COMMA NL* hashParameter)? (COMMA NL* procParameter)? (COMMA NL* mandatoryOrOptionalParameterList)?
     |   hashParameter (COMMA NL* procParameter)?
     |   procParameter
     ;
@@ -586,7 +586,7 @@ variableReference
     ;
 
 associationList
-    :   (association) (COMMA NL* (association))*
+    :   association (COMMA NL* association)*
     ;
     
 association

@@ -209,4 +209,21 @@ class HashTests extends RubyCode2CpgFixture {
     }
   }
 
+  "Splatting argument in hash" in {
+    val cpg = code("""
+        |a = {**x, **y}
+        |""".stripMargin)
+
+    inside(cpg.call.name(RubyOperators.hashInitializer).l) {
+      case hashCall :: Nil =>
+        val List(xSplatCall, ySplatCall) = hashCall.inCall.astSiblings.isCall.l
+        xSplatCall.code shouldBe "**x"
+        xSplatCall.methodFullName shouldBe RubyOperators.splat
+
+        ySplatCall.code shouldBe "**y"
+        ySplatCall.methodFullName shouldBe RubyOperators.splat
+      case xs => fail(s"Expected call to hashInitializer, [${xs.code.mkString(",")}]")
+    }
+  }
+
 }

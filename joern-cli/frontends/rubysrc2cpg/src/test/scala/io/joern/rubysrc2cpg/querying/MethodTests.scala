@@ -675,4 +675,46 @@ class MethodTests extends RubyCode2CpgFixture {
       }
     }
   }
+
+  "Splatting and normal argument" in {
+    val cpg = code("""
+        |def foo(*x, y)
+        |end
+        |""".stripMargin)
+
+    inside(cpg.method.name("foo").l) {
+      case fooMethod :: Nil =>
+        inside(fooMethod.method.parameter.l) {
+          case selfArg :: splatArg :: normalArg :: Nil =>
+            splatArg.code shouldBe "*x"
+            splatArg.index shouldBe 1
+
+            normalArg.code shouldBe "y"
+            normalArg.index shouldBe 2
+          case xs => fail(s"Expected two parameters, got [${xs.code.mkString(",")}]")
+        }
+      case xs => fail(s"Expected one method, got [${xs.code.mkString(",")}]")
+    }
+  }
+
+  "Splatting argument in call" in {
+    val cpg = code("""
+        |def foo(a, b)
+        |end
+        |
+        |x = 1,2
+        |foo(*x, y)
+        |""".stripMargin)
+
+    inside(cpg.call.name("foo").l) {
+      case fooCall :: Nil =>
+        inside(fooCall.argument.l) {
+          case selfArg :: xArg :: yArg :: Nil =>
+            xArg.code shouldBe "*x"
+            yArg.code shouldBe "self.y"
+          case xs => fail(s"Expected two args, got [${xs.code.mkString(",")}]")
+        }
+      case xs => fail(s"Expected one call to foo, got [${xs.code.mkString(",")}]")
+    }
+  }
 }

@@ -40,7 +40,9 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitCompoundStatement(ctx: RubyParser.CompoundStatementContext): RubyNode = {
-    StatementList(ctx.getStatements.map(visit))(ctx.toTextSpan)
+    val a = ctx.getStatements.map(visit)
+    StatementList(a)(ctx.toTextSpan)
+//    StatementList(ctx.getStatements.map(visit))(ctx.toTextSpan)
   }
 
   override def visitGroupingStatement(ctx: RubyParser.GroupingStatementContext): RubyNode = {
@@ -1097,11 +1099,13 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitMethodDefinition(ctx: RubyParser.MethodDefinitionContext): RubyNode = {
-    MethodDeclaration(
-      ctx.definedMethodName().getText,
-      Option(ctx.methodParameterPart().parameterList()).fold(List())(_.parameters).map(visit),
-      visit(ctx.bodyStatement())
-    )(ctx.toTextSpan)
+    val params =
+      Option(ctx.methodParameterPart().parameterList())
+        .fold(List())(_.parameters)
+        .map(visit)
+        .sortBy(x => (x.span.line, x.span.column))
+
+    MethodDeclaration(ctx.definedMethodName().getText, params, visit(ctx.bodyStatement()))(ctx.toTextSpan)
   }
 
   override def visitEndlessMethodDefinition(ctx: RubyParser.EndlessMethodDefinitionContext): RubyNode = {
@@ -1132,7 +1136,9 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitHashParameter(ctx: RubyParser.HashParameterContext): RubyNode = {
-    HashParameter(Option(ctx.LOCAL_VARIABLE_IDENTIFIER()).map(_.getText).getOrElse(ctx.getText))(ctx.toTextSpan)
+    val identifierName = Option(ctx.LOCAL_VARIABLE_IDENTIFIER()).map(_.getText).getOrElse(ctx.getText)
+    SplattingRubyNode(SimpleIdentifier()(ctx.toTextSpan.spanStart(identifierName)))(ctx.toTextSpan)
+
   }
 
   override def visitArrayParameter(ctx: RubyParser.ArrayParameterContext): RubyNode = {
