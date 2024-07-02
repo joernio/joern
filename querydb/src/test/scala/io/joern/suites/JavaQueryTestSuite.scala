@@ -1,6 +1,6 @@
 package io.joern.suites
 
-import io.joern.console.scan._
+import io.joern.console.scan.*
 import io.joern.console.{CodeSnippet, Query, QueryBundle}
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.joern.util.QueryUtil

@@ -14,7 +14,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   Literal,
   Local
 }
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode
 
 import scala.util.Try

@@ -2,7 +2,7 @@ package io.joern.pysrc2cpg.cpg
 
 import io.joern.pysrc2cpg.PySrc2CpgFixture
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import overflowdb.traversal.NodeOps
 
 import java.io.File

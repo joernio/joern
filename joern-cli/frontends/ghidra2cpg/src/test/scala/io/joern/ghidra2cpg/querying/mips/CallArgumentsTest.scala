@@ -1,7 +1,7 @@
 package io.joern.ghidra2cpg.querying.mips
 
 import io.joern.ghidra2cpg.fixtures.GhidraBinToCpgSuite
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class CallArgumentsTest extends GhidraBinToCpgSuite {
 

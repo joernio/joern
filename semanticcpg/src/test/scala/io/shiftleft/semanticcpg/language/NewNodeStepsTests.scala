@@ -1,12 +1,12 @@
 package io.shiftleft.semanticcpg.language
 
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import overflowdb.BatchedUpdate.{DiffGraphBuilder, applyDiff}
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 class NewNodeStepsTest extends AnyWordSpec with Matchers {
   import io.shiftleft.semanticcpg.language.NewNodeNodeStepsTest._

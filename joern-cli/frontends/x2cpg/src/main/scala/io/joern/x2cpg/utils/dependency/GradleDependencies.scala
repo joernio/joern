@@ -1,6 +1,6 @@
 package io.joern.x2cpg.utils.dependency
 
-import better.files._
+import better.files.*
 import org.gradle.tooling.{GradleConnector, ProjectConnection}
 import org.gradle.tooling.model.GradleProject
 import org.gradle.tooling.model.build.BuildEnvironment
@@ -10,7 +10,7 @@ import java.io.ByteArrayOutputStream
 import java.nio.file.{Files, Path}
 import java.io.{File => JFile}
 import java.util.stream.Collectors
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Random, Success, Try, Using}
 
 case class GradleProjectInfo(gradleVersion: String, tasks: Seq[String], hasAndroidSubproject: Boolean = false) {

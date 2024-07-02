@@ -1,7 +1,7 @@
 package io.joern.c2cpg.io.dotgenerator
 
 import io.joern.c2cpg.testfixtures.C2CpgSuite
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class DotAstGeneratorTests extends C2CpgSuite {
 

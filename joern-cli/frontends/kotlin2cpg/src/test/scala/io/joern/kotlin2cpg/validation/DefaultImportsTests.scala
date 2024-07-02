@@ -1,7 +1,7 @@
 package io.joern.kotlin2cpg.validation
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class DefaultImportsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   // It tests if we take into consideration default imports: https://kotlinlang.org/docs/packages.html#default-imports

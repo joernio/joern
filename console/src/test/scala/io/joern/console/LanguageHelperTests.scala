@@ -1,7 +1,7 @@
 package io.joern.console
 
-import better.files.Dsl._
-import better.files._
+import better.files.Dsl.*
+import better.files.*
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.joern.console.cpgcreation.{guessLanguage, LlvmCpgGenerator}
 import org.scalatest.matchers.should.Matchers

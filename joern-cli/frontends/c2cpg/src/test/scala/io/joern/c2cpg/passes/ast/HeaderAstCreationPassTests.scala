@@ -1,7 +1,7 @@
 package io.joern.c2cpg.passes.ast
 
 import io.joern.c2cpg.testfixtures.C2CpgSuite
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 class HeaderAstCreationPassTests extends C2CpgSuite {

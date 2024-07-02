@@ -1,6 +1,6 @@
 package io.joern.jimple2cpg.querying.dataflow
 
-import io.joern.dataflowengineoss.language._
+import io.joern.dataflowengineoss.language.*
 import io.joern.jimple2cpg.testfixtures.{JimpleDataFlowCodeToCpgSuite, JimpleDataflowTestCpg}
 
 class ArrayTests extends JimpleDataFlowCodeToCpgSuite {

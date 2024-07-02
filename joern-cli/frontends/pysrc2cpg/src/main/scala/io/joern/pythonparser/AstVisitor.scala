@@ -1,6 +1,6 @@
 package io.joern.pythonparser
 
-import io.joern.pythonparser.ast._
+import io.joern.pythonparser.ast.*
 
 trait AstVisitor[T] {
   def visit(ast: iast): T

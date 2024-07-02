@@ -1,8 +1,8 @@
 package io.joern.go2cpg.dataflow
 
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
-import io.shiftleft.semanticcpg.language._
-import io.joern.dataflowengineoss.language._
+import io.shiftleft.semanticcpg.language.*
+import io.joern.dataflowengineoss.language.*
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
 
 class LoopsDataflowTests extends GoCodeToCpgSuite(withOssDataflow = true) {

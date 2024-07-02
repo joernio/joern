@@ -1,9 +1,9 @@
 package io.joern.c2cpg.passes.types
 
 import io.joern.c2cpg.testfixtures.C2CpgSuite
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class TypeNodePassTests extends C2CpgSuite {
 

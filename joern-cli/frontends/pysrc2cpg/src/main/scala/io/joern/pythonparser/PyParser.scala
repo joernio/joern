@@ -6,7 +6,7 @@ import io.joern.pythonparser.ast.{ErrorStatement, iast}
 
 import java.io.{BufferedReader, ByteArrayInputStream, InputStream, Reader}
 import java.nio.charset.StandardCharsets
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 class PyParser {
   private var pythonParser: PythonParser = scala.compiletime.uninitialized

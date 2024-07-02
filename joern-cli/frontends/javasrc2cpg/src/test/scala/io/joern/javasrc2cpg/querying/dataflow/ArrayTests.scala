@@ -1,9 +1,9 @@
 package io.joern.javasrc2cpg.querying.dataflow
 
 import io.joern.javasrc2cpg.testfixtures.JavaDataflowFixture
-import io.joern.dataflowengineoss.language._
+import io.joern.dataflowengineoss.language.*
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 class ArrayTests extends JavaDataflowFixture {
 
   behavior of "Dataflow through arrays"

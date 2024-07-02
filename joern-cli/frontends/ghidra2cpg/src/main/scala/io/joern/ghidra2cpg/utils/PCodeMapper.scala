@@ -2,17 +2,17 @@ package io.joern.ghidra2cpg.utils
 
 import ghidra.app.util.template.TemplateSimplifier
 import ghidra.program.model.listing.{CodeUnitFormat, CodeUnitFormatOptions, Function, Instruction}
-import ghidra.program.model.pcode.PcodeOp._
+import ghidra.program.model.pcode.PcodeOp.*
 import ghidra.program.model.pcode.{HighFunction, PcodeOp, PcodeOpAST, Varnode}
 import io.joern.ghidra2cpg.Types
 //import io.joern.ghidra2cpg.utils.Utils.{createCallNode, createIdentifier, createLiteral}
-import io.joern.ghidra2cpg.utils.Utils._
+import io.joern.ghidra2cpg.utils.Utils.*
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNodeNew
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import scala.language.implicitConversions
 class State(argumentIndex: Int) {
   var argument: Int = argumentIndex

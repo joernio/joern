@@ -4,7 +4,7 @@ import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.joern.kotlin2cpg.types.TypeConstants
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class ResolutionErrorsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "CPG for code with QE of receiver for which the type cannot be inferred" should {

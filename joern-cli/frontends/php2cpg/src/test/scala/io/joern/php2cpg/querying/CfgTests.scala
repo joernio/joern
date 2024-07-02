@@ -3,7 +3,7 @@ package io.joern.php2cpg.querying
 import io.joern.php2cpg.parser.Domain.PhpOperators
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, JumpTarget}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class CfgTests extends PhpCode2CpgFixture {
   "the CFG for match constructs" when {

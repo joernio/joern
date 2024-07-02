@@ -7,7 +7,7 @@ import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg.TrueEdge
 import io.joern.x2cpg.testfixtures.CfgTestFixture
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.NodeTypes
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class MixedCfgCreationPassTests extends CfgTestFixture(() => new JsSrcCfgTestCpg()) {
 

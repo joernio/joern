@@ -1,6 +1,6 @@
 package io.joern.ghidra2cpg
 
-import io.joern.ghidra2cpg.Frontend._
+import io.joern.ghidra2cpg.Frontend.*
 import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
 import scopt.OParser
 
