@@ -16,7 +16,8 @@ object SourceFiles {
     val isInIgnoredFiles = ignoredFiles.exists { ignorePath =>
       val ignorePathFile = File(ignorePath)
       val filePathFile   = File(filePath)
-      ignorePathFile.contains(filePathFile, strict = false) || ignorePathFile.isSameFileAs(filePathFile)
+      ignorePathFile.exists &&
+      (ignorePathFile.contains(filePathFile, strict = false) || ignorePathFile.isSameFileAs(filePathFile))
     }
     if (isInIgnoredFiles) {
       logger.debug(s"'$filePath' ignored (--exclude)")
