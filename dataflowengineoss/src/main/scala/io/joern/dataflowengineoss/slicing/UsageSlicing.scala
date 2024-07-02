@@ -3,7 +3,7 @@ package io.joern.dataflowengineoss.slicing
 import io.joern.x2cpg.utils.ConcurrentTaskUtil
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{Operators, PropertyKeys}
+import io.shiftleft.codepropertygraph.generated.{Operators, Properties}
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 
@@ -185,8 +185,8 @@ object UsageSlicing {
         .map {
           case _: MethodRef => "LAMBDA"
           case x =>
-            x.propertyOption(PropertyKeys.TypeFullName)
-              .orElse(x.property(PropertyKeys.DynamicTypeHintFullName).headOption)
+            x.propertyOption(Properties.TypeFullName)
+              .orElse(x.property(Properties.DynamicTypeHintFullName).headOption)
               .getOrElse("ANY")
         }
         .collect { case x: String => x }

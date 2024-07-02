@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language.types.propertyaccessors
 
-import io.shiftleft.codepropertygraph.generated.PropertyKeys
+import io.shiftleft.codepropertygraph.generated.Properties
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode
 import io.shiftleft.semanticcpg.language.*
 
@@ -41,6 +41,6 @@ class EvalTypeAccessors[A <: AstNode](val traversal: Iterator[A]) extends AnyVal
     }
 
   private def evalType(traversal: Iterator[A]): Iterator[String] =
-    traversal.flatMap(_._evalTypeOut).flatMap(_._refOut).property(PropertyKeys.FullName)
+    traversal.flatMap(_._evalTypeOut).flatMap(_._refOut).property(Properties.FullName)
 
 }

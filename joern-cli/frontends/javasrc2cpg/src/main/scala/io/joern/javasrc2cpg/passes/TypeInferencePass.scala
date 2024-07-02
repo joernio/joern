@@ -3,7 +3,7 @@ package io.joern.javasrc2cpg.passes
 import com.github.javaparser.symbolsolver.cache.GuavaCache
 import com.google.common.cache.CacheBuilder
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.{Cpg, ModifierTypes, PropertyKeys}
+import io.shiftleft.codepropertygraph.generated.{Cpg, ModifierTypes, Properties}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language.*
@@ -53,7 +53,7 @@ class TypeInferencePass(cpg: Cpg) extends ForkJoinParallelCpgPass[Call](cpg) {
     val callArgs = if (skipCallThis) call.argument.toList.tail else call.argument.toList
 
     val hasDifferingArg = method.parameter.zip(callArgs).exists { case (parameter, argument) =>
-      val maybeArgumentType = argument.propertyOption(PropertyKeys.TypeFullName).getOrElse(TypeConstants.Any)
+      val maybeArgumentType = argument.propertyOption(Properties.TypeFullName).getOrElse(TypeConstants.Any)
       val argMatches        = maybeArgumentType == TypeConstants.Any || maybeArgumentType == parameter.typeFullName
 
       !argMatches
@@ -75,7 +75,7 @@ class TypeInferencePass(cpg: Cpg) extends ForkJoinParallelCpgPass[Call](cpg) {
   }
 
   private def getReplacementMethod(call: Call): Option[Method] = {
-    val argTypes = call.argument.property(PropertyKeys.TypeFullName).mkString(":")
+    val argTypes = call.argument.property(Properties.TypeFullName).mkString(":")
     val callKey  = s"${call.methodFullName}:$argTypes"
     cache.get(callKey).toScala.getOrElse {
       val callNameParts = getNameParts(call.name, call.methodFullName)

@@ -2,7 +2,7 @@ package io.joern.x2cpg.utils
 
 import io.joern.x2cpg.passes.frontend.Dereference
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{Cpg, PropertyKeys, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{Cpg, Properties, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.NamespaceBlock
 import io.shiftleft.codepropertygraph.generated.nodes.Type
 import io.shiftleft.semanticcpg.language.*
@@ -75,7 +75,7 @@ trait LinkingUtil {
             }
           }
       } else {
-        srcNode.out(edgeType).property(PropertyKeys.FullName).nextOption() match {
+        srcNode.out(edgeType).property(Properties.FullName).nextOption() match {
           case Some(dstFullName) =>
             dstGraph.setNodeProperty(
               srcNode.asInstanceOf[StoredNode],
@@ -121,7 +121,7 @@ trait LinkingUtil {
           }
         }
       } else {
-        val dstFullNames = srcNode.out(edgeType).property(PropertyKeys.FullName).l
+        val dstFullNames = srcNode.out(edgeType).property(Properties.FullName).l
         dstGraph.setNodeProperty(srcNode, dstFullNameKey, dstFullNames.map(dereference.dereferenceTypeFullName))
         if (!loggedDeprecationWarning) {
           logger.info(

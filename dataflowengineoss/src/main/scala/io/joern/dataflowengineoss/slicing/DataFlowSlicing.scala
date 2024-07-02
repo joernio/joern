@@ -2,7 +2,7 @@ package io.joern.dataflowengineoss.slicing
 
 import io.joern.dataflowengineoss.language.*
 import io.joern.x2cpg.utils.ConcurrentTaskUtil
-import io.shiftleft.codepropertygraph.generated.{Cpg, PropertyKeys}
+import io.shiftleft.codepropertygraph.generated.{Cpg, Properties}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
@@ -79,7 +79,7 @@ object DataFlowSlicing {
       case n: MethodRef => sliceNode.copy(name = n.methodFullName, code = n.code)
       case n: TypeRef   => sliceNode.copy(name = n.typeFullName, code = n.code)
       case n =>
-        sliceNode.copy(name = n.property(PropertyKeys.Name), typeFullName = n.property(PropertyKeys.TypeFullName))
+        sliceNode.copy(name = n.property(Properties.Name), typeFullName = n.property(Properties.TypeFullName))
     }
   }
 

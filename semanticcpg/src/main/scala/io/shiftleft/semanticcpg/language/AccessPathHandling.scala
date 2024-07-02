@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language
 
-import io.shiftleft.codepropertygraph.generated.{Operators, PropertyKeys}
+import io.shiftleft.codepropertygraph.generated.{Operators, Properties}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.accesspath.*
 import io.shiftleft.semanticcpg.language.*
@@ -43,10 +43,10 @@ object AccessPathHandling {
           .collect {
             case node: Literal    => ConstantAccess(node.code)
             case node: Identifier => ConstantAccess(node.name)
-            case other if other.propertyOption(PropertyKeys.Name).isDefined =>
+            case other if other.propertyOption(Properties.Name).isDefined =>
               val properties = other.propertiesMap
               logger.warn(s"unexpected/deprecated node encountered: $other with properties: $properties")
-              ConstantAccess(other.property(PropertyKeys.Name))
+              ConstantAccess(other.property(Properties.Name))
           }
           .getOrElse(VariableAccess) :: tail
 

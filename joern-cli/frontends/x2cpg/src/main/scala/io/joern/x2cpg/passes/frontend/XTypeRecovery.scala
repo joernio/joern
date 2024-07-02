@@ -7,7 +7,7 @@ import io.shiftleft.codepropertygraph.generated.{
   EdgeTypes,
   NodeTypes,
   Operators,
-  PropertyKeys,
+  Properties,
   PropertyNames
 }
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -272,9 +272,9 @@ object XTypeRecovery {
   // the symbol table then perhaps this would work out better
   implicit class AllNodeTypesFromNodeExt(x: StoredNode) {
     def allTypes: Iterator[String] =
-      (x.propertyOption(PropertyKeys.TypeFullName).getOrElse("ANY") +:
-        (x.property(PropertyKeys.DynamicTypeHintFullName) ++
-          x.property(PropertyKeys.PossibleTypes))).iterator
+      (x.propertyOption(Properties.TypeFullName).getOrElse("ANY") +:
+        (x.property(Properties.DynamicTypeHintFullName) ++
+          x.property(Properties.PossibleTypes))).iterator
 
     def getKnownTypes: Set[String] = {
       x.allTypes.toSet.filterNot(XTypeRecovery.unknownTypePattern.matches)

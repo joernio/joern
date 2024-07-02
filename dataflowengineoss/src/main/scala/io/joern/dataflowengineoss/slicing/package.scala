@@ -1,7 +1,7 @@
 package io.joern.dataflowengineoss
 
 import better.files.File
-import io.shiftleft.codepropertygraph.generated.{PropertyKeys, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{Properties, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
@@ -331,8 +331,8 @@ package object slicing {
       *   extracted.
       */
     def fromNode(node: StoredNode, typeMap: Map[String, String] = Map.empty[String, String]): DefComponent = {
-      val typeFullNameProperty             = node.propertyOption(PropertyKeys.TypeFullName).getOrElse("ANY")
-      val dynamicTypeHintFullNamesProperty = node.property(PropertyKeys.DynamicTypeHintFullName)
+      val typeFullNameProperty             = node.propertyOption(Properties.TypeFullName).getOrElse("ANY")
+      val dynamicTypeHintFullNamesProperty = node.property(Properties.DynamicTypeHintFullName)
       val nodeType = (typeFullNameProperty +: dynamicTypeHintFullNamesProperty)
         .filterNot(_.matches("(ANY|UNKNOWN)"))
         .headOption

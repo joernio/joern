@@ -72,7 +72,7 @@ object DotSerializer {
 
   private def stringRepr(vertex: StoredNode): String = {
     // TODO MP after the initial flatgraph migration (where we want to maintain semantics as far as
-    // possible) this might become `vertex.property(PropertyKeys.LineNumber)` which derives to `Option[Int]`
+    // possible) this might become `vertex.property(Properties.LineNumber)` which derives to `Option[Int]`
     val lineNoMaybe = vertex.propertyOption[Int](PropertyNames.LINE_NUMBER)
 
     StringEscapeUtils.escapeHtml4(vertex match {
