@@ -293,7 +293,7 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph)
     }
 
     val res = mutable.BitSet()
-    for(definition <- genOfCall){
+    for (definition <- genOfCall) {
       res.addAll(definitionsOfSameVariable(definition))
     }
     res
