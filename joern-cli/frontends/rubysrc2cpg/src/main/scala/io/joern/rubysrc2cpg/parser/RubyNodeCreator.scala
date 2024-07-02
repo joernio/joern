@@ -610,9 +610,8 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitLambdaExpression(ctx: RubyParser.LambdaExpressionContext): RubyNode = {
-    val Block(blockParams, body) = visit(ctx.block()).asInstanceOf[Block]
-    val parameters =
-      (Option(ctx.parameterList()).fold(List())(_.parameters).map(visit) ++ blockParams).sortBy(x => (x.line, x.column))
+    val parameters = Option(ctx.parameterList()).fold(List())(_.parameters).map(visit)
+    val body       = visit(ctx.block()).asInstanceOf[Block]
     ProcOrLambdaExpr(Block(parameters, body)(ctx.toTextSpan))(ctx.toTextSpan)
   }
 

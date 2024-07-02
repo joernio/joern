@@ -320,13 +320,13 @@ class DoBlockTests extends RubyCode2CpgFixture {
   "A lambda with arrow syntax" should {
 
     val cpg = code("""
-        |arrow_lambda = -> { |y| y }
+        |arrow_lambda = ->(y) { y }
         |""".stripMargin)
 
     "create a lambda method with a `y` parameter" in {
       inside(cpg.method.isLambda.headOption) {
         case Some(lambda) =>
-          lambda.code shouldBe "-> { |y| y }"
+          lambda.code shouldBe "{ y }"
           lambda.parameter.name.l shouldBe List("self", "y")
         case xs => fail(s"Expected a lambda method")
       }
