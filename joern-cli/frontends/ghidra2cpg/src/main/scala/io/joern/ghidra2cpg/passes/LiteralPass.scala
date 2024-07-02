@@ -6,7 +6,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import scala.language.implicitConversions
 
 class LiteralPass(cpg: Cpg, flatProgramAPI: FlatProgramAPI) extends ForkJoinParallelCpgPass[String](cpg) {

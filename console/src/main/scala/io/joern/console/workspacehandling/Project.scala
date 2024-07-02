@@ -1,6 +1,6 @@
 package io.joern.console.workspacehandling
 
-import better.files.Dsl._
+import better.files.Dsl.*
 import better.files.File
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.Overlays

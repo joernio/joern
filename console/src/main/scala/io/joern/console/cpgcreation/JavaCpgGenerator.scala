@@ -3,7 +3,7 @@ package io.joern.console.cpgcreation
 import io.joern.console.FrontendConfig
 
 import java.nio.file.Path
-import scala.sys.process._
+import scala.sys.process.*
 import scala.util.{Failure, Try}
 
 /** Language frontend for Java archives (JAR files). Translates Java archives into code property graphs.

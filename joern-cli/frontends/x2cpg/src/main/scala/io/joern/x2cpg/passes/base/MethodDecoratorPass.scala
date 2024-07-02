@@ -3,7 +3,7 @@ package io.joern.x2cpg.passes.base
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
 import io.shiftleft.passes.CpgPass
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.{Logger, LoggerFactory}
 
 /** Adds a METHOD_PARAMETER_OUT for each METHOD_PARAMETER_IN to the graph and connects those with a PARAMETER_LINK edge.

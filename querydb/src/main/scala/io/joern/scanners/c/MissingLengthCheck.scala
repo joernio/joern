@@ -1,14 +1,14 @@
 package io.joern.scanners.c
 
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
-import io.joern.scanners._
-import io.joern.console._
+import io.joern.scanners.*
+import io.joern.console.*
 import io.shiftleft.codepropertygraph.generated.nodes
 import io.joern.dataflowengineoss.queryengine.EngineContext
-import io.shiftleft.semanticcpg.language._
-import io.joern.macros.QueryMacros._
-import io.shiftleft.semanticcpg.language.operatorextension._
-import QueryLangExtensions._
+import io.shiftleft.semanticcpg.language.*
+import io.joern.macros.QueryMacros.*
+import io.shiftleft.semanticcpg.language.operatorextension.*
+import QueryLangExtensions.*
 
 object MissingLengthCheck extends QueryBundle {
 

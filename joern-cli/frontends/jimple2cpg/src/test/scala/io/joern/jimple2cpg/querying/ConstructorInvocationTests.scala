@@ -3,9 +3,9 @@ package io.joern.jimple2cpg.querying
 import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.proto.cpg.Cpg.DispatchTypes
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 /** These tests are based off of those found in javasrc2cpg but modified to fit to Jimple's 3-address code rule and flat
   * AST.

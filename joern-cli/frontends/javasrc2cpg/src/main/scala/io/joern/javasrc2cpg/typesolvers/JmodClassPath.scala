@@ -1,10 +1,10 @@
 package io.joern.javasrc2cpg.typesolvers
 
 import better.files.File
-import io.joern.javasrc2cpg.typesolvers.JmodClassPath._
+import io.joern.javasrc2cpg.typesolvers.JmodClassPath.*
 import javassist.ClassPath
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import scala.util.Try
 import java.io.InputStream
 import java.net.URL

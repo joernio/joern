@@ -11,7 +11,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   Modifier,
   Return
 }
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class SynchronizedTests extends JavaSrcCode2CpgFixture {
 

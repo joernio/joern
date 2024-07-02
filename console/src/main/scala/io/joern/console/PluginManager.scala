@@ -1,5 +1,5 @@
 package io.joern.console
-import better.files.Dsl._
+import better.files.Dsl.*
 import better.files.File
 import better.files.File.apply
 

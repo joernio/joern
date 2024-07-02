@@ -4,7 +4,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn.PropertyDefaults
 import io.shiftleft.passes.CpgPass
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 /** Old CPGs use the `order` field to indicate the parameter index while newer CPGs use the `parameterIndex` field. This
   * pass checks whether `parameterIndex` is not set, in which case the value of `order` is copied over.

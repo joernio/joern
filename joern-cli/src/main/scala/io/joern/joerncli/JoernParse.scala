@@ -7,7 +7,7 @@ import io.joern.joerncli.CpgBasedTool.newCpgCreatedString
 import io.shiftleft.codepropertygraph.generated.Languages
 
 import scala.collection.mutable
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
 
 object JoernParse {

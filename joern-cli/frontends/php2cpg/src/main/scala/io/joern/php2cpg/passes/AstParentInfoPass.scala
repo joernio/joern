@@ -4,7 +4,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, NamespaceBlock, Method, TypeDecl}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class AstParentInfoPass(cpg: Cpg) extends ForkJoinParallelCpgPass[AstNode](cpg) {
 

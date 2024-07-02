@@ -3,7 +3,7 @@ package io.joern.php2cpg.querying
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal, Local}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class ArrayTests extends PhpCode2CpgFixture {
   "array accesses with variable keys should be represented as index accesses" in {

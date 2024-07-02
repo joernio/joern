@@ -4,7 +4,7 @@ import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 import java.io.File
 

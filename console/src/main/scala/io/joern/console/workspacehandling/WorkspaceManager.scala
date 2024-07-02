@@ -1,7 +1,7 @@
 package io.joern.console.workspacehandling
 
-import better.files.Dsl._
-import better.files._
+import better.files.Dsl.*
+import better.files.*
 import io.joern.console
 import io.joern.console.defaultAvailableWidthProvider
 import io.joern.console.Reporting

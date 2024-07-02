@@ -2,7 +2,7 @@ package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class CallGraphTests extends JavaSrcCode2CpgFixture {
 

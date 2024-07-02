@@ -3,7 +3,7 @@ package io.joern.javasrc2cpg.querying
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, TypeRef}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class SpecialOperatorTests extends JavaSrcCode2CpgFixture {
 

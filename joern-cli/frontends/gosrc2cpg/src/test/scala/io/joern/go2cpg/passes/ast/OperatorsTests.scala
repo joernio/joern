@@ -3,7 +3,7 @@ package io.joern.go2cpg.passes.ast
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class OperatorsTests extends GoCodeToCpgSuite {
 

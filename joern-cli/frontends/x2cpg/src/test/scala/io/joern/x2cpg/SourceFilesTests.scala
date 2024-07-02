@@ -1,6 +1,6 @@
 package io.joern.x2cpg
 
-import better.files._
+import better.files.*
 import io.joern.x2cpg.utils.IgnoreInWindows
 import io.shiftleft.utils.ProjectRoot
 import org.scalatest.matchers.should.Matchers
@@ -8,7 +8,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.Inside
 
 import java.nio.file.attribute.PosixFilePermissions
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import scala.util.Try
 import java.io.FileNotFoundException
 

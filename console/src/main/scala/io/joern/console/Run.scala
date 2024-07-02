@@ -6,7 +6,7 @@ import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
 import org.reflections8.Reflections
 import org.reflections8.util.{ClasspathHelper, ConfigurationBuilder}
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 object Run {
 

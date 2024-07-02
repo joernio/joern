@@ -6,7 +6,7 @@ import io.shiftleft.codepropertygraph.generated.edges.Ref
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, Literal, MethodParameterIn}
 import io.shiftleft.semanticcpg.language.NoResolve
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import overflowdb.traversal.jIteratortoTraversal
 import overflowdb.traversal.toNodeTraversal
 

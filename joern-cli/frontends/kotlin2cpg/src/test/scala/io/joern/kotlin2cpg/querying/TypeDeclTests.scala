@@ -11,7 +11,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   MethodParameterIn
 }
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 
 class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {

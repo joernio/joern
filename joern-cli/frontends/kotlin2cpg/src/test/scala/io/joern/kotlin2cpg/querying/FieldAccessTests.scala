@@ -3,7 +3,7 @@ package io.joern.kotlin2cpg.querying
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.{FieldIdentifier, Identifier}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class FieldAccessTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 

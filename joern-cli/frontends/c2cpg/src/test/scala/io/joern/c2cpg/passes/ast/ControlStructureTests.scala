@@ -3,7 +3,7 @@ package io.joern.c2cpg.passes.ast
 import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class ControlStructureTests extends C2CpgSuite(FileDefaults.CPP_EXT) {
 

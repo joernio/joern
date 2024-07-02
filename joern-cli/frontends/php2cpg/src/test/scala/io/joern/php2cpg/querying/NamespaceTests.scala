@@ -1,7 +1,7 @@
 package io.joern.php2cpg.querying
 
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.codepropertygraph.generated.nodes.Method
 
 class NamespaceTests extends PhpCode2CpgFixture {

@@ -1,12 +1,12 @@
 package io.joern.x2cpg.passes.base
 
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 
 import scala.collection.mutable
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 /** This pass has MethodStubCreator and TypeDeclStubCreator as prerequisite for language frontends which do not provide
   * method stubs and type decl stubs.

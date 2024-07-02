@@ -4,7 +4,7 @@ import better.files.File
 import io.joern.c2cpg.Config
 import io.joern.c2cpg.C2Cpg
 import io.joern.x2cpg.X2Cpg
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks

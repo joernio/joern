@@ -1,6 +1,6 @@
 package io.joern.console.cpgcreation
 
-import better.files.Dsl._
+import better.files.Dsl.*
 import better.files.File
 import io.shiftleft.codepropertygraph.cpgloading.{CpgLoader, CpgLoaderConfig}
 import io.shiftleft.codepropertygraph.generated.Languages

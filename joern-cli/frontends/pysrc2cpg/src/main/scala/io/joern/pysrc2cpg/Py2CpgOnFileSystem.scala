@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory
 
 import java.nio.file.*
 import scala.util.Try
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 case class Py2CpgOnFileSystemConfig(
   venvDir: Option[Path] = None,

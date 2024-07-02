@@ -1,6 +1,6 @@
 package io.joern.console
 
-import better.files._
+import better.files.*
 
 import scala.annotation.tailrec
 import scala.collection.mutable

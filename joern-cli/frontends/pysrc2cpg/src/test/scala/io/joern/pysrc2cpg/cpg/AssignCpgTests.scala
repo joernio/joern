@@ -2,7 +2,7 @@ package io.joern.pysrc2cpg.cpg
 
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
 import io.joern.pysrc2cpg.Py2CpgTestContext
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 

@@ -15,7 +15,7 @@ import java.io.PrintStream
 import org.json4s.native.Serialization
 import org.json4s.{Formats, NoTypeHints}
 import scala.collection.mutable
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 object JoernScanConfig {
   val defaultDbVersion: String    = "latest"

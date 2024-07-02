@@ -3,7 +3,7 @@ package io.joern.joerncli
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.semanticcpg.layers._
+import io.shiftleft.semanticcpg.layers.*
 
 object DefaultOverlays {
 

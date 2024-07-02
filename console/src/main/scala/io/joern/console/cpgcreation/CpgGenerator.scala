@@ -3,7 +3,7 @@ package io.joern.console.cpgcreation
 import better.files.File
 import io.shiftleft.codepropertygraph.generated.Cpg
 
-import scala.sys.process._
+import scala.sys.process.*
 import scala.util.Try
 
 /** A CpgGenerator generates Code Property Graphs from code. Each supported language implements a Generator, e.g.,
