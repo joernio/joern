@@ -316,25 +316,10 @@ primaryValue
         # whileExpression
     |   FOR NL* forVariable IN NL* commandOrPrimaryValue doClause END
         # forExpression
-    
-        // Non-nested calls
-    |   SUPER argumentWithParentheses? block?
-        # superWithParentheses
-    |   SUPER argumentList? block?
-        # superWithoutParentheses
-    |   isDefinedKeyword LPAREN expressionOrCommand RPAREN
-        # isDefinedExpression
-    |   isDefinedKeyword primaryValue
-        # isDefinedCommand
-    |   methodOnlyIdentifier
-        # methodCallExpression
-    |   methodIdentifier block
-        # methodCallWithBlockExpression
-    |   methodIdentifier argumentWithParentheses block?
-        # methodCallWithParenthesesExpression
-    |   variableReference
-        # methodCallOrVariableReference
-        
+
+    |   methodCallsWithParentheses
+        # methodCallWithParentheses
+
         // Literals
     |   LBRACK NL* indexingArgumentList? NL* RBRACK
         # bracketedArrayLiteral
@@ -405,6 +390,26 @@ primaryValue
         # rangeExpression
     |   hereDoc
         # hereDocs
+    ;
+
+// Non-nested calls
+methodCallsWithParentheses
+    :   SUPER argumentWithParentheses? block?
+        # superWithParentheses
+    |   SUPER argumentList? block?
+        # superWithoutParentheses
+    |   isDefinedKeyword LPAREN expressionOrCommand RPAREN
+        # isDefinedExpression
+    |   isDefinedKeyword primaryValue
+        # isDefinedCommand
+    |   methodOnlyIdentifier
+        # methodCallExpression
+    |   methodIdentifier block
+        # methodCallWithBlockExpression
+    |   methodIdentifier argumentWithParentheses block?
+        # methodCallWithParenthesesExpression
+    |   variableReference
+        # methodCallOrVariableReference
     ;
 
 // This is required to make chained calls work. For classes, we cannot move up the `primaryValue` due to the possible
@@ -592,13 +597,17 @@ associationList
 association
     :   associationKey (EQGT | COLON) NL* operatorExpression
         # associationElement
-    |   hashParameter
-        # associationHashParameter
+    |   associationHashArgument
+        # associationHashArg
     ;
     
 associationKey
     :   operatorExpression
     |   keyword
+    ;
+
+associationHashArgument
+    :   STAR2 (LOCAL_VARIABLE_IDENTIFIER | methodCallsWithParentheses | (LPAREN methodInvocationWithoutParentheses RPAREN))?
     ;
 
 regexpLiteralContent

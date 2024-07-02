@@ -226,4 +226,45 @@ class HashTests extends RubyCode2CpgFixture {
     }
   }
 
+  "Function call in hash" in {
+    val cpg = code("""
+        |a = {**foo(bar)}
+        |""".stripMargin)
+
+    inside(cpg.call.name(RubyOperators.hashInitializer).l) {
+      case hashInitializer :: Nil =>
+        val List(splatCall) = hashInitializer.inCall.astSiblings.isCall.l
+        splatCall.code shouldBe "**foo(bar)"
+        splatCall.name shouldBe RubyOperators.splat
+
+        val List(splatCallArg: Call) = splatCall.argument.l: @unchecked
+
+        splatCallArg.code shouldBe "foo(bar)"
+
+        val List(selfCallArg, barCallArg) = splatCallArg.argument.l
+        barCallArg.code shouldBe "self.bar"
+      case xs => fail(s"Expected one call for init, got [${xs.code.mkString(",")}]")
+    }
+  }
+
+  "Function call without parentheses" in {
+    val cpg = code("""
+        |a = {**(foo 13)}
+        |""".stripMargin)
+
+    inside(cpg.call.name(RubyOperators.hashInitializer).l) {
+      case hashInitializer :: Nil =>
+        val List(splatCall) = hashInitializer.inCall.astSiblings.isCall.l
+        splatCall.code shouldBe "**(foo 13)"
+        splatCall.name shouldBe RubyOperators.splat
+
+        val List(splatCallArg: Call) = splatCall.argument.l: @unchecked
+
+        splatCallArg.code shouldBe "foo 13"
+
+        val List(selfCallArg, literalCallArg) = splatCallArg.argument.l
+        literalCallArg.code shouldBe "13"
+      case xs => fail(s"Expected one call for init, got [${xs.code.mkString(",")}]")
+    }
+  }
 }

@@ -549,7 +549,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val argumentAsts = node.elements.flatMap(elem =>
       elem match
         case associationNode: Association         => astForAssociationHash(associationNode, tmp)
-        case splattingRubyNode: SplattingRubyNode => List(astForSplattingRubyNode(splattingRubyNode))
+        case splattingRubyNode: SplattingRubyNode => astForSplattingRubyNode(splattingRubyNode) :: Nil
         case node =>
           logger.warn(s"Could not represent element: ${code(node)} ($relativeFileName), skipping")
           astForUnknown(node) :: Nil

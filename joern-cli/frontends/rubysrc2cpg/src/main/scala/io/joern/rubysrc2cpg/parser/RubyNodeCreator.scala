@@ -822,9 +822,16 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     }
   }
 
-  override def visitAssociationHashParameter(ctx: RubyParser.AssociationHashParameterContext): RubyNode = {
-    val identifierName = Option(ctx.hashParameter().LOCAL_VARIABLE_IDENTIFIER()).map(_.getText).getOrElse(ctx.getText)
-    SplattingRubyNode(SimpleIdentifier()(ctx.toTextSpan.spanStart(identifierName)))(ctx.toTextSpan)
+  override def visitAssociationHashArgument(ctx: RubyParser.AssociationHashArgumentContext): RubyNode = {
+    val identifierName = Option(ctx.LOCAL_VARIABLE_IDENTIFIER()).map(_.getText)
+
+    identifierName match {
+      case Some(identName) =>
+        SplattingRubyNode(SimpleIdentifier()(ctx.toTextSpan.spanStart(identName)))(ctx.toTextSpan)
+      case None =>
+        if ctx.LPAREN() == null then SplattingRubyNode(visit(ctx.methodCallsWithParentheses()))(ctx.toTextSpan)
+        else SplattingRubyNode(visit(ctx.methodInvocationWithoutParentheses()))(ctx.toTextSpan)
+    }
   }
 
   override def visitModuleDefinition(ctx: RubyParser.ModuleDefinitionContext): RubyNode = {
