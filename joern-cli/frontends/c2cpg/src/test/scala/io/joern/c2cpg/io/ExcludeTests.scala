@@ -64,7 +64,7 @@ class ExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropertyChe
 
   "Using case sensitive excludes" should {
     "exclude the given files correctly" in {
-      if (scala.util.Properties.isWin) {
+      if (!scala.util.Properties.isLinux) {
         // both are written uppercase and are ignored nevertheless
         testWithArguments(Seq("Folder", "Index.c"), "", Set("a.c", "foo.bar/d.c"))
       } else {
