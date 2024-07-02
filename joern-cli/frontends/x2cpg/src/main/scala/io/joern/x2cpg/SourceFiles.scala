@@ -13,10 +13,10 @@ object SourceFiles {
   private val logger = LoggerFactory.getLogger(getClass)
 
   private def isIgnoredByFileList(filePath: String, ignoredFiles: Seq[String]): Boolean = {
-    val isInIgnoredFiles = ignoredFiles.exists {
-      case ignorePath if File(ignorePath).isDirectory =>
-        filePath.regionMatches(true, 0, ignorePath, 0, ignorePath.length)
-      case ignorePath => filePath.equalsIgnoreCase(ignorePath)
+    val isInIgnoredFiles = ignoredFiles.exists { ignorePath =>
+      val ignorePathFile = File(ignorePath)
+      val filePathFile   = File(filePath)
+      ignorePathFile.contains(filePathFile, strict = false) || ignorePathFile.isSameFileAs(filePathFile)
     }
     if (isInIgnoredFiles) {
       logger.debug(s"'$filePath' ignored (--exclude)")
