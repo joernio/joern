@@ -461,7 +461,7 @@ class DataflowTests extends DataFlowCodeToCpgSuite {
     cpg.call
       .code("bar.*")
       .outE(EdgeTypes.REACHING_DEF)
-      .count(_.inNode() == cpg.ret.head) shouldBe 1
+      .count(_.dst == cpg.ret.head) shouldBe 1
   }
 
   "Flow from outer params to inner params" in {

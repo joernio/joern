@@ -22,7 +22,7 @@ class ArrayAccessMethods(val arrayAccess: OpNodes.ArrayAccess) extends AnyVal {
   }
 
   def simpleName: Iterator[String] = {
-    arrayAccess.array match {
+    array match {
       case id: Identifier => Iterator.single(id.name)
       case _              => Iterator.empty
     }

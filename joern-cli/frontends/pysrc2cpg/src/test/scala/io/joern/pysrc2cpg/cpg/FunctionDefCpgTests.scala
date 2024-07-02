@@ -55,12 +55,12 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
     }
 
     "test function method ref" in {
-      cpg.methodRef("func").referencedMethod.fullName.head shouldBe
+      cpg.methodRefWithName("func").referencedMethod.fullName.head shouldBe
         "test.py:<module>.func"
     }
 
     "test assignment of method ref to local variable" in {
-      val assignNode = cpg.methodRef("func").astParent.isCall.head
+      val assignNode = cpg.methodRefWithName("func").astParent.isCall.head
       assignNode.code shouldBe "func = def func(...)"
     }
 
@@ -132,7 +132,7 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
         |""".stripMargin)
 
     "test decorator wrapping of method reference" in {
-      val (staticMethod: Call) :: Nil = cpg.methodRef("func").astParent.l: @unchecked
+      val (staticMethod: Call) :: Nil = cpg.methodRefWithName("func").astParent.l: @unchecked
       staticMethod.code shouldBe "staticmethod(def func(...))"
       staticMethod.name shouldBe "staticmethod"
       val (abc: Call) :: Nil = staticMethod.start.astParent.l: @unchecked

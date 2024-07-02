@@ -1,22 +1,22 @@
 package io.joern.x2cpg.passes
 
-import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.{NodeTypes, Properties}
-import io.shiftleft.semanticcpg.language._
+import flatgraph.misc.TestUtils.addNode
+import io.shiftleft.codepropertygraph.generated.{Cpg, NodeTypes}
+import io.shiftleft.semanticcpg.language.*
 import io.joern.x2cpg.passes.base.NamespaceCreator
 import io.joern.x2cpg.testfixtures.EmptyGraphFixture
+import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import overflowdb._
 
 class NamespaceCreatorTests extends AnyWordSpec with Matchers {
   "NamespaceCreateor test " in EmptyGraphFixture { graph =>
     val cpg    = new Cpg(graph)
-    val block1 = graph + (NodeTypes.NAMESPACE_BLOCK, Properties.Name -> "namespace1")
-    val block2 = graph + (NodeTypes.NAMESPACE_BLOCK, Properties.Name -> "namespace1")
-    val block3 = graph + (NodeTypes.NAMESPACE_BLOCK, Properties.Name -> "namespace2")
+    val block1 = graph.addNode(NewNamespaceBlock().name("namespace1"))
+    val block2 = graph.addNode(NewNamespaceBlock().name("namespace1"))
+    val block3 = graph.addNode(NewNamespaceBlock().name("namespace2"))
 
-    val namespaceCreator = new NamespaceCreator(new Cpg(graph))
+    val namespaceCreator = new NamespaceCreator(cpg)
     namespaceCreator.createAndApply()
 
     val namespaces = cpg.namespace.l

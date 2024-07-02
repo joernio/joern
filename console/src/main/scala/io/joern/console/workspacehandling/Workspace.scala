@@ -1,8 +1,8 @@
 package io.joern.console.workspacehandling
 
 import io.joern.console.defaultAvailableWidthProvider
-import overflowdb.traversal.help.Table
-import overflowdb.traversal.help.Table.AvailableWidthProvider
+import flatgraph.help.Table
+import flatgraph.help.Table.AvailableWidthProvider
 
 import scala.collection.mutable.ListBuffer
 

@@ -1,14 +1,13 @@
-import io.shiftleft.codepropertygraph.schema._
-import overflowdb.codegen.CodeGen
-import overflowdb.schema.SchemaBuilder
-import overflowdb.schema.Property.ValueType
-
-import java.io.File
+import io.shiftleft.codepropertygraph.schema.*
+import flatgraph.codegen.DomainClassesGenerator
+import flatgraph.schema.SchemaBuilder
+import flatgraph.schema.Property.ValueType
+import java.nio.file.Paths
 
 object CpgExtCodegen {
   def main(args: Array[String]): Unit = {
     val outputDir = args.headOption
-      .map(new File(_))
+      .map(Paths.get(_))
       .getOrElse(throw new AssertionError("please pass outputDir as first parameter"))
 
     val builder   = new SchemaBuilder(domainShortName = "Cpg", basePackage = "io.shiftleft.codepropertygraph.generated")
@@ -24,6 +23,6 @@ object CpgExtCodegen {
     cpgSchema.fs.file.addProperties(exampleProperty)
     // END extensions for this build
 
-    new CodeGen(builder.build).run(outputDir)
+    new DomainClassesGenerator(builder.build).run(outputDir)
   }
 }

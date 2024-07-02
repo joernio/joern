@@ -2,10 +2,7 @@ package io.joern.javasrc2cpg.util
 
 import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration
 import com.github.javaparser.resolution.types.ResolvedReferenceType
-import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
-import io.joern.x2cpg.{Ast, Defines}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, PropertyNames}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewFieldIdentifier, NewMember}
+import io.joern.x2cpg.Defines
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable

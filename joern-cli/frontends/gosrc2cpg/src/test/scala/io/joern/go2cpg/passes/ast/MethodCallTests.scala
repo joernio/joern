@@ -7,9 +7,8 @@ import io.shiftleft.codepropertygraph.generated.edges.Ref
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
 import io.shiftleft.semanticcpg.language.*
-import overflowdb.traversal.{jIteratortoTraversal, toNodeTraversal}
-
 import java.io.File
+
 class MethodCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
 
   "Simple method call use case" should {

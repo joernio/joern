@@ -1,7 +1,7 @@
 package io.joern.php2cpg.passes
 
-import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{
   AstNode,
@@ -96,7 +96,7 @@ abstract class LocalCreationPass[ScopeType <: AstNode](cpg: Cpg)
   ): Unit = {
     val identifierMap =
       getIdentifiersInScope(bodyNode)
-        .filter(_.refOut.isEmpty)
+        .filter(_._refOut.isEmpty)
         .filterNot(excludeIdentifierFn)
         .groupBy(_.name)
 

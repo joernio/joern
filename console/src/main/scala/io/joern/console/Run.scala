@@ -64,7 +64,7 @@ object Run {
          |
          |val opts = new OptsDynamic()
          |
-         | import _root_.overflowdb.BatchedUpdate.DiffGraphBuilder
+         | import _root_.flatgraph.DiffGraphBuilder
          | implicit def _diffGraph: DiffGraphBuilder = opts.commit.diffGraphBuilder
          | def diffGraph = _diffGraph
          |""".stripMargin
@@ -75,7 +75,7 @@ object Run {
 
     val toStringCode =
       s"""
-         |  import overflowdb.traversal.help.Table
+         |  import flatgraph.help.Table
          |  override def toString() : String = {
          |    val columnNames = List("name", "description")
          |    val rows =

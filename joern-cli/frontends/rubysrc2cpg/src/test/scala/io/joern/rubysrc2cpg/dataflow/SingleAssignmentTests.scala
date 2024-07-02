@@ -15,13 +15,13 @@ class SingleAssignmentTests extends RubyCode2CpgFixture(withPostProcessing = tru
         |""".stripMargin)
     val source = cpg.literal.l
     val sink   = cpg.method.name("puts").callIn.argument.l
-    val flows  = sink.reachableByFlows(source).map(flowToResultPairs).distinct.sortBy(_.length).l
-    val List(flow1, flow2, flow3, flow4, flow5) = flows
-    flow1 shouldBe List(("y = 1", 2), ("puts y", 3))
-    flow2 shouldBe List(("y = 1", 2), ("x = y = 1", 2), ("puts x", 4))
-    flow3 shouldBe List(("y = 1", 2), ("puts y", 3), ("puts x", 4))
-    flow4 shouldBe List(("y = 1", 2), ("x = y = 1", 2), ("z = x = y = 1", 2), ("puts z", 5))
-    flow5 shouldBe List(("y = 1", 2), ("x = y = 1", 2), ("puts x", 4), ("puts z", 5))
+    val flows  = sink.reachableByFlows(source).map(flowToResultPairs).distinct.l
+    flows.size shouldBe 5
+    flows should contain(List(("y = 1", 2), ("puts y", 3)))
+    flows should contain(List(("y = 1", 2), ("x = y = 1", 2), ("puts x", 4)))
+    flows should contain(List(("y = 1", 2), ("puts y", 3), ("puts x", 4)))
+    flows should contain(List(("y = 1", 2), ("x = y = 1", 2), ("z = x = y = 1", 2), ("puts z", 5)))
+    flows should contain(List(("y = 1", 2), ("x = y = 1", 2), ("puts x", 4), ("puts z", 5)))
   }
 
   "flow through expressions" in {

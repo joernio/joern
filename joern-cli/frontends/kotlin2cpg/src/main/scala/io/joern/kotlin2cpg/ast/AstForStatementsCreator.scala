@@ -62,7 +62,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
   //
   private def astForForWithDestructuringLHS(expr: KtForExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val loopRangeText         = expr.getLoopRange.getText
-    val iteratorName          = s"${Constants.iteratorPrefix}${iteratorKeyPool.next()}"
+    val iteratorName          = s"${Constants.iteratorPrefix}${iteratorKeyPool.next}"
     val localForIterator      = localNode(expr, iteratorName, iteratorName, TypeConstants.any)
     val iteratorAssignmentLhs = newIdentifierNode(iteratorName, TypeConstants.any)
     val iteratorLocalAst      = Ast(localForIterator).withRefEdge(iteratorAssignmentLhs, localForIterator)
@@ -182,7 +182,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
   //
   private def astForForWithSimpleVarLHS(expr: KtForExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val loopRangeText         = expr.getLoopRange.getText
-    val iteratorName          = s"${Constants.iteratorPrefix}${iteratorKeyPool.next()}"
+    val iteratorName          = s"${Constants.iteratorPrefix}${iteratorKeyPool.next}"
     val iteratorLocal         = localNode(expr, iteratorName, iteratorName, TypeConstants.any)
     val iteratorAssignmentLhs = newIdentifierNode(iteratorName, TypeConstants.any)
     val iteratorLocalAst      = Ast(iteratorLocal).withRefEdge(iteratorAssignmentLhs, iteratorLocal)

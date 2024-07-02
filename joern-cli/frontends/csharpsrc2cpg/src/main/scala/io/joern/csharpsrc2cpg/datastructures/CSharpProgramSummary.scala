@@ -25,7 +25,7 @@ type NamespaceToTypeMap = mutable.Map[String, mutable.Set[CSharpType]]
   * @see
   *   [[CSharpProgramSummary.jsonToInitialMapping]] for generating initial mappings.
   */
-case class CSharpProgramSummary(val namespaceToType: NamespaceToTypeMap, val imports: Set[String])
+case class CSharpProgramSummary(namespaceToType: NamespaceToTypeMap, imports: Set[String])
     extends ProgramSummary[CSharpType, CSharpMethod, CSharpField] {
 
   def findGlobalTypes: Set[CSharpType] = namespaceToType.getOrElse(Constants.Global, Set.empty).toSet

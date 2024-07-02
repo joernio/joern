@@ -11,11 +11,6 @@ package object scan {
 
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
-  implicit class ScannerStarters(val cpg: Cpg) extends AnyVal {
-    def finding: Iterator[Finding] =
-      overflowdb.traversal.InitialTraversal.from[Finding](cpg.graph, NodeTypes.FINDING)
-  }
-
   implicit class QueryWrapper(q: Query) {
 
     /** Obtain list of findings by running query on CPG

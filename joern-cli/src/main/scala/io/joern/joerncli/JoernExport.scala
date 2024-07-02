@@ -2,6 +2,12 @@ package io.joern.joerncli
 
 import better.files.Dsl.*
 import better.files.File
+import flatgraph.{Accessors, Edge, GNode}
+import flatgraph.formats.ExportResult
+import flatgraph.formats.dot.DotExporter
+import flatgraph.formats.graphml.GraphMLExporter
+import flatgraph.formats.graphson.GraphSONExporter
+import flatgraph.formats.neo4jcsv.Neo4jCsvExporter
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.layers.dataflows.*
 import io.joern.dataflowengineoss.semanticsloader.Semantics
@@ -9,14 +15,8 @@ import io.joern.joerncli.CpgBasedTool.exitIfInvalid
 import io.joern.x2cpg.layers.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.NodeTypes
-import io.shiftleft.semanticcpg.language.{toAstNodeMethods, toNodeTypeStarters}
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.*
-import overflowdb.formats.ExportResult
-import overflowdb.formats.dot.DotExporter
-import overflowdb.formats.graphml.GraphMLExporter
-import overflowdb.formats.graphson.GraphSONExporter
-import overflowdb.formats.neo4jcsv.Neo4jCsvExporter
-import overflowdb.{Edge, Node}
 
 import java.nio.file.{Path, Paths}
 import scala.collection.mutable
@@ -64,7 +64,7 @@ object JoernExport {
       exitIfInvalid(outDir, config.cpgFileName)
       mkdir(File(outDir))
 
-      Using.resource(CpgBasedTool.loadFromOdb(config.cpgFileName)) { cpg =>
+      Using.resource(CpgBasedTool.loadFromFile(config.cpgFileName)) { cpg =>
         exportCpg(cpg, config.repr, config.format, Paths.get(outDir).toAbsolutePath)
       }
     }
@@ -105,15 +105,15 @@ object JoernExport {
 
     format match {
       case Format.Dot if representation == Representation.All || representation == Representation.Cpg =>
-        exportWithOdbFormat(cpg, representation, outDir, DotExporter)
+        exportWithFlatgraphFormat(cpg, representation, outDir, DotExporter)
       case Format.Dot =>
         exportDot(representation, outDir, context)
       case Format.Neo4jCsv =>
-        exportWithOdbFormat(cpg, representation, outDir, Neo4jCsvExporter)
+        exportWithFlatgraphFormat(cpg, representation, outDir, Neo4jCsvExporter)
       case Format.Graphml =>
-        exportWithOdbFormat(cpg, representation, outDir, GraphMLExporter)
+        exportWithFlatgraphFormat(cpg, representation, outDir, GraphMLExporter)
       case Format.Graphson =>
-        exportWithOdbFormat(cpg, representation, outDir, GraphSONExporter)
+        exportWithFlatgraphFormat(cpg, representation, outDir, GraphSONExporter)
       case other =>
         throw new NotImplementedError(s"repr=$representation not yet supported for format=$format")
     }
@@ -133,11 +133,11 @@ object JoernExport {
     }
   }
 
-  private def exportWithOdbFormat(
+  private def exportWithFlatgraphFormat(
     cpg: Cpg,
     repr: Representation.Value,
     outDir: Path,
-    exporter: overflowdb.formats.Exporter
+    exporter: flatgraph.formats.Exporter
   ): Unit = {
     val ExportResult(nodeCount, edgeCount, _, additionalInfo) = repr match {
       case Representation.All =>
@@ -154,7 +154,7 @@ object JoernExport {
                 windowsFilenameDeduplicationHelper
               )
               val outFileName = outDir.resolve(relativeFilename)
-              exporter.runExport(nodes, subGraph.edges, outFileName)
+              exporter.runExport(cpg.graph.schema, nodes, subGraph.edges, outFileName)
             }
             .reduce(plus)
         } else {
@@ -220,12 +220,12 @@ object JoernExport {
 
   private def emptyExportResult = ExportResult(0, 0, Seq.empty, Option("Empty CPG"))
 
-  case class MethodSubGraph(methodName: String, methodFilename: String, nodes: Set[Node]) {
+  case class MethodSubGraph(methodName: String, methodFilename: String, nodes: Set[GNode]) {
     def edges: Set[Edge] = {
       for {
         node <- nodes
-        edge <- node.bothE.asScala
-        if nodes.contains(edge.inNode) && nodes.contains(edge.outNode)
+        edge <- Accessors.getEdgesOut(node)
+        if nodes.contains(edge.dst)
       } yield edge
     }
   }

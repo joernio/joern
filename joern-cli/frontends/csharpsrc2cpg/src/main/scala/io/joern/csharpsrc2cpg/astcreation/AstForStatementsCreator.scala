@@ -286,7 +286,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val declNode    = createDotNetNodeInfo(usingStmt.json(ParserKeys.Declaration))
     val declAst     = astForNode(declNode)
 
-    val finallyAst = declAst.flatMap(_.nodes).collectFirst { case x: NewIdentifier => x.copy }.map { id =>
+    val finallyAst = declAst.flatMap(_.nodes).collectFirst { case x: NewIdentifier => x.copy() }.map { id =>
       val callCode = s"${id.name}.Dispose()"
       id.code(callCode)
       val disposeCall = callNode(

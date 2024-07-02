@@ -1,14 +1,13 @@
 package io.joern.x2cpg.passes
 
-import io.shiftleft.OverflowDbTestInstance
-import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, NodeTypes}
+import flatgraph.misc.TestUtils.*
 import io.joern.x2cpg.passes.base.ContainsEdgePass
+import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewFile, NewMethod, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
+import io.shiftleft.semanticcpg.language.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import overflowdb._
-
-import scala.jdk.CollectionConverters._
 
 class ContainsEdgePassTest extends AnyWordSpec with Matchers {
 
@@ -16,26 +15,26 @@ class ContainsEdgePassTest extends AnyWordSpec with Matchers {
 
   "Files " can {
     "contain Methods" in Fixture { fixture =>
-      fixture.methodVertex.in(EdgeTypes.CONTAINS).asScala.toList shouldBe List(fixture.fileVertex)
+      fixture.methodVertex.in(EdgeTypes.CONTAINS).l shouldBe List(fixture.fileVertex)
     }
     "contain Classes" in Fixture { fixture =>
-      fixture.typeDeclVertex.in(EdgeTypes.CONTAINS).asScala.toList shouldBe List(fixture.fileVertex)
+      fixture.typeDeclVertex.in(EdgeTypes.CONTAINS).l shouldBe List(fixture.fileVertex)
     }
   }
 
   "Classes " can {
     "contain Methods" in Fixture { fixture =>
-      fixture.typeMethodVertex.in(EdgeTypes.CONTAINS).asScala.toList shouldBe List(fixture.typeDeclVertex)
+      fixture.typeMethodVertex.in(EdgeTypes.CONTAINS).l shouldBe List(fixture.typeDeclVertex)
     }
   }
 
   "Methods " can {
     "contain Methods" in Fixture { fixture =>
-      fixture.innerMethodVertex.in(EdgeTypes.CONTAINS).asScala.toList shouldBe List(fixture.methodVertex)
+      fixture.innerMethodVertex.in(EdgeTypes.CONTAINS).l shouldBe List(fixture.methodVertex)
     }
     "contain expressions" in Fixture { fixture =>
-      fixture.expressionVertex.in(EdgeTypes.CONTAINS).asScala.toList shouldBe List(fixture.methodVertex)
-      fixture.innerExpressionVertex.in(EdgeTypes.CONTAINS).asScala.toList shouldBe List(fixture.innerMethodVertex)
+      fixture.expressionVertex.in(EdgeTypes.CONTAINS).l shouldBe List(fixture.methodVertex)
+      fixture.innerExpressionVertex.in(EdgeTypes.CONTAINS).l shouldBe List(fixture.innerMethodVertex)
     }
   }
 
@@ -43,23 +42,34 @@ class ContainsEdgePassTest extends AnyWordSpec with Matchers {
 
 object ContainsEdgePassTest {
   private class Fixture {
-    private val graph = OverflowDbTestInstance.create
+    private val cpg   = Cpg.empty
+    private val graph = cpg.graph
 
-    val fileVertex            = graph + NodeTypes.FILE
-    val typeDeclVertex        = graph + NodeTypes.TYPE_DECL
-    val typeMethodVertex      = graph + NodeTypes.METHOD
-    val methodVertex          = graph + NodeTypes.METHOD
-    val innerMethodVertex     = graph + NodeTypes.METHOD
-    val expressionVertex      = graph + NodeTypes.CALL
-    val innerExpressionVertex = graph + NodeTypes.CALL
+    val fileVertex            = graph.addNode(NewFile())
+    val typeDeclVertex        = graph.addNode(NewTypeDecl())
+    val typeMethodVertex      = graph.addNode(NewMethod())
+    val methodVertex          = graph.addNode(NewMethod())
+    val innerMethodVertex     = graph.addNode(NewMethod())
+    val expressionVertex      = graph.addNode(NewCall())
+    val innerExpressionVertex = graph.addNode(NewCall())
 
-    fileVertex --- EdgeTypes.AST --> typeDeclVertex
-    typeDeclVertex --- EdgeTypes.AST --> typeMethodVertex
+    // TODO MP get arrow syntax back
+//    fileVertex --- EdgeTypes.AST --> typeDeclVertex
+//    typeDeclVertex --- EdgeTypes.AST --> typeMethodVertex
+//
+//    fileVertex --- EdgeTypes.AST --> methodVertex
+//    methodVertex --- EdgeTypes.AST --> innerMethodVertex
+//    methodVertex --- EdgeTypes.AST --> expressionVertex
+//    innerMethodVertex --- EdgeTypes.AST --> innerExpressionVertex
+    graph.applyDiff { diffGraphBuilder =>
+      diffGraphBuilder.addEdge(fileVertex, typeDeclVertex, EdgeTypes.AST)
+      diffGraphBuilder.addEdge(typeDeclVertex, typeMethodVertex, EdgeTypes.AST)
 
-    fileVertex --- EdgeTypes.AST --> methodVertex
-    methodVertex --- EdgeTypes.AST --> innerMethodVertex
-    methodVertex --- EdgeTypes.AST --> expressionVertex
-    innerMethodVertex --- EdgeTypes.AST --> innerExpressionVertex
+      diffGraphBuilder.addEdge(fileVertex, methodVertex, EdgeTypes.AST)
+      diffGraphBuilder.addEdge(methodVertex, innerMethodVertex, EdgeTypes.AST)
+      diffGraphBuilder.addEdge(methodVertex, expressionVertex, EdgeTypes.AST)
+      diffGraphBuilder.addEdge(innerMethodVertex, innerExpressionVertex, EdgeTypes.AST)
+    }
 
     val containsEdgeCalculator = new ContainsEdgePass(new Cpg(graph))
     containsEdgeCalculator.createAndApply()

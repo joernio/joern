@@ -1,11 +1,10 @@
 package io.joern.console.cpgcreation
 
-import better.files.Dsl._
+import better.files.Dsl.*
 import better.files.File
-import io.shiftleft.codepropertygraph.cpgloading.{CpgLoader, CpgLoaderConfig}
+import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
 import io.shiftleft.codepropertygraph.generated.Languages
-import io.joern.console.ConsoleConfig
-import overflowdb.Config
+import io.joern.console.{ConsoleConfig, CpgConverter}
 
 import java.nio.file.Path
 import scala.util.Try
@@ -60,12 +59,12 @@ class CpgGeneratorFactory(config: ConsoleConfig) {
       generator.generate(inputPath, outputPath).map(File(_))
     outputFileOpt.map { outFile =>
       val parentPath = outFile.parent.path.toAbsolutePath
-      if (isZipFile(outFile)) {
+      if (CpgLoader.isProtoFormat(outFile.path)) {
         report("Creating database from bin.zip")
         val srcFilename = outFile.path.toAbsolutePath.toString
         val dstFilename = parentPath.resolve("cpg.bin").toAbsolutePath.toString
         // MemoryHelper.hintForInsufficientMemory(srcFilename).map(report)
-        convertProtoCpgToOverflowDb(srcFilename, dstFilename)
+        convertProtoCpgToFlatgraph(srcFilename, dstFilename)
       } else {
         report("moving cpg.bin.zip to cpg.bin because it is already a database file")
         val srcPath = parentPath.resolve("cpg.bin.zip")
@@ -77,18 +76,13 @@ class CpgGeneratorFactory(config: ConsoleConfig) {
     }
   }
 
-  def convertProtoCpgToOverflowDb(srcFilename: String, dstFilename: String): Unit = {
-    val odbConfig = Config.withDefaults.withStorageLocation(dstFilename)
-    val config    = CpgLoaderConfig.withDefaults.doNotCreateIndexesOnLoad.withOverflowConfig(odbConfig)
-    CpgLoader.load(srcFilename, config).close
-    File(srcFilename).delete()
-  }
+  @deprecated("method got renamed to `convertProtoCpgToFlatgraph, please use that instead", "joern v3")
+  def convertProtoCpgToOverflowDb(srcFilename: String, dstFilename: String): Unit =
+    convertProtoCpgToFlatgraph(srcFilename, dstFilename)
 
-  def isZipFile(file: File): Boolean = {
-    val bytes = file.bytes
-    Try {
-      bytes.next() == 'P' && bytes.next() == 'K'
-    }.getOrElse(false)
+  def convertProtoCpgToFlatgraph(srcFilename: String, dstFilename: String): Unit = {
+    CpgConverter.convertProtoCpgToFlatgraph(srcFilename, dstFilename)
+    File(srcFilename).delete()
   }
 
   private def report(str: String): Unit = System.err.println(str)

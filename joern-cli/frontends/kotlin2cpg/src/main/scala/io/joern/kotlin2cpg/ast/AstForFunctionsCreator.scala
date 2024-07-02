@@ -40,8 +40,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     filename: String
   ): Ast = {
     val astParentType     = parentNode.label
-    val astParentName     = parentNode.properties(TypeDecl.Properties.Name.name).toString
-    val astParentFullName = parentNode.properties(TypeDecl.Properties.FullName.name).toString
+    val astParentName     = parentNode.propertiesMap.get(TypeDecl.PropertyNames.Name).toString
+    val astParentFullName = parentNode.propertiesMap.get(TypeDecl.PropertyNames.FullName).toString
     val functionTypeDeclNode =
       typeDeclNode(
         node,

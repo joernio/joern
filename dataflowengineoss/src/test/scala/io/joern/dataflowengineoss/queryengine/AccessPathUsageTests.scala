@@ -1,13 +1,14 @@
 package io.joern.dataflowengineoss.queryengine
 
-import io.shiftleft.OverflowDbTestInstance
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, Operators, Properties}
+import flatgraph.{GNode, Graph}
+import flatgraph.misc.TestUtils.*
+import io.shiftleft.codepropertygraph.generated.PropertyNames
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, NodeTypes, Operators}
 import io.joern.dataflowengineoss.queryengine.AccessPathUsage.toTrackedBaseAndAccessPathSimple
-import io.shiftleft.semanticcpg.accesspath._
-import org.scalatest.matchers.should.Matchers._
+import io.shiftleft.semanticcpg.accesspath.*
+import org.scalatest.matchers.should.Matchers.*
 import org.scalatest.wordspec.AnyWordSpec
-import overflowdb._
 
 class AccessPathUsageTests extends AnyWordSpec {
 
@@ -22,35 +23,28 @@ class AccessPathUsageTests extends AnyWordSpec {
   private val VS = VariablePointerShift
   private val S  = PointerShift
 
-  private val g = OverflowDbTestInstance.create
+  private val g = Cpg.empty.graph
 
-  private def genCALL(graph: Graph, op: String, args: Node*): Call = {
-    val ret = graph + NodeTypes.CALL // (NodeTypes.CALL, Properties.NAME -> op)
-    ret.setProperty(Properties.Name, op)
+  private def genCALL(graph: Graph, op: String, args: GNode*): Call = {
+    val diffGraphBuilder = Cpg.newDiffGraphBuilder
+    val newCall          = NewCall().name(op)
+    diffGraphBuilder.addNode(newCall)
     args.reverse.zipWithIndex.foreach { case (arg, idx) =>
-      ret --- EdgeTypes.ARGUMENT --> arg
-      arg.setProperty(Properties.ArgumentIndex, idx + 1)
+      diffGraphBuilder.setNodeProperty(arg, PropertyNames.ARGUMENT_INDEX, idx + 1)
+      diffGraphBuilder.addEdge(newCall, arg, EdgeTypes.ARGUMENT)
     }
-    ret.asInstanceOf[Call]
+    diffGraphBuilder.apply(graph)
+    newCall.storedRef.get
   }
 
-  private def genLit(graph: Graph, payload: String): Literal = {
-    val ret = graph + NodeTypes.LITERAL
-    ret.setProperty(Properties.Code, payload)
-    ret.asInstanceOf[Literal]
-  }
+  private def genLit(graph: Graph, payload: String): Literal =
+    graph.addNode(NewLiteral().code(payload))
 
-  private def genID(graph: Graph, payload: String): Identifier = {
-    val ret = graph + NodeTypes.IDENTIFIER
-    ret.setProperty(Properties.Name, payload)
-    ret.asInstanceOf[Identifier]
-  }
+  private def genID(graph: Graph, payload: String): Identifier =
+    graph.addNode(NewIdentifier().name(payload))
 
-  private def genFID(graph: Graph, payload: String): FieldIdentifier = {
-    val ret = graph + NodeTypes.FIELD_IDENTIFIER
-    ret.setProperty(Properties.CanonicalName, payload)
-    ret.asInstanceOf[FieldIdentifier]
-  }
+  private def genFID(graph: Graph, payload: String): FieldIdentifier =
+    graph.addNode(NewFieldIdentifier().canonicalName(payload))
 
   private def toTrackedAccessPath(node: StoredNode): AccessPath = toTrackedBaseAndAccessPathSimple(node)._2
 

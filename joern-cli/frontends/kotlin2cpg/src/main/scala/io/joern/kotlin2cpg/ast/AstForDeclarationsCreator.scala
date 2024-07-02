@@ -425,7 +425,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     implicit typeInfoProvider: TypeInfoProvider
   ): Seq[Ast] = {
     ctors.map { ctor =>
-      val primaryCtorCallAst    = List(Ast(primaryCtorCall.copy))
+      val primaryCtorCallAst    = List(Ast(primaryCtorCall.copy()))
       val constructorParams     = ctor.getValueParameters.asScala.toList
       val defaultSignature      = typeInfoProvider.anySignature(constructorParams)
       val defaultFullName       = s"$classFullName.${TypeConstants.initPrefix}:$defaultSignature"

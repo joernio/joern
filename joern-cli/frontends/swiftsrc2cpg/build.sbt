@@ -17,7 +17,7 @@ lazy val astGenVersion = settingKey[String]("astgen version")
 astGenVersion := appProperties.value.getString("swiftsrc2cpg.astgen_version")
 
 libraryDependencies ++= Seq(
-  "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
+  "com.michaelpollmeier"  %% "codepropertygraph" % Versions.cpg,
   "com.lihaoyi"   %% "upickle"           % Versions.upickle,
   "org.scalatest" %% "scalatest"         % Versions.scalatest % Test
 )

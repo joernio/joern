@@ -149,7 +149,7 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
     }
 
     "test method reference closure binding" in {
-      val methodRefNode  = cpg.methodRef("f").head
+      val methodRefNode  = cpg.methodRefWithName("f").head
       val closureBinding = methodRefNode._closureBindingViaCaptureOut.next()
       closureBinding.closureBindingId shouldBe Some("test.py:<module>.f:x")
       closureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
@@ -185,7 +185,7 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
     }
 
     "test method reference closure binding" in {
-      val methodRefNode  = cpg.methodRef("f").head
+      val methodRefNode  = cpg.methodRefWithName("f").head
       val closureBinding = methodRefNode._closureBindingViaCaptureOut.next()
       closureBinding.closureBindingId shouldBe Some("test.py:<module>.f:x")
       closureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
@@ -223,7 +223,7 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
     }
 
     "test method reference closure binding of f in g" in {
-      val methodRefNode  = cpg.methodRef("f").head
+      val methodRefNode  = cpg.methodRefWithName("f").head
       val closureBinding = methodRefNode._closureBindingViaCaptureOut.next()
       closureBinding.closureBindingId shouldBe Some("test.py:<module>.g.f:x")
       closureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
@@ -240,7 +240,7 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
     }
 
     "test method reference closure binding of g in module" in {
-      val methodRefNode  = cpg.methodRef("g").head
+      val methodRefNode  = cpg.methodRefWithName("g").head
       val closureBinding = methodRefNode._closureBindingViaCaptureOut.next()
       closureBinding.closureBindingId shouldBe Some("test.py:<module>.g:x")
       closureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
