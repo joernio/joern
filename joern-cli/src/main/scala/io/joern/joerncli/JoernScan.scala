@@ -1,7 +1,7 @@
 package io.joern.joerncli
 
 import better.files.*
-import io.joern.console.scan.{ScanPass, outputFindings}
+import io.joern.console.scan.{ScanPass, logger, outputFindings}
 import io.joern.console.{BridgeBase, DefaultArgumentProvider, Query, QueryDatabase}
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
@@ -11,11 +11,13 @@ import io.joern.joerncli.console.ReplBridge
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder}
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
+
 import java.io.PrintStream
 import org.json4s.native.Serialization
 import org.json4s.{Formats, NoTypeHints}
+
 import scala.collection.mutable
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 object JoernScanConfig {
   val defaultDbVersion: String    = "latest"
@@ -274,7 +276,7 @@ class Scan(options: ScanOptions)(implicit engineContext: EngineContext) extends 
       println("No queries matched current filter selection (total number of queries: `" + allQueries.length + "`)")
       return
     }
-    runPass(new ScanPass(context.cpg, queriesAfterFilter), context)
+    runPass(new ScanPass(context.cpg, queriesAfterFilter, options.maxCallDepth), context)
     outputFindings(context.cpg)
 
   }

@@ -1,11 +1,12 @@
 package io.joern.console
 
-import io.joern.console.Query
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.{Logger, LoggerFactory}
+import overflowdb.BatchedUpdate.DiffGraphBuilder
+import overflowdb.traversal.help.TraversalSource
 
 package object scan {
 
@@ -24,7 +25,7 @@ package object scan {
       try {
         q.traversal(cpg)
           .map(evidence =>
-            finding(
+            QueryWrapper.finding(
               evidence = evidence,
               name = q.name,
               author = q.author,
@@ -41,6 +42,31 @@ package object scan {
       }
 
     }
+  }
+
+  object QueryWrapper {
+
+    def finding(
+      evidence: StoredNode,
+      name: String,
+      author: String,
+      title: String,
+      description: String,
+      score: Double
+    ): NewFinding = {
+      NewFinding()
+        .evidence(List(evidence))
+        .keyValuePairs(
+          List(
+            NewKeyValuePair().key(FindingKeys.name).value(name),
+            NewKeyValuePair().key(FindingKeys.author).value(author),
+            NewKeyValuePair().key(FindingKeys.title).value(title),
+            NewKeyValuePair().key(FindingKeys.description).value(description),
+            NewKeyValuePair().key(FindingKeys.score).value(score.toString)
+          )
+        )
+    }
+
   }
 
   private object FindingKeys {
@@ -82,29 +108,74 @@ package object scan {
 
   }
 
-  private def finding(
-    evidence: StoredNode,
-    name: String,
-    author: String,
-    title: String,
-    description: String,
-    score: Double
-  ): NewFinding = {
-    NewFinding()
-      .evidence(List(evidence))
-      .keyValuePairs(
-        List(
-          NewKeyValuePair().key(FindingKeys.name).value(name),
-          NewKeyValuePair().key(FindingKeys.author).value(author),
-          NewKeyValuePair().key(FindingKeys.title).value(title),
-          NewKeyValuePair().key(FindingKeys.description).value(description),
-          NewKeyValuePair().key(FindingKeys.score).value(score.toString)
-        )
-      )
+  @TraversalSource
+  implicit class TaintAnalysisStarters(cpg: Cpg) {
+
+    import TaintAnalysisKeys.*
+
+    def sources: Iterator[CfgNode] =
+      cpg.all.where(_.tag.nameExact(SOURCE)).collectAll[CfgNode]
+
+    def sinks: Iterator[CfgNode] =
+      cpg.all.where(_.tag.nameExact(SINK)).collectAll[CfgNode]
+
+    def sanitizers: Iterator[CfgNode] =
+      cpg.all.where(_.tag.nameExact(SANITIZER)).collectAll[CfgNode]
+
   }
 
-  /** Print human readable list of findings to standard out.
-    */
+  implicit class TaintAnalysisExt[T <: StoredNode](traversal: Iterator[T]) {
+
+    import TaintAnalysisKeys.*
+
+    def tagAsSource(implicit diffGraph: DiffGraphBuilder): Unit = traversal.newTagNode(SOURCE).store()
+
+    def tagAsSink(implicit diffGraph: DiffGraphBuilder): Unit = traversal.newTagNode(SINK).store()
+
+    def tagAsSanitizer(implicit diffGraph: DiffGraphBuilder): Unit = traversal.newTagNode(SANITIZER).store()
+
+    def tagAsSource(value: String)(implicit diffGraph: DiffGraphBuilder): Unit =
+      traversal.newTagNodePair(SOURCE, value).store()
+
+    def tagAsSink(value: String)(implicit diffGraph: DiffGraphBuilder): Unit =
+      traversal.newTagNodePair(SINK, value).store()
+
+    def tagAsSanitizer(value: String)(implicit diffGraph: DiffGraphBuilder): Unit =
+      traversal.newTagNodePair(SANITIZER, value).store()
+
+    def isSanitizer: Iterator[T] = traversal.where(_.tag.nameExact(SANITIZER))
+
+  }
+
+  implicit class TaintAnalysisNodeExt[T <: StoredNode](node: T) {
+
+    import TaintAnalysisKeys.*
+
+    def tagAsSource(implicit diffGraph: DiffGraphBuilder): Unit = node.start.newTagNode(SOURCE).store()
+
+    def tagAsSink(implicit diffGraph: DiffGraphBuilder): Unit = node.start.newTagNode(SINK).store()
+
+    def tagAsSanitizer(implicit diffGraph: DiffGraphBuilder): Unit = node.start.newTagNode(SANITIZER).store()
+
+    def tagAsSource(value: String)(implicit diffGraph: DiffGraphBuilder): Unit =
+      node.start.newTagNodePair(SOURCE, value).store()
+
+    def tagAsSink(value: String)(implicit diffGraph: DiffGraphBuilder): Unit =
+      node.start.newTagNodePair(SINK, value).store()
+
+    def tagAsSanitizer(value: String)(implicit diffGraph: DiffGraphBuilder): Unit =
+      node.start.newTagNodePair(SANITIZER, value).store()
+
+    def isSanitizer: Iterator[T] = node.start.where(_.tag.nameExact(SANITIZER))
+
+  }
+
+  object TaintAnalysisKeys {
+    val SOURCE    = "source"
+    val SINK      = "sink"
+    val SANITIZER = "sanitizer"
+  }
+
   def outputFindings(cpg: Cpg)(implicit finder: NodeExtensionFinder): Unit = {
     cpg.finding.sortBy(_.score.toInt).foreach { finding =>
       val evidence = finding.evidence.headOption

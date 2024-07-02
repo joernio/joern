@@ -1,12 +1,13 @@
 package io.joern.suites
 
-import io.joern.console.scan._
+import io.joern.console.scan.*
 import io.joern.console.{CodeSnippet, Query, QueryBundle}
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.joern.util.QueryUtil
 import io.joern.x2cpg.testfixtures.TestCpg
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Literal, Method, StoredNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Expression, Literal, Method, MethodParameterIn}
+import io.shiftleft.semanticcpg.language.*
 
 class JavaQueryTestSuite[QB <: QueryBundle](val queryBundle: QB)
     extends JavaSrcCode2CpgFixture(withOssDataflow = true) {
@@ -43,12 +44,20 @@ class JavaQueryTestSuite[QB <: QueryBundle](val queryBundle: QB)
     q(cpg).flatMap(_.evidence).collect { case c: Call => c.code }
   }
 
+  def findMatchingArgumentCalls(cpg: Cpg, q: Query): List[String] = {
+    q(cpg).flatMap(_.evidence).collect { case c: Expression => c.inCall.code }.flatten
+  }
+
   def findMatchingLiterals(cpg: Cpg, q: Query): List[String] = {
     q(cpg).flatMap(_.evidence).collect { case c: Literal => c.code }
   }
 
   def findMatchingMethods(cpg: Cpg, q: Query): List[String] = {
     q(cpg).flatMap(_.evidence).collect { case c: Method => c.name }
+  }
+
+  def findMatchingParameters(cpg: Cpg, q: Query): List[String] = {
+    q(cpg).flatMap(_.evidence).collect { case c: MethodParameterIn => c.name }
   }
 
   protected val cpg: TestCpg = code(concatQueryCodeExamples)

@@ -1,7 +1,7 @@
 package io.joern.dataflowengineoss
 
 import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, PassThroughMapping, Semantics}
-import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.{Operators, Languages}
 
 import scala.annotation.unused
 
@@ -13,6 +13,17 @@ object DefaultSemantics {
   def apply(): Semantics = {
     val list = operatorFlows ++ cFlows ++ javaFlows
     Semantics.fromList(list)
+  }
+
+  /** @param language
+    *   the programming language under analysis.
+    * @return
+    *   the semantics for the given language.
+    */
+  def semanticsFor(language: String): Semantics = language match {
+    case Languages.JAVA | Languages.JAVASRC | Languages.KOTLIN => Semantics.fromList(operatorFlows ++ javaFlows)
+    case Languages.C | Languages.NEWC                          => Semantics.fromList(operatorFlows ++ cFlows)
+    case _                                                     => Semantics.fromList(operatorFlows)
   }
 
   private def F = (x: String, y: List[(Int, Int)]) => FlowSemantic.from(x, y)
@@ -152,11 +163,5 @@ object DefaultSemantics {
     F("org.apache.http.HttpResponse.getEntity:org.apache.http.HttpEntity()", List((0, -1))),
     F("org.apache.http.HttpResponse.setEntity:void(org.apache.http.HttpEntity)", List((1, 0), (1, 1), (1, 0)))
   )
-
-  /** @return
-    *   procedure semantics for operators and common external Java calls only.
-    */
-  @unused
-  def javaSemantics(): Semantics = Semantics.fromList(operatorFlows ++ javaFlows)
 
 }

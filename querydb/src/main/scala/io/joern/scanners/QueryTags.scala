@@ -25,4 +25,9 @@ object QueryTags {
   val cryptography           = "cryptography"
   val remoteCodeExecution    = "remote-code-execution"
 
+  val taint     = "taint"
+  val source    = "source"
+  val sink      = "sink"
+  val sanitizer = "sanitizer"
+
 }
