@@ -258,7 +258,7 @@ class MipsFunctionPass(
   }
 
   override def runOnPart(diffGraphBuilder: DiffGraphBuilder, function: Function): Unit = {
-    val localDiffGraph = new DiffGraphBuilder
+    val localDiffGraph = Cpg.newDiffGraphBuilder
     // we need it just once with default settings
     val blockNode: NewBlock = nodes.NewBlock().code("").order(0)
     val methodNode = createMethodNode(decompiler, function, filename, checkIfExternal(currentProgram, function.getName))

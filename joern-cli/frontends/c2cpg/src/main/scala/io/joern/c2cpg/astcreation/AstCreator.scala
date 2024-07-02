@@ -82,12 +82,12 @@ class AstCreator(
     methodAstParentStack.push(fakeGlobalMethod)
     scope.pushNewScope(fakeGlobalMethod)
 
-    val blockNode_ = blockNode(iASTTranslationUnit, Defines.empty, registerType(Defines.anyTypeName))
+    val blockNode_ = blockNode(iASTTranslationUnit, Defines.Empty, registerType(Defines.Any))
 
     val declsAsts = allDecls.flatMap(astsForDeclaration)
     setArgumentIndices(declsAsts)
 
-    val methodReturn = newMethodReturnNode(iASTTranslationUnit, Defines.anyTypeName)
+    val methodReturn = methodReturnNode(iASTTranslationUnit, Defines.Any)
     Ast(fakeGlobalTypeDecl).withChild(
       methodAst(fakeGlobalMethod, Seq.empty, blockAst(blockNode_, declsAsts), methodReturn)
     )
@@ -95,21 +95,21 @@ class AstCreator(
 
   override protected def code(node: IASTNode): String = shortenCode(nodeSignature(node))
 
-  override protected def line(node: IASTNode): Option[Integer] = {
+  override protected def line(node: IASTNode): Option[Int] = {
     nullSafeFileLocation(node).map(_.getStartingLineNumber)
   }
 
-  override protected def lineEnd(node: IASTNode): Option[Integer] = {
+  override protected def lineEnd(node: IASTNode): Option[Int] = {
     nullSafeFileLocation(node).map(_.getEndingLineNumber)
   }
 
-  protected def column(node: IASTNode): Option[Integer] = {
+  protected def column(node: IASTNode): Option[Int] = {
     nodeOffsets(node).map { case (startOffset, _) =>
       offsetToColumn(node, startOffset)
     }
   }
 
-  protected def columnEnd(node: IASTNode): Option[Integer] = {
+  protected def columnEnd(node: IASTNode): Option[Int] = {
     nodeOffsets(node).map { case (_, endOffset) =>
       offsetToColumn(node, endOffset - 1)
     }

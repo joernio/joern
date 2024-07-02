@@ -135,11 +135,11 @@ class AstCreator(
     .removeOption(new DefaultConfigurationOption(ConfigOption.PRINT_COMMENTS))
     .removeOption(new DefaultConfigurationOption(ConfigOption.PRINT_JAVADOC))
 
-  protected def line(node: Node): Option[Integer]      = node.getBegin.map(x => Integer.valueOf(x.line)).toScala
-  protected def column(node: Node): Option[Integer]    = node.getBegin.map(x => Integer.valueOf(x.column)).toScala
-  protected def lineEnd(node: Node): Option[Integer]   = node.getEnd.map(x => Integer.valueOf(x.line)).toScala
-  protected def columnEnd(node: Node): Option[Integer] = node.getEnd.map(x => Integer.valueOf(x.column)).toScala
-  protected def code(node: Node): String               = node.toString(codePrinterOptions)
+  protected def line(node: Node): Option[Int]      = node.getBegin.map(x => x.line).toScala
+  protected def column(node: Node): Option[Int]    = node.getBegin.map(x => x.column).toScala
+  protected def lineEnd(node: Node): Option[Int]   = node.getEnd.map(x => x.line).toScala
+  protected def columnEnd(node: Node): Option[Int] = node.getEnd.map(x => x.column).toScala
+  protected def code(node: Node): String           = node.toString(codePrinterOptions)
 
   private val lineOffsetTable = OffsetUtils.getLineOffsetTable(fileContent)
 

@@ -20,15 +20,15 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def computeClassFullName(name: String): String  = s"${scope.surroundingScopeFullName.head}.$name"
   protected def computeMethodFullName(name: String): String = s"${scope.surroundingScopeFullName.head}:$name"
 
-  override def column(node: RubyNode): Option[Integer]    = node.column
-  override def columnEnd(node: RubyNode): Option[Integer] = node.columnEnd
-  override def line(node: RubyNode): Option[Integer]      = node.line
-  override def lineEnd(node: RubyNode): Option[Integer]   = node.lineEnd
-  override def code(node: RubyNode): String               = shortenCode(node.text)
+  override def column(node: RubyNode): Option[Int]    = node.column
+  override def columnEnd(node: RubyNode): Option[Int] = node.columnEnd
+  override def line(node: RubyNode): Option[Int]      = node.line
+  override def lineEnd(node: RubyNode): Option[Int]   = node.lineEnd
+  override def code(node: RubyNode): String           = shortenCode(node.text)
 
   protected def isBuiltin(x: String): Boolean            = kernelFunctions.contains(x)
   protected def prefixAsKernelDefined(x: String): String = s"$kernelPrefix$pathSep$x"
-  protected def prefixAsBundledType(x: String): String   = s"<${GlobalTypes.builtinPrefix}.$x>"
+  protected def prefixAsBundledType(x: String): String   = s"${GlobalTypes.builtinPrefix}.$x"
   protected def isBundledClass(x: String): Boolean       = GlobalTypes.bundledClasses.contains(x)
   protected def pathSep                                  = "."
 
@@ -86,18 +86,13 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def astForAssignment(
     lhs: NewNode,
     rhs: NewNode,
-    lineNumber: Option[Integer],
-    columnNumber: Option[Integer]
+    lineNumber: Option[Int],
+    columnNumber: Option[Int]
   ): Ast = {
     astForAssignment(Ast(lhs), Ast(rhs), lineNumber, columnNumber)
   }
 
-  protected def astForAssignment(
-    lhs: Ast,
-    rhs: Ast,
-    lineNumber: Option[Integer],
-    columnNumber: Option[Integer]
-  ): Ast = {
+  protected def astForAssignment(lhs: Ast, rhs: Ast, lineNumber: Option[Int], columnNumber: Option[Int]): Ast = {
     val code = Seq(lhs, rhs).flatMap(_.root).collect { case x: ExpressionNew => x.code }.mkString(" = ")
     val assignment = NewCall()
       .name(Operators.assignment)

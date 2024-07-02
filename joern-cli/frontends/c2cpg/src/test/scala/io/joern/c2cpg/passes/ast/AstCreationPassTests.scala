@@ -910,8 +910,8 @@ class AstCreationPassTests extends AstC2CpgSuite {
        |}
       """.stripMargin)
       inside(cpg.method.name("main").ast.isCall.codeExact("(*strLenFunc)(\"123\")").l) { case List(call) =>
-        call.name shouldBe Defines.operatorPointerCall
-        call.methodFullName shouldBe Defines.operatorPointerCall
+        call.name shouldBe Defines.OperatorPointerCall
+        call.methodFullName shouldBe Defines.OperatorPointerCall
       }
     }
 

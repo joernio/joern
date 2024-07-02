@@ -6,7 +6,7 @@ import io.joern.rubysrc2cpg.deprecated.utils.{PackageContext, PackageTable}
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Global
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.slf4j.LoggerFactory
 
 import scala.util.{Failure, Success, Try}
@@ -18,7 +18,7 @@ class AstPackagePass(
   packageTable: PackageTable,
   inputPath: String
 )(implicit withSchemaValidation: ValidationMode)
-    extends ConcurrentWriterCpgPass[String](cpg) {
+    extends ForkJoinParallelCpgPass[String](cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 

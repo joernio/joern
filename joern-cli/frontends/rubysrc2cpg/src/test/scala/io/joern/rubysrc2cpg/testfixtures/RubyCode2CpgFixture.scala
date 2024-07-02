@@ -1,13 +1,12 @@
 package io.joern.rubysrc2cpg.testfixtures
 
 import io.joern.dataflowengineoss.language.Path
-import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
 import io.joern.dataflowengineoss.testfixtures.{SemanticCpgTestFixture, SemanticTestCpg}
 import io.joern.rubysrc2cpg.deprecated.utils.PackageTable
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
 import io.joern.x2cpg.testfixtures.*
-import io.joern.x2cpg.{ValidationMode, X2Cpg}
+import io.joern.x2cpg.ValidationMode
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
 import org.scalatest.Tag
@@ -52,7 +51,6 @@ class DefaultTestCpgWithRuby(
     }
     RubySrc2Cpg.postProcessingPasses(this, config).foreach(_.createAndApply())
   }
-
 }
 
 class RubyCode2CpgFixture(
@@ -73,8 +71,8 @@ class RubyCode2CpgFixture(
 
   implicit val resolver: ICallResolver = NoResolve
 
-  protected def flowToResultPairs(path: Path): List[(String, Integer)] =
-    path.resultPairs().collect { case (firstElement: String, secondElement: Option[Integer]) =>
+  protected def flowToResultPairs(path: Path): List[(String, Int)] =
+    path.resultPairs().collect { case (firstElement, secondElement) =>
       (firstElement, secondElement.getOrElse(-1))
     }
 }

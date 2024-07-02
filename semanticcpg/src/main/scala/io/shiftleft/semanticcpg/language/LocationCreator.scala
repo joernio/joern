@@ -29,13 +29,7 @@ object LocationCreator {
     }
   }
 
-  def apply(
-    node: StoredNode,
-    symbol: String,
-    label: String,
-    lineNumber: Option[Integer],
-    method: Method
-  ): NewLocation = {
+  def apply(node: StoredNode, symbol: String, label: String, lineNumber: Option[Int], method: Method): NewLocation = {
 
     if (method == null) {
       NewLocation().node(node)

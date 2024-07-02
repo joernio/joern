@@ -2,7 +2,7 @@ package io.joern.rubysrc2cpg.datastructures
 
 import better.files.File
 import io.joern.rubysrc2cpg.passes.GlobalTypes
-import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelPrefix
+import io.joern.rubysrc2cpg.passes.GlobalTypes.builtinPrefix
 import io.joern.x2cpg.Defines
 import io.joern.rubysrc2cpg.passes.Defines as RDefines
 import io.joern.x2cpg.datastructures.*
@@ -30,13 +30,13 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
   typesInScope.addAll(
     Seq(
       RubyType(
-        s"$kernelPrefix.Array",
-        List(RubyMethod("[]", List.empty, s"$kernelPrefix.Array", Option(s"$kernelPrefix.Array"))),
+        s"$builtinPrefix.Array",
+        List(RubyMethod("[]", List.empty, s"$builtinPrefix.Array", Option(s"$builtinPrefix.Array"))),
         List.empty
       ),
       RubyType(
-        s"$kernelPrefix.Hash",
-        List(RubyMethod("[]", List.empty, s"$kernelPrefix.Hash", Option(s"$kernelPrefix.Hash"))),
+        s"$builtinPrefix.Hash",
+        List(RubyMethod("[]", List.empty, s"$builtinPrefix.Hash", Option(s"$builtinPrefix.Hash"))),
         List.empty
       )
     )

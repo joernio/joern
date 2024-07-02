@@ -131,6 +131,7 @@ case class GoModDependency(
   usedPackages: util.Set[String] = new ConcurrentSkipListSet[String]()
 ) {
   def getIncludePackageRegex(): String = usedPackages.toArray.mkString("(", "|", ")")
+  def getIncludePackagesList(): String = usedPackages.toArray.mkString(",")
   def dependencyStr(): String          = s"$module@$version"
 }
 

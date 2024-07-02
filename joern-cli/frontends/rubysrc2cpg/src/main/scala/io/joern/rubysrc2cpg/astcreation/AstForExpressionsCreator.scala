@@ -241,9 +241,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         scope
           .tryResolveMethodInvocation("[]", typeFullName = Option(typeReference))
           .map { m =>
-            val expr = astForExpression(MemberCall(node.target, "::", "[]", node.indices)(node.span))
+            val expr = astForExpression(MemberCall(node.target, ".", "[]", node.indices)(node.span))
             expr.root.collect { case x: NewCall =>
-              x.methodFullName(s"$typeReference:${m.name}")
+              x.methodFullName(s"$typeReference.${m.name}")
               scope.tryResolveTypeReference(m.returnType).map(_.name).foreach(x.typeFullName(_))
             }
             expr
@@ -548,7 +548,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     val argumentAsts = node.elements.flatMap(elem =>
       elem match
-        case associationNode: Association => astForAssociationHash(associationNode, tmp)
+        case associationNode: Association         => astForAssociationHash(associationNode, tmp)
+        case splattingRubyNode: SplattingRubyNode => astForSplattingRubyNode(splattingRubyNode) :: Nil
         case node =>
           logger.warn(s"Could not represent element: ${code(node)} ($relativeFileName), skipping")
           astForUnknown(node) :: Nil
@@ -759,8 +760,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     val argumentAst = node.arguments.map(astForMethodCallArgument)
     val (dispatchType, methodFullName) =
-      if receiverType.startsWith(s"<${GlobalTypes.builtinPrefix}") then
-        (DispatchTypes.STATIC_DISPATCH, methodFullNameHint)
+      if receiverType.startsWith(GlobalTypes.builtinPrefix) then (DispatchTypes.STATIC_DISPATCH, methodFullNameHint)
       else (DispatchTypes.DYNAMIC_DISPATCH, XDefines.DynamicCallUnknownFullName)
 
     val call = callNode(node, code(node), methodName, methodFullName, dispatchType)

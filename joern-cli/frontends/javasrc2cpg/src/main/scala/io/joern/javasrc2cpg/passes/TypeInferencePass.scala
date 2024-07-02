@@ -6,7 +6,7 @@ import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 
@@ -15,7 +15,7 @@ import io.joern.x2cpg.Defines.UnresolvedNamespace
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyNames
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 
-class TypeInferencePass(cpg: Cpg) extends ConcurrentWriterCpgPass[Call](cpg) {
+class TypeInferencePass(cpg: Cpg) extends ForkJoinParallelCpgPass[Call](cpg) {
 
   private val cache = new GuavaCache(CacheBuilder.newBuilder().build[String, Option[Method]]())
   private val resolvedMethodIndex = cpg.method

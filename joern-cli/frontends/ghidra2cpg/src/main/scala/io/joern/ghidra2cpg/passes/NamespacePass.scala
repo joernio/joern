@@ -2,11 +2,11 @@ package io.joern.ghidra2cpg.passes
 
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 
 import java.io.File
 
-class NamespacePass(cpg: Cpg, programFile: File) extends ConcurrentWriterCpgPass[String](cpg) {
+class NamespacePass(cpg: Cpg, programFile: File) extends ForkJoinParallelCpgPass[String](cpg) {
   override def generateParts(): Array[String] =
     Array(programFile.getCanonicalFile.toString)
 

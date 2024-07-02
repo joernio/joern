@@ -104,7 +104,14 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       scope.surroundingAstLabel.foreach(typeDeclNode_.astParentType(_))
       scope.surroundingScopeFullName.foreach(typeDeclNode_.astParentFullName(_))
       createMethodTypeBindings(method, typeDeclNode_)
-      if isClosure then Ast(typeDeclNode_).withChild(Ast(newModifierNode(ModifierTypes.LAMBDA))) else Ast(typeDeclNode_)
+      if isClosure then
+        Ast(typeDeclNode_)
+          .withChild(Ast(newModifierNode(ModifierTypes.LAMBDA)))
+          .withChild(
+            // This member refers back to itself, as itself is the type decl bound to the respective method
+            Ast(NewMember().name("call").code("call").dynamicTypeHintFullName(Seq(fullName)).typeFullName(Defines.Any))
+          )
+      else Ast(typeDeclNode_)
     }
 
     val modifiers = mutable.Buffer(ModifierTypes.VIRTUAL)

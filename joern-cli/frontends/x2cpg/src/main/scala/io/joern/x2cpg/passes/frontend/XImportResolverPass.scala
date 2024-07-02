@@ -3,7 +3,7 @@ package io.joern.x2cpg.passes.frontend
 import better.files.File
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Import, Tag}
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.importresolver.EvaluatedImport
 import org.slf4j.{Logger, LoggerFactory}
@@ -12,7 +12,7 @@ import java.io.File as JFile
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 
-abstract class XImportResolverPass(cpg: Cpg) extends ConcurrentWriterCpgPass[Import](cpg) {
+abstract class XImportResolverPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Import](cpg) {
 
   protected val logger: Logger = LoggerFactory.getLogger(this.getClass)
   protected val codeRootDir: String = File(

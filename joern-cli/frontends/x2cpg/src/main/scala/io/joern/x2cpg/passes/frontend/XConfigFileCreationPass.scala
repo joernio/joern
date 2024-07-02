@@ -3,7 +3,7 @@ package io.joern.x2cpg.passes.frontend
 import better.files.File
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.NewConfigFile
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
@@ -15,7 +15,7 @@ import scala.util.{Failure, Success, Try}
   * to scan, but alternatively one can specify a directory on the `rootDir` parameter.
   */
 abstract class XConfigFileCreationPass(cpg: Cpg, private val rootDir: Option[String] = None)
-    extends ConcurrentWriterCpgPass[File](cpg) {
+    extends ForkJoinParallelCpgPass[File](cpg) {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
