@@ -176,6 +176,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       case typeDef: ITypedef =>
         // TODO handle typeDecl for now we just ignore this.
         Ast()
+      case other =>
+        notHandledYet(funcDecl)
     }
 
   }
