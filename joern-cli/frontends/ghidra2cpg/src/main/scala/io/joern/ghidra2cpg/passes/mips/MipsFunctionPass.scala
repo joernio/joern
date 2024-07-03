@@ -11,7 +11,8 @@ import io.joern.ghidra2cpg.utils.Utils.*
 import io.joern.ghidra2cpg.Types
 import io.joern.ghidra2cpg.utils.Decompiler
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNodeNew, NewBlock}
-import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, nodes}
+import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.*
