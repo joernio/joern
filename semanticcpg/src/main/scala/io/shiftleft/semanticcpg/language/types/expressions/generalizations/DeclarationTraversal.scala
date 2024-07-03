@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language.types.expressions.generalizations
 
-import flatgraph.help.{Doc, Traversal}
+import io.shiftleft.codepropertygraph.generated.help.{Doc, Traversal}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 

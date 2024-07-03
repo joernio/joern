@@ -1,6 +1,6 @@
 package io.joern.csharpsrc2cpg.astcreation
 
-import flatgraph.DiffGraphBuilder
+import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 import io.joern.csharpsrc2cpg.{CSharpDefines, Constants}
 import io.joern.csharpsrc2cpg.datastructures.{CSharpProgramSummary, CSharpScope}
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*

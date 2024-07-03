@@ -4,7 +4,7 @@ import io.shiftleft.codepropertygraph.generated.{Cpg, DiffGraphBuilder}
 import io.shiftleft.codepropertygraph.generated.Properties
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*
-import flatgraph.DiffGraphBuilder
+import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 
 object Overlays {
 

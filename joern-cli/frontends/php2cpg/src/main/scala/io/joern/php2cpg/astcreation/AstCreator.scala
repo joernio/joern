@@ -1,6 +1,6 @@
 package io.joern.php2cpg.astcreation
 
-import flatgraph.DiffGraphBuilder
+import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants, operatorSymbols}
 import io.joern.php2cpg.datastructures.ArrayIndexTracker
 import io.joern.php2cpg.parser.Domain.*

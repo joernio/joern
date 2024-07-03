@@ -1,6 +1,6 @@
 package io.joern.x2cpg
 
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, EdgeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode.PropertyDefaults
 import org.slf4j.LoggerFactory

@@ -1,6 +1,6 @@
 package io.joern.x2cpg
 
-import flatgraph.DiffGraphBuilder
+import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.utils.IntervalKeyPool
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode

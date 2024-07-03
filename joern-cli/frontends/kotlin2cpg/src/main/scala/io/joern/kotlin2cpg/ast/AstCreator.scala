@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.ast
 
-import flatgraph.DiffGraphBuilder
+import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.KtFileWithMeta
 import io.joern.kotlin2cpg.datastructures.Scope

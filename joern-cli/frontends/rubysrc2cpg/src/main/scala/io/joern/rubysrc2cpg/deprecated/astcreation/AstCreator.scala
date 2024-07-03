@@ -1,6 +1,6 @@
 package io.joern.rubysrc2cpg.deprecated.astcreation
 
-import flatgraph.DiffGraphBuilder
+import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser
 import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser.*
 import io.joern.rubysrc2cpg.deprecated.passes.Defines

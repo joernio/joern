@@ -5,7 +5,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Languages, ModifierTypes}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*
-import flatgraph.DiffGraphBuilder
+import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 
 object MockCpg {
 

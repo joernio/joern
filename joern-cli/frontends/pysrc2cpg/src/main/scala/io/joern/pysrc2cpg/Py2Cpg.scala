@@ -2,7 +2,7 @@ package io.joern.pysrc2cpg
 
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.frontendspecific.pysrc2cpg.Constants
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, DiffGraphBuilder}
 import io.shiftleft.codepropertygraph.generated.Languages
 import flatgraph.DiffGraphApplier
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder

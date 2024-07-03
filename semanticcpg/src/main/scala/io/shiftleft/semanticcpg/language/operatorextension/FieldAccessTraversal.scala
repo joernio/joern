@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language.operatorextension
 
-import flatgraph.help.{Doc, Traversal}
+import io.shiftleft.codepropertygraph.generated.help.{Doc, Traversal}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Member, TypeDecl}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.codepropertygraph.generated.help.Doc

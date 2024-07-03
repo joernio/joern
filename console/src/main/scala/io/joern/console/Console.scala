@@ -3,6 +3,7 @@ package io.joern.console
 import better.files.File
 import dotty.tools.repl.State
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.help.Doc
 import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
 import io.joern.console.cpgcreation.ImportCode
 import io.joern.console.workspacehandling.{Project, WorkspaceLoader, WorkspaceManager}

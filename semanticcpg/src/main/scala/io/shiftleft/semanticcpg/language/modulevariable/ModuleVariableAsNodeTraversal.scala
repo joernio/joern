@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language.modulevariable
 
-import flatgraph.help.{Doc, Traversal}
+import io.shiftleft.codepropertygraph.generated.help.{Doc, Traversal}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.semanticcpg.language.*
