@@ -1,6 +1,5 @@
 package io.joern.gosrc2cpg.model
 
-import io.joern.gosrc2cpg.Config
 import io.joern.gosrc2cpg.utils.UtilityConstants.fileSeparateorPattern
 import upickle.default.*
 
@@ -9,11 +8,10 @@ import java.util.Set
 import java.util.concurrent.ConcurrentSkipListSet
 import scala.util.control.Breaks.*
 
-class GoModHelper(config: Option[Config] = None, meta: Option[GoMod] = None) {
+class GoModHelper(modulePath: Option[String] = None, meta: Option[GoMod] = None) {
 
   def getModMetaData(): Option[GoMod] = meta
   def getNameSpace(compilationUnitFilePath: String, pkg: String): String = {
-
     if (meta.isEmpty || compilationUnitFilePath == null || compilationUnitFilePath.isEmpty) {
       // When there no go.mod file, we don't have the information about the module prefix
       // In this case we will use package name as a namespace
@@ -29,7 +27,7 @@ class GoModHelper(config: Option[Config] = None, meta: Option[GoMod] = None) {
       // 1. if there is go file inside <root project path>/first/second/test.go (package main) => '/first/second/main'
       // 2. <root project path>/test.go (package main) => 'main'
 
-      val remainingpath = compilationUnitFilePath.stripPrefix(config.get.inputPath)
+      val remainingpath = compilationUnitFilePath.stripPrefix(modulePath.get)
       val pathTokens    = remainingpath.split(fileSeparateorPattern)
       val tokens        = pathTokens.dropRight(1).filterNot(x => x == null || x.trim.isEmpty) :+ pkg
       return tokens.mkString("/")
@@ -39,7 +37,7 @@ class GoModHelper(config: Option[Config] = None, meta: Option[GoMod] = None) {
     // go.mod (module jorn.io/trial) and <root project path>/foo.go (package foo) => jorn.io/trial>foo
     // go.mod (module jorn.io/trial) and <root project path>/first/foo.go (package first) => jorn.io/trial/first
     // go.mod (module jorn.io/trial) and <root project path>/first/foo.go (package bar) => jorn.io/trial/first
-    val remainingpath = compilationUnitFilePath.stripPrefix(config.get.inputPath)
+    val remainingpath = compilationUnitFilePath.stripPrefix(modulePath.get)
     val pathTokens    = remainingpath.split(fileSeparateorPattern)
     // prefixing module name i.e. jorn.io/trial
     val tokens = meta.get.module.name +: pathTokens.dropRight(1).filterNot(x => x == null || x.trim.isEmpty)

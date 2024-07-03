@@ -10,12 +10,17 @@ import io.joern.x2cpg.utils.Environment.OperatingSystemType.OperatingSystemType
 import io.joern.x2cpg.utils.{Environment, ExternalCommand}
 import org.slf4j.LoggerFactory
 
+import java.io.File as JFile
+import java.nio.file.Paths
+import scala.collection.mutable.ListBuffer
+import scala.jdk.CollectionConverters.*
 import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 
 object AstGenRunner {
   private val logger = LoggerFactory.getLogger(getClass)
   case class GoAstGenRunnerResult(
+    modulePath: String = "",
     parsedModFile: Option[String] = None,
     parsedFiles: List[String] = List.empty,
     skippedFiles: List[String] = List.empty
@@ -76,7 +81,7 @@ class AstGenRunner(config: Config, includeFileRegex: String = "") extends AstGen
     ExternalCommand.run(s"$astGenCommand $excludeCommand $includeCommand -out ${out.toString()} $in", ".")
   }
 
-  override def execute(out: File): AstGenRunnerResult = {
+  def executeForGo(out: File): List[GoAstGenRunnerResult] = {
     implicit val metaData: AstGenProgramMetaData = config.astGenMetaData
     val in                                       = File(config.inputPath)
     logger.info(s"Running goastgen in '$config.inputPath' ...")
@@ -91,11 +96,128 @@ class AstGenRunner(config: Config, includeFileRegex: String = "") extends AstGen
         val parsedModFile = filterModFile(srcFiles, out)
         val parsed        = filterFiles(srcFiles, out)
         val skipped       = skippedFiles(in, result.toList)
-        GoAstGenRunnerResult(parsedModFile.headOption, parsed, skipped)
+        segregateByModule(config.inputPath, out.toString, parsedModFile, parsed, skipped)
       case Failure(f) =>
         logger.error("\t- running astgen failed!", f)
-        GoAstGenRunnerResult()
+        List()
     }
   }
 
+  /** Segregate all parsed files including go.mod files under separate modules. This will also segregate modules defined
+    * inside another module
+    */
+  private def segregateByModule(
+    inputPath: String,
+    outPath: String,
+    parsedModFiles: List[String],
+    parsedFiles: List[String],
+    skippedFiles: List[String]
+  ): List[GoAstGenRunnerResult] = {
+    val moduleMeta: ModuleMeta =
+      ModuleMeta(inputPath, outPath, None, ListBuffer[String](), ListBuffer[String](), ListBuffer[ModuleMeta]())
+    if (parsedModFiles.size > 0) {
+      parsedModFiles
+        .sortBy(_.split(JFile.separator).length)
+        .foreach(modFile => {
+          moduleMeta.addModFile(modFile, inputPath, outPath)
+        })
+      parsedFiles.foreach(moduleMeta.addParsedFile)
+      skippedFiles.foreach(moduleMeta.addSkippedFile)
+      moduleMeta.getOnlyChilds()
+    } else {
+      parsedFiles.foreach(moduleMeta.addParsedFile)
+      skippedFiles.foreach(moduleMeta.addSkippedFile)
+      moduleMeta.getAllChilds()
+    }
+  }
+
+  private def getParentFolder(path: String): String = {
+    val parent = Paths.get(path).getParent
+    if (parent != null) parent.toString else ""
+  }
+
+  case class ModuleMeta(
+    modulePath: String,
+    outputModulePath: String,
+    modFilePath: Option[String],
+    parsedFiles: ListBuffer[String],
+    skippedFiles: ListBuffer[String],
+    childModules: ListBuffer[ModuleMeta]
+  ) {
+    def addModFile(modFile: String, inputPath: String, outPath: String): Unit = {
+      import scala.util.control.Breaks.*
+      var processed = false
+      breakable {
+        childModules.foreach(childMod => {
+          if (modFile.startsWith(childMod.outputModulePath)) {
+            childMod.addModFile(modFile, inputPath, outPath)
+            processed = true
+            break
+          }
+        })
+      }
+      if (!processed) {
+        val outmodpath = getParentFolder(modFile)
+        childModules.addOne(
+          ModuleMeta(
+            outmodpath.replace(outPath, inputPath),
+            outmodpath,
+            Some(modFile),
+            ListBuffer[String](),
+            ListBuffer[String](),
+            ListBuffer[ModuleMeta]()
+          )
+        )
+      }
+    }
+
+    def addParsedFile(parsedFile: String): Unit = {
+      import scala.util.control.Breaks.*
+      var processed = false
+      breakable {
+        childModules.foreach(childMod => {
+          if (parsedFile.startsWith(childMod.outputModulePath)) {
+            childMod.addParsedFile(parsedFile)
+            processed = true
+            break
+          }
+        })
+      }
+      if (!processed) {
+        parsedFiles.addOne(parsedFile)
+      }
+    }
+
+    def addSkippedFile(skippedFile: String): Unit = {
+      import scala.util.control.Breaks.*
+      var processed = false
+      breakable {
+        childModules.foreach(childMod => {
+          if (skippedFile.startsWith(childMod.outputModulePath)) {
+            childMod.addSkippedFile(skippedFile)
+            processed = true
+            break
+          }
+        })
+      }
+      if (!processed) {
+        skippedFiles.addOne(skippedFile)
+      }
+    }
+
+    def getOnlyChilds(): List[GoAstGenRunnerResult] = {
+      childModules.flatMap(_.getAllChilds()).toList
+    }
+
+    def getAllChilds(): List[GoAstGenRunnerResult] = {
+      getOnlyChilds() ++ List(
+        GoAstGenRunnerResult(
+          modulePath = modulePath,
+          parsedModFile = modFilePath,
+          parsedFiles = parsedFiles.toList,
+          skippedFiles = skippedFiles.toList
+        )
+      )
+    }
+  }
 }
