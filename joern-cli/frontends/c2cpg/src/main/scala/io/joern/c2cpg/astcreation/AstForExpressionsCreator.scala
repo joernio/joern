@@ -18,6 +18,8 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTQualifiedName
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPClosureType
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalFunctionCall
 
+import scala.util.Try
+
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   private def astForBinaryExpression(bin: IASTBinaryExpression): Ast = {
@@ -145,9 +147,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
             notHandledYet(other)
         }
       case classType: ICPPClassType =>
-        val evaluation   = call.getEvaluation.asInstanceOf[EvalFunctionCall]
-        val functionType = evaluation.getOverload.getType
-        val signature    = functionTypeToSignature(functionType)
+        val evaluation = call.getEvaluation.asInstanceOf[EvalFunctionCall]
+
+        val functionType = Try(evaluation.getOverload.getType).toOption
+        val signature    = functionType.map(functionTypeToSignature).getOrElse(X2CpgDefines.UnresolvedSignature)
         val name         = Defines.OperatorCall
 
         classType match {
@@ -200,7 +203,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case _: IProblemBinding =>
         astForCppCallExpressionUntyped(call)
       case other =>
-        notHandledYet(call)
         astForCppCallExpressionUntyped(call)
     }
   }
