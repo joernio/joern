@@ -326,7 +326,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
   protected def astForTSDeclareFunction(func: BabelNodeInfo): Ast = {
     val functionNode = createMethodDefinitionNode(func)
-    val bindingNode  = newBindingNode("", "", "")
+    val bindingNode  = newBindingNode(functionNode.name, "", functionNode.fullName)
     diffGraph.addEdge(getParentTypeDecl, bindingNode, EdgeTypes.BINDS)
     diffGraph.addEdge(bindingNode, functionNode, EdgeTypes.REF)
     addModifier(functionNode, func.json)

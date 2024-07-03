@@ -181,7 +181,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val memberNode_ = nodeInfo.node match {
       case TSDeclareMethod | TSDeclareFunction =>
         val function    = createMethodDefinitionNode(nodeInfo)
-        val bindingNode = newBindingNode("", "", "")
+        val bindingNode = newBindingNode(function.name, "", function.fullName)
         diffGraph.addEdge(typeDeclNode, bindingNode, EdgeTypes.BINDS)
         diffGraph.addEdge(bindingNode, function, EdgeTypes.REF)
         addModifier(function, nodeInfo.json)
@@ -189,7 +189,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
           .possibleTypes(possibleTypes)
       case ClassMethod | ClassPrivateMethod =>
         val function    = createMethodAstAndNode(nodeInfo).methodNode
-        val bindingNode = newBindingNode("", "", "")
+        val bindingNode = newBindingNode(function.name, "", function.fullName)
         diffGraph.addEdge(typeDeclNode, bindingNode, EdgeTypes.BINDS)
         diffGraph.addEdge(bindingNode, function, EdgeTypes.REF)
         addModifier(function, nodeInfo.json)
@@ -500,7 +500,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val constructorNode = interfaceConstructor(typeName, tsInterface)
     diffGraph.addEdge(constructorNode, NewModifier().modifierType(ModifierTypes.CONSTRUCTOR), EdgeTypes.AST)
 
-    val constructorBindingNode = newBindingNode("", "", "")
+    val constructorBindingNode = newBindingNode(constructorNode.name, "", constructorNode.fullName)
     diffGraph.addEdge(typeDeclNode_, constructorBindingNode, EdgeTypes.BINDS)
     diffGraph.addEdge(constructorBindingNode, constructorNode, EdgeTypes.REF)
 
@@ -514,7 +514,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       val memberNodes = nodeInfo.node match {
         case TSCallSignatureDeclaration | TSMethodSignature =>
           val functionNode = createMethodDefinitionNode(nodeInfo)
-          val bindingNode  = newBindingNode("", "", "")
+          val bindingNode  = newBindingNode(functionNode.name, "", functionNode.fullName)
           diffGraph.addEdge(typeDeclNode_, bindingNode, EdgeTypes.BINDS)
           diffGraph.addEdge(bindingNode, functionNode, EdgeTypes.REF)
           addModifier(functionNode, nodeInfo.json)
