@@ -11,4 +11,15 @@ class AssignmentParserTests extends RubyParserFixture with Matchers {
   "Multiple assignment" in {
     test("p, q = [foo(), bar()]")
   }
+
+  "Destructured Assignment" in {
+    test("a, b, c = 1, 2, 3")
+    test("a, b, c, d = 1, 2, 3")
+    test("a, b, *c = 1, 2, 3, 4")
+    test("a, *b, c = 1, 2, 3")
+    test("*a, b, c = 1, 2, 3, 4")
+    test("a = 1, 2, 3, 4")
+    test("a, b, c = 1, 2, *list")
+    test("a, b, c = 1, *list")
+  }
 }

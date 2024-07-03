@@ -19,6 +19,11 @@ class UnlessConditionParserTests extends RubyParserFixture with Matchers {
         |end
         |""".stripMargin)
 
+    test("""unless __LINE__ == 0 then
+        |else
+        |end
+        |""".stripMargin)
+
     test("return(value) unless item")
   }
 }
