@@ -171,7 +171,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     Ast(typeRefNode(node, code(node), node.typeFullName))
   }
 
-  protected def astForMemberCall(node: MemberCall): Ast = {
+  protected def astForMemberCall(node: MemberCall, isStatic: Boolean = false): Ast = {
 
     def createMemberCall(n: MemberCall): Ast = {
       val baseAst     = astForExpression(n.target) // this wil be something like self.Foo
@@ -195,12 +195,15 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         }
         .getOrElse(XDefines.Any -> XDefines.DynamicCallUnknownFullName)
       val argumentAsts = n.arguments.map(astForMethodCallArgument)
-      val dispatchType =
-        if (n.methodName == Defines.TypeDeclBody) DispatchTypes.STATIC_DISPATCH else DispatchTypes.DYNAMIC_DISPATCH
+      val dispatchType = if (isStatic) DispatchTypes.STATIC_DISPATCH else DispatchTypes.DYNAMIC_DISPATCH
 
       val call = callNode(n, code(n), n.methodName, XDefines.DynamicCallUnknownFullName, dispatchType)
       if methodFullName != XDefines.DynamicCallUnknownFullName then call.possibleTypes(Seq(methodFullName))
-      callAst(call, argumentAsts, base = Option(baseAst), receiver = Option(receiverAst))
+      if (isStatic) {
+        callAst(call, argumentAsts, base = Option(baseAst)).copy(receiverEdges = Nil)
+      } else {
+        callAst(call, argumentAsts, base = Option(baseAst), receiver = Option(receiverAst))
+      }
     }
 
     def determineMemberAccessBase(target: RubyNode): RubyNode = target match {

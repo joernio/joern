@@ -150,7 +150,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   }
 
   private def astForTypeDeclBodyCall(node: TypeDeclBodyCall, typeFullName: String): Ast = {
-    val callAst = astForMemberCall(node.toMemberCall)
+    val callAst = astForMemberCall(node.toMemberCall, isStatic = true)
     callAst.nodes.collectFirst {
       case c: NewCall if c.name == Defines.TypeDeclBody => c.methodFullName(s"$typeFullName:${Defines.TypeDeclBody}")
     }
