@@ -141,12 +141,20 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         .withChildren(fieldSingletonMemberNodes.map(_._2))
     val bodyMemberCallAst =
       node.bodyMemberCall match {
-        case Some(bodyMemberCall) => astForMemberCall(bodyMemberCall)
+        case Some(bodyMemberCall) => astForTypeDeclBodyCall(bodyMemberCall, classFullName)
         case None                 => Ast()
       }
 
     (typeDeclAst :: singletonTypeDeclAst :: Nil).foreach(Ast.storeInDiffGraph(_, diffGraph))
     prefixAst :: bodyMemberCallAst :: Nil
+  }
+
+  private def astForTypeDeclBodyCall(node: TypeDeclBodyCall, typeFullName: String): Ast = {
+    val callAst = astForMemberCall(node.toMemberCall, isStatic = true)
+    callAst.nodes.collectFirst {
+      case c: NewCall if c.name == Defines.TypeDeclBody => c.methodFullName(s"$typeFullName:${Defines.TypeDeclBody}")
+    }
+    callAst
   }
 
   private def createTypeRefPointer(typeDecl: NewTypeDecl): Ast = {

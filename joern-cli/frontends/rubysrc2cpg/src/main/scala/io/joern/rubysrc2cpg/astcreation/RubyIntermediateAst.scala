@@ -52,14 +52,14 @@ object RubyIntermediateAst {
     def name: RubyNode
     def baseClass: Option[RubyNode]
     def body: RubyNode
-    def bodyMemberCall: Option[MemberCall]
+    def bodyMemberCall: Option[TypeDeclBodyCall]
   }
 
   final case class ModuleDeclaration(
     name: RubyNode,
     body: RubyNode,
     fields: List[RubyNode & RubyFieldIdentifier],
-    bodyMemberCall: Option[MemberCall]
+    bodyMemberCall: Option[TypeDeclBodyCall]
   )(span: TextSpan)
       extends RubyNode(span)
       with TypeDeclaration {
@@ -71,7 +71,7 @@ object RubyIntermediateAst {
     baseClass: Option[RubyNode],
     body: RubyNode,
     fields: List[RubyNode & RubyFieldIdentifier],
-    bodyMemberCall: Option[MemberCall]
+    bodyMemberCall: Option[TypeDeclBodyCall]
   )(span: TextSpan)
       extends RubyNode(span)
       with TypeDeclaration
@@ -82,7 +82,7 @@ object RubyIntermediateAst {
     name: RubyNode,
     baseClass: Option[RubyNode],
     body: RubyNode,
-    bodyMemberCall: Option[MemberCall] = None
+    bodyMemberCall: Option[TypeDeclBodyCall] = None
   )(span: TextSpan)
       extends RubyNode(span)
       with AnonymousTypeDeclaration
@@ -91,7 +91,7 @@ object RubyIntermediateAst {
     name: RubyNode,
     baseClass: Option[RubyNode],
     body: RubyNode,
-    bodyMemberCall: Option[MemberCall] = None
+    bodyMemberCall: Option[TypeDeclBodyCall] = None
   )(span: TextSpan)
       extends RubyNode(span)
       with AnonymousTypeDeclaration
@@ -367,6 +367,19 @@ object RubyIntermediateAst {
     span: TextSpan
   ) extends RubyNode(span)
       with RubyCall
+
+  /** Special class for `<body>` calls of type decls.
+    */
+  final case class TypeDeclBodyCall(target: RubyNode, typeName: String)(span: TextSpan)
+      extends RubyNode(span)
+      with RubyCall {
+
+    def toMemberCall: MemberCall = MemberCall(target, op, Defines.TypeDeclBody, arguments)(span)
+
+    def arguments: List[RubyNode] = Nil
+
+    def op: String = "::"
+  }
 
   final case class MemberCallWithBlock(
     target: RubyNode,

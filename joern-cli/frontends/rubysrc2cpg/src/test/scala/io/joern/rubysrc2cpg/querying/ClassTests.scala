@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.querying
 import io.joern.rubysrc2cpg.passes.{GlobalTypes, Defines as RubyDefines}
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
@@ -576,6 +576,23 @@ class ClassTests extends RubyCode2CpgFixture {
             case xs => fail(s"Expected one method for init, instead got ${xs.name.mkString(", ")}")
           }
         case xs => fail(s"Expected TypeDecl for Foo, instead got ${xs.name.mkString(", ")}")
+      }
+    }
+
+    "call the body method" in {
+      inside(cpg.call.nameExact(RubyDefines.TypeDeclBody).headOption) {
+        case Some(bodyCall) =>
+          bodyCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+          bodyCall.methodFullName shouldBe s"Test0.rb:<global>::program.Foo:${RubyDefines.TypeDeclBody}"
+
+          bodyCall.receiver.isEmpty shouldBe true
+          inside(bodyCall.argumentOption(0)) {
+            case Some(selfArg: Call) =>
+              selfArg.name shouldBe Operators.fieldAccess
+              selfArg.code shouldBe "self::Foo"
+            case None => fail("Expected `self` argument")
+          }
+        case None => fail("Expected <body> call")
       }
     }
   }
