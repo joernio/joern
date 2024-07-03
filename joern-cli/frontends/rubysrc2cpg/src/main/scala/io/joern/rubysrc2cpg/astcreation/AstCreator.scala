@@ -10,8 +10,7 @@ import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Modif
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.{Logger, LoggerFactory}
-import overflowdb.BatchedUpdate
-import overflowdb.BatchedUpdate.DiffGraphBuilder
+import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 
 import java.util.regex.Matcher
 
@@ -51,7 +50,7 @@ class AstCreator(
   private def relativeUnixStyleFileName =
     relativeFileName.replaceAll(Matcher.quoteReplacement(java.io.File.separator), "/")
 
-  override def createAst(): BatchedUpdate.DiffGraphBuilder = {
+  override def createAst(): DiffGraphBuilder = {
     val rootNode = new RubyNodeCreator().visit(programCtx).asInstanceOf[StatementList]
     val ast      = astForRubyFile(rootNode)
     Ast.storeInDiffGraph(ast, diffGraph)

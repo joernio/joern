@@ -5,7 +5,6 @@ import io.shiftleft.codepropertygraph.generated.{Cpg, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, MethodParameterIn, MethodReturn, StoredNode}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language.*
-import overflowdb.BatchedUpdate
 
 import java.io.File
 import java.util.regex.{Matcher, Pattern}
@@ -74,7 +73,7 @@ class DynamicTypeHintFullNamePass(cpg: Cpg) extends ForkJoinParallelCpgPass[CfgN
     fullName.replaceFirst("\\.py:<module>", "").replaceAll(Pattern.quote(File.separator), ".")
 
   private def setTypeHints(
-    diffGraph: BatchedUpdate.DiffGraphBuilder,
+    diffGraph: DiffGraphBuilder,
     node: StoredNode,
     typeHint: String,
     alias: String,

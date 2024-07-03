@@ -14,7 +14,7 @@ import scala.jdk.CollectionConverters.*
 
 trait LinkingUtil {
 
-  import overflowdb.BatchedUpdate.DiffGraphBuilder
+  import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 
   val MAX_BATCH_SIZE: Int = 100
 

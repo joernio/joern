@@ -1,9 +1,8 @@
 package io.joern.rubysrc2cpg.deprecated.astcreation
 
 import io.joern.x2cpg.datastructures.Scope
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, EdgeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{DeclarationNew, NewIdentifier, NewLocal, NewNode}
-import overflowdb.BatchedUpdate
 
 import scala.collection.mutable
 
@@ -39,18 +38,16 @@ class RubyScope extends Scope[String, NewIdentifier, NewNode] {
     * @param paramNames
     *   the names of parameters.
     */
-  def createAndLinkLocalNodes(
-    diffGraph: BatchedUpdate.DiffGraphBuilder,
-    paramNames: Set[String] = Set.empty
-  ): List[DeclarationNew] = stack.headOption match
-    case Some(top) => scopeToVarMap.buildVariableGroupings(top.scopeNode, paramNames ++ Set("this"), diffGraph)
-    case None      => List.empty[DeclarationNew]
+  def createAndLinkLocalNodes(diffGraph: DiffGraphBuilder, paramNames: Set[String] = Set.empty): List[DeclarationNew] =
+    stack.headOption match
+      case Some(top) => scopeToVarMap.buildVariableGroupings(top.scopeNode, paramNames ++ Set("this"), diffGraph)
+      case None      => List.empty[DeclarationNew]
 
-    /** @param identifier
-      *   the identifier to count
-      * @return
-      *   the number of times the given identifier occurs in the immediate scope.
-      */
+      /** @param identifier
+        *   the identifier to count
+        * @return
+        *   the number of times the given identifier occurs in the immediate scope.
+        */
   def numVariableReferences(identifier: String): Int = {
     stack.map(_.scopeNode).flatMap(scopeToVarMap.get).flatMap(_.get(identifier)).map(_.ids.size).headOption.getOrElse(0)
   }
@@ -93,7 +90,7 @@ class RubyScope extends Scope[String, NewIdentifier, NewNode] {
     def buildVariableGroupings(
       key: ScopeNodeType,
       paramNames: Set[String],
-      diffGraph: BatchedUpdate.DiffGraphBuilder
+      diffGraph: DiffGraphBuilder
     ): List[DeclarationNew] =
       scopeMap.get(key) match
         case Some(varMap) =>

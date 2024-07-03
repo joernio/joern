@@ -14,7 +14,6 @@ import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.antlr.v4.runtime.ParserRuleContext
 import org.slf4j.LoggerFactory
-import overflowdb.BatchedUpdate
 
 import java.io.File as JFile
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
@@ -74,7 +73,7 @@ class AstCreator(
   // Hashmap to store used variable names, to avoid duplicates in case of un-named variables
   protected val usedVariableNames = mutable.HashMap.empty[String, Int]
 
-  override def createAst(): BatchedUpdate.DiffGraphBuilder = createAstForProgramCtx(programCtx)
+  override def createAst(): DiffGraphBuilder = createAstForProgramCtx(programCtx)
 
   private def createAstForProgramCtx(programCtx: DeprecatedRubyParser.ProgramContext) = {
     val name     = ":program"

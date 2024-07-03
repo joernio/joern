@@ -3,7 +3,7 @@ package io.shiftleft.semanticcpg.language.importresolver
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Declaration, Member, Tag}
 import io.shiftleft.semanticcpg.language.*
-import overflowdb.traversal.help.Doc
+import io.shiftleft.codepropertygraph.generated.help.Doc
 
 class ResolvedImportAsTagExt(node: Tag) extends AnyVal {
 

@@ -15,7 +15,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.LoggerFactory
-import overflowdb.BatchedUpdate
 
 import java.nio.charset.StandardCharsets
 
@@ -31,7 +30,7 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
 
   private def getNewTmpName(prefix: String = "tmp"): String = s"$prefix${tmpKeyPool.next.toString}"
 
-  override def createAst(): BatchedUpdate.DiffGraphBuilder = {
+  override def createAst(): DiffGraphBuilder = {
     val ast = astForPhpFile(phpAst)
     storeInDiffGraph(ast, diffGraph)
     diffGraph
