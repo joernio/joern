@@ -466,12 +466,14 @@ class ClassTests extends RubyCode2CpgFixture {
     }
   }
 
-  "fully qualified base types" should {
+  "base types names extending a class in the definition" should {
 
     val cpg = code("""require "rails/all"
         |
         |module Bar
-        | class Baz
+        | module Baz
+        |   class Boz
+        |   end
         | end
         |end
         |
@@ -479,12 +481,12 @@ class ClassTests extends RubyCode2CpgFixture {
         |  class Application < Rails::Application
         |  end
         |
-        |  class Foo < Bar::Baz
+        |  class Foo < Bar::Baz::Boz
         |  end
         |end
         |""".stripMargin)
 
-    "not confuse the internal `Application` with `Rails::Application` and leave the type unresolved" in {
+    "handle a qualified base type from an external type correctly" in {
       inside(cpg.typeDecl("Application").headOption) {
         case Some(app) =>
           app.inheritsFromTypeFullName.head shouldBe "Rails.Application"
@@ -492,10 +494,10 @@ class ClassTests extends RubyCode2CpgFixture {
       }
     }
 
-    "resolve the internal type being referenced" in {
+    "handle a deeply qualified internal base type correctly" in {
       inside(cpg.typeDecl("Foo").headOption) {
         case Some(app) =>
-          app.inheritsFromTypeFullName.head shouldBe "Test0.rb:<global>::program.Bar.Baz"
+          app.inheritsFromTypeFullName.head shouldBe "Bar.Baz.Boz"
         case None => fail("Expected a type decl for 'Foo', instead got nothing")
       }
     }

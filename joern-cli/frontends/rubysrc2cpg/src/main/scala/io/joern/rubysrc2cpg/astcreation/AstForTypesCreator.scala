@@ -27,26 +27,21 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         astForUnknown(node) :: Nil
   }
 
-  private def getBaseClassName(node: RubyNode): Option[String] = {
+  private def getBaseClassName(node: RubyNode): String = {
     node match
       case simpleIdentifier: SimpleIdentifier =>
-        val name = simpleIdentifier.text
-        scope.lookupVariable(name) match {
-          case Some(_) => Option(name) // in the case of singleton classes, we want to keep the variable name
-          case None    => scope.tryResolveTypeReference(name).map(_.name).orElse(Option(name))
-        }
+        simpleIdentifier.text
       case _: SelfIdentifier =>
-        scope.surroundingTypeFullName
+        Defines.Self
       case qualifiedBaseClass: MemberAccess =>
-        scope
-          .tryResolveTypeReference(qualifiedBaseClass.toString)
-          .map(_.name)
-          .orElse(Option(qualifiedBaseClass.toString))
+        qualifiedBaseClass.text.replace("::", ".")
+      case qualifiedBaseClass: MemberCall =>
+        qualifiedBaseClass.text.replace("::", ".")
       case x =>
         logger.warn(
-          s"Base class names of type ${x.getClass} are not supported yet: ${code(node)} ($relativeFileName), skipping"
+          s"Base class names of type ${x.getClass} are not supported yet: ${code(node)} ($relativeFileName), returning string as-is"
         )
-        None
+        x.text
   }
 
   private def astForSimpleNamedClassDeclaration(
@@ -54,7 +49,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     nameIdentifier: SimpleIdentifier
   ): Seq[Ast] = {
     val className     = nameIdentifier.text
-    val inheritsFrom  = node.baseClass.flatMap(getBaseClassName).toList
+    val inheritsFrom  = node.baseClass.map(getBaseClassName).toList
     val classFullName = computeClassFullName(className)
     val typeDecl = typeDeclNode(
       node = node,
