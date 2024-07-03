@@ -1,8 +1,8 @@
 package io.joern.javasrc2cpg.querying.dataflow
 
 import io.joern.javasrc2cpg.testfixtures.{JavaDataflowFixture, JavaSrcCode2CpgFixture}
-import io.joern.dataflowengineoss.language._
-import io.shiftleft.semanticcpg.language._
+import io.joern.dataflowengineoss.language.*
+import io.shiftleft.semanticcpg.language.*
 
 class NewFunctionCallTests extends JavaSrcCode2CpgFixture(withOssDataflow = true) {
   "Dataflow through function calls" should {

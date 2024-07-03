@@ -5,7 +5,7 @@ import org.reflections8.util.{ClasspathHelper, ConfigurationBuilder}
 
 import java.lang.reflect.{Method, Parameter}
 import scala.annotation.unused
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 trait QueryBundle
 

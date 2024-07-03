@@ -1,7 +1,7 @@
 package io.joern.ghidra2cpg.querying.x86
 
 import io.joern.ghidra2cpg.fixtures.GhidraBinToCpgSuite
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.{FileTraversal, NamespaceTraversal}
 
 class NamespaceBlockTests extends GhidraBinToCpgSuite {

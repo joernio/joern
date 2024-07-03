@@ -3,7 +3,7 @@ package io.joern.kotlin2cpg.validation
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Local, MethodParameterIn}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 // TODO: also add test with refs inside TYPE_DECL
 

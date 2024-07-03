@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.deprecated.passes.ast
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class IdentifierLocalTests extends RubyCode2CpgFixture(useDeprecatedFrontend = true) {
 

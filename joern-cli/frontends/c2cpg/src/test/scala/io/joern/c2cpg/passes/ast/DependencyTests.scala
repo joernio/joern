@@ -2,7 +2,7 @@ package io.joern.c2cpg.passes.ast
 
 import io.joern.c2cpg.testfixtures.AstC2CpgSuite
 
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class DependencyTests extends AstC2CpgSuite {
 

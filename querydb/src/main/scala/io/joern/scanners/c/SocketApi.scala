@@ -1,11 +1,11 @@
 package io.joern.scanners.c
 
 import io.joern.scanners.{Crew, QueryTags}
-import io.joern.console._
+import io.joern.console.*
 import io.joern.dataflowengineoss.queryengine.EngineContext
-import io.joern.macros.QueryMacros._
-import io.shiftleft.semanticcpg.language._
-import QueryLangExtensions._
+import io.joern.macros.QueryMacros.*
+import io.shiftleft.semanticcpg.language.*
+import QueryLangExtensions.*
 
 object SocketApi extends QueryBundle {
 

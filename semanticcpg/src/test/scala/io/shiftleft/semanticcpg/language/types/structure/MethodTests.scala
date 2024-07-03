@@ -2,7 +2,7 @@ package io.shiftleft.semanticcpg.language.types.structure
 
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Expression, Literal, Method, NamespaceBlock, TypeDecl}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.testing.MockCpg
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec

@@ -4,7 +4,7 @@ import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.StoredNode
 import io.shiftleft.semanticcpg.dotgenerator.DotSerializer.Edge
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 class CdgGenerator extends CfgGenerator {
 

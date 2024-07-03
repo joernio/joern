@@ -1,11 +1,11 @@
 package io.joern.console
 
-import better.files.Dsl._
-import better.files._
-import io.joern.console.testing._
+import better.files.Dsl.*
+import better.files.*
+import io.joern.console.testing.*
 import io.joern.x2cpg.X2Cpg.defaultOverlayCreators
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec

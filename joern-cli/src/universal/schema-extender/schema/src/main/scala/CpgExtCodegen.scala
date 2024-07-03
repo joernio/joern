@@ -1,4 +1,4 @@
-import io.shiftleft.codepropertygraph.schema._
+import io.shiftleft.codepropertygraph.schema.*
 import overflowdb.codegen.CodeGen
 import overflowdb.schema.SchemaBuilder
 import overflowdb.schema.Property.ValueType

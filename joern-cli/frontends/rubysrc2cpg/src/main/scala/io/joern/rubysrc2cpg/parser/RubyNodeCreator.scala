@@ -1,6 +1,6 @@
 package io.joern.rubysrc2cpg.parser
 
-import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
+import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{Block, *}
 import io.joern.rubysrc2cpg.parser.AntlrContextHelpers.*
 import io.joern.rubysrc2cpg.parser.RubyParser.{CommandWithDoBlockContext, ConstantVariableReferenceContext}
 import io.joern.rubysrc2cpg.passes.Defines
@@ -611,7 +611,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
 
   override def visitLambdaExpression(ctx: RubyParser.LambdaExpressionContext): RubyNode = {
     val parameters = Option(ctx.parameterList()).fold(List())(_.parameters).map(visit)
-    val body       = visit(ctx.block())
+    val body       = visit(ctx.block()).asInstanceOf[Block]
     ProcOrLambdaExpr(Block(parameters, body)(ctx.toTextSpan))(ctx.toTextSpan)
   }
 

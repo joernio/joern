@@ -1,9 +1,9 @@
 package io.shiftleft.semanticcpg.language
 
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{NodeTypes, Properties}
-import overflowdb._
+import overflowdb.*
 import overflowdb.traversal.help
 import overflowdb.traversal.help.Doc
 import overflowdb.traversal.{InitialTraversal, TraversalSource}

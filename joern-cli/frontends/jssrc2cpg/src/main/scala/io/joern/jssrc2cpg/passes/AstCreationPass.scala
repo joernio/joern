@@ -15,7 +15,7 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import java.nio.file.Paths
 import scala.util.{Failure, Success, Try}
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: Config, report: Report = new Report())(
   implicit withSchemaValidation: ValidationMode

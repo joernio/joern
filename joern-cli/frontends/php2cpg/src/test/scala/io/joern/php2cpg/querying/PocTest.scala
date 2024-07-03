@@ -4,7 +4,7 @@ import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class PocTest extends PhpCode2CpgFixture {
 

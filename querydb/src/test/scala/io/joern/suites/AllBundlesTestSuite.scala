@@ -2,7 +2,7 @@ package io.joern.suites
 
 import io.joern.console.QueryDatabase
 import org.scalatest.wordspec.AnyWordSpec
-import org.scalatest.matchers.should.Matchers._
+import org.scalatest.matchers.should.Matchers.*
 
 class AllBundlesTestSuite extends AnyWordSpec {
   val argumentProvider = new QDBArgumentProvider(3)

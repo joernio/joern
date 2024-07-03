@@ -3,7 +3,7 @@
 package io.joern.swiftsrc2cpg.passes.ast
 
 import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class CopyExprTests extends AstSwiftSrc2CpgSuite {
 

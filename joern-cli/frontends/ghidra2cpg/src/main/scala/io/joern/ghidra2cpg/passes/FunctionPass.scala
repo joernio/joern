@@ -6,17 +6,17 @@ import ghidra.program.model.lang.Register
 import ghidra.program.model.listing.{CodeUnitFormat, CodeUnitFormatOptions, Function, Instruction, Program}
 import ghidra.program.model.pcode.{HighFunction, HighSymbol}
 import ghidra.program.model.scalar.Scalar
-import io.joern.ghidra2cpg._
-import io.joern.ghidra2cpg.processors._
+import io.joern.ghidra2cpg.*
+import io.joern.ghidra2cpg.processors.*
 import io.joern.ghidra2cpg.utils.Decompiler
-import io.joern.ghidra2cpg.utils.Utils._
+import io.joern.ghidra2cpg.utils.Utils.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNodeNew, NewBlock, NewMethod}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 
 import scala.collection.mutable
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import scala.language.implicitConversions
 
 abstract class FunctionPass(

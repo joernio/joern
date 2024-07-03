@@ -1,10 +1,10 @@
 package io.joern.javasrc2cpg.querying.dataflow
 
 import io.joern.javasrc2cpg.testfixtures.JavaDataflowFixture
-import io.joern.dataflowengineoss.language._
+import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.queryengine.{EngineContext, EngineConfig}
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.semanticsloader.FlowSemantic

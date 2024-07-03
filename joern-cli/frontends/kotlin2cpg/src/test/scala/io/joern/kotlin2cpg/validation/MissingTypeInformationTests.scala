@@ -3,7 +3,7 @@ package io.joern.kotlin2cpg.validation
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class MissingTypeInformationTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "CPG for code with CALL to Java stdlib fn with argument of unknown type" should {

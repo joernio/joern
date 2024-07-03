@@ -3,7 +3,7 @@ package io.joern.jssrc2cpg.passes
 import io.shiftleft.codepropertygraph.generated.nodes.Expression
 import io.shiftleft.codepropertygraph.generated.nodes.TemplateDom
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import org.apache.commons.lang3.StringUtils
 
 trait DomPassTestsHelper {

@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language.types.structure
 
-import io.shiftleft.codepropertygraph.generated._
+import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Member}
 import io.shiftleft.semanticcpg.language.*
 

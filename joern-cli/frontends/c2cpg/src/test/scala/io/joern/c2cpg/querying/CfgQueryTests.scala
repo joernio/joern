@@ -1,7 +1,7 @@
 package io.joern.c2cpg.querying
 
 import io.joern.c2cpg.testfixtures.C2CpgSuite
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class CfgQueryTests extends C2CpgSuite {
 

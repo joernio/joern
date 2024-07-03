@@ -3,8 +3,8 @@ package io.joern.go2cpg.passes.ast
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 
 class ExpressionsTests extends GoCodeToCpgSuite {

@@ -1,7 +1,7 @@
 package io.joern.javasrc2cpg.jartypereader.descriptorparser
 
 import io.joern.javasrc2cpg.jartypereader.model.Bound.{BoundAbove, BoundBelow}
-import io.joern.javasrc2cpg.jartypereader.model._
+import io.joern.javasrc2cpg.jartypereader.model.*
 import org.slf4j.LoggerFactory
 
 trait TypeParser extends TokenParser {

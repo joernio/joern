@@ -3,7 +3,7 @@ package io.joern.c2cpg.dataflow
 import io.joern.c2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.joern.dataflowengineoss.passes.reachingdef.ReachingDefFlowGraph
 import io.shiftleft.codepropertygraph.generated.nodes.Identifier
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class ReachingDefTests extends DataFlowCodeToCpgSuite {
 

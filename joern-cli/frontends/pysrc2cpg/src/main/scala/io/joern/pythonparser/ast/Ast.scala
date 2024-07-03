@@ -3,7 +3,7 @@ package io.joern.pythonparser.ast
 import io.joern.pythonparser.AstVisitor
 
 import java.util
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 // This file describes the AST classes.
 // It tries to stay as close as possible to the AST defined by CPython at

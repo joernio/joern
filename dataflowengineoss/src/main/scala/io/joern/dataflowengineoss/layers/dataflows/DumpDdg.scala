@@ -2,9 +2,9 @@ package io.joern.dataflowengineoss.layers.dataflows
 
 import better.files.File
 import io.joern.dataflowengineoss.DefaultSemantics
-import io.joern.dataflowengineoss.language._
+import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.semanticsloader.Semantics
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
 
 case class DdgDumpOptions(var outDir: String) extends LayerCreatorOptions {}
