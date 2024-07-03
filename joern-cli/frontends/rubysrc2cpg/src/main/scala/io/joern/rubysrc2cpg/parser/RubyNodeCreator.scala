@@ -1,6 +1,6 @@
 package io.joern.rubysrc2cpg.parser
 
-import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
+import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{Block, *}
 import io.joern.rubysrc2cpg.parser.AntlrContextHelpers.*
 import io.joern.rubysrc2cpg.parser.RubyParser.{CommandWithDoBlockContext, ConstantVariableReferenceContext}
 import io.joern.rubysrc2cpg.passes.Defines
@@ -611,7 +611,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
 
   override def visitLambdaExpression(ctx: RubyParser.LambdaExpressionContext): RubyNode = {
     val parameters = Option(ctx.parameterList()).fold(List())(_.parameters).map(visit)
-    val body       = visit(ctx.block())
+    val body       = visit(ctx.block()).asInstanceOf[Block]
     ProcOrLambdaExpr(Block(parameters, body)(ctx.toTextSpan))(ctx.toTextSpan)
   }
 
@@ -813,12 +813,24 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     HashLiteral(Option(ctx.associationList()).map(_.associations).getOrElse(List()).map(visit))(ctx.toTextSpan)
   }
 
-  override def visitAssociation(ctx: RubyParser.AssociationContext): RubyNode = {
+  override def visitAssociationElement(ctx: RubyParser.AssociationElementContext): RubyNode = {
     ctx.associationKey().getText match {
       case "if" =>
         Association(SimpleIdentifier()(ctx.toTextSpan.spanStart("if")), visit(ctx.operatorExpression()))(ctx.toTextSpan)
       case _ =>
         Association(visit(ctx.associationKey()), visit(ctx.operatorExpression()))(ctx.toTextSpan)
+    }
+  }
+
+  override def visitAssociationHashArgument(ctx: RubyParser.AssociationHashArgumentContext): RubyNode = {
+    val identifierName = Option(ctx.LOCAL_VARIABLE_IDENTIFIER()).map(_.getText)
+
+    identifierName match {
+      case Some(identName) =>
+        SplattingRubyNode(SimpleIdentifier()(ctx.toTextSpan.spanStart(identName)))(ctx.toTextSpan)
+      case None =>
+        if ctx.LPAREN() == null then SplattingRubyNode(visit(ctx.methodCallsWithParentheses()))(ctx.toTextSpan)
+        else SplattingRubyNode(visit(ctx.methodInvocationWithoutParentheses()))(ctx.toTextSpan)
     }
   }
 
@@ -1090,11 +1102,13 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitMethodDefinition(ctx: RubyParser.MethodDefinitionContext): RubyNode = {
-    MethodDeclaration(
-      ctx.definedMethodName().getText,
-      Option(ctx.methodParameterPart().parameterList()).fold(List())(_.parameters).map(visit),
-      visit(ctx.bodyStatement())
-    )(ctx.toTextSpan)
+    val params =
+      Option(ctx.methodParameterPart().parameterList())
+        .fold(List())(_.parameters)
+        .map(visit)
+        .sortBy(x => (x.span.line, x.span.column))
+
+    MethodDeclaration(ctx.definedMethodName().getText, params, visit(ctx.bodyStatement()))(ctx.toTextSpan)
   }
 
   override def visitEndlessMethodDefinition(ctx: RubyParser.EndlessMethodDefinitionContext): RubyNode = {
@@ -1125,7 +1139,8 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitHashParameter(ctx: RubyParser.HashParameterContext): RubyNode = {
-    HashParameter(Option(ctx.LOCAL_VARIABLE_IDENTIFIER()).map(_.getText).getOrElse(ctx.getText))(ctx.toTextSpan)
+    val identifierName = Option(ctx.LOCAL_VARIABLE_IDENTIFIER()).map(_.getText).getOrElse(ctx.getText)
+    HashParameter(identifierName)(ctx.toTextSpan)
   }
 
   override def visitArrayParameter(ctx: RubyParser.ArrayParameterContext): RubyNode = {

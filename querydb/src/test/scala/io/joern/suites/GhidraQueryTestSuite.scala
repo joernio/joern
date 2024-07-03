@@ -1,12 +1,12 @@
 package io.joern.suites
 
 import io.joern.console.QueryBundle
-import io.joern.console.scan._
+import io.joern.console.scan.*
 import io.joern.ghidra2cpg.fixtures.DataFlowBinToCpgSuite
 import io.joern.util.QueryUtil
 import io.shiftleft.codepropertygraph.generated.nodes
 import io.joern.console.Query
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.utils.ProjectRoot
 
 class GhidraQueryTestSuite[QB <: QueryBundle](val queryBundle: QB) extends DataFlowBinToCpgSuite {

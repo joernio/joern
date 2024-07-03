@@ -208,7 +208,7 @@ argumentWithParentheses
 argumentList
     :   blockArgument
         # blockArgumentArgumentList
-    |   splattingArgument (COMMA NL* blockArgument)?
+    |   splattingArgument (COMMA NL* blockArgument)? (COMMA NL* operatorExpressionList)?
         # splattingArgumentArgumentList
     |   operatorExpressionList (COMMA NL* associationList)? (COMMA NL* splattingArgument)? (COMMA NL* blockArgument)?
         # operatorsArgumentList
@@ -282,7 +282,7 @@ primaryValue
         # assignmentWithRescue
         
         // Definitions
-    |   CLASS classPath (LT commandOrPrimaryValueClass)? (SEMI | NL) bodyStatement END
+    |   CLASS classPath (LT commandOrPrimaryValueClass)? (SEMI | NL)? bodyStatement END
         # classDefinition
     |   CLASS LT2 commandOrPrimaryValueClass (SEMI | NL) bodyStatement END
         # singletonClassDefinition
@@ -316,25 +316,10 @@ primaryValue
         # whileExpression
     |   FOR NL* forVariable IN NL* commandOrPrimaryValue doClause END
         # forExpression
-    
-        // Non-nested calls
-    |   SUPER argumentWithParentheses? block?
-        # superWithParentheses
-    |   SUPER argumentList? block?
-        # superWithoutParentheses
-    |   isDefinedKeyword LPAREN expressionOrCommand RPAREN
-        # isDefinedExpression
-    |   isDefinedKeyword primaryValue
-        # isDefinedCommand
-    |   methodOnlyIdentifier
-        # methodCallExpression
-    |   methodIdentifier block
-        # methodCallWithBlockExpression
-    |   methodIdentifier argumentWithParentheses block?
-        # methodCallWithParenthesesExpression
-    |   variableReference
-        # methodCallOrVariableReference
-        
+
+    |   methodCallsWithParentheses
+        # methodCallWithParentheses
+
         // Literals
     |   LBRACK NL* indexingArgumentList? NL* RBRACK
         # bracketedArrayLiteral
@@ -405,6 +390,26 @@ primaryValue
         # rangeExpression
     |   hereDoc
         # hereDocs
+    ;
+
+// Non-nested calls
+methodCallsWithParentheses
+    :   SUPER argumentWithParentheses? block?
+        # superWithParentheses
+    |   SUPER argumentList? block?
+        # superWithoutParentheses
+    |   isDefinedKeyword LPAREN expressionOrCommand RPAREN
+        # isDefinedExpression
+    |   isDefinedKeyword primaryValue
+        # isDefinedCommand
+    |   methodOnlyIdentifier
+        # methodCallExpression
+    |   methodIdentifier block
+        # methodCallWithBlockExpression
+    |   methodIdentifier argumentWithParentheses block?
+        # methodCallWithParenthesesExpression
+    |   variableReference
+        # methodCallOrVariableReference
     ;
 
 // This is required to make chained calls work. For classes, we cannot move up the `primaryValue` due to the possible
@@ -516,7 +521,7 @@ methodParameterPart
 
 parameterList
     :   mandatoryOrOptionalParameterList (COMMA NL* arrayParameter)? (COMMA NL* hashParameter)? (COMMA NL* procParameter)?
-    |   arrayParameter (COMMA NL* hashParameter)? (COMMA NL* procParameter)?
+    |   arrayParameter (COMMA NL* hashParameter)? (COMMA NL* procParameter)? (COMMA NL* mandatoryOrOptionalParameterList)?
     |   hashParameter (COMMA NL* procParameter)?
     |   procParameter
     ;
@@ -591,11 +596,18 @@ associationList
     
 association
     :   associationKey (EQGT | COLON) NL* operatorExpression
+        # associationElement
+    |   associationHashArgument
+        # associationHashArg
     ;
     
 associationKey
     :   operatorExpression
     |   keyword
+    ;
+
+associationHashArgument
+    :   STAR2 (LOCAL_VARIABLE_IDENTIFIER | methodCallsWithParentheses | (LPAREN methodInvocationWithoutParentheses RPAREN))?
     ;
 
 regexpLiteralContent

@@ -2,7 +2,7 @@ package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, ModifierTypes}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import org.scalatest.Ignore
 
 import scala.annotation.unused

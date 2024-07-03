@@ -1,6 +1,6 @@
 package io.joern.console.workspacehandling
 
-import better.files._
+import better.files.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec

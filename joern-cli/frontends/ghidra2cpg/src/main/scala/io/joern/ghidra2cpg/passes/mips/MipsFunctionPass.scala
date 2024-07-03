@@ -2,12 +2,12 @@ package io.joern.ghidra2cpg.passes.mips
 import ghidra.program.model.address.GenericAddress
 import ghidra.program.model.lang.Register
 import ghidra.program.model.listing.{Function, Instruction, Program}
-import ghidra.program.model.pcode.PcodeOp._
+import ghidra.program.model.pcode.PcodeOp.*
 import ghidra.program.model.pcode.{HighFunction, PcodeOp, PcodeOpAST, Varnode}
 import ghidra.program.model.scalar.Scalar
 import io.joern.ghidra2cpg.passes.FunctionPass
 import io.joern.ghidra2cpg.processors.MipsProcessor
-import io.joern.ghidra2cpg.utils.Utils._
+import io.joern.ghidra2cpg.utils.Utils.*
 import io.joern.ghidra2cpg.Types
 import io.joern.ghidra2cpg.utils.Decompiler
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -15,7 +15,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{CfgNodeNew, NewBlock}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
 import org.slf4j.LoggerFactory
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import scala.language.implicitConversions
 
 class MipsFunctionPass(

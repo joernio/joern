@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg.accesspath
 
-import io.shiftleft.semanticcpg.accesspath.MatchResult._
-import org.scalatest.matchers.should.Matchers._
+import io.shiftleft.semanticcpg.accesspath.MatchResult.*
+import org.scalatest.matchers.should.Matchers.*
 import org.scalatest.wordspec.AnyWordSpec
 
 class AccessPathTests extends AnyWordSpec {

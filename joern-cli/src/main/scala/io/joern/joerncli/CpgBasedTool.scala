@@ -6,7 +6,7 @@ import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.cpgloading.CpgLoaderConfig
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 object CpgBasedTool {
 

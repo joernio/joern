@@ -1,10 +1,10 @@
 package io.joern.scanners.c
 
-import io.joern.scanners._
-import io.joern.console._
-import io.joern.dataflowengineoss.language._
-import io.shiftleft.semanticcpg.language._
-import io.joern.macros.QueryMacros._
+import io.joern.scanners.*
+import io.joern.console.*
+import io.joern.dataflowengineoss.language.*
+import io.shiftleft.semanticcpg.language.*
+import io.joern.macros.QueryMacros.*
 import io.joern.dataflowengineoss.queryengine.EngineContext
 
 /** Just to make sure that we support reachableBy queries, which did not work before

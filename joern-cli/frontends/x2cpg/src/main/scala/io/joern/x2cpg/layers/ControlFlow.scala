@@ -3,7 +3,7 @@ package io.joern.x2cpg.layers
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.passes.CpgPassBase
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
 import io.joern.x2cpg.passes.controlflow.CfgCreationPass
 import io.joern.x2cpg.passes.controlflow.cfgdominator.CfgDominatorPass

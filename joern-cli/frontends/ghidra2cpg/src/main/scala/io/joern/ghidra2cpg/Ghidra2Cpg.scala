@@ -13,7 +13,7 @@ import ghidra.program.model.listing.Program
 import ghidra.program.util.{DefinedDataIterator, GhidraProgramUtilities}
 import ghidra.util.exception.InvalidInputException
 import ghidra.util.task.TaskMonitor
-import io.joern.ghidra2cpg.passes._
+import io.joern.ghidra2cpg.passes.*
 import io.joern.ghidra2cpg.passes.arm.ArmFunctionPass
 import io.joern.ghidra2cpg.passes.mips.{LoHiPass, MipsFunctionPass}
 import io.joern.ghidra2cpg.passes.x86.{ReturnEdgesPass, X86FunctionPass}
@@ -26,7 +26,7 @@ import utilities.util.FileUtilities
 
 import java.io.File
 import scala.collection.mutable
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import scala.util.Try
 
 class Ghidra2Cpg extends X2CpgFrontend[Config] {

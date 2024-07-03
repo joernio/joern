@@ -3,7 +3,7 @@ package io.joern.swiftsrc2cpg.io
 import better.files.File
 import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
 import io.shiftleft.semanticcpg.codedumper.CodeDumper
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 import java.util.regex.Pattern
 

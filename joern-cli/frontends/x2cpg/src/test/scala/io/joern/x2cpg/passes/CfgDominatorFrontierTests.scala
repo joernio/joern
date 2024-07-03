@@ -4,9 +4,9 @@ import io.shiftleft.OverflowDbTestInstance
 import io.joern.x2cpg.passes.controlflow.cfgdominator.{CfgAdapter, CfgDominator, CfgDominatorFrontier, DomTreeAdapter}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import overflowdb._
+import overflowdb.*
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 class CfgDominatorFrontierTests extends AnyWordSpec with Matchers {
 

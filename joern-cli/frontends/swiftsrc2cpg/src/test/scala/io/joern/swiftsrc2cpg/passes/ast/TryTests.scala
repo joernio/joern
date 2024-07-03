@@ -4,9 +4,9 @@ package io.joern.swiftsrc2cpg.passes.ast
 
 import io.joern.swiftsrc2cpg.testfixtures.AstSwiftSrc2CpgSuite
 
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.*
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.language.*
 
 class TryTests extends AstSwiftSrc2CpgSuite {
 

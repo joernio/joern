@@ -1,7 +1,7 @@
 package io.joern.x2cpg.layers
 
 import better.files.File
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
 
 case class AstDumpOptions(var outDir: String) extends LayerCreatorOptions {}

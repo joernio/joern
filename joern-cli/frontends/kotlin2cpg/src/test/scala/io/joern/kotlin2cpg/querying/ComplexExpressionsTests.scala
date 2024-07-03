@@ -3,7 +3,7 @@ package io.joern.kotlin2cpg.querying
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.edges.Argument
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import overflowdb.traversal.jIteratortoTraversal
 
 class ComplexExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {

@@ -15,7 +15,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     Ast(newCommentNode(comment, code(comment), fileName(comment)))
 
   protected def astForLiteral(lit: IASTLiteralExpression): Ast = {
-    val tpe = cleanType(ASTTypeUtil.getType(lit.getExpressionType))
+    val tpe = cleanType(safeGetType(lit.getExpressionType))
     Ast(literalNode(lit, code(lit), registerType(tpe)))
   }
 
@@ -111,7 +111,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     val ast = callAst(initCallNode, args)
     if (l.getClauses.length > MAX_INITIALIZERS) {
       val placeholder =
-        literalNode(l, "<too-many-initializers>", Defines.anyTypeName).argumentIndex(MAX_INITIALIZERS)
+        literalNode(l, "<too-many-initializers>", Defines.Any).argumentIndex(MAX_INITIALIZERS)
       ast.withChild(Ast(placeholder)).withArgEdge(initCallNode, placeholder)
     } else {
       ast
@@ -142,7 +142,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     val owner = if (qualifier != Ast()) {
       qualifier
     } else {
-      Ast(literalNode(qualId.getLastName, "<global>", Defines.anyTypeName))
+      Ast(literalNode(qualId.getLastName, "<global>", Defines.Any))
     }
 
     val member = fieldIdentifierNode(

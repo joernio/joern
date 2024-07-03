@@ -1,8 +1,8 @@
 package io.shiftleft.semanticcpg.language
 
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.slf4j.{Logger, LoggerFactory}
-import overflowdb.traversal._
+import overflowdb.traversal.*
 
 import scala.annotation.tailrec
 

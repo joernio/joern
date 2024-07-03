@@ -2,13 +2,13 @@ package io.joern.c2cpg.passes
 
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 class MetaDataPassTests extends AnyWordSpec with Matchers {
 

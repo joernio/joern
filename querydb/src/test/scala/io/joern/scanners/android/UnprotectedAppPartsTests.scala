@@ -1,9 +1,9 @@
 package io.joern.scanners.android
 
-import io.joern.console.scan._
+import io.joern.console.scan.*
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
 import io.joern.suites.KotlinQueryTestSuite
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class UnprotectedAppPartsTests extends KotlinQueryTestSuite(UnprotectedAppParts) {
 

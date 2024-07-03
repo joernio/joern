@@ -1,7 +1,7 @@
 package io.joern.dataflowengineoss.queryengine
 
 import scala.collection.mutable
-import scala.collection.parallel.CollectionConverters._
+import scala.collection.parallel.CollectionConverters.*
 
 /** Complete held tasks using the result table. The result table is modified in the process.
   *

@@ -3,7 +3,7 @@ package io.joern.x2cpg.passes.controlflow
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Method
 import io.shiftleft.passes.ForkJoinParallelCpgPass
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.joern.x2cpg.passes.controlflow.cfgcreation.CfgCreator
 
 /** A pass that creates control flow graphs from abstract syntax trees.

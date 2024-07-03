@@ -2,14 +2,14 @@ package io.joern.ghidra2cpg.querying.x86
 
 import io.joern.ghidra2cpg.fixtures.GhidraBinToCpgSuite
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.joern.dataflowengineoss.language._
+import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
-import io.shiftleft.semanticcpg.language._
-import io.shiftleft.semanticcpg.layers._
+import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.layers.*
 
 class DataFlowTests extends GhidraBinToCpgSuite {
 

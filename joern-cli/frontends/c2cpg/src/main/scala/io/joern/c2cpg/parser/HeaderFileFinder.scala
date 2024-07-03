@@ -1,6 +1,6 @@
 package io.joern.c2cpg.parser
 
-import better.files._
+import better.files.*
 import io.joern.x2cpg.SourceFiles
 import org.jline.utils.Levenshtein
 

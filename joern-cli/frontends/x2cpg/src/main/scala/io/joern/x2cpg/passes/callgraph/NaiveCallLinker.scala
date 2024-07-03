@@ -3,7 +3,7 @@ package io.joern.x2cpg.passes.callgraph
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
 import io.shiftleft.passes.CpgPass
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import overflowdb.traversal.jIteratortoTraversal
 
 /** Link remaining unlinked calls to methods only by their name (not full name)

@@ -2,7 +2,7 @@ package io.joern.kotlin2cpg.dataflow
 
 import io.joern.dataflowengineoss.language.toExtendedCfgNode
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class WhenTests extends KotlinCode2CpgFixture(withOssDataflow = true) {
   implicit val resolver: ICallResolver = NoResolve

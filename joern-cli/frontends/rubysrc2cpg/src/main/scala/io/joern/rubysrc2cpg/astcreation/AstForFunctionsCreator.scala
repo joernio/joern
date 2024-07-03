@@ -59,6 +59,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     val thisParameterAst = Ast(
       newThisParameterNode(
+        name = Defines.Self,
         code = Defines.Self,
         typeFullName = scope.surroundingTypeFullName.getOrElse(Defines.Any),
         line = method.lineNumber,

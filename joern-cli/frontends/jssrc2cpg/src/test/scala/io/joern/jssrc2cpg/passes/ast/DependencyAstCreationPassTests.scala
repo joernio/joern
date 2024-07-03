@@ -3,7 +3,7 @@ package io.joern.jssrc2cpg.passes.ast
 import io.joern.jssrc2cpg.testfixtures.AstJsSrc2CpgSuite
 import io.joern.x2cpg.layers.Base
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class DependencyAstCreationPassTests extends AstJsSrc2CpgSuite {
 

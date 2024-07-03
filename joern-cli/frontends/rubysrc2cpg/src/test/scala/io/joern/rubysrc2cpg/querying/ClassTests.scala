@@ -783,4 +783,26 @@ class ClassTests extends RubyCode2CpgFixture {
       }
     }
   }
+
+  "Class definition on one line" should {
+    val cpg = code("""
+        |class X 1 end
+        |""".stripMargin)
+
+    "create TYPE_DECL" in {
+      inside(cpg.typeDecl.name("X").l) {
+        case xClass :: Nil =>
+          inside(xClass.astChildren.isMethod.l) {
+            case bodyMethod :: initMethod :: Nil =>
+              inside(bodyMethod.block.astChildren.l) {
+                case (literal: Literal) :: Nil =>
+                  literal.code shouldBe "1"
+                case xs => fail(s"Exepcted literal for body method, got [${xs.code.mkString(",")}]")
+              }
+            case xs => fail(s"Expected body and init method, got [${xs.code.mkString(",")}]")
+          }
+        case xs => fail(s"Expected one class, got [${xs.code.mkString(",")}]")
+      }
+    }
+  }
 }

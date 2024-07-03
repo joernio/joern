@@ -1,8 +1,8 @@
 package io.joern.php2cpg.dataflow
 
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
-import io.shiftleft.semanticcpg.language._
-import io.joern.dataflowengineoss.language._
+import io.shiftleft.semanticcpg.language.*
+import io.joern.dataflowengineoss.language.*
 
 class IntraMethodDataflowTests extends PhpCode2CpgFixture(runOssDataflow = true) {
   "flows from parameters to corresponding identifiers should be found" in {

@@ -1,7 +1,7 @@
 package io.joern.javasrc2cpg.querying.dataflow
 
 import io.joern.javasrc2cpg.testfixtures.JavaDataflowFixture
-import io.joern.dataflowengineoss.language._
+import io.joern.dataflowengineoss.language.*
 
 class IfTests extends JavaDataflowFixture {
   behavior of "Dataflow through IF structures"

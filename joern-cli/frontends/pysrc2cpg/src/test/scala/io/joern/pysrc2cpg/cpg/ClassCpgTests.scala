@@ -1,7 +1,7 @@
 package io.joern.pysrc2cpg.cpg
 
 import io.joern.pysrc2cpg.PySrc2CpgFixture
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class ClassCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
   "class" should {
