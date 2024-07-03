@@ -191,7 +191,10 @@ class TsClassesAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
         greeter.fullName shouldBe "Test0.ts::program:Greeter"
         greeter.filename shouldBe "Test0.ts"
         greeter.file.name.head shouldBe "Test0.ts"
-        inside(cpg.typeDecl("Greeter").member.l) { case List(greeting, name, propName, foo, anon, toString) =>
+        inside(cpg.typeDecl("Greeter").member.l) { case List(init, greeting, name, propName, foo, anon, toString) =>
+          init.name shouldBe "<init>"
+          init.typeFullName shouldBe "Test0.ts::program:Greeter"
+          init.dynamicTypeHintFullName shouldBe List("Test0.ts::program:Greeter:<init>")
           greeting.name shouldBe "greeting"
           greeting.code shouldBe "greeting: string;"
           name.name shouldBe "name"
