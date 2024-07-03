@@ -74,6 +74,6 @@ object TypeNodePass {
   }
 
   def fullToShortName(typeName: String): String = {
-    typeName.takeWhile(_ != ':').split('.').lastOption.getOrElse(typeName)
+    typeName.takeWhile { c => c != ':' && c != '<' }.split('.').lastOption.getOrElse(typeName)
   }
 }
