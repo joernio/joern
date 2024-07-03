@@ -195,7 +195,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         }
         .getOrElse(XDefines.Any -> XDefines.DynamicCallUnknownFullName)
       val argumentAsts = n.arguments.map(astForMethodCallArgument)
-      val dispatchType = DispatchTypes.DYNAMIC_DISPATCH
+      val dispatchType =
+        if (n.methodName == Defines.TypeDeclBody) DispatchTypes.STATIC_DISPATCH else DispatchTypes.DYNAMIC_DISPATCH
 
       val call = callNode(n, code(n), n.methodName, XDefines.DynamicCallUnknownFullName, dispatchType)
       if methodFullName != XDefines.DynamicCallUnknownFullName then call.possibleTypes(Seq(methodFullName))
