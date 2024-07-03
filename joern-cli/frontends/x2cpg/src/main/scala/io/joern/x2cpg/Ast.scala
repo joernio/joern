@@ -4,7 +4,7 @@ import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode.PropertyDefaults
 import org.slf4j.LoggerFactory
-import overflowdb.BatchedUpdate.DiffGraphBuilder
+import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 import overflowdb.SchemaViolationException
 
 case class AstEdge(src: NewNode, dst: NewNode)

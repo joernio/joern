@@ -6,7 +6,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{NewDependency, NewTag}
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.slf4j.LoggerFactory
-import overflowdb.BatchedUpdate
 import upickle.default.*
 
 import scala.annotation.targetName

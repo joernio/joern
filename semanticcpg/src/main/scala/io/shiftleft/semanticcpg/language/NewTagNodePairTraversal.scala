@@ -2,7 +2,7 @@ package io.shiftleft.semanticcpg.language
 
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{NewNode, NewTagNodePair, StoredNode}
-import overflowdb.BatchedUpdate.DiffGraphBuilder
+import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 
 class NewTagNodePairTraversal(traversal: Iterator[NewTagNodePair]) extends HasStoreMethod {
   override def store()(implicit diffGraph: DiffGraphBuilder): Unit = {

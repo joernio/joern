@@ -13,7 +13,7 @@ import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.importresolver.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
-import overflowdb.BatchedUpdate.DiffGraphBuilder
+import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 
 private class PythonTypeRecovery(cpg: Cpg, state: XTypeRecoveryState, iteration: Int)
     extends XTypeRecovery[File](cpg, state, iteration) {

@@ -3,7 +3,6 @@ package io.joern.x2cpg.frontendspecific.jssrc2cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, MethodRef}
 import io.shiftleft.codepropertygraph.generated.{Cpg, PropertyNames}
 import io.shiftleft.passes.CpgPass
-import overflowdb.BatchedUpdate
 import io.shiftleft.semanticcpg.language.*
 
 /** Perform a simple analysis to find a common pattern in JavaScript where objects are dynamically assigned function
@@ -13,7 +12,7 @@ import io.shiftleft.semanticcpg.language.*
   */
 class ObjectPropertyCallLinker(cpg: Cpg) extends CpgPass(cpg) {
 
-  override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
+  override def run(builder: DiffGraphBuilder): Unit = {
 
     def propertyCallRegexPattern(withMatchingGroup: Boolean): String =
       "^(?:\\{.*\\}|.*<returnValue>):<member>\\(" + (if withMatchingGroup then "(.*)" else ".*") + "\\):.*$"

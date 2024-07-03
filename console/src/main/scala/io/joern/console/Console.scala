@@ -12,7 +12,7 @@ import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.dotextension.ImageViewer
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
-import overflowdb.traversal.help.Doc
+import io.shiftleft.codepropertygraph.generated.help.Doc
 import overflowdb.traversal.help.Table.AvailableWidthProvider
 
 import scala.sys.process.Process

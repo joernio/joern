@@ -6,7 +6,7 @@ import io.shiftleft.semanticcpg.language.modulevariable.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes as OpExtNodes
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.importresolver.{ResolvedMember, ResolvedTypeDecl}
-import overflowdb.traversal.help.Doc
+import io.shiftleft.codepropertygraph.generated.help.Doc
 
 class ModuleVariableMethods(node: OpNodes.ModuleVariable) extends AnyVal {
 

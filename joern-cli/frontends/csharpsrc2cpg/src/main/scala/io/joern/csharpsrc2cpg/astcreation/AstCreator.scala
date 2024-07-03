@@ -10,7 +10,7 @@ import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewTypeDecl}
 import io.shiftleft.passes.IntervalKeyPool
 import org.slf4j.{Logger, LoggerFactory}
-import overflowdb.BatchedUpdate.DiffGraphBuilder
+import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 import ujson.Value
 
 import java.math.BigInteger

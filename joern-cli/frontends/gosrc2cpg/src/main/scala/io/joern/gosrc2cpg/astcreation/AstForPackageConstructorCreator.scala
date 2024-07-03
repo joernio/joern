@@ -7,7 +7,7 @@ import io.joern.x2cpg.astgen.AstGenNodeBuilder
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import org.apache.commons.lang3.StringUtils
-import overflowdb.BatchedUpdate.DiffGraphBuilder
+import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 import ujson.Value
 
 import scala.collection.immutable.Set

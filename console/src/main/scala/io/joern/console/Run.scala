@@ -64,7 +64,7 @@ object Run {
          |
          |val opts = new OptsDynamic()
          |
-         | import _root_.overflowdb.BatchedUpdate.DiffGraphBuilder
+         | import _root_.io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
          | implicit def _diffGraph: DiffGraphBuilder = opts.commit.diffGraphBuilder
          | def diffGraph = _diffGraph
          |""".stripMargin

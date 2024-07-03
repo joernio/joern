@@ -2,7 +2,7 @@ package io.shiftleft.semanticcpg.language.modulevariable.nodemethods
 
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Local, Member}
 import io.shiftleft.semanticcpg.language.*
-import overflowdb.traversal.help.Doc
+import io.shiftleft.codepropertygraph.generated.help.Doc
 
 class ModuleVariableAsLocalMethods(node: Local) extends AnyVal {
 

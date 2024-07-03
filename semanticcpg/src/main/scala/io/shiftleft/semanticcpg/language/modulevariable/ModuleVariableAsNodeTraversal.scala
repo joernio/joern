@@ -5,7 +5,7 @@ import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.modulevariable.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
-import overflowdb.traversal.help.Doc
+import io.shiftleft.codepropertygraph.generated.help.Doc
 
 class ModuleVariableAsLocalTraversal(traversal: Iterator[Local]) extends AnyVal {
 

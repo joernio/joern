@@ -7,7 +7,7 @@ import io.joern.x2cpg.Defines
 import io.joern.x2cpg.frontendspecific.pysrc2cpg.Constants
 import io.joern.x2cpg.utils.NodeBuilders
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, nodes}
-import overflowdb.BatchedUpdate.DiffGraphBuilder
+import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 
 class NodeBuilder(diffGraph: DiffGraphBuilder) {
 

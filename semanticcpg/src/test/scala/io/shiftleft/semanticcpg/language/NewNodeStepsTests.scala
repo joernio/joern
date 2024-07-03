@@ -1,10 +1,10 @@
 package io.shiftleft.semanticcpg.language
 
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, DiffGraphBuilder}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import overflowdb.BatchedUpdate.{DiffGraphBuilder, applyDiff}
+import overflowdb.BatchedUpdate.applyDiff
 
 import scala.jdk.CollectionConverters.*
 
