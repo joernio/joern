@@ -109,7 +109,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
               fullName,
               dispatchType,
               Some(signature),
-              Some(cleanType(safeGetType(call.getExpressionType)))
+              Some(registerType(cleanType(safeGetType(call.getExpressionType))))
             )
             val args = call.getArguments.toList.map(a => astForNode(a))
 
@@ -140,7 +140,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
               fullName,
               dispatchType,
               Some(signature),
-              Some(cleanType(safeGetType(call.getExpressionType)))
+              Some(registerType(cleanType(safeGetType(call.getExpressionType))))
             )
             createCallAst(callCpgNode, args, base = Some(instanceAst), receiver)
           case other =>
@@ -191,7 +191,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
               fullName,
               dispatchType,
               Some(signature),
-              Some(cleanType(safeGetType(call.getExpressionType)))
+              Some(registerType(cleanType(safeGetType(call.getExpressionType))))
             )
 
             val instanceAst = astForExpression(functionNameExpr)
@@ -295,8 +295,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val name         = idExpr.getName.getLastName.toString
     val signature    = ""
     val dispatchType = DispatchTypes.STATIC_DISPATCH
-    val callCpgNode  = callNode(call, code(call), name, name, dispatchType, Some(signature), Some(callTypeFullName))
-    val args         = call.getArguments.toList.map(a => astForNode(a))
+    val callCpgNode =
+      callNode(call, code(call), name, name, dispatchType, Some(signature), Some(registerType(callTypeFullName)))
+    val args = call.getArguments.toList.map(a => astForNode(a))
     createCallAst(callCpgNode, args)
   }
 
@@ -305,9 +306,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val name             = Defines.OperatorPointerCall
     val signature        = ""
     val dispatchType     = DispatchTypes.DYNAMIC_DISPATCH
-    val callCpgNode      = callNode(call, code(call), name, name, dispatchType, Some(signature), Some(callTypeFullName))
-    val args             = call.getArguments.toList.map(a => astForNode(a))
-    val receiverAst      = astForExpression(functionNameExpr)
+    val callCpgNode =
+      callNode(call, code(call), name, name, dispatchType, Some(signature), Some(registerType(callTypeFullName)))
+    val args        = call.getArguments.toList.map(a => astForNode(a))
+    val receiverAst = astForExpression(functionNameExpr)
     createCallAst(callCpgNode, args, receiver = Some(receiverAst))
   }
 
