@@ -74,6 +74,11 @@ object TypeNodePass {
   }
 
   def fullToShortName(typeName: String): String = {
-    typeName.takeWhile(_ != ':').split('.').lastOption.getOrElse(typeName)
+    if (typeName.endsWith(">")) {
+      // special case for typeFullName with generics as suffix
+      typeName.takeWhile(c => c != ':' && c != '<').split('.').lastOption.getOrElse(typeName)
+    } else {
+      typeName.takeWhile(_ != ':').split('.').lastOption.getOrElse(typeName)
+    }
   }
 }
