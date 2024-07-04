@@ -10,8 +10,8 @@ import io.joern.ghidra2cpg.processors.MipsProcessor
 import io.joern.ghidra2cpg.utils.Utils.*
 import io.joern.ghidra2cpg.Types
 import io.joern.ghidra2cpg.utils.Decompiler
-import io.shiftleft.codepropertygraph.generated.nodes.{CfgNodeNew, NewBlock}
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.nodes.{CfgNodeNew, NewBlock}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
 import org.slf4j.LoggerFactory
 

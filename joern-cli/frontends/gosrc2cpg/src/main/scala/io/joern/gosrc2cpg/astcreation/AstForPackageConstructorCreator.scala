@@ -1,13 +1,11 @@
 package io.joern.gosrc2cpg.astcreation
 
-import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 import io.joern.gosrc2cpg.datastructures.PackageMemberAst
 import io.joern.gosrc2cpg.parser.ParserAst.Unknown
 import io.joern.gosrc2cpg.parser.ParserNodeInfo
 import io.joern.x2cpg.astgen.AstGenNodeBuilder
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.NodeTypes
-import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 import org.apache.commons.lang3.StringUtils
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 import ujson.Value

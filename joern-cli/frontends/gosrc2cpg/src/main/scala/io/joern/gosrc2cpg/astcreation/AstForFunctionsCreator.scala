@@ -6,7 +6,6 @@ import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.*
 import ujson.Value
 
 import scala.collection.mutable

@@ -4,9 +4,7 @@ import io.joern.gosrc2cpg.datastructures.MethodCacheMetaData
 import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
-import ujson.{Arr, Obj, Value}
+import ujson.Value
 
 import scala.util.Try
 
