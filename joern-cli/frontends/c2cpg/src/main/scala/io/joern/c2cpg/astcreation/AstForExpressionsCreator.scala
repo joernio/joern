@@ -83,7 +83,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         createPointerCallAst(call, cleanType(safeGetType(call.getExpressionType)))
       case functionType: ICPPFunctionType =>
         functionNameExpr match {
-          case idExpr: CPPASTIdExpression =>
+          case idExpr: CPPASTIdExpression if idExpr.getName.getBinding.isInstanceOf[ICPPFunction] =>
             val function = idExpr.getName.getBinding.asInstanceOf[ICPPFunction]
             val name     = idExpr.getName.getLastName.toString
             val signature =
@@ -177,14 +177,16 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
             val classFullName = cleanType(safeGetType(classType))
             val fullName      = s"$classFullName.$name:$signature"
 
-            val method = evaluation.getOverload.asInstanceOf[ICPPMethod]
-            val dispatchType =
-              if (method.isVirtual || method.isPureVirtual) {
-                DispatchTypes.DYNAMIC_DISPATCH
-              } else {
+            val dispatchType = evaluation.getOverload match {
+              case method: ICPPMethod =>
+                if (method.isVirtual || method.isPureVirtual) {
+                  DispatchTypes.DYNAMIC_DISPATCH
+                } else {
+                  DispatchTypes.STATIC_DISPATCH
+                }
+              case _ =>
                 DispatchTypes.STATIC_DISPATCH
-              }
-
+            }
             val callCpgNode = callNode(
               call,
               code(call),
