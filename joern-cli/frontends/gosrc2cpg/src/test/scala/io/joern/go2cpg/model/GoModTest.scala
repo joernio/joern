@@ -17,13 +17,12 @@ class GoModTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     namespace shouldBe "main"
   }
   "invalid compilation file unit with main pkg" in {
-    val config = Config()
-    config.inputPath = File.currentWorkingDirectory.toString()
+    val inputPath = File.currentWorkingDirectory.toString()
     val goMod = new GoModHelper(
-      Some(config),
+      Some(inputPath),
       Some(
         GoMod(
-          fileFullPath = File(config.inputPath) / "go.mod" pathAsString,
+          fileFullPath = File(inputPath) / "go.mod" pathAsString,
           module = GoModModule("joern.io/trial"),
           dependencies = List[GoModDependency]()
         )
@@ -37,128 +36,121 @@ class GoModTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   }
   "with .mod file and main pkg 1 use case" in {
-    val config = Config()
-    config.inputPath = File.currentWorkingDirectory.toString()
+    val inputPath = File.currentWorkingDirectory.toString()
     val goMod = new GoModHelper(
-      Some(config),
+      Some(inputPath),
       Some(
         GoMod(
-          fileFullPath = File(config.inputPath) / "go.mod" pathAsString,
+          fileFullPath = File(inputPath) / "go.mod" pathAsString,
           module = GoModModule("joern.io/trial"),
           dependencies = List[GoModDependency]()
         )
       )
     )
     val namespace =
-      goMod.getNameSpace(File(config.inputPath) / "first" / "second" / "test.go" pathAsString, "main")
+      goMod.getNameSpace(File(inputPath) / "first" / "second" / "test.go" pathAsString, "main")
     namespace shouldBe "first/second/main"
   }
 
   "with .mod file and main pkg 2 use case" in {
-    val config = Config()
-    config.inputPath = File.currentWorkingDirectory.toString() + JFile.separator
+    val inputPath = File.currentWorkingDirectory.toString() + JFile.separator
     val goMod = new GoModHelper(
-      Some(config),
+      Some(inputPath),
       Some(
         GoMod(
-          fileFullPath = File(config.inputPath) / "go.mod" pathAsString,
+          fileFullPath = File(inputPath) / "go.mod" pathAsString,
           module = GoModModule("joern.io/trial"),
           dependencies = List[GoModDependency]()
         )
       )
     )
     val namespace =
-      goMod.getNameSpace(File(config.inputPath) / "first" / "second" / "test.go" pathAsString, "main")
+      goMod.getNameSpace(File(inputPath) / "first" / "second" / "test.go" pathAsString, "main")
     namespace shouldBe "first/second/main"
   }
 
   "with .mod file and main pkg 3 use case" in {
-    val config = Config()
-    config.inputPath = File.currentWorkingDirectory.toString()
+    val inputPath = File.currentWorkingDirectory.toString() + JFile.separator
     val goMod = new GoModHelper(
-      Some(config),
+      Some(inputPath),
       Some(
         GoMod(
-          fileFullPath = File(config.inputPath) / "go.mod" pathAsString,
+          fileFullPath = File(inputPath) / "go.mod" pathAsString,
           module = GoModModule("joern.io/trial"),
           dependencies = List[GoModDependency]()
         )
       )
     )
     val namespace =
-      goMod.getNameSpace(File(config.inputPath) / "test.go" pathAsString, "main")
+      goMod.getNameSpace(File(inputPath) / "test.go" pathAsString, "main")
     namespace shouldBe "main"
   }
 
   "with .mod file and pkg other than main matching with folder" in {
-    val config = Config()
-    config.inputPath = File.currentWorkingDirectory.toString()
+    val inputPath = File.currentWorkingDirectory.toString() + JFile.separator
     val goMod = new GoModHelper(
-      Some(config),
+      Some(inputPath),
       Some(
         GoMod(
-          fileFullPath = File(config.inputPath) / "go.mod" pathAsString,
+          fileFullPath = File(inputPath) / "go.mod" pathAsString,
           module = GoModModule("joern.io/trial"),
           dependencies = List[GoModDependency]()
         )
       )
     )
     val namespace =
-      goMod.getNameSpace(File(config.inputPath) / "test.go" pathAsString, "trial")
+      goMod.getNameSpace(File(inputPath) / "test.go" pathAsString, "trial")
     namespace shouldBe "joern.io/trial"
   }
 
   "with .mod file, pkg other than main, one level child folder, and package matching with last folder" in {
-    val config = Config()
-    config.inputPath = File.currentWorkingDirectory.toString()
+    val inputPath = File.currentWorkingDirectory.toString() + JFile.separator
     val goMod = new GoModHelper(
-      Some(config),
+      Some(inputPath),
       Some(
         GoMod(
-          fileFullPath = File(config.inputPath) / "go.mod" pathAsString,
+          fileFullPath = File(inputPath) / "go.mod" pathAsString,
           module = GoModModule("joern.io/trial"),
           dependencies = List[GoModDependency]()
         )
       )
     )
     val namespace =
-      goMod.getNameSpace(File(config.inputPath) / "first" / "test.go" pathAsString, "first")
+      goMod.getNameSpace(File(inputPath) / "first" / "test.go" pathAsString, "first")
     namespace shouldBe "joern.io/trial/first"
   }
 
   "with .mod file and pkg other than main and not matching with folder" in {
-    val config = Config()
-    config.inputPath = File.currentWorkingDirectory.toString()
+    val inputPath = File.currentWorkingDirectory.toString() + JFile.separator
     val goMod = new GoModHelper(
-      Some(config),
+      Some(inputPath),
       Some(
         GoMod(
-          fileFullPath = File(config.inputPath) / "go.mod" pathAsString,
+          fileFullPath = File(inputPath) / "go.mod" pathAsString,
           module = GoModModule("joern.io/trial"),
           dependencies = List[GoModDependency]()
         )
       )
     )
     val namespace =
-      goMod.getNameSpace(File(config.inputPath) / "test.go" pathAsString, "foo")
+      goMod.getNameSpace(File(inputPath) / "test.go" pathAsString, "foo")
     namespace shouldBe "joern.io/trial"
   }
 
   "with .mod file, pkg other than main, one level child folder, and package not matching with last folder" in {
-    val config = Config()
-    config.inputPath = File.currentWorkingDirectory.toString()
+    val inputPath = File.currentWorkingDirectory.toString() + JFile.separator
     val goMod = new GoModHelper(
-      Some(config),
+      Some(inputPath),
       Some(
         GoMod(
-          fileFullPath = File(config.inputPath) / "go.mod" pathAsString,
+          fileFullPath = File(inputPath) / "go.mod" pathAsString,
           module = GoModModule("joern.io/trial"),
           dependencies = List[GoModDependency]()
         )
       )
     )
     val namespace =
-      goMod.getNameSpace(File(config.inputPath) / "first" / "test.go" pathAsString, "bar")
+      goMod.getNameSpace(File(inputPath) / "first" / "test.go" pathAsString, "bar")
     namespace shouldBe "joern.io/trial/first"
   }
 }
