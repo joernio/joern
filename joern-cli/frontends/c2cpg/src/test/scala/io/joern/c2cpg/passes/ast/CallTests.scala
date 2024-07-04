@@ -9,8 +9,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.Literal
 import io.shiftleft.semanticcpg.language.NoResolve
 import io.shiftleft.semanticcpg.language.*
 
-import java.nio.file.{Files, Path}
-
 class CallTests extends C2CpgSuite {
 
   implicit val resolver: NoResolve.type = NoResolve

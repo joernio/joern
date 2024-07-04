@@ -83,7 +83,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         createPointerCallAst(call, cleanType(safeGetType(call.getExpressionType)))
       case functionType: ICPPFunctionType =>
         functionNameExpr match {
-          case idExpr: CPPASTIdExpression =>
+          case idExpr: CPPASTIdExpression if idExpr.getName.getBinding.isInstanceOf[ICPPFunction] =>
             val function = idExpr.getName.getBinding.asInstanceOf[ICPPFunction]
             val name     = idExpr.getName.getLastName.toString
             val signature =
