@@ -124,13 +124,14 @@ trait MacroHandler(implicit withSchemaValidation: ValidationMode) { this: AstCre
 
     val callName     = StringUtils.normalizeSpace(name)
     val callFullName = StringUtils.normalizeSpace(fullName(macroDef, argAsts))
+    val typeFullName = registerType(cleanType(typeFor(node)))
     val callNode =
       NewCall()
         .name(callName)
         .dispatchType(DispatchTypes.INLINED)
         .methodFullName(callFullName)
         .code(code)
-        .typeFullName(typeFor(node))
+        .typeFullName(typeFullName)
         .lineNumber(line(node))
         .columnNumber(column(node))
     callAst(callNode, argAsts)
