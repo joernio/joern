@@ -10,7 +10,6 @@ import io.joern.x2cpg.utils.Environment.OperatingSystemType.OperatingSystemType
 import io.joern.x2cpg.utils.{Environment, ExternalCommand}
 import org.slf4j.LoggerFactory
 
-import java.io.File as JFile
 import java.nio.file.Paths
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters.*
@@ -145,63 +144,43 @@ class AstGenRunner(config: Config, includeFileRegex: String = "") extends AstGen
     childModules: ListBuffer[ModuleMeta]
   ) {
     def addModFile(modFile: String, inputPath: String, outPath: String): Unit = {
-      import scala.util.control.Breaks.*
-      var processed = false
-      breakable {
-        childModules.foreach(childMod => {
-          if (modFile.startsWith(childMod.outputModulePath)) {
-            childMod.addModFile(modFile, inputPath, outPath)
-            processed = true
-            break
-          }
-        })
-      }
-      if (!processed) {
-        val outmodpath = getParentFolder(modFile)
-        childModules.addOne(
-          ModuleMeta(
-            outmodpath.replace(outPath, inputPath),
-            outmodpath,
-            Some(modFile),
-            ListBuffer[String](),
-            ListBuffer[String](),
-            ListBuffer[ModuleMeta]()
+      childModules.collectFirst {
+        case childMod if modFile.startsWith(childMod.outputModulePath) =>
+          childMod.addModFile(modFile, inputPath, outPath)
+      } match {
+        case None =>
+          val outmodpath = getParentFolder(modFile)
+          childModules.addOne(
+            ModuleMeta(
+              outmodpath.replace(outPath, inputPath),
+              outmodpath,
+              Some(modFile),
+              ListBuffer[String](),
+              ListBuffer[String](),
+              ListBuffer[ModuleMeta]()
+            )
           )
-        )
+        case _ =>
       }
     }
 
     def addParsedFile(parsedFile: String): Unit = {
-      import scala.util.control.Breaks.*
-      var processed = false
-      breakable {
-        childModules.foreach(childMod => {
-          if (parsedFile.startsWith(childMod.outputModulePath)) {
-            childMod.addParsedFile(parsedFile)
-            processed = true
-            break
-          }
-        })
-      }
-      if (!processed) {
-        parsedFiles.addOne(parsedFile)
+      childModules.collectFirst {
+        case childMod if parsedFile.startsWith(childMod.outputModulePath) =>
+          childMod.addParsedFile(parsedFile)
+      } match {
+        case None => parsedFiles.addOne(parsedFile)
+        case _    =>
       }
     }
 
     def addSkippedFile(skippedFile: String): Unit = {
-      import scala.util.control.Breaks.*
-      var processed = false
-      breakable {
-        childModules.foreach(childMod => {
-          if (skippedFile.startsWith(childMod.outputModulePath)) {
-            childMod.addSkippedFile(skippedFile)
-            processed = true
-            break
-          }
-        })
-      }
-      if (!processed) {
-        skippedFiles.addOne(skippedFile)
+      childModules.collectFirst {
+        case childMod if skippedFile.startsWith(childMod.outputModulePath) =>
+          childMod.addSkippedFile(skippedFile)
+      } match {
+        case None => skippedFiles.addOne(skippedFile)
+        case _    =>
       }
     }
 
