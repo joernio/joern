@@ -315,8 +315,17 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
               }
             return fn
           case field: ICPPField =>
+            val fullNameNoSig = field.getQualifiedName.mkString(".")
+            val fn =
+              if (field.isExternC) {
+                field.getName
+              } else {
+                s"$fullNameNoSig:${safeGetType(field.getType)}"
+              }
+            return fn
           case _: IProblemBinding =>
             return ""
+          case _ =>
         }
       case declarator: CASTFunctionDeclarator =>
         val fn = declarator.getName.toString
