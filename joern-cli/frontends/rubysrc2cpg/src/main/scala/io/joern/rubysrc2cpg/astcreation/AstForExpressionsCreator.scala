@@ -364,6 +364,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
                     astForExpression(node.lhs)
                   case _ => astForExpression(node.lhs)
                 }
+
                 val rhsAst = astForExpression(node.rhs)
 
                 // If this is a simple object instantiation assignment, we can give the LHS variable a type hint

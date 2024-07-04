@@ -844,11 +844,33 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitSingletonClassDefinition(ctx: RubyParser.SingletonClassDefinitionContext): RubyNode = {
-    SingletonClassDeclaration(
-      freshClassName(ctx.toTextSpan),
-      Option(ctx.commandOrPrimaryValueClass()).map(visit),
-      visit(ctx.bodyStatement())
-    )(ctx.toTextSpan)
+    val baseClass = Option(ctx.commandOrPrimaryValueClass()).map(visit)
+    val body      = visit(ctx.bodyStatement()).asInstanceOf[StatementList]
+
+    baseClass match {
+      case Some(baseClass) =>
+        baseClass match {
+          case x: SelfIdentifier =>
+            SingletonClassDeclaration(freshClassName(ctx.toTextSpan), Option(baseClass), body)(ctx.toTextSpan)
+          case x =>
+            val stmts = body.statements.map {
+              case x: MethodDeclaration =>
+                val memberAccess =
+                  MemberAccess(baseClass, ".", x.methodName)(
+                    x.span.spanStart(s"${baseClass.span.text}.${x.methodName}")
+                  )
+                val proc = ProcOrLambdaExpr(Block(x.parameters, x.body)(x.span))(x.span)
+                SingleAssignment(memberAccess, "=", proc)(
+                  ctx.toTextSpan.spanStart(s"${memberAccess.span.text} = ${x.span.text}")
+                )
+              case x => x
+            }
+
+            SingletonStatementList(stmts)(ctx.toTextSpan)
+        }
+      case None =>
+        SingletonClassDeclaration(freshClassName(ctx.toTextSpan), baseClass, body)(ctx.toTextSpan)
+    }
   }
 
   private def findFieldsInMethodDecls(methodDecls: List[MethodDeclaration]): List[RubyNode & RubyFieldIdentifier] = {
