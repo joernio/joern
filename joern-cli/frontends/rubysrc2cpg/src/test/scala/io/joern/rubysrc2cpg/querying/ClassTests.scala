@@ -368,6 +368,13 @@ class ClassTests extends RubyCode2CpgFixture {
         |animal.bark # => 'Woof'
         |""".stripMargin)
 
+    "yeet" in {
+      cpg.call.name(Operators.assignment).dotAst.l.foreach(println)
+//      inside(cpg.call.name(Operators.assignment).l) {
+//        case
+//      }
+    }
+
     "generate a type decl with the associated members" in {
       inside(cpg.typeDecl.nameExact("<anon-class-0>").l) {
         case anonClass :: Nil =>
