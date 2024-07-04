@@ -849,20 +849,26 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
 
     baseClass match {
       case Some(baseClass) =>
-        val stmts = body.statements.map {
-          case x: MethodDeclaration =>
-            val memberAccess =
-              MemberAccess(baseClass, ".", x.methodName)(x.span.spanStart(s"${baseClass.span.text}.${x.methodName}"))
-            val proc = ProcOrLambdaExpr(Block(x.parameters, x.body)(x.span))(x.span)
-            SingleAssignment(memberAccess, "=", proc)(
-              ctx.toTextSpan.spanStart(s"${memberAccess.span.text} = ${x.span.text}")
-            )
-          case x => x
-        }
+        baseClass match {
+          case x: SelfIdentifier =>
+            SingletonClassDeclaration(freshClassName(ctx.toTextSpan), Option(baseClass), body)(ctx.toTextSpan)
+          case x =>
+            val stmts = body.statements.map {
+              case x: MethodDeclaration =>
+                val memberAccess =
+                  MemberAccess(baseClass, ".", x.methodName)(
+                    x.span.spanStart(s"${baseClass.span.text}.${x.methodName}")
+                  )
+                val proc = ProcOrLambdaExpr(Block(x.parameters, x.body)(x.span))(x.span)
+                SingleAssignment(memberAccess, "=", proc)(
+                  ctx.toTextSpan.spanStart(s"${memberAccess.span.text} = ${x.span.text}")
+                )
+              case x => x
+            }
 
-        StatementList(stmts)(ctx.toTextSpan)
+            StatementList(stmts)(ctx.toTextSpan)
+        }
       case None =>
-        logger.warn("No base class, creating normal SingletonClassDecl")
         SingletonClassDeclaration(freshClassName(ctx.toTextSpan), baseClass, body)(ctx.toTextSpan)
     }
   }
