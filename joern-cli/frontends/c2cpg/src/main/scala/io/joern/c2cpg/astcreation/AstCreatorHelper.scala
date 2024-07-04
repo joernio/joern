@@ -321,7 +321,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case declarator: CASTFunctionDeclarator =>
         val fn = declarator.getName.toString
         return fn
-      case definition: ICPPASTFunctionDefinition =>
+      case definition: ICPPASTFunctionDefinition if definition.getDeclarator.isInstanceOf[CPPASTFunctionDeclarator] =>
         return fullName(definition.getDeclarator)
       case x =>
     }
@@ -371,10 +371,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case _: IASTTranslationUnit  => ""
       case u: IASTUnaryExpression  => code(u.getOperand)
       case x: ICPPASTQualifiedName => ASTStringUtil.getQualifiedName(x)
-      case other
-          if other != null
-            && other.getParent != null
-            && !other.getParent.isInstanceOf[ICPPASTFunctionDefinition] =>
+      case other if other != null && other.getParent != null =>
         fullName(other.getParent)
       case other if other != null => notHandledYet(other); ""
       case null                   => ""
