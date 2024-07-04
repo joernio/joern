@@ -1,5 +1,6 @@
 package io.joern.rubysrc2cpg.astcreation
 
+import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.{BlockScope, NamespaceScope, RubyProgramSummary, RubyScope, RubyStubbedType}
 import io.joern.rubysrc2cpg.parser.{RubyNodeCreator, RubyParser}
@@ -43,7 +44,7 @@ class AstCreator(
       .map(_.stripPrefix(java.io.File.separator))
       .getOrElse(fileName)
 
-  private def internalLineAndColNum: Option[Integer] = Option(1)
+  private def internalLineAndColNum: Option[Int] = Option(1)
 
   /** The relative file name, in a unix path delimited format.
     */
