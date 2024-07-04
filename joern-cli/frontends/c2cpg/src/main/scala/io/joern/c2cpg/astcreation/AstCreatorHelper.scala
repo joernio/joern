@@ -4,6 +4,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewCall, N
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.joern.x2cpg.{Ast, SourceFiles, ValidationMode}
 import io.joern.x2cpg.utils.NodeBuilders.newDependencyNode
+import io.joern.x2cpg.Defines as X2CpgDefines
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.utils.IOUtils
 import org.apache.commons.lang3.StringUtils
@@ -456,7 +457,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   private def astForDecltypeSpecifier(decl: ICPPASTDecltypeSpecifier): Ast = {
     val op       = Defines.OperatorTypeOf
-    val cpgUnary = callNode(decl, code(decl), op, op, DispatchTypes.STATIC_DISPATCH)
+    val cpgUnary = callNode(decl, code(decl), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(X2CpgDefines.Any))
     val operand  = nullSafeAst(decl.getDecltypeExpression)
     callAst(cpgUnary, List(operand))
   }
@@ -467,7 +468,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     val op = Operators.assignment
     val calls = withIndex(d.getDesignators) { (des, o) =>
       val callNode_ =
-        callNode(d, code(d), op, op, DispatchTypes.STATIC_DISPATCH)
+        callNode(d, code(d), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(X2CpgDefines.Any))
           .argumentIndex(o)
       val left  = astForNode(des)
       val right = astForNode(d.getOperand)
@@ -483,7 +484,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     val op = Operators.assignment
     val calls = withIndex(d.getDesignators) { (des, o) =>
       val callNode_ =
-        callNode(d, code(d), op, op, DispatchTypes.STATIC_DISPATCH)
+        callNode(d, code(d), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(X2CpgDefines.Any))
           .argumentIndex(o)
       val left  = astForNode(des)
       val right = astForNode(d.getOperand)
@@ -495,14 +496,14 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   private def astForCPPASTConstructorInitializer(c: ICPPASTConstructorInitializer): Ast = {
     val name      = Defines.OperatorConstructorInitializer
-    val callNode_ = callNode(c, code(c), name, name, DispatchTypes.STATIC_DISPATCH)
+    val callNode_ = callNode(c, code(c), name, name, DispatchTypes.STATIC_DISPATCH, None, Some(X2CpgDefines.Any))
     val args      = c.getArguments.toList.map(a => astForNode(a))
     callAst(callNode_, args)
   }
 
   private def astForCASTArrayRangeDesignator(des: CASTArrayRangeDesignator): Ast = {
     val op         = Operators.arrayInitializer
-    val callNode_  = callNode(des, code(des), op, op, DispatchTypes.STATIC_DISPATCH)
+    val callNode_  = callNode(des, code(des), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(X2CpgDefines.Any))
     val floorAst   = nullSafeAst(des.getRangeFloor)
     val ceilingAst = nullSafeAst(des.getRangeCeiling)
     callAst(callNode_, List(floorAst, ceilingAst))
@@ -510,7 +511,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   private def astForCPPASTArrayRangeDesignator(des: CPPASTArrayRangeDesignator): Ast = {
     val op         = Operators.arrayInitializer
-    val callNode_  = callNode(des, code(des), op, op, DispatchTypes.STATIC_DISPATCH)
+    val callNode_  = callNode(des, code(des), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(X2CpgDefines.Any))
     val floorAst   = nullSafeAst(des.getRangeFloor)
     val ceilingAst = nullSafeAst(des.getRangeCeiling)
     callAst(callNode_, List(floorAst, ceilingAst))
