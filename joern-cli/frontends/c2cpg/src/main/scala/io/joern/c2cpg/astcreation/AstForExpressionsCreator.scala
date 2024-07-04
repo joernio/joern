@@ -145,7 +145,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
             )
             createCallAst(callCpgNode, args, base = Some(instanceAst), receiver)
           case other =>
-            notHandledYet(other)
+            astForCppCallExpressionUntyped(call)
         }
       case classType: ICPPClassType =>
         val evaluation = call.getEvaluation.asInstanceOf[EvalFunctionCall]

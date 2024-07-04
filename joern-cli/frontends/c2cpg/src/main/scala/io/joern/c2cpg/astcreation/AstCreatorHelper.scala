@@ -328,8 +328,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
           case _ =>
         }
       case declarator: CASTFunctionDeclarator =>
-        val fn = declarator.getName.toString
-        return fn
+        return declarator.getName.toString
       case definition: ICPPASTFunctionDefinition if definition.getDeclarator.isInstanceOf[CPPASTFunctionDeclarator] =>
         return fullName(definition.getDeclarator)
       case x =>
@@ -376,14 +375,13 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         s"${fullName(f.getParent)}.${shortName(f)}"
       case e: IASTElaboratedTypeSpecifier =>
         s"${fullName(e.getParent)}.${ASTStringUtil.getSimpleName(e.getName)}"
-      case d: IASTIdExpression     => ASTStringUtil.getSimpleName(d.getName)
-      case _: IASTTranslationUnit  => ""
-      case u: IASTUnaryExpression  => code(u.getOperand)
-      case x: ICPPASTQualifiedName => ASTStringUtil.getQualifiedName(x)
-      case other if other != null && other.getParent != null =>
-        fullName(other.getParent)
-      case other if other != null => notHandledYet(other); ""
-      case null                   => ""
+      case d: IASTIdExpression                               => ASTStringUtil.getSimpleName(d.getName)
+      case _: IASTTranslationUnit                            => ""
+      case u: IASTUnaryExpression                            => code(u.getOperand)
+      case x: ICPPASTQualifiedName                           => ASTStringUtil.getQualifiedName(x)
+      case other if other != null && other.getParent != null => fullName(other.getParent)
+      case other if other != null                            => notHandledYet(other); ""
+      case null                                              => ""
     }
     fixQualifiedName(qualifiedName).stripPrefix(".")
   }
