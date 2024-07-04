@@ -355,7 +355,7 @@ class ClassTests extends RubyCode2CpgFixture {
   }
 
   // TODO: This should be remodelled as a property access `animal.bark = METHOD_REF`
-  "a basic singleton class" ignore {
+  "a basic singleton class" should {
     val cpg = code("""class Animal; end
         |animal = Animal.new
         |

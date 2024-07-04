@@ -56,102 +56,137 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val className     = nameIdentifier.text
     val inheritsFrom  = node.baseClass.flatMap(getBaseClassName).toList
     val classFullName = computeClassFullName(className)
-    val typeDecl = typeDeclNode(
-      node = node,
-      name = className,
-      fullName = classFullName,
-      filename = relativeFileName,
-      code = code(node),
-      inherits = inheritsFrom,
-      alias = None
-    )
-    scope.surroundingAstLabel.foreach(typeDecl.astParentType(_))
-    scope.surroundingScopeFullName.foreach(typeDecl.astParentFullName(_))
-    /*
-      In Ruby, there are semantic differences between the ordinary class and singleton class (think "meta" class in
-      Python). Similar to how Java allows both static and dynamic methods/fields/etc. within the same type declaration,
-      Ruby allows `self` methods and @@ fields to be defined alongside ordinary methods and @ fields. However, both
-      classes are more dynamic and have separate behaviours in Ruby and we model it as such.
-
-      To signify the singleton type, we add the <class> tag.
-     */
-    val singletonTypeDecl = typeDecl.copy
-      .name(s"$className<class>")
-      .fullName(s"$classFullName<class>")
-      .inheritsFromTypeFullName(inheritsFrom.map(x => s"$x<class>"))
-
-    val (classModifiers, singletonModifiers) = node match {
-      case _: ModuleDeclaration =>
-        scope.pushNewScope(ModuleScope(classFullName))
-        (
-          ModifierTypes.VIRTUAL :: Nil map newModifierNode map Ast.apply,
-          ModifierTypes.VIRTUAL :: ModifierTypes.FINAL :: Nil map newModifierNode map Ast.apply
-        )
-      case _: TypeDeclaration =>
-        scope.pushNewScope(TypeScope(classFullName, List.empty))
-        (
-          ModifierTypes.VIRTUAL :: Nil map newModifierNode map Ast.apply,
-          ModifierTypes.VIRTUAL :: Nil map newModifierNode map Ast.apply
-        )
-    }
 
     val classBody =
       node.body.asInstanceOf[StatementList] // for now (bodyStatement is a superset of stmtList)
 
-    def handleDefaultConstructor(bodyAsts: Seq[Ast]): Seq[Ast] = bodyAsts match {
-      case bodyAsts if scope.shouldGenerateDefaultConstructor && this.parseLevel == AstParseLevel.FULL_AST =>
-        val bodyStart  = classBody.span.spanStart()
-        val initBody   = StatementList(List())(bodyStart)
-        val methodDecl = astForMethodDeclaration(MethodDeclaration(Defines.Initialize, List(), initBody)(bodyStart))
-        methodDecl ++ bodyAsts
-      case bodyAsts => bodyAsts
+    node match {
+      case x: SingletonClassDeclaration if x.name.span.text.startsWith("<anon") =>
+        val inheritsFromObj = scope.lookupVariable(node.baseClass.flatMap(getBaseClassName).getOrElse("")).map {
+          case x: NewLocal => x
+        }
+
+        classBody.statements.foreach {
+          case x: MethodDeclaration =>
+            val memberAccessNode = MemberAccess(
+              SimpleIdentifier()(x.span.spanStart(inheritsFrom.head)),
+              ".",
+              x.methodName
+            )(x.span.spanStart(s"${inheritsFrom.head}.${x.methodName}"))
+            val singleAssignmentNode = SingleAssignment(memberAccessNode, "=", x)(
+              x.span.spanStart(s"${inheritsFrom.head}.${x.methodName} = ${x.span.text}")
+            )
+
+            val lhsAst = astForExpression(memberAccessNode)
+            val rhsAst = astForMethodDeclaration(x, isClosure = true)
+
+            val op   = Operators.assignment
+            val call = callNode(singleAssignmentNode, code(singleAssignmentNode), op, op, DispatchTypes.STATIC_DISPATCH)
+            val callAsts = callAst(call, Seq(lhsAst, rhsAst(1)))
+
+            Ast.storeInDiffGraph(callAsts, diffGraph)
+            callAsts :: Nil
+          case x => // do something
+        }
+
+        Ast() :: Nil
+
+      case _ =>
+        val typeDecl = typeDeclNode(
+          node = node,
+          name = className,
+          fullName = classFullName,
+          filename = relativeFileName,
+          code = code(node),
+          inherits = inheritsFrom,
+          alias = None
+        )
+        scope.surroundingAstLabel.foreach(typeDecl.astParentType(_))
+        scope.surroundingScopeFullName.foreach(typeDecl.astParentFullName(_))
+        /*
+          In Ruby, there are semantic differences between the ordinary class and singleton class (think "meta" class in
+          Python). Similar to how Java allows both static and dynamic methods/fields/etc. within the same type declaration,
+          Ruby allows `self` methods and @@ fields to be defined alongside ordinary methods and @ fields. However, both
+          classes are more dynamic and have separate behaviours in Ruby and we model it as such.
+
+          To signify the singleton type, we add the <class> tag.
+         */
+        val singletonTypeDecl = typeDecl.copy
+          .name(s"$className<class>")
+          .fullName(s"$classFullName<class>")
+          .inheritsFromTypeFullName(inheritsFrom.map(x => s"$x<class>"))
+
+        val (classModifiers, singletonModifiers) = node match {
+          case _: ModuleDeclaration =>
+            scope.pushNewScope(ModuleScope(classFullName))
+            (
+              ModifierTypes.VIRTUAL :: Nil map newModifierNode map Ast.apply,
+              ModifierTypes.VIRTUAL :: ModifierTypes.FINAL :: Nil map newModifierNode map Ast.apply
+            )
+          case _: TypeDeclaration =>
+            scope.pushNewScope(TypeScope(classFullName, List.empty))
+            (
+              ModifierTypes.VIRTUAL :: Nil map newModifierNode map Ast.apply,
+              ModifierTypes.VIRTUAL :: Nil map newModifierNode map Ast.apply
+            )
+        }
+
+        def handleDefaultConstructor(bodyAsts: Seq[Ast]): Seq[Ast] = bodyAsts match {
+          case bodyAsts if scope.shouldGenerateDefaultConstructor && this.parseLevel == AstParseLevel.FULL_AST =>
+            val bodyStart  = classBody.span.spanStart()
+            val initBody   = StatementList(List())(bodyStart)
+            val methodDecl = astForMethodDeclaration(MethodDeclaration(Defines.Initialize, List(), initBody)(bodyStart))
+            methodDecl ++ bodyAsts
+          case bodyAsts => bodyAsts
+        }
+
+        val classBodyAsts = handleDefaultConstructor(classBody.statements.flatMap(astsForStatement))
+
+        val fields = node match {
+          case classDecl: ClassDeclaration   => classDecl.fields
+          case moduleDecl: ModuleDeclaration => moduleDecl.fields
+          case _                             => Seq.empty
+        }
+        val (fieldTypeMemberNodes, fieldSingletonMemberNodes) = fields
+          .map { x =>
+            val name = code(x)
+            x.isInstanceOf[InstanceFieldIdentifier] -> Ast(memberNode(x, name, name, Defines.Any))
+          }
+          .partition(_._1)
+
+        scope.popScope()
+
+        if scope.surroundingAstLabel.contains(NodeTypes.TYPE_DECL) then {
+          val typeDeclMember = NewMember()
+            .name(className)
+            .code(className)
+            .dynamicTypeHintFullName(Seq(s"$classFullName<class>"))
+          scope.surroundingScopeFullName.map(x => s"$x<class>").foreach { tfn =>
+            typeDeclMember.astParentFullName(tfn)
+            typeDeclMember.astParentType(NodeTypes.TYPE_DECL)
+          }
+          diffGraph.addNode(typeDeclMember)
+        }
+
+        val prefixAst = createTypeRefPointer(typeDecl)
+        val typeDeclAst = Ast(typeDecl)
+          .withChildren(classModifiers)
+          .withChildren(fieldTypeMemberNodes.map(_._2))
+          .withChildren(classBodyAsts)
+        val singletonTypeDeclAst =
+          Ast(singletonTypeDecl)
+            .withChildren(singletonModifiers)
+            .withChildren(fieldSingletonMemberNodes.map(_._2))
+        val bodyMemberCallAst =
+          node.bodyMemberCall match {
+            case Some(bodyMemberCall) => astForMemberCall(bodyMemberCall)
+            case None                 => Ast()
+          }
+
+        (typeDeclAst :: singletonTypeDeclAst :: Nil).foreach(Ast.storeInDiffGraph(_, diffGraph))
+        prefixAst :: bodyMemberCallAst :: Nil
     }
 
-    val classBodyAsts = handleDefaultConstructor(classBody.statements.flatMap(astsForStatement))
-
-    val fields = node match {
-      case classDecl: ClassDeclaration   => classDecl.fields
-      case moduleDecl: ModuleDeclaration => moduleDecl.fields
-      case _                             => Seq.empty
-    }
-    val (fieldTypeMemberNodes, fieldSingletonMemberNodes) = fields
-      .map { x =>
-        val name = code(x)
-        x.isInstanceOf[InstanceFieldIdentifier] -> Ast(memberNode(x, name, name, Defines.Any))
-      }
-      .partition(_._1)
-
-    scope.popScope()
-
-    if scope.surroundingAstLabel.contains(NodeTypes.TYPE_DECL) then {
-      val typeDeclMember = NewMember()
-        .name(className)
-        .code(className)
-        .dynamicTypeHintFullName(Seq(s"$classFullName<class>"))
-      scope.surroundingScopeFullName.map(x => s"$x<class>").foreach { tfn =>
-        typeDeclMember.astParentFullName(tfn)
-        typeDeclMember.astParentType(NodeTypes.TYPE_DECL)
-      }
-      diffGraph.addNode(typeDeclMember)
-    }
-
-    val prefixAst = createTypeRefPointer(typeDecl)
-    val typeDeclAst = Ast(typeDecl)
-      .withChildren(classModifiers)
-      .withChildren(fieldTypeMemberNodes.map(_._2))
-      .withChildren(classBodyAsts)
-    val singletonTypeDeclAst =
-      Ast(singletonTypeDecl)
-        .withChildren(singletonModifiers)
-        .withChildren(fieldSingletonMemberNodes.map(_._2))
-    val bodyMemberCallAst =
-      node.bodyMemberCall match {
-        case Some(bodyMemberCall) => astForMemberCall(bodyMemberCall)
-        case None                 => Ast()
-      }
-
-    (typeDeclAst :: singletonTypeDeclAst :: Nil).foreach(Ast.storeInDiffGraph(_, diffGraph))
-    prefixAst :: bodyMemberCallAst :: Nil
   }
 
   private def createTypeRefPointer(typeDecl: NewTypeDecl): Ast = {
