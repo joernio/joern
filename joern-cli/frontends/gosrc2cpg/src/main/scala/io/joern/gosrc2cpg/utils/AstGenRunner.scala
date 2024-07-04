@@ -117,7 +117,7 @@ class AstGenRunner(config: Config, includeFileRegex: String = "") extends AstGen
       ModuleMeta(inputPath, outPath, None, ListBuffer[String](), ListBuffer[String](), ListBuffer[ModuleMeta]())
     if (parsedModFiles.size > 0) {
       parsedModFiles
-        .sortBy(_.split(JFile.separator).length)
+        .sortBy(_.split(UtilityConstants.fileSeparateorPattern).length)
         .foreach(modFile => {
           moduleMeta.addModFile(modFile, inputPath, outPath)
         })
