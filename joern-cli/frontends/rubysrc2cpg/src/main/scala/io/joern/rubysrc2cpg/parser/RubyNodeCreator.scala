@@ -866,7 +866,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
               case x => x
             }
 
-            StatementList(stmts)(ctx.toTextSpan)
+            SingletonStatementList(stmts)(ctx.toTextSpan)
         }
       case None =>
         SingletonClassDeclaration(freshClassName(ctx.toTextSpan), baseClass, body)(ctx.toTextSpan)

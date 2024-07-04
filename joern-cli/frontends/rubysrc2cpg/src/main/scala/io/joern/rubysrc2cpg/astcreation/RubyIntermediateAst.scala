@@ -46,6 +46,14 @@ object RubyIntermediateAst {
     def size: Int = statements.size
   }
 
+  final case class SingletonStatementList(statements: List[RubyNode])(span: TextSpan) extends RubyNode(span) {
+    override def text: String = statements.size match
+      case 0 | 1 => span.text
+      case _     => "(...)"
+
+    def size: Int = statements.size
+  }
+
   sealed trait AllowedTypeDeclarationChild
 
   sealed trait TypeDeclaration extends AllowedTypeDeclarationChild {

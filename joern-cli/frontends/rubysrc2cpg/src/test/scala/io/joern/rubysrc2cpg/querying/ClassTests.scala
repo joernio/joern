@@ -354,7 +354,7 @@ class ClassTests extends RubyCode2CpgFixture {
 
   }
 
-  "a basic singleton class" should {
+  "a basic singleton class extending an object instance" should {
     val cpg = code("""class Animal; end
         |animal = Animal.new
         |
@@ -372,37 +372,33 @@ class ClassTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "Create assignments to method refs for methods on singleton object" in {
-      inside(cpg.method.name(":program").astChildren.isBlock.astChildren.isBlock.l) {
-        case singletonMethodsBlock :: Nil =>
-          inside(singletonMethodsBlock.astChildren.isCall.name(Operators.assignment).l) {
-            case barkAssignment :: legsAssignment :: Nil =>
-              inside(barkAssignment.argument.l) {
-                case (lhs: Call) :: (rhs: MethodRef) :: Nil =>
-                  val List(identifier, fieldIdentifier) = lhs.argument.l
-                  identifier.code shouldBe "animal"
-                  fieldIdentifier.code shouldBe "bark"
+      inside(cpg.method.isModule.block.assignment.l) {
+        case _ :: _ :: _ :: barkAssignment :: legsAssignment :: Nil =>
+          inside(barkAssignment.argument.l) {
+            case (lhs: Call) :: (rhs: MethodRef) :: Nil =>
+              val List(identifier, fieldIdentifier) = lhs.argument.l: @unchecked
+              identifier.code shouldBe "animal"
+              fieldIdentifier.code shouldBe "bark"
 
-                  rhs.methodFullName shouldBe "Test0.rb:<global>::program:<lambda>0"
-                case xs => fail(s"Expected two arguments for assignment, got [${xs.code.mkString(",")}]")
-              }
-
-              inside(legsAssignment.argument.l) {
-                case (lhs: Call) :: (rhs: MethodRef) :: Nil =>
-                  val List(identifier, fieldIdentifier) = lhs.argument.l
-                  identifier.code shouldBe "animal"
-                  fieldIdentifier.code shouldBe "legs"
-
-                  rhs.methodFullName shouldBe "Test0.rb:<global>::program:<lambda>1"
-                case xs => fail(s"Expected two arguments for assignment, got [${xs.code.mkString(",")}]")
-              }
-            case xs => fail(s"Expected two assignments, got [${xs.code.mkString(",")}]")
+              rhs.methodFullName shouldBe "Test0.rb:<global>::program:<lambda>0"
+            case xs => fail(s"Expected two arguments for assignment, got [${xs.code.mkString(",")}]")
           }
-        case xs => fail(s"Expected one block for main program, got [${xs.code.mkString(",")}]")
+
+          inside(legsAssignment.argument.l) {
+            case (lhs: Call) :: (rhs: MethodRef) :: Nil =>
+              val List(identifier, fieldIdentifier) = lhs.argument.l: @unchecked
+              identifier.code shouldBe "animal"
+              fieldIdentifier.code shouldBe "legs"
+
+              rhs.methodFullName shouldBe "Test0.rb:<global>::program:<lambda>1"
+            case xs => fail(s"Expected two arguments for assignment, got [${xs.code.mkString(",")}]")
+          }
+        case xs => fail(s"Expected five assignments, got [${xs.code.mkString(",")}]")
       }
     }
 
     "Create lambda methods for methods on singleton object" in {
-      inside(cpg.method.name("<lambda>\\d+").l) {
+      inside(cpg.method.isLambda.l) {
         case barkLambda :: legsLambda :: Nil =>
           val List(barkLambdaParam) = barkLambda.method.parameter.l
           val List(legsLambdaParam) = legsLambda.method.parameter.l

@@ -29,6 +29,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     case node: SingletonMethodDeclaration => astForSingletonMethodDeclaration(node)
     case node: MultipleAssignment         => node.assignments.map(astForExpression)
     case node: BreakStatement             => astForBreakStatement(node) :: Nil
+    case node: SingletonStatementList     => astForSingletonStatementList(node)
     case _                                => astForExpression(node) :: Nil
 
   private def astForWhileStatement(node: WhileExpression): Ast = {
@@ -322,6 +323,10 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       .columnNumber(column(node))
       .code(code(node))
     Ast(_node)
+  }
+
+  protected def astForSingletonStatementList(list: SingletonStatementList): Seq[Ast] = {
+    list.statements.map(astForExpression)
   }
 
   /** Wraps the last RubyNode with a ReturnExpression.
