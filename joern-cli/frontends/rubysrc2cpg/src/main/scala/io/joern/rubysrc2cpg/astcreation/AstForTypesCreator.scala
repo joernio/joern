@@ -56,7 +56,6 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val className     = nameIdentifier.text
     val inheritsFrom  = node.baseClass.flatMap(getBaseClassName).toList
     val classFullName = computeClassFullName(className)
-
     val typeDecl = typeDeclNode(
       node = node,
       name = className,
@@ -81,9 +80,6 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       .fullName(s"$classFullName<class>")
       .inheritsFromTypeFullName(inheritsFrom.map(x => s"$x<class>"))
 
-    val classBody =
-      node.body.asInstanceOf[StatementList] // for now (bodyStatement is a superset of stmtList)
-
     val (classModifiers, singletonModifiers) = node match {
       case _: ModuleDeclaration =>
         scope.pushNewScope(ModuleScope(classFullName))
@@ -98,6 +94,9 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
           ModifierTypes.VIRTUAL :: Nil map newModifierNode map Ast.apply
         )
     }
+
+    val classBody =
+      node.body.asInstanceOf[StatementList] // for now (bodyStatement is a superset of stmtList)
 
     def handleDefaultConstructor(bodyAsts: Seq[Ast]): Seq[Ast] = bodyAsts match {
       case bodyAsts if scope.shouldGenerateDefaultConstructor && this.parseLevel == AstParseLevel.FULL_AST =>
@@ -153,7 +152,6 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     (typeDeclAst :: singletonTypeDeclAst :: Nil).foreach(Ast.storeInDiffGraph(_, diffGraph))
     prefixAst :: bodyMemberCallAst :: Nil
-
   }
 
   private def createTypeRefPointer(typeDecl: NewTypeDecl): Ast = {
