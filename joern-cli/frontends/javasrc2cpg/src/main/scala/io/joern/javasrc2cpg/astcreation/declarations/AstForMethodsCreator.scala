@@ -2,14 +2,7 @@ package io.joern.javasrc2cpg.astcreation.declarations
 
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import com.github.javaparser.ast.NodeList
-import com.github.javaparser.ast.body.{
-  CallableDeclaration,
-  ConstructorDeclaration,
-  FieldDeclaration,
-  MethodDeclaration,
-  Parameter,
-  VariableDeclarator
-}
+import com.github.javaparser.ast.body.{CallableDeclaration, ConstructorDeclaration, FieldDeclaration, MethodDeclaration, Parameter, VariableDeclarator}
 import com.github.javaparser.ast.stmt.{BlockStmt, ExplicitConstructorInvocationStmt}
 import com.github.javaparser.resolution.declarations.{ResolvedMethodDeclaration, ResolvedMethodLikeDeclaration}
 import com.github.javaparser.resolution.types.ResolvedType
@@ -20,14 +13,7 @@ import io.joern.javasrc2cpg.util.Util.*
 import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.utils.NodeBuilders.*
 import io.joern.x2cpg.{Ast, Defines}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  NewBlock,
-  NewIdentifier,
-  NewMethod,
-  NewMethodParameterIn,
-  NewMethodReturn,
-  NewModifier
-}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewIdentifier, NewMethod, NewMethodParameterIn, NewMethodReturn, NewModifier}
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, ModifierTypes}
 import io.joern.javasrc2cpg.scope.JavaScopeElement.fullName
 
@@ -40,6 +26,7 @@ import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import com.github.javaparser.ast.Node
+import com.github.javaparser.ast.`type`.ClassOrInterfaceType
 import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserParameterDeclaration
 import io.joern.javasrc2cpg.astcreation.declarations.AstForMethodsCreator.PartialConstructorDeclaration
 import io.joern.javasrc2cpg.util.{NameConstants, Util}
@@ -60,9 +47,9 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
       .flatMap(typeInfoCalc.fullName)
       .orElse(simpleMethodReturnType.flatMap(scope.lookupType(_)))
       .orElse(
-        tryWithSafeStackOverflow(methodDeclaration.getType.asClassOrInterfaceType).toOption.flatMap(t =>
-          scope.lookupType(t.getNameAsString)
-        )
+        tryWithSafeStackOverflow(methodDeclaration.getType).toOption.collect{
+          case t: ClassOrInterfaceType=> scope.lookupType(t.getNameAsString)
+        }.flatten
       )
       .orElse(typeParameters.find(typeParam => simpleMethodReturnType.contains(typeParam.name)).map(_.typeFullName))
 
