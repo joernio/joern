@@ -21,9 +21,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case MemberExpression => code(callee.json("property"))
       case _                => callee.code
     }
-    val callNode =
-      createStaticCallNode(callExpr.code, callName, fullName, callee.lineNumber, callee.columnNumber)
-    val argAsts = astForNodes(callExpr.json("arguments").arr.toList)
+    val callNode = createStaticCallNode(callExpr.code, callName, fullName, callee.lineNumber, callee.columnNumber)
+    val argAsts  = astForNodes(callExpr.json("arguments").arr.toList)
     callAst(callNode, argAsts)
   }
 
@@ -114,9 +113,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     diffGraph.addEdge(localAstParentStack.head, localTmpAllocNode, EdgeTypes.AST)
     scope.addVariableReference(tmpAllocName, tmpAllocNode1)
 
-    val allocCallNode =
-      callNode(newExpr, ".alloc", Operators.alloc, DispatchTypes.STATIC_DISPATCH)
-
+    val allocCallNode = callNode(newExpr, ".alloc", Operators.alloc, DispatchTypes.STATIC_DISPATCH)
     val assignmentTmpAllocCallNode =
       createAssignmentCallAst(
         tmpAllocNode1,
@@ -126,12 +123,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         newExpr.columnNumber
       )
 
-    val tmpAllocNode2 = identifierNode(newExpr, tmpAllocName)
-
-    val receiverNode = astForNodeWithFunctionReference(callee)
-
-    val callAst = handleCallNodeArgs(newExpr, receiverNode, tmpAllocNode2, Defines.OperatorsNew)
-
+    val tmpAllocNode2      = identifierNode(newExpr, tmpAllocName)
+    val receiverNode       = astForNodeWithFunctionReference(callee)
+    val callAst            = handleCallNodeArgs(newExpr, receiverNode, tmpAllocNode2, Defines.OperatorsNew)
     val tmpAllocReturnNode = Ast(identifierNode(newExpr, tmpAllocName))
 
     scope.popScope()
@@ -217,31 +211,21 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     astForBinaryExpression(logicalExpr)
 
   protected def astForTSNonNullExpression(nonNullExpr: BabelNodeInfo): Ast = {
-    val op = Operators.notNullAssert
-    val callNode_ =
-      callNode(nonNullExpr, nonNullExpr.code, op, DispatchTypes.STATIC_DISPATCH)
-    val argAsts = List(astForNodeWithFunctionReference(nonNullExpr.json("expression")))
+    val op        = Operators.notNullAssert
+    val callNode_ = callNode(nonNullExpr, nonNullExpr.code, op, DispatchTypes.STATIC_DISPATCH)
+    val argAsts   = List(astForNodeWithFunctionReference(nonNullExpr.json("expression")))
     callAst(callNode_, argAsts)
   }
 
   protected def astForCastExpression(castExpr: BabelNodeInfo): Ast = {
-    val op      = Operators.cast
-    val lhsNode = castExpr.json("typeAnnotation")
-    val rhsAst  = astForNodeWithFunctionReference(castExpr.json("expression"))
-    typeFor(castExpr) match {
-      case tpe if GlobalBuiltins.builtins.contains(tpe) || Defines.isBuiltinType(tpe) =>
-        val lhsAst = Ast(literalNode(castExpr, code(lhsNode), Option(tpe)))
-        val node =
-          callNode(castExpr, castExpr.code, op, DispatchTypes.STATIC_DISPATCH).dynamicTypeHintFullName(Seq(tpe))
-        val argAsts = List(lhsAst, rhsAst)
-        callAst(node, argAsts)
-      case t =>
-        val possibleTypes = Seq(t)
-        val lhsAst        = Ast(literalNode(castExpr, code(lhsNode), None).possibleTypes(possibleTypes))
-        val node    = callNode(castExpr, castExpr.code, op, DispatchTypes.STATIC_DISPATCH).possibleTypes(possibleTypes)
-        val argAsts = List(lhsAst, rhsAst)
-        callAst(node, argAsts)
-    }
+    val op            = Operators.cast
+    val lhsNode       = castExpr.json("typeAnnotation")
+    val rhsAst        = astForNodeWithFunctionReference(castExpr.json("expression"))
+    val possibleTypes = Seq(typeFor(castExpr))
+    val lhsAst        = Ast(literalNode(castExpr, code(lhsNode), None).possibleTypes(possibleTypes))
+    val node    = callNode(castExpr, castExpr.code, op, DispatchTypes.STATIC_DISPATCH).possibleTypes(possibleTypes)
+    val argAsts = List(lhsAst, rhsAst)
+    callAst(node, argAsts)
   }
 
   protected def astForBinaryExpression(binExpr: BabelNodeInfo): Ast = {
@@ -340,8 +324,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   protected def astForAwaitExpression(awaitExpr: BabelNodeInfo): Ast = {
-    val node =
-      callNode(awaitExpr, awaitExpr.code, "<operator>.await", DispatchTypes.STATIC_DISPATCH)
+    val node    = callNode(awaitExpr, awaitExpr.code, "<operator>.await", DispatchTypes.STATIC_DISPATCH)
     val argAsts = List(astForNodeWithFunctionReference(awaitExpr.json("argument")))
     callAst(node, argAsts)
   }
@@ -417,12 +400,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   def astForTemplateExpression(templateExpr: BabelNodeInfo): Ast = {
-    val argumentAst = astForNodeWithFunctionReference(templateExpr.json("quasi"))
-    val callName    = code(templateExpr.json("tag"))
-    val callCode    = s"$callName(${codeOf(argumentAst.nodes.head)})"
-    val templateExprCall =
-      callNode(templateExpr, callCode, callName, DispatchTypes.STATIC_DISPATCH)
-    val argAsts = List(argumentAst)
+    val argumentAst      = astForNodeWithFunctionReference(templateExpr.json("quasi"))
+    val callName         = code(templateExpr.json("tag"))
+    val callCode         = s"$callName(${codeOf(argumentAst.nodes.head)})"
+    val templateExprCall = callNode(templateExpr, callCode, callName, DispatchTypes.STATIC_DISPATCH)
+    val argAsts          = List(argumentAst)
     callAst(templateExprCall, argAsts)
   }
 
