@@ -322,7 +322,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         val fn = declarator.getName.toString
         return fn
       case definition: ICPPASTFunctionDefinition
-            if !definition.getDeclarator.getParent.isInstanceOf[ICPPASTFunctionDefinition] =>
+          if !definition.getDeclarator.getParent.isInstanceOf[ICPPASTFunctionDefinition] =>
         return fullName(definition.getDeclarator)
       case x =>
     }
