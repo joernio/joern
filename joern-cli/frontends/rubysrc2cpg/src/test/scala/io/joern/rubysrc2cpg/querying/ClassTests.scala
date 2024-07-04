@@ -354,7 +354,6 @@ class ClassTests extends RubyCode2CpgFixture {
 
   }
 
-  // TODO: This should be remodelled as a property access `animal.bark = METHOD_REF`
   "a basic singleton class" should {
     val cpg = code("""class Animal; end
         |animal = Animal.new
@@ -363,42 +362,46 @@ class ClassTests extends RubyCode2CpgFixture {
         |  def bark
         |    'Woof'
         |  end
+        |
+        |  def legs
+        |     4
+        |  end
         |end
         |
         |animal.bark # => 'Woof'
         |""".stripMargin)
 
-    "yeet" in {
-      cpg.call.name(Operators.assignment).dotAst.l.foreach(println)
-//      inside(cpg.call.name(Operators.assignment).l) {
-//        case
-//      }
-    }
+    "Create assignments to method refs for methods on singleton object" in {
+      inside(cpg.method.name(":program").astChildren.isBlock.astChildren.isBlock.l) {
+        case singletonMethodsBlock :: Nil =>
+          inside(singletonMethodsBlock.astChildren.isCall.name(Operators.assignment).l) {
+            case barkAssignment :: legsAssignment :: Nil =>
+              inside(barkAssignment.argument.l) {
+                case (lhs: Call) :: (rhs: MethodRef) :: Nil =>
+                  val List(identifier, fieldIdentifier) = lhs.argument.l
+                  identifier.code shouldBe "animal"
+                  fieldIdentifier.code shouldBe "bark"
 
-    "generate a type decl with the associated members" in {
-      inside(cpg.typeDecl.nameExact("<anon-class-0>").l) {
-        case anonClass :: Nil =>
-          anonClass.name shouldBe "<anon-class-0>"
-          anonClass.fullName shouldBe "Test0.rb:<global>::program.<anon-class-0>"
-          // TODO: Attempt to resolve the below with the `scope` class once we're handling constructors
-          anonClass.inheritsFromTypeFullName shouldBe Seq("animal")
-          inside(anonClass.method.l) {
-            case defaultConstructor :: bark :: Nil =>
-              defaultConstructor.name shouldBe Defines.ConstructorMethodName
-              defaultConstructor.fullName shouldBe s"Test0.rb:<global>::program.<anon-class-0>:${Defines.ConstructorMethodName}"
-
-              bark.name shouldBe "bark"
-              bark.fullName shouldBe "Test0.rb:<global>::program.<anon-class-0>:bark"
-            case xs => fail(s"Expected a single method, but got [${xs.map(x => x.label -> x.code).mkString(",")}]")
+                  rhs.methodFullName shouldBe "Test0.rb:<global>::program:<lambda>0"
+                case xs => fail(s"Expected two arguments for assignment, got [${xs.code.mkString(",")}]")
+              }
+            case xs => fail(s"Expected two assignments, got [${xs.code.mkString(",")}]")
           }
-        case xs => fail(s"Expected a single anonymous class, but got [${xs.map(x => x.label -> x.code).mkString(",")}]")
+        case xs => fail(s"Expected one block for main program, got [${xs.code.mkString(",")}]")
       }
     }
 
-    "register that `animal` may possibly be an instantiation of the singleton type" in {
-      cpg.local("animal").possibleTypes.l should contain("Test0.rb:<global>::program.<anon-class-0>")
-    }
+    "Create lambda methods for methods on singleton object" in {
+      inside(cpg.method.name("<lambda>\\d+").l) {
+        case barkLambda :: legsLambda :: Nil =>
+          val List(barkLambdaParam) = barkLambda.method.parameter.l
+          val List(legsLambdaParam) = legsLambda.method.parameter.l
 
+          barkLambdaParam.code shouldBe RubyDefines.Self
+          legsLambdaParam.code shouldBe RubyDefines.Self
+        case xs => fail(s"Expected two lambdas, got [${xs.code.mkString(",")}]")
+      }
+    }
   }
 
   "if: <val> as function param" should {

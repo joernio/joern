@@ -361,10 +361,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
                   case _ => astForExpression(node.lhs)
                 }
 
-                val rhsAst = node.rhs match {
-                  case x: MethodDeclaration => astForMethodDeclaration(x, isClosure = true)(1) // (1) is methodRef
-                  case x                    => astForExpression(x)
-                }
+                val rhsAst = astForExpression(node.rhs)
 
                 // If this is a simple object instantiation assignment, we can give the LHS variable a type hint
                 if (node.rhs.isInstanceOf[ObjectInstantiation] && lhsAst.root.exists(_.isInstanceOf[NewIdentifier])) {
