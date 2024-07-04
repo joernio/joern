@@ -120,7 +120,7 @@ object MethodStubCreator {
     val blockNode = NewBlock()
       .order(1)
       .argumentIndex(1)
-      .typeFullName("ANY")
+      .typeFullName(Defines.Any)
 
     dstGraph.addNode(blockNode)
     dstGraph.addEdge(methodNode, blockNode, EdgeTypes.AST)

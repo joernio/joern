@@ -61,7 +61,11 @@ trait LinkingUtil {
           .propertyOption(key)
           .filter { dstFullName =>
             val dereferenceDstFullName = dereference.dereferenceTypeFullName(dstFullName)
-            srcNode.propertyDefaultValue(dstFullNameKey) != dereferenceDstFullName
+            val isDefaultValue         = srcNode.propertyDefaultValue(dstFullNameKey) == dereferenceDstFullName
+            if (isDefaultValue) {
+              logFailedDstLookup(edgeType, srcNode.label, srcNode.id.toString, dstNodeLabel, dereferenceDstFullName)
+            }
+            !isDefaultValue
           }
           .ifPresent { dstFullName =>
             // for `UNKNOWN` this is not always set, so we're using an Option here
