@@ -83,10 +83,11 @@ class DownloadDependenciesPass(cpg: Cpg, parentGoMod: GoModHelper, goGlobal: GoG
           .withIgnoredFilesRegex(config.ignoredFilesRegex.toString())
           .withIgnoredFiles(config.ignoredFiles.toList)
         val astGenResult = new AstGenRunner(depConfig, dependency.getIncludePackagesList())
-          .execute(astLocation)
-          .asInstanceOf[GoAstGenRunnerResult]
+          .executeForGo(astLocation)
+          .headOption
+          .getOrElse(GoAstGenRunnerResult())
         val goMod = new GoModHelper(
-          Some(depConfig),
+          Some(dependencyLocation),
           astGenResult.parsedModFile.flatMap(modFile => GoAstJsonParser.readModFile(Paths.get(modFile)).map(x => x))
         )
         DependencySrcProcessorPass(cpg, astGenResult.parsedFiles, depConfig, goMod, goGlobal, astLocation)

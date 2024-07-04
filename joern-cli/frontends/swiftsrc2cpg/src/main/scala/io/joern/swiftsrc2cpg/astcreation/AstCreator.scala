@@ -21,7 +21,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewTypeRef
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.nodes.File.PropertyDefaults
 import org.slf4j.{Logger, LoggerFactory}
-import overflowdb.BatchedUpdate.DiffGraphBuilder
+import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 
 import scala.collection.mutable
 

@@ -8,7 +8,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewMetaData
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.utils.ProjectRoot
 import overflowdb.BatchedUpdate
-import overflowdb.BatchedUpdate.DiffGraphBuilder
+import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 
 import java.nio.file.Paths
 

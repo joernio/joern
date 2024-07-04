@@ -71,7 +71,7 @@ class PySrc2CpgFixture(
   implicit val resolver: ICallResolver = NoResolve
 
   protected def flowToResultPairs(path: Path): List[(String, Integer)] =
-    path.resultPairs().collect { case (firstElement: String, secondElement: Option[Integer]) =>
+    path.resultPairs().collect { case (firstElement: String, secondElement) =>
       (firstElement, secondElement.getOrElse(-1))
     }
 }

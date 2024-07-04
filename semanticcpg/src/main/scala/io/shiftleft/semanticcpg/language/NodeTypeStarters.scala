@@ -5,7 +5,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{NodeTypes, Properties}
 import overflowdb.*
 import overflowdb.traversal.help
-import overflowdb.traversal.help.Doc
+import io.shiftleft.codepropertygraph.generated.help.Doc
 import overflowdb.traversal.{InitialTraversal, TraversalSource}
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
