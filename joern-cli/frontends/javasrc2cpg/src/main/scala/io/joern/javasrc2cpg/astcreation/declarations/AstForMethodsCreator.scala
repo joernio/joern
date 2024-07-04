@@ -2,7 +2,14 @@ package io.joern.javasrc2cpg.astcreation.declarations
 
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import com.github.javaparser.ast.NodeList
-import com.github.javaparser.ast.body.{CallableDeclaration, ConstructorDeclaration, FieldDeclaration, MethodDeclaration, Parameter, VariableDeclarator}
+import com.github.javaparser.ast.body.{
+  CallableDeclaration,
+  ConstructorDeclaration,
+  FieldDeclaration,
+  MethodDeclaration,
+  Parameter,
+  VariableDeclarator
+}
 import com.github.javaparser.ast.stmt.{BlockStmt, ExplicitConstructorInvocationStmt}
 import com.github.javaparser.resolution.declarations.{ResolvedMethodDeclaration, ResolvedMethodLikeDeclaration}
 import com.github.javaparser.resolution.types.ResolvedType
@@ -13,7 +20,14 @@ import io.joern.javasrc2cpg.util.Util.*
 import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.utils.NodeBuilders.*
 import io.joern.x2cpg.{Ast, Defines}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewIdentifier, NewMethod, NewMethodParameterIn, NewMethodReturn, NewModifier}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  NewBlock,
+  NewIdentifier,
+  NewMethod,
+  NewMethodParameterIn,
+  NewMethodReturn,
+  NewModifier
+}
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, ModifierTypes}
 import io.joern.javasrc2cpg.scope.JavaScopeElement.fullName
 
@@ -46,11 +60,9 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     val returnTypeFullName = expectedReturnType
       .flatMap(typeInfoCalc.fullName)
       .orElse(simpleMethodReturnType.flatMap(scope.lookupType(_)))
-      .orElse(
-        tryWithSafeStackOverflow(methodDeclaration.getType).toOption.collect{
-          case t: ClassOrInterfaceType=> scope.lookupType(t.getNameAsString)
-        }.flatten
-      )
+      .orElse(tryWithSafeStackOverflow(methodDeclaration.getType).toOption.collect { case t: ClassOrInterfaceType =>
+        scope.lookupType(t.getNameAsString)
+      }.flatten)
       .orElse(typeParameters.find(typeParam => simpleMethodReturnType.contains(typeParam.name)).map(_.typeFullName))
 
     scope.pushMethodScope(
