@@ -177,14 +177,16 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
             val classFullName = cleanType(safeGetType(classType))
             val fullName      = s"$classFullName.$name:$signature"
 
-            val method = evaluation.getOverload.asInstanceOf[ICPPMethod]
-            val dispatchType =
-              if (method.isVirtual || method.isPureVirtual) {
-                DispatchTypes.DYNAMIC_DISPATCH
-              } else {
+            val dispatchType = evaluation.getOverload match {
+              case method: ICPPMethod =>
+                if (method.isVirtual || method.isPureVirtual) {
+                  DispatchTypes.DYNAMIC_DISPATCH
+                } else {
+                  DispatchTypes.STATIC_DISPATCH
+                }
+              case _ =>
                 DispatchTypes.STATIC_DISPATCH
-              }
-
+            }
             val callCpgNode = callNode(
               call,
               code(call),
