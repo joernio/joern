@@ -40,6 +40,7 @@ import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import com.github.javaparser.ast.Node
+import com.github.javaparser.ast.`type`.ClassOrInterfaceType
 import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserParameterDeclaration
 import io.joern.javasrc2cpg.astcreation.declarations.AstForMethodsCreator.PartialConstructorDeclaration
 import io.joern.javasrc2cpg.util.{NameConstants, Util}
@@ -59,11 +60,9 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     val returnTypeFullName = expectedReturnType
       .flatMap(typeInfoCalc.fullName)
       .orElse(simpleMethodReturnType.flatMap(scope.lookupType(_)))
-      .orElse(
-        tryWithSafeStackOverflow(methodDeclaration.getType.asClassOrInterfaceType).toOption.flatMap(t =>
-          scope.lookupType(t.getNameAsString)
-        )
-      )
+      .orElse(tryWithSafeStackOverflow(methodDeclaration.getType).toOption.collect { case t: ClassOrInterfaceType =>
+        scope.lookupType(t.getNameAsString)
+      }.flatten)
       .orElse(typeParameters.find(typeParam => simpleMethodReturnType.contains(typeParam.name)).map(_.typeFullName))
 
     scope.pushMethodScope(

@@ -59,7 +59,11 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
   }
 
   private[expressions] def astForArrayCreationExpr(expr: ArrayCreationExpr, expectedType: ExpectedType): Ast = {
-    val maybeInitializerAst = expr.getInitializer.toScala.map(astForArrayInitializerExpr(_, expectedType))
+    val elementType = tryWithSafeStackOverflow(expr.getElementType.resolve()).map(elementType =>
+      ExpectedType(typeInfoCalc.fullName(elementType).map(_ ++ "[]"), Option(elementType))
+    )
+    val maybeInitializerAst =
+      expr.getInitializer.toScala.map(astForArrayInitializerExpr(_, elementType.getOrElse(expectedType)))
 
     maybeInitializerAst.flatMap(_.root) match {
       case Some(initializerRoot: NewCall) => initializerRoot.code(expr.toString)
@@ -84,11 +88,12 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
   }
 
   private[expressions] def astForArrayInitializerExpr(expr: ArrayInitializerExpr, expectedType: ExpectedType): Ast = {
-    val typeFullName =
-      expressionReturnTypeFullName(expr)
-        .orElse(expectedType.fullName)
-        .map(typeInfoCalc.registerType)
-        .getOrElse(TypeConstants.Any)
+    // In the expression `new int[] { 1, 2 }`, the ArrayInitializerExpr is only the `{ 1, 2 }` part and does not have
+    // a type itself. We need to use the expected type from the parent expr here.
+    val typeFullName = expectedType.fullName
+      .map(typeInfoCalc.registerType)
+      .getOrElse(TypeConstants.Any)
+
     val callNode = newOperatorCallNode(
       Operators.arrayInitializer,
       code = expr.toString,
