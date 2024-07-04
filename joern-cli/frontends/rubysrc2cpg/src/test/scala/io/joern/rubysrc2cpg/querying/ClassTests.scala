@@ -385,6 +385,16 @@ class ClassTests extends RubyCode2CpgFixture {
                   rhs.methodFullName shouldBe "Test0.rb:<global>::program:<lambda>0"
                 case xs => fail(s"Expected two arguments for assignment, got [${xs.code.mkString(",")}]")
               }
+
+              inside(legsAssignment.argument.l) {
+                case (lhs: Call) :: (rhs: MethodRef) :: Nil =>
+                  val List(identifier, fieldIdentifier) = lhs.argument.l
+                  identifier.code shouldBe "animal"
+                  fieldIdentifier.code shouldBe "legs"
+
+                  rhs.methodFullName shouldBe "Test0.rb:<global>::program:<lambda>1"
+                case xs => fail(s"Expected two arguments for assignment, got [${xs.code.mkString(",")}]")
+              }
             case xs => fail(s"Expected two assignments, got [${xs.code.mkString(",")}]")
           }
         case xs => fail(s"Expected one block for main program, got [${xs.code.mkString(",")}]")
