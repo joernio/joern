@@ -840,4 +840,25 @@ class ClassTests extends RubyCode2CpgFixture {
       }
     }
   }
+
+  "A call to super" should {
+    val cpg = code("""
+        |class A
+        |  def foo(a)
+        |  end
+        |end
+        |class B < A
+        |  def foo(a)
+        |    super(a)
+        |  end
+        |end
+        |""".stripMargin)
+
+    "create a simple call" in {
+      val superCall = cpg.call.nameExact("super").head
+      superCall.code shouldBe "super(a)"
+      superCall.name shouldBe "super"
+      superCall.methodFullName shouldBe Defines.DynamicCallUnknownFullName
+    }
+  }
 }
