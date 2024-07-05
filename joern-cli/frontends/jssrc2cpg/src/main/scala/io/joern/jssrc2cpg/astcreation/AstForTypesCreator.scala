@@ -6,7 +6,6 @@ import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
-import io.joern.x2cpg.utils.NodeBuilders.newBindingNode
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes, Operators}
 import ujson.Value
@@ -180,18 +179,12 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val typeFullName  = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
     val memberNode_ = nodeInfo.node match {
       case TSDeclareMethod | TSDeclareFunction =>
-        val function    = createMethodDefinitionNode(nodeInfo)
-        val bindingNode = newBindingNode("", "", "")
-        diffGraph.addEdge(typeDeclNode, bindingNode, EdgeTypes.BINDS)
-        diffGraph.addEdge(bindingNode, function, EdgeTypes.REF)
+        val function = createMethodDefinitionNode(nodeInfo)
         addModifier(function, nodeInfo.json)
         memberNode(nodeInfo, function.name, nodeInfo.code, typeFullName, Seq(function.fullName))
           .possibleTypes(possibleTypes)
       case ClassMethod | ClassPrivateMethod =>
-        val function    = createMethodAstAndNode(nodeInfo).methodNode
-        val bindingNode = newBindingNode("", "", "")
-        diffGraph.addEdge(typeDeclNode, bindingNode, EdgeTypes.BINDS)
-        diffGraph.addEdge(bindingNode, function, EdgeTypes.REF)
+        val function = createMethodAstAndNode(nodeInfo).methodNode
         addModifier(function, nodeInfo.json)
         memberNode(nodeInfo, function.name, nodeInfo.code, typeFullName, Seq(function.fullName))
           .possibleTypes(possibleTypes)
@@ -500,9 +493,9 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val constructorNode = interfaceConstructor(typeName, tsInterface)
     diffGraph.addEdge(constructorNode, NewModifier().modifierType(ModifierTypes.CONSTRUCTOR), EdgeTypes.AST)
 
-    val constructorBindingNode = newBindingNode("", "", "")
-    diffGraph.addEdge(typeDeclNode_, constructorBindingNode, EdgeTypes.BINDS)
-    diffGraph.addEdge(constructorBindingNode, constructorNode, EdgeTypes.REF)
+    val memberNode_ =
+      memberNode(tsInterface, constructorNode.name, constructorNode.code, typeFullName, Seq(constructorNode.fullName))
+    diffGraph.addEdge(typeDeclNode_, memberNode_, EdgeTypes.AST)
 
     val interfaceBodyElements = classMembers(tsInterface, withConstructor = false)
 
@@ -514,9 +507,6 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       val memberNodes = nodeInfo.node match {
         case TSCallSignatureDeclaration | TSMethodSignature =>
           val functionNode = createMethodDefinitionNode(nodeInfo)
-          val bindingNode  = newBindingNode("", "", "")
-          diffGraph.addEdge(typeDeclNode_, bindingNode, EdgeTypes.BINDS)
-          diffGraph.addEdge(bindingNode, functionNode, EdgeTypes.REF)
           addModifier(functionNode, nodeInfo.json)
           Seq(
             memberNode(nodeInfo, functionNode.name, nodeInfo.code, typeFullName, Seq(functionNode.fullName))
