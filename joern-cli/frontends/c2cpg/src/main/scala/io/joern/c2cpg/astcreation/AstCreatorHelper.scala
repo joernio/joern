@@ -324,14 +324,20 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
               }
             return fn
           case _: IProblemBinding =>
-            return ""
+            val fullNameNoSig = ASTStringUtil.getQualifiedName(declarator.getName)
+            val fixedFullName = fixQualifiedName(fullNameNoSig).stripPrefix(".")
+            if (fixedFullName.isEmpty) {
+              return s"${X2CpgDefines.UnresolvedNamespace}:${X2CpgDefines.UnresolvedSignature}"
+            } else {
+              return s"$fixedFullName:${X2CpgDefines.UnresolvedSignature}"
+            }
           case _ =>
         }
       case declarator: CASTFunctionDeclarator =>
         return declarator.getName.toString
-      case definition: ICPPASTFunctionDefinition if definition.getDeclarator.isInstanceOf[CPPASTFunctionDeclarator] =>
+      case definition: ICPPASTFunctionDefinition =>
         return fullName(definition.getDeclarator)
-      case x =>
+      case _ =>
     }
 
     val qualifiedName: String = node match {
@@ -369,6 +375,13 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         s"${fullName(enumSpecifier.getParent)}.${ASTStringUtil.getSimpleName(enumSpecifier.getName)}"
       case f: ICPPASTLambdaExpression =>
         s"${fullName(f.getParent)}."
+      case f: IASTFunctionDeclarator
+          if ASTStringUtil.getSimpleName(f.getName).isEmpty && f.getNestedDeclarator != null =>
+        s"${fullName(f.getParent)}.${shortName(f.getNestedDeclarator)}"
+      case f: IASTFunctionDeclarator if f.getParent.isInstanceOf[IASTFunctionDefinition] =>
+        s"${fullName(f.getParent)}"
+      case f: IASTFunctionDeclarator =>
+        s"${fullName(f.getParent)}.${ASTStringUtil.getSimpleName(f.getName)}"
       case f: IASTFunctionDefinition if f.getDeclarator != null =>
         s"${fullName(f.getParent)}.${ASTStringUtil.getQualifiedName(f.getDeclarator.getName)}"
       case f: IASTFunctionDefinition =>
