@@ -166,7 +166,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
               fullName,
               dispatchType,
               Some(signature),
-              Some(cleanType(safeGetType(call.getExpressionType)))
+              Some(registerType(cleanType(safeGetType(call.getExpressionType))))
             )
 
             val receiverAst = astForExpression(functionNameExpr)

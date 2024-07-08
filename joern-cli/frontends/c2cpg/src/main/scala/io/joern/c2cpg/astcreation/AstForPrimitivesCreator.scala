@@ -47,7 +47,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
         for {
           fullName     <- mayBeFullName
           typeFullName <- mayBeTypeFullName
-        } yield methodRefNode(ident, code(ident), fullName, typeFullName)
+        } yield methodRefNode(ident, code(ident), fullName, registerType(cleanType(typeFullName)))
       case _ => None
     }
   }
