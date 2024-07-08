@@ -586,7 +586,7 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
     val iteratorAssignAst = simpleAssignAst(Ast(iterIdentifier), iterValue, line(stmt))
 
     // - Assigned item assign
-    val itemInitAst = getItemAssignAstForForeach(stmt, assignItemTargetAst, iterIdentifier.copy())
+    val itemInitAst = getItemAssignAstForForeach(stmt, assignItemTargetAst, iterIdentifier.copy)
 
     // Condition ast
     val isNullName = PhpOperators.isNull
@@ -599,7 +599,7 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
     val conditionAst = callAst(notIsNull, isNullAst :: Nil)
 
     // Update asts
-    val nextIterIdent = Ast(iterIdentifier.copy())
+    val nextIterIdent = Ast(iterIdentifier.copy)
     val nextSignature = "void()"
     val nextCallCode  = s"${nextIterIdent.rootCodeOrEmpty}->next()"
     val nextCallNode = callNode(
@@ -1528,11 +1528,11 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
       Some(initSignature),
       Some(TypeConstants.Any)
     )
-    val initReceiver = Ast(tmpIdentifier.copy())
+    val initReceiver = Ast(tmpIdentifier.copy)
     val initCallAst  = callAst(initCallNode, initArgs, base = Option(initReceiver))
 
     // Return identifier
-    val returnIdentifierAst = Ast(tmpIdentifier.copy())
+    val returnIdentifierAst = Ast(tmpIdentifier.copy)
 
     Ast(blockNode(expr, "", TypeConstants.Any))
       .withChild(allocAssignAst)
