@@ -7,6 +7,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, NodeTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
+import scala.util.{Failure, Success, Try}
+
 class MethodTests extends RubyCode2CpgFixture {
 
   "`def f(x) = 1`" should {
@@ -716,5 +718,18 @@ class MethodTests extends RubyCode2CpgFixture {
         }
       case xs => fail(s"Expected one call to foo, got [${xs.code.mkString(",")}]")
     }
+  }
+
+  "a nested method declaration inside of a do-block should connect the member node to the bound type decl" in {
+    val cpg = code("""
+        |foo do
+        | def bar
+        | end
+        |end
+        |""".stripMargin)
+
+    val parentType = cpg.member("bar").typeDecl.head
+    parentType.isLambda should not be empty
+    parentType.methodBinding.methodFullName.head should endWith("<lambda>0")
   }
 }

@@ -127,7 +127,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           case Some(astParentTfn) => memberForMethod(method, Option(NodeTypes.TYPE_DECL), Option(astParentTfn))
           case None               => memberForMethod(method, scope.surroundingAstLabel, scope.surroundingScopeFullName)
         }
-        Ast(memberForMethod(method, scope.surroundingAstLabel, scope.surroundingScopeFullName))
+        Ast(memberForMethod(method, Option(NodeTypes.TYPE_DECL), scope.surroundingScopeFullName))
       }
     // For closures, we also want the method/type refs for upstream use
     val methodAst_ = {
