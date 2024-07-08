@@ -234,7 +234,7 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
   }
 
   protected def blockNode(node: Node): NewBlock = {
-    blockNode(node, BlockDefaults.Code, BlockDefaults.TypeFullName)
+    blockNode(node, BlockDefaults.Code, Defines.Any)
   }
 
   protected def blockNode(node: Node, code: String, typeFullName: String): NewBlock = {

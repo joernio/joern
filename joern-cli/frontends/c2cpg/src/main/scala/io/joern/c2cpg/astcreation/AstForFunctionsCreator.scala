@@ -295,7 +295,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   private def astForMethodBody(body: Option[IASTStatement]): Ast = body match {
     case Some(b: IASTCompoundStatement) => astForBlockStatement(b)
     case Some(b)                        => astForNode(b)
-    case None                           => blockAst(NewBlock())
+    case None                           => blockAst(NewBlock().typeFullName(Defines.Any))
   }
 
 }
