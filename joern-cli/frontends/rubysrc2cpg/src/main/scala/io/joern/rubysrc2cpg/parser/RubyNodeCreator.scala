@@ -161,6 +161,10 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     ReturnExpression(expressions)(ctx.toTextSpan)
   }
 
+  override def visitReturnWithoutArguments(ctx: RubyParser.ReturnWithoutArgumentsContext): RubyNode = {
+    ReturnExpression(Nil)(ctx.toTextSpan)
+  }
+
   override def visitNumericLiteral(ctx: RubyParser.NumericLiteralContext): RubyNode = {
     if (ctx.hasSign) {
       UnaryExpression(ctx.sign.getText, visit(ctx.unsignedNumericLiteral()))(ctx.toTextSpan)

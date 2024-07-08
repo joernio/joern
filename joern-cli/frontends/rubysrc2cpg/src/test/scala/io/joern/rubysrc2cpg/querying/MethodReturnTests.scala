@@ -439,4 +439,21 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
     }
   }
 
+  "a return in an expression position without arguments should generate a return node with no children" in {
+    val cpg = code("""
+        |def foo
+        | return unless baz()
+        | bar()
+        |end
+        |""".stripMargin)
+
+    inside(cpg.method.nameExact("foo").ast.isReturn.headOption) {
+      case Some(ret) =>
+        ret.code shouldBe "return"
+        ret.astChildren.size shouldBe 0
+        ret.astParent.astParent.code shouldBe "return unless baz()"
+      case None => fail(s"Expected at least one return node")
+    }
+  }
+
 }
