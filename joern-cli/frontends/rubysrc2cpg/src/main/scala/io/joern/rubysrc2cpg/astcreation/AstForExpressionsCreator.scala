@@ -819,7 +819,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           x.argumentIndex_=(-1)
         }
         value
-      case _: StaticLiteral => astForExpression(assoc)
+      case _: (LiteralExpr | RubyCall) => astForExpression(assoc)
       case x =>
         logger.warn(s"Not explicitly handled argument association key of type ${x.getClass.getSimpleName}")
         astForExpression(assoc)

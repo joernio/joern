@@ -281,8 +281,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         )
       case node: MemberAccess    => astForReturnMemberCall(node) :: Nil
       case ret: ReturnExpression => astForReturnStatement(ret) :: Nil
-      case node: MethodDeclaration =>
-        (astForMethodDeclaration(node) :+ astForReturnMethodDeclarationSymbolName(node)).toList
+      case node: (MethodDeclaration | SingletonMethodDeclaration) =>
+        (astsForStatement(node) :+ astForReturnMethodDeclarationSymbolName(node)).toList
       case _: BreakStatement => astsForStatement(node).toList
       case node =>
         logger.warn(
@@ -302,7 +302,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   // The evaluation of a MethodDeclaration returns its name in symbol form.
   // E.g. `def f = 0` ===> `:f`
-  private def astForReturnMethodDeclarationSymbolName(node: MethodDeclaration): Ast = {
+  private def astForReturnMethodDeclarationSymbolName(node: RubyNode & ProcedureDeclaration): Ast = {
     val literalNode_ = literalNode(node, s":${node.methodName}", getBuiltInType(Defines.Symbol))
     val returnNode_  = returnNode(node, literalNode_.code)
     returnAst(returnNode_, Seq(Ast(literalNode_)))

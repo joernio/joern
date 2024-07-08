@@ -577,13 +577,13 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
 
   override def visitSuperWithParentheses(ctx: RubyParser.SuperWithParenthesesContext): RubyNode = {
     val block     = Option(ctx.block()).map(visit)
-    val arguments = ctx.argumentWithParentheses().arguments.map(visit)
+    val arguments = Option(ctx.argumentWithParentheses()).map(_.arguments.map(visit)).getOrElse(Nil)
     visitSuperCall(ctx, arguments, block)
   }
 
   override def visitSuperWithoutParentheses(ctx: RubyParser.SuperWithoutParenthesesContext): RubyNode = {
     val block     = Option(ctx.block()).map(visit)
-    val arguments = ctx.argumentList().elements.map(visit)
+    val arguments = Option(ctx.argumentList()).map(_.elements.map(visit)).getOrElse(Nil)
     visitSuperCall(ctx, arguments, block)
   }
 
@@ -1261,10 +1261,10 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitAssociationKey(ctx: RubyParser.AssociationKeyContext): RubyNode = {
-    if (Option(ctx.operatorExpression()).isDefined) {
-      visit(ctx.operatorExpression())
-    } else {
-      SimpleIdentifier()(ctx.toTextSpan)
+    Option(ctx.operatorExpression()) match {
+      case Some(ctx) if ctx.isKeyword => SimpleIdentifier()(ctx.toTextSpan)
+      case Some(ctx)                  => visit(ctx)
+      case None                       => SimpleIdentifier()(ctx.toTextSpan)
     }
   }
 
