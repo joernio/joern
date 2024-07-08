@@ -206,6 +206,7 @@ object BabelAst {
   object TSIndexSignature                extends BabelNode
   object TSIndexedAccessType             extends TSType
   object TSInferType                     extends TSType
+  object TSInstantiationExpression       extends Expression
   object TSInterfaceBody                 extends BabelNode
   object TSInterfaceDeclaration          extends BabelNode
   object TSIntersectionType              extends TSType

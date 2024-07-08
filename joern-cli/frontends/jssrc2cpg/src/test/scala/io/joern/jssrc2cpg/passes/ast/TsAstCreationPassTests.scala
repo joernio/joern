@@ -108,8 +108,7 @@ class TsAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
       arg.typeFullName shouldBe Defines.String
       arg.code shouldBe "arg: string"
       arg.index shouldBe 1
-      val List(parentTypeDecl) = cpg.typeDecl.name(":program").l
-      parentTypeDecl.bindsOut.flatMap(_.refOut).l should contain(func)
+      cpg.method("foo").bindingTypeDecl.fullName.l shouldBe List("Test0.ts::program:foo")
     }
 
     "have correct structure for type assertion" in {

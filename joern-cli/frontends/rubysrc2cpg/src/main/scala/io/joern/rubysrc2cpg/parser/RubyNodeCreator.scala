@@ -7,6 +7,7 @@ import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
 import io.joern.x2cpg.Defines as XDefines
+import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.tree.{ParseTree, RuleNode}
 import org.slf4j.LoggerFactory
 
@@ -571,6 +572,26 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
       }
     } else {
       FieldsDeclaration(ctx.commandArgument().arguments.map(visit))(ctx.toTextSpan)
+    }
+  }
+
+  override def visitSuperWithParentheses(ctx: RubyParser.SuperWithParenthesesContext): RubyNode = {
+    val block     = Option(ctx.block()).map(visit)
+    val arguments = ctx.argumentWithParentheses().arguments.map(visit)
+    visitSuperCall(ctx, arguments, block)
+  }
+
+  override def visitSuperWithoutParentheses(ctx: RubyParser.SuperWithoutParenthesesContext): RubyNode = {
+    val block     = Option(ctx.block()).map(visit)
+    val arguments = ctx.argumentList().elements.map(visit)
+    visitSuperCall(ctx, arguments, block)
+  }
+
+  private def visitSuperCall(ctx: ParserRuleContext, arguments: List[RubyNode], block: Option[RubyNode]): RubyNode = {
+    val callName = SimpleIdentifier()(ctx.toTextSpan.spanStart("super"))
+    block match {
+      case Some(body) => SimpleCallWithBlock(callName, arguments, body.asInstanceOf[Block])(ctx.toTextSpan)
+      case None       => SimpleCall(callName, arguments)(ctx.toTextSpan)
     }
   }
 

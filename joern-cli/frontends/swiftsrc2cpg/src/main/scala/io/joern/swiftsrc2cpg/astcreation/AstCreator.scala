@@ -121,10 +121,10 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
     case null                               => notHandledYet(node)
   }
 
-  override protected def line(node: SwiftNode): Option[Int]      = node.startLine.map(Integer.valueOf)
-  override protected def column(node: SwiftNode): Option[Int]    = node.startColumn.map(Integer.valueOf)
-  override protected def lineEnd(node: SwiftNode): Option[Int]   = node.endLine.map(Integer.valueOf)
-  override protected def columnEnd(node: SwiftNode): Option[Int] = node.endColumn.map(Integer.valueOf)
+  override protected def line(node: SwiftNode): Option[Int]      = node.startLine
+  override protected def column(node: SwiftNode): Option[Int]    = node.startColumn
+  override protected def lineEnd(node: SwiftNode): Option[Int]   = node.endLine
+  override protected def columnEnd(node: SwiftNode): Option[Int] = node.endColumn
 
   private val lineOffsetTable =
     OffsetUtils.getLineOffsetTable(Option(parserResult.fileContent))

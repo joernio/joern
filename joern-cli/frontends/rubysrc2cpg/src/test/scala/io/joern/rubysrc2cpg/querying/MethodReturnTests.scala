@@ -339,7 +339,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
     }
   }
 
-  "implicit RETURN node for ASSOCIATION" in {
+  "implicit RETURN node for super call" in {
     val cpg = code("""
                      |def j
                      |  super(only: ["a"])
@@ -350,11 +350,11 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
       case jMethod :: Nil =>
         inside(jMethod.methodReturn.toReturn.l) {
           case retAssoc :: Nil =>
-            retAssoc.code shouldBe "only: [\"a\"]"
+            retAssoc.code shouldBe "super(only: [\"a\"])"
 
             val List(call: Call) = retAssoc.astChildren.l: @unchecked
-            call.name shouldBe RubyOperators.association
-            call.code shouldBe "only: [\"a\"]"
+            call.name shouldBe "super"
+            call.code shouldBe "super(only: [\"a\"])"
           case xs => fail(s"Expected exactly one return nodes, instead got [${xs.code.mkString(",")}]")
         }
       case _ => fail("Only one method expected")
