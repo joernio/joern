@@ -26,8 +26,8 @@ replaceDomainClassesInJoern := {
 }
 
 ThisBuild / libraryDependencies ++= Seq(
-  "com.michaelpollmeier" %% "codepropertygraph-schema"         % cpgVersion,
-  "com.michaelpollmeier" %% "codepropertygraph-domain-classes" % cpgVersion
+  "io.shiftleft" %% "codepropertygraph-schema"         % cpgVersion,
+  "io.shiftleft" %% "codepropertygraph-domain-classes" % cpgVersion
 )
 
 lazy val schema = project

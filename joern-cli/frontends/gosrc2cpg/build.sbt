@@ -9,9 +9,7 @@ name := "gosrc2cpg"
 dependsOn(Projects.dataflowengineoss % "compile->compile;test->test", Projects.x2cpg % "compile->compile;test->test")
 
 libraryDependencies ++= Seq(
-  // TODO back to io.shiftleft!
-  //"io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
-  "com.michaelpollmeier" %% "codepropertygraph" % Versions.cpg,
+  "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
   "org.scalatest" %% "scalatest"         % Versions.scalatest % Test,
   "com.lihaoyi"   %% "os-lib"            % Versions.osLib
 )

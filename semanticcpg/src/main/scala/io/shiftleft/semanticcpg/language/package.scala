@@ -144,7 +144,7 @@ package object language
     new CallTraversal(a.iterator)
   // / Call graph extension
 
-//   // Binding extensions
+  // Binding extensions
   implicit def singleToBindingMethodTrav[A <: Method](a: A): BindingMethodTraversal =
     new BindingMethodTraversal(Iterator.single(a))
   implicit def iterOnceToBindingMethodTrav[A <: Method](a: IterableOnce[A]): BindingMethodTraversal =

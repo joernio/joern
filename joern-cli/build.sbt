@@ -3,7 +3,7 @@ name := "joern-cli"
 dependsOn(Projects.console, Projects.console % "test->test", Projects.dataflowengineoss, Projects.x2cpg)
 
 libraryDependencies ++= Seq(
-  "com.michaelpollmeier"     %% "codepropertygraph" % Versions.cpg,
+  "io.shiftleft"     %% "codepropertygraph" % Versions.cpg,
   "com.lihaoyi"      %% "requests"          % Versions.requests,
   "com.lihaoyi"      %% "upickle"           % Versions.upickle,
   "com.github.scopt" %% "scopt"             % Versions.scopt,

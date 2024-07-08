@@ -17,13 +17,13 @@ class CallMethods(val node: Call) extends AnyVal with NodeExtension with HasLoca
     node.receiverOut.collectAll[Expression]
 
   def arguments(index: Int): Iterator[Expression] =
-    node.argumentOut.collect {
+    node._argumentOut.collect {
       case expr: Expression if expr.argumentIndex == index => expr
     }
 
   // TODO define as named step in the schema
   def argument: Iterator[Expression] =
-    node.argumentOut.collectAll[Expression]
+    node._argumentOut.collectAll[Expression]
 
   def argument(index: Int): Expression =
     arguments(index).next
