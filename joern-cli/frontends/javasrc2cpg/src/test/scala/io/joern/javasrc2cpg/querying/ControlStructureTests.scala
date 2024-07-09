@@ -14,7 +14,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   Return
 }
 import io.shiftleft.semanticcpg.language.*
-import overflowdb.traversal.toNodeTraversal
 
 import scala.jdk.CollectionConverters.*
 

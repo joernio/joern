@@ -108,8 +108,7 @@ class AstNodeMethods(val node: AstNode) extends AnyVal with NodeExtension {
       case member: Member          => member
       case node: MethodParameterIn => node.method
 
-      case node: MethodParameterOut =>
-        node.method.methodReturn
+      case node: MethodParameterOut => node.method.methodReturn
 
       case node: Call if MemberAccess.isGenericMemberAccessName(node.name) =>
         parentExpansion(node)

@@ -178,7 +178,7 @@ trait X2CpgFrontend[T <: X2CpgConfig[?]] {
     withErrorsToConsole(config) { _ =>
       createCpg(config) match {
         case Success(cpg) =>
-          cpg.close()
+          cpg.close() // persists to disk
           Success(cpg)
         case Failure(exception) =>
           Failure(exception)

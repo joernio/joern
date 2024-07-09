@@ -969,8 +969,8 @@ class RegexDefinedFlowsDataFlowTests
         |print(Foo.func())
         |""".stripMargin)
     "be found" in {
-      val src = cpg.call.code("Foo.func").l
-      val snk = cpg.call("print").l
+      val src = cpg.call.code("Foo.func")
+      val snk = cpg.call("print")
       snk.argument.reachableByFlows(src).size shouldBe 1
     }
   }

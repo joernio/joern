@@ -1,11 +1,10 @@
 package io.joern.x2cpg.passes.frontend
 
 import io.joern.x2cpg.passes.frontend.TypeNodePass.fullToShortName
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, Properties}
 import io.shiftleft.codepropertygraph.generated.nodes.NewType
 import io.shiftleft.passes.{KeyPool, CpgPass}
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.codepropertygraph.generated.PropertyNames
 
 import scala.collection.mutable
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
@@ -33,9 +32,8 @@ class TypeNodePass protected (
 
   protected def typeFullNamesFromCpg: Set[String] = {
     cpg.all
-      .map(_.property(PropertyNames.TYPE_FULL_NAME))
+      .map(_.property(Properties.TypeFullName))
       .filter(_ != null)
-      .map(_.toString)
       .toSet
   }
 

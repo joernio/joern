@@ -96,7 +96,7 @@ abstract class LocalCreationPass[ScopeType <: AstNode](cpg: Cpg)
   ): Unit = {
     val identifierMap =
       getIdentifiersInScope(bodyNode)
-        .filter(_.refOut.isEmpty)
+        .filter(_._refOut.isEmpty)
         .filterNot(excludeIdentifierFn)
         .groupBy(_.name)
 

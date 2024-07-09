@@ -19,5 +19,6 @@ class MethodReturnMethods(val node: MethodReturn) extends AnyVal with NodeExtens
     callsites.collectAll[Call]
   }
 
+  // TODO define in schema as named step
   def typ: Iterator[Type] = node.evalTypeOut
 }

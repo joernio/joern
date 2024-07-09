@@ -17,7 +17,8 @@ trait Implicits {
   implicit def toFieldAccessTrav(steps: Iterator[OpNodes.FieldAccess]): FieldAccessTraversal =
     new FieldAccessTraversal(steps)
 
-  implicit def toAssignmentExt(assignment: OpNodes.Assignment): AssignmentMethods = new AssignmentMethods(assignment)
+  implicit def toAssignmentExt(assignment: OpNodes.Assignment): AssignmentMethods =
+    new AssignmentMethods(assignment)
   implicit def toAssignmentTrav(steps: Iterator[OpNodes.Assignment]): AssignmentTraversal =
     new AssignmentTraversal(steps)
 

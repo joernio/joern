@@ -315,7 +315,7 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
       case Success(v) => Some(v)
       case Failure(ex) =>
         System.err.println("Error loading CPG")
-        System.err.println(ex)
+        ex.printStackTrace()
         None
     }
   }
