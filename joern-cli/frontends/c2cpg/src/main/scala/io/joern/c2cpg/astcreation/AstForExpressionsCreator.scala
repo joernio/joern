@@ -5,6 +5,7 @@ import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.Defines as X2CpgDefines
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
+import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.cpp.*
@@ -95,9 +96,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
             val fullName =
               if (function.isExternC) {
-                name
+                StringUtils.normalizeSpace(name)
               } else {
-                val fullNameNoSig = function.getQualifiedName.mkString(".")
+                val fullNameNoSig = StringUtils.normalizeSpace(function.getQualifiedName.mkString("."))
                 s"$fullNameNoSig:$signature"
               }
 

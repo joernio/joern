@@ -113,7 +113,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val fixedFullName = if (rawFullname.contains("[") || rawFullname.contains("{")) {
       // FIXME: the lambda may be located in something we are not able to generate a correct fullname yet
       s"${X2CpgDefines.UnresolvedSignature}."
-    } else rawFullname
+    } else StringUtils.normalizeSpace(rawFullname)
     val fullname    = s"$fixedFullName$name"
     val signature   = StringUtils.normalizeSpace(s"$returnType${parameterListSignature(lambdaExpression)}")
     val codeString  = code(lambdaExpression)
@@ -146,7 +146,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         val returnType = cleanType(
           typeForDeclSpecifier(funcDecl.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclSpecifier)
         )
-        val name = shortName(funcDecl)
+        val name = StringUtils.normalizeSpace(shortName(funcDecl))
         val fixedName = if (name.isEmpty) {
           nextClosureName()
         } else name
@@ -155,8 +155,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           case f if funcDecl.isInstanceOf[CPPASTFunctionDeclarator] && f == "" =>
             s"${X2CpgDefines.UnresolvedNamespace}.$fixedName:$signature"
           case f if funcDecl.isInstanceOf[CPPASTFunctionDeclarator] && f.contains("?") =>
-            s"${f.takeWhile(_ != ':')}:$signature"
-          case other => other
+            s"${StringUtils.normalizeSpace(f).takeWhile(_ != ':')}:$signature"
+          case other => StringUtils.normalizeSpace(other)
         }
 
         if (seenFunctionFullnames.add(fullname)) {
@@ -215,8 +215,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       case f if funcDef.isInstanceOf[CPPASTFunctionDefinition] && f == "" =>
         s"${X2CpgDefines.UnresolvedNamespace}.$name:$signature"
       case f if funcDef.isInstanceOf[CPPASTFunctionDefinition] && f.contains("?") =>
-        s"${f.takeWhile(_ != ':')}:$signature"
-      case other => other
+        s"${StringUtils.normalizeSpace(f).takeWhile(_ != ':')}:$signature"
+      case other => StringUtils.normalizeSpace(other)
     }
     seenFunctionFullnames.add(fullname)
 

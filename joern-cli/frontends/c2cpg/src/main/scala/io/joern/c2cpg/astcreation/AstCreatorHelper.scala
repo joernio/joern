@@ -280,17 +280,20 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def dereferenceTypeFullName(fullName: String): String =
     fullName.replace("*", "")
 
-  protected def fixQualifiedName(name: String): String =
-    name.stripPrefix(Defines.QualifiedNameSeparator).replace(Defines.QualifiedNameSeparator, ".")
+norm  protected def fixQualifiedName(name: String): String = {
+    val normalizedName = StringUtils.normalizeSpace(name)
+    normalizedName.stripPrefix(Defines.QualifiedNameSeparator).replace(Defines.QualifiedNameSeparator, ".")
+  }
 
   protected def isQualifiedName(name: String): Boolean =
     name.startsWith(Defines.QualifiedNameSeparator)
 
   protected def lastNameOfQualifiedName(name: String): String = {
-    val cleanedName = if (name.contains("<") && name.contains(">")) {
-      name.substring(0, name.indexOf("<"))
+    val normalizedName = StringUtils.normalizeSpace(name)
+    val cleanedName = if (normalizedName.contains("<") && normalizedName.contains(">")) {
+      name.substring(0, normalizedName.indexOf("<"))
     } else {
-      name
+      normalizedName
     }
     cleanedName.split(Defines.QualifiedNameSeparator).lastOption.getOrElse(cleanedName)
   }

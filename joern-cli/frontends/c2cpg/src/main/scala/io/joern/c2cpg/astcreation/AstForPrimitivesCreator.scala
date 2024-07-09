@@ -1,13 +1,11 @@
 package io.joern.c2cpg.astcreation
 
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
-import io.joern.x2cpg.{Ast, ValidationMode}
-import io.joern.x2cpg.Defines as X2CpgDefines
+import io.joern.x2cpg.{Ast, ValidationMode, Defines as X2CpgDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethodRef
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.internal.core.dom.parser.c.ICInternalBinding
-import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTQualifiedName
-import org.eclipse.cdt.internal.core.dom.parser.cpp.ICPPInternalBinding
+import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTQualifiedName, ICPPInternalBinding}
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
