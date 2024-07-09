@@ -112,10 +112,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val rawFullname = fullName(lambdaExpression)
     val fixedFullName = if (rawFullname.contains("[") || rawFullname.contains("{")) {
       // FIXME: the lambda may be located in something we are not able to generate a correct fullname yet
-      s"${X2CpgDefines.UnresolvedNamespace}."
+      s"${X2CpgDefines.UnresolvedSignature}."
     } else rawFullname
+    val fullname    = s"$fixedFullName$name"
     val signature   = s"$returnType${parameterListSignature(lambdaExpression)}"
-    val fullname    = s"$fixedFullName$name:$signature"
     val codeString  = code(lambdaExpression)
     val methodNode_ = methodNode(lambdaExpression, name, codeString, fullname, Some(signature), filename)
 

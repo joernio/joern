@@ -109,10 +109,8 @@ class AstCreationPassTests extends AstC2CpgSuite {
         |""".stripMargin,
         "test.cpp"
       )
-      val lambda1Name     = "<lambda>0"
-      val lambda1FullName = s"$lambda1Name:int(int,int)"
-      val lambda2Name     = "<lambda>1"
-      val lambda2FullName = s"$lambda2Name:string(string,string)"
+      val lambda1FullName = "<lambda>0"
+      val lambda2FullName = "<lambda>1"
 
       cpg.local.name("x").order.l shouldBe List(1)
       cpg.local.name("y").order.l shouldBe List(3)
@@ -129,14 +127,14 @@ class AstCreationPassTests extends AstC2CpgSuite {
       }
 
       inside(cpg.method.fullNameExact(lambda1FullName).isLambda.l) { case List(l1) =>
-        l1.name shouldBe lambda1Name
+        l1.name shouldBe lambda1FullName
         l1.code should startWith("[] (int a, int b) -> int")
         l1.signature shouldBe s"int(int,int)"
         l1.body.code shouldBe "{ return a + b; }"
       }
 
       inside(cpg.method.fullNameExact(lambda2FullName).isLambda.l) { case List(l2) =>
-        l2.name shouldBe lambda2Name
+        l2.name shouldBe lambda2FullName
         l2.code should startWith("[] (string a, string b) -> string")
         l2.signature shouldBe s"string(string,string)"
         l2.body.code shouldBe "{ return a + b; }"
@@ -144,19 +142,19 @@ class AstCreationPassTests extends AstC2CpgSuite {
 
       inside(cpg.typeDecl(NamespaceTraversal.globalNamespaceName).head.bindsOut.l) {
         case List(bX: Binding, bY: Binding) =>
-          bX.name shouldBe lambda1Name
-          bX.signature shouldBe "int(int,int)"
+          bX.name shouldBe lambda1FullName
+          bX.signature shouldBe s"int(int,int)"
           inside(bX.refOut.l) { case List(method: Method) =>
-            method.name shouldBe lambda1Name
+            method.name shouldBe lambda1FullName
             method.fullName shouldBe lambda1FullName
-            method.signature shouldBe "int(int,int)"
+            method.signature shouldBe s"int(int,int)"
           }
-          bY.name shouldBe lambda2Name
-          bY.signature shouldBe "string(string,string)"
+          bY.name shouldBe lambda2FullName
+          bY.signature shouldBe s"string(string,string)"
           inside(bY.refOut.l) { case List(method: Method) =>
-            method.name shouldBe lambda2Name
+            method.name shouldBe lambda2FullName
             method.fullName shouldBe lambda2FullName
-            method.signature shouldBe "string(string,string)"
+            method.signature shouldBe s"string(string,string)"
           }
       }
     }
@@ -174,9 +172,9 @@ class AstCreationPassTests extends AstC2CpgSuite {
         |""".stripMargin,
         "test.cpp"
       )
-      val signature      = s"int(int,int)"
       val lambdaName     = "<lambda>0"
-      val lambdaFullName = s"Foo.$lambdaName:$signature"
+      val lambdaFullName = s"Foo.$lambdaName"
+      val signature      = s"int(int,int)"
 
       cpg.member.name("x").order.l shouldBe List(1)
 
@@ -217,9 +215,9 @@ class AstCreationPassTests extends AstC2CpgSuite {
         |""".stripMargin,
         "test.cpp"
       )
-      val signature      = s"int(int,int)"
       val lambdaName     = "<lambda>0"
-      val lambdaFullName = s"A.B.Foo.$lambdaName:$signature"
+      val lambdaFullName = s"A.B.Foo.$lambdaName"
+      val signature      = s"int(int,int)"
 
       cpg.member.name("x").order.l shouldBe List(1)
 
@@ -262,11 +260,10 @@ class AstCreationPassTests extends AstC2CpgSuite {
         |""".stripMargin,
         "test.cpp"
       )
-      val signature       = "int(int)"
-      val lambda1Name     = "<lambda>0"
-      val lambda2Name     = "<lambda>1"
-      val lambda1FullName = s"$lambda1Name:$signature"
-      val lambda2FullName = s"$lambda2Name:$signature"
+      val lambda1Name = "<lambda>0"
+      val signature1  = s"int(int)"
+      val lambda2Name = "<lambda>1"
+      val signature2  = s"int(int)"
 
       cpg.local.name("x").order.l shouldBe List(1)
       cpg.local.name("foo1").order.l shouldBe List(3)
@@ -277,31 +274,31 @@ class AstCreationPassTests extends AstC2CpgSuite {
         assignment2.order shouldBe 4
         assignment3.order shouldBe 6
         inside(assignment1.astMinusRoot.isMethodRef.l) { case List(ref) =>
-          ref.methodFullName shouldBe lambda1FullName
+          ref.methodFullName shouldBe lambda1Name
         }
       }
 
-      inside(cpg.method.fullNameExact(lambda1FullName).isLambda.l) { case List(l1) =>
+      inside(cpg.method.fullNameExact(lambda1Name).isLambda.l) { case List(l1) =>
         l1.name shouldBe lambda1Name
         l1.code should startWith("[](int n) -> int")
-        l1.signature shouldBe signature
+        l1.signature shouldBe signature1
       }
 
       inside(cpg.typeDecl(NamespaceTraversal.globalNamespaceName).head.bindsOut.l) {
         case List(b1: Binding, b2: Binding) =>
           b1.name shouldBe lambda1Name
-          b1.signature shouldBe signature
+          b1.signature shouldBe signature1
           inside(b1.refOut.l) { case List(method: Method) =>
             method.name shouldBe lambda1Name
-            method.fullName shouldBe lambda1FullName
-            method.signature shouldBe signature
+            method.fullName shouldBe lambda1Name
+            method.signature shouldBe signature1
           }
           b2.name shouldBe lambda2Name
-          b2.signature shouldBe signature
+          b2.signature shouldBe signature2
           inside(b2.refOut.l) { case List(method: Method) =>
             method.name shouldBe lambda2Name
-            method.fullName shouldBe lambda2FullName
-            method.signature shouldBe signature
+            method.fullName shouldBe lambda2Name
+            method.signature shouldBe signature2
           }
       }
 
@@ -324,7 +321,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
         lambda2call.methodFullName shouldBe "<operator>():int(int)"
         lambda2call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
         inside(lambda2call.astChildren.l) { case List(ref: MethodRef, lit: Literal) =>
-          ref.methodFullName shouldBe lambda2FullName
+          ref.methodFullName shouldBe lambda2Name
           ref.code should startWith("[](int n) -> int")
           lit.code shouldBe "10"
         }
@@ -333,7 +330,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
           lit.code shouldBe "10"
         }
         inside(lambda2call.receiver.l) { case List(ref: MethodRef) =>
-          ref.methodFullName shouldBe lambda2FullName
+          ref.methodFullName shouldBe lambda2Name
           ref.code should startWith("[](int n) -> int")
         }
       }
