@@ -115,7 +115,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       s"${X2CpgDefines.UnresolvedSignature}."
     } else rawFullname
     val fullname    = s"$fixedFullName$name"
-    val signature   = s"$returnType${parameterListSignature(lambdaExpression)}"
+    val signature   = StringUtils.normalizeSpace(s"$returnType${parameterListSignature(lambdaExpression)}")
     val codeString  = code(lambdaExpression)
     val methodNode_ = methodNode(lambdaExpression, name, codeString, fullname, Some(signature), filename)
 
@@ -143,12 +143,14 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   protected def astForFunctionDeclarator(funcDecl: IASTFunctionDeclarator): Ast = {
     funcDecl.getName.resolveBinding() match {
       case function: IFunction =>
-        val returnType = typeForDeclSpecifier(funcDecl.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclSpecifier)
-        val name       = shortName(funcDecl)
+        val returnType = cleanType(
+          typeForDeclSpecifier(funcDecl.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclSpecifier)
+        )
+        val name = shortName(funcDecl)
         val fixedName = if (name.isEmpty) {
           nextClosureName()
         } else name
-        val signature = s"$returnType${parameterListSignature(funcDecl)}"
+        val signature = StringUtils.normalizeSpace(s"$returnType${parameterListSignature(funcDecl)}")
         val fullname = fullName(funcDecl) match {
           case f if funcDecl.isInstanceOf[CPPASTFunctionDeclarator] && f == "" =>
             s"${X2CpgDefines.UnresolvedNamespace}.$fixedName:$signature"
@@ -207,7 +209,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val returnType = if (isCppConstructor(funcDef)) {
       typeFor(funcDef.asInstanceOf[CPPASTFunctionDefinition].getMemberInitializers.head.getInitializer)
     } else typeForDeclSpecifier(funcDef.getDeclSpecifier)
-    val signature = s"$returnType${parameterListSignature(funcDef)}"
+    val signature = StringUtils.normalizeSpace(s"$returnType${parameterListSignature(funcDef)}")
     val name      = shortName(funcDef)
     val fullname = fullName(funcDef) match {
       case f if funcDef.isInstanceOf[CPPASTFunctionDefinition] && f == "" =>

@@ -296,9 +296,9 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   protected def functionTypeToSignature(typ: IFunctionType): String = {
-    val returnType     = safeGetType(typ.getReturnType)
-    val parameterTypes = typ.getParameterTypes.map(safeGetType)
-    s"$returnType(${parameterTypes.mkString(",")})"
+    val returnType     = cleanType(safeGetType(typ.getReturnType))
+    val parameterTypes = typ.getParameterTypes.map(t => cleanType(safeGetType(t)))
+    StringUtils.normalizeSpace(s"$returnType(${parameterTypes.mkString(",")})")
   }
 
   protected def fullName(node: IASTNode): String = {
@@ -320,7 +320,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
               if (field.isExternC) {
                 field.getName
               } else {
-                s"$fullNameNoSig:${safeGetType(field.getType)}"
+                s"$fullNameNoSig:${cleanType(safeGetType(field.getType))}"
               }
             return fn
           case _: IProblemBinding =>

@@ -250,7 +250,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         )
         createCallAst(callCpgNode, args)
       case other =>
-        // This could either be a pointer or an operator() call we dont know at this point
+        // This could either be a pointer or an operator() call we do not know at this point
         // but since it is CPP we opt for the later.
         val args = call.getArguments.toList.map(a => astForNode(a))
 
