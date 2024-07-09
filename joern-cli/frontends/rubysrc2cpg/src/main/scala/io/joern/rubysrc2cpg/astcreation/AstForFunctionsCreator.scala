@@ -164,7 +164,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       case _                                              => false
     })
 
-    val methodRefOption = refs.flatMap(_.nodes).collectFirst { case x: NewMethodRef => x }
+    val methodRefOption = refs.flatMap(_.nodes).collectFirst { case x: NewTypeRef => x }
 
     capturedLocalNodes
       .collect {

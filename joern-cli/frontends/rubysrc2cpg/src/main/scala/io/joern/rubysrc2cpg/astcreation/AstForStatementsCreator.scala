@@ -196,13 +196,13 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
    * ```
    */
   protected def astForCallWithBlock[C <: RubyCall](node: RubyNode & RubyCallWithBlock[C]): Ast = {
-    val Seq(_, methodRefAst) = astForDoBlock(node.block): @unchecked
-    val methodRefDummyNode   = methodRefAst.root.map(DummyNode(_)(node.span)).toList
+    val Seq(typeRef, _)  = astForDoBlock(node.block): @unchecked
+    val typeRefDummyNode = typeRef.root.map(DummyNode(_)(node.span)).toList
 
     // Create call with argument referencing the MethodRef
     val callWithLambdaArg = node.withoutBlock match {
-      case x: SimpleCall => astForSimpleCall(x.copy(arguments = x.arguments ++ methodRefDummyNode)(x.span))
-      case x: MemberCall => astForMemberCall(x.copy(arguments = x.arguments ++ methodRefDummyNode)(x.span))
+      case x: SimpleCall => astForSimpleCall(x.copy(arguments = x.arguments ++ typeRefDummyNode)(x.span))
+      case x: MemberCall => astForMemberCall(x.copy(arguments = x.arguments ++ typeRefDummyNode)(x.span))
       case x =>
         logger.warn(s"Unhandled call-with-block type ${code(x)}, creating anonymous method structures only")
         Ast()
@@ -220,12 +220,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         astForMethodDeclaration(x.toMethodDeclaration(methodName, Option(block.parameters)), isClosure = true)
       case _ =>
         astForMethodDeclaration(block.toMethodDeclaration(methodName, Option(block.parameters)), isClosure = true)
-    }
-
-    // Set span contents
-    methodAstsWithRefs.flatMap(_.nodes).foreach {
-      case m: NewMethodRef => DummyNode(m.copy)(block.span.spanStart(m.code))
-      case _               =>
     }
 
     methodAstsWithRefs
