@@ -32,7 +32,7 @@ object SourcesToStartingPoints {
         .map(src => {
           // We need to get Cpg wrapper from graph. Hence we are taking head element from source iterator.
           // This will also ensure if the source list is empty then these tasks are invoked.
-          val cpg                           = Cpg(src.graph())
+          val cpg                           = Cpg(src.graph)
           val (startingPoints, methodTasks) = calculateStartingPoints(sources, executorService)
           val startingPointFromUsageInOtherClasses =
             calculateStatingPointsWithUsageInOtherClasses(methodTasks, cpg, executorService)

@@ -8,8 +8,6 @@ import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.semanticcpg.dotgenerator.DotSerializer.{Edge, Graph}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.utils.MemberAccess.isGenericMemberAccessName
-import overflowdb.Node
-import overflowdb.traversal.jIteratortoTraversal
 
 import scala.collection.mutable
 
@@ -59,7 +57,7 @@ class DdgGenerator {
     }
   }
 
-  private def shouldBeDisplayed(v: Node): Boolean = !(
+  private def shouldBeDisplayed(v: StoredNode): Boolean = !(
     v.isInstanceOf[ControlStructure] ||
       v.isInstanceOf[JumpTarget]
   )

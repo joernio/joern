@@ -1051,7 +1051,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "assert the method properties in RedisDB, especially quoted type hints" in {
       val Some(redisDB) = cpg.typeDecl.nameExact("RedisDB").method.nameExact("<body>").headOption: @unchecked
-      val List(instanceM, getRedisM, setM) = redisDB.astOut.isMethod.nameExact("instance", "get_redis", "set").l
+      val List(instanceM, getRedisM, setM) = redisDB.astChildren.isMethod.nameExact("instance", "get_redis", "set").l
 
       instanceM.methodReturn.typeFullName shouldBe Seq("db", "redis.py:<module>.RedisDB").mkString(File.separator)
       getRedisM.methodReturn.typeFullName shouldBe "aioredis.py:<module>.Redis"
@@ -1324,12 +1324,9 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       val variables = cpg.moduleVariables
         .where(_.typeFullName(".*FastAPI.*"))
         .l
-      val appIncludeRouterCalls =
-        variables.invokingCalls
-          .nameExact("include_router")
-          .l
-      val includedRouters      = appIncludeRouterCalls.argument.argumentIndexGte(1).moduleVariables.l
-      val definitionsOfRouters = includedRouters.definitions.whereNot(_.source.isCall.nameExact("import")).l
+      val appIncludeRouterCalls = variables.invokingCalls.nameExact("include_router")
+      val includedRouters       = appIncludeRouterCalls.argument.argumentIndexGte(1).moduleVariables
+      val definitionsOfRouters  = includedRouters.definitions.whereNot(_.source.isCall.nameExact("import"))
       val List(adminRouter, normalRouter, itemsRouter) =
         definitionsOfRouters.map(x => (x.code, x.method.fullName)).sortBy(_._1).l: @unchecked
 
