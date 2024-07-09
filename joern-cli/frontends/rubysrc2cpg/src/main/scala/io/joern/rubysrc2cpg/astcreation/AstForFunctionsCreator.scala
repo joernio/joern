@@ -169,10 +169,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     capturedLocalNodes
       .collect {
         case local: NewLocal =>
-          val closureBindingId = scope.surroundingScopeFullName.map(x => s"$x:${local.name}")
+          val closureBindingId = scope.variableScopeFullName(local.name).map(x => s"$x:${local.name}")
           (local, local.name, local.code, closureBindingId)
         case param: NewMethodParameterIn =>
-          val closureBindingId = scope.surroundingScopeFullName.map(x => s"$x:${param.name}")
+          val closureBindingId = scope.variableScopeFullName(param.name).map(x => s"$x:${param.name}")
           (param, param.name, param.code, closureBindingId)
       }
       .collect { case (capturedLocal, name, code, Some(closureBindingId)) =>

@@ -5,7 +5,7 @@ import io.joern.rubysrc2cpg.passes.GlobalTypes
 import io.joern.rubysrc2cpg.passes.GlobalTypes.builtinPrefix
 import io.joern.x2cpg.Defines
 import io.joern.rubysrc2cpg.passes.Defines as RDefines
-import io.joern.x2cpg.datastructures.*
+import io.joern.x2cpg.datastructures.{TypedScopeElement, *}
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{DeclarationNew, NewLocal, NewMethodParameterIn}
 
@@ -337,6 +337,24 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
             None
           case x => x
         }
+      }
+  }
+
+  /** @param identifier
+    *   the name of the variable.
+    * @return
+    *   the full name of the variable's scope, if available.
+    */
+  def variableScopeFullName(identifier: String): Option[String] = {
+    stack
+      .collectFirst {
+        case scopeElement if scopeElement.variables.contains(identifier) =>
+          scopeElement
+      }
+      .map {
+        case ScopeElement(x: NamespaceLikeScope, _) => x.fullName
+        case ScopeElement(x: TypeLikeScope, _)      => x.fullName
+        case ScopeElement(x: MethodLikeScope, _)    => x.fullName
       }
   }
 
