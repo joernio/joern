@@ -1,6 +1,5 @@
 package io.joern.x2cpg.frontendspecific.php2cpg
 
-import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.passes.frontend.*
 import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt

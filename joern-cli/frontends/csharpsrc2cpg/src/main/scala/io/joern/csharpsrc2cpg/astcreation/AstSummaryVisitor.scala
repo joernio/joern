@@ -1,6 +1,6 @@
 package io.joern.csharpsrc2cpg.astcreation
 
-import flatgraph.DiffGraphApplier
+import flatgraph.DiffGraphApplier.applyDiff
 import io.joern.csharpsrc2cpg.Constants
 import io.joern.csharpsrc2cpg.datastructures.{
   CSharpField,
@@ -33,7 +33,7 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
       // Build and store compilation unit AST
       val ast = Ast(fileNode).withChildren(astForCompilationUnit(compilationUnit))
       Ast.storeInDiffGraph(ast, diffGraph)
-      DiffGraphApplier.applyDiff(cpg.graph, diffGraph)
+      applyDiff(cpg.graph, diffGraph)
 
       // Simulate AST Linker for global namespace
       val globalNode      = NewNamespaceBlock().fullName(Constants.Global).name(Constants.Global)
@@ -41,7 +41,7 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
       cpg.typeDecl
         .where(_.astParentFullNameExact(Constants.Global))
         .foreach(globalDiffGraph.addEdge(globalNode, _, EdgeTypes.AST))
-      DiffGraphApplier.applyDiff(cpg.graph, globalDiffGraph)
+      applyDiff(cpg.graph, globalDiffGraph)
 
       // Summarize findings
       summarize(cpg)

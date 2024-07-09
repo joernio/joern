@@ -1,7 +1,7 @@
 package io.joern.dataflowengineoss
 
 import better.files.File
-import io.shiftleft.codepropertygraph.generated.{Properties, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.Properties
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
@@ -338,8 +338,8 @@ package object slicing {
         .headOption
         .getOrElse("ANY")
       val typeFullName = typeMap.getOrElse(nodeType, nodeType)
-      val lineNumber   = node.propertyOption[Int](PropertyNames.LINE_NUMBER)
-      val columnNumber = node.propertyOption[Int](PropertyNames.COLUMN_NUMBER)
+      val lineNumber   = node.propertyOption(Properties.LineNumber)
+      val columnNumber = node.propertyOption(Properties.ColumnNumber)
       node match {
         case x: MethodParameterIn => ParamDef(x.name, typeFullName, x.index, lineNumber, columnNumber)
         case x: Call if x.code.startsWith("new ") =>

@@ -1,6 +1,5 @@
 package io.joern.rubysrc2cpg.deprecated.astcreation
 
-import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 import io.joern.x2cpg.datastructures.Scope
 import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, EdgeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{DeclarationNew, NewIdentifier, NewLocal, NewNode}

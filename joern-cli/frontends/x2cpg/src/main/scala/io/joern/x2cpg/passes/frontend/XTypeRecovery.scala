@@ -829,7 +829,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   protected def visitCallAssignedToLiteral(c: Call, l: Literal): Set[String] = {
     if (c.name.equals(Operators.indexAccess)) {
       // For now, we will just handle this on a very basic level
-      c.argumentOut.cast[CfgNode].l match {
+      c.argumentOut.l match {
         case List(_: Identifier, _: Literal) =>
           indexAccessToCollectionVar(c).map(cv => symbolTable.append(cv, getLiteralType(l))).getOrElse(Set.empty)
         case List(_: Identifier, idx: Identifier) if symbolTable.contains(idx) =>
@@ -872,7 +872,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
           .getOrElse(XTypeRecovery.DummyIndexAccess)
       else x.name
 
-    Option(c.argumentOut.cast[CfgNode].l match {
+    Option(c.argumentOut.l match {
       case List(i: Identifier, idx: Literal)    => CollectionVar(i.name, idx.code)
       case List(i: Identifier, idx: Identifier) => CollectionVar(i.name, idx.code)
       case List(c: Call, idx: Call)             => CollectionVar(callName(c), callName(idx))
@@ -981,7 +981,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
           callPaths.map(c => s"$c$pathSep${XTypeRecovery.DummyReturnType}")
         else
           returnValues
-      case ::(head: Call, Nil) if head.argumentOut.cast[CfgNode].headOption.exists(symbolTable.contains) =>
+      case ::(head: Call, Nil) if head.argumentOut.headOption.exists(symbolTable.contains) =>
         symbolTable
           .get(head.argumentOut.head)
           .map(t => Seq(t, head.name, XTypeRecovery.DummyReturnType).mkString(pathSep))
@@ -991,7 +991,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         extractTypes(head.argument.l)
       case _ => Set.empty
     }
-    val returnTypes = extractTypes(ret.argumentOut.cast[CfgNode].l)
+    val returnTypes = extractTypes(ret.argumentOut.l)
     existingTypes.addAll(returnTypes)
     builder.setNodeProperty(ret.method.methodReturn, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, existingTypes)
   }

@@ -1,6 +1,5 @@
 package io.joern.php2cpg.astcreation
 
-import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants, operatorSymbols}
 import io.joern.php2cpg.datastructures.ArrayIndexTracker
 import io.joern.php2cpg.parser.Domain.*
@@ -15,7 +14,6 @@ import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
-import scala.jdk.CollectionConverters.*
 import org.slf4j.LoggerFactory
 
 import java.nio.charset.StandardCharsets

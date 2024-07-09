@@ -12,7 +12,7 @@ import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.nodes.File.PropertyDefaults
 import ujson.Value
 
-import scala.collection.{SortedMap, mutable}
+import scala.collection.{mutable, SortedMap}
 import scala.util.{Success, Try}
 
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>

@@ -10,7 +10,7 @@ import soot.tagkit.*
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.jdk.CollectionConverters.*
+import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode)
     extends AstForTypeDeclsCreator

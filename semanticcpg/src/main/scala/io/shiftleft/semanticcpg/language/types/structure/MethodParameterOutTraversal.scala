@@ -14,8 +14,8 @@ class MethodParameterOutTraversal(val traversal: Iterator[MethodParameterOut]) e
   def index(num: Int): Iterator[MethodParameterOut] =
     traversal.filter { _.index == num }
 
-    /* get all parameters from (and including)
-     * method parameter indexes are  based, i.e. first parameter has index  (that's how java2cpg generates it) */
+  /* get all parameters from (and including)
+   * method parameter indexes are  based, i.e. first parameter has index  (that's how java2cpg generates it) */
   def indexFrom(num: Int): Iterator[MethodParameterOut] =
     traversal.filter(_.index >= num)
 
