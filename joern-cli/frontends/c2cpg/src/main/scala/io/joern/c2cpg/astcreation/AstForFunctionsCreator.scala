@@ -158,6 +158,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
             s"${X2CpgDefines.UnresolvedNamespace}.$fixedName:$signature"
           case f if funcDecl.isInstanceOf[CPPASTFunctionDeclarator] && f.contains("?") =>
             s"${StringUtils.normalizeSpace(f).takeWhile(_ != ':')}:$signature"
+          case f if f == "" || f == s"${X2CpgDefines.UnresolvedNamespace}." =>
+            s"${X2CpgDefines.UnresolvedNamespace}.$fixedName"
           case other if other.nonEmpty => StringUtils.normalizeSpace(other)
           case other                   => s"${X2CpgDefines.UnresolvedNamespace}.$name"
         }
@@ -213,21 +215,26 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       typeFor(funcDef.asInstanceOf[CPPASTFunctionDefinition].getMemberInitializers.head.getInitializer)
     } else typeForDeclSpecifier(funcDef.getDeclSpecifier)
     val signature = StringUtils.normalizeSpace(s"$returnType${parameterListSignature(funcDef)}")
-    val name      = shortName(funcDef)
+    val name      = StringUtils.normalizeSpace(shortName(funcDef))
+    val fixedName = if (name.isEmpty) {
+      nextClosureName()
+    } else name
     val fullname = fullName(funcDef) match {
       case f
           if funcDef.isInstanceOf[CPPASTFunctionDefinition] &&
             (f == "" || f == s"${X2CpgDefines.UnresolvedNamespace}.") =>
-        s"${X2CpgDefines.UnresolvedNamespace}.$name:$signature"
+        s"${X2CpgDefines.UnresolvedNamespace}.$fixedName:$signature"
       case f if funcDef.isInstanceOf[CPPASTFunctionDefinition] && f.contains("?") =>
         s"${StringUtils.normalizeSpace(f).takeWhile(_ != ':')}:$signature"
+      case f if f == "" || f == s"${X2CpgDefines.UnresolvedNamespace}." =>
+        s"${X2CpgDefines.UnresolvedNamespace}.$fixedName"
       case other if other.nonEmpty => StringUtils.normalizeSpace(other)
-      case other                   => s"${X2CpgDefines.UnresolvedNamespace}.$name"
+      case other                   => s"${X2CpgDefines.UnresolvedNamespace}.$fixedName"
     }
     seenFunctionFullnames.add(fullname)
 
     val codeString  = code(funcDef)
-    val methodNode_ = methodNode(funcDef, name, codeString, fullname, Some(signature), filename)
+    val methodNode_ = methodNode(funcDef, fixedName, codeString, fullname, Some(signature), filename)
 
     methodAstParentStack.push(methodNode_)
     scope.pushNewScope(methodNode_)
@@ -252,7 +259,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     scope.popScope()
     methodAstParentStack.pop()
 
-    val typeDeclAst = createFunctionTypeAndTypeDecl(funcDef, methodNode_, name, fullname, signature)
+    val typeDeclAst = createFunctionTypeAndTypeDecl(funcDef, methodNode_, fixedName, fullname, signature)
     astForMethod.merge(typeDeclAst)
   }
 
