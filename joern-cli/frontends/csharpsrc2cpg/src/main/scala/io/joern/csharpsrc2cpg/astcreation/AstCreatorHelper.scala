@@ -63,7 +63,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   protected def getTypeFullNameFromAstNode(ast: Ast): String = {
     ast.root
-      .map(_.propertiesMap.getOrDefault(PropertyNames.TYPE_FULL_NAME, Defines.Any).toString)
+      .flatMap(_.properties.get(PropertyNames.TYPE_FULL_NAME))
+      .map(_.toString)
       .getOrElse(Defines.Any)
   }
 

@@ -17,13 +17,13 @@ object Show {
     override def apply(a: Any): String = a match {
       case node: NewNode =>
         val label      = node.label
-        val properties = propsToString(node.propertiesMap.asScala.toMap)
+        val properties = propsToString(node.properties)
         s"($label): $properties"
 
       case node: StoredNode =>
         val label      = node.label
         val id         = node.id().toString
-        val properties = propsToString(node.propertiesMap.asScala.toMap)
+        val properties = propsToString(node.properties)
         s"($label,$id): $properties"
 
       case other => other.toString

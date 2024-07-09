@@ -57,8 +57,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode)
     val typeFullName = registerType(annotationTag.getType.parseAsJavaType)
     val name         = typeFullName.split('.').last
     val elementNodes = annotationTag.getElems.asScala.map(astForAnnotationElement(_, host)).toSeq
-    val code =
-      s"@$name(${elementNodes.flatMap(_.root).flatMap(_.propertiesMap.asScala.get(PropertyNames.CODE)).mkString(", ")})"
+    val code = s"@$name(${elementNodes.flatMap(_.root).flatMap(_.properties.get(PropertyNames.CODE)).mkString(", ")})"
 
     val annotation = annotationNode(host, code, name, typeFullName)
     annotationAst(annotation, elementNodes)
@@ -96,7 +95,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode)
     astChildren.append(annoElement match {
       case x: AnnotationAnnotationElem =>
         val rhsAst = astsForAnnotations(x.getValue, parent)
-        codeBuilder.append(s"${rhsAst.root.flatMap(_.propertiesMap.asScala.get(PropertyNames.CODE)).mkString(", ")}")
+        codeBuilder.append(s"${rhsAst.root.flatMap(_.properties.get(PropertyNames.CODE)).mkString(", ")}")
         rhsAst
       case x: AnnotationArrayElem =>
         val (rhsAst, code) = astForAnnotationArrayElement(x, parent)
@@ -127,7 +126,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode)
 
   private def astForAnnotationArrayElement(x: AnnotationArrayElem, parent: AbstractHost): (Ast, String) = {
     val elems = x.getValues.asScala.map(astForAnnotationElement(_, parent)).toSeq
-    val code  = s"{${elems.flatMap(_.root).flatMap(_.propertiesMap.asScala.get(PropertyNames.CODE)).mkString(", ")}}"
+    val code  = s"{${elems.flatMap(_.root).flatMap(_.properties.get(PropertyNames.CODE)).mkString(", ")}}"
     val array = NewArrayInitializer().code(code).lineNumber(line(parent)).columnNumber(column(parent))
     setArgumentIndices(elems)
     (Ast(array).withChildren(elems), code)

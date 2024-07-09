@@ -35,7 +35,7 @@ class AstTests extends AnyWordSpec with Matchers {
       copied.root match {
         case Some(root: NewCall) =>
           root should not be Some(moo)
-          root.propertiesMap.get(Call.PropertyNames.Name) shouldBe "moo"
+          root.properties(Call.PropertyNames.Name) shouldBe "moo"
           root.argumentIndex shouldBe 123
         case _ => fail()
       }

@@ -250,7 +250,7 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     registerType(methodFullName)
 
     val astParentType     = parentNode.label
-    val astParentFullName = parentNode.propertiesMap.get(PropertyNames.FULL_NAME).toString
+    val astParentFullName = parentNode.properties(PropertyNames.FULL_NAME).toString
     val functionTypeDeclNode =
       typeDeclNode(
         node,

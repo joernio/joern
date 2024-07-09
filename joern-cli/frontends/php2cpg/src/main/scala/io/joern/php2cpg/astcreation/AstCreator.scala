@@ -1413,9 +1413,8 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
         case PhpVariable(PhpNameExpr(name, _), _) =>
           val typeFullName = scope
             .lookupVariable(name)
-            .map(node => Option(node.propertiesMap.get(PropertyNames.TYPE_FULL_NAME)))
+            .flatMap(_.properties.get(PropertyNames.TYPE_FULL_NAME).map(_.toString))
             .getOrElse(TypeConstants.Any)
-            .toString
           val byRefPrefix = if (closureUse.byRef) "&" else ""
 
           Some(localNode(closureExpr, name, s"$byRefPrefix$$$name", typeFullName))
@@ -1679,7 +1678,7 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
       case nameExpr: PhpNameExpr =>
         scope
           .lookupVariable(nameExpr.name)
-          .flatMap(_.propertiesMap.asScala.get(PropertyNames.TYPE_FULL_NAME).map(_.toString))
+          .flatMap(_.properties.get(PropertyNames.TYPE_FULL_NAME).map(_.toString))
           .getOrElse(nameExpr.name)
 
       case expr =>
