@@ -156,7 +156,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
             s"${X2CpgDefines.UnresolvedNamespace}.$fixedName:$signature"
           case f if funcDecl.isInstanceOf[CPPASTFunctionDeclarator] && f.contains("?") =>
             s"${StringUtils.normalizeSpace(f).takeWhile(_ != ':')}:$signature"
-          case other => StringUtils.normalizeSpace(other)
+          case other if other.nonEmpty => StringUtils.normalizeSpace(other)
+          case other                   => s"${X2CpgDefines.UnresolvedNamespace}.$name"
         }
 
         if (seenFunctionFullnames.add(fullname)) {
@@ -216,7 +217,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         s"${X2CpgDefines.UnresolvedNamespace}.$name:$signature"
       case f if funcDef.isInstanceOf[CPPASTFunctionDefinition] && f.contains("?") =>
         s"${StringUtils.normalizeSpace(f).takeWhile(_ != ':')}:$signature"
-      case other => StringUtils.normalizeSpace(other)
+      case other if other.nonEmpty => StringUtils.normalizeSpace(other)
+      case other                   => s"${X2CpgDefines.UnresolvedNamespace}.$name"
     }
     seenFunctionFullnames.add(fullname)
 
