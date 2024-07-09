@@ -112,10 +112,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val rawFullname = fullName(lambdaExpression)
     val fixedFullName = if (rawFullname.contains("[") || rawFullname.contains("{")) {
       // FIXME: the lambda may be located in something we are not able to generate a correct fullname yet
-      s"${X2CpgDefines.UnresolvedSignature}."
+      s"${X2CpgDefines.UnresolvedNamespace}."
     } else rawFullname
-    val fullname    = s"$fixedFullName$name"
     val signature   = s"$returnType${parameterListSignature(lambdaExpression)}"
+    val fullname    = s"$fixedFullName$name:$signature"
     val codeString  = code(lambdaExpression)
     val methodNode_ = methodNode(lambdaExpression, name, codeString, fullname, Some(signature), filename)
 
@@ -145,23 +145,22 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       case function: IFunction =>
         val returnType = typeForDeclSpecifier(funcDecl.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclSpecifier)
         val name       = shortName(funcDecl)
-        val fullname   = fullName(funcDecl)
-
         val fixedName = if (name.isEmpty) {
           nextClosureName()
         } else name
-        val fixedFullName = if (fullname.isEmpty) {
-          s"${X2CpgDefines.UnresolvedNamespace}.$name"
-        } else fullname
+        val signature = s"$returnType${parameterListSignature(funcDecl)}"
+        val fullname = fullName(funcDecl) match {
+          case f if funcDecl.isInstanceOf[CPPASTFunctionDeclarator] && f == "" =>
+            s"${X2CpgDefines.UnresolvedNamespace}.$fixedName:$signature"
+          case f if funcDecl.isInstanceOf[CPPASTFunctionDeclarator] && f.contains("?") =>
+            s"${f.takeWhile(_ != ':')}:$signature"
+          case other => other
+        }
 
-        val templateParams = templateParameters(funcDecl).getOrElse("")
-        val signature =
-          s"$returnType${parameterListSignature(funcDecl)}"
-
-        if (seenFunctionFullnames.add(fixedFullName)) {
+        if (seenFunctionFullnames.add(fullname)) {
           val codeString  = code(funcDecl.getParent)
           val filename    = fileName(funcDecl)
-          val methodNode_ = methodNode(funcDecl, fixedName, codeString, fixedFullName, Some(signature), filename)
+          val methodNode_ = methodNode(funcDecl, fixedName, codeString, fullname, Some(signature), filename)
 
           scope.pushNewScope(methodNode_)
 
@@ -174,7 +173,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
           val stubAst =
             methodStubAst(methodNode_, parameterNodes.map(Ast(_)), methodReturnNode(funcDecl, registerType(returnType)))
-          val typeDeclAst = createFunctionTypeAndTypeDecl(funcDecl, methodNode_, fixedName, fixedFullName, signature)
+          val typeDeclAst = createFunctionTypeAndTypeDecl(funcDecl, methodNode_, fixedName, fullname, signature)
           stubAst.merge(typeDeclAst)
         } else {
           Ast()
@@ -208,15 +207,15 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val returnType = if (isCppConstructor(funcDef)) {
       typeFor(funcDef.asInstanceOf[CPPASTFunctionDefinition].getMemberInitializers.head.getInitializer)
     } else typeForDeclSpecifier(funcDef.getDeclSpecifier)
-    val name = shortName(funcDef)
+    val signature = s"$returnType${parameterListSignature(funcDef)}"
+    val name      = shortName(funcDef)
     val fullname = fullName(funcDef) match {
-      case ""    => s"${X2CpgDefines.UnresolvedNamespace}.$name"
+      case f if funcDef.isInstanceOf[CPPASTFunctionDefinition] && f == "" =>
+        s"${X2CpgDefines.UnresolvedNamespace}.$name:$signature"
+      case f if funcDef.isInstanceOf[CPPASTFunctionDefinition] && f.contains("?") =>
+        s"${f.takeWhile(_ != ':')}:$signature"
       case other => other
     }
-    val templateParams = templateParameters(funcDef).getOrElse("")
-
-    val signature =
-      s"$returnType${parameterListSignature(funcDef)}"
     seenFunctionFullnames.add(fullname)
 
     val codeString  = code(funcDef)
