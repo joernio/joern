@@ -280,7 +280,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def dereferenceTypeFullName(fullName: String): String =
     fullName.replace("*", "")
 
-norm  protected def fixQualifiedName(name: String): String = {
+  protected def fixQualifiedName(name: String): String = {
     val normalizedName = StringUtils.normalizeSpace(name)
     normalizedName.stripPrefix(Defines.QualifiedNameSeparator).replace(Defines.QualifiedNameSeparator, ".")
   }
