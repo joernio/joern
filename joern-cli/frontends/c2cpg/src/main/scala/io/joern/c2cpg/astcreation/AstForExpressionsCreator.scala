@@ -219,7 +219,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         val instanceAst = astForExpression(fieldRefExpr.getFieldOwner)
         val args        = call.getArguments.toList.map(a => astForNode(a))
 
-        val name      = fieldRefExpr.getFieldName.toString
+        val name      = StringUtils.normalizeSpace(fieldRefExpr.getFieldName.toString)
         val signature = X2CpgDefines.UnresolvedSignature
         val fullName  = s"${X2CpgDefines.UnresolvedNamespace}.$name:$signature(${args.size})"
 
@@ -236,7 +236,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case idExpr: CPPASTIdExpression =>
         val args = call.getArguments.toList.map(a => astForNode(a))
 
-        val name      = idExpr.getName.getLastName.toString
+        val name      = StringUtils.normalizeSpace(idExpr.getName.getLastName.toString)
         val signature = X2CpgDefines.UnresolvedSignature
         val fullName  = s"${X2CpgDefines.UnresolvedNamespace}.$name:$signature(${args.size})"
 
