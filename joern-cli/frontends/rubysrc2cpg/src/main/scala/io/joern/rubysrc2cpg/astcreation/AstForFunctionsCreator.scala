@@ -169,20 +169,20 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     capturedLocalNodes
       .collect {
         case local: NewLocal =>
-          val closureBindingId = scope.surroundingScopeFullName.map(x => s"$x:${local.name}")
+          val closureBindingId = scope.variableScopeFullName(local.name).map(x => s"$x:${local.name}")
           (local, local.name, local.code, closureBindingId)
         case param: NewMethodParameterIn =>
-          val closureBindingId = scope.surroundingScopeFullName.map(x => s"$x:${param.name}")
+          val closureBindingId = scope.variableScopeFullName(param.name).map(x => s"$x:${param.name}")
           (param, param.name, param.code, closureBindingId)
       }
-      .collect { case (decl, name, code, Some(closureBindingId)) =>
-        val local          = newLocalNode(name, code, Option(closureBindingId))
+      .collect { case (capturedLocal, name, code, Some(closureBindingId)) =>
+        val capturingLocal = newLocalNode(name, code, Option(closureBindingId))
         val closureBinding = newClosureBindingNode(closureBindingId, name, EvaluationStrategies.BY_REFERENCE)
 
         // Create new local node for lambda, with corresponding REF edges to identifiers and closure binding
-        capturedBlockAst.withChild(Ast(local))
-        capturedIdentifiers.filter(_.name == name).foreach(i => capturedBlockAst.withRefEdge(i, local))
-        diffGraph.addEdge(closureBinding, decl, EdgeTypes.REF)
+        capturedBlockAst.root.foreach(rootBlock => diffGraph.addEdge(rootBlock, capturingLocal, EdgeTypes.AST))
+        capturedIdentifiers.filter(_.name == name).foreach(i => diffGraph.addEdge(i, capturingLocal, EdgeTypes.REF))
+        diffGraph.addEdge(closureBinding, capturedLocal, EdgeTypes.REF)
 
         methodRefOption.foreach(methodRef => diffGraph.addEdge(methodRef, closureBinding, EdgeTypes.CAPTURE))
       }
