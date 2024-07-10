@@ -112,8 +112,15 @@ object RubyIntermediateAst {
     def hasSetter: Boolean = text.startsWith("attr_writer") || text.startsWith("attr_accessor")
   }
 
+  sealed trait ProcedureDeclaration {
+    def methodName: String
+    def parameters: List[RubyNode]
+    def body: RubyNode
+  }
+
   final case class MethodDeclaration(methodName: String, parameters: List[RubyNode], body: RubyNode)(span: TextSpan)
       extends RubyNode(span)
+      with ProcedureDeclaration
       with AllowedTypeDeclarationChild
 
   final case class SingletonMethodDeclaration(
@@ -123,6 +130,7 @@ object RubyIntermediateAst {
     body: RubyNode
   )(span: TextSpan)
       extends RubyNode(span)
+      with ProcedureDeclaration
       with AllowedTypeDeclarationChild
 
   final case class SingletonObjectMethodDeclaration(methodName: String, baseClass: RubyNode, block: Block)(

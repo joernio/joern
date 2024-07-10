@@ -8,7 +8,6 @@ import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.codepropertygraph.generated.nodes.Literal
 import io.shiftleft.semanticcpg.language.*
-import overflowdb.traversal.toNodeTraversal
 
 class DataFlowTests extends DataFlowCodeToCpgSuite {
 

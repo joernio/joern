@@ -88,7 +88,7 @@ abstract class AstCreatorBase(filename: String)(implicit withSchemaValidation: V
   ): Ast =
     Ast(method)
       .withChildren(parameters)
-      .withChild(Ast(NewBlock()))
+      .withChild(Ast(NewBlock().typeFullName(Defines.Any)))
       .withChildren(modifiers.map(Ast(_)))
       .withChild(Ast(methodReturn))
 
@@ -113,7 +113,7 @@ abstract class AstCreatorBase(filename: String)(implicit withSchemaValidation: V
       methodNode.filename(fileName.get)
     }
     val staticModifier = NewModifier().modifierType(ModifierTypes.STATIC)
-    val body           = blockAst(NewBlock(), initAsts)
+    val body           = blockAst(NewBlock().typeFullName(Defines.Any), initAsts)
     val methodReturn   = newMethodReturnNode(returnType, None, None, None)
     methodAst(methodNode, Nil, body, methodReturn, List(staticModifier))
   }
@@ -150,9 +150,9 @@ abstract class AstCreatorBase(filename: String)(implicit withSchemaValidation: V
 
   def wrapMultipleInBlock(asts: Seq[Ast], lineNumber: Option[Int]): Ast = {
     asts.toList match {
-      case Nil        => blockAst(NewBlock().lineNumber(lineNumber))
+      case Nil        => blockAst(NewBlock().typeFullName(Defines.Any).lineNumber(lineNumber))
       case ast :: Nil => ast
-      case astList    => blockAst(NewBlock().lineNumber(lineNumber), astList)
+      case astList    => blockAst(NewBlock().typeFullName(Defines.Any).lineNumber(lineNumber), astList)
     }
   }
 

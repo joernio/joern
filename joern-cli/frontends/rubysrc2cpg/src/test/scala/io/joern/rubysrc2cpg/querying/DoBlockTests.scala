@@ -207,14 +207,16 @@ class DoBlockTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     // Basic assertions for expected behaviour
-    "create the declarations for the closure" in {
-      inside(cpg.method("<lambda>.*").l) {
+    "create the declarations for the closure with captured local" in {
+      inside(cpg.method.isLambda.l) {
         case m :: Nil =>
           m.name should startWith("<lambda>")
+          val myValue = m.local.nameExact("myValue").head
+          myValue.closureBindingId shouldBe Option("Test0.rb:<global>::program:myValue")
         case xs => fail(s"Expected exactly one closure method decl, instead got [${xs.code.mkString(",")}]")
       }
 
-      inside(cpg.typeDecl("<lambda>.*").l) {
+      inside(cpg.typeDecl.isLambda.l) {
         case m :: Nil =>
           m.name should startWith("<lambda>")
         case xs => fail(s"Expected exactly one closure type decl, instead got [${xs.code.mkString(",")}]")
@@ -224,7 +226,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
     "annotate the nodes via CAPTURE bindings" in {
       cpg.all.collectAll[ClosureBinding].l match {
         case myValue :: Nil =>
-          myValue.closureOriginalName.head shouldBe "myValue"
+          myValue.closureOriginalName shouldBe Option("myValue")
           inside(myValue._localViaRefOut) {
             case Some(local) =>
               local.name shouldBe "myValue"

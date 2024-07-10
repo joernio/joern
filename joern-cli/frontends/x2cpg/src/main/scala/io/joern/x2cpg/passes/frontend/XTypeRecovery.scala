@@ -1,7 +1,15 @@
 package io.joern.x2cpg.passes.frontend
 
 import io.joern.x2cpg.{Defines, X2CpgConfig}
-import io.shiftleft.codepropertygraph.generated.{Cpg, DispatchTypes, EdgeTypes, NodeTypes, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{
+  Cpg,
+  DispatchTypes,
+  EdgeTypes,
+  NodeTypes,
+  Operators,
+  Properties,
+  PropertyNames
+}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.passes.{CpgPass, CpgPassBase, ForkJoinParallelCpgPass}
 import io.shiftleft.semanticcpg.language.*
@@ -264,9 +272,9 @@ object XTypeRecovery {
   // the symbol table then perhaps this would work out better
   implicit class AllNodeTypesFromNodeExt(x: StoredNode) {
     def allTypes: Iterator[String] =
-      (x.property(PropertyNames.TYPE_FULL_NAME, "ANY") +:
-        (x.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty)
-          ++ x.property(PropertyNames.POSSIBLE_TYPES, Seq.empty))).iterator
+      (x.propertyOption(Properties.TypeFullName).orElse("ANY") +:
+        (x.property(Properties.DynamicTypeHintFullName) ++
+          x.property(Properties.PossibleTypes))).iterator
 
     def getKnownTypes: Set[String] = {
       x.allTypes.toSet.filterNot(XTypeRecovery.unknownTypePattern.matches)
@@ -435,7 +443,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     * @param a
     *   assignment call pointer.
     */
-  protected def visitAssignments(a: Assignment): Set[String] = visitAssignmentArguments(a.argumentOut.l)
+  protected def visitAssignments(a: Assignment): Set[String] =
+    visitAssignmentArguments(a.argumentOut.cast[CfgNode].l)
 
   protected def visitAssignmentArguments(args: List[AstNode]): Set[String] = args match {
     case List(i: Identifier, b: Block)                             => visitIdentifierAssignedToBlock(i, b)
@@ -554,7 +563,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     isFieldCache.getOrElseUpdate(i, isFieldUncached(i))
 
   protected def isFieldUncached(i: Identifier): Boolean =
-    i.method.typeDecl.member.nameExact(i.name).nonEmpty
+    Try(i.method.typeDecl.member.nameExact(i.name).nonEmpty).getOrElse(false)
 
   /** Associates the types with the identifier. This may sometimes be an identifier that should be considered a field
     * which this method uses [[isField]] to determine.
@@ -568,7 +577,9 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     val fieldName = getFieldName(fa).split(Pattern.quote(pathSep)).last
     Try(cpg.member.nameExact(fieldName).typeDecl.fullName.filterNot(_.contains("ANY")).toSet) match
       case Failure(exception) =>
-        logger.warn("Unable to obtain name of member's parent type declaration", exception)
+        logger.warn(
+          s"Unable to obtain name of member's parent type declaration: ${cpg.member.nameExact(fieldName).propertiesMap.mkString(",")}"
+        )
         Set.empty
       case Success(typeDeclNames) => typeDeclNames
   }
@@ -1230,7 +1241,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     lazy val existingTypes = storedNode.getKnownTypes
 
     val hasUnknownTypeFullName = storedNode
-      .property(PropertyNames.TYPE_FULL_NAME, Defines.Any)
+      .propertyOption(Properties.TypeFullName)
+      .orElse(Defines.Any)
       .matches(XTypeRecovery.unknownTypePattern.pattern.pattern())
 
     if (types.nonEmpty && (hasUnknownTypeFullName || types.toSet != existingTypes)) {
@@ -1269,7 +1281,9 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     */
   protected def storeDefaultTypeInfo(n: StoredNode, types: Seq[String]): Unit =
     val hasUnknownType =
-      n.property(PropertyNames.TYPE_FULL_NAME, Defines.Any).matches(XTypeRecovery.unknownTypePattern.pattern.pattern())
+      n.propertyOption(Properties.TypeFullName)
+        .orElse(Defines.Any)
+        .matches(XTypeRecovery.unknownTypePattern.pattern.pattern())
 
     if (types.toSet != n.getKnownTypes || (hasUnknownType && types.nonEmpty)) {
       setTypes(n, (n.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty) ++ types).distinct)

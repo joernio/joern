@@ -254,7 +254,6 @@ object Engine {
   private def ddgInE(node: CfgNode, path: Vector[PathElement], callSiteStack: List[Call] = List()): Vector[Edge] = {
     node
       .inE(EdgeTypes.REACHING_DEF)
-      .asScala
       .filter { e =>
         e.outNode() match {
           case srcNode: CfgNode =>

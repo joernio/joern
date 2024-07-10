@@ -5,7 +5,7 @@ import io.joern.jssrc2cpg.parser.BabelAst.*
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
-import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newModifierNode}
+import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier as _, *}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes}
@@ -325,10 +325,13 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   protected def astForTSDeclareFunction(func: BabelNodeInfo): Ast = {
-    val functionNode = createMethodDefinitionNode(func)
-    val bindingNode  = newBindingNode("", "", "")
-    diffGraph.addEdge(getParentTypeDecl, bindingNode, EdgeTypes.BINDS)
-    diffGraph.addEdge(bindingNode, functionNode, EdgeTypes.REF)
+    val functionNode  = createMethodDefinitionNode(func)
+    val tpe           = typeFor(func)
+    val possibleTypes = Seq(tpe)
+    val typeFullName  = if (Defines.isBuiltinType(tpe)) tpe else Defines.Any
+    val memberNode_ = memberNode(func, functionNode.name, func.code, typeFullName, Seq(functionNode.fullName))
+      .possibleTypes(possibleTypes)
+    diffGraph.addEdge(getParentTypeDecl, memberNode_, EdgeTypes.AST)
     addModifier(functionNode, func.json)
     Ast(functionNode)
   }

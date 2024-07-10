@@ -280,25 +280,28 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def dereferenceTypeFullName(fullName: String): String =
     fullName.replace("*", "")
 
-  protected def fixQualifiedName(name: String): String =
-    name.stripPrefix(Defines.QualifiedNameSeparator).replace(Defines.QualifiedNameSeparator, ".")
+  protected def fixQualifiedName(name: String): String = {
+    val normalizedName = StringUtils.normalizeSpace(name)
+    normalizedName.stripPrefix(Defines.QualifiedNameSeparator).replace(Defines.QualifiedNameSeparator, ".")
+  }
 
   protected def isQualifiedName(name: String): Boolean =
     name.startsWith(Defines.QualifiedNameSeparator)
 
   protected def lastNameOfQualifiedName(name: String): String = {
-    val cleanedName = if (name.contains("<") && name.contains(">")) {
-      name.substring(0, name.indexOf("<"))
+    val normalizedName = StringUtils.normalizeSpace(name)
+    val cleanedName = if (normalizedName.contains("<") && normalizedName.contains(">")) {
+      name.substring(0, normalizedName.indexOf("<"))
     } else {
-      name
+      normalizedName
     }
     cleanedName.split(Defines.QualifiedNameSeparator).lastOption.getOrElse(cleanedName)
   }
 
   protected def functionTypeToSignature(typ: IFunctionType): String = {
-    val returnType     = safeGetType(typ.getReturnType)
-    val parameterTypes = typ.getParameterTypes.map(safeGetType)
-    s"$returnType(${parameterTypes.mkString(",")})"
+    val returnType     = cleanType(safeGetType(typ.getReturnType))
+    val parameterTypes = typ.getParameterTypes.map(t => cleanType(safeGetType(t)))
+    StringUtils.normalizeSpace(s"$returnType(${parameterTypes.mkString(",")})")
   }
 
   protected def fullName(node: IASTNode): String = {
@@ -320,18 +323,24 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
               if (field.isExternC) {
                 field.getName
               } else {
-                s"$fullNameNoSig:${safeGetType(field.getType)}"
+                s"$fullNameNoSig:${cleanType(safeGetType(field.getType))}"
               }
             return fn
           case _: IProblemBinding =>
-            return ""
+            val fullNameNoSig = ASTStringUtil.getQualifiedName(declarator.getName)
+            val fixedFullName = fixQualifiedName(fullNameNoSig).stripPrefix(".")
+            if (fixedFullName.isEmpty) {
+              return s"${X2CpgDefines.UnresolvedNamespace}:${X2CpgDefines.UnresolvedSignature}"
+            } else {
+              return s"$fixedFullName:${X2CpgDefines.UnresolvedSignature}"
+            }
           case _ =>
         }
       case declarator: CASTFunctionDeclarator =>
         return declarator.getName.toString
-      case definition: ICPPASTFunctionDefinition if definition.getDeclarator.isInstanceOf[CPPASTFunctionDeclarator] =>
+      case definition: ICPPASTFunctionDefinition =>
         return fullName(definition.getDeclarator)
-      case x =>
+      case _ =>
     }
 
     val qualifiedName: String = node match {
@@ -369,6 +378,13 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         s"${fullName(enumSpecifier.getParent)}.${ASTStringUtil.getSimpleName(enumSpecifier.getName)}"
       case f: ICPPASTLambdaExpression =>
         s"${fullName(f.getParent)}."
+      case f: IASTFunctionDeclarator
+          if ASTStringUtil.getSimpleName(f.getName).isEmpty && f.getNestedDeclarator != null =>
+        s"${fullName(f.getParent)}.${shortName(f.getNestedDeclarator)}"
+      case f: IASTFunctionDeclarator if f.getParent.isInstanceOf[IASTFunctionDefinition] =>
+        s"${fullName(f.getParent)}"
+      case f: IASTFunctionDeclarator =>
+        s"${fullName(f.getParent)}.${ASTStringUtil.getSimpleName(f.getName)}"
       case f: IASTFunctionDefinition if f.getDeclarator != null =>
         s"${fullName(f.getParent)}.${ASTStringUtil.getQualifiedName(f.getDeclarator.getName)}"
       case f: IASTFunctionDefinition =>

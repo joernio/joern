@@ -7,6 +7,7 @@ import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
 import io.joern.x2cpg.Defines as XDefines
+import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.tree.{ParseTree, RuleNode}
 import org.slf4j.LoggerFactory
 
@@ -158,6 +159,10 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   ): RubyNode = {
     val expressions = ctx.primaryValueList().primaryValue().asScala.map(visit).toList
     ReturnExpression(expressions)(ctx.toTextSpan)
+  }
+
+  override def visitReturnWithoutArguments(ctx: RubyParser.ReturnWithoutArgumentsContext): RubyNode = {
+    ReturnExpression(Nil)(ctx.toTextSpan)
   }
 
   override def visitNumericLiteral(ctx: RubyParser.NumericLiteralContext): RubyNode = {
@@ -571,6 +576,26 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
       }
     } else {
       FieldsDeclaration(ctx.commandArgument().arguments.map(visit))(ctx.toTextSpan)
+    }
+  }
+
+  override def visitSuperWithParentheses(ctx: RubyParser.SuperWithParenthesesContext): RubyNode = {
+    val block     = Option(ctx.block()).map(visit)
+    val arguments = Option(ctx.argumentWithParentheses()).map(_.arguments.map(visit)).getOrElse(Nil)
+    visitSuperCall(ctx, arguments, block)
+  }
+
+  override def visitSuperWithoutParentheses(ctx: RubyParser.SuperWithoutParenthesesContext): RubyNode = {
+    val block     = Option(ctx.block()).map(visit)
+    val arguments = Option(ctx.argumentList()).map(_.elements.map(visit)).getOrElse(Nil)
+    visitSuperCall(ctx, arguments, block)
+  }
+
+  private def visitSuperCall(ctx: ParserRuleContext, arguments: List[RubyNode], block: Option[RubyNode]): RubyNode = {
+    val callName = SimpleIdentifier()(ctx.toTextSpan.spanStart("super"))
+    block match {
+      case Some(body) => SimpleCallWithBlock(callName, arguments, body.asInstanceOf[Block])(ctx.toTextSpan)
+      case None       => SimpleCall(callName, arguments)(ctx.toTextSpan)
     }
   }
 
@@ -1241,10 +1266,10 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitAssociationKey(ctx: RubyParser.AssociationKeyContext): RubyNode = {
-    if (Option(ctx.operatorExpression()).isDefined) {
-      visit(ctx.operatorExpression())
-    } else {
-      SimpleIdentifier()(ctx.toTextSpan)
+    Option(ctx.operatorExpression()) match {
+      case Some(ctx) if ctx.isKeyword => SimpleIdentifier()(ctx.toTextSpan)
+      case Some(ctx)                  => visit(ctx)
+      case None                       => SimpleIdentifier()(ctx.toTextSpan)
     }
   }
 

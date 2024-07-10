@@ -17,7 +17,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.MethodRef
 import io.shiftleft.codepropertygraph.generated.nodes.Return
 import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
 import io.shiftleft.semanticcpg.language.*
-import overflowdb.traversal.jIteratortoTraversal
 
 class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDefaultJars = true) {
   "CPG for code with a simple lambda which captures a method parameter" should {

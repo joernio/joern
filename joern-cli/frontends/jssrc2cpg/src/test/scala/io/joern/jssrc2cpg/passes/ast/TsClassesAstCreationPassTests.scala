@@ -191,7 +191,10 @@ class TsClassesAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
         greeter.fullName shouldBe "Test0.ts::program:Greeter"
         greeter.filename shouldBe "Test0.ts"
         greeter.file.name.head shouldBe "Test0.ts"
-        inside(cpg.typeDecl("Greeter").member.l) { case List(greeting, name, propName, foo, anon, toString) =>
+        inside(cpg.typeDecl("Greeter").member.l) { case List(init, greeting, name, propName, foo, anon, toString) =>
+          init.name shouldBe "<init>"
+          init.typeFullName shouldBe "Test0.ts::program:Greeter"
+          init.dynamicTypeHintFullName shouldBe List("Test0.ts::program:Greeter:<init>")
           greeting.name shouldBe "greeting"
           greeting.code shouldBe "greeting: string;"
           name.name shouldBe "name"
@@ -339,7 +342,7 @@ class TsClassesAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
       val List(credentialsParam) = cpg.parameter.nameExact("credentials").l
       credentialsParam.typeFullName shouldBe "Test0.ts::program:Test:run:<anon-class>0"
       // should not produce dangling nodes that are meant to be inside procedures
-      cpg.all.collectAll[CfgNode].whereNot(_._astIn).size shouldBe 0
+      cpg.all.collectAll[CfgNode].whereNot(_.astParent).size shouldBe 0
       cpg.identifier.count(_.refsTo.size > 1) shouldBe 0
       cpg.identifier.whereNot(_.refsTo).size shouldBe 0
       // should not produce assignment calls directly under typedecls
@@ -359,7 +362,7 @@ class TsClassesAstCreationPassTests extends AstJsSrc2CpgSuite(".ts") {
       val List(credentialsParam) = cpg.parameter.nameExact("param1_0").l
       credentialsParam.typeFullName shouldBe "Test0.ts::program:apiCall:<anon-class>0"
       // should not produce dangling nodes that are meant to be inside procedures
-      cpg.all.collectAll[CfgNode].whereNot(_._astIn).size shouldBe 0
+      cpg.all.collectAll[CfgNode].whereNot(_.astParent).size shouldBe 0
       cpg.identifier.count(_.refsTo.size > 1) shouldBe 0
       cpg.identifier.whereNot(_.refsTo).size shouldBe 0
       // should not produce assignment calls directly under typedecls

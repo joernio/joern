@@ -260,6 +260,15 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
     inArg.argumentName shouldBe Option("in")
   }
 
+  "named parameters in parenthesis-less call with a known keyword as the association key should shadow the keyword" in {
+    val cpg = code("""
+        |foo retry: 3
+        |""".stripMargin)
+    val List(_, retry) = cpg.call.nameExact("foo").argument.l: @unchecked
+    retry.code shouldBe "3"
+    retry.argumentName shouldBe Some("retry")
+  }
+
   "a call with a quoted regex literal should have a literal receiver" in {
     val cpg          = code("%r{^/}.freeze")
     val regexLiteral = cpg.call.nameExact("freeze").receiver.fieldAccess.argument(1).head.asInstanceOf[Literal]

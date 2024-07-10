@@ -6,8 +6,7 @@ import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, PropertyNames}
 
 trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
   protected def createMethodReturnNode(func: BabelNodeInfo): NewMethodReturn = {
@@ -251,7 +250,7 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     registerType(methodFullName)
 
     val astParentType     = parentNode.label
-    val astParentFullName = parentNode.properties("FULL_NAME").toString
+    val astParentFullName = parentNode.properties(PropertyNames.FULL_NAME).toString
     val functionTypeDeclNode =
       typeDeclNode(
         node,

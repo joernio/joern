@@ -21,7 +21,6 @@ class CfgNodeTraversal[A <: CfgNode](val traversal: Iterator[A]) extends AnyVal 
 
   /** Traverse to next expression in CFG.
     */
-
   @Doc(info = "Nodes directly reachable via outgoing CFG edges")
   def cfgNext: Iterator[CfgNode] =
     traversal._cfgOut
