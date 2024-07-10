@@ -30,14 +30,14 @@ class DoBlockTests extends RubyCode2CpgFixture {
               foo.name shouldBe "foo"
 
               closureMethod.name shouldBe "<lambda>0"
-              closureMethod.fullName shouldBe s"Test0.rb:<global>.$Main.<lambda>0"
+              closureMethod.fullName shouldBe s"Test0.rb:$Main.<lambda>0"
             case xs => fail(s"Expected a two method nodes, instead got [${xs.code.mkString(", ")}]")
           }
 
           inside(program.astChildren.collectAll[TypeDecl].isLambda.l) {
             case closureType :: Nil =>
               closureType.name shouldBe "<lambda>0"
-              closureType.fullName shouldBe s"Test0.rb:<global>.$Main.<lambda>0"
+              closureType.fullName shouldBe s"Test0.rb:$Main.<lambda>0"
             case xs => fail(s"Expected a one closure type node, instead got [${xs.code.mkString(", ")}]")
           }
 
@@ -45,7 +45,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
             case closureType :: Nil =>
               val callMember = closureType.member.nameExact("call").head
               callMember.typeFullName shouldBe Defines.Any
-              callMember.dynamicTypeHintFullName shouldBe Seq(s"Test0.rb:<global>.$Main.<lambda>0")
+              callMember.dynamicTypeHintFullName shouldBe Seq(s"Test0.rb:$Main.<lambda>0")
             case xs => fail(s"Expected a one closure type node, instead got [${xs.code.mkString(", ")}]")
           }
         case xs => fail(s"Expected a single program module, instead got [${xs.code.mkString(", ")}]")
@@ -89,14 +89,14 @@ class DoBlockTests extends RubyCode2CpgFixture {
           inside(program.astChildren.collectAll[Method].l) {
             case closureMethod :: Nil =>
               closureMethod.name shouldBe "<lambda>0"
-              closureMethod.fullName shouldBe s"Test0.rb:<global>.$Main.<lambda>0"
+              closureMethod.fullName shouldBe s"Test0.rb:$Main.<lambda>0"
             case xs => fail(s"Expected a one method nodes, instead got [${xs.code.mkString(", ")}]")
           }
 
           inside(program.astChildren.collectAll[TypeDecl].isLambda.l) {
             case closureType :: Nil =>
               closureType.name shouldBe "<lambda>0"
-              closureType.fullName shouldBe s"Test0.rb:<global>.$Main.<lambda>0"
+              closureType.fullName shouldBe s"Test0.rb:$Main.<lambda>0"
             case xs => fail(s"Expected a one closure type node, instead got [${xs.code.mkString(", ")}]")
           }
         case xs => fail(s"Expected a single program module, instead got [${xs.code.mkString(", ")}]")
@@ -119,7 +119,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
           myArray.code shouldBe "my_array"
 
           lambdaRef.argumentIndex shouldBe 1
-          lambdaRef.typeFullName shouldBe s"Test0.rb:<global>.$Main.<lambda>0&Proc"
+          lambdaRef.typeFullName shouldBe s"Test0.rb:$Main.<lambda>0&Proc"
         case xs =>
           fail(s"Expected `each` call to have call and method ref arguments, instead got [${xs.code.mkString(", ")}]")
       }
@@ -151,7 +151,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
           inside(program.astChildren.collectAll[Method].l) {
             case closureMethod :: Nil =>
               closureMethod.name shouldBe "<lambda>0"
-              closureMethod.fullName shouldBe s"Test0.rb:<global>.$Main.<lambda>0"
+              closureMethod.fullName shouldBe s"Test0.rb:$Main.<lambda>0"
               closureMethod.isLambda.nonEmpty shouldBe true
             case xs => fail(s"Expected a one method nodes, instead got [${xs.code.mkString(", ")}]")
           }
@@ -159,7 +159,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
           inside(program.astChildren.collectAll[TypeDecl].isLambda.l) {
             case closureType :: Nil =>
               closureType.name shouldBe "<lambda>0"
-              closureType.fullName shouldBe s"Test0.rb:<global>.$Main.<lambda>0"
+              closureType.fullName shouldBe s"Test0.rb:$Main.<lambda>0"
               closureType.isLambda.nonEmpty shouldBe true
             case xs => fail(s"Expected a one closure type node, instead got [${xs.code.mkString(", ")}]")
           }
@@ -184,7 +184,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
           hash.code shouldBe "hash"
 
           lambdaRef.argumentIndex shouldBe 1
-          lambdaRef.typeFullName shouldBe s"Test0.rb:<global>.$Main.<lambda>0&Proc"
+          lambdaRef.typeFullName shouldBe s"Test0.rb:$Main.<lambda>0&Proc"
         case xs =>
           fail(s"Expected `each` call to have call and method ref arguments, instead got [${xs.code.mkString(", ")}]")
       }
@@ -217,7 +217,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
         case m :: Nil =>
           m.name should startWith("<lambda>")
           val myValue = m.local.nameExact("myValue").head
-          myValue.closureBindingId shouldBe Option(s"Test0.rb:<global>.$Main.myValue")
+          myValue.closureBindingId shouldBe Option(s"Test0.rb:$Main.myValue")
         case xs => fail(s"Expected exactly one closure method decl, instead got [${xs.code.mkString(",")}]")
       }
 
@@ -235,12 +235,12 @@ class DoBlockTests extends RubyCode2CpgFixture {
           inside(myValue._localViaRefOut) {
             case Some(local) =>
               local.name shouldBe "myValue"
-              local.method.fullName.headOption shouldBe Option(s"Test0.rb:<global>.$Main")
+              local.method.fullName.headOption shouldBe Option(s"Test0.rb:$Main")
             case None => fail("Expected closure binding refer to the captured local")
           }
 
           inside(myValue._captureIn.l) {
-            case (x: TypeRef) :: Nil => x.typeFullName shouldBe s"Test0.rb:<global>.$Main.<lambda>0&Proc"
+            case (x: TypeRef) :: Nil => x.typeFullName shouldBe s"Test0.rb:$Main.<lambda>0&Proc"
             case xs                  => fail(s"Expected single method ref binding but got [${xs.mkString(",")}]")
           }
 
@@ -270,7 +270,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
               tmpAssign.code shouldBe "<tmp-0> = Array.new(x) { |i| i += 1 }"
 
               newCall.name shouldBe "new"
-              newCall.methodFullName shouldBe s"$builtinPrefix.Array:initialize"
+              newCall.methodFullName shouldBe s"$builtinPrefix.Array.initialize"
 
               inside(newCall.argument.l) {
                 case (_: Identifier) :: (x: Identifier) :: (closure: TypeRef) :: Nil =>
@@ -347,7 +347,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
       inside(cpg.method.isModule.assignment.code("arrow_lambda.*").headOption) {
         case Some(lambdaAssign) =>
           lambdaAssign.target.asInstanceOf[Identifier].name shouldBe "arrow_lambda"
-          lambdaAssign.source.asInstanceOf[TypeRef].typeFullName shouldBe s"Test0.rb:<global>.$Main.<lambda>0&Proc"
+          lambdaAssign.source.asInstanceOf[TypeRef].typeFullName shouldBe s"Test0.rb:$Main.<lambda>0&Proc"
         case xs => fail(s"Expected an assignment to a lambda")
       }
     }
@@ -373,7 +373,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
       inside(cpg.method.isModule.assignment.code("a_lambda.*").headOption) {
         case Some(lambdaAssign) =>
           lambdaAssign.target.asInstanceOf[Identifier].name shouldBe "a_lambda"
-          lambdaAssign.source.asInstanceOf[TypeRef].typeFullName shouldBe s"Test0.rb:<global>.$Main.<lambda>0&Proc"
+          lambdaAssign.source.asInstanceOf[TypeRef].typeFullName shouldBe s"Test0.rb:$Main.<lambda>0&Proc"
         case xs => fail(s"Expected an assignment to a lambda")
       }
     }

@@ -106,7 +106,7 @@ class FieldAccessTests extends RubyCode2CpgFixture {
           bazAssign.code shouldBe "self.Baz"
 
           val bazTypeRef = baz.argument(2).asInstanceOf[TypeRef]
-          bazTypeRef.typeFullName shouldBe s"Test0.rb:<global>.$Main.Baz<class>"
+          bazTypeRef.typeFullName shouldBe s"Test0.rb:$Main.Baz<class>"
           bazTypeRef.code shouldBe "module Baz (...)"
 
           val fooAssign = foo.argument(1).asInstanceOf[Call]
@@ -114,7 +114,7 @@ class FieldAccessTests extends RubyCode2CpgFixture {
           fooAssign.code shouldBe "self.Foo"
 
           val fooTypeRef = foo.argument(2).asInstanceOf[TypeRef]
-          fooTypeRef.typeFullName shouldBe s"Test0.rb:<global>.$Main.Foo<class>"
+          fooTypeRef.typeFullName shouldBe s"Test0.rb:$Main.Foo<class>"
           fooTypeRef.code shouldBe "class Foo (...)"
         case _ => fail(s"Expected two type ref assignments on the module level")
       }
@@ -227,7 +227,7 @@ class FieldAccessTests extends RubyCode2CpgFixture {
       base.name shouldBe Operators.fieldAccess
       base.code shouldBe "A::B"
 
-      base.argument(1).asInstanceOf[TypeRef].typeFullName shouldBe s"Test0.rb:<global>.$Main.A<class>"
+      base.argument(1).asInstanceOf[TypeRef].typeFullName shouldBe s"Test0.rb:$Main.A<class>"
       base.argument(2).asInstanceOf[FieldIdentifier].canonicalName shouldBe "B"
 
       val receiver = call.receiver.isCall.head
@@ -238,7 +238,7 @@ class FieldAccessTests extends RubyCode2CpgFixture {
       selfArg1.name shouldBe Operators.fieldAccess
       selfArg1.code shouldBe "A::B"
 
-      selfArg1.argument(1).asInstanceOf[TypeRef].typeFullName shouldBe s"Test0.rb:<global>.$Main.A<class>"
+      selfArg1.argument(1).asInstanceOf[TypeRef].typeFullName shouldBe s"Test0.rb:$Main.A<class>"
       selfArg1.argument(2).asInstanceOf[FieldIdentifier].canonicalName shouldBe "B"
 
       val selfArg2 = receiver.argument(2).asInstanceOf[FieldIdentifier]

@@ -18,7 +18,7 @@ class MethodTests extends RubyCode2CpgFixture {
     "be represented by a METHOD node" in {
       val List(f) = cpg.method.name("f").l
 
-      f.fullName shouldBe s"Test0.rb:<global>.$Main.f"
+      f.fullName shouldBe s"Test0.rb:$Main.f"
       f.isExternal shouldBe false
       f.lineNumber shouldBe Some(2)
       f.numberOfLines shouldBe 1
@@ -31,17 +31,17 @@ class MethodTests extends RubyCode2CpgFixture {
 
     "have a corresponding bound type" in {
       val List(fType) = cpg.typeDecl("f").l
-      fType.fullName shouldBe s"Test0.rb:<global>.$Main.f"
+      fType.fullName shouldBe s"Test0.rb:$Main.f"
       fType.code shouldBe "def f(x) = 1"
-      fType.astParentFullName shouldBe s"Test0.rb:<global>.$Main"
+      fType.astParentFullName shouldBe s"Test0.rb:$Main"
       fType.astParentType shouldBe NodeTypes.METHOD
       val List(fMethod) = fType.iterator.boundMethod.l
-      fType.fullName shouldBe s"Test0.rb:<global>.$Main.f"
+      fType.fullName shouldBe s"Test0.rb:$Main.f"
     }
 
     "create a 'fake' method for the file" in {
       val List(m) = cpg.method.nameExact(RDefines.Main).l
-      m.fullName shouldBe s"Test0.rb:<global>.$Main"
+      m.fullName shouldBe s"Test0.rb:$Main"
       m.isModule.nonEmpty shouldBe true
     }
   }
@@ -55,7 +55,7 @@ class MethodTests extends RubyCode2CpgFixture {
 
     val List(f) = cpg.method.name("f").l
 
-    f.fullName shouldBe s"Test0.rb:<global>.$Main.f"
+    f.fullName shouldBe s"Test0.rb:$Main.f"
     f.isExternal shouldBe false
     f.lineNumber shouldBe Some(2)
     f.numberOfLines shouldBe 3
@@ -69,7 +69,7 @@ class MethodTests extends RubyCode2CpgFixture {
 
     val List(f) = cpg.method.name("f").l
 
-    f.fullName shouldBe s"Test0.rb:<global>.$Main.f"
+    f.fullName shouldBe s"Test0.rb:$Main.f"
     f.isExternal shouldBe false
     f.lineNumber shouldBe Some(2)
     f.numberOfLines shouldBe 1
@@ -87,7 +87,7 @@ class MethodTests extends RubyCode2CpgFixture {
 
     val List(f) = cpg.method.name("f").l
 
-    f.fullName shouldBe s"Test0.rb:<global>.$Main.f"
+    f.fullName shouldBe s"Test0.rb:$Main.f"
     f.isExternal shouldBe false
     f.lineNumber shouldBe Some(2)
     f.numberOfLines shouldBe 1
@@ -194,7 +194,7 @@ class MethodTests extends RubyCode2CpgFixture {
             inside(funcF.parameter.l) {
               case thisParam :: xParam :: Nil =>
                 thisParam.code shouldBe RDefines.Self
-                thisParam.typeFullName shouldBe s"Test0.rb:<global>.$Main.C"
+                thisParam.typeFullName shouldBe s"Test0.rb:$Main.C"
                 thisParam.index shouldBe 0
                 thisParam.isVariadic shouldBe false
 
@@ -228,7 +228,7 @@ class MethodTests extends RubyCode2CpgFixture {
             inside(funcF.parameter.l) {
               case thisParam :: xParam :: Nil =>
                 thisParam.code shouldBe RDefines.Self
-                thisParam.typeFullName shouldBe s"Test0.rb:<global>.$Main.C"
+                thisParam.typeFullName shouldBe s"Test0.rb:$Main.C"
                 thisParam.index shouldBe 0
                 thisParam.isVariadic shouldBe false
 
@@ -352,7 +352,7 @@ class MethodTests extends RubyCode2CpgFixture {
             case thisParam :: xParam :: Nil =>
               thisParam.name shouldBe RDefines.Self
               thisParam.code shouldBe "F"
-              thisParam.typeFullName shouldBe s"Test0.rb:<global>.$Main.F"
+              thisParam.typeFullName shouldBe s"Test0.rb:$Main.F"
 
               xParam.name shouldBe "x"
             case xs => fail(s"Expected two parameters, got ${xs.name.mkString(", ")}")
@@ -362,7 +362,7 @@ class MethodTests extends RubyCode2CpgFixture {
             case thisParam :: xParam :: Nil =>
               thisParam.name shouldBe RDefines.Self
               thisParam.code shouldBe "F"
-              thisParam.typeFullName shouldBe s"Test0.rb:<global>.$Main.F"
+              thisParam.typeFullName shouldBe s"Test0.rb:$Main.F"
 
               xParam.name shouldBe "x"
               xParam.code shouldBe "x"
@@ -375,7 +375,7 @@ class MethodTests extends RubyCode2CpgFixture {
     // TODO: we cannot bind baz as this is a dynamic assignment to `F` which is trickier to determine
     //   Also, double check bindings
     "have bindings to the singleton module TYPE_DECL" ignore {
-      cpg.typeDecl.name("F<class>").methodBinding.methodFullName.l shouldBe List(s"Test0.rb:<global>.$Main.F.bar")
+      cpg.typeDecl.name("F<class>").methodBinding.methodFullName.l shouldBe List(s"Test0.rb:$Main.F.bar")
     }
 
     "baz should not exist in the <main> block" in {
@@ -400,7 +400,7 @@ class MethodTests extends RubyCode2CpgFixture {
     "be represented by a METHOD node" in {
       inside(cpg.method.name("exists\\?").l) {
         case existsMethod :: Nil =>
-          existsMethod.fullName shouldBe s"Test0.rb:<global>.$Main.exists?"
+          existsMethod.fullName shouldBe s"Test0.rb:$Main.exists?"
           existsMethod.isExternal shouldBe false
 
           inside(existsMethod.methodReturn.cfgIn.l) {
@@ -612,7 +612,7 @@ class MethodTests extends RubyCode2CpgFixture {
             case (lhs: Call) :: (rhs: TypeRef) :: Nil =>
               lhs.code shouldBe "self.A"
               lhs.name shouldBe Operators.fieldAccess
-              rhs.typeFullName shouldBe s"t1.rb:<global>.$Main.A<class>"
+              rhs.typeFullName shouldBe s"t1.rb:$Main.A<class>"
             case xs => fail(s"Expected lhs and rhs, instead got ${xs.code.mkString(",")}")
           }
 
@@ -620,7 +620,7 @@ class MethodTests extends RubyCode2CpgFixture {
             case (lhs: Call) :: (rhs: TypeRef) :: Nil =>
               lhs.code shouldBe "self.B"
               lhs.name shouldBe Operators.fieldAccess
-              rhs.typeFullName shouldBe s"t1.rb:<global>.$Main.B<class>"
+              rhs.typeFullName shouldBe s"t1.rb:$Main.B<class>"
             case xs => fail(s"Expected lhs and rhs, instead got ${xs.code.mkString(",")}")
           }
 
@@ -628,8 +628,8 @@ class MethodTests extends RubyCode2CpgFixture {
             case (lhs: Call) :: (rhs: MethodRef) :: Nil =>
               lhs.code shouldBe "self.c"
               lhs.name shouldBe Operators.fieldAccess
-              rhs.methodFullName shouldBe s"t1.rb:<global>.$Main.c"
-              rhs.typeFullName shouldBe s"t1.rb:<global>.$Main.c"
+              rhs.methodFullName shouldBe s"t1.rb:$Main.c"
+              rhs.typeFullName shouldBe s"t1.rb:$Main.c"
             case xs => fail(s"Expected lhs and rhs, instead got ${xs.code.mkString(",")}")
           }
 
@@ -647,7 +647,7 @@ class MethodTests extends RubyCode2CpgFixture {
             case (lhs: Call) :: (rhs: TypeRef) :: Nil =>
               lhs.code shouldBe "self.D"
               lhs.name shouldBe Operators.fieldAccess
-              rhs.typeFullName shouldBe s"t2.rb:<global>.$Main.D<class>"
+              rhs.typeFullName shouldBe s"t2.rb:$Main.D<class>"
             case xs => fail(s"Expected lhs and rhs, instead got ${xs.code.mkString(",")}")
           }
 
@@ -655,8 +655,8 @@ class MethodTests extends RubyCode2CpgFixture {
             case (lhs: Call) :: (rhs: MethodRef) :: Nil =>
               lhs.code shouldBe "self.e"
               lhs.name shouldBe Operators.fieldAccess
-              rhs.methodFullName shouldBe s"t2.rb:<global>.$Main.e"
-              rhs.typeFullName shouldBe s"t2.rb:<global>.$Main.e"
+              rhs.methodFullName shouldBe s"t2.rb:$Main.e"
+              rhs.typeFullName shouldBe s"t2.rb:$Main.e"
             case xs => fail(s"Expected lhs and rhs, instead got ${xs.code.mkString(",")}")
           }
 

@@ -12,7 +12,7 @@ class RegexTests extends RubyCode2CpgFixture(withPostProcessing = true) {
        |0
        |""".stripMargin)
     cpg.call(RubyOperators.regexpMatch).methodFullName.l shouldBe List(
-      s"$kernelPrefix.String:${RubyOperators.regexpMatch}"
+      s"$kernelPrefix.String.${RubyOperators.regexpMatch}"
     )
   }
   "`/x/ =~ 'y'` is a member call `/x/.=~ 'y'" in {
@@ -20,7 +20,7 @@ class RegexTests extends RubyCode2CpgFixture(withPostProcessing = true) {
        |0
        |""".stripMargin)
     cpg.call(RubyOperators.regexpMatch).methodFullName.l shouldBe List(
-      s"$kernelPrefix.Regexp:${RubyOperators.regexpMatch}"
+      s"$kernelPrefix.Regexp.${RubyOperators.regexpMatch}"
     )
   }
 
@@ -33,7 +33,7 @@ class RegexTests extends RubyCode2CpgFixture(withPostProcessing = true) {
 
     inside(cpg.controlStructure.isIf.l) {
       case regexIf :: Nil =>
-        regexIf.condition.isCall.methodFullName.l shouldBe List(s"$kernelPrefix.Regexp:${RubyOperators.regexpMatch}")
+        regexIf.condition.isCall.methodFullName.l shouldBe List(s"$kernelPrefix.Regexp.${RubyOperators.regexpMatch}")
 
         inside(regexIf.condition.isCall.argument.l) {
           case (lhs: Literal) :: (rhs: Literal) :: Nil =>

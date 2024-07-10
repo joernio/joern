@@ -167,7 +167,7 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
           inside(assignment.argument.l) {
             case (a: Identifier) :: (_: Block) :: Nil =>
               a.name shouldBe "a"
-              a.dynamicTypeHintFullName should contain(s"Test0.rb:<global>.$Main.A")
+              a.dynamicTypeHintFullName should contain(s"Test0.rb:$Main.A")
             case xs => fail(s"Expected one identifier and one call argument, got [${xs.code.mkString(",")}]")
           }
         case xs => fail(s"Expected a single assignment, got [${xs.code.mkString(",")}]")
@@ -196,7 +196,7 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
           inside(constructor.argument.l) {
             case (a: Identifier) :: Nil =>
               a.name shouldBe "<tmp-0>"
-              a.typeFullName shouldBe s"Test0.rb:<global>.$Main.A"
+              a.typeFullName shouldBe s"Test0.rb:$Main.A"
               a.argumentIndex shouldBe 0
             case xs => fail(s"Expected one identifier and one call argument, got [${xs.code.mkString(",")}]")
           }
@@ -218,7 +218,7 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
       inside(cpg.call("src").l) {
         case src :: Nil =>
           src.name shouldBe "src"
-          src.methodFullName shouldBe s"Test0.rb:<global>.$Main.src"
+          src.methodFullName shouldBe s"Test0.rb:$Main.src"
         case xs => fail(s"Expected exactly one `src` call, instead got [${xs.code.mkString(",")}]")
       }
     }

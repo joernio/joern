@@ -8,6 +8,7 @@ import io.joern.rubysrc2cpg.passes.Defines as RDefines
 import io.joern.x2cpg.datastructures.{TypedScopeElement, *}
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{DeclarationNew, NewLocal, NewMethodParameterIn}
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import java.io.File as JFile
 import scala.collection.mutable
@@ -47,7 +48,8 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
   /** @return
     *   using the stack, will initialize a new module scope object.
     */
-  def newProgramScope: Option[ProgramScope] = surroundingScopeFullName.map(ProgramScope.apply)
+  def newProgramScope: Option[ProgramScope] =
+    surroundingScopeFullName.map(_.stripSuffix(NamespaceTraversal.globalNamespaceName)).map(ProgramScope.apply)
 
   /** @return
     *   true if the top of the stack is the program/module.

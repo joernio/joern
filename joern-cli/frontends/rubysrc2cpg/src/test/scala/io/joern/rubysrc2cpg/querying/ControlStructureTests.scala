@@ -293,7 +293,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     whileCond.code shouldBe "true"
     whileCond.lineNumber shouldBe Some(2)
 
-    putsHi.methodFullName shouldBe s"$kernelPrefix:puts"
+    putsHi.methodFullName shouldBe s"$kernelPrefix.puts"
     putsHi.code shouldBe "puts 'hi'"
     putsHi.lineNumber shouldBe Some(2)
   }

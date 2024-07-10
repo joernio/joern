@@ -67,7 +67,7 @@ class RubyInternalTypeRecoveryTests extends RubyCode2CpgFixture(withPostProcessi
 
     "present the declared method name when a built-in with the same name is used in the same compilation unit" in {
       val List(absCall) = cpg.call("sleep").l
-      absCall.methodFullName shouldBe s"main.rb:<global>.$Main.sleep"
+      absCall.methodFullName shouldBe s"main.rb:$Main.sleep"
     }
   }
 
@@ -142,7 +142,7 @@ class RubyInternalTypeRecoveryTests extends RubyCode2CpgFixture(withPostProcessi
 
           inside(constructAssignment.argument.l) {
             case (lhs: Identifier) :: rhs :: Nil =>
-              lhs.typeFullName shouldBe s"test2.rb:<global>.$Main.Test2A"
+              lhs.typeFullName shouldBe s"test2.rb:$Main.Test2A"
             case xs => fail(s"Expected lhs and rhs, got [${xs.code.mkString(",")}]")
           }
         case xs => fail(s"Expected lhs and rhs, got [${xs.code.mkString(",")}]")
@@ -168,8 +168,8 @@ class RubyInternalTypeRecoveryTests extends RubyCode2CpgFixture(withPostProcessi
     "propagate to identifier" ignore {
       inside(cpg.identifier.name("(a|b)").l) {
         case aIdent :: bIdent :: Nil =>
-          aIdent.typeFullName shouldBe s"Test0.rb:<global>.$Main.A"
-          bIdent.typeFullName shouldBe s"Test0.rb:<global>.$Main.A"
+          aIdent.typeFullName shouldBe s"Test0.rb:$Main.A"
+          bIdent.typeFullName shouldBe s"Test0.rb:$Main.A"
         case xs => fail(s"Expected one identifier, got [${xs.name.mkString(",")}]")
       }
     }
@@ -361,7 +361,7 @@ class RubyExternalTypeRecoveryTests
 
     "resolved the type of call" in {
       val Some(create) = cpg.call("create").headOption: @unchecked
-      create.methodFullName shouldBe s"stripe.rb:<global>.$Main.Stripe.Customer.create"
+      create.methodFullName shouldBe s"stripe.rb:$Main.Stripe.Customer.create"
     }
 
     "resolved the type of identifier" in {

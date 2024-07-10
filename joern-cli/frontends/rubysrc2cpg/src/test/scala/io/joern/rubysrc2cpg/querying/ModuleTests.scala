@@ -15,7 +15,7 @@ class ModuleTests extends RubyCode2CpgFixture {
 
     val List(m) = cpg.typeDecl.name("M").l
 
-    m.fullName shouldBe s"Test0.rb:<global>.$Main.M"
+    m.fullName shouldBe s"Test0.rb:$Main.M"
     m.lineNumber shouldBe Some(2)
     m.baseType.l shouldBe List()
     m.member.name.l shouldBe List(Defines.TypeDeclBody)
@@ -32,7 +32,7 @@ class ModuleTests extends RubyCode2CpgFixture {
 
     val List(m) = cpg.typeDecl.name("M1").l
 
-    m.fullName shouldBe s"Test0.rb:<global>.$Main.M1"
+    m.fullName shouldBe s"Test0.rb:$Main.M1"
     m.lineNumber shouldBe Some(2)
     m.baseType.l shouldBe List()
     m.member.name.l shouldBe List(Defines.TypeDeclBody)

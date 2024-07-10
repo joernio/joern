@@ -204,8 +204,8 @@ class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with In
 
     "allow the resolution for all modules in that directory" in {
       cpg.call("foo").methodFullName.l shouldBe List(
-        s"dir/module1.rb:<global>.$Main.Module1.foo",
-        s"dir/module2.rb:<global>.$Main.Module2.foo"
+        s"dir/module1.rb:$Main.Module1.foo",
+        s"dir/module2.rb:$Main.Module2.foo"
       )
     }
   }
@@ -277,9 +277,9 @@ class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with In
     "resolve the calls directly" in {
       inside(cpg.call.name("foo.*").l) {
         case foo1 :: foo2 :: foo3 :: Nil =>
-          foo1.methodFullName shouldBe s"lib/file1.rb:<global>.$Main.File1.foo"
-          foo2.methodFullName shouldBe s"lib/file2.rb:<global>.$Main.File2.foo"
-          foo3.methodFullName shouldBe s"src/file3.rb:<global>.$Main.File3.foo"
+          foo1.methodFullName shouldBe s"lib/file1.rb:$Main.File1.foo"
+          foo2.methodFullName shouldBe s"lib/file2.rb:$Main.File2.foo"
+          foo3.methodFullName shouldBe s"src/file3.rb:$Main.File3.foo"
         case xs => fail(s"Expected 3 calls, got [${xs.code.mkString(",")}] instead")
       }
     }

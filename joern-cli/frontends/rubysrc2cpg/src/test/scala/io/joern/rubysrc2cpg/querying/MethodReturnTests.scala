@@ -380,7 +380,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
           inside(bar.astChildren.collectAll[Method].l) {
             case closureMethod :: Nil =>
               closureMethod.name shouldBe "<lambda>0"
-              closureMethod.fullName shouldBe s"Test0.rb:<global>.$Main.bar.<lambda>0"
+              closureMethod.fullName shouldBe s"Test0.rb:$Main.bar.<lambda>0"
             case xs => fail(s"Expected closure method, but found ${xs.code.mkString(", ")} instead")
           }
 
@@ -393,7 +393,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
                   returnCall.name shouldBe "foo"
 
                   val List(_, arg: TypeRef) = returnCall.argument.l: @unchecked
-                  arg.typeFullName shouldBe s"Test0.rb:<global>.$Main.bar.<lambda>0&Proc"
+                  arg.typeFullName shouldBe s"Test0.rb:$Main.bar.<lambda>0&Proc"
                 case xs => fail(s"Expected one call for return, but found ${xs.code.mkString(", ")} instead")
               }
 
