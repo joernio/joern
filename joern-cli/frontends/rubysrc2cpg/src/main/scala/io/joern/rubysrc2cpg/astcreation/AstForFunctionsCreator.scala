@@ -36,12 +36,23 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     * @return
     *   a method declaration with additional refs and types if specified.
     */
-  protected def astForMethodDeclaration(node: MethodDeclaration, isClosure: Boolean = false): Seq[Ast] = {
+  protected def astForMethodDeclaration(
+    node: RubyNode & ProcedureDeclaration,
+    isClosure: Boolean = false,
+    isSingletonObjectMethod: Boolean = false
+  ): Seq[Ast] = {
     val isInTypeDecl  = scope.surroundingAstLabel.contains(NodeTypes.TYPE_DECL)
     val isConstructor = (node.methodName == Defines.Initialize) && isInTypeDecl
     val methodName    = node.methodName
+
     // TODO: body could be a try
-    val fullName = computeMethodFullName(methodName)
+
+    val fullName = node match {
+      case x: SingletonObjectMethodDeclaration =>
+        computeSingletonObjectMethodFullName(s"class<<${x.baseClass.span.text}.$methodName")
+      case _ => computeMethodFullName(methodName)
+    }
+
     val method = methodNode(
       node = node,
       name = methodName,
@@ -80,7 +91,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     }
 
     // Consider which variables are captured from the outer scope
-    val stmtBlockAst = if (isClosure) {
+    val stmtBlockAst = if (isClosure || isSingletonObjectMethod) {
       val baseStmtBlockAst = astForMethodBody(node.body, optionalStatementList)
       transformAsClosureBody(refs, baseStmtBlockAst)
     } else {
@@ -130,7 +141,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     if (isConstructor) modifiers.addOne(ModifierTypes.CONSTRUCTOR)
 
     val prefixMemberAst =
-      if isClosure || isSurroundedByProgramScope then Ast() // program scope members are set elsewhere
+      if isClosure || isSingletonObjectMethod || isSurroundedByProgramScope then
+        Ast() // program scope members are set elsewhere
       else {
         // Singleton constructors that initialize @@ fields should have their members linked under the singleton class
         val methodMember = scope.surroundingTypeFullName match {
@@ -156,7 +168,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       .foreach(Ast.storeInDiffGraph(_, diffGraph))
     // In the case of a closure, we expect this method to return a method ref, otherwise, we bind a pointer to a
     // method ref, e.g. self.foo = def foo(...)
-    if isClosure then refs else createMethodRefPointer(method) :: Nil
+    if isClosure || isSingletonObjectMethod then refs else createMethodRefPointer(method) :: Nil
   }
 
   private def transformAsClosureBody(refs: List[Ast], baseStmtBlockAst: Ast) = {

@@ -19,6 +19,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   protected def computeClassFullName(name: String): String  = s"${scope.surroundingScopeFullName.head}.$name"
   protected def computeMethodFullName(name: String): String = s"${scope.surroundingScopeFullName.head}:$name"
+  protected def computeSingletonObjectMethodFullName(name: String): String =
+    s"${scope.surroundingScopeFullName.head}.$name"
 
   override def column(node: RubyNode): Option[Int]    = node.column
   override def columnEnd(node: RubyNode): Option[Int] = node.columnEnd
