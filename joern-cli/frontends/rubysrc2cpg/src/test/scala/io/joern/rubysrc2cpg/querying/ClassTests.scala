@@ -401,8 +401,8 @@ class ClassTests extends RubyCode2CpgFixture {
     "Create TYPE_DECL nodes for two singleton methods" in {
       inside(cpg.typeDecl.name("(bark|legs)").l) {
         case barkTypeDecl :: legsTypeDecl :: Nil =>
-          barkTypeDecl.fullName shouldBe "Test0.rb:<global>::program.class<<animal.bark"
-          legsTypeDecl.fullName shouldBe "Test0.rb:<global>::program.class<<animal.legs"
+          barkTypeDecl.fullName shouldBe s"Test0.rb:$Main.class<<animal.bark"
+          legsTypeDecl.fullName shouldBe s"Test0.rb:$Main.class<<animal.legs"
         case xs => fail(s"Expected two type_decls, got [${xs.code.mkString(",")}]")
       }
     }
