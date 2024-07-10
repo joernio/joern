@@ -72,8 +72,12 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     val methodReturn = methodReturnNode(node, Defines.Any)
 
-    val refs =
-      List(typeRefNode(node, methodName, fullName), methodRefNode(node, methodName, fullName, fullName)).map(Ast.apply)
+    val refs = {
+      val typeRef =
+        if isClosure then typeRefNode(node, s"$methodName&Proc", s"$fullName&Proc")
+        else typeRefNode(node, methodName, fullName)
+      List(typeRef, methodRefNode(node, methodName, fullName, fullName)).map(Ast.apply)
+    }
 
     // Consider which variables are captured from the outer scope
     val stmtBlockAst = if (isClosure) {
@@ -105,15 +109,21 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       scope.surroundingAstLabel.foreach(typeDeclNode_.astParentType(_))
       scope.surroundingScopeFullName.foreach(typeDeclNode_.astParentFullName(_))
       createMethodTypeBindings(method, typeDeclNode_)
-      if isClosure then
-        Ast(typeDeclNode_)
-          .withChild(Ast(newModifierNode(ModifierTypes.LAMBDA)))
-          .withChild(
-            // This member refers back to itself, as itself is the type decl bound to the respective method
-            Ast(NewMember().name("call").code("call").dynamicTypeHintFullName(Seq(fullName)).typeFullName(Defines.Any))
-          )
+      if isClosure then Ast(typeDeclNode_).withChild(Ast(newModifierNode(ModifierTypes.LAMBDA)))
       else Ast(typeDeclNode_)
     }
+
+    // Due to lambdas being invoked by `call()`, this additional type ref holding that member is created.
+    val lambdaTypeDeclAst = if isClosure then {
+      val typeDeclNode_ = typeDeclNode(node, s"$methodName&Proc", s"$fullName&Proc", relativeFileName, code(node))
+      scope.surroundingAstLabel.foreach(typeDeclNode_.astParentType(_))
+      scope.surroundingScopeFullName.foreach(typeDeclNode_.astParentFullName(_))
+      Ast(typeDeclNode_)
+        .withChild(
+          // This member refers back to itself, as itself is the type decl bound to the respective method
+          Ast(NewMember().name("call").code("call").dynamicTypeHintFullName(Seq(fullName)).typeFullName(Defines.Any))
+        )
+    } else Ast()
 
     val modifiers = mutable.Buffer(ModifierTypes.VIRTUAL)
     if (isClosure) modifiers.addOne(ModifierTypes.LAMBDA)
@@ -142,7 +152,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     }
 
     // Each of these ASTs are linked via AstLinker as per the astParent* properties
-    (prefixMemberAst :: methodAst_ :: methodTypeDeclAst :: Nil).foreach(Ast.storeInDiffGraph(_, diffGraph))
+    (prefixMemberAst :: methodAst_ :: methodTypeDeclAst :: lambdaTypeDeclAst :: Nil)
+      .foreach(Ast.storeInDiffGraph(_, diffGraph))
     // In the case of a closure, we expect this method to return a method ref, otherwise, we bind a pointer to a
     // method ref, e.g. self.foo = def foo(...)
     if isClosure then refs else createMethodRefPointer(method) :: Nil
@@ -164,7 +175,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       case _                                              => false
     })
 
-    val methodRefOption = refs.flatMap(_.nodes).collectFirst { case x: NewMethodRef => x }
+    val methodRefOption = refs.flatMap(_.nodes).collectFirst { case x: NewTypeRef => x }
 
     capturedLocalNodes
       .collect {
