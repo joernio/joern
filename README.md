@@ -127,3 +127,4 @@ The last command prints all available queries - add your own in querydb, run the
 More details in the [separate querydb readme](querydb/README.md)
 foo
 foo
+foo
