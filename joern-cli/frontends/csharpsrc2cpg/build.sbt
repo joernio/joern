@@ -20,7 +20,7 @@ lazy val astGenVersion = settingKey[String]("dotnetastgen version")
 astGenVersion := appProperties.value.getString("csharpsrc2cpg.dotnetastgen_version")
 
 libraryDependencies ++= Seq(
-  "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
+  "com.michaelpollmeier"  %% "codepropertygraph" % Versions.cpg,
   "org.scalatest" %% "scalatest"         % Versions.scalatest % Test
 )
 
