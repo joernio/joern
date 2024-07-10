@@ -371,6 +371,8 @@ class ClassTests extends RubyCode2CpgFixture {
         |animal.bark # => 'Woof'
         |""".stripMargin)
 
+    cpg.method.isModule.dotAst.l.foreach(println)
+
     "Create assignments to method refs for methods on singleton object" in {
       inside(cpg.method.isModule.block.assignment.l) {
         case _ :: _ :: _ :: barkAssignment :: legsAssignment :: Nil =>
@@ -380,7 +382,7 @@ class ClassTests extends RubyCode2CpgFixture {
               identifier.code shouldBe "animal"
               fieldIdentifier.code shouldBe "bark"
 
-              rhs.methodFullName shouldBe "Test0.rb:<global>::program:<lambda>0"
+              rhs.methodFullName shouldBe "Test0.rb:<global>::program.class<<animal.bark"
             case xs => fail(s"Expected two arguments for assignment, got [${xs.code.mkString(",")}]")
           }
 
@@ -390,22 +392,19 @@ class ClassTests extends RubyCode2CpgFixture {
               identifier.code shouldBe "animal"
               fieldIdentifier.code shouldBe "legs"
 
-              rhs.methodFullName shouldBe "Test0.rb:<global>::program:<lambda>1"
+              rhs.methodFullName shouldBe "Test0.rb:<global>::program.class<<animal.legs"
             case xs => fail(s"Expected two arguments for assignment, got [${xs.code.mkString(",")}]")
           }
         case xs => fail(s"Expected five assignments, got [${xs.code.mkString(",")}]")
       }
     }
 
-    "Create lambda methods for methods on singleton object" in {
-      inside(cpg.method.isLambda.l) {
-        case barkLambda :: legsLambda :: Nil =>
-          val List(barkLambdaParam) = barkLambda.method.parameter.l
-          val List(legsLambdaParam) = legsLambda.method.parameter.l
-
-          barkLambdaParam.code shouldBe RubyDefines.Self
-          legsLambdaParam.code shouldBe RubyDefines.Self
-        case xs => fail(s"Expected two lambdas, got [${xs.code.mkString(",")}]")
+    "Create TYPE_DECL nodes for two singleton methods" in {
+      inside(cpg.typeDecl.name("(bark|legs)").l) {
+        case barkTypeDecl :: legsTypeDecl :: Nil =>
+          barkTypeDecl.fullName shouldBe "Test0.rb:<global>::program.class<<animal.bark"
+          legsTypeDecl.fullName shouldBe "Test0.rb:<global>::program.class<<animal.legs"
+        case xs => fail(s"Expected two type_decls, got [${xs.code.mkString(",")}]")
       }
     }
   }

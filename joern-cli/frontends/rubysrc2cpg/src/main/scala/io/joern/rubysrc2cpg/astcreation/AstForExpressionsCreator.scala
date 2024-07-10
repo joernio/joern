@@ -22,41 +22,42 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   val tmpGen: FreshNameGenerator[String] = FreshNameGenerator(i => s"<tmp-$i>")
 
   protected def astForExpression(node: RubyNode): Ast = node match
-    case node: StaticLiteral            => astForStaticLiteral(node)
-    case node: HereDocNode              => astForHereDoc(node)
-    case node: DynamicLiteral           => astForDynamicLiteral(node)
-    case node: UnaryExpression          => astForUnary(node)
-    case node: BinaryExpression         => astForBinary(node)
-    case node: MemberAccess             => astForMemberAccess(node)
-    case node: MemberCall               => astForMemberCall(node)
-    case node: ObjectInstantiation      => astForObjectInstantiation(node)
-    case node: IndexAccess              => astForIndexAccess(node)
-    case node: SingleAssignment         => astForSingleAssignment(node)
-    case node: AttributeAssignment      => astForAttributeAssignment(node)
-    case node: TypeIdentifier           => astForTypeIdentifier(node)
-    case node: RubyIdentifier           => astForSimpleIdentifier(node)
-    case node: SimpleCall               => astForSimpleCall(node)
-    case node: RequireCall              => astForRequireCall(node)
-    case node: IncludeCall              => astForIncludeCall(node)
-    case node: YieldExpr                => astForYield(node)
-    case node: RangeExpression          => astForRange(node)
-    case node: ArrayLiteral             => astForArrayLiteral(node)
-    case node: HashLiteral              => astForHashLiteral(node)
-    case node: Association              => astForAssociation(node)
-    case node: IfExpression             => astForIfExpression(node)
-    case node: UnlessExpression         => astForUnlessExpression(node)
-    case node: RescueExpression         => astForRescueExpression(node)
-    case node: CaseExpression           => blockAst(NewBlock(), astsForCaseExpression(node).toList)
-    case node: MandatoryParameter       => astForMandatoryParameter(node)
-    case node: SplattingRubyNode        => astForSplattingRubyNode(node)
-    case node: AnonymousTypeDeclaration => astForAnonymousTypeDeclaration(node)
-    case node: ProcOrLambdaExpr         => astForProcOrLambdaExpr(node)
-    case node: RubyCallWithBlock[_]     => astForCallWithBlock(node)
-    case node: SelfIdentifier           => astForSelfIdentifier(node)
-    case node: BreakStatement           => astForBreakStatement(node)
-    case node: StatementList            => astForStatementList(node)
-    case node: DummyNode                => Ast(node.node)
-    case node: Unknown                  => astForUnknown(node)
+    case node: StaticLiteral                    => astForStaticLiteral(node)
+    case node: HereDocNode                      => astForHereDoc(node)
+    case node: DynamicLiteral                   => astForDynamicLiteral(node)
+    case node: UnaryExpression                  => astForUnary(node)
+    case node: BinaryExpression                 => astForBinary(node)
+    case node: MemberAccess                     => astForMemberAccess(node)
+    case node: MemberCall                       => astForMemberCall(node)
+    case node: ObjectInstantiation              => astForObjectInstantiation(node)
+    case node: IndexAccess                      => astForIndexAccess(node)
+    case node: SingleAssignment                 => astForSingleAssignment(node)
+    case node: AttributeAssignment              => astForAttributeAssignment(node)
+    case node: TypeIdentifier                   => astForTypeIdentifier(node)
+    case node: RubyIdentifier                   => astForSimpleIdentifier(node)
+    case node: SimpleCall                       => astForSimpleCall(node)
+    case node: RequireCall                      => astForRequireCall(node)
+    case node: IncludeCall                      => astForIncludeCall(node)
+    case node: YieldExpr                        => astForYield(node)
+    case node: RangeExpression                  => astForRange(node)
+    case node: ArrayLiteral                     => astForArrayLiteral(node)
+    case node: HashLiteral                      => astForHashLiteral(node)
+    case node: Association                      => astForAssociation(node)
+    case node: IfExpression                     => astForIfExpression(node)
+    case node: UnlessExpression                 => astForUnlessExpression(node)
+    case node: RescueExpression                 => astForRescueExpression(node)
+    case node: CaseExpression                   => blockAst(NewBlock(), astsForCaseExpression(node).toList)
+    case node: MandatoryParameter               => astForMandatoryParameter(node)
+    case node: SplattingRubyNode                => astForSplattingRubyNode(node)
+    case node: AnonymousTypeDeclaration         => astForAnonymousTypeDeclaration(node)
+    case node: ProcOrLambdaExpr                 => astForProcOrLambdaExpr(node)
+    case node: SingletonObjectMethodDeclaration => astForSingletonObjectMethodDeclaration(node)
+    case node: RubyCallWithBlock[_]             => astForCallWithBlock(node)
+    case node: SelfIdentifier                   => astForSelfIdentifier(node)
+    case node: BreakStatement                   => astForBreakStatement(node)
+    case node: StatementList                    => astForStatementList(node)
+    case node: DummyNode                        => Ast(node.node)
+    case node: Unknown                          => astForUnknown(node)
     case x =>
       logger.warn(s"Unhandled expression of type ${x.getClass.getSimpleName}")
       astForUnknown(node)
@@ -781,6 +782,34 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   private def astForProcOrLambdaExpr(node: ProcOrLambdaExpr): Ast = {
     val Seq(_, methodRef) = astForDoBlock(node.block): @unchecked
+    methodRef
+  }
+
+  private def astForSingletonObjectMethodDeclaration(node: SingletonObjectMethodDeclaration): Ast = {
+    val methodName     = node.methodName
+    val methodFullName = computeSingletonObjectMethodFullName(s"class<<${node.baseClass.span.text}.$methodName")
+
+    val methodAstsWithRefs = node.block.body match {
+      case x: RubyBlock =>
+        astForMethodDeclaration(
+          x.toMethodDeclaration(methodName, Option(node.block.parameters)),
+          singletonMethodFullName = Option(methodFullName)
+        )
+      case _ =>
+        astForMethodDeclaration(
+          node.block.toMethodDeclaration(methodName, Option(node.block.parameters)),
+          singletonMethodFullName = Option(methodFullName)
+        )
+    }
+
+    // Set span contents
+    methodAstsWithRefs.flatMap(_.nodes).foreach {
+      case m: NewMethodRef => DummyNode(m.copy)(node.block.span.spanStart(m.code))
+      case _               =>
+    }
+
+    val Seq(_, methodRef) = methodAstsWithRefs
+
     methodRef
   }
 

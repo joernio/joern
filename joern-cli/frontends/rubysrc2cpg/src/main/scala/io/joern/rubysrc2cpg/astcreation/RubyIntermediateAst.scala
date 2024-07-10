@@ -125,6 +125,10 @@ object RubyIntermediateAst {
       extends RubyNode(span)
       with AllowedTypeDeclarationChild
 
+  final case class SingletonObjectMethodDeclaration(methodName: String, baseClass: RubyNode, block: Block)(
+    span: TextSpan
+  ) extends RubyNode(span)
+
   sealed trait MethodParameter {
     def name: String
   }

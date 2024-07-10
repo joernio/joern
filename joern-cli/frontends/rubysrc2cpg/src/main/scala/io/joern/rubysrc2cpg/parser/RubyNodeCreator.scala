@@ -859,8 +859,9 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
                   MemberAccess(baseClass, ".", x.methodName)(
                     x.span.spanStart(s"${baseClass.span.text}.${x.methodName}")
                   )
-                val proc = ProcOrLambdaExpr(Block(x.parameters, x.body)(x.span))(x.span)
-                SingleAssignment(memberAccess, "=", proc)(
+                val singletonBlockMethod =
+                  SingletonObjectMethodDeclaration(x.methodName, baseClass, Block(x.parameters, x.body)(x.span))(x.span)
+                SingleAssignment(memberAccess, "=", singletonBlockMethod)(
                   ctx.toTextSpan.spanStart(s"${memberAccess.span.text} = ${x.span.text}")
                 )
               case x => x
