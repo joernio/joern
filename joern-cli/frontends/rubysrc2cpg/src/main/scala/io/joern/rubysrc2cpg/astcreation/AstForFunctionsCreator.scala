@@ -49,7 +49,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     val fullName = node match {
       case x: SingletonObjectMethodDeclaration => computeFullName(s"class<<${x.baseClass.span.text}.$methodName")
-      case _ => computeFullName(methodName)
+      case _                                   => computeFullName(methodName)
     }
 
     val method = methodNode(
