@@ -1,10 +1,10 @@
 package io.joern.rubysrc2cpg.querying
 
-import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
+import io.joern.rubysrc2cpg.passes.Defines.{Main, RubyOperators}
+import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelPrefix
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelPrefix
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Literal, Method, MethodRef, Return, TypeRef}
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
 class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
@@ -72,7 +72,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
     r.lineNumber shouldBe Some(3)
 
     val List(c: Call) = r.astChildren.isCall.l
-    c.methodFullName shouldBe s"$kernelPrefix:puts"
+    c.methodFullName shouldBe s"$kernelPrefix.puts"
     c.lineNumber shouldBe Some(3)
     c.code shouldBe "puts x"
   }
@@ -380,7 +380,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
           inside(bar.astChildren.collectAll[Method].l) {
             case closureMethod :: Nil =>
               closureMethod.name shouldBe "<lambda>0"
-              closureMethod.fullName shouldBe "Test0.rb:<global>::program:bar:<lambda>0"
+              closureMethod.fullName shouldBe s"Test0.rb:$Main.bar.<lambda>0"
             case xs => fail(s"Expected closure method, but found ${xs.code.mkString(", ")} instead")
           }
 
@@ -393,7 +393,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
                   returnCall.name shouldBe "foo"
 
                   val List(_, arg: TypeRef) = returnCall.argument.l: @unchecked
-                  arg.typeFullName shouldBe "Test0.rb:<global>::program:bar:<lambda>0&Proc"
+                  arg.typeFullName shouldBe s"Test0.rb:$Main.bar.<lambda>0&Proc"
                 case xs => fail(s"Expected one call for return, but found ${xs.code.mkString(", ")} instead")
               }
 

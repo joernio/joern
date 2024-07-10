@@ -1,5 +1,6 @@
 package io.joern.rubysrc2cpg.passes
 
+import io.joern.rubysrc2cpg.passes.Defines.Main
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines as XDefines
 import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelPrefix
@@ -59,14 +60,14 @@ class RubyInternalTypeRecoveryTests extends RubyCode2CpgFixture(withPostProcessi
 
     "resolve 'print' and 'puts' StubbedRubyType calls" in {
       val List(printCall) = cpg.call("print").l
-      printCall.methodFullName shouldBe s"$kernelPrefix:print"
+      printCall.methodFullName shouldBe s"$kernelPrefix.print"
       val List(maxCall) = cpg.call("puts").l
-      maxCall.methodFullName shouldBe s"$kernelPrefix:puts"
+      maxCall.methodFullName shouldBe s"$kernelPrefix.puts"
     }
 
     "present the declared method name when a built-in with the same name is used in the same compilation unit" in {
       val List(absCall) = cpg.call("sleep").l
-      absCall.methodFullName shouldBe "main.rb:<global>::program:sleep"
+      absCall.methodFullName shouldBe s"main.rb:$Main.sleep"
     }
   }
 
@@ -141,7 +142,7 @@ class RubyInternalTypeRecoveryTests extends RubyCode2CpgFixture(withPostProcessi
 
           inside(constructAssignment.argument.l) {
             case (lhs: Identifier) :: rhs :: Nil =>
-              lhs.typeFullName shouldBe "test2.rb:<global>::program.Test2A"
+              lhs.typeFullName shouldBe s"test2.rb:$Main.Test2A"
             case xs => fail(s"Expected lhs and rhs, got [${xs.code.mkString(",")}]")
           }
         case xs => fail(s"Expected lhs and rhs, got [${xs.code.mkString(",")}]")
@@ -167,8 +168,8 @@ class RubyInternalTypeRecoveryTests extends RubyCode2CpgFixture(withPostProcessi
     "propagate to identifier" ignore {
       inside(cpg.identifier.name("(a|b)").l) {
         case aIdent :: bIdent :: Nil =>
-          aIdent.typeFullName shouldBe "Test0.rb:<global>::program.A"
-          bIdent.typeFullName shouldBe "Test0.rb:<global>::program.A"
+          aIdent.typeFullName shouldBe s"Test0.rb:$Main.A"
+          bIdent.typeFullName shouldBe s"Test0.rb:$Main.A"
         case xs => fail(s"Expected one identifier, got [${xs.name.mkString(",")}]")
       }
     }
@@ -195,7 +196,7 @@ class RubyExternalTypeRecoveryTests
     // TODO: Revisit
     "be present in (Case 1)" ignore {
       cpg.identifier("sg").lineNumber(5).typeFullName.l shouldBe List("sendgrid-ruby.SendGrid.API")
-      cpg.call("client").methodFullName.headOption shouldBe Option("sendgrid-ruby.SendGrid.API:client")
+      cpg.call("client").methodFullName.headOption shouldBe Option("sendgrid-ruby.SendGrid.API.client")
     }
 
     "resolve correct imports via tag nodes" in {
@@ -219,7 +220,7 @@ class RubyExternalTypeRecoveryTests
 
     "be present in (Case 2)" ignore {
       cpg.call("post").methodFullName.l shouldBe List(
-        "sendgrid-ruby::program.SendGrid.API.client<returnValue>.mail<returnValue>.anonymous<returnValue>.post"
+        s"sendgrid-ruby.$Main.SendGrid.API.client<returnValue>.mail<returnValue>.anonymous<returnValue>.post"
       )
     }
   }
@@ -280,7 +281,7 @@ class RubyExternalTypeRecoveryTests
         .isIdentifier
         .name("d")
         .headOption: @unchecked
-      d.typeFullName shouldBe "dbi::program.DBI.connect.<returnValue>"
+      d.typeFullName shouldBe "dbi.$Main.DBI.connect.<returnValue>"
       d.dynamicTypeHintFullName shouldBe Seq()
     }
 
@@ -291,7 +292,7 @@ class RubyExternalTypeRecoveryTests
         .isCall
         .name("select_one")
         .l
-      d.methodFullName shouldBe "dbi::program.DBI.connect.<returnValue>.select_one"
+      d.methodFullName shouldBe "dbi.$Main.DBI.connect.<returnValue>.select_one"
       d.dynamicTypeHintFullName shouldBe Seq()
       d.callee(NoResolve).isExternal.headOption shouldBe Some(true)
     }
@@ -300,10 +301,10 @@ class RubyExternalTypeRecoveryTests
     "resolve correct imports via tag nodes" ignore {
       val List(foo: ResolvedTypeDecl) =
         cpg.file(".*foo.rb").ast.isCall.where(_.referencedImports).tag._toEvaluatedImport.toList: @unchecked
-      foo.fullName shouldBe "dbi::program.DBI"
+      foo.fullName shouldBe s"dbi.$Main.DBI"
       val List(bar: ResolvedTypeDecl) =
         cpg.file(".*bar.rb").ast.isCall.where(_.referencedImports).tag._toEvaluatedImport.toList: @unchecked
-      bar.fullName shouldBe "foo.rb::program.FooModule"
+      bar.fullName shouldBe s"foo.rb.$Main.FooModule"
     }
 
   }
@@ -341,7 +342,7 @@ class RubyExternalTypeRecoveryTests
       val Some(log) = cpg.identifier("log").headOption: @unchecked
       log.typeFullName shouldBe "logger.Logger"
       val List(errorCall) = cpg.call("error").l
-      errorCall.methodFullName shouldBe "logger.Logger:error"
+      errorCall.methodFullName shouldBe "logger.Logger.error"
     }
   }
 
@@ -360,12 +361,12 @@ class RubyExternalTypeRecoveryTests
 
     "resolved the type of call" in {
       val Some(create) = cpg.call("create").headOption: @unchecked
-      create.methodFullName shouldBe "stripe.rb:<global>::program.Stripe.Customer:create"
+      create.methodFullName shouldBe s"stripe.rb:$Main.Stripe.Customer.create"
     }
 
     "resolved the type of identifier" in {
       val Some(customer) = cpg.identifier("customer").headOption: @unchecked
-      customer.typeFullName shouldBe "stripe::program.Stripe.Customer.create.<returnValue>"
+      customer.typeFullName shouldBe s"stripe.$Main.Stripe.Customer.create.<returnValue>"
     }
   }
 
@@ -384,11 +385,11 @@ class RubyExternalTypeRecoveryTests
       .moreCode(RubyExternalTypeRecoveryTests.LOGGER_GEMFILE, "Gemfile")
 
     "have a correct type for call `connect`" in {
-      cpg.call("error").methodFullName.l shouldBe List("logger.Logger:error")
+      cpg.call("error").methodFullName.l shouldBe List("logger.Logger.error")
     }
 
     "have a correct type for identifier `d`" in {
-      cpg.identifier("e").typeFullName.l shouldBe List("logger.Logger:error.<returnValue>")
+      cpg.identifier("e").typeFullName.l shouldBe List("logger.Logger.error.<returnValue>")
     }
   }
 }

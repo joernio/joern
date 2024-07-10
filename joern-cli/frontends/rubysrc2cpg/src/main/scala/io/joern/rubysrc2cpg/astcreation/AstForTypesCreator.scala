@@ -50,7 +50,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   ): Seq[Ast] = {
     val className     = nameIdentifier.text
     val inheritsFrom  = node.baseClass.map(getBaseClassName).toList
-    val classFullName = computeClassFullName(className)
+    val classFullName = computeFullName(className)
     val typeDecl = typeDeclNode(
       node = node,
       name = className,
@@ -152,7 +152,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   private def astForTypeDeclBodyCall(node: TypeDeclBodyCall, typeFullName: String): Ast = {
     val callAst = astForMemberCall(node.toMemberCall, isStatic = true)
     callAst.nodes.collectFirst {
-      case c: NewCall if c.name == Defines.TypeDeclBody => c.methodFullName(s"$typeFullName:${Defines.TypeDeclBody}")
+      case c: NewCall if c.name == Defines.TypeDeclBody => c.methodFullName(s"$typeFullName.${Defines.TypeDeclBody}")
     }
     callAst
   }
@@ -211,7 +211,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   // creates a `def <name>() { return <fieldName> }` METHOD, for <fieldName> = @<name>.
   private def astForGetterMethod(node: FieldsDeclaration, fieldName: String): Ast = {
     val name     = fieldName.drop(1)
-    val fullName = computeMethodFullName(name)
+    val fullName = computeFullName(name)
     val method = methodNode(
       node = node,
       name = name,
@@ -241,7 +241,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   // creates a `def <name>=(x) { <fieldName> = x }` METHOD, for <fieldName> = @<name>
   private def astForSetterMethod(node: FieldsDeclaration, fieldName: String): Ast = {
     val name     = fieldName.drop(1) + "="
-    val fullName = computeMethodFullName(name)
+    val fullName = computeFullName(name)
     val method = methodNode(
       node = node,
       name = name,

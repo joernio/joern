@@ -1,6 +1,7 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.passes.Defines
+import io.joern.rubysrc2cpg.passes.Defines.Main
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.semanticcpg.language.*
 
@@ -14,7 +15,7 @@ class ModuleTests extends RubyCode2CpgFixture {
 
     val List(m) = cpg.typeDecl.name("M").l
 
-    m.fullName shouldBe "Test0.rb:<global>::program.M"
+    m.fullName shouldBe s"Test0.rb:$Main.M"
     m.lineNumber shouldBe Some(2)
     m.baseType.l shouldBe List()
     m.member.name.l shouldBe List(Defines.TypeDeclBody)
@@ -31,7 +32,7 @@ class ModuleTests extends RubyCode2CpgFixture {
 
     val List(m) = cpg.typeDecl.name("M1").l
 
-    m.fullName shouldBe "Test0.rb:<global>::program.M1"
+    m.fullName shouldBe s"Test0.rb:$Main.M1"
     m.lineNumber shouldBe Some(2)
     m.baseType.l shouldBe List()
     m.member.name.l shouldBe List(Defines.TypeDeclBody)

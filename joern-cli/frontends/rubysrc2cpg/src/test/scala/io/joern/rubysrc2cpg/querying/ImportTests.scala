@@ -1,10 +1,8 @@
 package io.joern.rubysrc2cpg.querying
 
+import io.joern.rubysrc2cpg.passes.Defines.Main
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.semanticcpg.language.*
-import io.joern.rubysrc2cpg.RubySrc2Cpg
-import io.joern.rubysrc2cpg.Config
-import scala.util.{Success, Failure}
 import org.scalatest.Inspectors
 
 class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with Inspectors {
@@ -59,8 +57,8 @@ class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with In
       )
 
       val List(newCall) =
-        cpg.method.name(":program").filename("t1.rb").ast.isCall.methodFullName(".*:initialize").methodFullName.l
-      newCall should startWith(s"${path}.rb:")
+        cpg.method.isModule.filename("t1.rb").ast.isCall.methodFullName(".*\\.initialize").methodFullName.l
+      newCall should startWith(s"$path.rb:")
     }
   }
 
@@ -86,7 +84,7 @@ class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with In
       |""".stripMargin)
 
       val List(methodName) =
-        cpg.method.name("bar").ast.isCall.methodFullName(".*::program\\.(A|B):foo").methodFullName.l
+        cpg.method.name("bar").ast.isCall.methodFullName(s".*\\.$Main\\.(A|B).foo").methodFullName.l
       methodName should endWith(s"${moduleName}:foo")
     }
   }
@@ -171,9 +169,9 @@ class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with In
     "resolve calls to builtin functions" in {
       inside(cpg.call.methodFullName("(pp|csv).*").l) {
         case csvParseCall :: csvTableInitCall :: ppCall :: Nil =>
-          csvParseCall.methodFullName shouldBe "csv.CSV:parse"
-          ppCall.methodFullName shouldBe "pp.PP:pp"
-          csvTableInitCall.methodFullName shouldBe "csv.CSV.Table:initialize"
+          csvParseCall.methodFullName shouldBe "csv.CSV.parse"
+          ppCall.methodFullName shouldBe "pp.PP.pp"
+          csvTableInitCall.methodFullName shouldBe "csv.CSV.Table.initialize"
         case xs => fail(s"Expected three calls, got [${xs.code.mkString(",")}] instead")
       }
     }
@@ -206,8 +204,8 @@ class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with In
 
     "allow the resolution for all modules in that directory" in {
       cpg.call("foo").methodFullName.l shouldBe List(
-        "dir/module1.rb:<global>::program.Module1:foo",
-        "dir/module2.rb:<global>::program.Module2:foo"
+        s"dir/module1.rb:$Main.Module1.foo",
+        s"dir/module2.rb:$Main.Module2.foo"
       )
     }
   }
@@ -245,9 +243,9 @@ class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with In
         |require 'file2'
         |require 'file3'
         |
-        |File1::foo # lib/file1.rb::program:foo
-        |File2::foo # lib/file2.rb::program:foo
-        |File3::foo # src/file3.rb::program:foo
+        |File1::foo # lib/file1.rb.<main>.foo
+        |File2::foo # lib/file2.rb.<main>.foo
+        |File3::foo # src/file3.rb.<main>.foo
         |""".stripMargin,
       "main.rb"
     ).moreCode(
@@ -279,9 +277,9 @@ class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with In
     "resolve the calls directly" in {
       inside(cpg.call.name("foo.*").l) {
         case foo1 :: foo2 :: foo3 :: Nil =>
-          foo1.methodFullName shouldBe "lib/file1.rb:<global>::program.File1:foo"
-          foo2.methodFullName shouldBe "lib/file2.rb:<global>::program.File2:foo"
-          foo3.methodFullName shouldBe "src/file3.rb:<global>::program.File3:foo"
+          foo1.methodFullName shouldBe s"lib/file1.rb:$Main.File1.foo"
+          foo2.methodFullName shouldBe s"lib/file2.rb:$Main.File2.foo"
+          foo3.methodFullName shouldBe s"src/file3.rb:$Main.File3.foo"
         case xs => fail(s"Expected 3 calls, got [${xs.code.mkString(",")}] instead")
       }
     }

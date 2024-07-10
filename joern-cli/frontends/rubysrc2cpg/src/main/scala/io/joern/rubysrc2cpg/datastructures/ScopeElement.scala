@@ -35,7 +35,7 @@ trait TypeLikeScope extends TypedScopeElement {
   *   the relative file name.
   */
 case class ProgramScope(fileName: String) extends TypeLikeScope {
-  override def fullName: String = s"$fileName:${Defines.Program}"
+  override def fullName: String = s"$fileName${Defines.Main}"
 }
 
 /** A Ruby module/abstract class.
