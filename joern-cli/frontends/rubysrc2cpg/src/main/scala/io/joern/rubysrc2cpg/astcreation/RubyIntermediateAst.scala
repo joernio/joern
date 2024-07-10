@@ -133,9 +133,14 @@ object RubyIntermediateAst {
       with ProcedureDeclaration
       with AllowedTypeDeclarationChild
 
-  final case class SingletonObjectMethodDeclaration(methodName: String, baseClass: RubyNode, block: Block)(
-    span: TextSpan
-  ) extends RubyNode(span)
+  final case class SingletonObjectMethodDeclaration(
+    methodName: String,
+    parameters: List[RubyNode],
+    body: RubyNode,
+    baseClass: RubyNode
+  )(span: TextSpan)
+      extends RubyNode(span)
+      with ProcedureDeclaration
 
   sealed trait MethodParameter {
     def name: String
@@ -444,7 +449,6 @@ object RubyIntermediateAst {
       case Some(givenParameters) => MethodDeclaration(name, givenParameters, body)(span)
       case None                  => MethodDeclaration(name, this.parameters, body)(span)
     }
-
   }
 
   /** A dummy class for wrapping around `NewNode` and allowing it to integrate with RubyNode classes.

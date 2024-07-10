@@ -885,7 +885,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
                     x.span.spanStart(s"${baseClass.span.text}.${x.methodName}")
                   )
                 val singletonBlockMethod =
-                  SingletonObjectMethodDeclaration(x.methodName, baseClass, Block(x.parameters, x.body)(x.span))(x.span)
+                  SingletonObjectMethodDeclaration(x.methodName, x.parameters, x.body, baseClass)(x.span)
                 SingleAssignment(memberAccess, "=", singletonBlockMethod)(
                   ctx.toTextSpan.spanStart(s"${memberAccess.span.text} = ${x.span.text}")
                 )

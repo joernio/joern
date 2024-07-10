@@ -371,28 +371,26 @@ class ClassTests extends RubyCode2CpgFixture {
         |animal.bark # => 'Woof'
         |""".stripMargin)
 
-    cpg.method.isModule.dotAst.l.foreach(println)
-
     "Create assignments to method refs for methods on singleton object" in {
       inside(cpg.method.isModule.block.assignment.l) {
         case _ :: _ :: _ :: barkAssignment :: legsAssignment :: Nil =>
           inside(barkAssignment.argument.l) {
-            case (lhs: Call) :: (rhs: MethodRef) :: Nil =>
+            case (lhs: Call) :: (rhs: TypeRef) :: Nil =>
               val List(identifier, fieldIdentifier) = lhs.argument.l: @unchecked
               identifier.code shouldBe "animal"
               fieldIdentifier.code shouldBe "bark"
 
-              rhs.methodFullName shouldBe "Test0.rb:<global>::program.class<<animal.bark"
+              rhs.typeFullName shouldBe "Test0.rb:<global>::program.class<<animal.bark"
             case xs => fail(s"Expected two arguments for assignment, got [${xs.code.mkString(",")}]")
           }
 
           inside(legsAssignment.argument.l) {
-            case (lhs: Call) :: (rhs: MethodRef) :: Nil =>
+            case (lhs: Call) :: (rhs: TypeRef) :: Nil =>
               val List(identifier, fieldIdentifier) = lhs.argument.l: @unchecked
               identifier.code shouldBe "animal"
               fieldIdentifier.code shouldBe "legs"
 
-              rhs.methodFullName shouldBe "Test0.rb:<global>::program.class<<animal.legs"
+              rhs.typeFullName shouldBe "Test0.rb:<global>::program.class<<animal.legs"
             case xs => fail(s"Expected two arguments for assignment, got [${xs.code.mkString(",")}]")
           }
         case xs => fail(s"Expected five assignments, got [${xs.code.mkString(",")}]")

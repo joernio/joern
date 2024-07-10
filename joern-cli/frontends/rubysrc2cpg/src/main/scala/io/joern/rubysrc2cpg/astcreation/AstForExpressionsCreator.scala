@@ -787,31 +787,17 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astForSingletonObjectMethodDeclaration(node: SingletonObjectMethodDeclaration): Ast = {
-    val methodName     = node.methodName
-    val methodFullName = computeSingletonObjectMethodFullName(s"class<<${node.baseClass.span.text}.$methodName")
-
-    val methodAstsWithRefs = node.block.body match {
-      case x: RubyBlock =>
-        astForMethodDeclaration(
-          x.toMethodDeclaration(methodName, Option(node.block.parameters)),
-          singletonMethodFullName = Option(methodFullName)
-        )
-      case _ =>
-        astForMethodDeclaration(
-          node.block.toMethodDeclaration(methodName, Option(node.block.parameters)),
-          singletonMethodFullName = Option(methodFullName)
-        )
-    }
+    val methodAstsWithRefs = astForMethodDeclaration(node, isSingletonObjectMethod = true)
 
     // Set span contents
     methodAstsWithRefs.flatMap(_.nodes).foreach {
-      case m: NewMethodRef => DummyNode(m.copy)(node.block.span.spanStart(m.code))
+      case m: NewMethodRef => DummyNode(m.copy)(node.body.span.spanStart(m.code))
       case _               =>
     }
 
-    val Seq(_, methodRef) = methodAstsWithRefs
+    val Seq(typeRef, _) = methodAstsWithRefs
 
-    methodRef
+    typeRef
   }
 
   private def astForMethodCallArgument(node: RubyNode): Ast = {
