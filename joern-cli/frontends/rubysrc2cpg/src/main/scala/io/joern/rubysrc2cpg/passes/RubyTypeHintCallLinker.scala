@@ -26,7 +26,7 @@ class RubyTypeHintCallLinker(cpg: Cpg) extends XTypeHintCallLinker(cpg) {
     }
     val name =
       if (methodName.contains(pathSep) && methodName.length > methodName.lastIndexOf(pathSep) + 1)
-        val strippedMethod = methodName.stripPrefix(s"${GlobalTypes.kernelPrefix}:")
+        val strippedMethod = methodName.stripPrefix(s"${GlobalTypes.kernelPrefix}.")
         if GlobalTypes.kernelFunctions.contains(strippedMethod) then strippedMethod
         else methodName.substring(methodName.lastIndexOf(pathSep) + pathSep.length)
       else methodName

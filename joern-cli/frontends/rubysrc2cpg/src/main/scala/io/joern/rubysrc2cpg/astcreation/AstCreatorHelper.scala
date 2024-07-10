@@ -17,8 +17,7 @@ import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Opera
 
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  protected def computeClassFullName(name: String): String  = s"${scope.surroundingScopeFullName.head}.$name"
-  protected def computeMethodFullName(name: String): String = s"${scope.surroundingScopeFullName.head}:$name"
+  protected def computeFullName(name: String): String = s"${scope.surroundingScopeFullName.head}.$name"
 
   override def column(node: RubyNode): Option[Int]    = node.column
   override def columnEnd(node: RubyNode): Option[Int] = node.columnEnd

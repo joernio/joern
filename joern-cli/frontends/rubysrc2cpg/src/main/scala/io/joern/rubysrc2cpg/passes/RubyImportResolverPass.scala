@@ -61,7 +61,7 @@ class RubyImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
       // Expose methods which are directly present in a file, without any module, TypeDecl
       val resolvedMethods = cpg.method
         .where(_.file.name(filePattern))
-        .where(_.nameExact(RDefines.Program))
+        .where(_.nameExact(RDefines.Main))
         .astChildren
         .astChildren
         .isMethod

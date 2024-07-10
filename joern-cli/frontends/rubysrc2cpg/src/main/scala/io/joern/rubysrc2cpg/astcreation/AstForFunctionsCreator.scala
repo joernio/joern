@@ -41,7 +41,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val isConstructor = (node.methodName == Defines.Initialize) && isInTypeDecl
     val methodName    = node.methodName
     // TODO: body could be a try
-    val fullName = computeMethodFullName(methodName)
+    val fullName = computeFullName(methodName)
     val method = methodNode(
       node = node,
       name = methodName,
@@ -180,10 +180,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     capturedLocalNodes
       .collect {
         case local: NewLocal =>
-          val closureBindingId = scope.variableScopeFullName(local.name).map(x => s"$x:${local.name}")
+          val closureBindingId = scope.variableScopeFullName(local.name).map(x => s"$x.${local.name}")
           (local, local.name, local.code, closureBindingId)
         case param: NewMethodParameterIn =>
-          val closureBindingId = scope.variableScopeFullName(param.name).map(x => s"$x:${param.name}")
+          val closureBindingId = scope.variableScopeFullName(param.name).map(x => s"$x.${param.name}")
           (param, param.name, param.code, closureBindingId)
       }
       .collect { case (capturedLocal, name, code, Some(closureBindingId)) =>
@@ -313,7 +313,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   protected def astForSingletonMethodDeclaration(node: SingletonMethodDeclaration): Seq[Ast] = {
     node.target match {
       case targetNode: SingletonMethodIdentifier =>
-        val fullName = computeMethodFullName(node.methodName)
+        val fullName = computeFullName(node.methodName)
 
         val (astParentType, astParentFullName, thisParamCode, addEdge) = targetNode match {
           case _: SelfIdentifier =>

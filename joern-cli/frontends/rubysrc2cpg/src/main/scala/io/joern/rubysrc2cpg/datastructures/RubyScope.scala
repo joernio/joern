@@ -332,7 +332,7 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
           case None if GlobalTypes.kernelFunctions.contains(normalizedTypeName) =>
             Option(RubyType(s"${GlobalTypes.kernelPrefix}.$normalizedTypeName", List.empty, List.empty))
           case None if GlobalTypes.bundledClasses.contains(normalizedTypeName) =>
-            Option(RubyType(s"<${GlobalTypes.builtinPrefix}.$normalizedTypeName>", List.empty, List.empty))
+            Option(RubyType(s"${GlobalTypes.builtinPrefix}.$normalizedTypeName", List.empty, List.empty))
           case None =>
             None
           case x => x

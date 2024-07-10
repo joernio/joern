@@ -24,7 +24,7 @@ object Defines {
   val Initialize: String   = "initialize"
   val TypeDeclBody: String = "<body>"
 
-  val Program: String = ":program"
+  val Main: String = "<main>"
 
   val Resolver: String = "<dependency-resolver>"
 

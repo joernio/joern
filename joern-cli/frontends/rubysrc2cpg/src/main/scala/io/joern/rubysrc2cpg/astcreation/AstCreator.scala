@@ -78,8 +78,8 @@ class AstCreator(
   }
 
   private def astInFakeMethod(rootNode: StatementList): Ast = {
-    val name     = Defines.Program
-    val fullName = computeMethodFullName(name)
+    val name     = Defines.Main
+    val fullName = computeFullName(name)
     val code     = rootNode.text
     val methodNode_ = methodNode(
       node = rootNode,

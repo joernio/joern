@@ -6,6 +6,7 @@ import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
+import io.joern.rubysrc2cpg.passes.Defines.Main
 
 class ClassTests extends RubyCode2CpgFixture {
 
@@ -17,7 +18,7 @@ class ClassTests extends RubyCode2CpgFixture {
     val List(classC) = cpg.typeDecl.name("C").l
 
     classC.inheritsFromTypeFullName shouldBe List()
-    classC.fullName shouldBe "Test0.rb:<global>::program.C"
+    classC.fullName shouldBe s"Test0.rb:<global>.$Main.C"
     classC.lineNumber shouldBe Some(2)
     classC.baseType.l shouldBe List()
     classC.member.name.l shouldBe List(RubyDefines.TypeDeclBody, RubyDefines.Initialize)
@@ -25,7 +26,7 @@ class ClassTests extends RubyCode2CpgFixture {
 
     val List(singletonC) = cpg.typeDecl.nameExact("C<class>").l
     singletonC.inheritsFromTypeFullName shouldBe List()
-    singletonC.fullName shouldBe "Test0.rb:<global>::program.C<class>"
+    singletonC.fullName shouldBe s"Test0.rb:<global>.$Main.C<class>"
     singletonC.lineNumber shouldBe Some(2)
     singletonC.baseType.l shouldBe List()
     singletonC.member.name.l shouldBe List()
@@ -42,7 +43,7 @@ class ClassTests extends RubyCode2CpgFixture {
     val List(classC) = cpg.typeDecl.name("C").l
 
     classC.inheritsFromTypeFullName shouldBe List("D")
-    classC.fullName shouldBe "Test0.rb:<global>::program.C"
+    classC.fullName shouldBe s"Test0.rb:<global>.$Main.C"
     classC.lineNumber shouldBe Some(2)
     classC.member.name.l shouldBe List(RubyDefines.TypeDeclBody, RubyDefines.Initialize)
     classC.method.name.l shouldBe List(RubyDefines.TypeDeclBody, RubyDefines.Initialize)
@@ -53,7 +54,7 @@ class ClassTests extends RubyCode2CpgFixture {
     val List(singletonC) = cpg.typeDecl.nameExact("C<class>").l
 
     singletonC.inheritsFromTypeFullName shouldBe List("D<class>")
-    singletonC.fullName shouldBe "Test0.rb:<global>::program.C<class>"
+    singletonC.fullName shouldBe s"Test0.rb:<global>.$Main.C<class>"
     singletonC.lineNumber shouldBe Some(2)
     singletonC.member.name.l shouldBe List()
     singletonC.method.name.l shouldBe List()
@@ -103,7 +104,7 @@ class ClassTests extends RubyCode2CpgFixture {
     methodAbc.code shouldBe "def abc (...)"
     methodAbc.lineNumber shouldBe Some(3)
     methodAbc.parameter.isEmpty shouldBe true
-    methodAbc.fullName shouldBe "Test0.rb:<global>::program.C:abc"
+    methodAbc.fullName shouldBe s"Test0.rb:<global>.$Main.C.abc"
 
     // TODO: Make sure that @abc in this return is the actual field
     val List(ret: Return)          = methodAbc.methodReturn.cfgIn.l: @unchecked
@@ -152,7 +153,7 @@ class ClassTests extends RubyCode2CpgFixture {
 
     methodA.code shouldBe "def a= (...)"
     methodA.lineNumber shouldBe Some(3)
-    methodA.fullName shouldBe "Test0.rb:<global>::program.C:a="
+    methodA.fullName shouldBe s"Test0.rb:<global>.$Main.C.a="
 
     // TODO: there's probably a better way for testing this
     val List(param)                            = methodA.parameter.l
@@ -189,7 +190,7 @@ class ClassTests extends RubyCode2CpgFixture {
     val List(classC)  = cpg.typeDecl.name("C").l
     val List(methodF) = classC.method.name("f").l
 
-    methodF.fullName shouldBe "Test0.rb:<global>::program.C:f"
+    methodF.fullName shouldBe s"Test0.rb:<global>.$Main.C.f"
 
     val List(memberF) = classC.member.nameExact("f").l
     memberF.dynamicTypeHintFullName.toSet should contain(methodF.fullName)
@@ -261,7 +262,7 @@ class ClassTests extends RubyCode2CpgFixture {
     val List(classC)     = cpg.typeDecl.name("C").l
     val List(methodInit) = classC.method.name(RubyDefines.Initialize).l
 
-    methodInit.fullName shouldBe s"Test0.rb:<global>::program.C:${RubyDefines.Initialize}"
+    methodInit.fullName shouldBe s"Test0.rb:<global>.$Main.C.${RubyDefines.Initialize}"
     methodInit.isConstructor.isEmpty shouldBe false
   }
 
@@ -274,7 +275,7 @@ class ClassTests extends RubyCode2CpgFixture {
     val List(classC)     = cpg.typeDecl.name("C").l
     val List(methodInit) = classC.method.name(RubyDefines.Initialize).l
 
-    methodInit.fullName shouldBe s"Test0.rb:<global>::program.C:${RubyDefines.Initialize}"
+    methodInit.fullName shouldBe s"Test0.rb:<global>.$Main.C.${RubyDefines.Initialize}"
   }
 
   "only `def initialize() ... end` directly under class has the constructor modifier" in {
@@ -312,8 +313,8 @@ class ClassTests extends RubyCode2CpgFixture {
         |
         |""".stripMargin)
 
-    cpg.member("MConst").typeDecl.fullName.head shouldBe "Test0.rb:<global>::program.MMM<class>"
-    cpg.member("NConst").typeDecl.fullName.head shouldBe "Test0.rb:<global>::program.MMM.Nested<class>"
+    cpg.member("MConst").typeDecl.fullName.head shouldBe s"Test0.rb:<global>.$Main.MMM<class>"
+    cpg.member("NConst").typeDecl.fullName.head shouldBe s"Test0.rb:<global>.$Main.MMM.Nested<class>"
   }
 
   "a basic anonymous class" should {
@@ -329,14 +330,14 @@ class ClassTests extends RubyCode2CpgFixture {
       inside(cpg.typeDecl.nameExact("<anon-class-0>").l) {
         case anonClass :: Nil =>
           anonClass.name shouldBe "<anon-class-0>"
-          anonClass.fullName shouldBe "Test0.rb:<global>::program.<anon-class-0>"
+          anonClass.fullName shouldBe s"Test0.rb:<global>.$Main.<anon-class-0>"
           inside(anonClass.method.l) {
             case hello :: defaultConstructor :: Nil =>
               defaultConstructor.name shouldBe RubyDefines.Initialize
-              defaultConstructor.fullName shouldBe s"Test0.rb:<global>::program.<anon-class-0>:${RubyDefines.Initialize}"
+              defaultConstructor.fullName shouldBe s"Test0.rb:<global>.$Main.<anon-class-0>.${RubyDefines.Initialize}"
 
               hello.name shouldBe "hello"
-              hello.fullName shouldBe "Test0.rb:<global>::program.<anon-class-0>:hello"
+              hello.fullName shouldBe s"Test0.rb:<global>.$Main.<anon-class-0>.hello"
             case xs => fail(s"Expected a single method, but got [${xs.map(x => x.label -> x.code).mkString(",")}]")
           }
         case xs => fail(s"Expected a single anonymous class, but got [${xs.map(x => x.label -> x.code).mkString(",")}]")
@@ -344,7 +345,7 @@ class ClassTests extends RubyCode2CpgFixture {
     }
 
     "generate an assignment to the variable `a` with the source being a constructor invocation of the class" in {
-      inside(cpg.method(":program").assignment.l) {
+      inside(cpg.method.isModule.assignment.l) {
         case aAssignment :: Nil =>
           aAssignment.target.code shouldBe "a"
           aAssignment.source.code shouldBe "Class.new <anon-class-0> (...)"
@@ -380,7 +381,7 @@ class ClassTests extends RubyCode2CpgFixture {
               identifier.code shouldBe "animal"
               fieldIdentifier.code shouldBe "bark"
 
-              rhs.typeFullName shouldBe "Test0.rb:<global>::program:<lambda>0&Proc"
+              rhs.typeFullName shouldBe s"Test0.rb:<global>.$Main.<lambda>0&Proc"
             case xs => fail(s"Expected two arguments for assignment, got [${xs.code.mkString(",")}]")
           }
 
@@ -390,7 +391,7 @@ class ClassTests extends RubyCode2CpgFixture {
               identifier.code shouldBe "animal"
               fieldIdentifier.code shouldBe "legs"
 
-              rhs.typeFullName shouldBe "Test0.rb:<global>::program:<lambda>1&Proc"
+              rhs.typeFullName shouldBe s"Test0.rb:<global>.$Main.<lambda>1&Proc"
             case xs => fail(s"Expected two arguments for assignment, got [${xs.code.mkString(",")}]")
           }
         case xs => fail(s"Expected five assignments, got [${xs.code.mkString(",")}]")
@@ -599,7 +600,7 @@ class ClassTests extends RubyCode2CpgFixture {
       inside(cpg.call.nameExact(RubyDefines.TypeDeclBody).headOption) {
         case Some(bodyCall) =>
           bodyCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-          bodyCall.methodFullName shouldBe s"Test0.rb:<global>::program.Foo:${RubyDefines.TypeDeclBody}"
+          bodyCall.methodFullName shouldBe s"Test0.rb:<global>.$Main.Foo.${RubyDefines.TypeDeclBody}"
 
           bodyCall.receiver.isEmpty shouldBe true
           inside(bodyCall.argumentOption(0)) {
@@ -715,7 +716,7 @@ class ClassTests extends RubyCode2CpgFixture {
 
     "create the `StandardError` local variable" in {
       cpg.local.nameExact("some_variable").dynamicTypeHintFullName.toList shouldBe List(
-        s"<${GlobalTypes.builtinPrefix}.StandardError>"
+        s"${GlobalTypes.builtinPrefix}.StandardError"
       )
     }
 
@@ -783,7 +784,7 @@ class ClassTests extends RubyCode2CpgFixture {
                           base.code shouldBe "self.scope"
                           self.name shouldBe "self"
                           literal.code shouldBe ":hits_by_ip"
-                          typeRef.typeFullName shouldBe s"Test0.rb:<global>::program.Foo:${RubyDefines.TypeDeclBody}:<lambda>0&Proc"
+                          typeRef.typeFullName shouldBe s"Test0.rb:<global>.$Main.Foo.${RubyDefines.TypeDeclBody}.<lambda>0&Proc"
                           cpg.method
                             .fullNameExact(
                               typeRef.typ.referencedTypeDecl.member.name("call").dynamicTypeHintFullName.toSeq*
@@ -818,7 +819,7 @@ class ClassTests extends RubyCode2CpgFixture {
         case assignCall :: Nil =>
           inside(assignCall.argument.l) {
             case lhs :: (rhs: Call) :: Nil =>
-              rhs.typeFullName shouldBe "<__builtin.Encoding.Converter>:asciicompat_encoding"
+              rhs.typeFullName shouldBe "__builtin.Encoding.Converter.asciicompat_encoding"
             case xs => fail(s"Expected lhs and rhs for assignment call, got [${xs.code.mkString(",")}]")
           }
         case xs => fail(s"Expected one call for assignment, got [${xs.code.mkString(",")}]")
@@ -839,7 +840,7 @@ class ClassTests extends RubyCode2CpgFixture {
               inside(bodyMethod.block.astChildren.l) {
                 case (literal: Literal) :: Nil =>
                   literal.code shouldBe "1"
-                case xs => fail(s"Exepcted literal for body method, got [${xs.code.mkString(",")}]")
+                case xs => fail(s"Expected literal for body method, got [${xs.code.mkString(",")}]")
               }
             case xs => fail(s"Expected body and init method, got [${xs.code.mkString(",")}]")
           }

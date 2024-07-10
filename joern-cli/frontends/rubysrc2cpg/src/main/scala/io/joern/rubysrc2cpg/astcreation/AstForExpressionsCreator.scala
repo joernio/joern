@@ -185,13 +185,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       }
       val (receiverFullName, methodFullName) = receiverAst.nodes
         .collectFirst {
-          case _ if builtinType.isDefined => builtinType.get  -> s"${builtinType.get}:${n.methodName}"
+          case _ if builtinType.isDefined => builtinType.get  -> s"${builtinType.get}.${n.methodName}"
           case x: NewMethodRef            => x.methodFullName -> x.methodFullName
           case _ =>
             (n.target match {
               case ma: MemberAccess => scope.tryResolveTypeReference(ma.memberName).map(_.name)
               case _                => typeFromCallTarget(n.target)
-            }).map(x => x -> s"$x:${n.methodName}")
+            }).map(x => x -> s"$x.${n.methodName}")
               .getOrElse(XDefines.Any -> XDefines.DynamicCallUnknownFullName)
         }
         .getOrElse(XDefines.Any -> XDefines.DynamicCallUnknownFullName)
@@ -267,7 +267,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       as referring to the singleton class.
      */
     val (receiverTypeFullName, fullName) = scope.tryResolveTypeReference(className) match {
-      case Some(typeMetaData) => s"${typeMetaData.name}<class>" -> s"${typeMetaData.name}:$methodName"
+      case Some(typeMetaData) => s"${typeMetaData.name}<class>" -> s"${typeMetaData.name}.$methodName"
       case None               => XDefines.Any                   -> XDefines.DynamicCallUnknownFullName
     }
     /*
@@ -735,7 +735,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val methodName  = memberAccess.memberName
     // TODO: Type recovery should potentially resolve this
     val methodFullName = typeFromCallTarget(memberAccess.target)
-      .map(x => s"$x:$methodName")
+      .map(x => s"$x.$methodName")
       .getOrElse(XDefines.DynamicCallUnknownFullName)
     val argumentAsts = node.arguments.map(astForMethodCallArgument)
     val call =
@@ -760,7 +760,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         ) // Check if this is a method invocation of a member imported into scope
       match {
         case Some(m) =>
-          scope.typeForMethod(m).map(t => t.name -> s"${t.name}:${m.name}").getOrElse(defaultResult)
+          scope.typeForMethod(m).map(t => t.name -> s"${t.name}.${m.name}").getOrElse(defaultResult)
         case None => defaultResult
       }
 
@@ -806,7 +806,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         }
         Ast.storeInDiffGraph(methodDeclAst, diffGraph)
         scope.surroundingScopeFullName
-          .map(s => Ast(methodRefNode(node, selfMethod.span.text, s"$s:${selfMethod.methodName}", Defines.Any)))
+          .map(s => Ast(methodRefNode(node, selfMethod.span.text, s"$s.${selfMethod.methodName}", Defines.Any)))
           .getOrElse(Ast())
       case _ => astForExpression(node)
   }

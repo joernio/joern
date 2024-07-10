@@ -85,7 +85,7 @@ class ImplicitRequirePass(cpg: Cpg, programSummary: RubyProgramSummary) extends 
     val requireCallNode = NewCall()
       .name(importCallName)
       .code(s"$importCallName '$path'")
-      .methodFullName(s"__builtin:$importCallName")
+      .methodFullName(s"__builtin.$importCallName")
       .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
       .typeFullName(Defines.Any)
     val receiverIdentifier =

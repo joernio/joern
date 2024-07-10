@@ -96,7 +96,7 @@ private class RecoverForRubyFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, 
               else
                 fieldAccessParents
                   .filter(_.endsWith(fieldAccessName.stripSuffix(s".${c.name}")))
-                  .map(x => s"$x:${c.name}")
+                  .map(x => s"$x.${c.name}")
             } else {
               types
             }

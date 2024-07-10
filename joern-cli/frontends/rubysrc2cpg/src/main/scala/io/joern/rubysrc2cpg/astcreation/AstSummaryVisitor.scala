@@ -116,7 +116,7 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
         }.toSet
         // Map module types
         val typeEntries = namespace.method.collectFirst {
-          case m: Method if m.name == Defines.Program =>
+          case m: Method if m.name == Defines.Main =>
             val childrenTypes = m.astChildren.collectAll[TypeDecl].l
             val fullName =
               if childrenTypes.nonEmpty && asExternal then buildFullName(childrenTypes.head) else s"${m.fullName}"
