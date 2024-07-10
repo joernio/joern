@@ -776,12 +776,19 @@ class ClassTests extends RubyCode2CpgFixture {
                   inside(methodBlock.astChildren.l) {
                     case methodCall :: Nil =>
                       inside(methodCall.astChildren.l) {
-                        case (base: Call) :: (self: Identifier) :: (literal: Literal) :: (methodRef: MethodRef) :: Nil =>
+                        case (base: Call) :: (self: Identifier) :: (literal: Literal) :: (typeRef: TypeRef) :: Nil =>
                           base.code shouldBe "self.scope"
                           self.name shouldBe "self"
                           literal.code shouldBe ":hits_by_ip"
-                          methodRef.methodFullName shouldBe s"Test0.rb:<global>::program.Foo:${RubyDefines.TypeDeclBody}:<lambda>0"
-                          methodRef.referencedMethod.parameter.indexGt(0).name.l shouldBe List("ip", "col")
+                          typeRef.typeFullName shouldBe s"Test0.rb:<global>::program.Foo:${RubyDefines.TypeDeclBody}:<lambda>0&Proc"
+                          cpg.method
+                            .fullNameExact(
+                              typeRef.typ.referencedTypeDecl.member.name("call").dynamicTypeHintFullName.toSeq*
+                            )
+                            .parameter
+                            .indexGt(0)
+                            .name
+                            .l shouldBe List("ip", "col")
                         case xs => fail(s"Expected three children, got ${xs.code.mkString(", ")} instead")
                       }
                     case xs => fail(s"Expected one call, got ${xs.code.mkString(", ")} instead")

@@ -308,8 +308,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val argumentAsts = node match {
       case x: SimpleObjectInstantiation => x.arguments.map(astForMethodCallArgument)
       case x: ObjectInstantiationWithBlock =>
-        val Seq(_, methodRef) = astForDoBlock(x.block): @unchecked
-        x.arguments.map(astForMethodCallArgument) :+ methodRef
+        val Seq(typeRef, _) = astForDoBlock(x.block): @unchecked
+        x.arguments.map(astForMethodCallArgument) :+ typeRef
     }
 
     val constructorCall    = callNode(node, code(node), callName, fullName, DispatchTypes.DYNAMIC_DISPATCH)
@@ -782,8 +782,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astForProcOrLambdaExpr(node: ProcOrLambdaExpr): Ast = {
-    val Seq(_, methodRef) = astForDoBlock(node.block): @unchecked
-    methodRef
+    val Seq(typeRef, _) = astForDoBlock(node.block): @unchecked
+    typeRef
   }
 
   private def astForSingletonObjectMethodDeclaration(node: SingletonObjectMethodDeclaration): Ast = {
@@ -805,11 +805,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       // Associations in method calls are keyword arguments
       case assoc: Association => astForKeywordArgument(assoc)
       case block: RubyBlock =>
-        val Seq(methodDecl, typeDecl, _, methodRef) = astForDoBlock(block)
+        val Seq(methodDecl, typeDecl, typeRef, _) = astForDoBlock(block)
         Ast.storeInDiffGraph(methodDecl, diffGraph)
         Ast.storeInDiffGraph(typeDecl, diffGraph)
 
-        methodRef
+        typeRef
       case selfMethod: SingletonMethodDeclaration =>
         // Last element is the method declaration, the prefix methods would be `foo = def foo (...)` pointers in other
         // contexts, but this would be empty as a method call argument
