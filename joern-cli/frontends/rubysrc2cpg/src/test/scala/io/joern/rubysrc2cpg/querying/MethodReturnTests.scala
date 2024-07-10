@@ -4,7 +4,7 @@ import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelPrefix
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Literal, Method, MethodRef, Return}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Literal, Method, MethodRef, Return, TypeRef}
 import io.shiftleft.semanticcpg.language.*
 
 class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
@@ -392,8 +392,8 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
 
                   returnCall.name shouldBe "foo"
 
-                  val List(_, arg: MethodRef) = returnCall.argument.l: @unchecked
-                  arg.methodFullName shouldBe "Test0.rb:<global>::program:bar:<lambda>0"
+                  val List(_, arg: TypeRef) = returnCall.argument.l: @unchecked
+                  arg.typeFullName shouldBe "Test0.rb:<global>::program:bar:<lambda>0&Proc"
                 case xs => fail(s"Expected one call for return, but found ${xs.code.mkString(", ")} instead")
               }
 
