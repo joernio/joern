@@ -146,11 +146,13 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         fixQualifiedName(t.substring(0, t.indexOf(" ->")))
       case t if t.contains("( ") =>
         fixQualifiedName(t.substring(0, t.indexOf("( ")))
-      case t if t.contains("?") => Defines.Any
-      case t if t.contains("#") => Defines.Any
+      case t if t.contains("?")                        => Defines.Any
+      case t if t.contains("#")                        => Defines.Any
+      case t if t.contains("::{") || t.contains("}::") => Defines.Any
       case t if t.contains("{") && t.contains("}") =>
-        val anonType =
-          s"${uniqueName("type", "", "")._1}${t.substring(0, t.indexOf("{"))}${t.substring(t.indexOf("}") + 1)}"
+        val beforeBracket = t.substring(0, t.indexOf("{"))
+        val afterBracket  = t.substring(t.indexOf("}") + 1)
+        val anonType      = s"${uniqueName("type", "", "")._1}$beforeBracket$afterBracket"
         anonType.replace(" ", "")
       case t if t.startsWith("[") && t.endsWith("]")       => Defines.Any
       case t if t.contains(Defines.QualifiedNameSeparator) => fixQualifiedName(t)
