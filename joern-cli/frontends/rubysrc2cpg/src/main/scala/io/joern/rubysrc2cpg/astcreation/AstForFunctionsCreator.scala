@@ -105,11 +105,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     }
 
     // For yield statements where there isn't an explicit proc parameter
-    val anonProcParam = scope.anonProcParam.map { param =>
-      val paramNode = ProcParameter(param)(node.span.spanStart(s"&$param"))
+    val anonProcParam = scope.procParamName.map { p =>
       val nextIndex =
-        parameterAsts.lastOption.flatMap(_.root).map { case m: NewMethodParameterIn => m.index + 1 }.getOrElse(0)
-      astForParameter(paramNode, nextIndex)
+        parameterAsts.flatMap(_.root).lastOption.map { case m: NewMethodParameterIn => m.index + 1 }.getOrElse(0)
+
+      Ast(p.index(nextIndex))
     }
 
     scope.popScope()
@@ -245,9 +245,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           evaluationStrategy = EvaluationStrategies.BY_REFERENCE,
           typeFullName = None
         )
-        scope.addToScope(node.name, parameterIn)
-        scope.setProcParam(node.name)
-        Ast(parameterIn)
+        scope.setProcParam(node.name, parameterIn)
+        Ast() // The proc parameter is retrieved later under method AST creation
       case node: CollectionParameter =>
         val typeFullName = node match {
           case ArrayParameter(_) => prefixAsKernelDefined("Array")
@@ -376,15 +375,15 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           )
         )
 
-        val parameterAsts         = astForParameters(node.parameters)
+        val parameterAsts         = thisParameterAst :: astForParameters(node.parameters)
         val optionalStatementList = statementListForOptionalParams(node.parameters)
         val stmtBlockAst          = astForMethodBody(node.body, optionalStatementList)
 
-        val anonProcParam = scope.anonProcParam.map { param =>
-          val paramNode = ProcParameter(param)(node.span.spanStart(s"&$param"))
+        val anonProcParam = scope.procParamName.map { p =>
           val nextIndex =
-            parameterAsts.lastOption.flatMap(_.root).map { case m: NewMethodParameterIn => m.index + 1 }.getOrElse(1)
-          astForParameter(paramNode, nextIndex)
+            parameterAsts.flatMap(_.root).lastOption.map { case m: NewMethodParameterIn => m.index + 1 }.getOrElse(0)
+
+          Ast(p.index(nextIndex))
         }
 
         scope.popScope()
@@ -396,7 +395,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         val _methodAst =
           methodAst(
             method,
-            (thisParameterAst +: parameterAsts) ++ anonProcParam,
+            parameterAsts ++ anonProcParam,
             stmtBlockAst,
             methodReturnNode(node, Defines.Any),
             newModifierNode(ModifierTypes.VIRTUAL) :: Nil
