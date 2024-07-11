@@ -57,6 +57,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case node: BreakStatement                   => astForBreakStatement(node)
     case node: StatementList                    => astForStatementList(node)
     case node: ReturnExpression                 => astForReturnStatement(node)
+    case node: NextExpression                   => astForNextExpression(node)
     case node: DummyNode                        => Ast(node.node)
     case node: Unknown                          => astForUnknown(node)
     case x =>
