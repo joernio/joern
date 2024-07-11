@@ -179,7 +179,12 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           scope.popScope()
 
           val stubAst =
-            methodStubAst(methodNode_, parameterNodes.map(Ast(_)), methodReturnNode(funcDecl, registerType(returnType)))
+            methodStubAst(
+              methodNode_,
+              parameterNodes.map(Ast(_)),
+              methodReturnNode(funcDecl, registerType(returnType)),
+              modifiers = modifierFor(funcDecl)
+            )
           val typeDeclAst = createFunctionTypeAndTypeDecl(funcDecl, methodNode_, fixedName, fullname, signature)
           stubAst.merge(typeDeclAst)
         } else {
@@ -200,6 +205,29 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         notHandledYet(funcDecl)
     }
 
+  }
+
+  private def modifierFromString(image: String): List[NewModifier] = {
+    image match {
+      case "static" => List(newModifierNode(ModifierTypes.STATIC))
+      case _        => Nil
+    }
+  }
+
+  private def modifierFor(funcDef: IASTFunctionDefinition): List[NewModifier] = {
+    val constructorModifier = if (isCppConstructor(funcDef)) {
+      List(newModifierNode(ModifierTypes.CONSTRUCTOR), newModifierNode(ModifierTypes.PUBLIC))
+    } else Nil
+    val visibilityModifier = if (funcDef.getSyntax != null) {
+      modifierFromString(funcDef.getSyntax.getImage)
+    } else Nil
+    constructorModifier ++ visibilityModifier
+  }
+
+  private def modifierFor(funcDecl: IASTFunctionDeclarator): List[NewModifier] = {
+    if (funcDecl.getParent != null && funcDecl.getParent.getSyntax != null) {
+      modifierFromString(funcDecl.getParent.getSyntax.getImage)
+    } else Nil
   }
 
   private def isCppConstructor(funcDef: IASTFunctionDefinition): Boolean = {
@@ -244,16 +272,12 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     }
     setVariadic(parameterNodes, funcDef)
 
-    val modifiers = if (isCppConstructor(funcDef)) {
-      List(newModifierNode(ModifierTypes.CONSTRUCTOR), newModifierNode(ModifierTypes.PUBLIC))
-    } else Nil
-
     val astForMethod = methodAst(
       methodNode_,
       parameterNodes.map(Ast(_)),
       astForMethodBody(Option(funcDef.getBody)),
       methodReturnNode(funcDef, registerType(returnType)),
-      modifiers = modifiers
+      modifiers = modifierFor(funcDef)
     )
 
     scope.popScope()
