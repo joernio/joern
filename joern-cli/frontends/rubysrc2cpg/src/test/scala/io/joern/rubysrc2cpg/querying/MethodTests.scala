@@ -731,4 +731,21 @@ class MethodTests extends RubyCode2CpgFixture {
     parentType.isLambda should not be empty
     parentType.methodBinding.methodFullName.head should endWith("<lambda>0")
   }
+
+  "a method that is redefined should have a counter suffixed to ensure uniqueness" in {
+    val cpg = code("""
+        |def foo;end
+        |def bar;end
+        |def foo;end
+        |def foo;end
+        |""".stripMargin)
+
+    cpg.method.name("(foo|bar).*").name.l shouldBe List("foo", "bar", "foo", "foo")
+    cpg.method.name("(foo|bar).*").fullName.l shouldBe List(
+      s"Test0.rb:$Main.foo",
+      s"Test0.rb:$Main.bar",
+      s"Test0.rb:$Main.foo0",
+      s"Test0.rb:$Main.foo1"
+    )
+  }
 }

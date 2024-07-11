@@ -866,4 +866,33 @@ class ClassTests extends RubyCode2CpgFixture {
       superCall.methodFullName shouldBe Defines.DynamicCallUnknownFullName
     }
   }
+
+  "a class that is redefined should have a counter suffixed to ensure uniqueness" in {
+    val cpg = code("""
+        |class Foo
+        | def foo;end
+        |end
+        |class Bar;end
+        |class Foo
+        | def foo;end
+        |end
+        |class Foo;end
+        |""".stripMargin)
+
+    cpg.typeDecl.name("(Foo|Bar).*").filterNot(_.name.endsWith("<class>")).name.l shouldBe List(
+      "Foo",
+      "Bar",
+      "Foo",
+      "Foo"
+    )
+    cpg.typeDecl.name("(Foo|Bar).*").filterNot(_.name.endsWith("<class>")).fullName.l shouldBe List(
+      s"Test0.rb:$Main.Foo",
+      s"Test0.rb:$Main.Bar",
+      s"Test0.rb:$Main.Foo0",
+      s"Test0.rb:$Main.Foo1"
+    )
+
+    cpg.method.nameExact("foo").fullName.l shouldBe List(s"Test0.rb:$Main.Foo.foo", s"Test0.rb:$Main.Foo0.foo")
+
+  }
 }
