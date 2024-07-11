@@ -1,84 +1,96 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.Operators
-import org.scalatest.Inspectors
-import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.language.*
+import org.scalatest.Inspectors
 
 class ProcParameterAndYieldTests extends RubyCode2CpgFixture with Inspectors {
-  "Methods" should {
-    "with a yield expression" should {
-      "with a proc parameter" should {
-        val cpg1 = code("def foo(&b) yield end")
-        val cpg2 = code("def self.foo(&b) yield end")
-        val cpgs = List(cpg1, cpg2)
 
-        "have a single block argument" in {
-          forAll(cpgs)(_.method("foo").parameter.code("&.*").name.l shouldBe List("b"))
-        }
+  "a method with an explicit proc parameter should create an invocation of it's `call` member" in {
+    val cpg = code("def foo(&b) yield end")
 
-        "represent the yield as a conditional with a call and return node as children" in {
-          forAll(cpgs) { cpg =>
-            inside(cpg.method("foo").call.nameExact(Operators.conditional).code("yield").astChildren.l) {
-              case List(cond: Expression, call: Call, ret: Return) => {
-                cond.code shouldBe "<nondet>"
-                call.name shouldBe "b"
-                call.code shouldBe "b"
-                ret.code shouldBe "yield"
-              }
-            }
-          }
-        }
-      }
+    val foo = cpg.method("foo").head
 
-      "without a proc parameter" should {
-        val cpg = code("""
-            |def foo() yield end
-            |def self.bar() yield end
-            |""".stripMargin)
+    val bParam = foo.parameter.last
+    bParam.name shouldBe "b"
+    bParam.code shouldBe "&b"
+    bParam.index shouldBe 1
 
-        "have a call to a block parameter" in {
-          cpg.method("foo").call.code("yield").astChildren.isCall.code("<proc-param-0>").name.l shouldBe List(
-            "<proc-param-0>"
-          )
-          cpg.method("bar").call.code("yield").astChildren.isCall.code("<proc-param-1>").name.l shouldBe List(
-            "<proc-param-1>"
-          )
-        }
-
-        "add a block argument" in {
-          val List(param1) = cpg.method("foo").parameter.code("&.*").l
-          param1.name shouldBe "<proc-param-0>"
-          param1.index shouldBe 1
-
-          val List(param2) = cpg.method("bar").parameter.code("&.*").l
-          param2.name shouldBe "<proc-param-1>"
-          param2.index shouldBe 1
-        }
-      }
-
-      "with yield arguments" should {
-        val cpg = code("def foo(x) yield(x) end")
-        "replace the yield with a call to the block parameter with arguments" in {
-          val List(call) = cpg.call.codeExact("yield(x)").astChildren.isCall.codeExact("<proc-param-0>").l
-          call.name shouldBe "<proc-param-0>"
-          call.argument.code.l shouldBe List("self", "x")
-        }
-
-      }
+    inside(foo.call.nameExact("call").argument.l) { case selfBase :: Nil =>
+      selfBase.code shouldBe "b"
     }
+  }
 
-    "that don't have a yield nor a proc parameter" should {
-      val cpg1 = code("def foo() end")
-      val cpg2 = code("def self.foo() end")
-      val cpgs = List(cpg1, cpg2)
+  "a singleton method with an explicit proc parameter should create an invocation of it's `call` member" in {
+    val cpg = code("def self.foo(&b) yield end")
 
-      "not add a block argument" in {
-        forAll(cpgs)(_.method("foo").parameter.code("&.*").name.l should be(empty))
-      }
+    val foo = cpg.method("foo").head
+
+    val bParam = foo.parameter.last
+    bParam.name shouldBe "b"
+    bParam.code shouldBe "&b"
+    bParam.index shouldBe 1
+
+    inside(foo.call.nameExact("call").argument.l) { case selfBase :: Nil =>
+      selfBase.code shouldBe "b"
     }
+  }
 
+  "a method with an implicit proc parameter should create an invocation using a unique parameter name" in {
+    val cpg = code("""
+        |def foo() yield end
+        |def self.bar() yield end
+        |""".stripMargin)
+
+    val foo = cpg.method("foo").head
+    val bar = cpg.method("bar").head
+
+    val fooParam = foo.parameter.last
+    fooParam.name shouldBe "<proc-param-0>"
+    fooParam.code shouldBe "&<proc-param-0>"
+    fooParam.index shouldBe 1
+
+    val barParam = bar.parameter.last
+    barParam.name shouldBe "<proc-param-1>"
+    barParam.code shouldBe "&<proc-param-1>"
+    barParam.index shouldBe 1
+
+    foo.call.nameExact("call").argument.isIdentifier.name.l shouldBe List("<proc-param-0>")
+    bar.call.nameExact("call").argument.isIdentifier.name.l shouldBe List("<proc-param-1>")
+  }
+
+  "a method with an implicit proc parameter should create an invocation of it's `call` member with given arguments" in {
+    val cpg = code("def foo(x) yield(x) end")
+
+    val foo = cpg.method("foo").head
+
+    val List(xParam, procParam) = foo.parameter.l.takeRight(2)
+
+    xParam.name shouldBe "x"
+    xParam.index shouldBe 1
+
+    procParam.name shouldBe "<proc-param-0>"
+    procParam.code shouldBe "&<proc-param-0>"
+    procParam.index shouldBe 2
+
+    inside(foo.call.nameExact("call").argument.l) { case selfBase :: x :: Nil =>
+      selfBase.code shouldBe "<proc-param-0>"
+      selfBase.argumentIndex shouldBe 0
+      x.code shouldBe "x"
+      x.argumentIndex shouldBe 1
+    }
+  }
+
+  "a method without a yield nor proc parameter should not have either modelled" in {
+    val cpg1 = code("def foo() end")
+    val cpg2 = code("def self.foo() end")
+    val cpgs = List(cpg1, cpg2)
+
+    forAll(cpgs)(cpg => {
+      cpg.method("foo").parameter.code("&.*").name.l should be(empty)
+      cpg.method("foo").call.nameExact("call").name.l should be(empty)
+    })
   }
 
 }

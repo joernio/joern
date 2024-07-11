@@ -226,15 +226,26 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
       (ScopeElement(MethodScope(fullName, param, true), variables), param.fold(x => x, x => x))
   }
 
-  /** Get the name of the implicit or explict proc param */
+  /** Get the name of the implicit or explicit proc param */
   def anonProcParam: Option[String] = stack.collectFirst { case ScopeElement(MethodScope(_, Left(param), true), _) =>
     param
   }
 
-  /** Set the name of explict proc param */
-  def setProcParam(param: String): Unit = updateSurrounding {
+  /** Set the name of explicit proc param */
+  def setProcParam(param: String, paramNode: NewMethodParameterIn): Unit = updateSurrounding {
     case ScopeElement(MethodScope(fullName, _, _), variables) =>
-      (ScopeElement(MethodScope(fullName, Right(param)), variables), ())
+      (ScopeElement(MethodScope(fullName, Right(param), true), variables ++ Map(paramNode.name -> paramNode)), ())
+  }
+
+  /** If a proc param is used, provides the node to add to the AST.
+    */
+  def procParamName: Option[NewMethodParameterIn] = {
+    stack
+      .collectFirst {
+        case ScopeElement(MethodScope(_, Left(param), true), _)  => param
+        case ScopeElement(MethodScope(_, Right(param), true), _) => param
+      }
+      .flatMap(lookupVariable(_).collect { case p: NewMethodParameterIn => p })
   }
 
   def surroundingTypeFullName: Option[String] = stack.collectFirst { case ScopeElement(x: TypeLikeScope, _) =>

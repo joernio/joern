@@ -480,24 +480,22 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     astForSimpleCall(node.asSimpleCall)
   }
 
-  /** A yield in Ruby could either return the result of the block, or simply call the block, depending on runtime
-    * conditions. Thus we embed this in a conditional expression where the condition itself is some non-deterministic
-    * placeholder.
+  /** A yield in Ruby calls an explicit (or implicit) proc parameter and returns its value. This can be lowered as
+    * block.call(), which is effectively how one invokes a proc parameter in any case.
     */
   protected def astForYield(node: YieldExpr): Ast = {
     scope.useProcParam match {
       case Some(param) =>
-        val call = astForExpression(
-          SimpleCall(SimpleIdentifier()(node.span.spanStart(param)), node.arguments)(node.span.spanStart(param))
-        )
-        val ret = returnAst(returnNode(node, code(node)))
-        val cond = astForExpression(
-          SimpleCall(SimpleIdentifier()(node.span.spanStart(tmpGen.fresh)), List())(node.span.spanStart("<nondet>"))
-        )
-        callAst(
-          callNode(node, code(node), Operators.conditional, Operators.conditional, DispatchTypes.STATIC_DISPATCH),
-          List(cond, call, ret)
-        )
+        // We do not know if we necessarily have an explicit proc param here, or if we need to create a new one
+        if (scope.lookupVariable(param).isEmpty) {
+          scope.anonProcParam.map { param =>
+            val paramNode = ProcParameter(param)(node.span.spanStart(s"&$param"))
+            astForParameter(paramNode, -1)
+          }
+        }
+        val loweredCall =
+          MemberCall(SimpleIdentifier()(node.span.spanStart(param)), ".", "call", node.arguments)(node.span)
+        astForExpression(loweredCall)
       case None =>
         logger.warn(s"Yield expression outside of method scope: ${code(node)} ($relativeFileName), skipping")
         astForUnknown(node)
