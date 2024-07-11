@@ -518,4 +518,18 @@ class ControlStructureTests extends RubyCode2CpgFixture {
       }
     }
   }
+
+  "Generate continue node for next" in {
+    val cpg = code("""
+                     |for i in arr do
+                     |   next if i % 2 == 0
+                     |end
+                     |""".stripMargin)
+
+    inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.CONTINUE).l) {
+      case nextControl :: Nil =>
+        nextControl.code shouldBe "next"
+      case xs => fail(s"Expected next to be continue, got [${xs.code.mkString(",")}]")
+    }
+  }
 }

@@ -231,6 +231,15 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     returnAst(returnNode_, argumentAsts)
   }
 
+  protected def astForNextExpression(node: NextExpression): Ast = {
+    val nextNode = NewControlStructure()
+      .controlStructureType(ControlStructureTypes.CONTINUE)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
+      .code(code(node))
+    Ast(nextNode)
+  }
+
   protected def astForStatementListReturningLastExpression(node: StatementList): Ast = {
     val block = blockNode(node)
     scope.pushNewScope(BlockScope(block))

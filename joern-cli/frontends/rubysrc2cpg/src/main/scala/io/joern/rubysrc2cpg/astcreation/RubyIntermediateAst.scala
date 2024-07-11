@@ -259,6 +259,8 @@ object RubyIntermediateAst {
       extends RubyNode(span)
       with ControlFlowClause
 
+  final case class NextExpression()(span: TextSpan) extends RubyNode(span) with ControlFlowExpression
+
   final case class ReturnExpression(expressions: List[RubyNode])(span: TextSpan) extends RubyNode(span)
 
   /** Represents an unqualified identifier e.g. `X`, `x`,  `@@x`, `$x`, `$<`, etc. */

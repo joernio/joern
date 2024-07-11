@@ -43,6 +43,10 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     StatementList(ctx.getStatements.map(visit))(ctx.toTextSpan)
   }
 
+  override def visitNextWithoutArguments(ctx: RubyParser.NextWithoutArgumentsContext): RubyNode = {
+    NextExpression()(ctx.toTextSpan)
+  }
+
   override def visitGroupingStatement(ctx: RubyParser.GroupingStatementContext): RubyNode = {
     // When there's only 1 statement, we can use it directly, instead of wrapping it in a StatementList.
     val statements = ctx.compoundStatement().getStatements.map(visit)
