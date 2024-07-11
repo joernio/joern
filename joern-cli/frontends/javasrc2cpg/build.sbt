@@ -3,7 +3,7 @@ name := "javasrc2cpg"
 dependsOn(Projects.dataflowengineoss % "compile->compile;test->test", Projects.x2cpg % "compile->compile;test->test")
 
 libraryDependencies ++= Seq(
-  "com.michaelpollmeier"           %% "codepropertygraph"             % Versions.cpg,
+  "io.shiftleft"           %% "codepropertygraph"             % Versions.cpg,
   "com.github.javaparser"   % "javaparser-symbol-solver-core" % Versions.javaParser,
   "org.gradle"              % "gradle-tooling-api"            % Versions.gradleTooling,
   "org.scalatest"          %% "scalatest"                     % Versions.scalatest % Test,

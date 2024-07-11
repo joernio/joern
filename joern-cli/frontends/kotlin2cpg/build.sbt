@@ -12,7 +12,7 @@ libraryDependencies ++= Seq(
   "com.lihaoyi"             %% "requests"                   % Versions.requests,
   "com.lihaoyi"             %% "ujson"                      % Versions.upickle,
   "com.squareup.tools.build" % "maven-archeologist"         % Versions.mavenArcheologist,
-  "com.michaelpollmeier"            %% "codepropertygraph"          % Versions.cpg,
+  "io.shiftleft"            %% "codepropertygraph"          % Versions.cpg,
   "org.gradle"               % "gradle-tooling-api"         % Versions.gradleTooling,
   "org.jetbrains.kotlin"     % "kotlin-stdlib-jdk8"         % kotlinVersion,
   "org.jetbrains.kotlin"     % "kotlin-stdlib"              % kotlinVersion,

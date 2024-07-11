@@ -15,7 +15,7 @@ dependsOn(Projects.dataflowengineoss % "compile->compile;test->test", Projects.x
 libraryDependencies ++= Seq(
   "com.lihaoyi"   %% "upickle"           % Versions.upickle,
   "com.lihaoyi"   %% "ujson"             % Versions.upickle,
-  "com.michaelpollmeier"  %% "codepropertygraph" % Versions.cpg,
+  "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
   "com.github.sh4869" %% "semver-parser-scala" % Versions.semverParser,
   "org.scalatest" %% "scalatest"         % Versions.scalatest % Test
 )
