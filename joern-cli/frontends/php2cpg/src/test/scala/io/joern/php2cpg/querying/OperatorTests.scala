@@ -4,7 +4,7 @@ import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
 import io.joern.php2cpg.parser.Domain.{PhpDomainTypeConstants, PhpOperators}
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, NodeTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal, TypeRef}
 import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.semanticcpg.language.*
@@ -716,14 +716,47 @@ class OperatorTests extends PhpCode2CpgFixture {
         |list(list($a, $b), $c) = $arr;
         |""".stripMargin)
     // finds the block containing the assignments
-    val block     = cpg.all.collect { case block: Block if block.lineNumber.contains(2) => block }.head
-    val blockCode = block.astChildren.sortBy(_.order).map(_.code).mkString("\n")
-    blockCode shouldBe
-      """$tmp0 = $arr
-        |$tmp1 = $tmp0[0]
-        |$tmp2 = $tmp1
-        |$a = $tmp2[0]
-        |$b = $tmp2[1]
-        |$c = $tmp0[1]""".stripMargin
+    val block = cpg.all.collect { case block: Block if block.lineNumber.contains(2) => block }.head
+    inside(block.astChildren.assignment.l) { case tmp0 :: tmp1 :: tmp2 :: a :: b :: c :: Nil =>
+      tmp0.code shouldBe "$tmp0 = $arr"
+      tmp0.source.label shouldBe NodeTypes.IDENTIFIER
+      tmp0.source.code shouldBe "$arr"
+      tmp0.target.label shouldBe NodeTypes.IDENTIFIER
+      tmp0.target.code shouldBe "$tmp0"
+
+      tmp1.code shouldBe "$tmp1 = $tmp0[0]"
+      tmp1.source.label shouldBe NodeTypes.CALL
+      tmp1.source.asInstanceOf[Call].name shouldBe Operators.indexAccess
+      tmp1.source.code shouldBe "$tmp0[0]"
+      tmp1.target.label shouldBe NodeTypes.IDENTIFIER
+      tmp1.target.code shouldBe "$tmp1"
+
+      tmp2.code shouldBe "$tmp2 = $tmp1"
+      tmp2.source.label shouldBe NodeTypes.IDENTIFIER
+      tmp2.source.code shouldBe "$tmp1"
+      tmp2.target.label shouldBe NodeTypes.IDENTIFIER
+      tmp2.target.code shouldBe "$tmp2"
+
+      a.code shouldBe "$a = $tmp2[0]"
+      a.source.label shouldBe NodeTypes.CALL
+      a.source.asInstanceOf[Call].name shouldBe Operators.indexAccess
+      a.source.code shouldBe "$tmp2[0]"
+      a.target.label shouldBe NodeTypes.IDENTIFIER
+      a.target.code shouldBe "$a"
+
+      b.code shouldBe "$b = $tmp2[1]"
+      b.source.label shouldBe NodeTypes.CALL
+      b.source.asInstanceOf[Call].name shouldBe Operators.indexAccess
+      b.source.code shouldBe "$tmp2[1]"
+      b.target.label shouldBe NodeTypes.IDENTIFIER
+      b.target.code shouldBe "$b"
+
+      c.code shouldBe "$c = $tmp0[1]"
+      c.source.label shouldBe NodeTypes.CALL
+      c.source.asInstanceOf[Call].name shouldBe Operators.indexAccess
+      c.source.code shouldBe "$tmp0[1]"
+      c.target.label shouldBe NodeTypes.IDENTIFIER
+      c.target.code shouldBe "$c"
+    }
   }
 }
