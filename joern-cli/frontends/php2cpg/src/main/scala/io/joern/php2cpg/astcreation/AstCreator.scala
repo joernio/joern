@@ -1127,7 +1127,7 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
         }
 
         // Take `[[$a, $b], $c] = $arr;` as an example
-        def handleUnpackLowing(
+        def handleUnpackLowering(
           target: PhpArrayExpr | PhpListExpr,
           itemsOf: PhpArrayExpr | PhpListExpr => List[Option[PhpArrayItem]],
           sourceAst: Ast
@@ -1156,7 +1156,7 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
                       item
                     )
                   loweredAssignNodes += targetAssignNode
-                  handleUnpackLowing(nested, itemsOf, createIdentifier(tmpIdentifierName))
+                  handleUnpackLowering(nested, itemsOf, createIdentifier(tmpIdentifierName))
                 case phpVar: PhpVariable => // item is $c
                   val identifier = astForExpr(phpVar)
                   // $c = <operator>.indexAccess($arr, 1)
@@ -1177,7 +1177,7 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
             case x: PhpArrayExpr => x.items
             case x: PhpListExpr  => x.items
           }
-        handleUnpackLowing(arrayExpr, itemsOf, sourceAst)
+        handleUnpackLowering(arrayExpr, itemsOf, sourceAst)
         Ast(blockNode(assignment))
           .withChildren(loweredAssignNodes.toList)
       case _ =>

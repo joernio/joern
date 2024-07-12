@@ -30,34 +30,36 @@ class IntraMethodDataflowTests extends PhpCode2CpgFixture(runOssDataflow = true)
     flows.size shouldBe 1
   }
 
-  "flow from array unpacking should be found" in {
+  "flow from single layer array unpacking should be found" in {
     val cpg = code("""<?php
         |[$a1, $a2] = $arr1;
         |echo $a1;
+        |""".stripMargin)
+    val source = cpg.identifier("arr1")
+    val sink   = cpg.call("echo").argument(1)
+    val flows  = sink.reachableByFlows(source)
+    flows.size shouldBe 1
+  }
+
+  "flow from nested array unpacking should be found" in {
+    val cpg = code("""<?php
         |[[$b1, $b2]] = $arr2;
         |echo $b1;
+        |""".stripMargin)
+    val source = cpg.identifier("arr2")
+    val sink   = cpg.call("echo").argument(1)
+    val flows  = sink.reachableByFlows(source)
+    flows.size shouldBe 1
+  }
+
+  "flow from nested list unpacking should be found" in {
+    val cpg = code("""<?php
         |list(list($c1, $c2)) = $arr3;
         |echo $c1;
         |""".stripMargin)
-    {
-      val source = cpg.identifier("arr1")
-      val sink   = cpg.call("echo")
-      val flows  = sink.reachableByFlows(source)
-      flows.size shouldBe 1
-    }
-
-    {
-      val source = cpg.identifier("arr2")
-      val sink   = cpg.call("echo")
-      val flows  = sink.reachableByFlows(source)
-      flows.size shouldBe 1
-    }
-
-    {
-      val source = cpg.identifier("arr3")
-      val sink   = cpg.call("echo")
-      val flows  = sink.reachableByFlows(source)
-      flows.size shouldBe 1
-    }
+    val source = cpg.identifier("arr3")
+    val sink   = cpg.call("echo").argument(1)
+    val flows  = sink.reachableByFlows(source)
+    flows.size shouldBe 1
   }
 }

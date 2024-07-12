@@ -710,4 +710,15 @@ class OperatorTests extends PhpCode2CpgFixture {
       absCall.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
     }
   }
+
+  "array/list unpacking should be lowered to several assignments" in {
+    val cpg = code("""<?php
+        |list(list($a, $b), $c) = $arr;
+        |""".stripMargin)
+
+    inside(cpg.call.nameExact(Operators.assignment).l) { case assignments: List[Call] =>
+      val targets = assignments.flatMap(_.argumentOption(1).code)
+      targets should contain allOf ("$a", "$b", "$c")
+    }
+  }
 }
