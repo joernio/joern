@@ -1097,89 +1097,97 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
     arrayPushAst
   }
 
+  /** Lower the array/list unpack. For example `[$a, $b] = $arr;` will be lowered to `$a = $arr[0]; $b = $arr[1];`
+    */
+  private def astForArrayUnpack(assignment: PhpAssignment, target: PhpArrayExpr | PhpListExpr): Ast = {
+    val loweredAssignNodes = mutable.ListBuffer.empty[Ast]
+
+    // create a Identifier ast for given name
+    def createIdentifier(name: String): Ast = Ast(identifierNode(assignment, name, s"$$$name", TypeConstants.Any))
+
+    def createIndexAccessChain(
+      targetAst: Ast,
+      sourceAst: Ast,
+      idxTracker: ArrayIndexTracker,
+      item: PhpArrayItem
+    ): Ast = {
+      val dimensionAst    = astForExpr(PhpInt(idxTracker.next, item.attributes))
+      val indexAccessCode = s"${sourceAst.rootCodeOrEmpty}[${dimensionAst.rootCodeOrEmpty}]"
+      // <operator>.indexAccess(sourceAst, index)
+      val indexAccessNode = callAst(
+        newOperatorCallNode(Operators.indexAccess, indexAccessCode, line = line(item)),
+        sourceAst :: dimensionAst :: Nil
+      )
+      val assignCode = s"${targetAst.rootCodeOrEmpty} = $indexAccessCode"
+      val assignNode = newOperatorCallNode(Operators.assignment, assignCode, line = line(item))
+      // targetAst = <operator>.indexAccess(sourceAst, index)
+      callAst(assignNode, targetAst :: indexAccessNode :: Nil)
+    }
+
+    // Take `[[$a, $b], $c] = $arr;` as an example
+    def handleUnpackLowering(
+      target: PhpArrayExpr | PhpListExpr,
+      itemsOf: PhpArrayExpr | PhpListExpr => List[Option[PhpArrayItem]],
+      sourceAst: Ast
+    ): Unit = {
+      val idxTracker = new ArrayIndexTracker
+
+      // create an alias identifier of $arr
+      val sourceAliasName       = getNewTmpName()
+      val sourceAliasIdentifier = createIdentifier(sourceAliasName)
+      val assignCode            = s"${sourceAliasIdentifier.rootCodeOrEmpty} = ${sourceAst.rootCodeOrEmpty}"
+      val assignNode            = newOperatorCallNode(Operators.assignment, assignCode, line = line(assignment))
+      loweredAssignNodes += callAst(assignNode, sourceAliasIdentifier :: sourceAst :: Nil)
+
+      itemsOf(target).foreach {
+        case Some(item) =>
+          item.value match {
+            case nested: (PhpArrayExpr | PhpListExpr) => // item is [$a, $b]
+              // create tmp variable for [$a, $b] to receive the result of <operator>.indexAccess($arr, 0)
+              val tmpIdentifierName = getNewTmpName()
+              // tmpVar = <operator>.indexAccess($arr, 0)
+              val targetAssignNode =
+                createIndexAccessChain(
+                  createIdentifier(tmpIdentifierName),
+                  createIdentifier(sourceAliasName),
+                  idxTracker,
+                  item
+                )
+              loweredAssignNodes += targetAssignNode
+              handleUnpackLowering(nested, itemsOf, createIdentifier(tmpIdentifierName))
+            case phpVar: PhpVariable => // item is $c
+              val identifier = astForExpr(phpVar)
+              // $c = <operator>.indexAccess($arr, 1)
+              val targetAssignNode =
+                createIndexAccessChain(identifier, createIdentifier(sourceAliasName), idxTracker, item)
+              loweredAssignNodes += targetAssignNode
+            case _ =>
+              // unknown case
+              idxTracker.next
+          }
+        case None =>
+          idxTracker.next
+      }
+    }
+
+    val sourceAst = astForExpr(assignment.source)
+    val itemsOf = (exp: PhpArrayExpr | PhpListExpr) =>
+      exp match {
+        case x: PhpArrayExpr => x.items
+        case x: PhpListExpr  => x.items
+      }
+    handleUnpackLowering(target, itemsOf, sourceAst)
+    Ast(blockNode(assignment))
+      .withChildren(loweredAssignNodes.toList)
+  }
+
   private def astForAssignment(assignment: PhpAssignment): Ast = {
     assignment.target match {
       case arrayDimFetch: PhpArrayDimFetchExpr if arrayDimFetch.dimension.isEmpty =>
         // Rewrite `$xs[] = <value_expr>` as `array_push($xs, <value_expr>)` to simplify finding dataflows.
         astForEmptyArrayDimAssign(assignment, arrayDimFetch)
       case arrayExpr: (PhpArrayExpr | PhpListExpr) =>
-        val loweredAssignNodes = mutable.ListBuffer.empty[Ast]
-
-        def createIdentifier(name: String): Ast = Ast(identifierNode(assignment, name, s"$$$name", TypeConstants.Any))
-
-        def createIndexAccessChain(
-          targetAst: Ast,
-          sourceAst: Ast,
-          idxTracker: ArrayIndexTracker,
-          item: PhpArrayItem
-        ): Ast = {
-          val dimensionAst    = astForExpr(PhpInt(idxTracker.next, item.attributes))
-          val indexAccessCode = s"${sourceAst.rootCodeOrEmpty}[${dimensionAst.rootCodeOrEmpty}]"
-          // <operator>.indexAccess(sourceAst, index)
-          val indexAccessNode = callAst(
-            newOperatorCallNode(Operators.indexAccess, indexAccessCode, line = line(item)),
-            sourceAst :: dimensionAst :: Nil
-          )
-          val assignCode = s"${targetAst.rootCodeOrEmpty} = $indexAccessCode"
-          val assignNode = newOperatorCallNode(Operators.assignment, assignCode, line = line(item))
-          // targetAst = <operator>.indexAccess(sourceAst, index)
-          callAst(assignNode, targetAst :: indexAccessNode :: Nil)
-        }
-
-        // Take `[[$a, $b], $c] = $arr;` as an example
-        def handleUnpackLowering(
-          target: PhpArrayExpr | PhpListExpr,
-          itemsOf: PhpArrayExpr | PhpListExpr => List[Option[PhpArrayItem]],
-          sourceAst: Ast
-        ): Unit = {
-          val idxTracker = new ArrayIndexTracker
-
-          // create an alias identifier of $arr
-          val sourceAliasName       = getNewTmpName()
-          val sourceAliasIdentifier = createIdentifier(sourceAliasName)
-          val assignCode            = s"${sourceAliasIdentifier.rootCodeOrEmpty} = ${sourceAst.rootCodeOrEmpty}"
-          val assignNode            = newOperatorCallNode(Operators.assignment, assignCode, line = line(assignment))
-          loweredAssignNodes += callAst(assignNode, sourceAliasIdentifier :: sourceAst :: Nil)
-
-          itemsOf(target).foreach {
-            case Some(item) =>
-              item.value match {
-                case nested: (PhpArrayExpr | PhpListExpr) => // item is [$a, $b]
-                  // create tmp variable for [$a, $b] to receive the result of <operator>.indexAccess($arr, 0)
-                  val tmpIdentifierName = getNewTmpName()
-                  // tmpVar = <operator>.indexAccess($arr, 0)
-                  val targetAssignNode =
-                    createIndexAccessChain(
-                      createIdentifier(tmpIdentifierName),
-                      createIdentifier(sourceAliasName),
-                      idxTracker,
-                      item
-                    )
-                  loweredAssignNodes += targetAssignNode
-                  handleUnpackLowering(nested, itemsOf, createIdentifier(tmpIdentifierName))
-                case phpVar: PhpVariable => // item is $c
-                  val identifier = astForExpr(phpVar)
-                  // $c = <operator>.indexAccess($arr, 1)
-                  val targetAssignNode =
-                    createIndexAccessChain(identifier, createIdentifier(sourceAliasName), idxTracker, item)
-                  loweredAssignNodes += targetAssignNode
-                case _ =>
-                  // unknown case
-                  idxTracker.next
-              }
-            case None =>
-              idxTracker.next
-          }
-        }
-        val sourceAst = astForExpr(assignment.source)
-        val itemsOf = (exp: PhpArrayExpr | PhpListExpr) =>
-          exp match {
-            case x: PhpArrayExpr => x.items
-            case x: PhpListExpr  => x.items
-          }
-        handleUnpackLowering(arrayExpr, itemsOf, sourceAst)
-        Ast(blockNode(assignment))
-          .withChildren(loweredAssignNodes.toList)
+        astForArrayUnpack(assignment, arrayExpr)
       case _ =>
         val operatorName = assignment.assignOp
 

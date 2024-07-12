@@ -715,10 +715,15 @@ class OperatorTests extends PhpCode2CpgFixture {
     val cpg = code("""<?php
         |list(list($a, $b), $c) = $arr;
         |""".stripMargin)
-
-    inside(cpg.call.nameExact(Operators.assignment).l) { case assignments: List[Call] =>
-      val targets = assignments.flatMap(_.argumentOption(1).code)
-      targets should contain allOf ("$a", "$b", "$c")
-    }
+    // finds the block containing the assignments
+    val block     = cpg.all.collect { case block: Block if block.lineNumber.contains(2) => block }.head
+    val blockCode = block.astChildren.sortBy(_.order).map(_.code).mkString("\n")
+    blockCode shouldBe
+      """$tmp0 = $arr
+        |$tmp1 = $tmp0[0]
+        |$tmp2 = $tmp1
+        |$a = $tmp2[0]
+        |$b = $tmp2[1]
+        |$c = $tmp0[1]""".stripMargin
   }
 }
