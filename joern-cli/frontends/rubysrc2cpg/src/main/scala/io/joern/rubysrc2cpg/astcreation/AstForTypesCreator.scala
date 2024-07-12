@@ -200,78 +200,43 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         val fieldName   = nameAsSymbol.innerText.prepended('@')
         val memberNode_ = memberNode(nameAsSymbol, fieldName, code(node), Defines.Any)
         val memberAst   = Ast(memberNode_)
-        val getterAst   = Option.when(node.hasGetter)(astForGetterMethod(node, fieldName))
-        val setterAst   = Option.when(node.hasSetter)(astForSetterMethod(node, fieldName))
-        Seq(memberAst) ++ getterAst.toList ++ setterAst.toList
+        val getterAst   = Option.when(node.hasGetter)(astForGetterMethod(node, fieldName)).getOrElse(Nil)
+        val setterAst   = Option.when(node.hasSetter)(astForSetterMethod(node, fieldName)).getOrElse(Nil)
+        Seq(memberAst) ++ getterAst ++ setterAst
       case _ =>
         logger.warn(s"Unsupported field declaration: ${nameNode.text}, skipping")
         Seq()
   }
 
   // creates a `def <name>() { return <fieldName> }` METHOD, for <fieldName> = @<name>.
-  private def astForGetterMethod(node: FieldsDeclaration, fieldName: String): Ast = {
-    val name     = fieldName.drop(1)
-    val fullName = computeFullName(name)
-    val method = methodNode(
-      node = node,
-      name = name,
-      fullName = fullName,
-      code = s"def $name (...)",
-      signature = None,
-      fileName = relativeFileName,
-      astParentType = scope.surroundingAstLabel,
-      astParentFullName = scope.surroundingScopeFullName
-    )
-    scope.pushNewScope(MethodScope(fullName, procParamGen.fresh))
-    val block_ = blockNode(node)
-    scope.pushNewScope(BlockScope(block_))
-    // TODO: Should it be `return this.@abc`?
-    val returnAst_ = {
-      val returnNode_         = returnNode(node, s"return $fieldName")
-      val fieldNameIdentifier = identifierNode(node, fieldName, fieldName, Defines.Any)
-      returnAst(returnNode_, Seq(Ast(fieldNameIdentifier)))
-    }
-
-    val methodBody = blockAst(block_, List(returnAst_))
-    scope.popScope()
-    scope.popScope()
-    methodAst(method, Seq(), methodBody, methodReturnNode(node, Defines.Any))
+  private def astForGetterMethod(node: FieldsDeclaration, fieldName: String): Seq[Ast] = {
+    val name = fieldName.drop(1)
+    val code = s"def $name (...)"
+    val methodDecl = MethodDeclaration(
+      name,
+      Nil,
+      StatementList(InstanceFieldIdentifier()(node.span.spanStart(fieldName)) :: Nil)(
+        node.span.spanStart(s"return $fieldName")
+      )
+    )(node.span.spanStart(code))
+    astForMethodDeclaration(methodDecl)
   }
 
   // creates a `def <name>=(x) { <fieldName> = x }` METHOD, for <fieldName> = @<name>
-  private def astForSetterMethod(node: FieldsDeclaration, fieldName: String): Ast = {
-    val name     = fieldName.drop(1) + "="
-    val fullName = computeFullName(name)
-    val method = methodNode(
-      node = node,
-      name = name,
-      fullName = fullName,
-      code = s"def $name (...)",
-      signature = None,
-      fileName = relativeFileName,
-      astParentType = scope.surroundingAstLabel,
-      astParentFullName = scope.surroundingScopeFullName
-    )
-    scope.pushNewScope(MethodScope(fullName, procParamGen.fresh))
-    val parameter = parameterInNode(node, "x", "x", 1, false, EvaluationStrategies.BY_REFERENCE)
-    val methodBody = {
-      val block_ = blockNode(node)
-      scope.pushNewScope(BlockScope(block_))
-      val lhs = identifierNode(node, fieldName, fieldName, Defines.Any)
-      val rhs = identifierNode(node, parameter.name, parameter.name, Defines.Any)
-      val assignmentCall = callNode(
-        node,
-        s"${lhs.code} = ${rhs.code}",
-        Operators.assignment,
-        Operators.assignment,
-        DispatchTypes.STATIC_DISPATCH
-      )
-      val assignmentAst = callAst(assignmentCall, Seq(Ast(lhs), Ast(rhs)))
-      scope.popScope()
-      blockAst(blockNode(node), List(assignmentAst))
-    }
-    scope.popScope()
-    methodAst(method, Seq(Ast(parameter)), methodBody, methodReturnNode(node, Defines.Any))
+  private def astForSetterMethod(node: FieldsDeclaration, fieldName: String): Seq[Ast] = {
+    val name = fieldName.drop(1) + "="
+    val code = s"def $name (...)"
+    val assignment = SingleAssignment(
+      InstanceFieldIdentifier()(node.span.spanStart(fieldName)),
+      "=",
+      SimpleIdentifier()(node.span.spanStart("x"))
+    )(node.span.spanStart(s"$fieldName = x"))
+    val methodDecl = MethodDeclaration(
+      name,
+      MandatoryParameter("x")(node.span.spanStart("x")) :: Nil,
+      StatementList(assignment :: Nil)(node.span.spanStart(s"return $fieldName"))
+    )(node.span.spanStart(code))
+    astForMethodDeclaration(methodDecl)
   }
 
 }

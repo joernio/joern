@@ -75,6 +75,9 @@ class ClassTests extends RubyCode2CpgFixture {
 
     val List(singletonC) = cpg.typeDecl.name("C<class>").l
     singletonC.member.nameExact("@a").isEmpty shouldBe true
+
+    val List(aGetterMember) = classC.member.nameExact("a").l
+    aGetterMember.dynamicTypeHintFullName should contain("Test0.rb:<main>.C.a")
   }
 
   "`attr_reader :'abc'` is represented by a `@abc` MEMBER node" in {
@@ -89,6 +92,9 @@ class ClassTests extends RubyCode2CpgFixture {
 
     abcMember.code shouldBe "attr_reader :'abc'"
     abcMember.lineNumber shouldBe Some(3)
+
+    val List(aMember) = classC.member.nameExact("abc").l
+    aMember.dynamicTypeHintFullName should contain("Test0.rb:<main>.C.abc")
   }
 
   "`attr_reader :'abc' creates an `abc` METHOD node" in {
@@ -103,14 +109,17 @@ class ClassTests extends RubyCode2CpgFixture {
 
     methodAbc.code shouldBe "def abc (...)"
     methodAbc.lineNumber shouldBe Some(3)
-    methodAbc.parameter.isEmpty shouldBe true
+    methodAbc.parameter.indexGt(0).isEmpty shouldBe true
     methodAbc.fullName shouldBe s"Test0.rb:$Main.C.abc"
 
-    // TODO: Make sure that @abc in this return is the actual field
     val List(ret: Return)          = methodAbc.methodReturn.cfgIn.l: @unchecked
-    val List(abcField: Identifier) = ret.astChildren.l: @unchecked
-    ret.code shouldBe "return @abc"
-    abcField.name shouldBe "@abc"
+    val List(abcFieldAccess: Call) = ret.astChildren.l: @unchecked
+    ret.code shouldBe "@abc"
+    abcFieldAccess.name shouldBe Operators.fieldAccess
+    abcFieldAccess.code shouldBe "self.@abc"
+
+    val List(aMember) = classC.member.nameExact("abc").l
+    aMember.dynamicTypeHintFullName should contain("Test0.rb:<main>.C.abc")
   }
 
   "`attr_reader :a, :b` is represented by `@a`, `@b` MEMBER nodes" in {
@@ -156,12 +165,16 @@ class ClassTests extends RubyCode2CpgFixture {
     methodA.fullName shouldBe s"Test0.rb:$Main.C.a="
 
     // TODO: there's probably a better way for testing this
-    val List(param)                            = methodA.parameter.l
-    val List(assignment)                       = methodA.assignment.l
-    val List(lhs: Identifier, rhs: Identifier) = assignment.argument.l: @unchecked
+    val List(_, param)                   = methodA.parameter.l
+    val List(assignment)                 = methodA.assignment.l
+    val List(lhs: Call, rhs: Identifier) = assignment.argument.l: @unchecked
 
     param.name shouldBe rhs.name
-    lhs.name shouldBe "@a"
+    lhs.name shouldBe Operators.fieldAccess
+    lhs.code shouldBe "self.@a"
+
+    val List(aMember) = classC.member.nameExact("a=").l
+    aMember.dynamicTypeHintFullName should contain("Test0.rb:<main>.C.a=")
   }
 
   "`attr_accessor :a` is represented by a `@a` MEMBER node" in {
