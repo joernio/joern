@@ -237,8 +237,7 @@ package object slicing {
     lineNumber: Option[Int] = None,
     columnNumber: Option[Int] = None,
     label: String = "LOCAL"
-  ) extends DefComponent
-      derives ReadWriter
+  ) extends DefComponent derives ReadWriter
 
   /** Represents a literal.
     */
@@ -248,8 +247,7 @@ package object slicing {
     lineNumber: Option[Int] = None,
     columnNumber: Option[Int] = None,
     label: String = "LITERAL"
-  ) extends DefComponent
-      derives ReadWriter
+  ) extends DefComponent derives ReadWriter
 
   /** Represents data introduced via a parameter.
     *
@@ -263,8 +261,7 @@ package object slicing {
     lineNumber: Option[Int] = None,
     columnNumber: Option[Int] = None,
     label: String = "PARAM"
-  ) extends DefComponent
-      derives ReadWriter {
+  ) extends DefComponent derives ReadWriter {
     override def toString: String = super.toString + s" @ pos #$position"
   }
 
@@ -280,8 +277,7 @@ package object slicing {
     lineNumber: Option[Int] = None,
     columnNumber: Option[Int] = None,
     label: String = "CALL"
-  ) extends DefComponent
-      derives ReadWriter {
+  ) extends DefComponent derives ReadWriter {
     override def toString: String = super.toString + resolvedMethod.map(s => s" @ $s").getOrElse("")
   }
 
@@ -293,8 +289,7 @@ package object slicing {
     lineNumber: Option[Int] = None,
     columnNumber: Option[Int] = None,
     label: String = "UNKNOWN"
-  ) extends DefComponent
-      derives ReadWriter
+  ) extends DefComponent derives ReadWriter
 
   // The following encoders make sure the object does follow ClassName: { properties ... } format but instead
   // is just { properties }. This makes it less automatically serializable but we have `label` to encode classes.
@@ -397,8 +392,7 @@ package object slicing {
     returnType: String,
     lineNumber: Option[Int] = None,
     columnNumber: Option[Int] = None
-  ) extends UsedCall(callName, resolvedMethod, paramTypes, returnType, lineNumber, columnNumber)
-      derives ReadWriter
+  ) extends UsedCall(callName, resolvedMethod, paramTypes, returnType, lineNumber, columnNumber) derives ReadWriter
 
   /** Extends observed call with a specific argument in mind.
     *
