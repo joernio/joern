@@ -368,16 +368,17 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     val loopExprCfg  = children.find(_.order == nLocals + 3).map(cfgFor).getOrElse(Cfg.empty)
     val bodyCfg      = children.find(_.order == nLocals + 4).map(cfgFor).getOrElse(Cfg.empty)
 
-    val innerCfg  = conditionCfg ++ bodyCfg ++ loopExprCfg
-    val entryNode = (initExprCfg ++ innerCfg).entryNode
+    val innerCfg      = bodyCfg ++ loopExprCfg
+    val loopEntryNode = conditionCfg.entryNode.orElse(innerCfg.entryNode)
+    val entryNode     = initExprCfg.entryNode.orElse(loopEntryNode)
 
-    val newEdges = edgesFromFringeTo(initExprCfg, innerCfg.entryNode) ++
-      edgesFromFringeTo(innerCfg, innerCfg.entryNode) ++
-      edgesFromFringeTo(conditionCfg, bodyCfg.entryNode, TrueEdge) ++ {
+    val newEdges = edgesFromFringeTo(initExprCfg, loopEntryNode) ++
+      edgesFromFringeTo(innerCfg, loopEntryNode) ++
+      edgesFromFringeTo(conditionCfg, innerCfg.entryNode.orElse(conditionCfg.entryNode), TrueEdge) ++ {
         if (loopExprCfg.entryNode.isDefined) {
           edges(takeCurrentLevel(bodyCfg.continues), loopExprCfg.entryNode)
         } else {
-          edges(takeCurrentLevel(bodyCfg.continues), innerCfg.entryNode)
+          edges(takeCurrentLevel(bodyCfg.continues), loopEntryNode)
         }
       }
 
@@ -385,7 +386,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
       .from(initExprCfg, conditionCfg, loopExprCfg, bodyCfg)
       .copy(
         entryNode = entryNode,
-        edges = newEdges ++ initExprCfg.edges ++ innerCfg.edges,
+        edges = newEdges ++ initExprCfg.edges ++ conditionCfg.edges ++ innerCfg.edges,
         fringe = conditionCfg.fringe.withEdgeType(FalseEdge) ++ takeCurrentLevel(bodyCfg.breaks).map((_, AlwaysEdge)),
         breaks = reduceAndFilterLevel(bodyCfg.breaks),
         continues = reduceAndFilterLevel(bodyCfg.continues)
