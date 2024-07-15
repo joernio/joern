@@ -506,7 +506,7 @@ class CfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg) {
     }
 
     "be correct for empty 'then' block" in {
-      implicit val cpg: Cpg = code("if (cond()) {} else { foo() }")
+      implicit val cpg: Cpg = code("if (cond()) {} else { foo(); }")
       succOf("func") shouldBe expected(("cond()", AlwaysEdge))
       succOf("cond()") shouldBe expected(("RET", TrueEdge), ("foo()", FalseEdge))
       succOf("foo()") shouldBe expected(("RET", AlwaysEdge))
