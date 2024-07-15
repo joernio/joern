@@ -32,6 +32,7 @@ options {
     superClass = RubyLexerBase;
 }
 
+
 // --------------------------------------------------------
 // Keywords
 // --------------------------------------------------------
@@ -78,49 +79,6 @@ WHEN: 'when';
 WHILE: 'while';
 YIELD: 'yield';
 
-fragment KEYWORD
-    :   LINE__
-    |   ENCODING__
-    |   FILE__
-    |   BEGIN_
-    |   END_
-    |   ALIAS
-    |   AND
-    |   BEGIN
-    |   BREAK
-    |   CASE
-    |   CLASS
-    |   DEF
-    |   IS_DEFINED
-    |   DO
-    |   ELSE
-    |   ELSIF
-    |   END
-    |   ENSURE
-    |   FOR
-    |   FALSE
-    |   IF
-    |   IN
-    |   MODULE
-    |   NEXT
-    |   NIL
-    |   NOT
-    |   OR
-    |   REDO
-    |   RESCUE
-    |   RETRY
-    |   RETURN
-    |   SELF
-    |   SUPER
-    |   THEN
-    |   TRUE
-    |   UNDEF
-    |   UNLESS
-    |   UNTIL
-    |   WHEN
-    |   WHILE
-    |   YIELD
-    ;
 
 // --------------------------------------------------------
 // Punctuators
@@ -544,9 +502,52 @@ fragment SYMBOL_NAME
 // --------------------------------------------------------
 // Identifiers
 // --------------------------------------------------------
-
 LOCAL_VARIABLE_IDENTIFIER
-    :   (LOWERCASE_CHARACTER | '_') IDENTIFIER_CHARACTER*
+    :   (LOWERCASE_CHARACTER | '_') IDENTIFIER_CHARACTER* { setKeywordTokenType(); }
+    ;
+
+fragment KEYWORD
+    :   LINE__
+    |   ENCODING__
+    |   FILE__
+    |   BEGIN_
+    |   END_
+    |   ALIAS
+    |   AND
+    |   BEGIN
+    |   BREAK
+    |   CASE
+    |   CLASS
+    |   DEF
+    |   IS_DEFINED
+    |   DO
+    |   ELSE
+    |   ELSIF
+    |   END
+    |   ENSURE
+    |   FOR
+    |   FALSE
+    |   IF
+    |   IN
+    |   MODULE
+    |   NEXT
+    |   NIL
+    |   NOT
+    |   OR
+    |   REDO
+    |   RESCUE
+    |   RETRY
+    |   RETURN
+    |   SELF
+    |   SUPER
+    |   THEN
+    |   TRUE
+    |   UNDEF
+    |   UNLESS
+    |   UNTIL
+    |   WHEN
+    |   WHILE
+    |   YIELD
     ;
 
 GLOBAL_VARIABLE_IDENTIFIER

@@ -734,11 +734,11 @@ class MethodTests extends RubyCode2CpgFixture {
 
   "a method that is redefined should have a counter suffixed to ensure uniqueness" in {
     val cpg = code("""
-        |def foo;end
-        |def bar;end
-        |def foo;end
-        |def foo;end
-        |""".stripMargin)
+          |def foo;end
+          |def bar;end
+          |def foo;end
+          |def foo;end
+          |""".stripMargin)
 
     cpg.method.name("(foo|bar).*").name.l shouldBe List("foo", "bar", "foo", "foo")
     cpg.method.name("(foo|bar).*").fullName.l shouldBe List(
@@ -748,4 +748,13 @@ class MethodTests extends RubyCode2CpgFixture {
       s"Test0.rb:$Main.foo1"
     )
   }
+
+  "shadowed keyword in member call with emark" in {
+    val cpg = code("""
+        |batch.retry!
+        |""".stripMargin)
+
+    cpg.method.isModule.l
+  }
+
 }

@@ -19,4 +19,9 @@ class InvocationWithoutParenthesesParserTests extends RubyParserFixture with Mat
     test("foo&.bar")
     test("foo&.bar 1,2")
   }
+
+  "method invocation without parenthesis with reserved keywords" in {
+    test("batch.retry!")
+    test("batch.retry")
+  }
 }

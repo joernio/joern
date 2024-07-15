@@ -32,6 +32,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     currentResult.isInstanceOf[Unknown]
 
   override def visit(tree: ParseTree): RubyNode = {
+    println(tree.getClass)
     Option(tree).map(super.visit).getOrElse(defaultResult())
   }
 
@@ -732,9 +733,10 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   override def visitMemberAccessExpression(ctx: RubyParser.MemberAccessExpressionContext): RubyNode = {
     val hasArguments = Option(ctx.argumentWithParentheses()).isDefined
     val hasBlock     = Option(ctx.block()).isDefined
-    val isClassDecl = Option(ctx.primaryValue()).map(_.getText).contains("Class") && Option(ctx.methodName())
-      .map(_.getText)
-      .contains("new")
+    val isClassDecl =
+      Option(ctx.primaryValue()).map(_.getText).contains("Class") && Option(ctx.methodName())
+        .map(_.getText)
+        .contains("new")
     val methodName = ctx.methodName().getText
 
     if (!hasBlock) {
@@ -750,6 +752,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
           if (methodName.headOption.exists(_.isUpper)) {
             return MemberAccess(target, ctx.op.getText, methodName)(ctx.toTextSpan)
           } else {
+            val a = MemberCall(target, ctx.op.getText, methodName, Nil)(ctx.toTextSpan)
             return MemberCall(target, ctx.op.getText, methodName, Nil)(ctx.toTextSpan)
           }
         } else {
