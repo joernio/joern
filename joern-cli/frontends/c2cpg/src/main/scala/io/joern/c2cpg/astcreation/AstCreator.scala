@@ -100,7 +100,7 @@ class AstCreator(
   }
 
   override protected def lineEnd(node: IASTNode): Option[Int] = {
-    nullSafeFileLocation(node).map(_.getEndingLineNumber)
+    nullSafeFileLocationLast(node).map(_.getEndingLineNumber)
   }
 
   protected def column(node: IASTNode): Option[Int] = {

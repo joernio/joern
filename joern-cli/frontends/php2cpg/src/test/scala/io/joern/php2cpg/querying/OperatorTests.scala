@@ -4,7 +4,7 @@ import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
 import io.joern.php2cpg.parser.Domain.{PhpDomainTypeConstants, PhpOperators}
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, NodeTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal, TypeRef}
 import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.semanticcpg.language.*
@@ -497,29 +497,6 @@ class OperatorTests extends PhpCode2CpgFixture {
     }
   }
 
-  "temporary list implementation should work" in {
-    // TODO This is a simple placeholder implementation that represents most of the useful information
-    //  in the AST, while being pretty much unusable for dataflow. A better implementation needs to follow.
-    val cpg = code("""<?php
-      |list($a, $b) = $arr;
-      |""".stripMargin)
-
-    inside(cpg.call.nameExact("list").l) { case List(listCall: Call) =>
-      listCall.methodFullName shouldBe PhpOperators.listFunc
-      listCall.code shouldBe "list($a,$b)"
-      listCall.lineNumber shouldBe Some(2)
-      inside(listCall.argument.l) { case List(aArg: Identifier, bArg: Identifier) =>
-        aArg.name shouldBe "a"
-        aArg.code shouldBe "$a"
-        aArg.lineNumber shouldBe Some(2)
-
-        bArg.name shouldBe "b"
-        bArg.code shouldBe "$b"
-        bArg.lineNumber shouldBe Some(2)
-      }
-    }
-  }
-
   "include calls" should {
     "be correctly represented for normal includes" in {
       val cpg = code("""<?php
@@ -731,6 +708,55 @@ class OperatorTests extends PhpCode2CpgFixture {
       absCall.methodFullName shouldBe "abs"
       absCall.code shouldBe "abs($a)"
       absCall.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
+    }
+  }
+
+  "array/list unpacking should be lowered to several assignments" in {
+    val cpg = code("""<?php
+        |list(list($a, $b), $c) = $arr;
+        |""".stripMargin)
+    // finds the block containing the assignments
+    val block = cpg.all.collect { case block: Block if block.lineNumber.contains(2) => block }.head
+    inside(block.astChildren.assignment.l) { case tmp0 :: tmp1 :: tmp2 :: a :: b :: c :: Nil =>
+      tmp0.code shouldBe "$tmp0 = $arr"
+      tmp0.source.label shouldBe NodeTypes.IDENTIFIER
+      tmp0.source.code shouldBe "$arr"
+      tmp0.target.label shouldBe NodeTypes.IDENTIFIER
+      tmp0.target.code shouldBe "$tmp0"
+
+      tmp1.code shouldBe "$tmp1 = $tmp0[0]"
+      tmp1.source.label shouldBe NodeTypes.CALL
+      tmp1.source.asInstanceOf[Call].name shouldBe Operators.indexAccess
+      tmp1.source.code shouldBe "$tmp0[0]"
+      tmp1.target.label shouldBe NodeTypes.IDENTIFIER
+      tmp1.target.code shouldBe "$tmp1"
+
+      tmp2.code shouldBe "$tmp2 = $tmp1"
+      tmp2.source.label shouldBe NodeTypes.IDENTIFIER
+      tmp2.source.code shouldBe "$tmp1"
+      tmp2.target.label shouldBe NodeTypes.IDENTIFIER
+      tmp2.target.code shouldBe "$tmp2"
+
+      a.code shouldBe "$a = $tmp2[0]"
+      a.source.label shouldBe NodeTypes.CALL
+      a.source.asInstanceOf[Call].name shouldBe Operators.indexAccess
+      a.source.code shouldBe "$tmp2[0]"
+      a.target.label shouldBe NodeTypes.IDENTIFIER
+      a.target.code shouldBe "$a"
+
+      b.code shouldBe "$b = $tmp2[1]"
+      b.source.label shouldBe NodeTypes.CALL
+      b.source.asInstanceOf[Call].name shouldBe Operators.indexAccess
+      b.source.code shouldBe "$tmp2[1]"
+      b.target.label shouldBe NodeTypes.IDENTIFIER
+      b.target.code shouldBe "$b"
+
+      c.code shouldBe "$c = $tmp0[1]"
+      c.source.label shouldBe NodeTypes.CALL
+      c.source.asInstanceOf[Call].name shouldBe Operators.indexAccess
+      c.source.code shouldBe "$tmp0[1]"
+      c.target.label shouldBe NodeTypes.IDENTIFIER
+      c.target.code shouldBe "$c"
     }
   }
 }
