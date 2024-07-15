@@ -461,18 +461,32 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     val diffGraphs = edgesFromFringeTo(conditionCfg, trueCfg.entryNode) ++
       edgesFromFringeTo(conditionCfg, falseCfg.entryNode)
 
-    Cfg
-      .from(conditionCfg, trueCfg, falseCfg)
-      .copy(
-        entryNode = conditionCfg.entryNode,
-        edges = diffGraphs ++ conditionCfg.edges ++ trueCfg.edges ++ falseCfg.edges,
-        fringe = trueCfg.fringe ++ {
+    val ifStatementFringe =
+      if (trueCfg.entryNode.isEmpty && falseCfg.entryNode.isEmpty) {
+        conditionCfg.fringe.withEdgeType(AlwaysEdge)
+      } else {
+        val trueFringe = if (trueCfg.entryNode.isDefined) {
+          trueCfg.fringe
+        } else {
+          conditionCfg.fringe.withEdgeType(TrueEdge)
+        }
+
+        val falseFringe =
           if (falseCfg.entryNode.isDefined) {
             falseCfg.fringe
           } else {
             conditionCfg.fringe.withEdgeType(FalseEdge)
           }
-        }
+
+        trueFringe ++ falseFringe
+      }
+
+    Cfg
+      .from(conditionCfg, trueCfg, falseCfg)
+      .copy(
+        entryNode = conditionCfg.entryNode,
+        edges = diffGraphs ++ conditionCfg.edges ++ trueCfg.edges ++ falseCfg.edges,
+        fringe = ifStatementFringe
       )
   }
 
