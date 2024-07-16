@@ -777,4 +777,87 @@ class MethodTests extends RubyCode2CpgFixture {
     }
   }
 
+  "Call with :: syntax and reserved keyword" in {
+    val cpg = code("""
+        |batch::retry!
+        |""".stripMargin)
+
+    inside(cpg.call.name(".*retry!").l) {
+      case batchCall :: Nil =>
+        batchCall.name shouldBe "retry!"
+        batchCall.code shouldBe "batch::retry!"
+
+        inside(batchCall.receiver.l) {
+          case (receiverCall: Call) :: Nil =>
+            receiverCall.name shouldBe Operators.fieldAccess
+            receiverCall.code shouldBe "batch.retry!"
+
+            val selfBatch = receiverCall.argument(1).asInstanceOf[Call]
+            selfBatch.code shouldBe "self.batch"
+
+            val retry = receiverCall.argument(2).asInstanceOf[FieldIdentifier]
+            retry.code shouldBe "retry!"
+
+          case xs => fail(s"Expected one receiver for call, got [${xs.code.mkString(",")}]")
+        }
+
+      case xs => fail(s"Expected one method for batch.retry, got [${xs.code.mkString(",")}]")
+    }
+  }
+
+  "Call with reserved keyword as base and call name using . notation" in {
+    val cpg = code("""
+        |retry.retry!
+        |""".stripMargin)
+
+    inside(cpg.call.name(".*retry!").l) {
+      case batchCall :: Nil =>
+        batchCall.name shouldBe "retry!"
+        batchCall.code shouldBe "retry.retry!"
+
+        inside(batchCall.receiver.l) {
+          case (receiverCall: Call) :: Nil =>
+            receiverCall.name shouldBe Operators.fieldAccess
+            receiverCall.code shouldBe "retry.retry!"
+
+            val selfBatch = receiverCall.argument(1).asInstanceOf[Call]
+            selfBatch.code shouldBe "self.retry"
+
+            val retry = receiverCall.argument(2).asInstanceOf[FieldIdentifier]
+            retry.code shouldBe "retry!"
+
+          case xs => fail(s"Expected one receiver for call, got [${xs.code.mkString(",")}]")
+        }
+
+      case xs => fail(s"Expected one method for batch.retry, got [${xs.code.mkString(",")}]")
+    }
+  }
+
+  "Call with reserved keyword as base and call name" in {
+    val cpg = code("""
+        |retry::retry!
+        |""".stripMargin)
+
+    inside(cpg.call.name(".*retry!").l) {
+      case batchCall :: Nil =>
+        batchCall.name shouldBe "retry!"
+        batchCall.code shouldBe "retry::retry!"
+
+        inside(batchCall.receiver.l) {
+          case (receiverCall: Call) :: Nil =>
+            receiverCall.name shouldBe Operators.fieldAccess
+            receiverCall.code shouldBe "retry.retry!"
+
+            val selfBatch = receiverCall.argument(1).asInstanceOf[Call]
+            selfBatch.code shouldBe "self.retry"
+
+            val retry = receiverCall.argument(2).asInstanceOf[FieldIdentifier]
+            retry.code shouldBe "retry!"
+
+          case xs => fail(s"Expected one receiver for call, got [${xs.code.mkString(",")}]")
+        }
+
+      case xs => fail(s"Expected one method for batch.retry, got [${xs.code.mkString(",")}]")
+    }
+  }
 }

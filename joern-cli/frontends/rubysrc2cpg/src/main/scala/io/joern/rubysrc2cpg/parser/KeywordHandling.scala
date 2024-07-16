@@ -53,14 +53,17 @@ trait KeywordHandling { this: RubyLexerBase =>
     previousToken == RubyLexer.DOT || previousToken == RubyLexer.COLON || previousToken == RubyLexer.COLON2
   }
 
+  private def isNextTokenColonOrDot: Boolean = {
+    _input.LA(1) == '.' || _input.LA(1) == ':'
+  }
+
   def setKeywordTokenType(): Unit = {
     val tokenText = getText
     if (tokenText == null) {
       return
     }
 
-    // _input.LA(1) == ':' indicates named parameter
-    if (isPreviousTokenColonOrDot || _input.LA(1) == ':' || !keywordMap.contains(tokenText.toUpperCase)) {
+    if (isPreviousTokenColonOrDot || isNextTokenColonOrDot || !keywordMap.contains(tokenText.toUpperCase)) {
       setType(RubyLexer.LOCAL_VARIABLE_IDENTIFIER)
     } else {
       keywordMap.get(tokenText.toUpperCase).foreach(setType)
