@@ -713,11 +713,11 @@ class OperatorTests extends PhpCode2CpgFixture {
 
   "array/list unpacking should be lowered to several assignments" in {
     val cpg = code("""<?php
-        |list(list($a, $b), $c) = $arr;
+        |list(list($a, $b), $c, "d" => $d) = $arr;
         |""".stripMargin)
     // finds the block containing the assignments
     val block = cpg.all.collect { case block: Block if block.lineNumber.contains(2) => block }.head
-    inside(block.astChildren.assignment.l) { case tmp0 :: tmp1 :: tmp2 :: a :: b :: c :: Nil =>
+    inside(block.astChildren.assignment.l) { case tmp0 :: tmp1 :: tmp2 :: a :: b :: c :: d :: Nil =>
       tmp0.code shouldBe "$tmp0 = $arr"
       tmp0.source.label shouldBe NodeTypes.IDENTIFIER
       tmp0.source.code shouldBe "$arr"
@@ -757,6 +757,13 @@ class OperatorTests extends PhpCode2CpgFixture {
       c.source.code shouldBe "$tmp0[1]"
       c.target.label shouldBe NodeTypes.IDENTIFIER
       c.target.code shouldBe "$c"
+
+      d.code shouldBe "$d = $tmp0[\"d\"]"
+      d.source.label shouldBe NodeTypes.CALL
+      d.source.asInstanceOf[Call].name shouldBe Operators.indexAccess
+      d.source.code shouldBe "$tmp0[\"d\"]"
+      d.target.label shouldBe NodeTypes.IDENTIFIER
+      d.target.code shouldBe "$d"
     }
   }
 }

@@ -40,6 +40,8 @@ object Domain {
     val errorSuppress = "<operator>.errorSuppress"
     // Double arrow operator used to represent key/value pairs: key => value
     val doubleArrow = "<operator>.doubleArrow"
+    // Used to mark the creation point of an array. It's similar with the dictLiteral operator in pysrc2cpg
+    val emptyArray = "<operator>.emptyArray"
 
     val assignmentCoalesceOp = "<operator>.assignmentCoalesce"
     val assignmentConcatOp   = "<operator>.assignmentConcat"

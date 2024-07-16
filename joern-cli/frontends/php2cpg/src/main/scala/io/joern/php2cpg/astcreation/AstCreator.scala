@@ -1141,7 +1141,13 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
       idxTracker: ArrayIndexTracker,
       item: PhpArrayItem
     ): Ast = {
-      val dimensionAst    = astForExpr(PhpInt(idxTracker.next, item.attributes))
+      // copy from `assignForArrayItem` to handle the case where key exists, such as `list("id" => $a, "name" => $b) = $arr;`
+      val dimension = item.key match {
+        case Some(key: PhpSimpleScalar) => dimensionFromSimpleScalar(key, idxTracker)
+        case Some(key)                  => key
+        case None                       => PhpInt(idxTracker.next, item.attributes)
+      }
+      val dimensionAst    = astForExpr(dimension)
       val indexAccessCode = s"${sourceAst.rootCodeOrEmpty}[${dimensionAst.rootCodeOrEmpty}]"
       // <operator>.indexAccess(sourceAst, index)
       val indexAccessNode = callAst(
@@ -1408,10 +1414,20 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
   private def astForArrayExpr(expr: PhpArrayExpr): Ast = {
     val idxTracker = new ArrayIndexTracker
 
-    val tmpIdentifier = getTmpIdentifier(expr, Some(TypeConstants.Array))
+    val tmpName = getNewTmpName()
+
+    def newTmpIdentifier: Ast = Ast(identifierNode(expr, tmpName, s"$$$tmpName", TypeConstants.Array))
+
+    val tmpIdentifierAssignNode = {
+      val emptyArrayCall = callAst(newOperatorCallNode(PhpOperators.emptyArray, s"[]", line = line(expr)))
+
+      val assignCode = s"$$$tmpName = ${emptyArrayCall.rootCodeOrEmpty}"
+      val assignNode = newOperatorCallNode(Operators.assignment, assignCode, line = line(expr))
+      callAst(assignNode, newTmpIdentifier :: emptyArrayCall :: Nil)
+    }
 
     val itemAssignments = expr.items.flatMap {
-      case Some(item) => Option(assignForArrayItem(item, tmpIdentifier.name, idxTracker))
+      case Some(item) => Option(assignForArrayItem(item, tmpName, idxTracker))
       case None =>
         idxTracker.next // Skip an index
         None
@@ -1419,8 +1435,9 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
     val arrayBlock = blockNode(expr)
 
     Ast(arrayBlock)
+      .withChild(tmpIdentifierAssignNode)
       .withChildren(itemAssignments)
-      .withChild(Ast(tmpIdentifier))
+      .withChild(newTmpIdentifier)
   }
 
   private def astForListExpr(expr: PhpListExpr): Ast = {
