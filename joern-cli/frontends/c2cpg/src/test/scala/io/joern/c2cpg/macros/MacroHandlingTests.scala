@@ -298,6 +298,31 @@ class MacroHandlingTests extends C2CpgSuite {
       typeNumCall.columnNumber shouldBe Some(11)
     }
   }
+
+  "MacroHandlingTests10" should {
+    "only have locals with exactly one ast parent" in {
+      val cpg = code(
+        """
+          |#define deleteReset(ptr) do { delete ptr; ptr = nullptr; } while(0)
+          |void func(void) {
+          |  int *foo = new int;
+          |  int *bar = new int;
+          |  int *baz = new int;
+          |  deleteReset(foo);
+          |  deleteReset(bar);
+          |  deleteReset(baz);
+          |}
+          |""".stripMargin,
+        "foo.cc"
+      )
+      val List(foo) = cpg.local.nameExact("foo").l
+      foo._astIn.size shouldBe 1
+      val List(bar) = cpg.local.nameExact("bar").l
+      bar._astIn.size shouldBe 1
+      val List(baz) = cpg.local.nameExact("baz").l
+      baz._astIn.size shouldBe 1
+    }
+  }
 }
 
 class CfgMacroTests extends DataFlowCodeToCpgSuite {
