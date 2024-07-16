@@ -21,6 +21,7 @@ import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import scala.annotation.tailrec
 import scala.collection.mutable
+import scala.util.Try
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -218,16 +219,12 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val constructorModifier = if (isCppConstructor(funcDef)) {
       List(newModifierNode(ModifierTypes.CONSTRUCTOR), newModifierNode(ModifierTypes.PUBLIC))
     } else Nil
-    val visibilityModifier = if (funcDef.getSyntax != null) {
-      modifierFromString(funcDef.getSyntax.getImage)
-    } else Nil
+    val visibilityModifier = Try(modifierFromString(funcDef.getSyntax.getImage)).getOrElse(Nil)
     constructorModifier ++ visibilityModifier
   }
 
   private def modifierFor(funcDecl: IASTFunctionDeclarator): List[NewModifier] = {
-    if (funcDecl.getParent != null && funcDecl.getParent.getSyntax != null) {
-      modifierFromString(funcDecl.getParent.getSyntax.getImage)
-    } else Nil
+    Try(modifierFromString(funcDecl.getParent.getSyntax.getImage)).getOrElse(Nil)
   }
 
   private def isCppConstructor(funcDef: IASTFunctionDefinition): Boolean = {
