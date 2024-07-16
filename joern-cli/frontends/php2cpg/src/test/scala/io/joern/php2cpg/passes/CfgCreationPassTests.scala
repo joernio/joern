@@ -29,7 +29,7 @@ class CfgCreationPassTests extends CfgTestFixture(() => new PhpCfgTestCpg) {
           |  }
           |}
           |""".stripMargin)
-      succOf("break(1)") shouldBe expected(("$i", AlwaysEdge))
+      succOf("break(1)") should contain theSameElementsAs expected(("$i", AlwaysEdge))
     }
 
     "be correct for break with level 2" in {
@@ -40,7 +40,7 @@ class CfgCreationPassTests extends CfgTestFixture(() => new PhpCfgTestCpg) {
           |  }
           |}
           |""".stripMargin)
-      succOf("break(2)") shouldBe expected(("RET", AlwaysEdge))
+      succOf("break(2)") should contain theSameElementsAs expected(("RET", AlwaysEdge))
     }
 
     "be correct for continue with level 1" in {
@@ -51,7 +51,7 @@ class CfgCreationPassTests extends CfgTestFixture(() => new PhpCfgTestCpg) {
           |  }
           |}
           |""".stripMargin)
-      succOf("continue(1)") shouldBe expected(("$j", AlwaysEdge))
+      succOf("continue(1)") should contain theSameElementsAs expected(("$j", AlwaysEdge))
     }
 
     "be correct for continue with level 2" in {
@@ -62,7 +62,7 @@ class CfgCreationPassTests extends CfgTestFixture(() => new PhpCfgTestCpg) {
           |  }
           |}
           |""".stripMargin)
-      succOf("continue(2)") shouldBe expected(("$i", AlwaysEdge))
+      succOf("continue(2)") should contain theSameElementsAs expected(("$i", AlwaysEdge))
     }
   }
 
@@ -75,7 +75,7 @@ class CfgCreationPassTests extends CfgTestFixture(() => new PhpCfgTestCpg) {
           |  } while ($j < 1);
           |} while ($i < 1)
           |""".stripMargin)
-      succOf("break(1)") shouldBe expected(("$i", AlwaysEdge))
+      succOf("break(1)") should contain theSameElementsAs expected(("$i", AlwaysEdge))
     }
 
     "be correct for break with level 2" in {
@@ -86,7 +86,7 @@ class CfgCreationPassTests extends CfgTestFixture(() => new PhpCfgTestCpg) {
           |  } while ($j < 1);
           |} while ($i < 1)
           |""".stripMargin)
-      succOf("break(2)") shouldBe expected(("RET", AlwaysEdge))
+      succOf("break(2)") should contain theSameElementsAs expected(("RET", AlwaysEdge))
     }
 
     "be correct for continue with level 1" in {
@@ -97,7 +97,7 @@ class CfgCreationPassTests extends CfgTestFixture(() => new PhpCfgTestCpg) {
           |  } while ($j < 1);
           |} while ($i < 1)
           |""".stripMargin)
-      succOf("continue(1)") shouldBe expected(("$j", AlwaysEdge))
+      succOf("continue(1)") should contain theSameElementsAs expected(("$j", AlwaysEdge))
     }
 
     "be correct for continue with level 2" in {
@@ -108,7 +108,7 @@ class CfgCreationPassTests extends CfgTestFixture(() => new PhpCfgTestCpg) {
           |  } while ($j < 1);
           |} while ($i < 1)
           |""".stripMargin)
-      succOf("continue(2)") shouldBe expected(("$i", AlwaysEdge))
+      succOf("continue(2)") should contain theSameElementsAs expected(("$i", AlwaysEdge))
     }
   }
 
@@ -121,7 +121,7 @@ class CfgCreationPassTests extends CfgTestFixture(() => new PhpCfgTestCpg) {
           |  }
           |}
           |""".stripMargin)
-      succOf("break(1)") shouldBe expected(("$i", AlwaysEdge))
+      succOf("break(1)") should contain theSameElementsAs expected(("$i", AlwaysEdge))
     }
 
     "be correct for break with level 2" in {
@@ -132,7 +132,7 @@ class CfgCreationPassTests extends CfgTestFixture(() => new PhpCfgTestCpg) {
           |  }
           |}
           |""".stripMargin)
-      succOf("break(2)") shouldBe expected(("RET", AlwaysEdge))
+      succOf("break(2)") should contain theSameElementsAs expected(("RET", AlwaysEdge))
     }
 
     "be correct for continue with level 1" in {
@@ -143,7 +143,7 @@ class CfgCreationPassTests extends CfgTestFixture(() => new PhpCfgTestCpg) {
           |  }
           |}
           |""".stripMargin)
-      succOf("continue(1)") shouldBe expected(("$j", AlwaysEdge))
+      succOf("continue(1)") should contain theSameElementsAs expected(("$j", AlwaysEdge))
     }
 
     "be correct for continue with level 2" in {
@@ -154,7 +154,7 @@ class CfgCreationPassTests extends CfgTestFixture(() => new PhpCfgTestCpg) {
           |  }
           |}
           |""".stripMargin)
-      succOf("continue(2)") shouldBe expected(("$i", AlwaysEdge))
+      succOf("continue(2)") should contain theSameElementsAs expected(("$i", AlwaysEdge))
     }
   }
 
@@ -170,7 +170,7 @@ class CfgCreationPassTests extends CfgTestFixture(() => new PhpCfgTestCpg) {
           |    $k;
           |}
           |""".stripMargin)
-      succOf("break(1)") shouldBe expected(("$k", AlwaysEdge))
+      succOf("break(1)") should contain theSameElementsAs expected(("$k", AlwaysEdge))
     }
 
     "be correct for break with level 2" in {
@@ -184,7 +184,7 @@ class CfgCreationPassTests extends CfgTestFixture(() => new PhpCfgTestCpg) {
           |    $k;
           |}
           |""".stripMargin)
-      succOf("break(2)") shouldBe expected(("RET", AlwaysEdge))
+      succOf("break(2)") should contain theSameElementsAs expected(("RET", AlwaysEdge))
     }
   }
 }

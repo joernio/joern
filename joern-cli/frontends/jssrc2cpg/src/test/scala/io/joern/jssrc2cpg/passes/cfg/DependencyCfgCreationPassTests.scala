@@ -10,16 +10,16 @@ class DependencyCfgCreationPassTests extends CfgTestFixture(() => new JsSrcCfgTe
   "CFG generation for global builtins" should {
     "be correct for JSON.parse" in {
       implicit val cpg: Cpg = code("""JSON.parse("foo");""")
-      succOf(":program") shouldBe expected((""""foo"""", AlwaysEdge))
-      succOf(""""foo"""") shouldBe expected(("""JSON.parse("foo")""", AlwaysEdge))
-      succOf("""JSON.parse("foo")""") shouldBe expected(("RET", AlwaysEdge))
+      succOf(":program") should contain theSameElementsAs expected((""""foo"""", AlwaysEdge))
+      succOf(""""foo"""") should contain theSameElementsAs expected(("""JSON.parse("foo")""", AlwaysEdge))
+      succOf("""JSON.parse("foo")""") should contain theSameElementsAs expected(("RET", AlwaysEdge))
     }
 
     "have correct structure for JSON.stringify" in {
       implicit val cpg: Cpg = code("""JSON.stringify(foo);""")
-      succOf(":program") shouldBe expected(("foo", AlwaysEdge))
-      succOf("foo") shouldBe expected(("JSON.stringify(foo)", AlwaysEdge))
-      succOf("JSON.stringify(foo)") shouldBe expected(("RET", AlwaysEdge))
+      succOf(":program") should contain theSameElementsAs expected(("foo", AlwaysEdge))
+      succOf("foo") should contain theSameElementsAs expected(("JSON.stringify(foo)", AlwaysEdge))
+      succOf("JSON.stringify(foo)") should contain theSameElementsAs expected(("RET", AlwaysEdge))
     }
   }
 

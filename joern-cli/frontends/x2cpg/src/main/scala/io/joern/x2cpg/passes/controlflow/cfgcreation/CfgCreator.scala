@@ -368,16 +368,17 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     val loopExprCfg  = children.find(_.order == nLocals + 3).map(cfgFor).getOrElse(Cfg.empty)
     val bodyCfg      = children.find(_.order == nLocals + 4).map(cfgFor).getOrElse(Cfg.empty)
 
-    val innerCfg  = conditionCfg ++ bodyCfg ++ loopExprCfg
-    val entryNode = (initExprCfg ++ innerCfg).entryNode
+    val innerCfg      = bodyCfg ++ loopExprCfg
+    val loopEntryNode = conditionCfg.entryNode.orElse(innerCfg.entryNode)
+    val entryNode     = initExprCfg.entryNode.orElse(loopEntryNode)
 
-    val newEdges = edgesFromFringeTo(initExprCfg, innerCfg.entryNode) ++
-      edgesFromFringeTo(innerCfg, innerCfg.entryNode) ++
-      edgesFromFringeTo(conditionCfg, bodyCfg.entryNode, TrueEdge) ++ {
+    val newEdges = edgesFromFringeTo(initExprCfg, loopEntryNode) ++
+      edgesFromFringeTo(innerCfg, loopEntryNode) ++
+      edgesFromFringeTo(conditionCfg, innerCfg.entryNode.orElse(conditionCfg.entryNode), TrueEdge) ++ {
         if (loopExprCfg.entryNode.isDefined) {
           edges(takeCurrentLevel(bodyCfg.continues), loopExprCfg.entryNode)
         } else {
-          edges(takeCurrentLevel(bodyCfg.continues), innerCfg.entryNode)
+          edges(takeCurrentLevel(bodyCfg.continues), loopEntryNode)
         }
       }
 
@@ -385,7 +386,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
       .from(initExprCfg, conditionCfg, loopExprCfg, bodyCfg)
       .copy(
         entryNode = entryNode,
-        edges = newEdges ++ initExprCfg.edges ++ innerCfg.edges,
+        edges = newEdges ++ initExprCfg.edges ++ conditionCfg.edges ++ innerCfg.edges,
         fringe = conditionCfg.fringe.withEdgeType(FalseEdge) ++ takeCurrentLevel(bodyCfg.breaks).map((_, AlwaysEdge)),
         breaks = reduceAndFilterLevel(bodyCfg.breaks),
         continues = reduceAndFilterLevel(bodyCfg.continues)
@@ -461,18 +462,32 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     val diffGraphs = edgesFromFringeTo(conditionCfg, trueCfg.entryNode) ++
       edgesFromFringeTo(conditionCfg, falseCfg.entryNode)
 
-    Cfg
-      .from(conditionCfg, trueCfg, falseCfg)
-      .copy(
-        entryNode = conditionCfg.entryNode,
-        edges = diffGraphs ++ conditionCfg.edges ++ trueCfg.edges ++ falseCfg.edges,
-        fringe = trueCfg.fringe ++ {
+    val ifStatementFringe =
+      if (trueCfg.entryNode.isEmpty && falseCfg.entryNode.isEmpty) {
+        conditionCfg.fringe.withEdgeType(AlwaysEdge)
+      } else {
+        val trueFringe = if (trueCfg.entryNode.isDefined) {
+          trueCfg.fringe
+        } else {
+          conditionCfg.fringe.withEdgeType(TrueEdge)
+        }
+
+        val falseFringe =
           if (falseCfg.entryNode.isDefined) {
             falseCfg.fringe
           } else {
             conditionCfg.fringe.withEdgeType(FalseEdge)
           }
-        }
+
+        trueFringe ++ falseFringe
+      }
+
+    Cfg
+      .from(conditionCfg, trueCfg, falseCfg)
+      .copy(
+        entryNode = conditionCfg.entryNode,
+        edges = diffGraphs ++ conditionCfg.edges ++ trueCfg.edges ++ falseCfg.edges,
+        fringe = ifStatementFringe
       )
   }
 

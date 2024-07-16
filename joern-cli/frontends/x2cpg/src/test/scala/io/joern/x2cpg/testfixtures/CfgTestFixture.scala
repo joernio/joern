@@ -30,7 +30,7 @@ class CfgTestFixture[T <: CfgTestCpg](testCpgFactory: () => T) extends Code2CpgF
     ExpectationInfo(pair._1, pair._2, pair._3)
   }
 
-  def expected(pairs: ExpectationInfo*)(implicit cpg: Cpg): Set[String] = {
+  def expected(pairs: ExpectationInfo*)(implicit cpg: Cpg): List[String] = {
     pairs.map { case ExpectationInfo(code, index, _) =>
       cpg.method.ast.isCfgNode.toVector
         .collect {
@@ -38,11 +38,11 @@ class CfgTestFixture[T <: CfgTestCpg](testCpgFactory: () => T) extends Code2CpgF
         }
         .lift(index)
         .getOrElse(fail(s"No node found for code = '$code' and index '$index'!"))
-    }.toSet
+    }.toList
   }
 
   // index is zero based and describes which node to take if multiple node match the code string.
-  def succOf(code: String, index: Int = 0)(implicit cpg: Cpg): Set[String] = {
+  def succOf(code: String, index: Int = 0)(implicit cpg: Cpg): List[String] = {
     cpg.method.ast.isCfgNode.toVector
       .collect {
         case node if matchCode(node, code) => node
@@ -52,10 +52,10 @@ class CfgTestFixture[T <: CfgTestCpg](testCpgFactory: () => T) extends Code2CpgF
       ._cfgOut
       .cast[CfgNode]
       .code
-      .toSetImmutable
+      .toList
   }
 
-  def succOf(code: String, nodeType: String)(implicit cpg: Cpg): Set[String] = {
+  def succOf(code: String, nodeType: String)(implicit cpg: Cpg): List[String] = {
     cpg.method.ast.isCfgNode
       .label(nodeType)
       .toVector
@@ -66,6 +66,6 @@ class CfgTestFixture[T <: CfgTestCpg](testCpgFactory: () => T) extends Code2CpgF
       ._cfgOut
       .cast[CfgNode]
       .code
-      .toSetImmutable
+      .toList
   }
 }

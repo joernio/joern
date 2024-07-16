@@ -5,6 +5,7 @@ import org.antlr.v4.runtime.*
 import org.antlr.v4.runtime.atn.{ATN, ATNConfigSet}
 import org.antlr.v4.runtime.dfa.DFA
 import org.slf4j.LoggerFactory
+
 import java.io.File.separator
 import java.util
 import scala.collection.mutable.ListBuffer
@@ -18,8 +19,9 @@ import scala.util.Try
   */
 class AntlrParser(inputDir: File, filename: String) {
 
-  private val charStream  = CharStreams.fromFileName(filename)
-  private val lexer       = new RubyLexer(charStream)
+  private val charStream = CharStreams.fromFileName(filename)
+  private val lexer      = new RubyLexer(charStream)
+
   private val tokenStream = new CommonTokenStream(RubyLexerPostProcessor(lexer))
   val parser: RubyParser  = new RubyParser(tokenStream)
 
@@ -82,7 +84,7 @@ class AntlrParser(inputDir: File, filename: String) {
   * @param clearLimit
   *   the percentage of used heap to clear the DFA-cache on.
   */
-class ResourceManagedParser(clearLimit: Double) extends AutoCloseable {
+class ResourceManagedParser(clearLimit: Double, debug: Boolean = false) extends AutoCloseable {
 
   private val logger                                 = LoggerFactory.getLogger(getClass)
   private val runtime                                = Runtime.getRuntime
@@ -92,7 +94,8 @@ class ResourceManagedParser(clearLimit: Double) extends AutoCloseable {
   def parse(inputFile: File, filename: String): Try[RubyParser.ProgramContext] = {
     val inputDir    = if inputFile.isDirectory then inputFile else inputFile.parent
     val antlrParser = AntlrParser(inputDir, filename)
-    val interp      = antlrParser.parser.getInterpreter
+    antlrParser.parser.setTrace(debug) // enables printing of ANTLR parse tree
+    val interp = antlrParser.parser.getInterpreter
     // We need to grab a live instance in order to get the static variables as they are protected from static access
     maybeDecisionToDFA = Option(interp.decisionToDFA)
     maybeAtn = Option(interp.atn)
@@ -101,6 +104,7 @@ class ResourceManagedParser(clearLimit: Double) extends AutoCloseable {
       logger.debug(s"Runtime memory consumption at $usedMemory, clearing ANTLR DFA cache")
       clearDFA()
     }
+
     val (programCtx, errors) = antlrParser.parse()
     errors.foreach(logger.warn)
     programCtx
