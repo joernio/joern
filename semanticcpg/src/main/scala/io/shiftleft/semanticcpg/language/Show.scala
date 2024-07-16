@@ -23,7 +23,7 @@ object Show {
       case node: StoredNode =>
         val label      = node.label
         val id         = node.id().toString
-        val properties = propsToString(node.propertiesMap.asScala.toMap)
+        val properties = propsToString(node.properties)
         s"($label,$id): $properties"
 
       case other => other.toString

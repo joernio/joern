@@ -56,7 +56,7 @@ class AstNodeMethods(val node: AstNode) extends AnyVal with NodeExtension {
     val additionalDepth = if (p(node)) { 1 }
     else { 0 }
 
-    val childDepths = node.astChildren.map(_.depth(p)).l
+    val childDepths = astChildren.map(_.depth(p)).l
     additionalDepth + (if (childDepths.isEmpty) {
                          0
                        } else {
@@ -70,7 +70,7 @@ class AstNodeMethods(val node: AstNode) extends AnyVal with NodeExtension {
   /** Direct children of node in the AST. Siblings are ordered by their `order` fields
     */
   def astChildren: Iterator[AstNode] =
-    node._astOut.cast[AstNode].sortBy(_.order).iterator
+    node._astOut.cast[AstNode].toSeq.sortBy(_.order).iterator
 
   /** Siblings of this node in the AST, ordered by their `order` fields
     */

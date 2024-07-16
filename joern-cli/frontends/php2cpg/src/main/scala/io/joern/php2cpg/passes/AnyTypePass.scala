@@ -13,7 +13,7 @@ import io.shiftleft.semanticcpg.language.*
 class AnyTypePass(cpg: Cpg) extends ForkJoinParallelCpgPass[AstNode](cpg) {
 
   override def generateParts(): Array[AstNode] = {
-    cpg.has(PropertyNames.TYPE_FULL_NAME, PropertyDefaults.TypeFullName).collectAll[AstNode].toArray
+    cpg.graph.nodesWithProperty(PropertyNames.TYPE_FULL_NAME, PropertyDefaults.TypeFullName).collectAll[AstNode].toArray
   }
 
   override def runOnPart(diffGraph: DiffGraphBuilder, node: AstNode): Unit = {

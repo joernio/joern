@@ -12,7 +12,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
-import overflowdb.traversal.toNodeTraversal
 
 class AstCreationPassTests extends AstC2CpgSuite {
 
@@ -1373,11 +1372,9 @@ class AstCreationPassTests extends AstC2CpgSuite {
         .name("d")
         .ast
         .isReturn
-        .outE(EdgeTypes.ARGUMENT)
+        .out(EdgeTypes.ARGUMENT)
         .head
-        .inNode()
-        .get
-        .asInstanceOf[CallDb]
+        .asInstanceOf[Call]
         .code shouldBe "x * 2"
     }
 

@@ -5,7 +5,7 @@ import io.joern.x2cpg.Defines.ConstructorMethodName
 import io.joern.x2cpg.passes.frontend.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{Operators, Properties, PropertyNames}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
@@ -48,9 +48,9 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
 
   override protected def prepopulateSymbolTableEntry(x: AstNode): Unit = x match {
     case x @ (_: Identifier | _: Local | _: MethodParameterIn)
-        if x.property(PropertyNames.TYPE_FULL_NAME, Defines.Any) != Defines.Any =>
-      val typeFullName = x.property(PropertyNames.TYPE_FULL_NAME, Defines.Any)
-      val typeHints    = symbolTable.get(LocalVar(x.property(PropertyNames.TYPE_FULL_NAME, Defines.Any))) - typeFullName
+        if x.propertyOption(Properties.TypeFullName).getOrElse(Defines.Any) != Defines.Any =>
+      val typeFullName         = x.propertyOption(Properties.TypeFullName).getOrElse(Defines.Any)
+      val typeHints            = symbolTable.get(LocalVar(typeFullName)) - typeFullName
       lazy val cpgTypeFullName = cpg.typeDecl.nameExact(typeFullName).fullName.toSet
       val resolvedTypeHints =
         if (typeHints.nonEmpty) symbolTable.put(x, typeHints)
@@ -59,9 +59,8 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
       if (!resolvedTypeHints.contains(typeFullName) && resolvedTypeHints.sizeIs == 1)
         builder.setNodeProperty(x, PropertyNames.TYPE_FULL_NAME, resolvedTypeHints.head)
 
-    case x @ (_: Identifier | _: Local | _: MethodParameterIn)
-        if x.property(PropertyNames.POSSIBLE_TYPES, Seq.empty[String]).nonEmpty =>
-      val possibleTypes = x.property(PropertyNames.POSSIBLE_TYPES, Seq.empty[String])
+    case x @ (_: Identifier | _: Local | _: MethodParameterIn) if x.property(Properties.PossibleTypes).nonEmpty =>
+      val possibleTypes = x.property(Properties.PossibleTypes)
       if (possibleTypes.sizeIs == 1 && !possibleTypes.contains("ANY")) {
         val typeFullName         = possibleTypes.head
         val typeHints            = symbolTable.get(LocalVar(typeFullName)) - typeFullName

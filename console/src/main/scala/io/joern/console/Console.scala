@@ -13,7 +13,7 @@ import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.dotextension.ImageViewer
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
 import io.shiftleft.codepropertygraph.generated.help.Doc
-import overflowdb.traversal.help.Table.AvailableWidthProvider
+import flatgraph.help.Table.AvailableWidthProvider
 
 import scala.sys.process.Process
 import scala.util.control.NoStackTrace
@@ -349,10 +349,14 @@ class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.cur
 
     val cpgDestinationPath = cpgDestinationPathOpt.get
 
-    if (CpgLoader.isLegacyCpg(cpgFile)) {
-      report("You have provided a legacy proto CPG. Attempting conversion.")
+    val isProtoFormat      = CpgLoader.isProtoFormat(cpgFile.path)
+    val isOverflowDbFormat = CpgLoader.isOverflowDbFormat(cpgFile.path)
+    if (isProtoFormat || isOverflowDbFormat) {
+      if (isProtoFormat) report("You have provided a legacy proto CPG. Attempting conversion.")
+      else if (isOverflowDbFormat) report("You have provided a legacy overflowdb CPG. Attempting conversion.")
       try {
-        CpgConverter.convertProtoCpgToOverflowDb(cpgFile.path.toString, cpgDestinationPath.toString)
+        val cpg = CpgLoader.load(cpgFile.path, cpgDestinationPath)
+        cpg.close()
       } catch {
         case exc: Exception =>
           report("Error converting legacy CPG: " + exc.getMessage)
