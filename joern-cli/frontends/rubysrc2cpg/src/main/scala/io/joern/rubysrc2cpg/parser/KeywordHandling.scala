@@ -48,15 +48,22 @@ trait KeywordHandling { this: RubyLexerBase =>
     "YIELD"      -> YIELD
   )
 
+  private def isPreviousTokenColonOrDot: Boolean = {
+    val previousToken = previousTokenTypeOrEOF()
+    previousToken == RubyLexer.DOT || previousToken == RubyLexer.COLON || previousToken == RubyLexer.COLON2
+  }
+
   def setKeywordTokenType(): Unit = {
-    if (_token == null) {
+    val tokenText = getText
+    if (tokenText == null) {
       return
     }
 
-    if (previousNonWsTokenTypeOrEOF() == RubyLexer.DOT || !keywordMap.contains(_token.getText)) {
+    // _input.LA(1) == ':' indicates named parameter
+    if (isPreviousTokenColonOrDot || _input.LA(1) == ':' || !keywordMap.contains(tokenText.toUpperCase)) {
       setType(RubyLexer.LOCAL_VARIABLE_IDENTIFIER)
     } else {
-      keywordMap.get(_token.getText).foreach(setType)
+      keywordMap.get(tokenText.toUpperCase).foreach(setType)
     }
   }
 }
