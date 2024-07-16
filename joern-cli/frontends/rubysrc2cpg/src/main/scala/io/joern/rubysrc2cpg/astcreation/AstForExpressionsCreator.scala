@@ -428,11 +428,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     }
   }
 
-  // `x.y = 1` is lowered as `x.y=(1)`, i.e. as calling `y=` on `x` with argument `1`
+  // `x.y = 1` is approximated as `x.y = 1`, i.e. as calling `x.y =` assignment with argument `1`
+  // This has the benefit of avoiding unnecessary call resolution
   protected def astForAttributeAssignment(node: AttributeAssignment): Ast = {
-    val call         = SimpleCall(node, List(node.rhs))(node.span)
-    val memberAccess = MemberAccess(node.target, ".", s"${node.attributeName}=")(node.span)
-    astForMemberCallWithoutBlock(call, memberAccess)
+    val memberAccess = MemberAccess(node.target, ".", node.attributeName)(
+      node.span.spanStart(s"${node.target.text}.${node.attributeName}")
+    )
+    astForSingleAssignment(SingleAssignment(memberAccess, "=", node.rhs)(node.span))
   }
 
   protected def astForSimpleIdentifier(node: RubyNode & RubyIdentifier): Ast = {
