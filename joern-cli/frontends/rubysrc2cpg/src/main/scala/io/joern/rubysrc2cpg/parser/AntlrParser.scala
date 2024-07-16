@@ -1,6 +1,6 @@
 package io.joern.rubysrc2cpg.parser
 
-import better.files.{EOF, File}
+import better.files.File
 import org.antlr.v4.runtime.*
 import org.antlr.v4.runtime.atn.{ATN, ATNConfigSet}
 import org.antlr.v4.runtime.dfa.DFA
