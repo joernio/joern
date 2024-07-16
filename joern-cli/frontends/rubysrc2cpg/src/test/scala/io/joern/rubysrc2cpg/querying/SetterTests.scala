@@ -17,13 +17,13 @@ class SetterTests extends RubyCode2CpgFixture {
         xyAssign.code shouldBe "x.y = 1"
 
         val fieldTarget = xyAssign.target.asInstanceOf[Call]
-        fieldTarget.code shouldBe "x.y"
+        fieldTarget.code shouldBe "x.@y"
         fieldTarget.name shouldBe Operators.fieldAccess
 
         inside(fieldTarget.argument.l) {
           case (base: Identifier) :: (field: FieldIdentifier) :: Nil =>
             base.name shouldBe "x"
-            field.canonicalName shouldBe "y"
+            field.canonicalName shouldBe "@y"
           case xs => fail("Expected field access to have two targets")
         }
       case xs => fail("Expected a single assignment to the literal `1`")
