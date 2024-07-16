@@ -63,7 +63,11 @@ trait KeywordHandling { this: RubyLexerBase =>
       return
     }
 
-    if (isPreviousTokenColonOrDot || isNextTokenColonOrDot || !keywordMap.contains(tokenText.toUpperCase)) {
+    if (
+      isPreviousTokenColonOrDot || (isNextTokenColonOrDot && tokenText.toUpperCase != "SELF") || !keywordMap.contains(
+        tokenText.toUpperCase
+      )
+    ) {
       setType(RubyLexer.LOCAL_VARIABLE_IDENTIFIER)
     } else {
       keywordMap.get(tokenText.toUpperCase).foreach(setType)
