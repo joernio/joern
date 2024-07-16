@@ -62,4 +62,17 @@ class IntraMethodDataflowTests extends PhpCode2CpgFixture(runOssDataflow = true)
     val flows  = sink.reachableByFlows(source)
     flows.size shouldBe 1
   }
+
+  "flow from foreach statement should be found" in {
+    val cpg = code("""<?php
+        |foreach ($arr as $key => $value) {
+        |  echo $key;
+        |  echo $value;
+        |}
+        |""".stripMargin)
+    val source = cpg.identifier("arr")
+    val sink   = cpg.call("echo").argument(1)
+    val flows  = sink.reachableByFlows(source)
+    flows.size shouldBe 2
+  }
 }
