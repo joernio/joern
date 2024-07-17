@@ -124,7 +124,7 @@ object RubyIntermediateAst {
   final case class MethodDeclaration(methodName: String, parameters: List[RubyNode], body: RubyNode)(span: TextSpan)
       extends RubyNode(span)
       with ProcedureDeclaration
-      with AllowedTypeDeclarationChild {}
+      with AllowedTypeDeclarationChild
 
   final case class SingletonMethodDeclaration(
     target: RubyNode,
