@@ -21,7 +21,6 @@ class TypeInferencePass(cpg: Cpg) extends ForkJoinParallelCpgPass[Call](cpg) {
     .filterNot(_.fullName.startsWith(Defines.UnresolvedNamespace))
     .filterNot(_.signature.startsWith(Defines.UnresolvedSignature))
     .groupBy(_.name)
-
   private case class NameParts(typeDecl: Option[String], signature: String)
 
   override def generateParts(): Array[Call] = {
@@ -31,7 +30,12 @@ class TypeInferencePass(cpg: Cpg) extends ForkJoinParallelCpgPass[Call](cpg) {
       .toArray
   }
 
-  private def isMatchingMethod(method: Method, call: Call, callNameParts: NameParts): Boolean = {
+  private def isMatchingMethod(
+    method: Method,
+    call: Call,
+    callNameParts: NameParts,
+    ignoreArgTypes: Boolean = false
+  ): Boolean = {
     // An erroneous `this` argument is added for unresolved calls to static methods.
     val argSizeMod           = if (method.modifier.modifierType.iterator.contains(ModifierTypes.STATIC)) 1 else 0
     lazy val methodNameParts = getNameParts(method.name, method.fullName)
@@ -43,7 +47,8 @@ class TypeInferencePass(cpg: Cpg) extends ForkJoinParallelCpgPass[Call](cpg) {
 
     lazy val typeDeclMatches = (callNameParts.typeDecl == methodNameParts.typeDecl)
 
-    parameterSizesMatch && argTypesMatch && typeDeclMatches
+    if ignoreArgTypes then parameterSizesMatch && typeDeclMatches
+    else parameterSizesMatch && argTypesMatch && typeDeclMatches
   }
 
   /** Check if argument types match by comparing exact full names. An argument type of `ANY` always matches.
@@ -81,17 +86,39 @@ class TypeInferencePass(cpg: Cpg) extends ForkJoinParallelCpgPass[Call](cpg) {
     cache.get(callKey).toScala.getOrElse {
       val callNameParts = getNameParts(call.name, call.methodFullName)
       resolvedMethodIndex.get(call.name).flatMap { candidateMethods =>
-        val candidateMethodsIter = candidateMethods.iterator
-        val uniqueMatchingMethod =
-          candidateMethodsIter.find(isMatchingMethod(_, call, callNameParts)).flatMap { method =>
-            val otherMatchingMethod = candidateMethodsIter.find(isMatchingMethod(_, call, callNameParts))
-            // Only return a resulting method if exactly one matching method is found.
-            Option.when(otherMatchingMethod.isEmpty)(method)
-          }
+        val uniqueMatchingMethod = retreiveMatchingMethod(candidateMethods, call, callNameParts) match {
+          case Some(method) => Some(method)
+          case None         => retreiveMatchingMethod(candidateMethods, call, callNameParts, ignoreArgTypes = true)
+        }
         cache.put(callKey, uniqueMatchingMethod)
         uniqueMatchingMethod
       }
     }
+  }
+
+  /** Return a method only if there exists a one to one mapping of call to method node
+    * @param candidateMethods
+    * @param call
+    * @param callNameParts
+    * @param ignoreArgTypes
+    * @return
+    */
+  private def retreiveMatchingMethod(
+    candidateMethods: List[Method],
+    call: Call,
+    callNameParts: NameParts,
+    ignoreArgTypes: Boolean = false
+  ): Option[Method] = {
+    val candidateMethodsIter = candidateMethods.iterator
+    val uniqueMatchingMethod =
+      candidateMethodsIter.find(isMatchingMethod(_, call, callNameParts, ignoreArgTypes = ignoreArgTypes)).flatMap {
+        method =>
+          val otherMatchingMethod =
+            candidateMethodsIter.find(isMatchingMethod(_, call, callNameParts, ignoreArgTypes = ignoreArgTypes))
+          // Only return a resulting method if exactly one matching method is found.
+          Option.when(otherMatchingMethod.isEmpty)(method)
+      }
+    uniqueMatchingMethod
   }
 
   override def runOnPart(diffGraph: DiffGraphBuilder, call: Call): Unit = {
