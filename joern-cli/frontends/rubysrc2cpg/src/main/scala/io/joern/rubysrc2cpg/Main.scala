@@ -40,7 +40,6 @@ final case class Config(
   override def withTypeStubs(value: Boolean): Config = {
     copy(useTypeStubs = value).withInheritedFields(this)
   }
-
 }
 
 private object Frontend {
@@ -70,6 +69,9 @@ private object Frontend {
       opt[Unit]("antlrDebug")
         .hidden()
         .action((_, c) => c.withAntlrDebugging(true)),
+      opt[Unit]("enable-file-content")
+        .action((_, c) => c.withDisableFileContent(false))
+        .text("Enable file content"),
       DependencyDownloadConfig.parserOptions,
       XTypeRecoveryConfig.parserOptionsForParserConfig,
       TypeStubConfig.parserOptions

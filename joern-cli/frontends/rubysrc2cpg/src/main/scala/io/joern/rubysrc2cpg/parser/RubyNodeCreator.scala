@@ -24,7 +24,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     SimpleIdentifier(None)(span.spanStart(classNameGen.fresh))
   }
 
-  private def defaultTextSpan(code: String = ""): TextSpan = TextSpan(None, None, None, None, code)
+  private def defaultTextSpan(code: String = ""): TextSpan = TextSpan(None, None, None, None, None, code)
 
   override def defaultResult(): RubyNode = Unknown()(defaultTextSpan())
 
