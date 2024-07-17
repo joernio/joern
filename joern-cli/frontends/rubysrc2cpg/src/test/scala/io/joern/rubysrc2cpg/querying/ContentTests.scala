@@ -4,6 +4,22 @@ import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.semanticcpg.language.*
 
 class ContentTests extends RubyCode2CpgFixture(disableFileContent = false) {
+  "Content of file" in {
+    val fileContent =
+      """
+        |class Animal
+        |end
+        |
+        |def foo
+        | puts "a"
+        |end
+        |""".stripMargin
+
+    val cpg = code(fileContent, "Test0.rb")
+
+    cpg.file.name("Test0.rb").content.head shouldBe fileContent
+  }
+
   "Content of method" in {
 
     val fooFunc =
