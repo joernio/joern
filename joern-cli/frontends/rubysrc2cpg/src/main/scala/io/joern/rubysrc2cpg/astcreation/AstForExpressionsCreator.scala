@@ -17,7 +17,8 @@ import io.shiftleft.codepropertygraph.generated.{
   PropertyNames
 }
 
-trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
+trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
+  this: AstCreator =>
 
   val tmpGen: FreshNameGenerator[String] = FreshNameGenerator(i => s"<tmp-$i>")
 
@@ -74,7 +75,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   // Helper for nil literals to put in empty clauses
   protected def astForNilLiteral: Ast = Ast(NewLiteral().code("nil").typeFullName(getBuiltInType(Defines.NilClass)))
-  protected def astForNilBlock: Ast   = blockAst(NewBlock(), List(astForNilLiteral))
+
+  protected def astForNilBlock: Ast = blockAst(NewBlock(), List(astForNilLiteral))
 
   protected def astForDynamicLiteral(node: DynamicLiteral): Ast = {
     val fmtValueAsts = node.expressions.map {
@@ -353,6 +355,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
                     x => reassign(node.lhs, node.op, x, transform),
                     elseAssignNil
                   )
+
                 astForExpression(transform(cfNode))
               case _ =>
                 // The if the LHS defines a new variable, put the local variable into scope
@@ -681,6 +684,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       val call = callNode(node, code(node), Operators.conditional, Operators.conditional, DispatchTypes.STATIC_DISPATCH)
       callAst(call, conditionAst :: thenAst :: elseAsts_)
     }
+
     foldIfExpression(builder)(node)
   }
 
@@ -843,9 +847,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   protected def astForFieldAccess(node: MemberAccess): Ast = {
-    val fieldIdentifierAst = Ast(fieldIdentifierNode(node, node.memberName, node.memberName))
+    val memberName         = node.memberName.stripPrefix("@")
+    val fieldIdentifierAst = Ast(fieldIdentifierNode(node, node.memberName, memberName))
     val targetAst          = astForExpression(node.target)
-    val code               = s"${node.target.text}${node.op}${node.memberName}"
+    val code               = s"${node.target.text}${node.op}$memberName"
     val memberType = typeFromCallTarget(node.target)
       .flatMap(scope.tryResolveTypeReference)
       .map(_.fields)
@@ -874,7 +879,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     callAst(splattingCall, argumentAst)
   }
 
-  private def getBinaryOperatorName(op: String): Option[String]     = BinaryOperatorNames.get(op)
-  private def getUnaryOperatorName(op: String): Option[String]      = UnaryOperatorNames.get(op)
+  private def getBinaryOperatorName(op: String): Option[String] = BinaryOperatorNames.get(op)
+
+  private def getUnaryOperatorName(op: String): Option[String] = UnaryOperatorNames.get(op)
+
   private def getAssignmentOperatorName(op: String): Option[String] = AssignmentOperatorNames.get(op)
 }

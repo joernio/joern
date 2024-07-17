@@ -18,7 +18,7 @@ class AttributeAccessorTests extends RubyCode2CpgFixture {
         xyAssign.code shouldBe "x.y = 1"
 
         val fieldTarget = xyAssign.target.asInstanceOf[Call]
-        fieldTarget.code shouldBe "x.@y"
+        fieldTarget.code shouldBe "x.y"
         fieldTarget.name shouldBe Operators.fieldAccess
         fieldTarget.methodFullName shouldBe Operators.fieldAccess
         fieldTarget.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
@@ -27,6 +27,7 @@ class AttributeAccessorTests extends RubyCode2CpgFixture {
           case (base: Identifier) :: (field: FieldIdentifier) :: Nil =>
             base.name shouldBe "x"
             field.canonicalName shouldBe "@y"
+            field.code shouldBe "y"
           case xs => fail("Expected field access to have two targets")
         }
       case xs => fail("Expected a single assignment to the literal `1`")
@@ -35,7 +36,7 @@ class AttributeAccessorTests extends RubyCode2CpgFixture {
 
   "`x.y` is represented by a CALL `x.y`" in {
     val cpg = code("""x = Foo.new
-        |x.y
+        |a = x.y
         |""".stripMargin)
     inside(cpg.call.nameExact("y").l) {
       case xyCall :: Nil =>
