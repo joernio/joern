@@ -105,7 +105,7 @@ class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with In
           | end
           |end
           |
-          |B::bar
+          |B::bar()
           |""".stripMargin,
         "bar/B.rb"
       )
@@ -117,7 +117,7 @@ class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with In
       )
       .moreCode(
         """
-          |B.bar
+          |B.bar()
           |""".stripMargin,
         "Bar.rb"
       )
@@ -180,8 +180,8 @@ class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with In
   "`require_all` on a directory" should {
     val cpg = code("""
         |require_all './dir'
-        |Module1.foo
-        |Module2.foo
+        |Module1.foo()
+        |Module2.foo()
         |""".stripMargin)
       .moreCode(
         """

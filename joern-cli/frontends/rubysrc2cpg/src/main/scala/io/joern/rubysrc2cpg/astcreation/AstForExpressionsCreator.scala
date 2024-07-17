@@ -17,7 +17,8 @@ import io.shiftleft.codepropertygraph.generated.{
   PropertyNames
 }
 
-trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
+trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
+  this: AstCreator =>
 
   val tmpGen: FreshNameGenerator[String] = FreshNameGenerator(i => s"<tmp-$i>")
 
@@ -74,7 +75,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   // Helper for nil literals to put in empty clauses
   protected def astForNilLiteral: Ast = Ast(NewLiteral().code("nil").typeFullName(getBuiltInType(Defines.NilClass)))
-  protected def astForNilBlock: Ast   = blockAst(NewBlock(), List(astForNilLiteral))
+
+  protected def astForNilBlock: Ast = blockAst(NewBlock(), List(astForNilLiteral))
 
   protected def astForDynamicLiteral(node: DynamicLiteral): Ast = {
     val fmtValueAsts = node.expressions.map {
@@ -177,8 +179,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   protected def astForMemberCall(node: MemberCall, isStatic: Boolean = false): Ast = {
 
     def createMemberCall(n: MemberCall): Ast = {
-      val baseAst     = astForExpression(n.target) // this wil be something like self.Foo
-      val receiverAst = astForExpression(MemberAccess(n.target, ".", n.methodName)(n.span))
+      val baseAst = n.target match {
+        case target: MemberAccess => astForFieldAccess(target, stripLeadingAt = true)
+        case _                    => astForExpression(n.target)
+      }
+      val receiverAst = astForFieldAccess(MemberAccess(n.target, ".", n.methodName)(n.span), stripLeadingAt = true)
       val builtinType = n.target match {
         case MemberAccess(_: SelfIdentifier, _, memberName) if isBundledClass(memberName) =>
           Option(prefixAsBundledType(memberName))
@@ -353,6 +358,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
                     x => reassign(node.lhs, node.op, x, transform),
                     elseAssignNil
                   )
+
                 astForExpression(transform(cfNode))
               case _ =>
                 // The if the LHS defines a new variable, put the local variable into scope
@@ -428,11 +434,17 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     }
   }
 
-  // `x.y = 1` is lowered as `x.y=(1)`, i.e. as calling `y=` on `x` with argument `1`
+  // `x.y = 1` is approximated as `x.y = 1`, i.e. as calling `x.y =` assignment with argument `1`
+  // This has the benefit of avoiding unnecessary call resolution
   protected def astForAttributeAssignment(node: AttributeAssignment): Ast = {
-    val call         = SimpleCall(node, List(node.rhs))(node.span)
-    val memberAccess = MemberAccess(node.target, ".", s"${node.attributeName}=")(node.span)
-    astForMemberCallWithoutBlock(call, memberAccess)
+    val memberAccess = MemberAccess(node.target, ".", s"@${node.attributeName}")(
+      node.span.spanStart(s"${node.target.text}.${node.attributeName}")
+    )
+    val op     = Operators.assignment
+    val lhsAst = astForFieldAccess(memberAccess, stripLeadingAt = true)
+    val rhsAst = astForExpression(node.rhs)
+    val call   = callNode(node, code(node), op, op, DispatchTypes.STATIC_DISPATCH)
+    callAst(call, Seq(lhsAst, rhsAst))
   }
 
   protected def astForSimpleIdentifier(node: RubyNode & RubyIdentifier): Ast = {
@@ -689,6 +701,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       val call = callNode(node, code(node), Operators.conditional, Operators.conditional, DispatchTypes.STATIC_DISPATCH)
       callAst(call, conditionAst :: thenAst :: elseAsts_)
     }
+
     foldIfExpression(builder)(node)
   }
 
@@ -783,8 +796,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     if methodFullName != methodFullNameHint then call.possibleTypes(IndexedSeq(methodFullNameHint))
 
-    val receiverAst = astForExpression(
-      MemberAccess(SelfIdentifier()(node.span.spanStart(Defines.Self)), ".", call.name)(node.span)
+    val receiverAst = astForFieldAccess(
+      MemberAccess(SelfIdentifier()(node.span.spanStart(Defines.Self)), ".", call.name)(node.span),
+      stripLeadingAt = true
     )
     val baseAst = Ast(identifierNode(node, Defines.Self, Defines.Self, receiverType))
     callAst(call, argumentAst, Option(baseAst), Option(receiverAst))
@@ -850,16 +864,28 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         astForExpression(assoc)
   }
 
-  protected def astForFieldAccess(node: MemberAccess): Ast = {
-    val fieldIdentifierAst = Ast(fieldIdentifierNode(node, node.memberName, node.memberName))
-    val targetAst          = astForExpression(node.target)
-    val code               = s"${node.target.text}${node.op}${node.memberName}"
+  protected def astForFieldAccess(node: MemberAccess, stripLeadingAt: Boolean = false): Ast = {
+    val (memberName, memberCode) = node.target match {
+      case _ if stripLeadingAt => node.memberName        -> node.memberName.stripPrefix("@")
+      case _: TypeIdentifier   => node.memberName        -> node.memberName
+      case _: SelfIdentifier   => s"@${node.memberName}" -> node.memberName
+      case _ if !node.memberName.startsWith("@") && node.memberName.headOption.exists(_.isLower) =>
+        s"@${node.memberName}" -> node.memberName
+      case _ => node.memberName -> node.memberName
+    }
+
+    val fieldIdentifierAst = Ast(fieldIdentifierNode(node, memberName, memberCode))
+    val targetAst = node.target match {
+      case target: MemberAccess => astForFieldAccess(target, stripLeadingAt = true)
+      case _                    => astForExpression(node.target)
+    }
+    val code = s"${node.target.text}${node.op}$memberCode"
     val memberType = typeFromCallTarget(node.target)
       .flatMap(scope.tryResolveTypeReference)
       .map(_.fields)
       .getOrElse(List.empty)
       .collectFirst {
-        case x if x.name == node.memberName =>
+        case x if x.name == memberName =>
           scope.tryResolveTypeReference(x.typeName).map(_.name).getOrElse(Defines.Any)
       }
       .orElse(Option(Defines.Any))
@@ -882,7 +908,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     callAst(splattingCall, argumentAst)
   }
 
-  private def getBinaryOperatorName(op: String): Option[String]     = BinaryOperatorNames.get(op)
-  private def getUnaryOperatorName(op: String): Option[String]      = UnaryOperatorNames.get(op)
+  private def getBinaryOperatorName(op: String): Option[String] = BinaryOperatorNames.get(op)
+
+  private def getUnaryOperatorName(op: String): Option[String] = UnaryOperatorNames.get(op)
+
   private def getAssignmentOperatorName(op: String): Option[String] = AssignmentOperatorNames.get(op)
 }
