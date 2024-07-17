@@ -190,7 +190,15 @@ object RubySrc2Cpg {
       .map { fileName => () =>
         resourceManagedParser.parse(File(config.inputPath), fileName) match {
           case Failure(exception) => throw exception
-          case Success(ctx)       => new AstCreator(fileName, ctx, projectRoot)(config.schemaValidation)
+          case Success(ctx) =>
+            val fileContent = (File(config.inputPath) / fileName).contentAsString
+            new AstCreator(
+              fileName,
+              ctx,
+              projectRoot,
+              enableFileContents = !config.disableFileContent,
+              fileContent = fileContent
+            )(config.schemaValidation)
         }
       }
       .iterator

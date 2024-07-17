@@ -272,7 +272,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   private def generateTextSpan(node: RubyNode, text: String): TextSpan = {
-    TextSpan(node.span.line, node.span.column, node.span.lineEnd, node.span.columnEnd, text)
+    TextSpan(node.span.line, node.span.column, node.span.lineEnd, node.span.columnEnd, node.span.offset, text)
   }
 
   protected def statementForOptionalParam(node: OptionalParameter): RubyNode = {
@@ -461,7 +461,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           x
         }
         .map(statementForOptionalParam)
-    )(TextSpan(None, None, None, None, ""))
+    )(TextSpan(None, None, None, None, None, ""))
   }
 
   private def astForMethodBody(

@@ -602,7 +602,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           case (s"${GlobalTypes.`kernelPrefix`}.Integer", s"${GlobalTypes.`kernelPrefix`}.Integer") =>
             generateRange(lb.span.text.toInt, ub.span.text.toInt, node.rangeOperator.exclusive)
               .map(x =>
-                StaticLiteral(lb.typeFullName)(TextSpan(lb.line, lb.column, lb.lineEnd, lb.columnEnd, x.toString))
+                StaticLiteral(lb.typeFullName)(TextSpan(lb.line, lb.column, lb.lineEnd, lb.columnEnd, None, x.toString))
               )
               .toList
           case (s"${GlobalTypes.`kernelPrefix`}.String", s"${GlobalTypes.`kernelPrefix`}.String") =>
@@ -619,7 +619,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
             generateRange(lbVal(0).toInt, ubVal(0).toInt, node.rangeOperator.exclusive)
               .map(x =>
                 StaticLiteral(lb.typeFullName)(
-                  TextSpan(lb.line, lb.column, lb.lineEnd, lb.columnEnd, s"\'${x.toChar.toString}\'")
+                  TextSpan(lb.line, lb.column, lb.lineEnd, lb.columnEnd, None, s"\'${x.toChar.toString}\'")
                 )
               )
               .toList
@@ -648,9 +648,18 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     astForExpression(
       SingleAssignment(
         IndexAccess(
-          SimpleIdentifier()(TextSpan(keyNode.line, keyNode.column, keyNode.lineEnd, keyNode.columnEnd, tmp)),
+          SimpleIdentifier()(TextSpan(keyNode.line, keyNode.column, keyNode.lineEnd, keyNode.columnEnd, None, tmp)),
           List(keyNode)
-        )(TextSpan(keyNode.line, keyNode.column, keyNode.lineEnd, keyNode.columnEnd, s"$tmp[${keyNode.span.text}]")),
+        )(
+          TextSpan(
+            keyNode.line,
+            keyNode.column,
+            keyNode.lineEnd,
+            keyNode.columnEnd,
+            None,
+            s"$tmp[${keyNode.span.text}]"
+          )
+        ),
         "=",
         valueNode
       )(
@@ -659,6 +668,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           keyNode.column,
           keyNode.lineEnd,
           keyNode.columnEnd,
+          None,
           s"$tmp[${keyNode.span.text}] = ${valueNode.span.text}"
         )
       )

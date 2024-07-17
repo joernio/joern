@@ -38,7 +38,7 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
   }
 
   def withSummary(newSummary: RubyProgramSummary): AstCreator = {
-    AstCreator(fileName, programCtx, projectRoot, newSummary)
+    AstCreator(fileName, programCtx, projectRoot, newSummary, enableFileContents, fileContent)
   }
 
   private def summarize(cpg: Cpg, asExternal: Boolean): RubyProgramSummary = {

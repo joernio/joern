@@ -12,9 +12,10 @@ object RubyIntermediateAst {
     column: Option[Int],
     lineEnd: Option[Int],
     columnEnd: Option[Int],
+    offset: Option[(Int, Int)],
     text: String
   ) {
-    def spanStart(newText: String = ""): TextSpan = TextSpan(line, column, line, column, newText)
+    def spanStart(newText: String = ""): TextSpan = TextSpan(line, column, line, column, offset, newText)
   }
 
   sealed class RubyNode(val span: TextSpan) {
@@ -25,6 +26,8 @@ object RubyIntermediateAst {
     def lineEnd: Option[Int] = span.lineEnd
 
     def columnEnd: Option[Int] = span.columnEnd
+
+    def offset: Option[(Int, Int)] = span.offset
 
     def text: String = span.text
   }
@@ -121,7 +124,7 @@ object RubyIntermediateAst {
   final case class MethodDeclaration(methodName: String, parameters: List[RubyNode], body: RubyNode)(span: TextSpan)
       extends RubyNode(span)
       with ProcedureDeclaration
-      with AllowedTypeDeclarationChild
+      with AllowedTypeDeclarationChild {}
 
   final case class SingletonMethodDeclaration(
     target: RubyNode,
