@@ -300,6 +300,27 @@ class MacroHandlingTests extends C2CpgSuite {
   }
 
   "MacroHandlingTests10" should {
+
+    "have ast parents" in {
+      val cpg = code("""
+          |#define FFSWAP(type,a,b) do{type SWAP_tmp=b; b=a; a=SWAP_tmp;}while(0)
+          |struct elem_to_channel {
+          |    uint64_t av_position;
+          |    uint8_t syn_ele;
+          |    uint8_t elem_id;
+          |    uint8_t aac_position;
+          |};
+          |int main () {
+          |  struct elem_to_channel e2c_vec[4 * 1] = { { 0 } };
+          |  int i = 1;
+          |  FFSWAP(struct elem_to_channel, e2c_vec[i - 1], e2c_vec[i]);
+          |}
+          |""".stripMargin)
+      cpg.local.count(l => l._astIn.isEmpty) shouldBe 0
+      cpg.local.count(l => l._astIn.size == 1) shouldBe 4
+      cpg.local.count(l => l._astIn.size > 1) shouldBe 0
+    }
+
     "only have locals with exactly one ast parent" in {
       val cpg = code(
         """

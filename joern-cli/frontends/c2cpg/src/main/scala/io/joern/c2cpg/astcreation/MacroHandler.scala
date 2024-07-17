@@ -1,6 +1,7 @@
 package io.joern.c2cpg.astcreation
 
 import io.joern.x2cpg.Ast
+import io.joern.x2cpg.AstEdge
 import io.joern.x2cpg.ValidationMode
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.nodes.AstNodeNew
@@ -53,8 +54,12 @@ trait MacroHandler(implicit withSchemaValidation: ValidationMode) { this: AstCre
           case Some(_: NewBlock) => newAst
           case _                 => blockAst(blockNode(node), List(newAst))
         }
-        setArgumentIndices(Seq(childAst))
-        callAst.withChild(childAst)
+        val lostLocals = ast.edges.collect {
+          case AstEdge(_, dst: NewLocal) if !newAst.edges.exists(_.dst == dst) => Ast(dst)
+        }.distinct
+        val childrenAsts = lostLocals :+ childAst
+        setArgumentIndices(childrenAsts.toList)
+        callAst.withChildren(childrenAsts)
       case None => ast
     }
   }
