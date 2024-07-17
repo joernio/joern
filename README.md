@@ -23,6 +23,7 @@ Specification: https://cpg.joern.io
 
 ## News / Changelog
 
+- Joern v4.0.0 [migrates from overflowdb to flatgraph](changelog/4.0.0-flatgraph.md)
 - Joern v2.0.0 [upgrades from Scala2 to Scala3](changelog/2.0.0-scala3.md)
 - Joern v1.2.0 removes the `overflowdb.traversal.Traversal` class. This change is not completely backwards compatible. See [here](changelog/traversal_removal.md) for a detailed writeup.
 

@@ -4,22 +4,23 @@ import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.cpgloading.CpgLoaderConfig
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
 
 object CpgBasedTool {
+
+  def loadFromFile(filename: String): Cpg =
+    CpgLoader.load(filename)
 
   /** Load code property graph from overflowDB
     *
     * @param filename
     *   name of the file that stores the CPG
     */
-  def loadFromOdb(filename: String): Cpg = {
-    val odbConfig = overflowdb.Config.withDefaults().withStorageLocation(filename)
-    val config    = CpgLoaderConfig().withOverflowConfig(odbConfig).doNotCreateIndexesOnLoad
-    io.shiftleft.codepropertygraph.cpgloading.CpgLoader.loadFromOverflowDb(config)
-  }
+  @deprecated("use `loadFromFile` instead", "joern v3")
+  def loadFromOdb(filename: String): Cpg =
+    loadFromFile(filename)
 
   /** Add the data flow layer to the CPG if it does not exist yet.
     */

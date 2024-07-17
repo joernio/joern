@@ -525,7 +525,7 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture() {
     "propagate this QueryBuilder type to the identifier assigned to the inherited call for the wrapped `createQueryBuilder`" in {
       cpg.method
         .nameExact("findSomething")
-        ._containsOut
+        .containsOut
         .collectAll[Identifier]
         .nameExact("queryBuilder")
         .typeFullName

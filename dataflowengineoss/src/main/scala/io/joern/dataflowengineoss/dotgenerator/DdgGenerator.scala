@@ -2,7 +2,7 @@ package io.joern.dataflowengineoss.dotgenerator
 
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Properties}
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.semanticcpg.dotgenerator.DotSerializer.{Edge, Graph}
@@ -89,7 +89,16 @@ class DdgGenerator {
     val allInEdges = v
       .inE(EdgeTypes.REACHING_DEF)
       .map(x =>
-        Edge(x.outNode.asInstanceOf[StoredNode], v, srcVisible = true, x.property(Properties.Variable), edgeType)
+        // note: this looks strange, but let me explain...
+        // in overflowdb, edges were allowed multiple properties and this used to be `x.property(Properties.VARIABLE)`
+        // in flatgraph an edge may have zero or one properties and they're not named...
+        // in this case we know that we're dealing with ReachingDef edges which has the `variable` property
+        val variablePropertyMaybe = x.property match {
+          case null                     => null
+          case variableProperty: String => variableProperty
+          case _                        => null
+        }
+        Edge(x.src.asInstanceOf[StoredNode], v, srcVisible = true, variablePropertyMaybe, edgeType)
       )
 
     v match {

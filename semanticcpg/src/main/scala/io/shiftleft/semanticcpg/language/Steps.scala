@@ -1,9 +1,9 @@
 package io.shiftleft.semanticcpg.language
 
-import io.shiftleft.codepropertygraph.generated.nodes.AbstractNode
+import io.shiftleft.codepropertygraph.generated.nodes.{AbstractNode, StoredNode}
 import org.json4s.native.Serialization.{write, writePretty}
 import org.json4s.{CustomSerializer, Extraction, Formats}
-import io.shiftleft.codepropertygraph.generated.help.Doc
+import io.shiftleft.codepropertygraph.generated.help.{Doc, Traversal}
 import replpp.Colors
 import replpp.Operators.*
 
@@ -14,6 +14,7 @@ import scala.jdk.CollectionConverters.*
 /** Base class for our DSL These are the base steps available in all steps of the query language. There are no
   * constraints on the element types, unlike e.g. [[NodeSteps]]
   */
+@Traversal(elementType = classOf[AnyRef])
 class Steps[A](val traversal: Iterator[A]) extends AnyVal {
 
   /** Execute the traversal and convert it to a mutable buffer
@@ -82,7 +83,7 @@ object Steps {
   private lazy val nodeSerializer = new CustomSerializer[AbstractNode](implicit format =>
     (
       { case _ => ??? },
-      { case node: (AbstractNode & Product) =>
+      { case node: AbstractNode =>
         val elementMap = (0 until node.productArity).map { i =>
           val label   = node.productElementName(i)
           val element = node.productElement(i)

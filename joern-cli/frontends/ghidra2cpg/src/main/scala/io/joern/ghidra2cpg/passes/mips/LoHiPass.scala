@@ -23,6 +23,9 @@ class LoHiPass(cpg: Cpg) extends ForkJoinParallelCpgPass[(Call, Call)](cpg) {
   }.toArray
 
   override def runOnPart(diffGraph: DiffGraphBuilder, pair: (Call, Call)): Unit = {
-    diffGraph.addEdge(pair._1, pair._2, EdgeTypes.REACHING_DEF, PropertyNames.VARIABLE, pair._1.code)
+    // in flatgraph an edge may have zero or one properties and they're not named...
+    // in this case we know that we're dealing with ReachingDef edges which has the `variable` property
+    val variableProperty = pair._1.code
+    diffGraph.addEdge(pair._1, pair._2, EdgeTypes.REACHING_DEF, variableProperty)
   }
 }

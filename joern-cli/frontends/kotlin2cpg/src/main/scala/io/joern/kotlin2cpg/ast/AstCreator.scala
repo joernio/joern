@@ -13,11 +13,11 @@ import io.joern.x2cpg.Defines
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.datastructures.Stack.*
+import io.joern.x2cpg.utils.IntervalKeyPool
 import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement

@@ -14,7 +14,8 @@ import org.scalatest.Tag
 import java.io.File
 import org.scalatest.Inside
 
-trait RubyFrontend(useDeprecatedFrontend: Boolean, withDownloadDependencies: Boolean) extends LanguageFrontend {
+trait RubyFrontend(useDeprecatedFrontend: Boolean, withDownloadDependencies: Boolean, disableFileContent: Boolean)
+    extends LanguageFrontend {
   override val fileSuffix: String = ".rb"
 
   implicit val config: Config =
@@ -23,6 +24,7 @@ trait RubyFrontend(useDeprecatedFrontend: Boolean, withDownloadDependencies: Boo
       .getOrElse(Config().withSchemaValidation(ValidationMode.Enabled))
       .withUseDeprecatedFrontend(useDeprecatedFrontend)
       .withDownloadDependencies(withDownloadDependencies)
+      .withDisableFileContent(disableFileContent)
 
   override def execute(sourceCodeFile: File): Cpg = {
     new RubySrc2Cpg().createCpg(sourceCodeFile.getAbsolutePath).get
@@ -33,9 +35,10 @@ trait RubyFrontend(useDeprecatedFrontend: Boolean, withDownloadDependencies: Boo
 class DefaultTestCpgWithRuby(
   packageTable: Option[PackageTable],
   useDeprecatedFrontend: Boolean,
-  downloadDependencies: Boolean = false
+  downloadDependencies: Boolean = false,
+  disableFileContent: Boolean = true
 ) extends DefaultTestCpg
-    with RubyFrontend(useDeprecatedFrontend, downloadDependencies)
+    with RubyFrontend(useDeprecatedFrontend, downloadDependencies, disableFileContent)
     with SemanticTestCpg {
 
   override protected def applyPasses(): Unit = {
@@ -57,11 +60,12 @@ class RubyCode2CpgFixture(
   withPostProcessing: Boolean = false,
   withDataFlow: Boolean = false,
   downloadDependencies: Boolean = false,
+  disableFileContent: Boolean = true,
   extraFlows: List[FlowSemantic] = List.empty,
   packageTable: Option[PackageTable] = None,
   useDeprecatedFrontend: Boolean = false
 ) extends Code2CpgFixture(() =>
-      new DefaultTestCpgWithRuby(packageTable, useDeprecatedFrontend, downloadDependencies)
+      new DefaultTestCpgWithRuby(packageTable, useDeprecatedFrontend, downloadDependencies, disableFileContent)
         .withOssDataflow(withDataFlow)
         .withExtraFlows(extraFlows)
         .withPostProcessingPasses(withPostProcessing)
@@ -77,9 +81,12 @@ class RubyCode2CpgFixture(
     }
 }
 
-class RubyCfgTestCpg(useDeprecatedFrontend: Boolean = true, downloadDependencies: Boolean = false)
-    extends CfgTestCpg
-    with RubyFrontend(useDeprecatedFrontend, downloadDependencies) {
+class RubyCfgTestCpg(
+  useDeprecatedFrontend: Boolean = true,
+  downloadDependencies: Boolean = false,
+  disableFileContent: Boolean = true
+) extends CfgTestCpg
+    with RubyFrontend(useDeprecatedFrontend, downloadDependencies, disableFileContent) {
   override val fileSuffix: String = ".rb"
 
 }
