@@ -272,7 +272,7 @@ object XTypeRecovery {
   // the symbol table then perhaps this would work out better
   implicit class AllNodeTypesFromNodeExt(x: StoredNode) {
     def allTypes: Iterator[String] =
-      (x.propertyOption(Properties.TypeFullName).orElse("ANY") +:
+      (x.propertyOption(Properties.TypeFullName).getOrElse("ANY") +:
         (x.property(Properties.DynamicTypeHintFullName) ++
           x.property(Properties.PossibleTypes))).iterator
 
@@ -820,7 +820,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       case ::(_: TypeRef, ::(f: FieldIdentifier, _)) =>
         f.canonicalName
       case xs =>
-        logger.warn(s"Unhandled field structure ${xs.map(x => (x.label, x.code)).mkString(",")} @ ${debugLocation(fa)}")
+        val debugInfo = xs.collect { case x: CfgNode => (x.label(), x.code) }.mkString(",")
+        logger.warn(s"Unhandled field structure $debugInfo @ ${debugLocation(fa)}")
         wrapName("<unknown>")
     }
   }
@@ -1242,7 +1243,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 
     val hasUnknownTypeFullName = storedNode
       .propertyOption(Properties.TypeFullName)
-      .orElse(Defines.Any)
+      .getOrElse(Defines.Any)
       .matches(XTypeRecovery.unknownTypePattern.pattern.pattern())
 
     if (types.nonEmpty && (hasUnknownTypeFullName || types.toSet != existingTypes)) {
@@ -1282,11 +1283,11 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   protected def storeDefaultTypeInfo(n: StoredNode, types: Seq[String]): Unit =
     val hasUnknownType =
       n.propertyOption(Properties.TypeFullName)
-        .orElse(Defines.Any)
+        .getOrElse(Defines.Any)
         .matches(XTypeRecovery.unknownTypePattern.pattern.pattern())
 
     if (types.toSet != n.getKnownTypes || (hasUnknownType && types.nonEmpty)) {
-      setTypes(n, (n.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty) ++ types).distinct)
+      setTypes(n, (n.propertyOption(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME).getOrElse(Seq.empty) ++ types).distinct)
     }
 
   /** If there is only 1 type hint then this is set to the `typeFullName` property and `dynamicTypeHintFullName` is

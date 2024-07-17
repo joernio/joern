@@ -1,6 +1,6 @@
 package io.joern
 
-import overflowdb.traversal.help.Table.AvailableWidthProvider
+import flatgraph.help.Table.AvailableWidthProvider
 import replpp.Operators.*
 import replpp.Colors
 

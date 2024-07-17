@@ -9,6 +9,6 @@ set -x #verbose on
 # we should now be able to use our new `EXAMPLE_NODE` node
 mkdir -p scripts
 echo 'assert(nodes.ExampleNode.Label == "EXAMPLE_NODE")
-assert(nodes.ExampleNode.PropertyNames.all.contains("EXAMPLE_PROPERTY"))' > scripts/SchemaExtenderTest.sc
+assert(nodes.ExampleNode.PropertyNames.ExampleProperty == "EXAMPLE_PROPERTY")' > scripts/SchemaExtenderTest.sc
 ./joern --script scripts/SchemaExtenderTest.sc
 
