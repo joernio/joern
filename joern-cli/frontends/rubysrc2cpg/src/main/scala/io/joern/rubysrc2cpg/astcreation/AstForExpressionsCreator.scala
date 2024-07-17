@@ -179,8 +179,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   protected def astForMemberCall(node: MemberCall, isStatic: Boolean = false): Ast = {
 
     def createMemberCall(n: MemberCall): Ast = {
-      val baseAst     = astForExpression(n.target) // this wil be something like self.Foo
-      val receiverAst = astForExpression(MemberAccess(n.target, ".", n.methodName)(n.span))
+      val baseAst = n.target match {
+        case target: MemberAccess => astForFieldAccess(target, stripLeadingAt = true)
+        case _                    => astForExpression(n.target)
+      }
+      val receiverAst = astForFieldAccess(MemberAccess(n.target, ".", n.methodName)(n.span), stripLeadingAt = true)
       val builtinType = n.target match {
         case MemberAccess(_: SelfIdentifier, _, memberName) if isBundledClass(memberName) =>
           Option(prefixAsBundledType(memberName))
@@ -437,7 +440,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val memberAccess = MemberAccess(node.target, ".", s"@${node.attributeName}")(
       node.span.spanStart(s"${node.target.text}.${node.attributeName}")
     )
-    astForSingleAssignment(SingleAssignment(memberAccess, "=", node.rhs)(node.span))
+    val op     = Operators.assignment
+    val lhsAst = astForFieldAccess(memberAccess, stripLeadingAt = true)
+    val rhsAst = astForExpression(node.rhs)
+    val call   = callNode(node, code(node), op, op, DispatchTypes.STATIC_DISPATCH)
+    callAst(call, Seq(lhsAst, rhsAst))
   }
 
   protected def astForSimpleIdentifier(node: RubyNode & RubyIdentifier): Ast = {
@@ -779,8 +786,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
 
     if methodFullName != methodFullNameHint then call.possibleTypes(IndexedSeq(methodFullNameHint))
 
-    val receiverAst = astForExpression(
-      MemberAccess(SelfIdentifier()(node.span.spanStart(Defines.Self)), ".", call.name)(node.span)
+    val receiverAst = astForFieldAccess(
+      MemberAccess(SelfIdentifier()(node.span.spanStart(Defines.Self)), ".", call.name)(node.span),
+      stripLeadingAt = true
     )
     val baseAst = Ast(identifierNode(node, Defines.Self, Defines.Self, receiverType))
     callAst(call, argumentAst, Option(baseAst), Option(receiverAst))
@@ -846,17 +854,28 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         astForExpression(assoc)
   }
 
-  protected def astForFieldAccess(node: MemberAccess): Ast = {
-    val memberName         = node.memberName.stripPrefix("@")
-    val fieldIdentifierAst = Ast(fieldIdentifierNode(node, node.memberName, memberName))
-    val targetAst          = astForExpression(node.target)
-    val code               = s"${node.target.text}${node.op}$memberName"
+  protected def astForFieldAccess(node: MemberAccess, stripLeadingAt: Boolean = false): Ast = {
+    val (memberName, memberCode) = node.target match {
+      case _ if stripLeadingAt => node.memberName        -> node.memberName.stripPrefix("@")
+      case _: TypeIdentifier   => node.memberName        -> node.memberName
+      case _: SelfIdentifier   => s"@${node.memberName}" -> node.memberName
+      case _ if !node.memberName.startsWith("@") && node.memberName.headOption.exists(_.isLower) =>
+        s"@${node.memberName}" -> node.memberName
+      case _ => node.memberName -> node.memberName
+    }
+
+    val fieldIdentifierAst = Ast(fieldIdentifierNode(node, memberName, memberCode))
+    val targetAst = node.target match {
+      case target: MemberAccess => astForFieldAccess(target, stripLeadingAt = true)
+      case _                    => astForExpression(node.target)
+    }
+    val code = s"${node.target.text}${node.op}$memberCode"
     val memberType = typeFromCallTarget(node.target)
       .flatMap(scope.tryResolveTypeReference)
       .map(_.fields)
       .getOrElse(List.empty)
       .collectFirst {
-        case x if x.name == node.memberName =>
+        case x if x.name == memberName =>
           scope.tryResolveTypeReference(x.typeName).map(_.name).getOrElse(Defines.Any)
       }
       .orElse(Option(Defines.Any))

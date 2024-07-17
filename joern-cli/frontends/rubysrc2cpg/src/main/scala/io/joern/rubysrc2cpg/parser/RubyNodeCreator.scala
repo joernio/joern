@@ -741,10 +741,11 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
       } else {
         if (!hasArguments) {
           if (methodName.headOption.exists(_.isUpper)) {
+            // This would be a symbol-like member
             return MemberAccess(target, ctx.op.getText, methodName)(ctx.toTextSpan)
           } else {
-            val a = MemberCall(target, ctx.op.getText, methodName, Nil)(ctx.toTextSpan)
-            return MemberCall(target, ctx.op.getText, methodName, Nil)(ctx.toTextSpan)
+            // Approximate this as a field-load
+            return MemberAccess(target, ctx.op.getText, methodName)(ctx.toTextSpan)
           }
         } else {
           return MemberCall(target, ctx.op.getText, methodName, ctx.argumentWithParentheses().arguments.map(visit))(

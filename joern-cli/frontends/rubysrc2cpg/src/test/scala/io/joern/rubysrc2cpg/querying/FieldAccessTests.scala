@@ -8,41 +8,24 @@ import io.joern.rubysrc2cpg.passes.Defines.Main
 
 class FieldAccessTests extends RubyCode2CpgFixture {
 
-  "`x.y` is represented by an `x.y` CALL without arguments" in {
+  "`x.y` is represented by a `x.y` field access" in {
     val cpg = code("""
-                     |x.y
-                     |""".stripMargin)
+        |x = Foo.new
+        |x.y
+        |""".stripMargin)
 
-    inside(cpg.call("y").headOption) {
+    inside(cpg.fieldAccess.code("x.y").headOption) {
       case Some(xyCall) =>
-        xyCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-        xyCall.lineNumber shouldBe Some(2)
+        xyCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        xyCall.name shouldBe Operators.fieldAccess
+        xyCall.methodFullName shouldBe Operators.fieldAccess
+        xyCall.lineNumber shouldBe Some(3)
         xyCall.code shouldBe "x.y"
-
-        inside(xyCall.argumentOption(0)) {
-          case Some(receiver: Call) =>
-            receiver.name shouldBe Operators.fieldAccess
-            receiver.code shouldBe "self.x"
-          case _ => fail("Expected an field access receiver")
-        }
-
-        inside(xyCall.receiver.headOption) {
-          case Some(xyBase: Call) =>
-            xyBase.name shouldBe Operators.fieldAccess
-            xyBase.code shouldBe "x.y"
-
-            val selfX = xyBase.argument(1).asInstanceOf[Call]
-            selfX.code shouldBe "self.x"
-
-            val yIdentifier = xyBase.argument(2).asInstanceOf[FieldIdentifier]
-            yIdentifier.code shouldBe "y"
-          case _ => fail("Expected an field access receiver")
-        }
-      case None => fail("Expected a call with the name `y`")
+      case None => fail("Expected a field access with the code `x.y`")
     }
   }
 
-  "`self.x` should correctly create a `this` node field base" in {
+  "`self.x` should correctly create a `self` node field base" in {
 
     // Example from railsgoat
     val cpg = code("""
@@ -56,17 +39,21 @@ class FieldAccessTests extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
-    inside(cpg.call.name("sick_days_earned").l) {
+    inside(cpg.fieldAccess.code("self.sick_days_earned").l) {
       case sickDays :: _ =>
         sickDays.code shouldBe "self.sick_days_earned"
-        sickDays.name shouldBe "sick_days_earned"
-        sickDays.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        sickDays.name shouldBe Operators.fieldAccess
+        sickDays.methodFullName shouldBe Operators.fieldAccess
+        sickDays.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
         inside(sickDays.argument.l) {
-          case (self: Identifier) :: Nil =>
+          case (self: Identifier) :: (sickDaysId: FieldIdentifier) :: Nil =>
             self.name shouldBe "self"
             self.code shouldBe "self"
             self.typeFullName should endWith("PaidTimeOff")
+
+            sickDaysId.canonicalName shouldBe "@sick_days_earned"
+            sickDaysId.code shouldBe "sick_days_earned"
           case xs => fail(s"Expected exactly two field access arguments, instead got [${xs.code.mkString(", ")}]")
         }
       case Nil => fail("Expected at least one call with `self` base, but got none.")
@@ -84,8 +71,8 @@ class FieldAccessTests extends RubyCode2CpgFixture {
         |  end
         |end
         |
-        |Base64::decode64 # self.Base64.decode64()
-        |Baz::func1       # self.Baz.func1()
+        |Base64::decode64() # self.Base64.decode64()
+        |Baz::func1()       # self.Baz.func1()
         |
         |# self.Foo = TYPE_REF Foo<class>
         |class Foo
@@ -121,7 +108,7 @@ class FieldAccessTests extends RubyCode2CpgFixture {
     }
 
     "give external type accesses on script-level the `self.` base" in {
-      val call = cpg.method.isModule.call.codeExact("Base64::decode64").head
+      val call = cpg.method.isModule.call.codeExact("Base64::decode64()").head
       call.name shouldBe "decode64"
 
       val base = call.argument(0).asInstanceOf[Call]
@@ -142,7 +129,7 @@ class FieldAccessTests extends RubyCode2CpgFixture {
     }
 
     "give internal type accesses on script-level the `self.` base" in {
-      val call = cpg.method.isModule.call.codeExact("Baz::func1").head
+      val call = cpg.method.isModule.call.codeExact("Baz::func1()").head
       call.name shouldBe "func1"
 
       val base = call.argument(0).asInstanceOf[Call]
@@ -214,7 +201,7 @@ class FieldAccessTests extends RubyCode2CpgFixture {
         |    end
         |    module C
         |      # TYPE_REF A <fieldAccess> B <fieldAccess> func
-        |      A::B::func
+        |      A::B::func()
         |    end
         |  end
         |end

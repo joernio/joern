@@ -34,17 +34,28 @@ class AttributeAccessorTests extends RubyCode2CpgFixture {
     }
   }
 
-  "`x.y` is represented by a CALL `x.y`" in {
+  "`x.y` is represented by a field access `x.y`" in {
     val cpg = code("""x = Foo.new
         |a = x.y
+        |b = x.z()
         |""".stripMargin)
-    inside(cpg.call.nameExact("y").l) {
+    // Test the field access
+    inside(cpg.fieldAccess.lineNumber(2).codeExact("x.y").l) {
       case xyCall :: Nil =>
         xyCall.lineNumber shouldBe Some(2)
         xyCall.code shouldBe "x.y"
-        xyCall.methodFullName shouldBe Defines.DynamicCallUnknownFullName
-        xyCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
-      case xs => fail("Expected a single assignment to the literal `1`")
+        xyCall.methodFullName shouldBe Operators.fieldAccess
+        xyCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      case xs => fail("Expected a single field access for `x.y`")
+    }
+    // Test an explicit call with parenthesis
+    inside(cpg.call("z").lineNumber(3).l) {
+      case xzCall :: Nil =>
+        xzCall.lineNumber shouldBe Some(3)
+        xzCall.code shouldBe "x.z()"
+        xzCall.methodFullName shouldBe Defines.DynamicCallUnknownFullName
+        xzCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      case xs => fail("Expected a single call for `x.z()`")
     }
   }
 
