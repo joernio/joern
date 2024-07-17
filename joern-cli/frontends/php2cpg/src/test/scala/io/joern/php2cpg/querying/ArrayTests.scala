@@ -79,7 +79,7 @@ class ArrayTests extends PhpCode2CpgFixture {
 
       inside(arrayBlock.astChildren.l) {
         case List(initAssign: Call, aAssign: Call, bAssign: Call, tmpIdent: Identifier) =>
-          initAssign.code shouldBe "$tmp0 = []"
+          initAssign.code shouldBe "$tmp0 = array()"
           initAssign.lineNumber shouldBe Some(2)
 
           aAssign.code shouldBe "$tmp0[\"A\"] = 1"
@@ -109,7 +109,7 @@ class ArrayTests extends PhpCode2CpgFixture {
 
       inside(arrayBlock.astChildren.l) {
         case List(initAssign: Call, aAssign: Call, bAssign: Call, tmpIdent: Identifier) =>
-          initAssign.code shouldBe "$tmp0 = []"
+          initAssign.code shouldBe "$tmp0 = array()"
           initAssign.lineNumber shouldBe Some(2)
 
           aAssign.code shouldBe "$tmp0[0] = \"A\""
@@ -137,7 +137,7 @@ class ArrayTests extends PhpCode2CpgFixture {
       tmpLocal.code shouldBe "$tmp0"
 
       inside(arrayBlock.astChildren.l) { case List(initAssign: Call, assign: Call, tmpIdent: Identifier) =>
-        initAssign.code shouldBe "$tmp0 = []"
+        initAssign.code shouldBe "$tmp0 = array()"
         initAssign.lineNumber shouldBe Some(2)
 
         assign.code shouldBe "$tmp0[2] = \"A\""
@@ -185,7 +185,7 @@ class ArrayTests extends PhpCode2CpgFixture {
               eightAssign: Call,
               tmpIdent: Identifier
             ) =>
-          initAssign.code shouldBe "$tmp0 = []"
+          initAssign.code shouldBe "$tmp0 = array()"
           initAssign.lineNumber shouldBe Some(2)
 
           aAssign.code shouldBe "$tmp0[\"A\"] = \"B\""

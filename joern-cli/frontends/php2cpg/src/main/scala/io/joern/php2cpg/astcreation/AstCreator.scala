@@ -1419,11 +1419,21 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
     def newTmpIdentifier: Ast = Ast(identifierNode(expr, tmpName, s"$$$tmpName", TypeConstants.Array))
 
     val tmpIdentifierAssignNode = {
-      val emptyArrayCall = callAst(newOperatorCallNode(PhpOperators.emptyArray, s"[]", line = line(expr)))
+      // use array() function to create an empty array. see https://www.php.net/manual/zh/function.array.php
+      val initArrayNode = callNode(
+        expr,
+        "array()",
+        "array",
+        "array",
+        DispatchTypes.STATIC_DISPATCH,
+        Some("array()"),
+        Some(TypeConstants.Array)
+      )
+      val initArrayCallAst = callAst(initArrayNode)
 
-      val assignCode = s"$$$tmpName = ${emptyArrayCall.rootCodeOrEmpty}"
+      val assignCode = s"$$$tmpName = ${initArrayCallAst.rootCodeOrEmpty}"
       val assignNode = newOperatorCallNode(Operators.assignment, assignCode, line = line(expr))
-      callAst(assignNode, newTmpIdentifier :: emptyArrayCall :: Nil)
+      callAst(assignNode, newTmpIdentifier :: initArrayCallAst :: Nil)
     }
 
     val itemAssignments = expr.items.flatMap {
