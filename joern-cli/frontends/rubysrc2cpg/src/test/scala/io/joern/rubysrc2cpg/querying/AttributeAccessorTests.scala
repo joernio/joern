@@ -34,8 +34,7 @@ class AttributeAccessorTests extends RubyCode2CpgFixture {
   }
 
   "`x.y` is represented by a CALL `x.y`" in {
-    val cpg = code(
-      """x = Foo.new
+    val cpg = code("""x = Foo.new
         |x.y
         |""".stripMargin)
     inside(cpg.call.nameExact("y").l) {
