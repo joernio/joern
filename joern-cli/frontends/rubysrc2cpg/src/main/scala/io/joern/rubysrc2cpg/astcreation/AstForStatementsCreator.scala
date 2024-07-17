@@ -414,6 +414,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           whenClauses.map(transform),
           elseClause.map(transform).orElse(defaultElseBranch(node.span))
         )(node.span)
+      case next: NextExpression => next
     }
   }
 }
