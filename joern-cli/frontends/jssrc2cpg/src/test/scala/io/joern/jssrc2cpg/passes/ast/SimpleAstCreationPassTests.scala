@@ -859,7 +859,7 @@ class SimpleAstCreationPassTests extends AstJsSrc2CpgSuite {
       val List(typeDecl) = cpg.typeDecl.nameExact("method").l
       typeDecl.fullName should endWith("Test0.js::program:method")
 
-      val List(binding) = typeDecl.bindsOut.l
+      val List(binding) = typeDecl.bindsOut.cast[Binding].l
       binding.name shouldBe ""
       binding.signature shouldBe ""
 

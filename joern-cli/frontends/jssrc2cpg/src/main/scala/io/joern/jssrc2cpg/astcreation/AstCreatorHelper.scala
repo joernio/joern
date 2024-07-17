@@ -4,12 +4,12 @@ import io.joern.jssrc2cpg.datastructures.*
 import io.joern.jssrc2cpg.parser.BabelAst.*
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
+import io.joern.x2cpg.utils.IntervalKeyPool
 import io.joern.x2cpg.utils.NodeBuilders.{newClosureBindingNode, newLocalNode}
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies}
 import io.shiftleft.codepropertygraph.generated.nodes.File.PropertyDefaults
-import io.shiftleft.passes.IntervalKeyPool
 import ujson.Value
 
 import scala.collection.{mutable, SortedMap}

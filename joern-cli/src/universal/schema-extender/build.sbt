@@ -1,10 +1,10 @@
 name := "schema-extender"
 
-ThisBuild / scalaVersion := "3.4.1"
+ThisBuild / scalaVersion := "3.4.2"
 
 val cpgVersion = IO.read(file("cpg-version"))
 
-val generateDomainClasses = taskKey[Seq[File]]("generate overflowdb domain classes for our schema")
+val generateDomainClasses = taskKey[Seq[File]]("generate domain classes for our schema")
 
 val joernInstallPath =
   settingKey[String]("path to joern installation, e.g. `/home/username/bin/joern/joern-cli` or `../../joern/joern-cli`")
@@ -33,9 +33,9 @@ ThisBuild / libraryDependencies ++= Seq(
 lazy val schema = project
   .in(file("schema"))
   .settings(generateDomainClasses := {
-    val outputRoot = target.value / "odb-codegen"
+    val outputRoot = target.value / "fg-codegen"
     FileUtils.deleteRecursively(outputRoot)
-    val invoked = (Compile / runMain).toTask(s" CpgExtCodegen schema/target/odb-codegen").value
+    val invoked = (Compile / runMain).toTask(s" CpgExtCodegen schema/target/fg-codegen").value
     FileUtils.listFilesRecursively(outputRoot)
   })
 

@@ -1,11 +1,10 @@
 package io.joern.dataflowengineoss
 
 import better.files.File
-import io.shiftleft.codepropertygraph.generated.PropertyNames
+import io.shiftleft.codepropertygraph.generated.Properties
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
-import overflowdb.PropertyKey
 import upickle.default.*
 
 import java.util.concurrent.{ExecutorService, Executors}
@@ -332,13 +331,15 @@ package object slicing {
       *   extracted.
       */
     def fromNode(node: StoredNode, typeMap: Map[String, String] = Map.empty[String, String]): DefComponent = {
-      val nodeType = (node.property(PropertyNames.TYPE_FULL_NAME, "ANY") +: node.property(
-        PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
-        Seq.empty[String]
-      )).filterNot(_.matches("(ANY|UNKNOWN)")).headOption.getOrElse("ANY")
+      val typeFullNameProperty             = node.propertyOption(Properties.TypeFullName).getOrElse("ANY")
+      val dynamicTypeHintFullNamesProperty = node.property(Properties.DynamicTypeHintFullName)
+      val nodeType = (typeFullNameProperty +: dynamicTypeHintFullNamesProperty)
+        .filterNot(_.matches("(ANY|UNKNOWN)"))
+        .headOption
+        .getOrElse("ANY")
       val typeFullName = typeMap.getOrElse(nodeType, nodeType)
-      val lineNumber   = Option(node.property(new PropertyKey[Integer](PropertyNames.LINE_NUMBER))).map(_.toInt)
-      val columnNumber = Option(node.property(new PropertyKey[Integer](PropertyNames.COLUMN_NUMBER))).map(_.toInt)
+      val lineNumber   = node.propertyOption(Properties.LineNumber)
+      val columnNumber = node.propertyOption(Properties.ColumnNumber)
       node match {
         case x: MethodParameterIn => ParamDef(x.name, typeFullName, x.index, lineNumber, columnNumber)
         case x: Call if x.code.startsWith("new ") =>

@@ -4,7 +4,7 @@ import io.joern.jssrc2cpg.testfixtures.AstJsSrc2CpgSuite
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn
+import io.shiftleft.codepropertygraph.generated.nodes.{ClosureBinding, MethodParameterIn}
 import io.shiftleft.semanticcpg.language.*
 
 class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
@@ -285,7 +285,7 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       val List(fooLocalY) = fooBlock.astChildren.isLocal.nameExact("y").l
       val List(barRef)    = fooBlock.astChildren.isCall.astChildren.isMethodRef.l
 
-      val List(closureBindForY, closureBindForX) = barRef.captureOut.l
+      val List(closureBindForY, closureBindForX) = barRef.captureOut.cast[ClosureBinding].l
 
       closureBindForX.closureOriginalName shouldBe Option("x")
       closureBindForX.closureBindingId shouldBe Option("Test0.js::program:foo:bar:x")

@@ -1261,17 +1261,24 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         (initAsts, updateAsts, body)
     }
 
-    inside(initAsts.astChildren.l) { case List(_: Call, valInit: Call) =>
-      valInit.name shouldBe Operators.assignment
-      valInit.code shouldBe "$key => $val = $iter_tmp0->current()"
-      inside(valInit.argument.l) { case List(valPair: Call, currentCall: Call) =>
-        valPair.name shouldBe PhpOperators.doubleArrow
-        valPair.code shouldBe "$key => $val"
-        inside(valPair.argument.l) { case List(keyId: Identifier, valId: Identifier) =>
-          keyId.name shouldBe "key"
-          valId.name shouldBe "val"
+    inside(initAsts.assignment.l) { case List(_: Call, keyInit: Call, valInit: Call) =>
+      keyInit.name shouldBe Operators.assignment
+      keyInit.code shouldBe "$key = $iter_tmp0->key()"
+      inside(keyInit.argument.l) { case List(target: Identifier, keyCall: Call) =>
+        target.name shouldBe "key"
+        keyCall.name shouldBe "key"
+        keyCall.methodFullName shouldBe s"Iterator.key"
+        keyCall.code shouldBe "$iter_tmp0->key()"
+        inside(keyCall.argument(0).start.l) { case List(iterRecv: Identifier) =>
+          iterRecv.name shouldBe "iter_tmp0"
+          iterRecv.argumentIndex shouldBe 0
         }
+      }
 
+      valInit.name shouldBe Operators.assignment
+      valInit.code shouldBe "$val = $iter_tmp0->current()"
+      inside(valInit.argument.l) { case List(target: Identifier, currentCall: Call) =>
+        target.name shouldBe "val"
         currentCall.name shouldBe "current"
         currentCall.methodFullName shouldBe s"Iterator.current"
         currentCall.code shouldBe "$iter_tmp0->current()"
@@ -1282,9 +1289,12 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       }
     }
 
-    inside(updateAsts.astChildren.l) { case List(_: Call, valAssign: Call) =>
-      valAssign.name shouldBe Operators.assignment
-      valAssign.code shouldBe "$key => $val = $iter_tmp0->current()"
+    inside(updateAsts.astChildren.l) { case List(_: Call, updateBlock: Block) =>
+      val tmp = updateBlock.astChildren.l
+      inside(updateBlock.assignment.l) { case List(keyInit: Call, valInit: Call) =>
+        keyInit.code shouldBe "$key = $iter_tmp0->key()"
+        valInit.code shouldBe "$val = $iter_tmp0->current()"
+      }
     }
 
     inside(body.astChildren.l) { case List(echoCall: Call) =>

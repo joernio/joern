@@ -33,96 +33,6 @@ options {
 }
 
 // --------------------------------------------------------
-// Keywords
-// --------------------------------------------------------
-
-LINE__:'__LINE__';
-ENCODING__: '__ENCODING__';
-FILE__: '__FILE__';
-BEGIN_: 'BEGIN';
-END_: 'END';
-ALIAS: 'alias';
-AND: 'and';
-BEGIN: 'begin';
-BREAK: 'break';
-CASE: 'case';
-CLASS: 'class';
-DEF: 'def';
-IS_DEFINED: 'defined?';
-DO: 'do';
-ELSE: 'else';
-ELSIF: 'elsif';
-END: 'end';
-ENSURE: 'ensure';
-FOR: 'for';
-FALSE: 'false';
-IF: 'if';
-IN: 'in';
-MODULE: 'module';
-NEXT: 'next';
-NIL: 'nil';
-NOT: 'not';
-OR: 'or';
-REDO: 'redo';
-RESCUE: 'rescue';
-RETRY: 'retry';
-RETURN: 'return';
-SELF: 'self';
-SUPER: 'super';
-THEN: 'then';
-TRUE: 'true';
-UNDEF: 'undef';
-UNLESS: 'unless';
-UNTIL: 'until';
-WHEN: 'when';
-WHILE: 'while';
-YIELD: 'yield';
-
-fragment KEYWORD
-    :   LINE__
-    |   ENCODING__
-    |   FILE__
-    |   BEGIN_
-    |   END_
-    |   ALIAS
-    |   AND
-    |   BEGIN
-    |   BREAK
-    |   CASE
-    |   CLASS
-    |   DEF
-    |   IS_DEFINED
-    |   DO
-    |   ELSE
-    |   ELSIF
-    |   END
-    |   ENSURE
-    |   FOR
-    |   FALSE
-    |   IF
-    |   IN
-    |   MODULE
-    |   NEXT
-    |   NIL
-    |   NOT
-    |   OR
-    |   REDO
-    |   RESCUE
-    |   RETRY
-    |   RETURN
-    |   SELF
-    |   SUPER
-    |   THEN
-    |   TRUE
-    |   UNDEF
-    |   UNLESS
-    |   UNTIL
-    |   WHEN
-    |   WHILE
-    |   YIELD
-    ;
-
-// --------------------------------------------------------
 // Punctuators
 // --------------------------------------------------------
 
@@ -544,9 +454,98 @@ fragment SYMBOL_NAME
 // --------------------------------------------------------
 // Identifiers
 // --------------------------------------------------------
-
 LOCAL_VARIABLE_IDENTIFIER
-    :   (LOWERCASE_CHARACTER | '_') IDENTIFIER_CHARACTER*
+    :   (LOWERCASE_CHARACTER | '_') IDENTIFIER_CHARACTER* { setKeywordTokenType(); }
+    ;
+
+// --------------------------------------------------------
+// Keywords
+// --------------------------------------------------------
+
+LINE__:'__LINE__';
+ENCODING__: '__ENCODING__';
+FILE__: '__FILE__';
+BEGIN_: 'BEGIN';
+END_: 'END';
+ALIAS: 'alias';
+AND: 'and';
+BEGIN: 'begin';
+BREAK: 'break';
+CASE: 'case';
+CLASS: 'class';
+DEF: 'def';
+IS_DEFINED: 'defined?';
+DO: 'do';
+ELSE: 'else';
+ELSIF: 'elsif';
+END: 'end';
+ENSURE: 'ensure';
+FOR: 'for';
+FALSE: 'false';
+IF: 'if';
+IN: 'in';
+MODULE: 'module';
+NEXT: 'next';
+NIL: 'nil';
+NOT: 'not';
+OR: 'or';
+REDO: 'redo';
+RESCUE: 'rescue';
+RETRY: 'retry';
+RETURN: 'return';
+SELF: 'self';
+SUPER: 'super';
+THEN: 'then';
+TRUE: 'true';
+UNDEF: 'undef';
+UNLESS: 'unless';
+UNTIL: 'until';
+WHEN: 'when';
+WHILE: 'while';
+YIELD: 'yield';
+
+fragment KEYWORD
+    :   LINE__
+    |   ENCODING__
+    |   FILE__
+    |   BEGIN_
+    |   END_
+    |   ALIAS
+    |   AND
+    |   BEGIN
+    |   BREAK
+    |   CASE
+    |   CLASS
+    |   DEF
+    |   IS_DEFINED
+    |   DO
+    |   ELSE
+    |   ELSIF
+    |   END
+    |   ENSURE
+    |   FOR
+    |   FALSE
+    |   IF
+    |   IN
+    |   MODULE
+    |   NEXT
+    |   NIL
+    |   NOT
+    |   OR
+    |   REDO
+    |   RESCUE
+    |   RETRY
+    |   RETURN
+    |   SELF
+    |   SUPER
+    |   THEN
+    |   TRUE
+    |   UNDEF
+    |   UNLESS
+    |   UNTIL
+    |   WHEN
+    |   WHILE
+    |   YIELD
     ;
 
 GLOBAL_VARIABLE_IDENTIFIER

@@ -150,7 +150,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
         symbolTable.append(head, callees)
       case _ => Set.empty
     }
-    val returnTypes = extractTypes(ret.argumentOut.l)
+    val returnTypes = extractTypes(ret.argumentOut.cast[CfgNode].l)
     existingTypes.addAll(returnTypes)
 
     /* Check whether method return is already known, and if so, remove dummy value */
@@ -221,7 +221,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
           .getOrElse(XTypeRecovery.DummyIndexAccess)
       else x.name
 
-    val collectionVar = Option(c.argumentOut.l match {
+    val collectionVar = Option(c.argumentOut.cast[CfgNode].l match {
       case List(i: Identifier, idx: Literal)    => CollectionVar(i.name, idx.code)
       case List(i: Identifier, idx: Identifier) => CollectionVar(i.name, idx.code)
       case List(c: Call, idx: Call)             => CollectionVar(callName(c), callName(idx))

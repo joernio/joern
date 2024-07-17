@@ -8,11 +8,11 @@ import io.joern.php2cpg.utils.Scope
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.Defines.{StaticInitMethodName, UnresolvedNamespace, UnresolvedSignature}
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
+import io.joern.x2cpg.utils.IntervalKeyPool
 import io.joern.x2cpg.utils.NodeBuilders.*
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.LoggerFactory
 
@@ -574,6 +574,7 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
   private def astForForeachStmt(stmt: PhpForeachStmt): Ast = {
     val iterIdentifier = getTmpIdentifier(stmt, maybeTypeFullName = None, prefix = "iter_")
 
+    // keep this just used to construct the `code` field
     val assignItemTargetAst = stmt.keyVar match {
       case Some(key) => astForKeyValPair(key, stmt.valueVar, line(stmt))
       case None      => astForExpr(stmt.valueVar)
@@ -585,7 +586,7 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
     val iteratorAssignAst = simpleAssignAst(Ast(iterIdentifier), iterValue, line(stmt))
 
     // - Assigned item assign
-    val itemInitAst = getItemAssignAstForForeach(stmt, assignItemTargetAst, iterIdentifier.copy)
+    val itemInitAst = getItemAssignAstForForeach(stmt, iterIdentifier.copy)
 
     // Condition ast
     val isNullName = PhpOperators.isNull
@@ -631,34 +632,63 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
       .withConditionEdges(foreachNode, conditionAst.root.toList)
   }
 
-  private def getItemAssignAstForForeach(
-    stmt: PhpForeachStmt,
-    assignItemTargetAst: Ast,
-    iteratorIdentifier: NewIdentifier
-  ): Ast = {
-    val iteratorIdentifierAst = Ast(iteratorIdentifier)
-    val currentCallSignature  = s"$UnresolvedSignature(0)"
-    val currentCallCode       = s"${iteratorIdentifierAst.rootCodeOrEmpty}->current()"
-    val currentCallNode = callNode(
-      stmt,
-      currentCallCode,
-      "current",
-      "Iterator.current",
-      DispatchTypes.DYNAMIC_DISPATCH,
-      Some(currentCallSignature),
-      Some(TypeConstants.Any)
-    )
-    val currentCallAst = callAst(currentCallNode, base = Option(iteratorIdentifierAst))
+  private def getItemAssignAstForForeach(stmt: PhpForeachStmt, iteratorIdentifier: NewIdentifier): Ast = {
+    // create assignment for value-part
+    val valueAssign = {
+      val iteratorIdentifierAst = Ast(iteratorIdentifier)
+      val currentCallSignature  = s"$UnresolvedSignature(0)"
+      val currentCallCode       = s"${iteratorIdentifierAst.rootCodeOrEmpty}->current()"
+      // `current` function is used to get the current element of given array
+      // see https://www.php.net/manual/en/function.current.php & https://www.php.net/manual/en/iterator.current.php
+      val currentCallNode = callNode(
+        stmt,
+        currentCallCode,
+        "current",
+        "Iterator.current",
+        DispatchTypes.DYNAMIC_DISPATCH,
+        Some(currentCallSignature),
+        Some(TypeConstants.Any)
+      )
+      val currentCallAst = callAst(currentCallNode, base = Option(iteratorIdentifierAst))
 
-    val valueAst = if (stmt.assignByRef) {
-      val addressOfCode = s"&${currentCallAst.rootCodeOrEmpty}"
-      val addressOfCall = newOperatorCallNode(Operators.addressOf, addressOfCode, line = line(stmt))
-      callAst(addressOfCall, currentCallAst :: Nil)
-    } else {
-      currentCallAst
+      val valueAst = if (stmt.assignByRef) {
+        val addressOfCode = s"&${currentCallAst.rootCodeOrEmpty}"
+        val addressOfCall = newOperatorCallNode(Operators.addressOf, addressOfCode, line = line(stmt))
+        callAst(addressOfCall, currentCallAst :: Nil)
+      } else {
+        currentCallAst
+      }
+      simpleAssignAst(astForExpr(stmt.valueVar), valueAst, line(stmt))
     }
 
-    simpleAssignAst(assignItemTargetAst, valueAst, line(stmt))
+    // try to create assignment for key-part
+    val keyAssignOption = stmt.keyVar.map(keyVar =>
+      val iteratorIdentifierAst = Ast(iteratorIdentifier.copy)
+      val keyCallSignature      = s"$UnresolvedSignature(0)"
+      val keyCallCode           = s"${iteratorIdentifierAst.rootCodeOrEmpty}->key()"
+      // `key` function is used to get the key of the current element
+      // see https://www.php.net/manual/en/function.key.php & https://www.php.net/manual/en/iterator.key.php
+      val keyCallNode = callNode(
+        stmt,
+        keyCallCode,
+        "key",
+        "Iterator.key",
+        DispatchTypes.DYNAMIC_DISPATCH,
+        Some(keyCallSignature),
+        Some(TypeConstants.Any)
+      )
+      val keyCallAst = callAst(keyCallNode, base = Option(iteratorIdentifierAst))
+      simpleAssignAst(astForExpr(keyVar), keyCallAst, line(stmt))
+    )
+
+    keyAssignOption match {
+      case Some(keyAssign) =>
+        Ast(blockNode(stmt))
+          .withChild(keyAssign)
+          .withChild(valueAssign)
+      case None =>
+        valueAssign
+    }
   }
 
   private def simpleAssignAst(target: Ast, source: Ast, lineNo: Option[Int]): Ast = {
