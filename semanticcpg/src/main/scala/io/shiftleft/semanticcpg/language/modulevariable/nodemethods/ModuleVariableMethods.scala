@@ -10,15 +10,15 @@ import io.shiftleft.codepropertygraph.generated.help.Doc
 
 class ModuleVariableMethods(node: OpNodes.ModuleVariable) extends AnyVal {
 
-  @Doc(info = "References of this module variable across the codebase, as either identifiers or field identifiers")
+  /** References of this module variable across the codebase, as either identifiers or field identifiers */
   def references: Iterator[Identifier | FieldIdentifier] = node.start.references
 
-  @Doc(info = "The module members being referenced in the respective module type declaration")
+  /** The module members being referenced in the respective module type declaration */
   def referencingMembers: Iterator[Member] = {
-    Cpg(node.graph()).typeDecl.fullNameExact(node.method.fullName.toSeq*).member.nameExact(node.name)
+    Cpg(node.graph).typeDecl.fullNameExact(node.method.fullName.toSeq*).member.nameExact(node.name)
   }
 
-  @Doc(info = "Returns the assignments where the module variable is the target (LHS)")
+  /** Returns the assignments where the module variable is the target (LHS) */
   def definitions: Iterator[OpExtNodes.Assignment] = node.start.definitions
 
 }

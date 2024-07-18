@@ -1,5 +1,6 @@
 package io.shiftleft.semanticcpg.language.modulevariable
 
+import io.shiftleft.codepropertygraph.generated.help.{Doc, Traversal}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.semanticcpg.language.*
@@ -7,6 +8,7 @@ import io.shiftleft.semanticcpg.language.modulevariable.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
 import io.shiftleft.codepropertygraph.generated.help.Doc
 
+@Traversal(elementType = classOf[Local])
 class ModuleVariableAsLocalTraversal(traversal: Iterator[Local]) extends AnyVal {
 
   @Doc(info = "Locals representing module variables")
@@ -16,6 +18,7 @@ class ModuleVariableAsLocalTraversal(traversal: Iterator[Local]) extends AnyVal 
 
 }
 
+@Traversal(elementType = classOf[Identifier])
 class ModuleVariableAsIdentifierTraversal(traversal: Iterator[Identifier]) extends AnyVal {
 
   @Doc(info = "Identifiers representing module variables")
@@ -25,6 +28,7 @@ class ModuleVariableAsIdentifierTraversal(traversal: Iterator[Identifier]) exten
 
 }
 
+@Traversal(elementType = classOf[FieldIdentifier])
 class ModuleVariableAsFieldIdentifierTraversal(traversal: Iterator[FieldIdentifier]) extends AnyVal {
 
   @Doc(info = "Field identifiers representing module variables")
@@ -40,6 +44,7 @@ class ModuleVariableAsFieldIdentifierTraversal(traversal: Iterator[FieldIdentifi
 
 }
 
+@Traversal(elementType = classOf[Member])
 class ModuleVariableAsMemberTraversal(traversal: Iterator[Member]) extends AnyVal {
 
   @Doc(info = "Members representing module variables")
@@ -57,6 +62,7 @@ class ModuleVariableAsMemberTraversal(traversal: Iterator[Member]) extends AnyVa
 
 }
 
+@Traversal(elementType = classOf[Expression])
 class ModuleVariableAsExpressionTraversal(traversal: Iterator[Expression]) extends AnyVal {
 
   @Doc(info = "Expression nodes representing module variables")

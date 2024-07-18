@@ -1,6 +1,6 @@
 package io.joern.rubysrc2cpg.parser
 
-import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.TextSpan
+import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{ProcedureDeclaration, TextSpan, TypeDeclaration}
 import io.joern.rubysrc2cpg.parser.RubyParser.*
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.misc.Interval
@@ -18,11 +18,20 @@ object AntlrContextHelpers {
       // We need to make sure this doesn't happen when building the `text` field.
       val startIndex = ctx.getStart.getStartIndex
       val stopIndex  = math.max(startIndex, ctx.getStop.getStopIndex)
+
+      val offset = ctx match {
+        case x: MethodDefinitionContext => Option(ctx.start.getStartIndex, ctx.stop.getStopIndex + 1)
+        case x: ClassDefinitionContext  => Option(ctx.start.getStartIndex, ctx.stop.getStopIndex + 1)
+        case x: ModuleDefinitionContext => Option(ctx.start.getStartIndex, ctx.stop.getStopIndex + 1)
+        case _                          => None
+      }
+
       TextSpan(
         line = Option(ctx.getStart.getLine),
         column = Option(ctx.getStart.getCharPositionInLine),
         lineEnd = Option(ctx.getStop.getLine),
         columnEnd = Option(ctx.getStop.getCharPositionInLine),
+        offset = offset,
         text = ctx.getStart.getInputStream.getText(new Interval(startIndex, stopIndex))
       )
     }

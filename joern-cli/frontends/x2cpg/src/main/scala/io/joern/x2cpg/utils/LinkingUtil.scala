@@ -1,15 +1,13 @@
 package io.joern.x2cpg.utils
 
 import io.joern.x2cpg.passes.frontend.Dereference
-import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{Properties, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{Cpg, Properties, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.nodes.NamespaceBlock
+import io.shiftleft.codepropertygraph.generated.nodes.Type
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.{Logger, LoggerFactory}
-import overflowdb.traversal.*
-import overflowdb.traversal.ChainedImplicitsTemp.*
-import overflowdb.{Node, NodeDb, NodeRef, PropertyKey}
 
-import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 
 trait LinkingUtil {
@@ -32,21 +30,21 @@ trait LinkingUtil {
   def namespaceBlockFullNameToNode(cpg: Cpg, x: String): Option[NamespaceBlock] =
     nodesWithFullName(cpg, x).collectFirst { case x: NamespaceBlock => x }
 
-  def nodesWithFullName(cpg: Cpg, x: String): mutable.Seq[NodeRef[? <: NodeDb]] =
-    cpg.graph.indexManager.lookup(PropertyNames.FULL_NAME, x).asScala
+  def nodesWithFullName(cpg: Cpg, x: String): Iterator[StoredNode] =
+    cpg.graph.nodesWithProperty(propertyName = PropertyNames.FULL_NAME, value = x).cast[StoredNode]
 
   /** For all nodes `n` with a label in `srcLabels`, determine the value of `n.\$dstFullNameKey`, use that to lookup the
     * destination node in `dstNodeMap`, and create an edge of type `edgeType` between `n` and the destination node.
     */
-
   protected def linkToSingle(
     cpg: Cpg,
-    srcNodes: List[Node],
+    srcNodes: List[StoredNode],
     srcLabels: List[String],
     dstNodeLabel: String,
     edgeType: String,
     dstNodeMap: String => Option[StoredNode],
     dstFullNameKey: String,
+    dstDefaultPropertyValue: Any,
     dstGraph: DiffGraphBuilder,
     dstNotExistsHandler: Option[(StoredNode, String) => Unit]
   ): Unit = {
@@ -56,14 +54,13 @@ trait LinkingUtil {
       // If the source node does not have any outgoing edges of this type
       // This check is just required for backward compatibility
       if (srcNode.outE(edgeType).isEmpty) {
-        val key = new PropertyKey[String](dstFullNameKey)
         srcNode
-          .propertyOption(key)
+          .propertyOption[String](dstFullNameKey)
           .filter { dstFullName =>
             val dereferenceDstFullName = dereference.dereferenceTypeFullName(dstFullName)
-            srcNode.propertyDefaultValue(dstFullNameKey) != dereferenceDstFullName
+            dstDefaultPropertyValue != dereferenceDstFullName
           }
-          .ifPresent { dstFullName =>
+          .map { dstFullName =>
             // for `UNKNOWN` this is not always set, so we're using an Option here
             val srcStoredNode          = srcNode.asInstanceOf[StoredNode]
             val dereferenceDstFullName = dereference.dereferenceTypeFullName(dstFullName)
@@ -111,7 +108,7 @@ trait LinkingUtil {
   ): Unit = {
     var loggedDeprecationWarning = false
     val dereference              = Dereference(cpg)
-    cpg.graph.nodes(srcLabels*).asScala.cast[SRC_NODE_TYPE].foreach { srcNode =>
+    cpg.graph.nodes(srcLabels*).cast[SRC_NODE_TYPE].foreach { srcNode =>
       if (!srcNode.outE(edgeType).hasNext) {
         getDstFullNames(srcNode).foreach { dstFullName =>
           val dereferenceDstFullName = dereference.dereferenceTypeFullName(dstFullName)

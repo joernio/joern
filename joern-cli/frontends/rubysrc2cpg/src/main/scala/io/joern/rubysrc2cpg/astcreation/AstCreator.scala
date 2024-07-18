@@ -19,7 +19,9 @@ class AstCreator(
   val fileName: String,
   protected val programCtx: RubyParser.ProgramContext,
   protected val projectRoot: Option[String] = None,
-  protected val programSummary: RubyProgramSummary = RubyProgramSummary()
+  protected val programSummary: RubyProgramSummary = RubyProgramSummary(),
+  val enableFileContents: Boolean = false,
+  val fileContent: String = ""
 )(implicit withSchemaValidation: ValidationMode)
     extends AstCreatorBase(fileName)
     with AstCreatorHelper
@@ -37,6 +39,8 @@ class AstCreator(
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
 
   protected var parseLevel: AstParseLevel = AstParseLevel.FULL_AST
+
+  override protected def offset(node: RubyNode): Option[(Int, Int)] = node.offset
 
   protected val relativeFileName: String =
     projectRoot
@@ -63,7 +67,9 @@ class AstCreator(
    * allowing for a straightforward representation of out-of-method statements.
    */
   protected def astForRubyFile(rootStatements: StatementList): Ast = {
-    val fileNode = NewFile().name(relativeFileName)
+    val fileNode =
+      if enableFileContents then NewFile().name(relativeFileName).content(fileContent)
+      else NewFile().name(relativeFileName)
     val fullName = s"$relativeUnixStyleFileName:${NamespaceTraversal.globalNamespaceName}"
     val namespaceBlock = NewNamespaceBlock()
       .filename(relativeFileName)

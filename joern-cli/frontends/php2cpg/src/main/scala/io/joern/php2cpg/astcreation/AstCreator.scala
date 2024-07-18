@@ -8,11 +8,11 @@ import io.joern.php2cpg.utils.Scope
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.Defines.{StaticInitMethodName, UnresolvedNamespace, UnresolvedSignature}
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
+import io.joern.x2cpg.utils.IntervalKeyPool
 import io.joern.x2cpg.utils.NodeBuilders.*
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.LoggerFactory
 
@@ -1141,7 +1141,13 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
       idxTracker: ArrayIndexTracker,
       item: PhpArrayItem
     ): Ast = {
-      val dimensionAst    = astForExpr(PhpInt(idxTracker.next, item.attributes))
+      // copy from `assignForArrayItem` to handle the case where key exists, such as `list("id" => $a, "name" => $b) = $arr;`
+      val dimension = item.key match {
+        case Some(key: PhpSimpleScalar) => dimensionFromSimpleScalar(key, idxTracker)
+        case Some(key)                  => key
+        case None                       => PhpInt(idxTracker.next, item.attributes)
+      }
+      val dimensionAst    = astForExpr(dimension)
       val indexAccessCode = s"${sourceAst.rootCodeOrEmpty}[${dimensionAst.rootCodeOrEmpty}]"
       // <operator>.indexAccess(sourceAst, index)
       val indexAccessNode = callAst(
@@ -1408,10 +1414,30 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
   private def astForArrayExpr(expr: PhpArrayExpr): Ast = {
     val idxTracker = new ArrayIndexTracker
 
-    val tmpIdentifier = getTmpIdentifier(expr, Some(TypeConstants.Array))
+    val tmpName = getNewTmpName()
+
+    def newTmpIdentifier: Ast = Ast(identifierNode(expr, tmpName, s"$$$tmpName", TypeConstants.Array))
+
+    val tmpIdentifierAssignNode = {
+      // use array() function to create an empty array. see https://www.php.net/manual/zh/function.array.php
+      val initArrayNode = callNode(
+        expr,
+        "array()",
+        "array",
+        "array",
+        DispatchTypes.STATIC_DISPATCH,
+        Some("array()"),
+        Some(TypeConstants.Array)
+      )
+      val initArrayCallAst = callAst(initArrayNode)
+
+      val assignCode = s"$$$tmpName = ${initArrayCallAst.rootCodeOrEmpty}"
+      val assignNode = newOperatorCallNode(Operators.assignment, assignCode, line = line(expr))
+      callAst(assignNode, newTmpIdentifier :: initArrayCallAst :: Nil)
+    }
 
     val itemAssignments = expr.items.flatMap {
-      case Some(item) => Option(assignForArrayItem(item, tmpIdentifier.name, idxTracker))
+      case Some(item) => Option(assignForArrayItem(item, tmpName, idxTracker))
       case None =>
         idxTracker.next // Skip an index
         None
@@ -1419,8 +1445,9 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
     val arrayBlock = blockNode(expr)
 
     Ast(arrayBlock)
+      .withChild(tmpIdentifierAssignNode)
       .withChildren(itemAssignments)
-      .withChild(Ast(tmpIdentifier))
+      .withChild(newTmpIdentifier)
   }
 
   private def astForListExpr(expr: PhpListExpr): Ast = {
