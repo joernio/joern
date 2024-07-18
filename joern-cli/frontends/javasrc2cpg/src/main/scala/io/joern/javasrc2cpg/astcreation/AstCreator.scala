@@ -17,7 +17,7 @@ import com.github.javaparser.ast.nodeTypes.{NodeWithName, NodeWithSimpleName}
 import com.github.javaparser.ast.{CompilationUnit, ImportDeclaration, Node, PackageDeclaration}
 import com.github.javaparser.printer.configuration.DefaultPrinterConfiguration.ConfigOption
 import com.github.javaparser.printer.configuration.{DefaultConfigurationOption, DefaultPrinterConfiguration}
-import com.github.javaparser.resolution.UnsolvedSymbolException
+import com.github.javaparser.resolution.{TypeSolver, UnsolvedSymbolException}
 import com.github.javaparser.resolution.declarations.{
   ResolvedMethodDeclaration,
   ResolvedMethodLikeDeclaration,

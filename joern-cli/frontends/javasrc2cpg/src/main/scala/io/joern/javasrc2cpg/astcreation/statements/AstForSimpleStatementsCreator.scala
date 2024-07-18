@@ -19,17 +19,26 @@ import com.github.javaparser.ast.stmt.{
   TryStmt,
   WhileStmt
 }
+import com.github.javaparser.symbolsolver.javaparsermodel.contexts.{IfStatementContext, WhileStatementContext}
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.javasrc2cpg.util.NameConstants
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode, newModifierNode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewCall, NewControlStructure, NewJumpTarget, NewReturn}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  NewBlock,
+  NewCall,
+  NewControlStructure,
+  NewJumpTarget,
+  NewLocal,
+  NewReturn
+}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes}
 
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
 import io.joern.javasrc2cpg.scope.JavaScopeElement.PartialInit
+import io.joern.javasrc2cpg.typesolvers.EmptyTypeSolver
 
 trait AstForSimpleStatementsCreator { this: AstCreator =>
   def astForBlockStatement(stmt: BlockStmt, codeStr: String = "<empty>", prefixAsts: Seq[Ast] = Seq.empty): Ast = {
@@ -132,10 +141,15 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
     val lineNumber   = line(stmt)
     val columnNumber = column(stmt)
 
+    val whileStmtContext = new WhileStatementContext(stmt, new EmptyTypeSolver())
+
+    val patternsIntroducedByWhile = whileStmtContext.getIntroducedTypePatterns.asScala.toList
+    val patternsExposedToBody     = whileStmtContext.typePatternExprsExposedToChild(stmt.getBody)
+
     whileAst(conditionAst, stmtAsts, Some(code), lineNumber, columnNumber)
   }
 
-  private[statements] def astForIf(stmt: IfStmt): Ast = {
+  private[statements] def astsForIf(stmt: IfStmt): List[Ast] = {
     val ifNode =
       NewControlStructure()
         .controlStructureType(ControlStructureTypes.IF)
@@ -146,19 +160,101 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
     val conditionAst =
       astsForExpression(stmt.getCondition, ExpectedType.Boolean).headOption.toList
 
-    val thenAsts = astsForStatement(stmt.getThenStmt)
-    val elseAst  = astForElse(stmt.getElseStmt.toScala).toList
+    val ifStmtContext = new IfStatementContext(stmt, new EmptyTypeSolver())
 
-    val ast = Ast(ifNode)
-      .withChildren(conditionAst)
-      .withChildren(thenAsts)
-      .withChildren(elseAst)
+    val patternsIntroducedByIf = ifStmtContext.getIntroducedTypePatterns.asScala.toList
+    val patternsExposedToThen  = ifStmtContext.typePatternExprsExposedToChild(stmt.getThenStmt).asScala.toList
+    val patternsExposedToElse =
+      stmt.getElseStmt.toScala.map(ifStmtContext.typePatternExprsExposedToChild(_).asScala.toList).getOrElse(Nil)
 
-    conditionAst.flatMap(_.root.toList) match {
-      case r :: Nil =>
-        ast.withConditionEdge(ifNode, r)
+    /** The following makes use of 2 properties of pattern scope:
+      *   1. At least one of patternsExposedToThen and patternsExposedToElse must be empty. This is because there is no
+      *      rule for expressions that allows them to introduce patterns when both true or false. The unary operations
+      *      simply propagate pattern variables up the tree (possibly flipping the "truthiness", but not introducing new
+      *      variables), while the binary operators && and || only provide rules for one of true and false, effectively
+      *      "erasing" the other branch.
+      *
+      * 2. If patternsIntroducedByIf is non-empty, then either it is equivalent to patternsExposedToThen or
+      * patternsExposedToElse, or the if statement has no else branch.
+      */
+
+    val patternAsts = (patternsIntroducedByIf match {
+      case Nil => patternsExposedToThen ++ patternsExposedToElse
+
+      case _ => patternsIntroducedByIf
+    }).map(pattern => pattern -> astsForPatternAssignment(pattern)).toMap
+
+    // then scope
+    scope.pushBlockScope()
+
+    val localsExposedToThen =
+      patternsExposedToThen.flatMap(patternAsts(_)).flatMap(_.root).collect { case local: NewLocal => local }
+    localsExposedToThen.foreach(local => scope.enclosingBlock.foreach(_.addLocal(local)))
+
+    val thenAst = patternsIntroducedByIf match {
+      case Nil =>
+        bodyAstWithStmtsPrefix(stmt.getThenStmt, patternsExposedToThen.flatMap(patternAsts(_)))
       case _ =>
-        ast
+        bodyAstWithStmtsPrefix(stmt.getThenStmt, Nil)
+    }
+    // then scope
+    scope.popBlockScope()
+
+    val elseAst = stmt.getElseStmt.toScala.map { elseStmt =>
+      // else scope
+      scope.pushBlockScope()
+
+      val localsExposedToElse =
+        patternsExposedToElse.flatMap(patternAsts(_)).flatMap(_.root).collect { case local: NewLocal => local }
+      localsExposedToElse.foreach(local => scope.enclosingBlock.foreach(_.addLocal(local)))
+
+      val elseAst = patternsIntroducedByIf match {
+        case Nil =>
+          bodyAstWithStmtsPrefix(elseStmt, patternsExposedToElse.flatMap(patternAsts(_)))
+        case _ =>
+          bodyAstWithStmtsPrefix(elseStmt, Nil)
+      }
+      // else scope
+      scope.popBlockScope()
+
+      elseAst
+    }
+
+    // At this point, any logic with then/else is done, so introduce the rest of the locals to scope
+    val localsIntroducedByIf =
+      patternsIntroducedByIf.flatMap(patternAsts(_)).flatMap(_.root).collect { case local: NewLocal => local }
+    localsIntroducedByIf.foreach(local => scope.enclosingBlock.foreach(_.addLocal(local)))
+
+    val ifAst = Ast(ifNode)
+      .withChildren(conditionAst)
+      .withChild(thenAst)
+      .withChildren(elseAst.toList)
+
+    val ifAstWithConditionEdge = conditionAst.flatMap(_.root.toList) match {
+      case r :: Nil =>
+        ifAst.withConditionEdge(ifNode, r)
+      case _ =>
+        ifAst
+    }
+
+    if (patternsIntroducedByIf.nonEmpty && (patternsExposedToThen.nonEmpty || patternsExposedToElse.nonEmpty)) {
+      patternsIntroducedByIf.flatMap(patternAsts(_)) :+ ifAstWithConditionEdge
+    } else {
+      ifAstWithConditionEdge :: patternsIntroducedByIf.flatMap(patternAsts(_))
+    }
+  }
+
+  private def bodyAstWithStmtsPrefix(statement: Statement, prefixAsts: List[Ast]): Ast = {
+    val bodyAsts = statement match {
+      case block: BlockStmt => prefixAsts ++ block.getStatements.asScala.flatMap(astsForStatement).toList
+      case _                => prefixAsts ++ astsForStatement(statement)
+    }
+
+    if (bodyAsts.size == 1 && !statement.isInstanceOf[BlockStmt]) {
+      bodyAsts.head
+    } else {
+      val block = blockNode(statement)
+      blockAst(block, bodyAsts)
     }
   }
 

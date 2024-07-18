@@ -54,6 +54,12 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
 
   private var tempConstCount = 0
 
+  private[expressions] def getTmpObjName() = {
+    val tmpName = "$obj" ++ tempConstCount.toString
+    tempConstCount += 1
+    tmpName
+  }
+
   private[expressions] def astForMethodCall(call: MethodCallExpr, expectedReturnType: ExpectedType): Ast = {
     val maybeResolvedCall = tryWithSafeStackOverflow(call.resolve())
     val argumentAsts      = argAstsForCall(call, maybeResolvedCall, call.getArguments)

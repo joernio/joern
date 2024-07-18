@@ -5,6 +5,7 @@ import com.github.javaparser.{JavaParser, ParserConfiguration}
 import com.github.javaparser.ParserConfiguration.LanguageLevel
 import com.github.javaparser.ast.CompilationUnit
 import com.github.javaparser.ast.Node.Parsedness
+import com.github.javaparser.resolution.TypeSolver
 import com.github.javaparser.symbolsolver.JavaSymbolSolver
 import com.github.javaparser.symbolsolver.javaparsermodel.JavaParserFacade
 import com.github.javaparser.symbolsolver.resolution.typesolvers.{

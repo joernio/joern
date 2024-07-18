@@ -47,7 +47,7 @@ trait AstForStatementsCreator extends AstForSimpleStatementsCreator with AstForF
       case x: ExpressionStmt            => astsForExpression(x.getExpression, ExpectedType.Void)
       case x: ForEachStmt               => astForForEach(x)
       case x: ForStmt                   => Seq(astForFor(x))
-      case x: IfStmt                    => Seq(astForIf(x))
+      case x: IfStmt                    => astsForIf(x)
       case x: LabeledStmt               => astsForLabeledStatement(x)
       case x: ReturnStmt                => Seq(astForReturnNode(x))
       case x: SwitchStmt                => Seq(astForSwitchStatement(x))

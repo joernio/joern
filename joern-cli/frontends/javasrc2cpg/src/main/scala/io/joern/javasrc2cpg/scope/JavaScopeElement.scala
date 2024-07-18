@@ -1,5 +1,6 @@
 package io.joern.javasrc2cpg.scope
 
+import com.github.javaparser.ast.expr.TypePatternExpr
 import io.joern.javasrc2cpg.scope.Scope.*
 import io.joern.javasrc2cpg.scope.JavaScopeElement.*
 import io.shiftleft.codepropertygraph.generated.nodes.{NewImport, NewMethod, NewNamespaceBlock, NewTypeDecl}
@@ -88,8 +89,38 @@ object JavaScopeElement {
   class MethodScope(val method: NewMethod, val returnType: ExpectedType, override val isStatic: Boolean)
       extends JavaScopeElement
       with AnonymousClassCounter {
+
+    private val patternLocalMap      = mutable.Map[String, NewLocal]()
+    private val patternAssignmentMap = mutable.Map[String, Ast]()
+    private val instanceOfTmpLocals  = mutable.ListBuffer[NewLocal]()
+
     def addParameter(parameter: NewMethodParameterIn): Unit = {
       addVariableToScope(ScopeParameter(parameter))
+    }
+
+    def addPatternAst(name: String, local: NewLocal, assignmentRhs: Ast): Unit = {
+      patternLocalMap.addOne(name, local)
+      patternAssignmentMap.addOne(name, assignmentRhs)
+    }
+
+    def popPatternLocal(name: String): Option[NewLocal] = {
+      patternLocalMap.remove(name)
+    }
+
+    def hasPatternAssignmentFor(name: String): Unit = {
+      patternAssignmentMap.contains(name)
+    }
+
+    def popPatternAssignment(name: String): Option[Ast] = {
+      patternAssignmentMap.remove(name)
+    }
+
+    def addInstanceOfTmpLocal(local: NewLocal): Unit = {
+      instanceOfTmpLocals.addOne(local)
+    }
+
+    def getInstanceOfTmpLocals(): List[NewLocal] = {
+      instanceOfTmpLocals.toList
     }
   }
 

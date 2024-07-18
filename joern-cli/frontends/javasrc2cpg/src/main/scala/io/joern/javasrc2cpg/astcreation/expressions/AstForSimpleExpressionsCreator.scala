@@ -21,6 +21,7 @@ import com.github.javaparser.ast.expr.{
   UnaryExpr
 }
 import com.github.javaparser.ast.nodeTypes.NodeWithName
+import com.github.javaparser.ast.expr.PatternExpr
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
@@ -28,7 +29,7 @@ import io.joern.javasrc2cpg.util.{NameConstants, Util}
 import io.joern.x2cpg.{Ast, Defines}
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode, newOperatorCallNode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewFieldIdentifier, NewLiteral, NewTypeRef}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNodeNew, NewCall, NewFieldIdentifier, NewLiteral, NewTypeRef}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
 
 import scala.jdk.CollectionConverters.*
@@ -273,22 +274,38 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
   }
 
   private[expressions] def astForInstanceOfExpr(expr: InstanceOfExpr): Ast = {
-    val booleanTypeFullName = Some(TypeConstants.Boolean)
-    val callNode =
-      newOperatorCallNode(Operators.instanceOf, expr.toString, booleanTypeFullName, line(expr), column(expr))
+    val exprAst = astsForExpression(expr.getExpression, ExpectedType.empty)
 
-    val exprAst      = astsForExpression(expr.getExpression, ExpectedType.empty)
-    val exprType     = tryWithSafeStackOverflow(expr.getType).toOption
-    val typeFullName = exprType.flatMap(typeInfoCalc.fullName).getOrElse(TypeConstants.Any)
-    val typeNode =
-      NewTypeRef()
-        .code(exprType.map(_.toString).getOrElse(code(expr).split("instanceof").lastOption.getOrElse("")))
-        .lineNumber(line(expr))
-        .columnNumber(exprType.map(column(_)).getOrElse(column(expr)))
-        .typeFullName(typeFullName)
-    val typeAst = Ast(typeNode)
+    expr.getPattern.toScala match {
+      case None =>
+        val booleanTypeFullName = Some(TypeConstants.Boolean)
+        val callNode =
+          newOperatorCallNode(Operators.instanceOf, expr.toString, booleanTypeFullName, line(expr), column(expr))
 
-    callAst(callNode, exprAst ++ Seq(typeAst))
+        val exprType     = tryWithSafeStackOverflow(expr.getType).toOption
+        val typeFullName = exprType.flatMap(typeInfoCalc.fullName).getOrElse(TypeConstants.Any)
+        val typeNode =
+          NewTypeRef()
+            .code(exprType.map(_.toString).getOrElse(code(expr).split("instanceof").lastOption.getOrElse("")))
+            .lineNumber(line(expr))
+            .columnNumber(exprType.map(column(_)).getOrElse(column(expr)))
+            .typeFullName(typeFullName)
+        val typeAst = Ast(typeNode)
+
+        callAst(callNode, exprAst ++ Seq(typeAst))
+
+      case Some(patternExpr) =>
+        val tmpName = getTmpObjName();
+        val tmpIdentifier =
+          exprAst.head.root
+            .collect { case exprRoot: AstNodeNew => exprAst.head.subTreeCopy(exprRoot) }
+            .foreach(exprAstCopy => pushLocalAndAssignmentForPattern(patternExpr, exprAstCopy))
+        astForPatternMatchCondition(patternExpr, exprAst.head)
+    }
+  }
+
+  private def pushLocalAndAssignmentForPattern(patternExpr: PatternExpr, exprAstCopy: Ast): Unit = {
+    ???
   }
 
   private[expressions] def fieldAccessAst(

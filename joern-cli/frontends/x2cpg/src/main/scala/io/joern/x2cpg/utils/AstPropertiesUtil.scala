@@ -7,18 +7,25 @@ object AstPropertiesUtil {
 
   implicit class RootProperties(val ast: Ast) extends AnyVal {
 
-    private def rootProperty(propertyName: String): Option[String] = {
-      ast.root.flatMap(_.properties.get(propertyName).map(_.toString))
+    private def rootStringProperty(propertyName: String): Option[String] = {
+      rootProperty(propertyName).map(_.toString)
     }
 
-    def rootType: Option[String] = rootProperty(PropertyNames.TYPE_FULL_NAME)
+    private def rootProperty(propertyName: String): Option[Any] = {
+      ast.root.flatMap(_.properties.get(propertyName))
+    }
 
-    def rootCode: Option[String] = rootProperty(PropertyNames.CODE)
+    def rootType: Option[String] = rootStringProperty(PropertyNames.TYPE_FULL_NAME)
 
-    def rootName: Option[String] = rootProperty(PropertyNames.NAME)
+    def rootCode: Option[String] = rootStringProperty(PropertyNames.CODE)
+
+    def rootName: Option[String] = rootStringProperty(PropertyNames.NAME)
 
     def rootCodeOrEmpty: String = rootCode.getOrElse("")
 
+    def rootLine: Option[Int] = rootProperty(PropertyNames.LINE_NUMBER).map(_.asInstanceOf[Int])
+
+    def rootColumn: Option[Int] = rootProperty(PropertyNames.COLUMN_NUMBER).map(_.asInstanceOf[Int])
   }
 
   implicit class RootPropertiesOnSeq(val asts: Seq[Ast]) extends AnyVal {
