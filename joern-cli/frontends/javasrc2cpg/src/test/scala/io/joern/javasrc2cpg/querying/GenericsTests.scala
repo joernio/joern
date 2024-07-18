@@ -70,7 +70,33 @@ class GenericsTests extends JavaSrcCode2CpgFixture {
 
       cpg.call.name("get").methodFullName.l shouldBe List("foo.Box.get:java.lang.Object()")
     }
+  }
 
+  "calls for methods to generic objects" should {
+    val cpg = code("""package foo;
+        |class Box<T> {
+        |  private T value;
+        |
+        |  public T value() {
+        |    return value;
+        |  }
+        |
+        |  public Box(T value) {
+        |    this.value = value;
+        |  }
+        |}
+        |
+        |class Test {
+        |  void test() {
+        |    Box<String> b = new Box<>("Hello");
+        |    b.value();
+        |  }
+        |}
+        |""".stripMargin)
+
+    "use erased types in the method call" in {
+      cpg.call.name("value").methodFullName.l shouldBe List("foo.Box.value:java.lang.Object()")
+    }
   }
 
   "unresolved generic variable types" should {
