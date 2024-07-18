@@ -206,6 +206,28 @@ class CfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg) {
       succOf("x > 1") should contain theSameElementsAs expected(("x", TrueEdge), ("RET", FalseEdge))
     }
 
+    "be correct with multiple macro calls" in {
+      implicit val cpg: Cpg = code(
+        """
+          |#define deleteReset(ptr) do { delete ptr; ptr = nullptr; } while(0)
+          |void func(void) {
+          |  int *foo = new int;
+          |  int *bar = new int;
+          |  int *baz = new int;
+          |  deleteReset(foo);
+          |  deleteReset(bar);
+          |  deleteReset(baz);
+          |}
+          |""".stripMargin,
+        "foo.cc"
+      )
+      succOf("deleteReset(foo)") should contain theSameElementsAs expected(("foo", 2, AlwaysEdge), ("bar", AlwaysEdge))
+      succOf("foo", 2) should contain theSameElementsAs expected(("delete foo", AlwaysEdge))
+      succOf("deleteReset(bar)") should contain theSameElementsAs expected(("bar", 2, AlwaysEdge), ("baz", AlwaysEdge))
+      succOf("bar", 2) should contain theSameElementsAs expected(("delete bar", AlwaysEdge))
+      succOf("deleteReset(baz)") should contain theSameElementsAs expected(("baz", 2, AlwaysEdge), ("RET", AlwaysEdge))
+      succOf("baz", 2) should contain theSameElementsAs expected(("delete baz", AlwaysEdge))
+    }
   }
 
   "Cfg for for-loop" should {
