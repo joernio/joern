@@ -13,7 +13,7 @@ object Versions {
   val commonsLang            = "3.14.0"
   val commonsText            = "1.12.0"
   val eclipseCdt             = "8.4.0.202401242025"
-  val eclipseCore            = "3.20.100"
+  val eclipseCore            = "3.20.200"
   val eclipseText            = "3.14.0"
   val ghidra                 = "11.0_PUBLIC_20231222-2"
   val gradleTooling          = "8.3"
