@@ -1,8 +1,8 @@
 package io.joern.c2cpg.astcreation
 
+import io.joern.x2cpg.Defines as X2CpgDefines
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
-import io.joern.x2cpg.Defines as X2CpgDefines
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
@@ -20,12 +20,15 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTParameterDeclaration
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import scala.annotation.tailrec
-import scala.collection.mutable
 import scala.util.Try
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  private val seenFunctionFullnames = mutable.HashSet.empty[String]
+  private def methodDeclarationParentInfo(): (String, String) = {
+    methodAstParentStack.collectFirst { case t: NewTypeDecl => (t.label, t.fullName) }.getOrElse {
+      (methodAstParentStack.head.label, methodAstParentStack.head.properties("FULL_NAME").toString)
+    }
+  }
 
   private def createFunctionTypeAndTypeDecl(
     node: IASTNode,
@@ -98,6 +101,15 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     }
   }
 
+  private def setVariadicParameterInfo(parameterNodeInfos: Seq[CGlobal.ParameterInfo], func: IASTNode): Unit = {
+    parameterNodeInfos.lastOption.foreach {
+      case p: CGlobal.ParameterInfo if isVariadic(func) =>
+        p.isVariadic = true
+        p.code = s"${p.code}..."
+      case _ =>
+    }
+  }
+
   protected def astForMethodRefForLambda(lambdaExpression: ICPPASTLambdaExpression): Ast = {
     val filename = fileName(lambdaExpression)
 
@@ -112,7 +124,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val name        = nextClosureName()
     val rawFullname = fullName(lambdaExpression)
     val fixedFullName = if (rawFullname.contains("[") || rawFullname.contains("{")) {
-      // FIXME: the lambda may be located in something we are not able to generate a correct fullname yet
+      // FIXME: the lambda may be located in something we are not able to generate a correct fullName yet
       s"${X2CpgDefines.UnresolvedSignature}."
     } else StringUtils.normalizeSpace(rawFullname)
     val fullname    = s"$fixedFullName$name"
@@ -165,32 +177,34 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           case other                   => s"${X2CpgDefines.UnresolvedNamespace}.$name"
         }
 
-        if (seenFunctionFullnames.add(fullname)) {
-          val codeString  = code(funcDecl.getParent)
-          val filename    = fileName(funcDecl)
-          val methodNode_ = methodNode(funcDecl, fixedName, codeString, fullname, Some(signature), filename)
+        val codeString = code(funcDecl.getParent)
+        val filename   = fileName(funcDecl)
 
-          scope.pushNewScope(methodNode_)
-
-          val parameterNodes = withIndex(parameters(funcDecl)) { (p, i) =>
-            parameterNode(p, i)
-          }
-          setVariadic(parameterNodes, funcDecl)
-
-          scope.popScope()
-
-          val stubAst =
-            methodStubAst(
-              methodNode_,
-              parameterNodes.map(Ast(_)),
-              methodReturnNode(funcDecl, registerType(returnType)),
-              modifiers = modifierFor(funcDecl)
-            )
-          val typeDeclAst = createFunctionTypeAndTypeDecl(funcDecl, methodNode_, fixedName, fullname, signature)
-          stubAst.merge(typeDeclAst)
-        } else {
-          Ast()
+        val parameterNodeInfos = withIndex(parameters(funcDecl)) { (p, i) =>
+          parameterNodeInfo(p, i)
         }
+        setVariadicParameterInfo(parameterNodeInfos, funcDecl)
+
+        val (astParentType, astParentFullName) = methodDeclarationParentInfo()
+
+        val methodInfo = CGlobal.MethodInfo(
+          name,
+          code = codeString,
+          fileName = filename,
+          returnType = registerType(returnType),
+          astParentType = astParentType,
+          astParentFullName = astParentFullName,
+          lineNumber = line(funcDecl),
+          columnNumber = column(funcDecl),
+          lineNumberEnd = lineEnd(funcDecl),
+          columnNumberEnd = columnEnd(funcDecl),
+          signature = signature,
+          offset(funcDecl),
+          parameter = parameterNodeInfos,
+          modifier = modifierFor(funcDecl).map(_.modifierType)
+        )
+        registerMethodDeclaration(fullname, methodInfo)
+        Ast()
       case field: IField =>
         // TODO create a member for the field
         // We get here a least for function pointer member declarations in classes like:
@@ -256,7 +270,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       case other if other.nonEmpty => StringUtils.normalizeSpace(other)
       case other                   => s"${X2CpgDefines.UnresolvedNamespace}.$fixedName"
     }
-    seenFunctionFullnames.add(fullname)
+    registerMethodDefinition(fullname)
 
     val codeString  = code(funcDef)
     val methodNode_ = methodNode(funcDef, fixedName, codeString, fullname, Some(signature), filename)
@@ -284,7 +298,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     astForMethod.merge(typeDeclAst)
   }
 
-  private def parameterNode(parameter: IASTNode, paramIndex: Int): NewMethodParameterIn = {
+  private def parameterNodeInfo(parameter: IASTNode, paramIndex: Int): CGlobal.ParameterInfo = {
     val (name, codeString, tpe, variadic) = parameter match {
       case p: CASTParameterDeclaration =>
         (
@@ -312,18 +326,31 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       case other =>
         (code(other), code(other), cleanType(typeForDeclSpecifier(other)), false)
     }
+    CGlobal.ParameterInfo(
+      name,
+      codeString,
+      paramIndex,
+      variadic,
+      EvaluationStrategies.BY_VALUE,
+      lineNumber = line(parameter),
+      columnNumber = column(parameter),
+      typeFullName = registerType(tpe)
+    )
+  }
 
+  private def parameterNode(parameter: IASTNode, paramIndex: Int): NewMethodParameterIn = {
+    val parameterInfo = parameterNodeInfo(parameter, paramIndex)
     val parameterNode =
       parameterInNode(
         parameter,
-        name,
-        codeString,
-        paramIndex,
-        variadic,
-        EvaluationStrategies.BY_VALUE,
-        registerType(tpe)
+        parameterInfo.name,
+        parameterInfo.code,
+        parameterInfo.index,
+        parameterInfo.isVariadic,
+        parameterInfo.evaluationStrategy,
+        parameterInfo.typeFullName
       )
-    scope.addToScope(name, (parameterNode, tpe))
+    scope.addToScope(parameterInfo.name, (parameterNode, parameterInfo.typeFullName))
     parameterNode
   }
 

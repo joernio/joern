@@ -106,6 +106,14 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     fixedTypeName
   }
 
+  protected def registerMethodDeclaration(fullName: String, methodInfo: CGlobal.MethodInfo): Unit = {
+    global.methodDeclarations.putIfAbsent(fullName, methodInfo)
+  }
+
+  protected def registerMethodDefinition(fullName: String): Unit = {
+    global.methodDefinitions.putIfAbsent(fullName, true)
+  }
+
   // Sadly, there is no predefined List / Enum of this within Eclipse CDT:
   private val ReservedTypeKeywords: List[String] =
     List(
