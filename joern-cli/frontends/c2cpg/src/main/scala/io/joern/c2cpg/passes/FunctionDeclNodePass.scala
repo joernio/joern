@@ -120,17 +120,15 @@ class FunctionDeclNodePass(cpg: Cpg, methodDeclarations: Map[String, CGlobal.Met
     if (methodInfo.astParentType == NodeTypes.TYPE_DECL) {
       val parentTypeDecl = cpg.typeDecl.nameExact(methodInfo.astParentFullName).headOption
       parentTypeDecl
-        .map { parentNode =>
+        .map { typeDecl =>
           val functionBinding =
             NewBinding().name(normalizedName).methodFullName(normalizedFullName).signature(signature)
-          dstGraph.addEdge(parentNode, functionBinding, EdgeTypes.BINDS)
-          method.astParentFullName = parentNode.fullName
-          method.astParentType = parentNode.label
+          dstGraph.addEdge(typeDecl, functionBinding, EdgeTypes.BINDS)
           Ast(functionBinding).withRefEdge(functionBinding, method)
         }
         .getOrElse(Ast())
     } else {
-      val parentNode = typeDeclNode(
+      val typeDecl = typeDeclNode(
         normalizedName,
         normalizedFullName,
         method.filename,
@@ -141,11 +139,11 @@ class FunctionDeclNodePass(cpg: Cpg, methodDeclarations: Map[String, CGlobal.Met
         methodInfo.columnNumber,
         methodInfo.offset
       )
-      Ast.storeInDiffGraph(Ast(parentNode), dstGraph)
-      method.astParentFullName = parentNode.fullName
-      method.astParentType = parentNode.label
+      Ast.storeInDiffGraph(Ast(typeDecl), dstGraph)
+      method.astParentFullName = typeDecl.fullName
+      method.astParentType = typeDecl.label
       val functionBinding = NewBinding().name(normalizedName).methodFullName(normalizedFullName).signature(signature)
-      Ast(functionBinding).withBindsEdge(parentNode, functionBinding).withRefEdge(functionBinding, method)
+      Ast(functionBinding).withBindsEdge(typeDecl, functionBinding).withRefEdge(functionBinding, method)
     }
   }
 
