@@ -101,8 +101,10 @@ jobs:
           ./joern-scan /tmp/foo
           ./joern-scan --dump
       - run: |
-          mkdir /tmp/slice
+          mkdir /tmp/slice && ls -al
+          echo "Slicing!"
           ./joern-slice data-flow tests/code/javasrc/SliceTest.java -o /tmp/slice/dataflow-slice-javasrc.json
+          echo "Validating!"
           ./joern --script test-dataflow-slice.sc --param sliceFile=/tmp/slice/dataflow-slice-javasrc.json | \ 
             grep -q 'List(boolean b, b, this, s, "MALICIOUS", s, new Foo("MALICIOUS"), s, s, "SAFE", s, b, this, this, b, s, System.out)'
       - run: |
