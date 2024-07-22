@@ -149,39 +149,20 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         rawType
       }
     StringUtils.normalizeSpace(tpe) match {
-      case "" =>
-        Defines.Any
-      case t if t.contains("org.eclipse.cdt.internal.core.dom.parser.ProblemType") =>
-        Defines.Any
-      case t if t.contains(" ->") && t.contains("}::") =>
-        replaceWhitespaceAfterTypeKeyword(fixQualifiedName(t.substring(t.indexOf("}::") + 3, t.indexOf(" ->"))))
-      case t if t.contains(" ->") =>
-        replaceWhitespaceAfterTypeKeyword(fixQualifiedName(t.substring(0, t.indexOf(" ->"))))
-      case t if t.contains("( ") =>
-        replaceWhitespaceAfterTypeKeyword(fixQualifiedName(t.substring(0, t.indexOf("( "))))
-      case t if t.contains("?") =>
-        Defines.Any
-      case t if t.contains("#") =>
-        Defines.Any
-      case t if t.contains("::{") || t.contains("}::") =>
-        Defines.Any
-      case t if t.contains("{") && t.contains("}") =>
-        val beforeBracket = t.substring(0, t.indexOf("{"))
-        val afterBracket  = t.substring(t.indexOf("}") + 1)
-        val anonType      = s"${uniqueName("type", "", "")._1}$beforeBracket$afterBracket"
-        replaceWhitespaceAfterTypeKeyword(anonType)
-      case t if t.startsWith("[") && t.endsWith("]") =>
-        Defines.Any
-      case t if t.contains(Defines.QualifiedNameSeparator) =>
-        replaceWhitespaceAfterTypeKeyword(fixQualifiedName(t))
-      case t if KeepTypeKeywords.exists(k => t.startsWith(s"$k ")) =>
-        replaceWhitespaceAfterTypeKeyword(t)
-      case t if t.contains("[") && t.contains("]") =>
-        replaceWhitespaceAfterTypeKeyword(t)
-      case t if t.contains("*") =>
-        replaceWhitespaceAfterTypeKeyword(t)
-      case someType =>
-        someType
+      case ""                                                                      => Defines.Any
+      case t if t.startsWith("[") && t.endsWith("]")                               => Defines.Array
+      case t if t.contains("->")                                                   => Defines.Function
+      case t if t.contains("?")                                                    => Defines.Any
+      case t if t.contains("#")                                                    => Defines.Any
+      case t if t.contains("::{") || t.contains("}::")                             => Defines.Any
+      case t if t.contains("{") || t.contains("}")                                 => Defines.Any
+      case t if t.contains("org.eclipse.cdt.internal.core.dom.parser.ProblemType") => Defines.Any
+      case t if t.contains("( ") => replaceWhitespaceAfterTypeKeyword(fixQualifiedName(t.substring(0, t.indexOf("( "))))
+      case t if t.contains(Defines.QualifiedNameSeparator) => replaceWhitespaceAfterTypeKeyword(fixQualifiedName(t))
+      case t if KeepTypeKeywords.exists(k => t.startsWith(s"$k ")) => replaceWhitespaceAfterTypeKeyword(t)
+      case t if t.contains("[") && t.contains("]")                 => replaceWhitespaceAfterTypeKeyword(t)
+      case t if t.contains("*")                                    => replaceWhitespaceAfterTypeKeyword(t)
+      case someType                                                => someType
     }
   }
 
