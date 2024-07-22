@@ -5,7 +5,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 object CGlobal {
 
-  case class MethodInfo(
+  final case class MethodInfo(
     name: String,
     code: String,
     fileName: String,
@@ -21,15 +21,15 @@ object CGlobal {
     parameter: Seq[ParameterInfo],
     modifier: Seq[String]
   )
-  case class ParameterInfo(
-    name: String,
+  final class ParameterInfo(
+    val name: String,
     var code: String,
-    index: Int,
+    val index: Int,
     var isVariadic: Boolean,
-    evaluationStrategy: String,
-    lineNumber: Option[Int],
-    columnNumber: Option[Int],
-    typeFullName: String
+    val evaluationStrategy: String,
+    val lineNumber: Option[Int],
+    val columnNumber: Option[Int],
+    val typeFullName: String
   )
 
 }

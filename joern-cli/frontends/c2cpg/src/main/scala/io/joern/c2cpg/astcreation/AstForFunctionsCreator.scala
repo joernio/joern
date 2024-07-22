@@ -326,7 +326,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       case other =>
         (code(other), code(other), cleanType(typeForDeclSpecifier(other)), false)
     }
-    CGlobal.ParameterInfo(
+    new CGlobal.ParameterInfo(
       name,
       codeString,
       paramIndex,

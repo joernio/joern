@@ -4,7 +4,6 @@ import io.joern.c2cpg.C2Cpg.DefaultIgnoredFolders
 import io.joern.c2cpg.Config
 import io.joern.c2cpg.astcreation.AstCreator
 import io.joern.c2cpg.astcreation.CGlobal
-import io.joern.c2cpg.astcreation.Defines
 import io.joern.c2cpg.parser.{CdtParser, FileDefaults}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPass
@@ -30,7 +29,7 @@ class AstCreationPass(cpg: Cpg, config: Config, report: Report = new Report())
 
   private val global = new CGlobal()
 
-  def typesSeen(): List[String] = global.usedTypes.keys().asScala.filterNot(_ == Defines.Any).toList
+  def typesSeen(): List[String] = global.usedTypes.keys().asScala.toList
 
   def unhandledMethodDeclarations(): Map[String, CGlobal.MethodInfo] = {
     global.methodDeclarations.asScala.toMap -- global.methodDefinitions.asScala.keys
