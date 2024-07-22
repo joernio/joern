@@ -866,9 +866,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
 
   protected def astForFieldAccess(node: MemberAccess, stripLeadingAt: Boolean = false): Ast = {
     val (memberName, memberCode) = node.target match {
-      case _ if stripLeadingAt => node.memberName        -> node.memberName.stripPrefix("@")
-      case _: TypeIdentifier   => node.memberName        -> node.memberName
-      case _: SelfIdentifier   => s"@${node.memberName}" -> node.memberName
+      case _ if stripLeadingAt => node.memberName -> node.memberName.stripPrefix("@")
+      case _: TypeIdentifier   => node.memberName -> node.memberName
       case _ if !node.memberName.startsWith("@") && node.memberName.headOption.exists(_.isLower) =>
         s"@${node.memberName}" -> node.memberName
       case _ => node.memberName -> node.memberName
