@@ -280,6 +280,8 @@ object DotNetJsonAst {
 
   object ParenthesizedExpression extends BaseExpr
 
+  object CoalesceExpression extends BaseExpr
+
   object Unknown extends DotNetParserNode
 
   object AccessorList extends DotNetParserNode
