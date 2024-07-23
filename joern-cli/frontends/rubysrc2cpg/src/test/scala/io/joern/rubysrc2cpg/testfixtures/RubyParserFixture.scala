@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.testfixtures
 
 import io.joern.rubysrc2cpg.Config
-import io.joern.rubysrc2cpg.parser.{ResourceManagedParser, RubyNodeCreator, RubyParser}
+import io.joern.rubysrc2cpg.parser.{AstPrinter, ResourceManagedParser, RubyNodeCreator, RubyParser}
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.utils.{ConcurrentTaskUtil, TestCodeWriter}
 import org.scalatest.matchers.should.Matchers
@@ -85,6 +85,13 @@ class RubyParserFixture
       case Some(head) => Option(new RubyNodeCreator().visit(head))
       case None       => None
     }
+
+    val astPrinterParser = parseCode(code).headOption match {
+      case Some(head) => Option(AstPrinter().visit(head))
+      case None       => None
+    }
+
+    println(astPrinterParser)
 
     ast match {
       case Some(ast) =>

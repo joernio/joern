@@ -64,4 +64,21 @@ class StringParserTests extends RubyParserFixture with Matchers {
     test("%x//")
     test("%x{l#{'s'}}")
   }
+
+  "some" in {
+//    test("'abc'")
+//
+//    test("2")
+//    test("2.0")
+//    test("-2")
+//    test(
+//      """
+//        |-2
+//        |-3
+//        |20
+//        |'abc'
+//        |""".stripMargin)
+
+    test("b += 2 unless x < 2")
+  }
 }
