@@ -16,8 +16,8 @@ class TypeNodePassTests extends C2CpgSuite {
           |""".stripMargin)
       val List(foo) = cpg.typeDecl.nameExact("foo").l
       val List(bar) = cpg.typeDecl.nameExact("bar").l
-      foo.aliasTypeFullName shouldBe Option("char")
-      bar.aliasTypeFullName shouldBe Option("char")
+      foo.aliasTypeFullName shouldBe Option("char*")
+      bar.aliasTypeFullName shouldBe Option("char**")
     }
 
     "be correct for static decl assignment" in {
@@ -126,12 +126,11 @@ class TypeNodePassTests extends C2CpgSuite {
         |}
         |""".stripMargin)
       inside(cpg.call("free").argument(1).l) { case List(arg) =>
-        arg.evalType.l shouldBe List("test")
+        arg.evalType.l shouldBe List("test*")
         arg.code shouldBe "ptr"
         inside(arg.typ.referencedTypeDecl.l) { case List(tpe) =>
-          tpe.fullName shouldBe "test"
-          tpe.name shouldBe "test"
-          tpe.code should startWith("struct test")
+          tpe.fullName shouldBe "test*"
+          tpe.name shouldBe "test*"
         }
         inside(cpg.local.l) { case List(ptr) =>
           ptr.name shouldBe "ptr"
@@ -139,9 +138,8 @@ class TypeNodePassTests extends C2CpgSuite {
           ptr.code shouldBe "struct test* ptr"
         }
         inside(cpg.local.typ.referencedTypeDecl.l) { case List(tpe) =>
-          tpe.name shouldBe "test"
-          tpe.fullName shouldBe "test"
-          tpe.code should startWith("struct test")
+          tpe.name shouldBe "test*"
+          tpe.fullName shouldBe "test*"
         }
       }
     }
@@ -169,7 +167,7 @@ class TypeNodePassTests extends C2CpgSuite {
         |}
         |""".stripMargin)
       inside(cpg.local.typ.referencedTypeDecl.l) { case List(tpe) =>
-        tpe.fullName shouldBe "Foo"
+        tpe.fullName shouldBe "Foo*"
       }
     }
 
@@ -213,6 +211,22 @@ class TypeNodePassTests extends C2CpgSuite {
       cpg.local.nameExact("ipp").typeFullName.l shouldBe List("volatile int**")
       cpg.local.nameExact("ip").typeFullName.l shouldBe List("int*")
       cpg.local.nameExact("i").typeFullName.l shouldBe List("volatile int")
+    }
+
+    "be correct for referenced types from locals" in {
+      val cpg = code("""
+          |struct flex {
+          |  int a;
+          |  char b[];
+          |};
+          |void foo() {
+          |  struct flex *ptr = malloc(sizeof(struct flex));
+          |  struct flex value = {0};
+          |}""".stripMargin)
+      val List(value) = cpg.typeDecl.fullNameExact("flex").referencingType.fullNameExact("flex").localOfType.l
+      value.name shouldBe "value"
+      value.typeFullName shouldBe "flex"
+      value.code shouldBe "struct flex value"
     }
   }
 
