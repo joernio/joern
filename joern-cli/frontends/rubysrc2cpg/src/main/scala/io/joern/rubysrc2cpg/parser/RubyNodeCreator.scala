@@ -751,7 +751,6 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
           if (methodName.headOption.exists(_.isUpper)) {
             return MemberAccess(target, ctx.op.getText, methodName)(ctx.toTextSpan)
           } else {
-            val a = MemberCall(target, ctx.op.getText, methodName, Nil)(ctx.toTextSpan)
             return MemberCall(target, ctx.op.getText, methodName, Nil)(ctx.toTextSpan)
           }
         } else {
@@ -922,7 +921,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
       }
   }
 
-  private def genInitFieldStmts(
+  def genInitFieldStmts(
     ctxBodyStatement: RubyParser.BodyStatementContext
   ): (RubyNode, List[RubyNode & RubyFieldIdentifier]) = {
     val loweredClassDecls = lowerSingletonClassDeclarations(ctxBodyStatement)
@@ -1011,7 +1010,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     * @return
     *   the class body as a statement list.
     */
-  private def lowerAliasStatementsToMethods(classBody: RubyNode): StatementList = {
+  def lowerAliasStatementsToMethods(classBody: RubyNode): StatementList = {
 
     val classBodyStmts = classBody match {
       case StatementList(stmts) => stmts
@@ -1061,7 +1060,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     *   - `initialize` MethodDeclaration with all non-allowed children nodes added
     *   - list of all nodes allowed directly under type decl
     */
-  private def filterNonAllowedTypeDeclChildren(stmts: StatementList): RubyNode = {
+  def filterNonAllowedTypeDeclChildren(stmts: StatementList): RubyNode = {
     val (initMethod, nonInitStmts) = stmts.statements.partition {
       case x: MethodDeclaration if x.methodName == Defines.Initialize => true
       case _                                                          => false

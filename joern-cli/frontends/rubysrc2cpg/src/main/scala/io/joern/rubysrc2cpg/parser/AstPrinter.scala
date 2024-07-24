@@ -8,17 +8,21 @@ import io.joern.rubysrc2cpg.parser.RubyParser.{
   MethodCallExpressionContext
 }
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
-import io.joern.x2cpg.Defines as XDefines
 import org.antlr.v4.runtime.ParserRuleContext
-import org.antlr.v4.runtime.tree.{ParseTree, RuleNode}
-import org.slf4j.LoggerFactory
+import org.antlr.v4.runtime.tree.ParseTree
 
 import scala.jdk.CollectionConverters.*
 
 class AstPrinter extends RubyParserBaseVisitor[String] {
-  private val ls = "\n"
+  private val ls              = "\n"
+  private val rubyNodeCreator = new RubyNodeCreator
+
+  private val classNameGen = FreshNameGenerator(id => s"<anon-class-$id>")
+
+  protected def freshClassName(): String = {
+    classNameGen.fresh
+  }
 
   override def defaultResult(): String = ""
 
@@ -52,14 +56,14 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     val condition = visit(ctx.expressionOrCommand)
     val body      = visit(ctx.doClause())
 
-    s"while $condition $body\nend"
+    s"${ctx.WHILE.getText} $condition $body$ls${ctx.END.getText}"
   }
 
   override def visitUntilExpression(ctx: RubyParser.UntilExpressionContext): String = {
     val condition = visit(ctx.expressionOrCommand())
     val body      = visit(ctx.doClause())
 
-    s"until $condition $body${ls}end"
+    s"${ctx.UNTIL.getText} $condition $body$ls${ctx.END.getText}"
   }
 
   override def visitBeginEndExpression(ctx: RubyParser.BeginEndExpressionContext): String = {
@@ -72,19 +76,19 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     val elsifs    = ctx.elsifClause().asScala.map(visit).toList
     val elseBody  = Option(ctx.elseClause()).map(visit)
 
-    s"if $condition$ls$thenBody${elsifs.mkString(ls)}$elseBody${ls}end"
+    s"${ctx.IF.getText} $condition$ls$thenBody${elsifs.mkString(ls)}$elseBody${ls}end"
   }
 
   override def visitElsifClause(ctx: RubyParser.ElsifClauseContext): String = {
     val condition = visit(ctx.expressionOrCommand())
     val thenBody  = visit(ctx.thenClause())
 
-    s"elsif$ls$condition$ls$thenBody"
+    s"${ctx.ELSIF.getText} $condition$ls$thenBody"
   }
 
   override def visitElseClause(ctx: RubyParser.ElseClauseContext): String = {
     val elseBody = visit(ctx.compoundStatement())
-    s"else$ls$elseBody"
+    s"${ctx.ELSE.getText}$ls$elseBody"
   }
 
   override def visitUnlessExpression(ctx: RubyParser.UnlessExpressionContext): String = {
@@ -92,7 +96,7 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     val thenBody  = visit(ctx.thenClause())
     val elseBody  = Option(ctx.elseClause()).map(visit)
 
-    s"unless $condition$ls$thenBody$elseBody${ls}end"
+    s"${ctx.UNLESS.getText} $condition$ls$thenBody$elseBody${ls}end"
   }
 
   override def visitForExpression(ctx: RubyParser.ForExpressionContext): String = {
@@ -100,7 +104,7 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     val iterableVariable = visit(ctx.commandOrPrimaryValue())
     val doBlock          = visit(ctx.doClause())
 
-    s"for $forVariable in $iterableVariable$doBlock${ls}end"
+    s"${ctx.FOR.getText} $forVariable ${ctx.IN.getText} $iterableVariable$doBlock$ls${ctx.END.getText}"
   }
 
   override def visitForVariable(ctx: RubyParser.ForVariableContext): String = {
@@ -138,7 +142,7 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     val thenBody  = visit(ctx.operatorExpression(1))
     val elseBody  = visit(ctx.operatorExpression(2))
 
-    s"$condition ? $thenBody : $elseBody"
+    s"$condition ${ctx.QMARK.getText} $thenBody ${ctx.COLON.getText} $elseBody"
   }
 
   override def visitReturnMethodInvocationWithoutParentheses(
@@ -186,7 +190,23 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     s"$name $arguments $block"
   }
 
-  // TODO: visitPrimaryOperatorExpression
+  override def visitPrimaryOperatorExpression(ctx: RubyParser.PrimaryOperatorExpressionContext): String = {
+    rubyNodeCreator.visitPrimaryOperatorExpression(ctx) match {
+      case x: BinaryExpression if x.lhs.text.endsWith("=") && x.op == "*" =>
+        val newLhs = x.lhs match {
+          case call: SimpleCall => SimpleIdentifier(None)(call.span.spanStart(call.span.text.stripSuffix("=")))
+          case y =>
+            y
+        }
+        val newRhs = {
+          val oldRhsSpan = x.rhs.span
+          SplattingRubyNode(x.rhs)(oldRhsSpan.spanStart(s"*${oldRhsSpan.text}"))
+        }
+        SingleAssignment(newLhs, "=", newRhs)(x.span)
+        s"${newLhs.span.text} = ${newRhs.span.text}"
+      case x => x.span.text
+    }
+  }
 
   override def visitPowerExpression(ctx: RubyParser.PowerExpressionContext): String = {
     val lhs = visit(ctx.primaryValue(0))
@@ -324,53 +344,71 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     ctx.getText
   }
 
-  // TODO: Interpolations
   override def visitSingleQuotedStringExpression(ctx: RubyParser.SingleQuotedStringExpressionContext): String = {
-    ctx.getText
+    if (!ctx.isInterpolated) {
+      ctx.getText
+    } else {
+      ctx.children.asScala.map(visit).mkString(" ")
+    }
   }
 
   override def visitQuotedNonExpandedStringLiteral(ctx: RubyParser.QuotedNonExpandedStringLiteralContext): String = {
     ctx.getText
   }
 
-  // TODO: Interpolatioins
   override def visitDoubleQuotedStringExpression(ctx: RubyParser.DoubleQuotedStringExpressionContext): String = {
-    ctx.getText
+    if (!ctx.isInterpolated) {
+      ctx.getText
+    } else {
+      ctx.children.asScala.map(visit).mkString(" ")
+    }
   }
 
-  // TODO: Interpolations
   override def visitDoubleQuotedSymbolLiteral(ctx: RubyParser.DoubleQuotedSymbolLiteralContext): String = {
-    ctx.getText
+    if (!ctx.isInterpolated) {
+      ctx.getText
+    } else {
+      ctx.children.asScala.map(visit).mkString(" ")
+    }
   }
 
-  // TODO: Interpolations
   override def visitQuotedExpandedStringLiteral(ctx: RubyParser.QuotedExpandedStringLiteralContext): String = {
-    ctx.getText
+    if (!ctx.isInterpolated) {
+      ctx.getText
+    } else {
+      ctx.children.asScala.map(visit).mkString(" ")
+    }
   }
 
-  // TODO: Interpolations
   override def visitRegularExpressionLiteral(ctx: RubyParser.RegularExpressionLiteralContext): String = {
-    ctx.getText
+    if (ctx.isStatic) {
+      ctx.getText
+    } else {
+      ctx.children.asScala.map(visit).mkString(" ")
+    }
   }
 
-  // TODO: Interpolations
   override def visitQuotedExpandedRegularExpressionLiteral(
     ctx: RubyParser.QuotedExpandedRegularExpressionLiteralContext
   ): String = {
-    ctx.getText
+    if (ctx.isStatic) {
+      ctx.getText
+    } else {
+      ctx.children.asScala.map(visit).mkString(" ")
+    }
   }
 
   override def visitCurlyBracesBlock(ctx: RubyParser.CurlyBracesBlockContext): String = {
     val params = Option(ctx.blockParameter()).fold(List())(_.parameters).map(visit).mkString(",")
     val body   = visit(ctx.compoundStatement())
-    s"{ $params $body }"
+    s"${ctx.LCURLY.getText} $params $body ${ctx.RCURLY.getText}"
   }
 
   override def visitDoBlock(ctx: RubyParser.DoBlockContext): String = {
     val params = Option(ctx.blockParameter()).fold(List())(_.parameters).map(visit).mkString(",")
     val body   = visit(ctx.bodyStatement())
 
-    s"do $params $body end"
+    s"${ctx.DO.getText} $params $body ${ctx.END.getText}"
   }
 
   override def visitLocalVariableAssignmentExpression(
@@ -492,12 +530,26 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     s"$identifier"
   }
 
-  // TODO
   override def visitMethodCallWithBlockExpression(ctx: RubyParser.MethodCallWithBlockExpressionContext): String = {
     ctx.methodIdentifier().getText match {
       case Defines.Proc | Defines.Lambda => s"${ctx.methodIdentifier().getText} ${visit(ctx.block())}"
-      case Defines.Loop                  => ""
-      case _                             => ""
+      case Defines.Loop =>
+        ctx.block() match {
+          case b: RubyParser.DoBlockBlockContext =>
+            val body = visit(b.doBlock().bodyStatement)
+            s"${Defines.Loop} do$ls$body${ls}break if false${ls}end"
+          case y =>
+            val body = visit(ctx.block())
+            s"${Defines.Loop}$ls$body${ls}end"
+        }
+      case _ =>
+        val methodIdent = visit(ctx.methodIdentifier)
+        val body        = visit(ctx.block)
+
+        ctx.block() match {
+          case x: RubyParser.DoBlockBlockContext => s"$methodIdent $body"
+          case y                                 => s"$methodIdent {$ls$body$ls}"
+        }
     }
   }
 
@@ -510,7 +562,7 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
       case paramList => s"($paramList)"
     }
 
-    s"-> $paramList $body"
+    s"${ctx.MINUSGT.getText} $paramList $body"
   }
 
   override def visitMethodCallWithParenthesesExpression(
@@ -528,14 +580,14 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
 
   override def visitYieldExpression(ctx: RubyParser.YieldExpressionContext): String = {
     val args = Option(ctx.argumentWithParentheses()).iterator.flatMap(_.arguments).map(visit).mkString(",")
-    s"yield ($args)"
+    s"${ctx.YIELD.getText} ($args)"
   }
 
   override def visitYieldMethodInvocationWithoutParentheses(
     ctx: RubyParser.YieldMethodInvocationWithoutParenthesesContext
   ): String = {
     val args = ctx.primaryValueList().primaryValue().asScala.map(visit).mkString(",")
-    s"yield $args"
+    s"${ctx.YIELD.getText} $args"
   }
 
   override def visitConstantIdentifierVariable(ctx: RubyParser.ConstantIdentifierVariableContext): String = {
@@ -590,9 +642,59 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     ctx.getText
   }
 
-  // TODO
   override def visitMemberAccessExpression(ctx: RubyParser.MemberAccessExpressionContext): String = {
-    ""
+    val hasArgs    = Option(ctx.argumentWithParentheses()).isDefined
+    val hasBlock   = Option(ctx.block()).isDefined
+    val methodName = ctx.methodName.getText
+    val isClassDecl =
+      Option(ctx.primaryValue()).map(_.getText).contains("Class") && Option(ctx.methodName())
+        .map(_.getText)
+        .contains("new")
+
+    if (!hasBlock) {
+      val target = visit(ctx.primaryValue())
+      if (methodName == "new") {
+        if (!hasArgs) {
+          return s"$target.$methodName"
+        } else {
+          val args = ctx.argumentWithParentheses().arguments.map(visit).mkString(",")
+          return s"$target.$methodName ($args)"
+        }
+      } else {
+        if (!hasArgs) {
+          return s"$target${ctx.op.getText}$methodName"
+        } else {
+          val args = ctx.argumentWithParentheses().arguments.map(visit).mkString(",")
+          return s"$target${ctx.op.getText}$methodName ($args)"
+        }
+      }
+    }
+
+    if (hasBlock && isClassDecl) {
+      val block = visit(ctx.block())
+    } else if (hasBlock) {
+      val block  = visit(ctx.block())
+      val target = visit(ctx.primaryValue())
+      val blockStr = ctx.block() match {
+        case x: RubyParser.DoBlockBlockContext => block
+        case y                                 => s"{ $block }"
+      }
+
+      if (methodName == "new") {
+        val callStr = s"$target.$methodName"
+
+        if (!hasArgs) {
+          return s"$target.$methodName $blockStr"
+        } else {
+          val args = ctx.argumentWithParentheses().arguments.map(visit).mkString(",")
+          return s"$target.$methodName ($args) $blockStr"
+        }
+      } else {
+        return s"$target${ctx.op.getText}$methodName $blockStr"
+      }
+    }
+
+    defaultResult()
   }
 
   override def visitConstantVariableReference(ctx: RubyParser.ConstantVariableReferenceContext): String = {
@@ -603,12 +705,12 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     val target = visit(ctx.primaryValue())
     val arg    = Option(ctx.indexingArgumentList()).map(_.arguments).getOrElse(List()).map(visit).mkString(",")
 
-    s"$target[$arg]"
+    s"$target${ctx.LBRACK.getText}$arg${ctx.RBRACK.getText}"
   }
 
   override def visitBracketedArrayLiteral(ctx: RubyParser.BracketedArrayLiteralContext): String = {
     val args = Option(ctx.indexingArgumentList()).map(_.arguments).getOrElse(List()).map(visit).mkString(",")
-    s"[$args]"
+    s"${ctx.LBRACK.getText}$args${ctx.RBRACK.getText}"
   }
 
   override def visitQuotedNonExpandedStringArrayLiteral(
@@ -645,7 +747,7 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
 
   override def visitHashLiteral(ctx: RubyParser.HashLiteralContext): String = {
     val assocList = Option(ctx.associationList()).map(_.associations).getOrElse(List()).map(visit).mkString(",")
-    s"{ $assocList }"
+    s"${ctx.LCURLY.getText} $assocList ${ctx.RCURLY.getText}"
   }
 
   override def visitAssociationElement(ctx: RubyParser.AssociationElementContext): String = {
@@ -678,32 +780,49 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     s"${ctx.STAR2().getText}$body"
   }
 
-  // TODO
   override def visitModuleDefinition(ctx: RubyParser.ModuleDefinitionContext): String = {
-    ""
+    val (nonFieldStmts, fields) = rubyNodeCreator.genInitFieldStmts(ctx.bodyStatement())
+
+    val moduleName = visit(ctx.classPath())
+    s"module $moduleName$ls$fields$ls${nonFieldStmts.span.text}${ls}end"
   }
 
-  // TODO
   override def visitSingletonClassDefinition(ctx: RubyParser.SingletonClassDefinitionContext): String = {
-    ""
+    val baseClass = Option(ctx.commandOrPrimaryValueClass()).map(visit)
+    val body      = visit(ctx.bodyStatement())
+
+    baseClass match {
+      case Some(baseClass) if baseClass == "self" =>
+        s"${ctx.CLASS.getText} $baseClass.${freshClassName()}$ls$body$ls${ctx.END.getText}"
+      case Some(baseClass) =>
+        s"$body"
+      case None =>
+        s"${ctx.CLASS.getText} ${freshClassName()}$ls$body$ls${ctx.END.getText}"
+    }
   }
 
-  // TODO
   override def visitClassDefinition(ctx: RubyParser.ClassDefinitionContext): String = {
-    ""
+    val (nonFieldStmts, fields) = rubyNodeCreator.genInitFieldStmts(ctx.bodyStatement())
+
+    val stmts = rubyNodeCreator.lowerAliasStatementsToMethods(nonFieldStmts)
+
+    val classBody = rubyNodeCreator.filterNonAllowedTypeDeclChildren(stmts)
+    val className = visit(ctx.classPath())
+    s"class $className$ls${stmts.span.text}$ls${nonFieldStmts.span.text}${ls}end"
   }
 
   override def visitMethodDefinition(ctx: RubyParser.MethodDefinitionContext): String = {
     val params     = Option(ctx.methodParameterPart().parameterList()).fold(List())(_.parameters).map(visit)
     val methodBody = visit(ctx.bodyStatement())
 
-    if params.nonEmpty then s"def ${ctx.definedMethodName().getText} (${params.mkString(",")})$ls$methodBody${ls}end"
-    else s"def ${ctx.definedMethodName().getText}$ls$methodBody${ls}end"
+    if params.nonEmpty then
+      s"${ctx.DEF.getText} ${ctx.definedMethodName().getText} (${params.mkString(",")})$ls$methodBody$ls${ctx.END.getText}"
+    else s"${ctx.DEF.getText} ${ctx.definedMethodName().getText}$ls$methodBody$ls${ctx.END.getText}"
   }
 
   override def visitEndlessMethodDefinition(ctx: RubyParser.EndlessMethodDefinitionContext): String = {
     val body = visit(ctx.statement())
-    s"def ${ctx.definedMethodName().getText}$ls$body"
+    s"${ctx.DEF.getText} ${ctx.definedMethodName().getText}$ls$body"
   }
 
   override def visitSingletonMethodDefinition(ctx: RubyParser.SingletonMethodDefinitionContext): String = {
@@ -713,8 +832,9 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     val params = Option(ctx.methodParameterPart().parameterList()).fold(List())(_.parameters).map(visit).mkString(",")
     val body   = visit(ctx.bodyStatement())
 
-    if Option(ctx.methodParameterPart().LPAREN()).isDefined then s"def $target$op$methodName ($params)$ls$body${ls}end"
-    else s"def $target$op$methodName $params$ls$body${ls}end"
+    if Option(ctx.methodParameterPart().LPAREN()).isDefined then
+      s"${ctx.DEF.getText} $target$op$methodName ($params)$ls$body$ls${ctx.END.getText}"
+    else s"${ctx.DEF.getText} $target$op$methodName $params$ls$body$ls${ctx.END.getText}"
   }
 
   override def visitProcParameter(ctx: RubyParser.ProcParameterContext): String = {
@@ -747,11 +867,17 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     s"${ctx.getText}"
   }
 
-  // TODO
   override def visitBodyStatement(ctx: RubyParser.BodyStatementContext): String = {
     val body         = visit(ctx.compoundStatement())
-    val rescueClause = Option(ctx.rescueClause.asScala).fold(List())(_.map(visit)).mkString(ls)
-    ""
+    val rescueClause = Option(ctx.rescueClause.asScala).fold(List())(_.map(visit))
+    val elseClause   = Option(ctx.elseClause()).map(visit)
+    val ensureClause = Option(ctx.ensureClause).map(visit)
+
+    if (rescueClause.isEmpty && elseClause.isEmpty && ensureClause.isEmpty) {
+      body
+    } else {
+      s"$body ${rescueClause.mkString(ls)}$elseClause$ls$ensureClause"
+    }
   }
 
   override def visitExceptionClassList(ctx: RubyParser.ExceptionClassListContext): String = {
