@@ -106,12 +106,19 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     fixedTypeName
   }
 
+  protected def registerMethodDeclaration(fullName: String, methodInfo: CGlobal.MethodInfo): Unit = {
+    global.methodDeclarations.putIfAbsent(fullName, methodInfo)
+  }
+
+  protected def registerMethodDefinition(fullName: String): Unit = {
+    global.methodDefinitions.putIfAbsent(fullName, true)
+  }
+
   // Sadly, there is no predefined List / Enum of this within Eclipse CDT:
-  private val reservedTypeKeywords: List[String] =
+  private val ReservedTypeKeywords: List[String] =
     List(
       "const",
       "static",
-      "volatile",
       "restrict",
       "extern",
       "typedef",
@@ -125,11 +132,13 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       "class"
     )
 
+  private val KeepTypeKeywords: List[String] = List("unsigned", "volatile")
+
   protected def cleanType(rawType: String, stripKeywords: Boolean = true): String = {
     if (rawType == Defines.Any) return rawType
     val tpe =
       if (stripKeywords) {
-        reservedTypeKeywords.foldLeft(rawType) { (cur, repl) =>
+        ReservedTypeKeywords.foldLeft(rawType) { (cur, repl) =>
           if (cur.contains(s"$repl ")) {
             dereferenceTypeFullName(cur.replace(s"$repl ", ""))
           } else {
@@ -141,27 +150,34 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       }
     StringUtils.normalizeSpace(tpe) match {
       case ""                                                                      => Defines.Any
+      case t if t.startsWith("[") && t.endsWith("]")                               => Defines.Array
+      case t if t.contains("->")                                                   => Defines.Function
+      case t if t.contains("?")                                                    => Defines.Any
+      case t if t.contains("#")                                                    => Defines.Any
+      case t if t.contains("::{") || t.contains("}::")                             => Defines.Any
+      case t if t.contains("{") || t.contains("}")                                 => Defines.Any
       case t if t.contains("org.eclipse.cdt.internal.core.dom.parser.ProblemType") => Defines.Any
-      case t if t.contains(" ->") && t.contains("}::") =>
-        fixQualifiedName(t.substring(t.indexOf("}::") + 3, t.indexOf(" ->")))
-      case t if t.contains(" ->") =>
-        fixQualifiedName(t.substring(0, t.indexOf(" ->")))
-      case t if t.contains("( ") =>
-        fixQualifiedName(t.substring(0, t.indexOf("( ")))
-      case t if t.contains("?")                        => Defines.Any
-      case t if t.contains("#")                        => Defines.Any
-      case t if t.contains("::{") || t.contains("}::") => Defines.Any
-      case t if t.contains("{") && t.contains("}") =>
-        val beforeBracket = t.substring(0, t.indexOf("{"))
-        val afterBracket  = t.substring(t.indexOf("}") + 1)
-        val anonType      = s"${uniqueName("type", "", "")._1}$beforeBracket$afterBracket"
-        anonType.replace(" ", "")
-      case t if t.startsWith("[") && t.endsWith("]")       => Defines.Any
-      case t if t.contains(Defines.QualifiedNameSeparator) => fixQualifiedName(t)
-      case t if t.startsWith("unsigned ")                  => "unsigned " + t.substring(9).replace(" ", "")
-      case t if t.contains("[") && t.contains("]")         => t.replace(" ", "")
-      case t if t.contains("*")                            => t.replace(" ", "")
-      case someType                                        => someType
+      case t if t.contains("( ") => replaceWhitespaceAfterTypeKeyword(fixQualifiedName(t.substring(0, t.indexOf("( "))))
+      case t if t.contains(Defines.QualifiedNameSeparator) => replaceWhitespaceAfterTypeKeyword(fixQualifiedName(t))
+      case t if KeepTypeKeywords.exists(k => t.startsWith(s"$k ")) => replaceWhitespaceAfterTypeKeyword(t)
+      case t if t.contains("[") && t.contains("]")                 => replaceWhitespaceAfterTypeKeyword(t)
+      case t if t.contains("*")                                    => replaceWhitespaceAfterTypeKeyword(t)
+      case someType                                                => someType
+    }
+  }
+
+  private def replaceWhitespaceAfterTypeKeyword(tpe: String): String = {
+    if (KeepTypeKeywords.exists(k => tpe.startsWith(s"$k "))) {
+      KeepTypeKeywords.foldLeft(tpe) { (cur, repl) =>
+        val prefix = s"$repl "
+        if (cur.startsWith(prefix)) {
+          prefix + cur.substring(prefix.length).replace(" ", "")
+        } else {
+          cur
+        }
+      }
+    } else {
+      tpe.replace(" ", "")
     }
   }
 

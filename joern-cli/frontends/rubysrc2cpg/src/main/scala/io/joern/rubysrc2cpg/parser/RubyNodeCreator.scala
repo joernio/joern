@@ -24,7 +24,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     SimpleIdentifier(None)(span.spanStart(classNameGen.fresh))
   }
 
-  private def defaultTextSpan(code: String = ""): TextSpan = TextSpan(None, None, None, None, code)
+  private def defaultTextSpan(code: String = ""): TextSpan = TextSpan(None, None, None, None, None, code)
 
   override def defaultResult(): RubyNode = Unknown()(defaultTextSpan())
 
@@ -211,21 +211,13 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
 
   override def visitPrimaryOperatorExpression(ctx: RubyParser.PrimaryOperatorExpressionContext): RubyNode = {
     super.visitPrimaryOperatorExpression(ctx) match {
-      case x: BinaryExpression if x.lhs.text.endsWith("=") && x.op == "*" =>
+      case expr @ BinaryExpression(SimpleCall(lhs: SimpleIdentifier, Nil), "*", rhs) if lhs.text.endsWith("=") =>
         // fixme: This workaround handles a parser ambiguity with method identifiers having `=` and assignments with
         //  splatting on the RHS. The Ruby parser gives precedence to assignments over methods called with this suffix
-        //  however
-        val newLhs = x.lhs match {
-          case call: SimpleCall => SimpleIdentifier(None)(call.span.spanStart(call.span.text.stripSuffix("=")))
-          case y =>
-            logger.warn(s"Unhandled class in repacking of primary operator expression ${y.getClass}")
-            y
-        }
-        val newRhs = {
-          val oldRhsSpan = x.rhs.span
-          SplattingRubyNode(x.rhs)(oldRhsSpan.spanStart(s"*${oldRhsSpan.text}"))
-        }
-        SingleAssignment(newLhs, "=", newRhs)(x.span)
+        //  however. See https://github.com/joernio/joern/issues/4775
+        val newLhs = SimpleIdentifier(None)(lhs.span.spanStart(lhs.span.text.stripSuffix("=")))
+        val newRhs = SplattingRubyNode(rhs)(rhs.span.spanStart(s"*${rhs.span.text}"))
+        SingleAssignment(newLhs, "=", newRhs)(expr.span)
       case x => x
     }
   }
@@ -749,9 +741,11 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
       } else {
         if (!hasArguments) {
           if (methodName.headOption.exists(_.isUpper)) {
+            // This would be a symbol-like member
             return MemberAccess(target, ctx.op.getText, methodName)(ctx.toTextSpan)
           } else {
-            return MemberCall(target, ctx.op.getText, methodName, Nil)(ctx.toTextSpan)
+            // Approximate this as a field-load
+            return MemberAccess(target, ctx.op.getText, methodName)(ctx.toTextSpan)
           }
         } else {
           return MemberCall(target, ctx.op.getText, methodName, ctx.argumentWithParentheses().arguments.map(visit))(

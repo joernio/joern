@@ -1,6 +1,7 @@
 package io.joern.x2cpg.passes.frontend
 
 import io.joern.x2cpg.passes.frontend.TypeNodePass.fullToShortName
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{Cpg, Properties}
 import io.shiftleft.codepropertygraph.generated.nodes.NewType
 import io.shiftleft.passes.CpgPass
@@ -45,7 +46,9 @@ class TypeNodePass protected (registeredTypes: List[String], cpg: Cpg, getTypesF
     val usedTypesSet = typeDeclTypes ++ typeFullNameValues
     usedTypesSet.remove("<empty>")
     val usedTypes =
-      (usedTypesSet.filterInPlace(!_.endsWith(NamespaceTraversal.globalNamespaceName)).toArray :+ "ANY").toSet.sorted
+      (usedTypesSet
+        .filterInPlace(!_.endsWith(NamespaceTraversal.globalNamespaceName))
+        .toArray :+ Defines.Any).toSet.sorted
 
     usedTypes.foreach { typeName =>
       val shortName = fullToShortName(typeName)

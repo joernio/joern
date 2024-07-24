@@ -3,6 +3,8 @@ package io.joern.c2cpg.astcreation
 object Defines {
   val Any: String                    = "ANY"
   val Void: String                   = "void"
+  val Function: String               = "std.function"
+  val Array: String                  = "std.array"
   val QualifiedNameSeparator: String = "::"
   val Empty                          = "<empty>"
 

@@ -194,6 +194,26 @@ class TypeNodePassTests extends C2CpgSuite {
         }
       }
     }
+
+    "be correct for volatile types" in {
+      val cpg = code("""
+          |void func(void) {
+          |  static volatile int **ipp;
+          |  static int *ip;
+          |  static volatile int i = 0;
+          |
+          |  ipp = &ip;
+          |  ipp = (int**) &ip;
+          |  *ipp = &i;
+          |  if (*ip != 0) {}
+          |}""".stripMargin)
+      cpg.identifier.nameExact("ipp").typeFullName.distinct.l shouldBe List("volatile int**")
+      cpg.identifier.nameExact("ip").typeFullName.distinct.l shouldBe List("int*")
+      cpg.identifier.nameExact("i").typeFullName.distinct.l shouldBe List("volatile int")
+      cpg.local.nameExact("ipp").typeFullName.l shouldBe List("volatile int**")
+      cpg.local.nameExact("ip").typeFullName.l shouldBe List("int*")
+      cpg.local.nameExact("i").typeFullName.l shouldBe List("volatile int")
+    }
   }
 
 }

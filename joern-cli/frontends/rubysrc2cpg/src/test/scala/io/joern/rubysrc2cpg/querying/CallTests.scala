@@ -270,7 +270,7 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
   }
 
   "a call with a quoted regex literal should have a literal receiver" in {
-    val cpg          = code("%r{^/}.freeze")
+    val cpg          = code("%r{^/}.freeze()")
     val regexLiteral = cpg.call.nameExact("freeze").receiver.fieldAccess.argument(1).head.asInstanceOf[Literal]
     regexLiteral.typeFullName shouldBe s"$kernelPrefix.Regexp"
     regexLiteral.code shouldBe "%r{^/}"

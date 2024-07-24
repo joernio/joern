@@ -287,14 +287,14 @@ class MethodTests extends C2CpgSuite {
           |""".stripMargin,
         "test.cpp"
       )
-      val List(m1, m2, m3, m4) = cpg.method
-        .nameExact("staticCMethodDecl", "staticCMethodDef", "staticCPPMethodDecl", "staticCPPMethodDef")
-        .isStatic
-        .l
-      m1.fullName shouldBe "staticCMethodDecl"
-      m2.fullName shouldBe "staticCMethodDef"
-      m3.fullName shouldBe "A.staticCPPMethodDecl:void()"
-      m4.fullName shouldBe "A.staticCPPMethodDef:void()"
+      val List(staticCMethodDecl)   = cpg.method.nameExact("staticCMethodDecl").isStatic.l
+      val List(staticCMethodDef)    = cpg.method.nameExact("staticCMethodDef").isStatic.l
+      val List(staticCPPMethodDecl) = cpg.method.nameExact("staticCPPMethodDecl").isStatic.l
+      val List(staticCPPMethodDef)  = cpg.method.nameExact("staticCPPMethodDef").isStatic.l
+      staticCMethodDecl.fullName shouldBe "staticCMethodDecl"
+      staticCMethodDef.fullName shouldBe "staticCMethodDef"
+      staticCPPMethodDecl.fullName shouldBe "A.staticCPPMethodDecl:void()"
+      staticCPPMethodDef.fullName shouldBe "A.staticCPPMethodDef:void()"
     }
   }
 

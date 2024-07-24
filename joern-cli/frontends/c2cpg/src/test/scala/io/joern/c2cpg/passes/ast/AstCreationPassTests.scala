@@ -1655,6 +1655,27 @@ class AstCreationPassTests extends AstC2CpgSuite {
       }
     }
 
+    "be correct for method refs from function pointers" in {
+      val cpg = code("""
+          |uid_t getuid(void);
+          |void someFunction() {}
+          |void checkFunctionPointerComparison() {
+          |  if (getuid == 0 || someFunction == 0) {}
+          |}
+          |""".stripMargin)
+      val List(methodA) = cpg.method.fullNameExact("getuid").l
+      val List(methodB) = cpg.method.fullNameExact("someFunction").l
+      val List(methodC) = cpg.method.fullNameExact("checkFunctionPointerComparison").l
+      inside(cpg.call.nameExact(Operators.equals).l) { case List(callA: Call, callB: Call) =>
+        val getuidRef = callA.argument(1).asInstanceOf[MethodRef]
+        getuidRef.methodFullName shouldBe methodA.fullName
+        getuidRef.typeFullName shouldBe methodA.methodReturn.typeFullName
+        val someFunctionRef = callB.argument(1).asInstanceOf[MethodRef]
+        someFunctionRef.methodFullName shouldBe methodB.fullName
+        someFunctionRef.typeFullName shouldBe methodB.methodReturn.typeFullName
+      }
+    }
+
     "be correct for locals for array init" in {
       val cpg = code("""
         |bool x[2] = { TRUE, FALSE };
