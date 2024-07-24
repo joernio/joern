@@ -375,9 +375,7 @@ class NamespaceTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
         "FinalClasses.C22",
         "FinalClasses.C23",
         "IntermediateClasses.B1",
-        "IntermediateClasses.B1*",
-        "IntermediateClasses.B2",
-        "IntermediateClasses.B2*"
+        "IntermediateClasses.B2"
       )
     }
 

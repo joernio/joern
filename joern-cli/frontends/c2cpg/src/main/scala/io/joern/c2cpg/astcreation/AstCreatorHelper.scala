@@ -139,11 +139,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     val tpe =
       if (stripKeywords) {
         ReservedTypeKeywords.foldLeft(rawType) { (cur, repl) =>
-          if (cur.contains(s"$repl ")) {
-            dereferenceTypeFullName(cur.replace(s"$repl ", ""))
-          } else {
-            cur
-          }
+          if (cur.contains(s"$repl ")) cur.replace(s"$repl ", "") else cur
         }
       } else {
         rawType
@@ -296,9 +292,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def nullSafeAst(node: IASTStatement, argIndex: Int = -1): Seq[Ast] = {
     Option(node).map(astsForStatement(_, argIndex)).getOrElse(Seq.empty)
   }
-
-  protected def dereferenceTypeFullName(fullName: String): String =
-    fullName.replace("*", "")
 
   protected def fixQualifiedName(name: String): String = {
     val normalizedName = StringUtils.normalizeSpace(name)
