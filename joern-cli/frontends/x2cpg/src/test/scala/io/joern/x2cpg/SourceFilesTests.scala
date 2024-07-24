@@ -53,6 +53,24 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
 
   }
 
+  "do not throw an exception" when {
+    "one of the input files is a broken symlink" in {
+      File.usingTemporaryDirectory() { tmpDir =>
+        (tmpDir / "a.c").touch()
+        val symlink = (tmpDir / "broken.c").symbolicLinkTo(File("does/not/exist.c"))
+        symlink.exists shouldBe false
+        symlink.isReadable shouldBe false
+        val ignored = (tmpDir / "ignored.c").touch()
+        val result = Try(
+          SourceFiles
+            .determine(tmpDir.canonicalPath, cSourceFileExtensions, ignoredFilesPath = Some(Seq(ignored.pathAsString)))
+        )
+        result.isFailure shouldBe false
+        result.getOrElse(List.empty).size shouldBe 1
+      }
+    }
+  }
+
   "throw an exception" when {
 
     "the input file does not exist" in {
