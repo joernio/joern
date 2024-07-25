@@ -38,6 +38,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     blockAst(node, childAsts.toList)
   }
 
+  private def hasValidArrayModifier(arrayDecl: IASTArrayDeclarator): Boolean =
+    arrayDecl.getArrayModifiers.nonEmpty && arrayDecl.getArrayModifiers.forall(_.getConstantExpression != null)
+
   private def astsForDeclarationStatement(decl: IASTDeclarationStatement): Seq[Ast] =
     decl.getDeclaration match {
       case simpleDecl: IASTSimpleDeclaration
@@ -46,7 +49,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case simpleDecl: IASTSimpleDeclaration =>
         val locals = simpleDecl.getDeclarators.zipWithIndex.map { case (d, i) => astForDeclarator(simpleDecl, d, i) }
         val arrayModCalls = simpleDecl.getDeclarators
-          .collect { case d: IASTArrayDeclarator if d.getArrayModifiers.nonEmpty => d }
+          .collect { case d: IASTArrayDeclarator if hasValidArrayModifier(d) => d }
           .map { d =>
             val name          = Operators.alloc
             val tpe           = registerType(typeFor(d))

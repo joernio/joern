@@ -1548,6 +1548,20 @@ class AstCreationPassTests extends AstC2CpgSuite {
       }
     }
 
+    "be correct for empty array init" in {
+      val cpg = code("""
+        |void other(void) {
+        |  int i = 0;
+        |  char str[] = "abc";
+        |  printf("%d %s", i, str);
+        |}
+        |""".stripMargin)
+      val List(str1, str2) = cpg.identifier.nameExact("str").l
+      str1.typeFullName shouldBe "char[]"
+      str2.typeFullName shouldBe "char[]"
+      cpg.call.nameExact(Operators.alloc) shouldBe empty
+    }
+
     "be correct for array init" in {
       val cpg = code("""
         |int x[] = {0, 1, 2, 3};
