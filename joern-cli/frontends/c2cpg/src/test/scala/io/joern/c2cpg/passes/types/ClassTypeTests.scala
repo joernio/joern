@@ -145,6 +145,7 @@ class ClassTypeTests extends C2CpgSuite(FileDefaults.CPP_EXT) {
         |public:
         |  void foo1() {
         |    b.foo2();
+        |    B x = b;
         |   }
         |};
         |
@@ -156,6 +157,7 @@ class ClassTypeTests extends C2CpgSuite(FileDefaults.CPP_EXT) {
 
       val List(call) = cpg.call("foo2").l
       call.methodFullName shouldBe "B.foo2:void()"
+      cpg.identifier.nameExact("b").typeFullName.l shouldBe List("B", "B")
     }
   }
 
