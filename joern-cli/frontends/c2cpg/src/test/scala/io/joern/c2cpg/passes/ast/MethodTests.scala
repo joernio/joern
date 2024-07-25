@@ -299,7 +299,7 @@ class MethodTests extends C2CpgSuite {
   }
 
   "Method name, signature and full name tests" should {
-    "be correct for plain method C" in {
+    "be correct for plain C method" in {
       val cpg = code(
         """
           |int method(int);
@@ -308,6 +308,18 @@ class MethodTests extends C2CpgSuite {
       )
       val List(method) = cpg.method.nameExact("method").l
       method.signature shouldBe "int(int)"
+      method.fullName shouldBe "method"
+    }
+
+    "be correct for C function pointer" in {
+      val cpg = code(
+        """
+          |int (*method[])(int a, int b) = { 0 };
+          |""".stripMargin,
+        "test.c"
+      )
+      val List(method) = cpg.method.nameExact("method").l
+      method.signature shouldBe "int(int,int)"
       method.fullName shouldBe "method"
     }
 

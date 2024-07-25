@@ -14,6 +14,7 @@ import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTLambdaExpression
 import org.eclipse.cdt.core.dom.ast.gnu.c.ICASTKnRFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTParameterDeclaration
+import org.eclipse.cdt.internal.core.dom.parser.c.CVariable
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFunctionDefinition
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTParameterDeclaration
@@ -155,7 +156,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
   protected def astForFunctionDeclarator(funcDecl: IASTFunctionDeclarator): Ast = {
     funcDecl.getName.resolveBinding() match {
-      case function: IFunction =>
+      case _ @(_: IFunction | _: CVariable) =>
         val returnType = cleanType(
           typeForDeclSpecifier(funcDecl.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclSpecifier)
         )
