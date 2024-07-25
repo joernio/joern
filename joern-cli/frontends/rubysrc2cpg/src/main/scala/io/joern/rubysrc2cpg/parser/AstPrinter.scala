@@ -10,7 +10,7 @@ import io.joern.rubysrc2cpg.parser.RubyParser.{
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
 import org.antlr.v4.runtime.ParserRuleContext
-import org.antlr.v4.runtime.tree.ParseTree
+import org.antlr.v4.runtime.tree.{ParseTree, TerminalNode}
 
 import scala.jdk.CollectionConverters.*
 
@@ -27,6 +27,7 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   override def defaultResult(): String = ""
 
   override def visit(tree: ParseTree): String = {
+    println("AstPrinter: " + tree.getClass)
     Option(tree).map(super.visit).getOrElse(defaultResult)
   }
 
@@ -204,7 +205,7 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
         }
         SingleAssignment(newLhs, "=", newRhs)(x.span)
         s"${newLhs.span.text} = ${newRhs.span.text}"
-      case x => x.span.text
+      case x => super.visitPrimaryOperatorExpression(ctx)
     }
   }
 
@@ -348,7 +349,7 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     if (!ctx.isInterpolated) {
       ctx.getText
     } else {
-      ctx.children.asScala.map(visit).mkString(" ")
+      ctx.children.asScala.map(visit).mkString("")
     }
   }
 
@@ -360,7 +361,7 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     if (!ctx.isInterpolated) {
       ctx.getText
     } else {
-      ctx.children.asScala.map(visit).mkString(" ")
+      ctx.children.asScala.map(visit).mkString
     }
   }
 
@@ -368,7 +369,7 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     if (!ctx.isInterpolated) {
       ctx.getText
     } else {
-      ctx.children.asScala.map(visit).mkString(" ")
+      ctx.children.asScala.map(visit).mkString
     }
   }
 
@@ -376,7 +377,18 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     if (!ctx.isInterpolated) {
       ctx.getText
     } else {
-      ctx.children.asScala.map(visit).mkString(" ")
+      val b = ctx.interpolations
+      ctx.children.asScala.map(visit).mkString
+    }
+  }
+
+  override def visitQuotedExpandedLiteralStringContent(
+    ctx: RubyParser.QuotedExpandedLiteralStringContentContext
+  ): String = {
+    Option(ctx.compoundStatement()) match {
+      case Some(compoundStatement) =>
+        ctx.children.asScala.map(visit).mkString
+      case None => ctx.getText
     }
   }
 
@@ -396,6 +408,22 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     } else {
       ctx.children.asScala.map(visit).mkString(" ")
     }
+  }
+
+  override def visitDoubleQuotedString(ctx: RubyParser.DoubleQuotedStringContext): String = {
+    if (!ctx.isInterpolated) {
+      ctx.getText
+    } else {
+      ctx.children.asScala.map(visit).mkString
+    }
+  }
+
+  override def visitDoubleQuotedStringContent(ctx: RubyParser.DoubleQuotedStringContentContext): String = {
+    ctx.children.asScala.map(visit).mkString
+  }
+
+  override def visitTerminal(node: TerminalNode): String = {
+    node.getText
   }
 
   override def visitCurlyBracesBlock(ctx: RubyParser.CurlyBracesBlockContext): String = {
@@ -486,7 +514,7 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
           }
           s"$idAssign $argNode"
         case _ =>
-          s"${visit(identifierCtx)} (${arguments.mkString(",")})"
+          s"${visit(identifierCtx)} ${arguments.mkString(",")}"
       }
     } else {
       s"${ctx.commandArgument.arguments.map(visit).mkString(",")}"

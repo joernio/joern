@@ -13,7 +13,7 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path}
 import scala.util.{Failure, Success, Using}
 
-class RubyParserFixture
+class RubyParserFixture(newMatch: Boolean = false)
     extends RubyFrontend(useDeprecatedFrontend = false, withDownloadDependencies = false, disableFileContent = true)
     with TestCodeWriter
     with AnyWordSpecLike
@@ -86,18 +86,24 @@ class RubyParserFixture
       case None       => None
     }
 
-    val astPrinterParser = parseCode(code).headOption match {
+    val astPrinter = parseCode(code).headOption match {
       case Some(head) => Option(AstPrinter().visit(head))
       case None       => None
     }
 
-    println(astPrinterParser)
-
-    ast match {
-      case Some(ast) =>
-        val compareTo = if (expected != null) expected else code
-        ast.span.text shouldBe compareTo
-      case None => fail("AST generation failed")
-    }
+    if newMatch then
+      astPrinter match {
+        case Some(ast) =>
+          val compareTo = if (expected != null) expected else code
+          ast shouldBe compareTo
+        case None => fail("AST Printer failed")
+      }
+    else
+      ast match {
+        case Some(ast) =>
+          val compareTo = if (expected != null) expected else code
+          ast.span.text shouldBe code
+        case None => fail("AST generation failed")
+      }
   }
 }
