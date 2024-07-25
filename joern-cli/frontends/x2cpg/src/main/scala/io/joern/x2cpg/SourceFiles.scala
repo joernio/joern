@@ -13,9 +13,13 @@ object SourceFiles {
   private val logger = LoggerFactory.getLogger(getClass)
 
   private def isIgnoredByFileList(filePath: String, ignoredFiles: Seq[String]): Boolean = {
+    val filePathFile = File(filePath)
+    if (!filePathFile.exists || !filePathFile.isReadable) {
+      logger.debug(s"'$filePath' ignored (not readable or broken symlink)")
+      return true
+    }
     val isInIgnoredFiles = ignoredFiles.exists { ignorePath =>
       val ignorePathFile = File(ignorePath)
-      val filePathFile   = File(filePath)
       ignorePathFile.exists &&
       (ignorePathFile.contains(filePathFile, strict = false) || ignorePathFile.isSameFileAs(filePathFile))
     }
