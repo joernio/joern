@@ -156,7 +156,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
   protected def astForFunctionDeclarator(funcDecl: IASTFunctionDeclarator): Ast = {
     funcDecl.getName.resolveBinding() match {
-      case _ @(_: IFunction | _: CVariable) =>
+      case _: IFunction =>
         val returnType = cleanType(
           typeForDeclSpecifier(funcDecl.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclSpecifier)
         )
@@ -206,6 +206,13 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         )
         registerMethodDeclaration(fullname, methodInfo)
         Ast()
+      case cVariable: CVariable =>
+        val name       = StringUtils.normalizeSpace(shortName(funcDecl))
+        val tpe        = cleanType(ASTTypeUtil.getType(cVariable.getType))
+        val codeString = code(funcDecl.getParent)
+        val node       = localNode(funcDecl, name, codeString, registerType(tpe))
+        scope.addToScope(name, (node, tpe))
+        Ast(node)
       case field: IField =>
         // TODO create a member for the field
         // We get here a least for function pointer member declarations in classes like:

@@ -314,13 +314,16 @@ class MethodTests extends C2CpgSuite {
     "be correct for C function pointer" in {
       val cpg = code(
         """
-          |int (*method[])(int a, int b) = { 0 };
+          |int (*foo)(int, int) = { 0 };
+          |int (*bar[])(int, int) = { 0 };
           |""".stripMargin,
         "test.c"
       )
-      val List(method) = cpg.method.nameExact("method").l
-      method.signature shouldBe "int(int,int)"
-      method.fullName shouldBe "method"
+      val List(foo, bar) = cpg.local.l
+      foo.name shouldBe "foo"
+      foo.typeFullName shouldBe "int(*)(int,int)"
+      bar.name shouldBe "bar"
+      bar.typeFullName shouldBe "int(*[])(int,int)"
     }
 
     "be correct for plain method CPP" in {
