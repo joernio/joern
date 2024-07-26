@@ -213,7 +213,7 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   override def visitCommandWithDoBlock(ctx: RubyParser.CommandWithDoBlockContext): String = {
     val name = Option(ctx.methodIdentifier()).orElse(Option(ctx.methodName())).map(visit).getOrElse(defaultResult())
     val arguments = ctx.arguments.map(visit).mkString(" ")
-    val block     = visit(ctx.doBlock()).asInstanceOf[Block]
+    val block     = visit(ctx.doBlock())
 
     s"$name $arguments $block"
   }
@@ -459,10 +459,17 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   }
 
   override def visitDoBlock(ctx: RubyParser.DoBlockContext): String = {
-    val params = Option(ctx.blockParameter()).fold(List())(_.parameters).map(visit).mkString(",")
-    val body   = visit(ctx.bodyStatement())
+    val outputSb = new StringBuilder(ctx.DO.getText)
 
-    s"${ctx.DO.getText} $params $body ${ctx.END.getText}"
+    val params = Option(ctx.blockParameter()).fold(List())(_.parameters).map(visit).mkString(",")
+    if params != "" then outputSb.append(s"$params")
+
+    outputSb.append(ls)
+
+    val body = visit(ctx.bodyStatement())
+    if body != "" then outputSb.append(s"$body$ls")
+
+    outputSb.append(ctx.END.getText).toString
   }
 
   override def visitLocalVariableAssignmentExpression(
@@ -622,14 +629,16 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   override def visitMethodCallWithParenthesesExpression(
     ctx: RubyParser.MethodCallWithParenthesesExpressionContext
   ): String = {
-    val identifier = visit(ctx.methodIdentifier())
-    val args       = ctx.argumentWithParentheses().arguments.map(visit).mkString(",")
-    val block = Option(ctx.block()) match {
-      case Some(block) => visit(block)
-      case None        => ""
-    }
+    val outputSb = new StringBuilder()
 
-    s"$identifier ($args) $block"
+    val identifier = visit(ctx.methodIdentifier())
+    outputSb.append(identifier)
+
+    val args = ctx.argumentWithParentheses().arguments.map(visit).mkString(",")
+    outputSb.append(s"($args)")
+
+    if Option(ctx.block).isDefined then outputSb.append(s" ${visit(ctx.block)}")
+    outputSb.toString
   }
 
   override def visitYieldExpression(ctx: RubyParser.YieldExpressionContext): String = {
@@ -642,6 +651,14 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   ): String = {
     val args = ctx.primaryValueList().primaryValue().asScala.map(visit).mkString(",")
     s"${ctx.YIELD.getText} $args"
+  }
+
+  override def visitMemberAccessCommand(ctx: RubyParser.MemberAccessCommandContext): String = {
+    val arg        = visit(ctx.commandArgument())
+    val methodName = visit(ctx.methodName)
+    val base       = visit(ctx.primary())
+
+    s"$base.$methodName $arg"
   }
 
   override def visitConstantIdentifierVariable(ctx: RubyParser.ConstantIdentifierVariableContext): String = {
@@ -840,8 +857,11 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   }
 
   override def visitHashLiteral(ctx: RubyParser.HashLiteralContext): String = {
+    val outputSb  = new StringBuilder(ctx.LCURLY.getText)
     val assocList = Option(ctx.associationList()).map(_.associations).getOrElse(List()).map(visit).mkString(",")
-    s"${ctx.LCURLY.getText} $assocList ${ctx.RCURLY.getText}"
+    if assocList != "" then outputSb.append(s"$assocList")
+    outputSb.append(ctx.RCURLY.getText)
+    outputSb.toString
   }
 
   override def visitAssociationElement(ctx: RubyParser.AssociationElementContext): String = {
