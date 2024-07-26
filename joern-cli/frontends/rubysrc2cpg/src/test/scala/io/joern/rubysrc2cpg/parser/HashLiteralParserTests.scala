@@ -8,7 +8,7 @@ class HashLiteralParserTests extends RubyParserFixture(newMatch = true) with Mat
     test("{ }", "{}")
     test("{**x}")
     test("{**x, **y}", "{**x,**y}")
-    test("{**x, y => 1, **z}", "{**x,y => 1,**z}")
+    test("{**x, y => 1, **z}", "{**x,y=> 1,**z}")
     test("{**group_by_type(some)}")
   }
 }

@@ -453,9 +453,15 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   }
 
   override def visitCurlyBracesBlock(ctx: RubyParser.CurlyBracesBlockContext): String = {
-    val params = Option(ctx.blockParameter()).fold(List())(_.parameters).map(visit).mkString(",")
-    val body   = visit(ctx.compoundStatement())
-    s"${ctx.LCURLY.getText} $params $body ${ctx.RCURLY.getText}"
+    val outputSb = new StringBuilder(ctx.LCURLY.getText)
+
+    val params = Option(ctx.blockParameter()).fold(List())(_.parameters).map(visit)
+    if params.nonEmpty then outputSb.append(params.mkString(","))
+
+    val body = visit(ctx.compoundStatement())
+    if body != "" then outputSb.append(s"$ls$body$ls")
+
+    outputSb.append(ctx.RCURLY.getText).toString
   }
 
   override def visitDoBlock(ctx: RubyParser.DoBlockContext): String = {
@@ -620,15 +626,15 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   }
 
   override def visitLambdaExpression(ctx: RubyParser.LambdaExpressionContext): String = {
+    val outputSb = new StringBuilder(ctx.MINUSGT.getText)
+
     val params = Option(ctx.parameterList()).fold(List())(_.parameters).map(visit).mkString(",")
     val body   = visit(ctx.block())
 
-    val paramList = params match {
-      case ""        => ""
-      case paramList => s"($paramList)"
-    }
+    if params != "" then outputSb.append(s"($params)")
+    if body != "" then outputSb.append(s" $body")
 
-    s"${ctx.MINUSGT.getText} $paramList $body"
+    outputSb.toString
   }
 
   override def visitMethodCallWithParenthesesExpression(
@@ -647,8 +653,11 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   }
 
   override def visitYieldExpression(ctx: RubyParser.YieldExpressionContext): String = {
-    val args = Option(ctx.argumentWithParentheses()).iterator.flatMap(_.arguments).map(visit).mkString(",")
-    s"${ctx.YIELD.getText} ($args)"
+    val outputSb = new StringBuilder(ctx.YIELD.getText)
+    val args     = Option(ctx.argumentWithParentheses()).iterator.flatMap(_.arguments).map(visit)
+    if args.nonEmpty then outputSb.append(s"(${args.mkString(",")})")
+
+    outputSb.toString
   }
 
   override def visitYieldMethodInvocationWithoutParentheses(
@@ -937,17 +946,28 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   }
 
   override def visitMethodDefinition(ctx: RubyParser.MethodDefinitionContext): String = {
-    val params     = Option(ctx.methodParameterPart().parameterList()).fold(List())(_.parameters).map(visit)
-    val methodBody = visit(ctx.bodyStatement())
+    val outputSb = new StringBuilder(s"${ctx.DEF.getText} ${ctx.definedMethodName.getText}")
 
-    if params.nonEmpty then
-      s"${ctx.DEF.getText} ${ctx.definedMethodName().getText} (${params.mkString(",")})$ls$methodBody$ls${ctx.END.getText}"
-    else s"${ctx.DEF.getText} ${ctx.definedMethodName().getText}$ls$methodBody$ls${ctx.END.getText}"
+    val params = Option(ctx.methodParameterPart().parameterList()).fold(List())(_.parameters).map(visit)
+    if params.nonEmpty then outputSb.append(s"(${params.mkString(",")})")
+
+    val methodBody = visit(ctx.bodyStatement())
+    if methodBody != "" then outputSb.append(s"$ls$methodBody")
+
+    outputSb.append(s"$ls${ctx.END.getText}").toString
   }
 
   override def visitEndlessMethodDefinition(ctx: RubyParser.EndlessMethodDefinitionContext): String = {
+    val outputSb = new StringBuilder(s"${ctx.DEF.getText} ${ctx.definedMethodName.getText}")
+
+    val params = Option(ctx.parameterList()).fold(List())(_.parameters).map(visit)
+    if params.nonEmpty then outputSb.append(s"${ctx.LPAREN.getText}${params.mkString(",")}${ctx.RPAREN.getText}")
+
+    outputSb.append(s" ${ctx.EQ.getText}")
     val body = visit(ctx.statement())
-    s"${ctx.DEF.getText} ${ctx.definedMethodName().getText}$ls$body"
+    if body != "" then outputSb.append(s" $body")
+
+    outputSb.toString
   }
 
   override def visitSingletonMethodDefinition(ctx: RubyParser.SingletonMethodDefinitionContext): String = {
@@ -973,6 +993,11 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     s"${ctx.STAR2().getText}$identName"
   }
 
+  override def visitArrayParameter(ctx: RubyParser.ArrayParameterContext): String = {
+    val identName = Option(ctx.LOCAL_VARIABLE_IDENTIFIER()).map(_.getText).getOrElse(ctx.getText)
+    s"${ctx.STAR.getText}$identName"
+  }
+
   override def visitOptionalParameter(ctx: RubyParser.OptionalParameterContext): String = {
     val paramName = ctx.optionalParameterName().LOCAL_VARIABLE_IDENTIFIER().getText
     val value     = visit(ctx.operatorExpression())
@@ -985,7 +1010,12 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
 
   override def visitMandatoryParameter(ctx: RubyParser.MandatoryParameterContext): String = {
     val paramName = ctx.LOCAL_VARIABLE_IDENTIFIER().getText
-    s"$paramName"
+    val op = Option(ctx.COLON) match {
+      case Some(colon) => ctx.COLON.getText
+      case None        => ""
+    }
+
+    s"$paramName$op"
   }
 
   override def visitVariableLeftHandSide(ctx: RubyParser.VariableLeftHandSideContext): String = {
@@ -1036,14 +1066,9 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     if whenClauses.nonEmpty then outputSb.append(s"$ls${whenClauses.mkString}")
 
     val elseClause = Option(ctx.elseClause()).map(visit)
-    if elseClause.isDefined then outputSb.append(s"${elseClause.get}")
-
-    val op =
-      if Option(ctx.SEMI()).isDefined then ";"
-      else ls
+    if elseClause.isDefined then outputSb.append(s"${elseClause.get}$ls")
 
     outputSb.append(s"${ctx.END.getText}").toString
-
   }
 
   override def visitCaseWithoutExpression(ctx: RubyParser.CaseWithoutExpressionContext): String = {
