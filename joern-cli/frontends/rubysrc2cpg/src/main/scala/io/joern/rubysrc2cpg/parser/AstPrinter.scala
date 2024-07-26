@@ -68,7 +68,7 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   }
 
   override def visitBeginEndExpression(ctx: RubyParser.BeginEndExpressionContext): String = {
-    visit(ctx.bodyStatement())
+    s"${ctx.BEGIN.getText}$ls${visit(ctx.bodyStatement())}$ls${ctx.END.getText}"
   }
 
   override def visitIfExpression(ctx: RubyParser.IfExpressionContext): String = {
@@ -203,7 +203,6 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
           val oldRhsSpan = x.rhs.span
           SplattingRubyNode(x.rhs)(oldRhsSpan.spanStart(s"*${oldRhsSpan.text}"))
         }
-        SingleAssignment(newLhs, "=", newRhs)(x.span)
         s"${newLhs.span.text} = ${newRhs.span.text}"
       case x => super.visitPrimaryOperatorExpression(ctx)
     }
@@ -753,12 +752,52 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
 
     val sep =
       if elements.nonEmpty then
-        ctxElements.map(_.NON_EXPANDED_ARRAY_ITEM_SEPARATOR().asScala).getOrElse(List()).map(_.getText).head
+        ctxElements
+          .map(_.NON_EXPANDED_ARRAY_ITEM_SEPARATOR().asScala)
+          .getOrElse(List())
+          .map(_.getText)
+          .headOption
+          .getOrElse("")
       else ""
 
     val elementsString = elements.mkString(sep)
 
-    s"${ctx.QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_START()} $elements ${ctx.QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END()}"
+    s"${ctx.QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_START()}$elementsString${ctx.QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END()}"
+  }
+
+  override def visitQuotedNonExpandedSymbolArrayLiteral(
+    ctx: RubyParser.QuotedNonExpandedSymbolArrayLiteralContext
+  ): String = {
+    val ctxElements = Option(ctx.quotedNonExpandedArrayElementList())
+
+    val elements = ctxElements
+      .map(_.elements)
+      .getOrElse(List())
+      .map(_.getText)
+
+    val sep =
+      if elements.nonEmpty then
+        ctxElements
+          .map(_.NON_EXPANDED_ARRAY_ITEM_SEPARATOR().asScala)
+          .getOrElse(List())
+          .map(_.getText)
+          .headOption
+          .getOrElse("")
+      else ""
+
+    val elementsString = elements.mkString(sep)
+
+    s"${ctx.QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_START.getText}$elementsString${ctx.QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_END.getText}"
+  }
+
+  override def visitQuotedExpandedArrayElement(ctx: RubyParser.QuotedExpandedArrayElementContext): String = {
+    ""
+  }
+
+  override def visitQuotedExpandedArrayElementContent(
+    ctx: RubyParser.QuotedExpandedArrayElementContentContext
+  ): String = {
+    ""
   }
 
   override def visitRangeExpression(ctx: RubyParser.RangeExpressionContext): String = {
@@ -898,13 +937,13 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   override def visitBodyStatement(ctx: RubyParser.BodyStatementContext): String = {
     val body         = visit(ctx.compoundStatement())
     val rescueClause = Option(ctx.rescueClause.asScala).fold(List())(_.map(visit))
-    val elseClause   = Option(ctx.elseClause()).map(visit)
-    val ensureClause = Option(ctx.ensureClause).map(visit)
+    val elseClause   = Option(ctx.elseClause()).map(visit).getOrElse("")
+    val ensureClause = Option(ctx.ensureClause).map(visit).getOrElse("")
 
     if (rescueClause.isEmpty && elseClause.isEmpty && ensureClause.isEmpty) {
       body
     } else {
-      s"$body ${rescueClause.mkString(ls)}$elseClause$ls$ensureClause"
+      s"$body$ls${rescueClause.mkString(ls)}$elseClause$ensureClause"
     }
   }
 
@@ -913,15 +952,15 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   }
 
   override def visitRescueClause(ctx: RubyParser.RescueClauseContext): String = {
-    val exceptionClassList = Option(ctx.exceptionClassList).map(visit)
-    val variables          = Option(ctx.exceptionVariableAssignment).map(visit)
+    val exceptionClassList = Option(ctx.exceptionClassList).map(visit).getOrElse("")
+    val variables          = Option(ctx.exceptionVariableAssignment).map(visit).getOrElse("")
     val thenClause         = visit(ctx.thenClause)
 
     val thenKeyword =
-      if Option(ctx.thenClause().THEN()).isDefined then s"${ctx.thenClause().THEN().getText}"
+      if Option(ctx.thenClause().THEN()).isDefined then s" ${ctx.thenClause().THEN().getText}"
       else ""
 
-    s"${ctx.RESCUE().getText} $exceptionClassList $variables $thenKeyword $thenClause"
+    s"${ctx.RESCUE().getText} $exceptionClassList => $variables $thenKeyword $thenClause".strip()
   }
 
   override def visitEnsureClause(ctx: RubyParser.EnsureClauseContext): String = {
