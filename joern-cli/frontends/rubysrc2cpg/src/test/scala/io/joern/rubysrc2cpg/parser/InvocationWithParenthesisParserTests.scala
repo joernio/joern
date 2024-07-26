@@ -3,27 +3,36 @@ package io.joern.rubysrc2cpg.parser
 import io.joern.rubysrc2cpg.testfixtures.RubyParserFixture
 import org.scalatest.matchers.should.Matchers
 
-class InvocationWithParenthesisParserTests extends RubyParserFixture with Matchers {
+class InvocationWithParenthesisParserTests extends RubyParserFixture(newMatch = true) with Matchers {
   "method invocation with parenthesis" in {
     test("foo()")
-    test("""foo(
+    test(
+      """foo(
         |)
-        |""".stripMargin)
+        |""".stripMargin,
+      "foo()"
+    )
     test("foo(1)")
     test("foo(region: 1)")
-    test("foo(region:region)")
+    test("foo(region:region)", "foo(region: region)")
     test("foo(id: /.*/)")
-    test("foo(*x, y)")
+    test("foo(*x, y)", "foo(*x,y)")
     test("foo(:region)")
-    test("foo(:region,)")
+    test("foo(:region,)", "foo(:region)")
     test("foo(if: true)")
     test("foo&.bar()")
-    test("foo&.bar(1, 2)")
-    test("""foo
+    test("foo&.bar(1, 2)", "foo&.bar(1,2)")
+    test(
+      """foo
         |.bar
-        |""".stripMargin)
-    test("""foo.
+        |""".stripMargin,
+      "foo.bar"
+    )
+    test(
+      """foo.
         |bar
-        |""".stripMargin)
+        |""".stripMargin,
+      "foo.bar"
+    )
   }
 }

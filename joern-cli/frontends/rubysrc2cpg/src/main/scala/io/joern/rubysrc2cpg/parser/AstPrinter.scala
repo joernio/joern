@@ -511,7 +511,12 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   }
 
   override def visitSplattingArgument(ctx: RubyParser.SplattingArgumentContext): String = {
-    visit(ctx.operatorExpression())
+    val operator = Option(ctx.STAR) match {
+      case Some(star) => ctx.STAR.getText
+      case None       => ctx.STAR2.getText
+    }
+
+    s"$operator${visit(ctx.operatorExpression())}"
   }
 
   override def visitAttributeAssignmentExpression(ctx: RubyParser.AttributeAssignmentExpressionContext): String = {
@@ -729,14 +734,14 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
           return s"$target.$methodName"
         } else {
           val args = ctx.argumentWithParentheses().arguments.map(visit).mkString(",")
-          return s"$target.$methodName ($args)"
+          return s"$target.$methodName($args)"
         }
       } else {
         if (!hasArgs) {
           return s"$target${ctx.op.getText}$methodName"
         } else {
           val args = ctx.argumentWithParentheses().arguments.map(visit).mkString(",")
-          return s"$target${ctx.op.getText}$methodName ($args)"
+          return s"$target${ctx.op.getText}$methodName($args)"
         }
       }
     }
@@ -874,10 +879,10 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
 
     ctx.associationKey().getText match {
       case "if" =>
-        s"${ctx.associationKey().getText} $assocOp $opExpression"
+        s"${ctx.associationKey().getText}$assocOp $opExpression"
       case _ =>
         val assocKey = visit(ctx.associationKey())
-        s"$assocKey $assocOp $opExpression"
+        s"$assocKey$assocOp $opExpression"
     }
   }
 
