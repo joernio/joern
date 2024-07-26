@@ -5,6 +5,8 @@ import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.AstNodeNew
 import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.Operators
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.cpp.*
 import org.eclipse.cdt.core.dom.ast.gnu.IGNUASTGotoStatement
@@ -36,19 +38,34 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     blockAst(node, childAsts.toList)
   }
 
+  private def hasValidArrayModifier(arrayDecl: IASTArrayDeclarator): Boolean =
+    arrayDecl.getArrayModifiers.nonEmpty && arrayDecl.getArrayModifiers.forall(_.getConstantExpression != null)
+
   private def astsForDeclarationStatement(decl: IASTDeclarationStatement): Seq[Ast] =
     decl.getDeclaration match {
-      case simplDecl: IASTSimpleDeclaration
-          if simplDecl.getDeclarators.headOption.exists(_.isInstanceOf[IASTFunctionDeclarator]) =>
-        Seq(astForFunctionDeclarator(simplDecl.getDeclarators.head.asInstanceOf[IASTFunctionDeclarator]))
-      case simplDecl: IASTSimpleDeclaration =>
-        val locals =
-          simplDecl.getDeclarators.zipWithIndex.toList.map { case (d, i) => astForDeclarator(simplDecl, d, i) }
-        val calls =
-          simplDecl.getDeclarators.filter(_.getInitializer != null).toList.map { d =>
-            astForInitializer(d, d.getInitializer)
+      case simpleDecl: IASTSimpleDeclaration
+          if simpleDecl.getDeclarators.headOption.exists(_.isInstanceOf[IASTFunctionDeclarator]) =>
+        Seq(astForFunctionDeclarator(simpleDecl.getDeclarators.head.asInstanceOf[IASTFunctionDeclarator]))
+      case simpleDecl: IASTSimpleDeclaration =>
+        val locals = simpleDecl.getDeclarators.zipWithIndex.map { case (d, i) => astForDeclarator(simpleDecl, d, i) }
+        val arrayModCalls = simpleDecl.getDeclarators
+          .collect { case d: IASTArrayDeclarator if hasValidArrayModifier(d) => d }
+          .map { d =>
+            val name          = Operators.alloc
+            val tpe           = registerType(typeFor(d))
+            val codeString    = code(d)
+            val allocCallNode = callNode(d, code(d), name, name, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
+            val allocCallAst  = callAst(allocCallNode, d.getArrayModifiers.toIndexedSeq.map(astForNode))
+            val operatorName  = Operators.assignment
+            val assignmentCallNode =
+              callNode(d, code(d), operatorName, operatorName, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
+            val left = astForNode(d.getName)
+            callAst(assignmentCallNode, List(left, allocCallAst))
           }
-        locals ++ calls
+        val initCalls = simpleDecl.getDeclarators.filter(_.getInitializer != null).map { d =>
+          astForInitializer(d, d.getInitializer)
+        }
+        Seq.from(locals ++ arrayModCalls ++ initCalls)
       case s: ICPPASTStaticAssertDeclaration         => Seq(astForStaticAssert(s))
       case usingDeclaration: ICPPASTUsingDeclaration => handleUsingDeclaration(usingDeclaration)
       case alias: ICPPASTAliasDeclaration            => Seq(astForAliasDeclaration(alias))

@@ -13,6 +13,7 @@ import org.eclipse.cdt.core.dom.ast.c.{ICASTArrayDesignator, ICASTDesignatedInit
 import org.eclipse.cdt.core.dom.ast.cpp.*
 import org.eclipse.cdt.core.dom.ast.gnu.c.ICASTKnRFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.c.{CASTArrayRangeDesignator, CASTFunctionDeclarator}
+import org.eclipse.cdt.internal.core.dom.parser.c.CVariable
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalBinding
 import org.eclipse.cdt.internal.core.dom.parser.cpp.{
   CPPASTArrayRangeDesignator,
@@ -24,6 +25,7 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.{
   ICPPEvaluation
 }
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalMemberAccess
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPVariable
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import java.nio.file.{Path, Paths}
@@ -139,11 +141,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     val tpe =
       if (stripKeywords) {
         ReservedTypeKeywords.foldLeft(rawType) { (cur, repl) =>
-          if (cur.contains(s"$repl ")) {
-            dereferenceTypeFullName(cur.replace(s"$repl ", ""))
-          } else {
-            cur
-          }
+          if (cur.contains(s"$repl ")) cur.replace(s"$repl ", "") else cur
         }
       } else {
         rawType
@@ -297,9 +295,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     Option(node).map(astsForStatement(_, argIndex)).getOrElse(Seq.empty)
   }
 
-  protected def dereferenceTypeFullName(fullName: String): String =
-    fullName.replace("*", "")
-
   protected def fixQualifiedName(name: String): String = {
     val normalizedName = StringUtils.normalizeSpace(name)
     normalizedName.stripPrefix(Defines.QualifiedNameSeparator).replace(Defines.QualifiedNameSeparator, ".")
@@ -346,6 +341,15 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
                 s"$fullNameNoSig:${cleanType(safeGetType(field.getType))}"
               }
             return fn
+          case cppVariable: CPPVariable =>
+            val fullNameNoSig = cppVariable.getQualifiedName.mkString(".")
+            val fn =
+              if (cppVariable.isExternC) {
+                cppVariable.getName
+              } else {
+                s"$fullNameNoSig:${cleanType(safeGetType(cppVariable.getType))}"
+              }
+            return fn
           case _: IProblemBinding =>
             val fullNameNoSig = ASTStringUtil.getQualifiedName(declarator.getName)
             val fixedFullName = fixQualifiedName(fullNameNoSig).stripPrefix(".")
@@ -357,7 +361,10 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
           case _ =>
         }
       case declarator: CASTFunctionDeclarator =>
-        return declarator.getName.toString
+        declarator.getName.resolveBinding() match {
+          case cVariable: CVariable => return cVariable.getName
+          case _                    => return declarator.getName.toString
+        }
       case definition: ICPPASTFunctionDefinition =>
         return fullName(definition.getDeclarator)
       case _ =>

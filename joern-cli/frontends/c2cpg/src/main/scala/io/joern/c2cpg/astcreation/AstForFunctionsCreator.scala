@@ -14,6 +14,7 @@ import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTLambdaExpression
 import org.eclipse.cdt.core.dom.ast.gnu.c.ICASTKnRFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTParameterDeclaration
+import org.eclipse.cdt.internal.core.dom.parser.c.CVariable
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFunctionDefinition
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTParameterDeclaration
@@ -155,7 +156,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
   protected def astForFunctionDeclarator(funcDecl: IASTFunctionDeclarator): Ast = {
     funcDecl.getName.resolveBinding() match {
-      case function: IFunction =>
+      case _: IFunction =>
         val returnType = cleanType(
           typeForDeclSpecifier(funcDecl.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclSpecifier)
         )
@@ -205,6 +206,13 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         )
         registerMethodDeclaration(fullname, methodInfo)
         Ast()
+      case cVariable: CVariable =>
+        val name       = StringUtils.normalizeSpace(shortName(funcDecl))
+        val tpe        = cleanType(ASTTypeUtil.getType(cVariable.getType))
+        val codeString = code(funcDecl.getParent)
+        val node       = localNode(funcDecl, name, codeString, registerType(tpe))
+        scope.addToScope(name, (node, tpe))
+        Ast(node)
       case field: IField =>
         // TODO create a member for the field
         // We get here a least for function pointer member declarations in classes like:

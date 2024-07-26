@@ -11,6 +11,8 @@ import org.eclipse.cdt.internal.core.dom.parser.c.ICInternalBinding
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTQualifiedName
 import org.eclipse.cdt.internal.core.dom.parser.cpp.ICPPInternalBinding
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFunctionDeclarator
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTIdExpression
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPField
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -94,6 +96,11 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
             }
           case None if ident.isInstanceOf[IASTName] =>
             typeFor(ident.getParent)
+          case None if ident.isInstanceOf[CPPASTIdExpression] =>
+            ident.asInstanceOf[CPPASTIdExpression].getName.getBinding match {
+              case f: CPPField => cleanType(f.getType.toString)
+              case _           => typeFor(ident)
+            }
           case None => typeFor(ident)
         }
 

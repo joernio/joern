@@ -1,13 +1,14 @@
 package io.joern.x2cpg.passes.typerelations
 
-import io.joern.x2cpg.passes.frontend.Dereference
 import io.joern.x2cpg.utils.LinkingUtil
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Member, StoredNode}
 import io.shiftleft.codepropertygraph.generated.*
+import io.shiftleft.codepropertygraph.generated.nodes.Call
+import io.shiftleft.codepropertygraph.generated.nodes.Member
+import io.shiftleft.codepropertygraph.generated.nodes.StoredNode
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.semanticcpg.language.operatorextension.{OpNodes, allFieldAccessTypes}
-import io.shiftleft.semanticcpg.utils.MemberAccess
+import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
+import io.shiftleft.semanticcpg.language.operatorextension.allFieldAccessTypes
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.*
@@ -67,18 +68,16 @@ class FieldAccessLinkerPass(cpg: Cpg) extends CpgPass(cpg) with LinkingUtil {
     dstFullNameKey: String,
     dstGraph: DiffGraphBuilder
   ): Unit = {
-    val dereference = Dereference(cpg)
     cpg.graph.nodes(srcLabels*).cast[SRC_NODE_TYPE].filterNot(_.outE(edgeType).hasNext).foreach { srcNode =>
       if (!srcNode.outE(edgeType).hasNext) {
         getDstFullNames(srcNode).foreach { dstFullName =>
-          val dereferenceDstFullName = dereference.dereferenceTypeFullName(dstFullName)
-          dstNodeMap(dereferenceDstFullName) match {
+          dstNodeMap(dstFullName) match {
             case Some(dstNode) =>
               dstGraph.addEdge(srcNode, dstNode, edgeType)
             case None if dstNodeMap(dstFullName).isDefined =>
               dstGraph.addEdge(srcNode, dstNodeMap(dstFullName).get, edgeType)
             case None =>
-              logFailedDstLookup(edgeType, srcNode.label, srcNode.id.toString, dstNodeLabel, dereferenceDstFullName)
+              logFailedDstLookup(edgeType, srcNode.label, srcNode.id.toString, dstNodeLabel, dstFullName)
           }
         }
       }
