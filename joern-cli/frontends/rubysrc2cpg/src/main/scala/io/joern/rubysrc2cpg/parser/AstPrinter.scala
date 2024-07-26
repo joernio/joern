@@ -176,7 +176,7 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   override def visitReturnMethodInvocationWithoutParentheses(
     ctx: RubyParser.ReturnMethodInvocationWithoutParenthesesContext
   ): String = {
-    ctx.primaryValueList().primaryValue().asScala.map(visit).toList.mkString(ls)
+    s"return ${ctx.primaryValueList().primaryValue().asScala.map(visit).toList.mkString(ls)}"
   }
 
   override def visitReturnWithoutArguments(ctx: RubyParser.ReturnWithoutArgumentsContext): String = {
