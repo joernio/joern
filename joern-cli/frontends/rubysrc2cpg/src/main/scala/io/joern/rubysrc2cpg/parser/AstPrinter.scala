@@ -969,14 +969,23 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   }
 
   override def visitCaseWithExpression(ctx: RubyParser.CaseWithExpressionContext): String = {
-    val expression  = Option(ctx.expressionOrCommand).map(visit)
-    val whenClauses = Option(ctx.whenClause().asScala).fold(List())(_.map(visit)).mkString(ls)
-    val elseClause  = Option(ctx.elseClause()).map(visit)
+    val outputSb = new StringBuilder(ctx.CASE.getText)
+
+    val expression = Option(ctx.expressionOrCommand).map(visit)
+    if expression.isDefined then outputSb.append(s" ${expression.get}")
+
+    val whenClauses = Option(ctx.whenClause().asScala).fold(List())(_.map(visit))
+    if whenClauses.nonEmpty then outputSb.append(s"$ls${whenClauses.mkString}")
+
+    val elseClause = Option(ctx.elseClause()).map(visit)
+    if elseClause.isDefined then outputSb.append(s"${elseClause.get}")
+
     val op =
       if Option(ctx.SEMI()).isDefined then ";"
       else ls
 
-    s"${ctx.CASE().getText}$ls$expression$op$whenClauses$elseClause${ctx.END().getText}"
+    outputSb.append(s"${ctx.END.getText}").toString
+
   }
 
   override def visitCaseWithoutExpression(ctx: RubyParser.CaseWithoutExpressionContext): String = {
@@ -990,6 +999,8 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   }
 
   override def visitWhenClause(ctx: RubyParser.WhenClauseContext): String = {
+    val outputSb = new StringBuilder(ctx.WHEN.getText)
+
     val whenArgs = ctx.whenArgument()
     val matchArgs =
       Option(whenArgs.operatorExpressionList()).iterator.flatMap(_.operatorExpression().asScala).map(visit)
@@ -998,11 +1009,15 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
 
     if matchArgs.nonEmpty then
       val matchArgsStr = matchArgs.mkString(",")
+      outputSb.append(s" $matchArgsStr")
+
       val matchSplatArgStr =
-        if matchSplatArg.isDefined then s", $matchSplatArg"
-        else ""
-      s"${ctx.WHEN.getText} $matchArgsStr$matchSplatArgStr"
-    else s"${ctx.WHEN.getText} $matchSplatArg"
+        if matchSplatArg.isDefined then outputSb.append(s", $matchSplatArg")
+
+    if Option(ctx.thenClause().THEN).isDefined then outputSb.append(s" ${ctx.thenClause.THEN.getText}")
+    if thenClause != "" then outputSb.append(s"$ls$thenClause")
+
+    outputSb.append(ls).toString
   }
 
   override def visitAssociationKey(ctx: RubyParser.AssociationKeyContext): String = {
