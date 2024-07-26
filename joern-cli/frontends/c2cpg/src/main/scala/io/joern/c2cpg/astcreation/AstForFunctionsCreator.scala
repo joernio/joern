@@ -272,7 +272,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
               EvaluationStrategies.BY_VALUE,
               line(cppFunc),
               column(cppFunc),
-              owner
+              registerType(owner)
             )
             Seq(parameterNodeInfo)
           case _ => Seq.empty
