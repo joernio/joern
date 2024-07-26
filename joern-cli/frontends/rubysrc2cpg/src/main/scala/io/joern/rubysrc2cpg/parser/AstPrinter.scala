@@ -170,7 +170,7 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   }
 
   override def visitNotExpressionOrCommand(ctx: RubyParser.NotExpressionOrCommandContext): String = {
-    s"${ctx.NOT().getText}${visit(ctx.expressionOrCommand())}"
+    s"${ctx.NOT().getText} ${visit(ctx.expressionOrCommand())}"
   }
 
   override def visitCommandExpressionOrCommand(ctx: RubyParser.CommandExpressionOrCommandContext): String = {
