@@ -54,10 +54,17 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   }
 
   override def visitWhileExpression(ctx: RubyParser.WhileExpressionContext): String = {
-    val condition = visit(ctx.expressionOrCommand)
-    val body      = visit(ctx.doClause())
+    val outputSb = new StringBuilder(ctx.WHILE.getText)
 
-    s"${ctx.WHILE.getText} $condition $body$ls${ctx.END.getText}"
+    val condition = visit(ctx.expressionOrCommand)
+    outputSb.append(s" $condition")
+
+    val body = visit(ctx.doClause())
+
+    if body != "" then outputSb.append(s"$ls$body")
+
+    outputSb.append(s"$ls${ctx.END.getText}").toString
+//    s"${ctx.WHILE.getText} $condition $body$ls${ctx.END.getText}"
   }
 
   override def visitUntilExpression(ctx: RubyParser.UntilExpressionContext): String = {
@@ -72,24 +79,44 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   }
 
   override def visitIfExpression(ctx: RubyParser.IfExpressionContext): String = {
-    val condition = visit(ctx.expressionOrCommand())
-    val thenBody  = visit(ctx.thenClause())
-    val elsifs    = ctx.elsifClause().asScala.map(visit).toList
-    val elseBody  = Option(ctx.elseClause()).map(visit)
+    val outputSb = new StringBuilder(ctx.IF.getText)
 
-    s"${ctx.IF.getText} $condition$ls$thenBody${elsifs.mkString(ls)}$elseBody${ls}end"
+    val condition = visit(ctx.expressionOrCommand())
+    outputSb.append(s" $condition")
+
+    val thenBody = visit(ctx.thenClause())
+    if thenBody != "" then outputSb.append(s"$ls$thenBody")
+
+    val elsifs = ctx.elsifClause().asScala.map(visit).toList
+    if elsifs.nonEmpty then outputSb.append(s"$ls${elsifs.mkString(ls)}")
+
+    val elseBody = Option(ctx.elseClause()).map(visit)
+    if elseBody.isDefined then outputSb.append(s"$ls${elseBody.get}")
+
+    outputSb.append(s"$ls${ctx.END.getText}")
+    outputSb.toString
   }
 
   override def visitElsifClause(ctx: RubyParser.ElsifClauseContext): String = {
-    val condition = visit(ctx.expressionOrCommand())
-    val thenBody  = visit(ctx.thenClause())
+    val outputSb = new StringBuilder(ctx.ELSIF.getText)
 
-    s"${ctx.ELSIF.getText} $condition$ls$thenBody"
+    val condition = visit(ctx.expressionOrCommand())
+    outputSb.append(s" $condition")
+
+    val thenBody = visit(ctx.thenClause())
+    if thenBody != "" then outputSb.append(s"$ls$thenBody")
+
+//    s"${ctx.ELSIF.getText} $condition$ls$thenBody"
+    outputSb.toString
   }
 
   override def visitElseClause(ctx: RubyParser.ElseClauseContext): String = {
+    val outputSb = new StringBuilder(ctx.ELSE.getText)
+
     val elseBody = visit(ctx.compoundStatement())
-    s"${ctx.ELSE.getText}$ls$elseBody"
+    if elseBody != "" then outputSb.append(s"$ls$elseBody")
+
+    outputSb.toString
   }
 
   override def visitUnlessExpression(ctx: RubyParser.UnlessExpressionContext): String = {
@@ -855,12 +882,17 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   }
 
   override def visitSingletonClassDefinition(ctx: RubyParser.SingletonClassDefinitionContext): String = {
+    val outputSb = new StringBuilder()
+
     val baseClass = Option(ctx.commandOrPrimaryValueClass()).map(visit)
     val body      = visit(ctx.bodyStatement())
 
     baseClass match {
       case Some(baseClass) if baseClass == "self" =>
-        s"${ctx.CLASS.getText} $baseClass.${freshClassName()}$ls$body$ls${ctx.END.getText}"
+        outputSb.append(ctx.CLASS.getText).append(s" $baseClass.${freshClassName()}")
+        if body != "" then outputSb.append(s"$ls$body")
+        outputSb.append(s"$ls${ctx.END.getText}")
+        outputSb.toString
       case Some(baseClass) =>
         s"$body"
       case None =>
@@ -875,7 +907,8 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
 
     val classBody = rubyNodeCreator.filterNonAllowedTypeDeclChildren(stmts)
     val className = visit(ctx.classPath())
-    s"class $className$ls${stmts.span.text}$ls${nonFieldStmts.span.text}${ls}end"
+
+    s"class $className$ls${classBody.span.text}${ls}end"
   }
 
   override def visitMethodDefinition(ctx: RubyParser.MethodDefinitionContext): String = {
