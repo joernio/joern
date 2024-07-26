@@ -381,8 +381,10 @@ class MethodTests extends C2CpgSuite {
           |  int var;
           |  void meth();
           |};
-          |void A::meth() {
-          |  assert(this->var == var);
+          |namespace Foo {
+          |  void A::meth() {
+          |    assert(this->var == var);
+          |  }
           |}""".stripMargin,
         "test.cpp"
       )

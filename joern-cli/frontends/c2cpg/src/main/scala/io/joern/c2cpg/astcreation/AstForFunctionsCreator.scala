@@ -20,6 +20,9 @@ import org.eclipse.cdt.internal.core.dom.parser.c.CVariable
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFunctionDefinition
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTParameterDeclaration
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPClassType
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPEnumeration
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPStructuredBindingComposite
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import scala.annotation.tailrec
@@ -261,21 +264,26 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   private def thisForCPPFunctions(func: IASTNode): Seq[CGlobal.ParameterInfo] = {
     func match {
       case cppFunc: ICPPASTFunctionDefinition =>
-        Try(cppFunc.getDeclarator.getName.getBinding.getOwner).toOption match {
-          case Some(o: ICPPBinding) =>
-            val owner = o.getQualifiedName.mkString(".")
-            val parameterNodeInfo = new CGlobal.ParameterInfo(
-              "this",
-              "this",
-              0,
-              false,
-              EvaluationStrategies.BY_VALUE,
-              line(cppFunc),
-              column(cppFunc),
-              registerType(owner)
-            )
-            Seq(parameterNodeInfo)
-          case _ => Seq.empty
+        val maybeOwner = Try(cppFunc.getDeclarator.getName.getBinding).toOption match {
+          case Some(o: ICPPBinding) if o.getOwner.isInstanceOf[CPPClassType] =>
+            Some(o.getOwner.asInstanceOf[CPPClassType].getQualifiedName.mkString("."))
+          case Some(o: ICPPBinding) if o.getOwner.isInstanceOf[CPPEnumeration] =>
+            Some(o.getOwner.asInstanceOf[CPPEnumeration].getQualifiedName.mkString("."))
+          case Some(o: ICPPBinding) if o.getOwner.isInstanceOf[CPPStructuredBindingComposite] =>
+            Some(o.getOwner.asInstanceOf[CPPStructuredBindingComposite].getQualifiedName.mkString("."))
+          case _ => None
+        }
+        maybeOwner.toSeq.map { owner =>
+          new CGlobal.ParameterInfo(
+            "this",
+            "this",
+            0,
+            false,
+            EvaluationStrategies.BY_VALUE,
+            line(cppFunc),
+            column(cppFunc),
+            registerType(owner)
+          )
         }
       case _ => Seq.empty
     }
