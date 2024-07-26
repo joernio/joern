@@ -4,6 +4,7 @@ import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
@@ -388,10 +389,25 @@ class MethodTests extends C2CpgSuite {
       val List(implicitThisParam) = cpg.method.name("meth").parameter.l
       implicitThisParam.name shouldBe "this"
       implicitThisParam.typeFullName shouldBe "A"
+      val List(trueVarAccess) = cpg.call.name(Operators.equals).argument.argumentIndex(1).isCall.l
+      trueVarAccess.code shouldBe "this->var"
+      trueVarAccess.name shouldBe Operators.indirectFieldAccess
+      val List(trueThisId, trueVarFieldIdent) = trueVarAccess.argument.l
+      trueThisId.code shouldBe "this"
+      trueThisId.isIdentifier shouldBe true
+      trueThisId.asInstanceOf[Identifier].typeFullName shouldBe "A*"
+      trueVarFieldIdent.code shouldBe "var"
+      trueVarFieldIdent.isFieldIdentifier shouldBe true
+
       val List(varAccess) = cpg.call.name(Operators.equals).argument.argumentIndex(2).isCall.l
       varAccess.code shouldBe "this->var"
       varAccess.name shouldBe Operators.indirectFieldAccess
-      varAccess.argument.code.l shouldBe List("this", "var")
+      val List(thisId, varFieldIdent) = varAccess.argument.l
+      thisId.code shouldBe "this"
+      thisId.isIdentifier shouldBe true
+      thisId.asInstanceOf[Identifier].typeFullName shouldBe "A*"
+      varFieldIdent.code shouldBe "var"
+      varFieldIdent.isFieldIdentifier shouldBe true
     }
   }
 }

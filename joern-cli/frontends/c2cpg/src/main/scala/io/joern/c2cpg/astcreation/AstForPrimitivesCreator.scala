@@ -26,8 +26,13 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     Ast(newCommentNode(comment, code(comment), fileName(comment)))
 
   protected def astForLiteral(lit: IASTLiteralExpression): Ast = {
-    val tpe = cleanType(safeGetType(lit.getExpressionType))
-    Ast(literalNode(lit, code(lit), registerType(tpe)))
+    val codeString = code(lit)
+    val tpe        = registerType(cleanType(safeGetType(lit.getExpressionType)))
+    if (codeString == "this") {
+      Ast(identifierNode(lit, codeString, codeString, tpe))
+    } else {
+      Ast(literalNode(lit, codeString, tpe))
+    }
   }
 
   private def namesForBinding(binding: ICInternalBinding | ICPPInternalBinding): (Option[String], Option[String]) = {
@@ -115,12 +120,13 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
             }
             Try(ident.asInstanceOf[CPPASTIdExpression].getEvaluation).toOption match {
               case Some(e: EvalMemberAccess) =>
-                val owner = cleanType(e.getOwnerType.toString)
-                if (isInCurrentScope(owner)) {
+                val tpe       = registerType(typeFor(ident))
+                val ownerType = registerType(cleanType(e.getOwnerType.toString))
+                if (isInCurrentScope(ownerType)) {
                   val op   = Operators.indirectFieldAccess
                   val code = s"this->$identifierName"
                   val ma   = callNode(ident, code, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(X2CpgDefines.Any))
-                  val thisLiteral = literalNode(ident, "this", owner)
+                  val thisLiteral = identifierNode(ident, "this", "this", tpe)
                   val member      = fieldIdentifierNode(ident, identifierName, identifierName)
                   return callAst(ma, Seq(Ast(thisLiteral), Ast(member)))
                 } else tpe
