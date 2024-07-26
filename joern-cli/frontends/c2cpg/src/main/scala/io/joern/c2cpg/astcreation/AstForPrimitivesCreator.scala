@@ -29,7 +29,11 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     val codeString = code(lit)
     val tpe        = registerType(cleanType(safeGetType(lit.getExpressionType)))
     if (codeString == "this") {
-      Ast(identifierNode(lit, codeString, codeString, tpe))
+      val thisIdentifier = identifierNode(lit, "this", "this", tpe)
+      scope.lookupVariable("this") match {
+        case Some((variable, _)) => Ast(thisIdentifier).withRefEdge(thisIdentifier, variable)
+        case None                => Ast(identifierNode(lit, codeString, codeString, tpe))
+      }
     } else {
       Ast(literalNode(lit, codeString, tpe))
     }
@@ -88,58 +92,76 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     }.nonEmpty
   }
 
+  private def nameForIdentifier(ident: IASTNode): String = {
+    ident match {
+      case id: IASTIdExpression => ASTStringUtil.getSimpleName(id.getName)
+      case id: IASTName if ASTStringUtil.getSimpleName(id).isEmpty && id.getBinding != null => id.getBinding.getName
+      case id: IASTName if ASTStringUtil.getSimpleName(id).isEmpty => uniqueName("name", "", "")._1
+      case _                                                       => code(ident)
+    }
+  }
+
+  private def syntheticThisAccess(ident: CPPASTIdExpression, identifierName: String): String | Ast = {
+    val tpe = ident.getName.getBinding match {
+      case f: CPPField => cleanType(f.getType.toString)
+      case _           => typeFor(ident)
+    }
+    Try(ident.getEvaluation).toOption match {
+      case Some(e: EvalMemberAccess) =>
+        val tpe       = registerType(typeFor(ident))
+        val ownerType = registerType(cleanType(e.getOwnerType.toString))
+        if (isInCurrentScope(ownerType)) {
+          scope.lookupVariable("this") match {
+            case Some((variable, _)) =>
+              val op             = Operators.indirectFieldAccess
+              val code           = s"this->$identifierName"
+              val thisIdentifier = identifierNode(ident, "this", "this", tpe)
+              val member         = fieldIdentifierNode(ident, identifierName, identifierName)
+              val ma = callNode(ident, code, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(X2CpgDefines.Any))
+              callAst(ma, Seq(Ast(thisIdentifier).withRefEdge(thisIdentifier, variable), Ast(member)))
+            case None => tpe
+          }
+        } else tpe
+      case _ => tpe
+    }
+  }
+
+  private def typeNameForIdentifier(ident: IASTNode, identifierName: String): String | Ast = {
+    val variableOption = scope.lookupVariable(identifierName)
+    variableOption match {
+      case Some((_, variableTypeName)) => variableTypeName
+      case None if ident.isInstanceOf[IASTName] && ident.asInstanceOf[IASTName].getBinding != null =>
+        val id = ident.asInstanceOf[IASTName]
+        id.getBinding match {
+          case v: IVariable =>
+            v.getType match {
+              case f: IFunctionType => f.getReturnType.toString
+              case other            => other.toString
+            }
+          case other => other.getName
+        }
+      case None if ident.isInstanceOf[IASTName] =>
+        typeFor(ident.getParent)
+      case None if ident.isInstanceOf[CPPASTIdExpression] =>
+        syntheticThisAccess(ident.asInstanceOf[CPPASTIdExpression], identifierName)
+      case None => typeFor(ident)
+    }
+  }
+
   protected def astForIdentifier(ident: IASTNode): Ast = {
     maybeMethodRefForIdentifier(ident) match {
       case Some(ref) => Ast(ref)
       case None =>
-        val identifierName = ident match {
-          case id: IASTIdExpression => ASTStringUtil.getSimpleName(id.getName)
-          case id: IASTName if ASTStringUtil.getSimpleName(id).isEmpty && id.getBinding != null => id.getBinding.getName
-          case id: IASTName if ASTStringUtil.getSimpleName(id).isEmpty => uniqueName("name", "", "")._1
-          case _                                                       => code(ident)
-        }
-        val variableOption = scope.lookupVariable(identifierName)
-        val identifierTypeName = variableOption match {
-          case Some((_, variableTypeName)) => variableTypeName
-          case None if ident.isInstanceOf[IASTName] && ident.asInstanceOf[IASTName].getBinding != null =>
-            val id = ident.asInstanceOf[IASTName]
-            id.getBinding match {
-              case v: IVariable =>
-                v.getType match {
-                  case f: IFunctionType => f.getReturnType.toString
-                  case other            => other.toString
-                }
-              case other => other.getName
+        val identifierName = nameForIdentifier(ident)
+        typeNameForIdentifier(ident, identifierName) match {
+          case identifierTypeName: String =>
+            val node = identifierNode(ident, identifierName, code(ident), registerType(cleanType(identifierTypeName)))
+            scope.lookupVariable(identifierName) match {
+              case Some((variable, _)) =>
+                Ast(node).withRefEdge(node, variable)
+              case None => Ast(node)
             }
-          case None if ident.isInstanceOf[IASTName] =>
-            typeFor(ident.getParent)
-          case None if ident.isInstanceOf[CPPASTIdExpression] =>
-            val tpe = ident.asInstanceOf[CPPASTIdExpression].getName.getBinding match {
-              case f: CPPField => cleanType(f.getType.toString)
-              case _           => typeFor(ident)
-            }
-            Try(ident.asInstanceOf[CPPASTIdExpression].getEvaluation).toOption match {
-              case Some(e: EvalMemberAccess) =>
-                val tpe       = registerType(typeFor(ident))
-                val ownerType = registerType(cleanType(e.getOwnerType.toString))
-                if (isInCurrentScope(ownerType)) {
-                  val op   = Operators.indirectFieldAccess
-                  val code = s"this->$identifierName"
-                  val ma   = callNode(ident, code, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(X2CpgDefines.Any))
-                  val thisLiteral = identifierNode(ident, "this", "this", tpe)
-                  val member      = fieldIdentifierNode(ident, identifierName, identifierName)
-                  return callAst(ma, Seq(Ast(thisLiteral), Ast(member)))
-                } else tpe
-              case _ => tpe
-            }
-          case None => typeFor(ident)
-        }
-
-        val node = identifierNode(ident, identifierName, code(ident), registerType(cleanType(identifierTypeName)))
-        variableOption match {
-          case Some((variable, _)) =>
-            Ast(node).withRefEdge(node, variable)
-          case None => Ast(node)
+          case ast: Ast => ast
         }
     }
   }

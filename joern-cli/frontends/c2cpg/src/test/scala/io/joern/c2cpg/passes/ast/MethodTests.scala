@@ -396,6 +396,7 @@ class MethodTests extends C2CpgSuite {
       trueThisId.code shouldBe "this"
       trueThisId.isIdentifier shouldBe true
       trueThisId.asInstanceOf[Identifier].typeFullName shouldBe "A*"
+      trueThisId._refOut.l shouldBe List(implicitThisParam)
       trueVarFieldIdent.code shouldBe "var"
       trueVarFieldIdent.isFieldIdentifier shouldBe true
 
@@ -406,6 +407,7 @@ class MethodTests extends C2CpgSuite {
       thisId.code shouldBe "this"
       thisId.isIdentifier shouldBe true
       thisId.asInstanceOf[Identifier].typeFullName shouldBe "A*"
+      thisId._refOut.l shouldBe List(implicitThisParam)
       varFieldIdent.code shouldBe "var"
       varFieldIdent.isFieldIdentifier shouldBe true
     }
