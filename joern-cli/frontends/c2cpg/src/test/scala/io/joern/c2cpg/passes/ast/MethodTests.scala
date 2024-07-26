@@ -3,6 +3,7 @@ package io.joern.c2cpg.passes.ast
 import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.NodeTypes
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
@@ -370,6 +371,27 @@ class MethodTests extends C2CpgSuite {
       val List(method) = cpg.method.nameExact("method").l
       method.signature shouldBe "int(int)"
       method.fullName shouldBe "NNN.CCC.method:int(int)"
+    }
+
+    "be correct for class method with implicit member access" in {
+      val cpg = code(
+        """
+          |class A {
+          |  int var;
+          |  void meth();
+          |};
+          |void A::meth() {
+          |  assert(this->var == var);
+          |}""".stripMargin,
+        "test.cpp"
+      )
+      val List(implicitThisParam) = cpg.method.name("meth").parameter.l
+      implicitThisParam.name shouldBe "this"
+      implicitThisParam.typeFullName shouldBe "A"
+      val List(varAccess) = cpg.call.name(Operators.equals).argument.argumentIndex(2).isCall.l
+      varAccess.code shouldBe "this->var"
+      varAccess.name shouldBe Operators.indirectFieldAccess
+      varAccess.argument.code.l shouldBe List("this", "var")
     }
   }
 }
