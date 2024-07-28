@@ -5,12 +5,48 @@ import better.files.*
 import org.slf4j.LoggerFactory
 
 import java.io.FileNotFoundException
+import java.nio.file.FileVisitor
+import java.nio.file.FileVisitResult
+import java.nio.file.Path
 import java.nio.file.Paths
+import java.nio.file.attribute.BasicFileAttributes
+import java.nio.file.Files
 import scala.util.matching.Regex
+
+import scala.jdk.CollectionConverters.SetHasAsJava
 
 object SourceFiles {
 
   private val logger = LoggerFactory.getLogger(getClass)
+
+  /** Hack to have a FileVisitor in place that will continue iterating files even if an IOException happened during
+    * traversal.
+    */
+  private final class FailsafeFileVisitor extends FileVisitor[Path] {
+
+    private val seenFiles: scala.collection.mutable.Set[Path] = scala.collection.mutable.Set.empty[Path]
+
+    def files(): Set[File] = seenFiles.map(File(_)).toSet
+
+    override def preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult = {
+      FileVisitResult.CONTINUE
+    }
+
+    override def visitFile(dir: Path, attrs: BasicFileAttributes): FileVisitResult = {
+      seenFiles.addOne(dir)
+      FileVisitResult.CONTINUE
+    }
+
+    override def visitFileFailed(file: Path, exc: java.io.IOException): FileVisitResult = {
+      exc match {
+        case e: java.nio.file.FileSystemLoopException => logger.warn(s"Ignoring '$file' (cyclic symlink)")
+        case other                                    => logger.warn(s"Ignoring '$file'", other)
+      }
+      FileVisitResult.CONTINUE
+    }
+
+    override def postVisitDirectory(dir: Path, exc: java.io.IOException): FileVisitResult = FileVisitResult.CONTINUE
+  }
 
   private def isIgnoredByFileList(filePath: String, ignoredFiles: Seq[String]): Boolean = {
     val filePathFile = File(filePath)
@@ -112,7 +148,11 @@ object SourceFiles {
 
     val matchingFiles = files.filter(hasSourceFileExtension).map(_.toString)
     val matchingFilesFromDirs = dirs
-      .flatMap(_.listRecursively)
+      .flatMap { dir =>
+        val visitor = new FailsafeFileVisitor
+        Files.walkFileTree(dir.path, visitOptions.toSet.asJava, Int.MaxValue, visitor)
+        visitor.files()
+      }
       .filter(hasSourceFileExtension)
       .map(_.pathAsString)
 
