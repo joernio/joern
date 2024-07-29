@@ -24,7 +24,7 @@ object SourceFiles {
     */
   private final class FailsafeFileVisitor extends FileVisitor[Path] {
 
-    private val seenFiles: scala.collection.mutable.Set[Path] = scala.collection.mutable.Set.empty[Path]
+    private val seenFiles = scala.collection.mutable.Set.empty[Path]
 
     def files(): Set[File] = seenFiles.map(File(_)).toSet
 
@@ -32,8 +32,8 @@ object SourceFiles {
       FileVisitResult.CONTINUE
     }
 
-    override def visitFile(dir: Path, attrs: BasicFileAttributes): FileVisitResult = {
-      seenFiles.addOne(dir)
+    override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
+      seenFiles.addOne(file)
       FileVisitResult.CONTINUE
     }
 
@@ -163,21 +163,17 @@ object SourceFiles {
     * unexpected and hard-to-debug issues in the results.
     */
   private def assertAllExist(files: Set[File]): Unit = {
-    val (existant, nonExistant) = files.partition(_.isReadable)
-    val nonReadable             = existant.filterNot(_.isReadable)
-
-    if (nonExistant.nonEmpty || nonReadable.nonEmpty) {
-      logErrorWithPaths("Source input paths do not exist", nonExistant.map(_.canonicalPath))
-
+    val (existent, nonExistent) = files.partition(_.exists)
+    val nonReadable             = existent.filterNot(_.isReadable)
+    if (nonExistent.nonEmpty || nonReadable.nonEmpty) {
+      logErrorWithPaths("Source input paths do not exist", nonExistent.map(_.canonicalPath))
       logErrorWithPaths("Source input paths exist, but are not readable", nonReadable.map(_.canonicalPath))
-
       throw FileNotFoundException("Invalid source paths provided")
     }
   }
 
   private def logErrorWithPaths(message: String, paths: Iterable[String]): Unit = {
     val pathsArray = paths.toArray.sorted
-
     pathsArray.lengthCompare(1) match {
       case cmp if cmp < 0  => // pathsArray is empty, so don't log anything
       case cmp if cmp == 0 => logger.error(s"$message: ${paths.head}")
