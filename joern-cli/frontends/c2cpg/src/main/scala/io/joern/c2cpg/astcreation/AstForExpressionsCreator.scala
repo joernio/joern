@@ -3,8 +3,7 @@ package io.joern.c2cpg.astcreation
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.Defines as X2CpgDefines
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast
 import org.eclipse.cdt.core.dom.ast.*
@@ -332,6 +331,12 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     }
   }
 
+  private def astForThrowExpression(expression: IASTUnaryExpression): Ast = {
+    val operand = nullSafeAst(expression.getOperand)
+    Ast(controlStructureNode(expression, ControlStructureTypes.THROW, code(expression)))
+      .withChild(operand)
+  }
+
   private def astForUnaryExpression(unary: IASTUnaryExpression): Ast = {
     val operatorMethod = unary.getOperator match {
       case IASTUnaryExpression.op_prefixIncr       => Operators.preIncrement
@@ -345,7 +350,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case IASTUnaryExpression.op_sizeof           => Operators.sizeOf
       case IASTUnaryExpression.op_postFixIncr      => Operators.postIncrement
       case IASTUnaryExpression.op_postFixDecr      => Operators.postDecrement
-      case IASTUnaryExpression.op_throw            => Defines.OperatorThrow
       case IASTUnaryExpression.op_typeid           => Defines.OperatorTypeOf
       case IASTUnaryExpression.op_bracketedPrimary => Defines.OperatorBracketedPrimary
       case _                                       => Defines.OperatorUnknown
@@ -521,14 +525,15 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   protected def astForExpression(expression: IASTExpression): Ast = {
     val r = expression match {
-      case lit: IASTLiteralExpression                  => astForLiteral(lit)
-      case un: IASTUnaryExpression                     => astForUnaryExpression(un)
-      case bin: IASTBinaryExpression                   => astForBinaryExpression(bin)
-      case exprList: IASTExpressionList                => astForExpressionList(exprList)
-      case idExpr: IASTIdExpression                    => astForIdExpression(idExpr)
-      case call: IASTFunctionCallExpression            => astForCallExpression(call)
-      case typeId: IASTTypeIdExpression                => astForTypeIdExpression(typeId)
-      case fieldRef: IASTFieldReference                => astForFieldReference(fieldRef)
+      case lit: IASTLiteralExpression                                                => astForLiteral(lit)
+      case un: IASTUnaryExpression if un.getOperator == IASTUnaryExpression.op_throw => astForThrowExpression(un)
+      case un: IASTUnaryExpression                                                   => astForUnaryExpression(un)
+      case bin: IASTBinaryExpression                                                 => astForBinaryExpression(bin)
+      case exprList: IASTExpressionList                                              => astForExpressionList(exprList)
+      case idExpr: IASTIdExpression                                                  => astForIdExpression(idExpr)
+      case call: IASTFunctionCallExpression                                          => astForCallExpression(call)
+      case typeId: IASTTypeIdExpression                                              => astForTypeIdExpression(typeId)
+      case fieldRef: IASTFieldReference                                              => astForFieldReference(fieldRef)
       case expr: IASTConditionalExpression             => astForConditionalExpression(expr)
       case arr: IASTArraySubscriptExpression           => astForArrayIndexExpression(arr)
       case castExpression: IASTCastExpression          => astForCastExpression(castExpression)
