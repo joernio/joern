@@ -120,11 +120,18 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   }
 
   override def visitUnlessExpression(ctx: RubyParser.UnlessExpressionContext): String = {
-    val condition = visit(ctx.expressionOrCommand())
-    val thenBody  = visit(ctx.thenClause())
-    val elseBody  = Option(ctx.elseClause()).map(visit)
+    val outputSb = new StringBuilder(ctx.UNLESS.getText)
 
-    s"${ctx.UNLESS.getText} $condition$ls$thenBody$elseBody${ls}end"
+    val condition = visit(ctx.expressionOrCommand())
+    outputSb.append(s" $condition")
+
+    val thenBody = visit(ctx.thenClause())
+    if thenBody != "" then outputSb.append(s"$ls$thenBody")
+
+    val elseBody = Option(ctx.elseClause()).map(visit)
+    if elseBody.isDefined then outputSb.append(s"$ls${elseBody.get}")
+
+    outputSb.append(s"$ls${ctx.END.getText}").toString
   }
 
   override def visitForExpression(ctx: RubyParser.ForExpressionContext): String = {
