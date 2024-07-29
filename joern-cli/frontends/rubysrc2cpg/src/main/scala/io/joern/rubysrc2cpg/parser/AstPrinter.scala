@@ -1038,7 +1038,12 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     if (rescueClause.isEmpty && elseClause.isEmpty && ensureClause.isEmpty) {
       body
     } else {
-      s"$body$ls${rescueClause.mkString(ls)}$elseClause$ensureClause"
+      val outputSb = new StringBuilder(body)
+      if rescueClause.nonEmpty then outputSb.append(s"$ls${rescueClause.mkString(ls)}")
+      if elseClause.nonEmpty then outputSb.append(s"$elseClause$ls")
+      if ensureClause.nonEmpty then outputSb.append(s"$ensureClause")
+
+      outputSb.toString
     }
   }
 
@@ -1060,7 +1065,7 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
 
   override def visitEnsureClause(ctx: RubyParser.EnsureClauseContext): String = {
     val stmt = visit(ctx.compoundStatement)
-    s"${ctx.ENSURE().getText}$stmt"
+    s"${ctx.ENSURE().getText}$ls$stmt"
   }
 
   override def visitCaseWithExpression(ctx: RubyParser.CaseWithExpressionContext): String = {
