@@ -463,7 +463,7 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     val outputSb = new StringBuilder(ctx.LCURLY.getText)
 
     val params = Option(ctx.blockParameter()).fold(List())(_.parameters).map(visit)
-    if params.nonEmpty then outputSb.append(params.mkString(","))
+    if params.nonEmpty then outputSb.append(s"|${params.mkString(",")}|")
 
     val body = visit(ctx.compoundStatement())
     if body != "" then outputSb.append(s"$ls$body$ls")
@@ -475,7 +475,7 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     val outputSb = new StringBuilder(ctx.DO.getText)
 
     val params = Option(ctx.blockParameter()).fold(List())(_.parameters).map(visit).mkString(",")
-    if params != "" then outputSb.append(s"$params")
+    if params != "" then outputSb.append(s" |$params|")
 
     outputSb.append(ls)
 
@@ -767,22 +767,18 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     } else if (hasBlock) {
       val block  = visit(ctx.block())
       val target = visit(ctx.primaryValue())
-      val blockStr = ctx.block() match {
-        case x: RubyParser.DoBlockBlockContext => block
-        case y                                 => s"{ $block }"
-      }
 
       if (methodName == "new") {
         val callStr = s"$target.$methodName"
 
         if (!hasArgs) {
-          return s"$target.$methodName $blockStr"
+          return s"$target.$methodName $block"
         } else {
           val args = ctx.argumentWithParentheses().arguments.map(visit).mkString(",")
-          return s"$target.$methodName ($args) $blockStr"
+          return s"$target.$methodName($args) $block"
         }
       } else {
-        return s"$target${ctx.op.getText}$methodName $blockStr"
+        return s"$target${ctx.op.getText}$methodName $block"
       }
     }
 
