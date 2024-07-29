@@ -1086,7 +1086,13 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
         )
       }
 
-    StatementList(otherTypeDeclChildren ++ updatedBodyMethod)(stmts.span)
+    val otherTypeDeclChildrenSpan =
+      if otherTypeDeclChildren.nonEmpty then "\n" + otherTypeDeclChildren.map(_.span.text).mkString("\n")
+      else ""
+
+    StatementList(otherTypeDeclChildren ++ updatedBodyMethod)(
+      stmts.span.spanStart(updatedBodyMethod.headOption.map(x => x.span.text).getOrElse("") + otherTypeDeclChildrenSpan)
+    )
   }
 
   override def visitClassDefinition(ctx: RubyParser.ClassDefinitionContext): RubyNode = {

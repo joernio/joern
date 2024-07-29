@@ -926,12 +926,14 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
 
     baseClass match {
       case Some(baseClass) if baseClass == "self" =>
-        outputSb.append(ctx.CLASS.getText).append(s" $baseClass.${freshClassName()}")
+        outputSb.append(ctx.CLASS.getText).append(s" << $baseClass.${freshClassName()}")
         if body != "" then outputSb.append(s"$ls$body")
         outputSb.append(s"$ls${ctx.END.getText}")
         outputSb.toString
       case Some(baseClass) =>
-        s"$body"
+        outputSb.append(ctx.CLASS.getText).append(s" << $baseClass")
+        if body != "" then outputSb.append(s"$ls$body")
+        outputSb.append(s"$ls${ctx.END.getText}").toString
       case None =>
         s"${ctx.CLASS.getText} ${freshClassName()}$ls$body$ls${ctx.END.getText}"
     }
