@@ -10,7 +10,9 @@ import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast.*
+import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTFunctionDefinition
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTLambdaExpression
+import org.eclipse.cdt.core.dom.ast.cpp.ICPPBinding
 import org.eclipse.cdt.core.dom.ast.gnu.c.ICASTKnRFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTParameterDeclaration
@@ -18,6 +20,9 @@ import org.eclipse.cdt.internal.core.dom.parser.c.CVariable
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFunctionDefinition
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTParameterDeclaration
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPClassType
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPEnumeration
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPStructuredBindingComposite
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import scala.annotation.tailrec
@@ -181,7 +186,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         val codeString = code(funcDecl.getParent)
         val filename   = fileName(funcDecl)
 
-        val parameterNodeInfos = withIndex(parameters(funcDecl)) { (p, i) =>
+        val parameterNodeInfos = thisForCPPFunctions(funcDecl) ++ withIndex(parameters(funcDecl)) { (p, i) =>
           parameterNodeInfo(p, i)
         }
         setVariadicParameterInfo(parameterNodeInfos, funcDecl)
@@ -256,6 +261,34 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     }
   }
 
+  private def thisForCPPFunctions(func: IASTNode): Seq[CGlobal.ParameterInfo] = {
+    func match {
+      case cppFunc: ICPPASTFunctionDefinition =>
+        val maybeOwner = Try(cppFunc.getDeclarator.getName.getBinding).toOption match {
+          case Some(o: ICPPBinding) if o.getOwner.isInstanceOf[CPPClassType] =>
+            Some(o.getOwner.asInstanceOf[CPPClassType].getQualifiedName.mkString("."))
+          case Some(o: ICPPBinding) if o.getOwner.isInstanceOf[CPPEnumeration] =>
+            Some(o.getOwner.asInstanceOf[CPPEnumeration].getQualifiedName.mkString("."))
+          case Some(o: ICPPBinding) if o.getOwner.isInstanceOf[CPPStructuredBindingComposite] =>
+            Some(o.getOwner.asInstanceOf[CPPStructuredBindingComposite].getQualifiedName.mkString("."))
+          case _ => None
+        }
+        maybeOwner.toSeq.map { owner =>
+          new CGlobal.ParameterInfo(
+            "this",
+            "this",
+            0,
+            false,
+            EvaluationStrategies.BY_VALUE,
+            line(cppFunc),
+            column(cppFunc),
+            registerType(owner)
+          )
+        }
+      case _ => Seq.empty
+    }
+  }
+
   protected def astForFunctionDefinition(funcDef: IASTFunctionDefinition): Ast = {
     val filename = fileName(funcDef)
     val returnType = if (isCppConstructor(funcDef)) {
@@ -286,7 +319,20 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     methodAstParentStack.push(methodNode_)
     scope.pushNewScope(methodNode_)
 
-    val parameterNodes = withIndex(parameters(funcDef)) { (p, i) =>
+    val implicitThisParam = thisForCPPFunctions(funcDef).map { thisParam =>
+      val parameterNode = parameterInNode(
+        funcDef,
+        thisParam.name,
+        thisParam.code,
+        thisParam.index,
+        thisParam.isVariadic,
+        thisParam.evaluationStrategy,
+        thisParam.typeFullName
+      )
+      scope.addToScope(thisParam.name, (parameterNode, thisParam.typeFullName))
+      parameterNode
+    }
+    val parameterNodes = implicitThisParam ++ withIndex(parameters(funcDef)) { (p, i) =>
       parameterNode(p, i)
     }
     setVariadic(parameterNodes, funcDef)

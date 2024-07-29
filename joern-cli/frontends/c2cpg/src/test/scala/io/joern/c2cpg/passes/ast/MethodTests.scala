@@ -3,6 +3,8 @@ package io.joern.c2cpg.passes.ast
 import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.NodeTypes
+import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
@@ -370,6 +372,46 @@ class MethodTests extends C2CpgSuite {
       val List(method) = cpg.method.nameExact("method").l
       method.signature shouldBe "int(int)"
       method.fullName shouldBe "NNN.CCC.method:int(int)"
+    }
+
+    "be correct for class method with implicit member access" in {
+      val cpg = code(
+        """
+          |class A {
+          |  int var;
+          |  void meth();
+          |};
+          |namespace Foo {
+          |  void A::meth() {
+          |    assert(this->var == var);
+          |  }
+          |}""".stripMargin,
+        "test.cpp"
+      )
+      val List(implicitThisParam) = cpg.method.name("meth").parameter.l
+      implicitThisParam.name shouldBe "this"
+      implicitThisParam.typeFullName shouldBe "A"
+      val List(trueVarAccess) = cpg.call.name(Operators.equals).argument.argumentIndex(1).isCall.l
+      trueVarAccess.code shouldBe "this->var"
+      trueVarAccess.name shouldBe Operators.indirectFieldAccess
+      val List(trueThisId, trueVarFieldIdent) = trueVarAccess.argument.l
+      trueThisId.code shouldBe "this"
+      trueThisId.isIdentifier shouldBe true
+      trueThisId.asInstanceOf[Identifier].typeFullName shouldBe "A*"
+      trueThisId._refOut.l shouldBe List(implicitThisParam)
+      trueVarFieldIdent.code shouldBe "var"
+      trueVarFieldIdent.isFieldIdentifier shouldBe true
+
+      val List(varAccess) = cpg.call.name(Operators.equals).argument.argumentIndex(2).isCall.l
+      varAccess.code shouldBe "this->var"
+      varAccess.name shouldBe Operators.indirectFieldAccess
+      val List(thisId, varFieldIdent) = varAccess.argument.l
+      thisId.code shouldBe "this"
+      thisId.isIdentifier shouldBe true
+      thisId.asInstanceOf[Identifier].typeFullName shouldBe "A*"
+      thisId._refOut.l shouldBe List(implicitThisParam)
+      varFieldIdent.code shouldBe "var"
+      varFieldIdent.isFieldIdentifier shouldBe true
     }
   }
 }
