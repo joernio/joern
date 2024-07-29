@@ -912,10 +912,18 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   }
 
   override def visitModuleDefinition(ctx: RubyParser.ModuleDefinitionContext): String = {
+    val outputSb = new StringBuilder(ctx.MODULE.getText)
+
     val (nonFieldStmts, fields) = rubyNodeCreator.genInitFieldStmts(ctx.bodyStatement())
 
     val moduleName = visit(ctx.classPath())
-    s"module $moduleName$ls$fields$ls${nonFieldStmts.span.text}${ls}end"
+
+    outputSb.append(s" $moduleName$ls")
+    if fields.nonEmpty then outputSb.append(fields.mkString(ls))
+
+    outputSb.append(nonFieldStmts.span.text).append(s"$ls${ctx.END.getText}").toString
+
+//    s"module $moduleName$ls$fields$ls${nonFieldStmts.span.text}${ls}end"
   }
 
   override def visitSingletonClassDefinition(ctx: RubyParser.SingletonClassDefinitionContext): String = {
@@ -931,7 +939,7 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
         outputSb.append(s"$ls${ctx.END.getText}")
         outputSb.toString
       case Some(baseClass) =>
-        outputSb.append(ctx.CLASS.getText).append(s" << $baseClass")
+        outputSb.append(ctx.CLASS.getText).append(s" $baseClass")
         if body != "" then outputSb.append(s"$ls$body")
         outputSb.append(s"$ls${ctx.END.getText}").toString
       case None =>
