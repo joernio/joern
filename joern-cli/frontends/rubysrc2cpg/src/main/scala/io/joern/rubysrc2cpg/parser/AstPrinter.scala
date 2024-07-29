@@ -495,9 +495,9 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     s"$lhs $op $rhs"
   }
 
-  // TODO: Implement
   override def visitMultipleAssignmentStatement(ctx: RubyParser.MultipleAssignmentStatementContext): String = {
-    ctx.getText
+    // TODO: double check if this is fine.
+    rubyNodeCreator.visitMultipleAssignmentStatement(ctx).span.text
   }
 
   override def visitMultipleLeftHandSide(ctx: RubyParser.MultipleLeftHandSideContext): String = {
