@@ -174,9 +174,16 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
         cfgForChildren(node)
       case ControlStructureTypes.MATCH =>
         cfgForMatchExpression(node)
+      case ControlStructureTypes.THROW =>
+        cfgForThrowStatement(node)
       case _ =>
         Cfg.empty
     }
+
+  protected def cfgForThrowStatement(node: ControlStructure): Cfg = {
+    val throwExprCfg = node.astChildren.find(_.order == 1).map(cfgFor).getOrElse(Cfg.empty)
+    throwExprCfg ++ Cfg(entryNode = Option(node))
+  }
 
   /** The CFG for a break/continue statements contains only the break/continue statement as a single entry node. The
     * fringe is empty, that is, appending another CFG to the break statement will not result in the creation of an edge
