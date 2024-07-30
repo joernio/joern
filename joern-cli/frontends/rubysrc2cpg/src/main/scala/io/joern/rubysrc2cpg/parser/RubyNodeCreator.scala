@@ -32,7 +32,6 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     currentResult.isInstanceOf[Unknown]
 
   override def visit(tree: ParseTree): RubyNode = {
-    println("Node Creator: " + tree.getClass)
     Option(tree).map(super.visit).getOrElse(defaultResult())
   }
 

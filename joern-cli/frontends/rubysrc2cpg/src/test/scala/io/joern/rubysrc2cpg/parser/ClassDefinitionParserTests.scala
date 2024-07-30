@@ -4,13 +4,6 @@ import io.joern.rubysrc2cpg.testfixtures.RubyParserFixture
 import org.scalatest.matchers.should.Matchers
 
 class ClassDefinitionParserTests extends RubyParserFixture(newMatch = true) with Matchers {
-  "test" in {
-    test("""class << x
-           | def show; puts self; end
-           |end
-           |""".stripMargin)
-  }
-
   "class definitions" in {
     test(
       "class << self ; end",

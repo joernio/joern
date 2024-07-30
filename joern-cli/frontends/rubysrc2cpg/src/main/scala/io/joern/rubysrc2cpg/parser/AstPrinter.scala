@@ -1,6 +1,6 @@
 package io.joern.rubysrc2cpg.parser
 
-import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{Block, *}
+import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.parser.AntlrContextHelpers.*
 import io.joern.rubysrc2cpg.parser.RubyParser.{
   CommandWithDoBlockContext,
@@ -27,7 +27,6 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   override def defaultResult(): String = ""
 
   override def visit(tree: ParseTree): String = {
-    println("AstPrinter: " + tree.getClass)
     Option(tree).map(super.visit).getOrElse(defaultResult)
   }
 
@@ -64,7 +63,6 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     if body != "" then outputSb.append(s"$ls$body")
 
     outputSb.append(s"$ls${ctx.END.getText}").toString
-//    s"${ctx.WHILE.getText} $condition $body$ls${ctx.END.getText}"
   }
 
   override def visitUntilExpression(ctx: RubyParser.UntilExpressionContext): String = {
@@ -106,7 +104,6 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     val thenBody = visit(ctx.thenClause())
     if thenBody != "" then outputSb.append(s"$ls$thenBody")
 
-//    s"${ctx.ELSIF.getText} $condition$ls$thenBody"
     outputSb.toString
   }
 
@@ -425,12 +422,6 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     }
   }
 
-  override def visitQuotedExpandedStringArrayLiteral(ctx: RubyParser.QuotedExpandedStringArrayLiteralContext): String = {
-    val a = ""
-    ""
-  }
-
-
   override def visitRegularExpressionLiteral(ctx: RubyParser.RegularExpressionLiteralContext): String = {
     if (ctx.isStatic) {
       ctx.getText
@@ -502,7 +493,8 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   }
 
   override def visitMultipleAssignmentStatement(ctx: RubyParser.MultipleAssignmentStatementContext): String = {
-    // TODO: double check if this is fine.
+    // TODO: fixme - ctx.toTextSpan is being used for individual elements in the building of a MultipleAssignment - needs
+    //  to be fixed so that individual elements span texts can be used to build MultipleAssignment on AstPrinter side.
     rubyNodeCreator.visitMultipleAssignmentStatement(ctx).span.text
   }
 
@@ -857,16 +849,6 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     s"${ctx.QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_START.getText}$elementsString${ctx.QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_END.getText}"
   }
 
-  override def visitQuotedExpandedArrayElement(ctx: RubyParser.QuotedExpandedArrayElementContext): String = {
-    ""
-  }
-
-  override def visitQuotedExpandedArrayElementContent(
-    ctx: RubyParser.QuotedExpandedArrayElementContentContext
-  ): String = {
-    ""
-  }
-
   override def visitRangeExpression(ctx: RubyParser.RangeExpressionContext): String = {
     val lowerBound = visit(ctx.primaryValue(0))
     val upperBound = visit(ctx.primaryValue(1))
@@ -943,7 +925,7 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
         outputSb.append(s"$ls${ctx.END.getText}")
         outputSb.toString
       case Some(baseClass) =>
-        outputSb.append(ctx.CLASS.getText).append(s" $baseClass")
+        outputSb.append(ctx.CLASS.getText).append(s" << $baseClass")
         if body != "" then outputSb.append(s"$ls$body")
         outputSb.append(s"$ls${ctx.END.getText}").toString
       case None =>
