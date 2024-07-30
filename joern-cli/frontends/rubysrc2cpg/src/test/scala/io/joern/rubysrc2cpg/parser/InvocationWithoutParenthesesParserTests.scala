@@ -12,7 +12,7 @@ class InvocationWithoutParenthesesParserTests extends RubyParserFixture(newMatch
 
   // TODO: Fix
   "fixme" ignore {
-    test("foo&.bar 1,2") // second arg seems to be missing even RubyNodeCreator
+    test("foo&.bar 1,2") // second arg seems to be missing in RubyNodeCreator
   }
 
   "command with do block" in {

@@ -112,17 +112,26 @@ class MethodDefinitionParserTests extends RubyParserFixture(newMatch = true) wit
       """def foo(bar:)
         |end""".stripMargin
     )
-  }
 
-  // TODO: Test when ClassParserTests are fixed
-  "fixme" ignore {
-    test("""
+    test(
+      """
            |class SampleClass
            |  def sample_method (first_param:, second_param:)
            |  end
            |end
-           |""".stripMargin)
+           |""".stripMargin,
+      """class SampleClass
+        |def <body>
+        |
+        |end
+        |def sample_method (first_param:, second_param:)
+        |  end
+        |end""".stripMargin
+    )
+  }
 
+  "fixme" ignore {
+    // Initialize params / statements not being moved into the <body> method
     test("""
            |class SomeClass
            | def initialize(
@@ -131,15 +140,7 @@ class MethodDefinitionParserTests extends RubyParserFixture(newMatch = true) wit
            |end
            |""".stripMargin)
 
-    test("""
-           |class SomeClass
-           | def initialize(
-           |       name, age
-           |       )
-           | end
-           |end
-           |""".stripMargin)
-
+    // Initialize params / statements not being moved into the <body> method
     test("""
            |class SomeClass
            | def initialize(
@@ -148,5 +149,6 @@ class MethodDefinitionParserTests extends RubyParserFixture(newMatch = true) wit
            | end
            |end
            |""".stripMargin)
+
   }
 }

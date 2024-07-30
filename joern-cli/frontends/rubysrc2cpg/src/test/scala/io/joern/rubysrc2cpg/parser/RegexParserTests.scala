@@ -4,11 +4,12 @@ import io.joern.rubysrc2cpg.testfixtures.RubyParserFixture
 import org.scalatest.matchers.should.Matchers
 
 class RegexParserTests extends RubyParserFixture(newMatch = true) with Matchers {
+  // These are AstPrinter issues, not RubyNodeCreator issues
   "fixme" ignore {
     test("""unless /\A([^@\s]+)@((?:[-a-z0-9]+\.)+[a-z]{2,})\z/i.match?(value)
            |end""".stripMargin) // Extra None being added somewhere
 
-    // interpolation is still a bit weird
+    // interpolations for AstPrinter still need work
     test("/x#{1}y/")
     test("x = /x#{1}y/")
     test("puts /x#{1}y/")

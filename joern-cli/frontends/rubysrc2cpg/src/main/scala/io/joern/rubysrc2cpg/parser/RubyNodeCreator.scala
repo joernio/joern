@@ -218,9 +218,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
         val newLhs = SimpleIdentifier(None)(lhs.span.spanStart(lhs.span.text.stripSuffix("=")))
         val newRhs = SplattingRubyNode(rhs)(rhs.span.spanStart(s"*${rhs.span.text}"))
         SingleAssignment(newLhs, "=", newRhs)(expr.span)
-      case x =>
-        val a = x
-        x
+      case x => x
     }
   }
 

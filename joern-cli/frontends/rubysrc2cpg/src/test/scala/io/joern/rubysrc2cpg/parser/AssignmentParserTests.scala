@@ -16,7 +16,6 @@ class AssignmentParserTests extends RubyParserFixture(newMatch = true) with Matc
     test("p, q = [foo(), bar()]")
   }
 
-  // TODO: Implement Multiple Assignment
   "Destructured Assignment" in {
     test("a, b, c = 1, 2, 3")
     test("a, b, c, d = 1, 2, 3")
