@@ -5,7 +5,9 @@ import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.Defines as X2CpgDefines
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethodRef
+import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.internal.core.dom.parser.c.ICInternalBinding
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTQualifiedName
@@ -13,7 +15,10 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.ICPPInternalBinding
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTIdExpression
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPField
+import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalMemberAccess
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
+
+import scala.util.Try
 
 trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -21,8 +26,17 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     Ast(newCommentNode(comment, code(comment), fileName(comment)))
 
   protected def astForLiteral(lit: IASTLiteralExpression): Ast = {
-    val tpe = cleanType(safeGetType(lit.getExpressionType))
-    Ast(literalNode(lit, code(lit), registerType(tpe)))
+    val codeString = code(lit)
+    val tpe        = registerType(cleanType(safeGetType(lit.getExpressionType)))
+    if (codeString == "this") {
+      val thisIdentifier = identifierNode(lit, "this", "this", tpe)
+      scope.lookupVariable("this") match {
+        case Some((variable, _)) => Ast(thisIdentifier).withRefEdge(thisIdentifier, variable)
+        case None                => Ast(identifierNode(lit, codeString, codeString, tpe))
+      }
+    } else {
+      Ast(literalNode(lit, codeString, tpe))
+    }
   }
 
   private def namesForBinding(binding: ICInternalBinding | ICPPInternalBinding): (Option[String], Option[String]) = {
@@ -71,44 +85,83 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     }
   }
 
+  private def isInCurrentScope(owner: String): Boolean = {
+    methodAstParentStack.collectFirst {
+      case typeDecl: NewTypeDecl if typeDecl.fullName == owner    => typeDecl
+      case method: NewMethod if method.fullName.startsWith(owner) => method
+    }.nonEmpty
+  }
+
+  private def nameForIdentifier(ident: IASTNode): String = {
+    ident match {
+      case id: IASTIdExpression => ASTStringUtil.getSimpleName(id.getName)
+      case id: IASTName if ASTStringUtil.getSimpleName(id).isEmpty && id.getBinding != null => id.getBinding.getName
+      case id: IASTName if ASTStringUtil.getSimpleName(id).isEmpty => uniqueName("name", "", "")._1
+      case _                                                       => code(ident)
+    }
+  }
+
+  private def syntheticThisAccess(ident: CPPASTIdExpression, identifierName: String): String | Ast = {
+    val tpe = ident.getName.getBinding match {
+      case f: CPPField => cleanType(f.getType.toString)
+      case _           => typeFor(ident)
+    }
+    Try(ident.getEvaluation).toOption match {
+      case Some(e: EvalMemberAccess) =>
+        val tpe       = registerType(typeFor(ident))
+        val ownerType = registerType(cleanType(e.getOwnerType.toString))
+        if (isInCurrentScope(ownerType)) {
+          scope.lookupVariable("this") match {
+            case Some((variable, _)) =>
+              val op             = Operators.indirectFieldAccess
+              val code           = s"this->$identifierName"
+              val thisIdentifier = identifierNode(ident, "this", "this", tpe)
+              val member         = fieldIdentifierNode(ident, identifierName, identifierName)
+              val ma = callNode(ident, code, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(X2CpgDefines.Any))
+              callAst(ma, Seq(Ast(thisIdentifier).withRefEdge(thisIdentifier, variable), Ast(member)))
+            case None => tpe
+          }
+        } else tpe
+      case _ => tpe
+    }
+  }
+
+  private def typeNameForIdentifier(ident: IASTNode, identifierName: String): String | Ast = {
+    val variableOption = scope.lookupVariable(identifierName)
+    variableOption match {
+      case Some((_, variableTypeName)) => variableTypeName
+      case None if ident.isInstanceOf[IASTName] && ident.asInstanceOf[IASTName].getBinding != null =>
+        val id = ident.asInstanceOf[IASTName]
+        id.getBinding match {
+          case v: IVariable =>
+            v.getType match {
+              case f: IFunctionType => f.getReturnType.toString
+              case other            => other.toString
+            }
+          case other => other.getName
+        }
+      case None if ident.isInstanceOf[IASTName] =>
+        typeFor(ident.getParent)
+      case None if ident.isInstanceOf[CPPASTIdExpression] =>
+        syntheticThisAccess(ident.asInstanceOf[CPPASTIdExpression], identifierName)
+      case None => typeFor(ident)
+    }
+  }
+
   protected def astForIdentifier(ident: IASTNode): Ast = {
     maybeMethodRefForIdentifier(ident) match {
       case Some(ref) => Ast(ref)
       case None =>
-        val identifierName = ident match {
-          case id: IASTIdExpression => ASTStringUtil.getSimpleName(id.getName)
-          case id: IASTName if ASTStringUtil.getSimpleName(id).isEmpty && id.getBinding != null => id.getBinding.getName
-          case id: IASTName if ASTStringUtil.getSimpleName(id).isEmpty => uniqueName("name", "", "")._1
-          case _                                                       => code(ident)
-        }
-        val variableOption = scope.lookupVariable(identifierName)
-        val identifierTypeName = variableOption match {
-          case Some((_, variableTypeName)) => variableTypeName
-          case None if ident.isInstanceOf[IASTName] && ident.asInstanceOf[IASTName].getBinding != null =>
-            val id = ident.asInstanceOf[IASTName]
-            id.getBinding match {
-              case v: IVariable =>
-                v.getType match {
-                  case f: IFunctionType => f.getReturnType.toString
-                  case other            => other.toString
-                }
-              case other => other.getName
+        val identifierName = nameForIdentifier(ident)
+        typeNameForIdentifier(ident, identifierName) match {
+          case identifierTypeName: String =>
+            val node = identifierNode(ident, identifierName, code(ident), registerType(cleanType(identifierTypeName)))
+            scope.lookupVariable(identifierName) match {
+              case Some((variable, _)) =>
+                Ast(node).withRefEdge(node, variable)
+              case None => Ast(node)
             }
-          case None if ident.isInstanceOf[IASTName] =>
-            typeFor(ident.getParent)
-          case None if ident.isInstanceOf[CPPASTIdExpression] =>
-            ident.asInstanceOf[CPPASTIdExpression].getName.getBinding match {
-              case f: CPPField => cleanType(f.getType.toString)
-              case _           => typeFor(ident)
-            }
-          case None => typeFor(ident)
-        }
-
-        val node = identifierNode(ident, identifierName, code(ident), registerType(cleanType(identifierTypeName)))
-        variableOption match {
-          case Some((variable, _)) =>
-            Ast(node).withRefEdge(node, variable)
-          case None => Ast(node)
+          case ast: Ast => ast
         }
     }
   }

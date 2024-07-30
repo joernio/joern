@@ -7,7 +7,7 @@ class EjsPassTests extends AstJsSrc2CpgSuite {
 
   "ejs files" should {
 
-    "be renamed correctly " in {
+    "be renamed correctly" in {
       val cpg = code(
         """
         |<body>
@@ -16,6 +16,20 @@ class EjsPassTests extends AstJsSrc2CpgSuite {
         |""".stripMargin,
         "index.js.ejs"
       )
+      cpg.file.name.l shouldBe List("index.js.ejs")
+      cpg.call.code.l.sorted shouldBe List("user.name")
+    }
+
+    "be ignored at folders excluded by default" in {
+      val codeString = """
+        |<body>
+        |<h1>Welcome <%= user.name %></h1>
+        |</body>
+        |""".stripMargin
+      val cpg = code(codeString, "index.js.ejs")
+        .moreCode(codeString, "node_modules/foo.js.ejs")
+        .moreCode(codeString, "vendor/bar.js.ejs")
+        .moreCode(codeString, "www/baz.js.ejs")
       cpg.file.name.l shouldBe List("index.js.ejs")
       cpg.call.code.l.sorted shouldBe List("user.name")
     }

@@ -224,7 +224,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case s: CPPASTIdExpression =>
         safeGetEvaluation(s) match {
           case Some(evaluation: EvalMemberAccess) =>
-            cleanType(evaluation.getOwnerType.toString, stripKeywords)
+            val deref = if (evaluation.isPointerDeref) "*" else ""
+            cleanType(evaluation.getOwnerType.toString + deref, stripKeywords)
           case Some(evalBinding: EvalBinding) =>
             evalBinding.getBinding match {
               case m: CPPMethod => cleanType(fullName(m.getDefinition))
