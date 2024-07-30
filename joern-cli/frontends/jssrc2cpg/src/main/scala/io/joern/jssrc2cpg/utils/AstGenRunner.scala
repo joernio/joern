@@ -316,13 +316,26 @@ class AstGenRunner(config: Config) {
   }
 
   private def ejsFiles(in: File, out: File): Try[Seq[String]] = {
-    val files = SourceFiles.determine(in.pathAsString, Set(".ejs"))
+    val files =
+      SourceFiles.determine(
+        in.pathAsString,
+        Set(".ejs"),
+        ignoredDefaultRegex = Some(AstGenDefaultIgnoreRegex),
+        ignoredFilesRegex = Some(config.ignoredFilesRegex),
+        ignoredFilesPath = Some(config.ignoredFiles)
+      )
     if (files.nonEmpty) processEjsFiles(in, out, files)
     else Success(Seq.empty)
   }
 
   private def vueFiles(in: File, out: File): Try[Seq[String]] = {
-    val files = SourceFiles.determine(in.pathAsString, Set(".vue"))
+    val files = SourceFiles.determine(
+      in.pathAsString,
+      Set(".vue"),
+      ignoredDefaultRegex = Some(AstGenDefaultIgnoreRegex),
+      ignoredFilesRegex = Some(config.ignoredFilesRegex),
+      ignoredFilesPath = Some(config.ignoredFiles)
+    )
     if (files.nonEmpty)
       ExternalCommand.run(s"$astGenCommand$executableArgs -t vue -o $out", in.toString(), extraEnv = NODE_OPTIONS)
     else Success(Seq.empty)
