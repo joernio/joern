@@ -39,6 +39,10 @@ class ArrayParserTests extends RubyParserFixture(newMatch = true) with Matchers 
     )
   }
 
+  "interpolations" in {
+    test("%W(x#{1})") // Interpolations are weird
+  }
+
   "fixme" ignore {
     test("%I{}")      // Unknown in `RubyNodeCreator`
     test("%W(x#{1})") // Interpolations are weird

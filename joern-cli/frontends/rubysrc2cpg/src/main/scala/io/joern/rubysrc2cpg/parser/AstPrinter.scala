@@ -425,6 +425,12 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     }
   }
 
+  override def visitQuotedExpandedStringArrayLiteral(ctx: RubyParser.QuotedExpandedStringArrayLiteralContext): String = {
+    val a = ""
+    ""
+  }
+
+
   override def visitRegularExpressionLiteral(ctx: RubyParser.RegularExpressionLiteralContext): String = {
     if (ctx.isStatic) {
       ctx.getText
@@ -922,8 +928,6 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     if fields.nonEmpty then outputSb.append(fields.mkString(ls))
 
     outputSb.append(nonFieldStmts.span.text).append(s"$ls${ctx.END.getText}").toString
-
-//    s"module $moduleName$ls$fields$ls${nonFieldStmts.span.text}${ls}end"
   }
 
   override def visitSingletonClassDefinition(ctx: RubyParser.SingletonClassDefinitionContext): String = {
