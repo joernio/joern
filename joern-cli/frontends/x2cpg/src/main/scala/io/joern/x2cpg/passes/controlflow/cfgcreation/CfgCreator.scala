@@ -181,8 +181,9 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     }
 
   protected def cfgForThrowStatement(node: ControlStructure): Cfg = {
-    val throwExprCfg = node.astChildren.find(_.order == 1).map(cfgFor).getOrElse(Cfg.empty)
-    throwExprCfg ++ Cfg(entryNode = Option(node))
+    val throwExprCfg     = node.astChildren.find(_.order == 1).map(cfgFor).getOrElse(Cfg.empty)
+    val concatedNatedCfg = throwExprCfg ++ Cfg(entryNode = Option(node))
+    concatedNatedCfg.copy(edges = concatedNatedCfg.edges ++ singleEdge(node, exitNode))
   }
 
   /** The CFG for a break/continue statements contains only the break/continue statement as a single entry node. The

@@ -604,7 +604,7 @@ class CppCfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg(FileD
                                      |""".stripMargin)
       succOf("func") should contain theSameElementsAs expected(("foo()", AlwaysEdge))
       succOf("foo()") should contain theSameElementsAs expected(("throw foo()", AlwaysEdge))
-      succOf("throw foo()") should contain theSameElementsAs expected()
+      succOf("throw foo()") should contain theSameElementsAs expected(("RET", AlwaysEdge))
       succOf("bar()") should contain theSameElementsAs expected(("RET", AlwaysEdge))
     }
 
@@ -616,7 +616,7 @@ class CppCfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg(FileD
       succOf("func") should contain theSameElementsAs expected(("true", AlwaysEdge))
       succOf("true") should contain theSameElementsAs expected(("foo()", TrueEdge), ("bar()", FalseEdge))
       succOf("foo()") should contain theSameElementsAs expected(("throw foo()", AlwaysEdge))
-      succOf("throw foo()") should contain theSameElementsAs expected()
+      succOf("throw foo()") should contain theSameElementsAs expected(("RET", AlwaysEdge))
       succOf("bar()") should contain theSameElementsAs expected(("RET", AlwaysEdge))
     }
   }
