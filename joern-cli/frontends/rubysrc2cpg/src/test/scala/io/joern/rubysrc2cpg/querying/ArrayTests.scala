@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.querying
 import io.joern.rubysrc2cpg.passes.GlobalTypes.{builtinPrefix, kernelPrefix}
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.Call
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Literal}
 import io.shiftleft.semanticcpg.language.*
 
 class ArrayTests extends RubyCode2CpgFixture {
@@ -110,7 +110,10 @@ class ArrayTests extends RubyCode2CpgFixture {
 
     val List(xFmt, yFmt) = arrayCall.argument.isCall.l
     xFmt.name shouldBe Operators.formatString
+    xFmt.typeFullName shouldBe "String"
+
     yFmt.name shouldBe Operators.formatString
+    yFmt.typeFullName shouldBe "String"
 
     val List(xFmtStr) = xFmt.astChildren.isCall.l
     xFmtStr.name shouldBe Operators.formattedValue
@@ -125,11 +128,12 @@ class ArrayTests extends RubyCode2CpgFixture {
     val List(yFmtStr) = yFmt.astChildren.isCall.l
     yFmtStr.name shouldBe Operators.formattedValue
 
-    val List(yFmtStrLit) = yFmtStr.argument.l
+    val List(yFmtStrLit: Literal) = yFmtStr.argument.l: @unchecked
     yFmtStrLit.code shouldBe "23"
 
     val List(zLit) = arrayCall.argument.isLiteral.l
     zLit.code shouldBe "z"
+    zLit.typeFullName shouldBe s"$kernelPrefix.String"
   }
 
   "an implicit array constructor (Array::[]) should be lowered to an array initializer" in {
