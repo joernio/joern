@@ -179,7 +179,7 @@ object AntlrContextHelpers {
       .map(_.compoundStatement())
       .toList
     def hasInterpolation: Boolean =
-      ctx.quotedExpandedArrayElementContent().asScala.exists(x => Option(x.compoundStatement()).isDefined)
+      ctx.interpolations.nonEmpty
   }
 
   sealed implicit class QuotedNonExpandedArrayElementListContextHelper(ctx: QuotedNonExpandedArrayElementListContext) {

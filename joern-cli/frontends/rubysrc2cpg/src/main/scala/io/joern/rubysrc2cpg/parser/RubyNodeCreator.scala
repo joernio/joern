@@ -345,8 +345,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   override def visitQuotedExpandedStringArrayLiteral(
     ctx: RubyParser.QuotedExpandedStringArrayLiteralContext
   ): RubyNode = {
-    val elements = ctx.quotedExpandedArrayElementList().elements
-    ArrayLiteral(elements.map(visit))(ctx.toTextSpan)
+    ArrayLiteral(ctx.quotedExpandedArrayElementList().elements.map(visit))(ctx.toTextSpan)
   }
 
   override def visitQuotedExpandedArrayElement(ctx: RubyParser.QuotedExpandedArrayElementContext): RubyNode = {
