@@ -3,6 +3,7 @@ package io.joern.rubysrc2cpg.querying
 import io.joern.rubysrc2cpg.passes.GlobalTypes.{builtinPrefix, kernelPrefix}
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.semanticcpg.language.*
 
 class ArrayTests extends RubyCode2CpgFixture {
@@ -96,6 +97,39 @@ class ArrayTests extends RubyCode2CpgFixture {
 
     y.code shouldBe "y"
     y.typeFullName shouldBe s"$kernelPrefix.Symbol"
+  }
+
+  "%W is represented an `arrayInitializer` operator call" in {
+    val cpg = code("""%W(x#{1 + 3} y#{23} z)
+        |""".stripMargin)
+
+    val List(arrayCall) = cpg.call.name(Operators.arrayInitializer).l
+
+    arrayCall.code shouldBe "%W(x#{1 + 3} y#{23} z)"
+    arrayCall.lineNumber shouldBe Some(1)
+
+    val List(xFmt, yFmt) = arrayCall.argument.isCall.l
+    xFmt.name shouldBe Operators.formatString
+    yFmt.name shouldBe Operators.formatString
+
+    val List(xFmtStr) = xFmt.astChildren.isCall.l
+    xFmtStr.name shouldBe Operators.formattedValue
+
+    val List(xFmtStrAdd) = xFmtStr.astChildren.isCall.l
+    xFmtStrAdd.name shouldBe Operators.addition
+
+    val List(lhs, rhs) = xFmtStrAdd.argument.l
+    lhs.code shouldBe "1"
+    rhs.code shouldBe "3"
+
+    val List(yFmtStr) = yFmt.astChildren.isCall.l
+    yFmtStr.name shouldBe Operators.formattedValue
+
+    val List(yFmtStrLit) = yFmtStr.argument.l
+    yFmtStrLit.code shouldBe "23"
+
+    val List(zLit) = arrayCall.argument.isLiteral.l
+    zLit.code shouldBe "z"
   }
 
   "an implicit array constructor (Array::[]) should be lowered to an array initializer" in {

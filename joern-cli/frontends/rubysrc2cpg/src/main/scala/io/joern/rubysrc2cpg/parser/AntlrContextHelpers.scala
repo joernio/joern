@@ -167,6 +167,21 @@ object AntlrContextHelpers {
     def isIf: Boolean     = Option(ctx.statementModifier().IF()).isDefined
   }
 
+  sealed implicit class QuotedExpandedArrayElementListContextHelper(ctx: QuotedExpandedArrayElementListContext) {
+    def elements: List[ParserRuleContext] = ctx.quotedExpandedArrayElement.asScala.toList
+  }
+
+  sealed implicit class QuotedExpandedArrayElementContextHelper(ctx: QuotedExpandedArrayElementContext) {
+    def interpolations: List[ParserRuleContext] = ctx
+      .quotedExpandedArrayElementContent()
+      .asScala
+      .filter(x => Option(x.compoundStatement()).isDefined)
+      .map(_.compoundStatement())
+      .toList
+    def hasInterpolation: Boolean =
+      ctx.quotedExpandedArrayElementContent().asScala.exists(x => Option(x.compoundStatement()).isDefined)
+  }
+
   sealed implicit class QuotedNonExpandedArrayElementListContextHelper(ctx: QuotedNonExpandedArrayElementListContext) {
     def elements: List[ParserRuleContext] = ctx.quotedNonExpandedArrayElementContent().asScala.toList
   }
