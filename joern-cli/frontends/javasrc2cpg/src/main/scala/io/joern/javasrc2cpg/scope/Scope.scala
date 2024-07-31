@@ -279,6 +279,10 @@ class Scope {
       case _ => None
     }
   }
+
+  def getPatternAssignmentAsts(): List[Ast] = {
+    scopeStack.collect { case blockScope: BlockScope => blockScope.getPatternAssignmentAsts() }.flatten
+  }
 }
 
 object Scope {

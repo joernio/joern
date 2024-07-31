@@ -21,6 +21,9 @@ object Defines {
   val UnresolvedNamespace = "<unresolvedNamespace>"
   val UnresolvedSignature = "<unresolvedSignature>"
 
+  // The following define is used primarily in the lowering for record pattern
+  val UnresolvedField = "<unresolvedField>"
+
   // Name of the synthetic, static method that contains the initialization of member variables.
   val StaticInitMethodName = "<clinit>"
 

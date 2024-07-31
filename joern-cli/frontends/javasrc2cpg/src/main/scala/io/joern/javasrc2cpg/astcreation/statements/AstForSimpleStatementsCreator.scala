@@ -126,16 +126,25 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
   }
 
   private[statements] def astForWhile(stmt: WhileStmt): Ast = {
+    // Push block scope for pattern assignments
+    scope.pushBlockScope()
+
     val conditionAst = astsForExpression(stmt.getCondition, ExpectedType.Boolean).headOption
     val stmtAsts     = astsForStatement(stmt.getBody)
     val code         = s"while (${stmt.getCondition.toString})"
     val lineNumber   = line(stmt)
     val columnNumber = column(stmt)
 
+    // Pop pattern block
+    scope.popBlockScope()
+    
     whileAst(conditionAst, stmtAsts, Some(code), lineNumber, columnNumber)
   }
 
   private[statements] def astForIf(stmt: IfStmt): Ast = {
+    // Push block scope for pattern assignments
+    scope.pushBlockScope()
+
     val ifNode =
       NewControlStructure()
         .controlStructureType(ControlStructureTypes.IF)
@@ -148,6 +157,9 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
 
     val thenAsts = astsForStatement(stmt.getThenStmt)
     val elseAst  = astForElse(stmt.getElseStmt.toScala).toList
+
+    // Pop pattern block
+    scope.popBlockScope()
 
     val ast = Ast(ifNode)
       .withChildren(conditionAst)

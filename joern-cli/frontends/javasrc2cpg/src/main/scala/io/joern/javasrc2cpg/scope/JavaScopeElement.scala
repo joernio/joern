@@ -2,14 +2,20 @@ package io.joern.javasrc2cpg.scope
 
 import io.joern.javasrc2cpg.scope.Scope.*
 import io.joern.javasrc2cpg.scope.JavaScopeElement.*
-import io.shiftleft.codepropertygraph.generated.nodes.{NewImport, NewMethod, NewNamespaceBlock, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  AstNodeNew,
+  NewImport,
+  NewLocal,
+  NewMember,
+  NewMethod,
+  NewMethodParameterIn,
+  NewNamespaceBlock,
+  NewTypeDecl
+}
 
 import scala.collection.mutable
 import io.joern.javasrc2cpg.astcreation.ExpectedType
 import io.joern.javasrc2cpg.util.MultiBindingTableAdapterForJavaparser.JavaparserBindingDeclType
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethodParameterIn
-import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
-import io.shiftleft.codepropertygraph.generated.nodes.NewMember
 import io.joern.javasrc2cpg.util.{BindingTable, BindingTableEntry, NameConstants}
 import io.joern.x2cpg.utils.IntervalKeyPool
 import io.joern.x2cpg.Ast
@@ -78,10 +84,30 @@ object JavaScopeElement {
   }
 
   class BlockScope extends JavaScopeElement {
+    private val patternAssignmentAsts: mutable.ListBuffer[(String, Ast)] = mutable.ListBuffer.empty
+
     val isStatic = false
 
     def addLocal(local: NewLocal): Unit = {
       addVariableToScope(ScopeLocal(local))
+    }
+
+    def addPatternAssignmentAst(variableName: String, ast: Ast): Unit = {
+      patternAssignmentAsts.indexWhere(_._1 == variableName) match {
+        case index if index >= 0 => patternAssignmentAsts.remove(index)
+        case _                   => // Nothing to do here
+      }
+
+      patternAssignmentAsts.append((variableName, ast))
+    }
+
+    def getPatternAssignmentAsts(): List[Ast] = {
+      patternAssignmentAsts
+        .map(_._2)
+        .flatMap { ast =>
+          ast.root.collect { case root: AstNodeNew => ast.subTreeCopy(root) }
+        }
+        .toList
     }
   }
 

@@ -28,7 +28,7 @@ class PatternTests extends JavaSrcCode2CpgFixture {
           case List(instanceOfCall: Call) =>
             instanceOfCall.name shouldBe Operators.instanceOf
             instanceOfCall.typeFullName shouldBe "boolean"
-            instanceOfCall.code shouldBe "o instanceof String s"
+            instanceOfCall.code shouldBe "o instanceof String"
 
             inside(instanceOfCall.argument.l) { case List(oIdentifier: Identifier, stringType: TypeRef) =>
               oIdentifier.name shouldBe "o"
@@ -102,7 +102,7 @@ class PatternTests extends JavaSrcCode2CpgFixture {
           case List(instanceOfBox: Call) =>
             instanceOfBox.name shouldBe Operators.instanceOf
             instanceOfBox.methodFullName shouldBe Operators.instanceOf
-            instanceOfBox.code shouldBe "o instanceof Box(String s)"
+            instanceOfBox.code shouldBe "o instanceof Box"
             instanceOfBox.typeFullName shouldBe "boolean"
 
             inside(instanceOfBox.argument.l) { case List(oIdentifier: Identifier, boxType: TypeRef) =>
@@ -185,12 +185,12 @@ class PatternTests extends JavaSrcCode2CpgFixture {
           case List(andCall: Call) =>
             andCall.name shouldBe Operators.logicalAnd
             andCall.methodFullName shouldBe Operators.logicalAnd
-            andCall.code shouldBe "o instanceof Box(String s) && ((Box) o).value() instanceof String)"
+            andCall.code shouldBe "o instanceof Box && ((Box) o).value() instanceof String)"
 
             inside(andCall.argument.l) { case List(instanceOfBox: Call, instanceOfString: Call) =>
               instanceOfBox.name shouldBe Operators.instanceOf
               instanceOfBox.methodFullName shouldBe Operators.instanceOf
-              instanceOfBox.code shouldBe "o instanceof Box(String s)"
+              instanceOfBox.code shouldBe "o instanceof Box"
               instanceOfBox.typeFullName shouldBe "boolean"
 
               inside(instanceOfBox.argument.l) { case List(oIdentifier: Identifier, boxType: TypeRef) =>
@@ -315,7 +315,7 @@ class PatternTests extends JavaSrcCode2CpgFixture {
           case List(instanceOfCall: Call) =>
             instanceOfCall.name shouldBe Operators.instanceOf
             instanceOfCall.typeFullName shouldBe "boolean"
-            instanceOfCall.code shouldBe "o instanceof PairBox(Pair (String s, Integer i))"
+            instanceOfCall.code shouldBe "o instanceof PairBox"
 
             inside(instanceOfCall.argument.l) { case List(oIdentifier: Identifier, pairBoxType: TypeRef) =>
               oIdentifier.name shouldBe "o"
