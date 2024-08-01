@@ -6,7 +6,8 @@ import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
-import io.joern.rubysrc2cpg.passes.Defines.Main
+import io.joern.rubysrc2cpg.passes.Defines.{Main, TypeDeclBody, Initialize}
+import io.joern.rubysrc2cpg.passes.GlobalTypes
 
 class ClassTests extends RubyCode2CpgFixture {
 
@@ -907,5 +908,46 @@ class ClassTests extends RubyCode2CpgFixture {
 
     cpg.method.nameExact("foo").fullName.l shouldBe List(s"Test0.rb:$Main.Foo.foo", s"Test0.rb:$Main.Foo0.foo")
 
+  }
+
+  "Class with nonAllowedTypeDeclChildren and explicit init" should {
+    val cpg = code("""
+        |class Foo
+        | 1
+        | def initialize(bar)
+        |   puts bar
+        | end
+        |end
+        |""".stripMargin)
+
+    "have an explicit init method" in {
+      inside(cpg.typeDecl.nameExact("Foo").method.l) {
+        case initMethod :: bodyMethod :: Nil =>
+          bodyMethod.name shouldBe TypeDeclBody
+
+          initMethod.name shouldBe Initialize
+          inside(initMethod.parameter.l) {
+            case selfParam :: barParam :: Nil =>
+              selfParam.name shouldBe "self"
+              barParam.name shouldBe "bar"
+            case xs => fail(s"Expected two params, got [${xs.code.mkString(",")}]")
+          }
+
+          inside(initMethod.block.astChildren.l) {
+            case (putsCall: Call) :: Nil =>
+              putsCall.name shouldBe "puts"
+            case xs => fail(s"Expected one call, got [${xs.code.mkString(",")}]")
+          }
+
+          inside(bodyMethod.block.astChildren.l) {
+            case (one: Literal) :: Nil =>
+              one.code shouldBe "1"
+              one.typeFullName shouldBe s"${GlobalTypes.kernelPrefix}.Integer"
+            case xs => fail(s"Expected one literal, got [${xs.code.mkString(",")}]")
+          }
+
+        case xs => fail(s"Expected body method and init method, got [${xs.code.mkString(",")}]")
+      }
+    }
   }
 }

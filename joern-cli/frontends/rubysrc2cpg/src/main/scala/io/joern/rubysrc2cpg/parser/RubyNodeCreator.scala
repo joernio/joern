@@ -1087,7 +1087,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
       if otherTypeDeclChildren.nonEmpty then "\n" + otherTypeDeclChildren.map(_.span.text).mkString("\n")
       else ""
 
-    StatementList(otherTypeDeclChildren ++ updatedBodyMethod)(
+    StatementList(initMethod ++ otherTypeDeclChildren ++ updatedBodyMethod)(
       stmts.span.spanStart(updatedBodyMethod.headOption.map(x => x.span.text).getOrElse("") + otherTypeDeclChildrenSpan)
     )
   }
