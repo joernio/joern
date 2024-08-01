@@ -388,7 +388,9 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     ctx: RubyParser.QuotedExpandedExternalCommandLiteralContext
   ): RubyNode = {
     val commandLiteral =
-      StaticLiteral(Defines.String)(ctx.quotedExpandedLiteralStringContent.asScala.toList.map(_.toTextSpan).head)
+      if ctx.quotedExpandedLiteralStringContent.asScala.nonEmpty then
+        StaticLiteral(Defines.String)(ctx.quotedExpandedLiteralStringContent.asScala.toList.map(_.toTextSpan).head)
+      else StaticLiteral(Defines.String)(ctx.toTextSpan.spanStart())
 
     SimpleCall(SimpleIdentifier()(ctx.toTextSpan.spanStart("exec")), List(commandLiteral))(ctx.toTextSpan)
   }
