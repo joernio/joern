@@ -1092,7 +1092,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
         )
       }
 
-    StatementList(otherTypeDeclChildren ++ updatedBodyMethod)(stmts.span)
+    StatementList(initMethod ++ otherTypeDeclChildren ++ updatedBodyMethod)(stmts.span)
   }
 
   override def visitClassDefinition(ctx: RubyParser.ClassDefinitionContext): RubyNode = {
