@@ -37,7 +37,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   }
 
   private def astForNamespaceDefinition(namespaceDefinition: ICPPASTNamespaceDefinition): Ast = {
-    val TypeFullNameInfo(name, fullName) = typeInfo(namespaceDefinition)
+    val TypeFullNameInfo(name, fullName) = typeFullNameInfo(namespaceDefinition)
     val codeString                       = code(namespaceDefinition)
     val cpgNamespace =
       newNamespaceBlockNode(namespaceDefinition, name, fullName, codeString, fileName(namespaceDefinition))
@@ -54,7 +54,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   }
 
   protected def astForNamespaceAlias(namespaceAlias: ICPPASTNamespaceAlias): Ast = {
-    val TypeFullNameInfo(name, fullName) = typeInfo(namespaceAlias)
+    val TypeFullNameInfo(name, fullName) = typeFullNameInfo(namespaceAlias)
     if (!isQualifiedName(name)) {
       usingDeclarationMappings.put(name, fullName)
     }
@@ -268,7 +268,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     val lineNumber                       = line(typeSpecifier)
     val columnNumber                     = column(typeSpecifier)
-    val TypeFullNameInfo(name, fullName) = typeInfo(typeSpecifier)
+    val TypeFullNameInfo(name, fullName) = typeFullNameInfo(typeSpecifier)
     val codeString                       = code(typeSpecifier)
     val nameAlias                        = decls.headOption.map(d => registerType(shortName(d))).filter(_.nonEmpty)
     val nameWithTemplateParams           = templateParameters(typeSpecifier).map(t => registerType(s"$fullName$t"))
@@ -316,7 +316,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val declAsts = decls.zipWithIndex.map { case (d, i) =>
       astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d, i)
     }
-    val TypeFullNameInfo(name, fullName) = typeInfo(typeSpecifier)
+    val TypeFullNameInfo(name, fullName) = typeFullNameInfo(typeSpecifier)
     val nameAlias                        = decls.headOption.map(d => registerType(shortName(d))).filter(_.nonEmpty)
     val nameWithTemplateParams           = templateParameters(typeSpecifier).map(t => registerType(s"$fullName$t"))
     val alias                            = (nameAlias.toList ++ nameWithTemplateParams.toList).headOption
@@ -366,7 +366,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     val lineNumber                       = line(typeSpecifier)
     val columnNumber                     = column(typeSpecifier)
-    val TypeFullNameInfo(name, fullName) = typeInfo(typeSpecifier)
+    val TypeFullNameInfo(name, fullName) = typeFullNameInfo(typeSpecifier)
     val alias                            = decls.headOption.map(d => registerType(shortName(d))).filter(_.nonEmpty)
 
     val (deAliasedName, deAliasedFullName, newAlias) = if (name.contains("anonymous_enum") && alias.isDefined) {

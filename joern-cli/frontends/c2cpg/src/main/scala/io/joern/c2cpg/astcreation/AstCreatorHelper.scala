@@ -315,24 +315,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     Option(node).map(astsForStatement(_, argIndex)).getOrElse(Seq.empty)
   }
 
-  protected def fixQualifiedName(name: String): String = {
-    val normalizedName = StringUtils.normalizeSpace(name)
-    normalizedName.stripPrefix(Defines.QualifiedNameSeparator).replace(Defines.QualifiedNameSeparator, ".")
-  }
-
-  protected def isQualifiedName(name: String): Boolean =
-    name.startsWith(Defines.QualifiedNameSeparator)
-
-  protected def lastNameOfQualifiedName(name: String): String = {
-    val normalizedName = StringUtils.normalizeSpace(name)
-    val cleanedName = if (normalizedName.contains("<") && normalizedName.contains(">")) {
-      name.substring(0, normalizedName.indexOf("<"))
-    } else {
-      normalizedName
-    }
-    cleanedName.split(Defines.QualifiedNameSeparator).lastOption.getOrElse(cleanedName)
-  }
-
   protected def functionTypeToSignature(typ: IFunctionType): String = {
     val returnType     = cleanType(safeGetType(typ.getReturnType))
     val parameterTypes = typ.getParameterTypes.map(t => cleanType(safeGetType(t)))

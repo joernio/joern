@@ -108,7 +108,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
   protected def astForMethodRefForLambda(lambdaExpression: ICPPASTLambdaExpression): Ast = {
     val filename                                                  = fileName(lambdaExpression)
-    val MethodFullNameInfo(name, fullName, signature, returnType) = this.methodInfo(lambdaExpression)
+    val MethodFullNameInfo(name, fullName, signature, returnType) = this.methodFullNameInfo(lambdaExpression)
     val codeString                                                = code(lambdaExpression)
     val methodNode_ = methodNode(lambdaExpression, name, codeString, fullName, Some(signature), filename)
 
@@ -136,7 +136,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   protected def astForFunctionDeclarator(funcDecl: IASTFunctionDeclarator): Ast = {
     funcDecl.getName.resolveBinding() match {
       case _: IFunction =>
-        val MethodFullNameInfo(name, fullName, signature, returnType) = this.methodInfo(funcDecl)
+        val MethodFullNameInfo(name, fullName, signature, returnType) = this.methodFullNameInfo(funcDecl)
         val codeString                                                = code(funcDecl.getParent)
         val filename                                                  = fileName(funcDecl)
 
@@ -245,7 +245,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
   protected def astForFunctionDefinition(funcDef: IASTFunctionDefinition): Ast = {
     val filename                                                  = fileName(funcDef)
-    val MethodFullNameInfo(name, fullName, signature, returnType) = this.methodInfo(funcDef)
+    val MethodFullNameInfo(name, fullName, signature, returnType) = this.methodFullNameInfo(funcDef)
     registerMethodDefinition(fullName)
 
     val codeString  = code(funcDef)
