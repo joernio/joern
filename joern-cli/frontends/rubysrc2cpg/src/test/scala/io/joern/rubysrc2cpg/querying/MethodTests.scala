@@ -875,7 +875,7 @@ class MethodTests extends RubyCode2CpgFixture {
             lsArg.code shouldBe "ls -l"
           case xs => fail(s"expected 2 arguments, got [${xs.code.mkString(",")}]")
         }
-      case xs => println("penis")
+      case xs => fail(s"Expected one call to exec, got [${xs.code.mkString(",")}]")
     }
   }
 }
