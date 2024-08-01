@@ -860,4 +860,22 @@ class MethodTests extends RubyCode2CpgFixture {
       case xs => fail(s"Expected one method for batch.retry, got [${xs.code.mkString(",")}]")
     }
   }
+
+  "%x should be represented as a call to EXEC" in {
+    val cpg = code("""
+        |%x(ls -l)
+        |""".stripMargin)
+
+    inside(cpg.call.name("exec").l) {
+      case execCall :: Nil =>
+        execCall.name shouldBe "exec"
+        inside(execCall.argument.l) {
+          case selfArg :: lsArg :: Nil =>
+            selfArg.code shouldBe "self"
+            lsArg.code shouldBe "ls -l"
+          case xs => fail(s"expected 2 arguments, got [${xs.code.mkString(",")}]")
+        }
+      case xs => println("penis")
+    }
+  }
 }

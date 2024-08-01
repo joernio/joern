@@ -384,6 +384,15 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     }
   }
 
+  override def visitQuotedExpandedExternalCommandLiteral(
+    ctx: RubyParser.QuotedExpandedExternalCommandLiteralContext
+  ): RubyNode = {
+    val commandLiteral =
+      StaticLiteral(Defines.String)(ctx.quotedExpandedLiteralStringContent.asScala.toList.map(_.toTextSpan).head)
+
+    SimpleCall(SimpleIdentifier()(ctx.toTextSpan.spanStart("exec")), List(commandLiteral))(ctx.toTextSpan)
+  }
+
   override def visitCurlyBracesBlock(ctx: RubyParser.CurlyBracesBlockContext): RubyNode = {
     val parameters = Option(ctx.blockParameter()).fold(List())(_.parameters).map(visit)
     val body       = visit(ctx.compoundStatement())
