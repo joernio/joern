@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.parser
 import io.joern.rubysrc2cpg.testfixtures.RubyParserFixture
 import org.scalatest.matchers.should.Matchers
 
-class CaseConditionParserTests extends RubyParserFixture(newMatch = true) with Matchers {
+class CaseConditionParserTests extends RubyParserFixture with Matchers {
   "A case expression" in {
     test(
       """case something

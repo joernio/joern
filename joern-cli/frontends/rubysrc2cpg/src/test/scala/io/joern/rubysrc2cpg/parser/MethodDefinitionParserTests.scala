@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.parser
 import io.joern.rubysrc2cpg.testfixtures.RubyParserFixture
 import org.scalatest.matchers.should.Matchers
 
-class MethodDefinitionParserTests extends RubyParserFixture(newMatch = true) with Matchers {
+class MethodDefinitionParserTests extends RubyParserFixture with Matchers {
   "single line method definition" in {
     test(
       "def foo; end",

@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.parser
 import io.joern.rubysrc2cpg.testfixtures.RubyParserFixture
 import org.scalatest.matchers.should.Matchers
 
-class StringParserTests extends RubyParserFixture(newMatch = true) with Matchers {
+class StringParserTests extends RubyParserFixture with Matchers {
   "single quoted literal" in {
     test("''")
     test("'x' 'y'", "'x''y'")

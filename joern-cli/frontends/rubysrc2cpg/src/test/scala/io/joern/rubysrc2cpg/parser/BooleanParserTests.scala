@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.parser
 import io.joern.rubysrc2cpg.testfixtures.RubyParserFixture
 import org.scalatest.matchers.should.Matchers
 
-class BooleanParserTests extends RubyParserFixture(newMatch = true) with Matchers {
+class BooleanParserTests extends RubyParserFixture with Matchers {
   "Boolean word operators" in {
     test("1 or 2")
     test("1 and 2")

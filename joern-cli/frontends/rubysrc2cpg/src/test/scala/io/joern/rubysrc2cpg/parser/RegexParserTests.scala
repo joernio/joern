@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.parser
 import io.joern.rubysrc2cpg.testfixtures.RubyParserFixture
 import org.scalatest.matchers.should.Matchers
 
-class RegexParserTests extends RubyParserFixture(newMatch = true) with Matchers {
+class RegexParserTests extends RubyParserFixture with Matchers {
   // These are AstPrinter issues, not RubyNodeCreator issues
   "fixme" ignore {
     test("""unless /\A([^@\s]+)@((?:[-a-z0-9]+\.)+[a-z]{2,})\z/i.match?(value)
