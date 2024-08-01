@@ -328,12 +328,10 @@ trait FullNameProvider { this: AstCreator =>
   }
 
   private def fullNameForIASTFunctionDeclarator(f: IASTFunctionDeclarator): String = {
-    if (ASTStringUtil.getSimpleName(f.getName).isEmpty && f.getNestedDeclarator != null) {
-      s"${fullName(f.getParent)}.${shortName(f.getNestedDeclarator)}"
-    } else if (f.getParent.isInstanceOf[IASTFunctionDefinition]) {
+    if (f.getParent.isInstanceOf[IASTFunctionDefinition]) {
       s"${fullName(f.getParent)}"
     } else {
-      s"${fullName(f.getParent)}.${ASTStringUtil.getSimpleName(f.getName)}"
+      s"${fullName(f.getParent)}.${shortName(f)}"
     }
   }
 
