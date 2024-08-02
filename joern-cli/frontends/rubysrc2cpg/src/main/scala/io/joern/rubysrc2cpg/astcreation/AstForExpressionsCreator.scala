@@ -523,33 +523,23 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   protected def astForArrayLiteral(node: ArrayLiteral): Ast = {
-    if (node.isDynamic) {
-      logger.warn(s"Interpolated array literals are not supported yet: ${code(node)} ($relativeFileName), skipping")
-      astForUnknown(node)
-    } else {
-      val arguments = if (node.text.startsWith("%")) {
-        val argumentsType =
-          if (node.isStringArray) getBuiltInType(Defines.String)
-          else getBuiltInType(Defines.Symbol)
-        node.elements.map {
-          case element @ StaticLiteral(_) => StaticLiteral(argumentsType)(element.span)
-          case element                    => element
-        }
-      } else {
-        node.elements
+    val arguments = if (node.text.startsWith("%")) {
+      val argumentsType =
+        if (node.isStringArray) getBuiltInType(Defines.String)
+        else getBuiltInType(Defines.Symbol)
+      node.elements.map {
+        case element @ StaticLiteral(_)               => StaticLiteral(argumentsType)(element.span)
+        case element @ DynamicLiteral(_, expressions) => DynamicLiteral(argumentsType, expressions)(element.span)
+        case element                                  => element
       }
-      val argumentAsts = arguments.map(astForExpression)
-
-      val call =
-        callNode(
-          node,
-          code(node),
-          Operators.arrayInitializer,
-          Operators.arrayInitializer,
-          DispatchTypes.STATIC_DISPATCH
-        )
-      callAst(call, argumentAsts)
+    } else {
+      node.elements
     }
+    val argumentAsts = arguments.map(astForExpression)
+
+    val call =
+      callNode(node, code(node), Operators.arrayInitializer, Operators.arrayInitializer, DispatchTypes.STATIC_DISPATCH)
+    callAst(call, argumentAsts)
   }
 
   protected def astForHashLiteral(node: HashLiteral): Ast = {

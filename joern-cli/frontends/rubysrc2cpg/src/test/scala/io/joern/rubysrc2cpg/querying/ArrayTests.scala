@@ -4,6 +4,8 @@ import io.joern.rubysrc2cpg.passes.GlobalTypes.{builtinPrefix, kernelPrefix}
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.*
+import io.joern.rubysrc2cpg.passes.Defines
+import io.shiftleft.codepropertygraph.generated.nodes.Literal
 
 class ArrayTests extends RubyCode2CpgFixture {
 
@@ -121,4 +123,27 @@ class ArrayTests extends RubyCode2CpgFixture {
 
   }
 
+  "%I array" in {
+    val cpg = code("%I(test_#{1} test_2)")
+
+    val List(arrayCall) = cpg.call.name(Operators.arrayInitializer).l
+    arrayCall.lineNumber shouldBe Some(1)
+    arrayCall.code shouldBe "%I(test_#{1} test_2)"
+
+    val List(test1Fmt) = arrayCall.argument.isCall.l
+    test1Fmt.name shouldBe Operators.formatString
+    test1Fmt.typeFullName shouldBe Defines.getBuiltInType(Defines.Symbol)
+    test1Fmt.code shouldBe "test_#{1}"
+
+    val List(test1FmtSymbol) = test1Fmt.astChildren.isCall.l
+    test1FmtSymbol.name shouldBe Operators.formattedValue
+    test1FmtSymbol.typeFullName shouldBe Defines.getBuiltInType(Defines.Symbol)
+
+    val List(test1FmtFinal: Literal) = test1FmtSymbol.argument.l: @unchecked
+    test1FmtFinal.code shouldBe "1"
+
+    val List(test2) = arrayCall.argument.isLiteral.l
+    test2.code shouldBe "test_2"
+    test2.typeFullName shouldBe Defines.getBuiltInType(Defines.Symbol)
+  }
 }

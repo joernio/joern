@@ -2,7 +2,12 @@ package io.joern.rubysrc2cpg.parser
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{Block, *}
 import io.joern.rubysrc2cpg.parser.AntlrContextHelpers.*
-import io.joern.rubysrc2cpg.parser.RubyParser.{CommandWithDoBlockContext, ConstantVariableReferenceContext}
+import io.joern.rubysrc2cpg.parser.RubyParser.{
+  CommandWithDoBlockContext,
+  ConstantVariableReferenceContext,
+  QuotedExpandedStringArrayLiteralContext,
+  QuotedExpandedSymbolArrayLiteralContext
+}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
@@ -11,6 +16,7 @@ import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.tree.{ParseTree, RuleNode}
 import org.slf4j.LoggerFactory
 
+import scala.annotation.tailrec
 import scala.jdk.CollectionConverters.*
 
 /** Converts an ANTLR Ruby Parse Tree into the intermediate Ruby AST.
@@ -819,6 +825,45 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
       .getOrElse(List())
       .map(elemCtx => StaticLiteral(getBuiltInType(Defines.Symbol))(elemCtx.toTextSpan))
     ArrayLiteral(elements)(ctx.toTextSpan)
+  }
+
+  override def visitQuotedExpandedSymbolArrayLiteral(
+    ctx: RubyParser.QuotedExpandedSymbolArrayLiteralContext
+  ): RubyNode = {
+    if (Option(ctx.quotedExpandedArrayElementList).isDefined) {
+      ArrayLiteral(ctx.quotedExpandedArrayElementList().elements.map(visit))(ctx.toTextSpan)
+    } else {
+      ArrayLiteral(List())(ctx.toTextSpan)
+    }
+  }
+
+  override def visitQuotedExpandedArrayElement(ctx: RubyParser.QuotedExpandedArrayElementContext): RubyNode = {
+    val literalType = findParent(ctx) match {
+      case Some(parentCtx) =>
+        parentCtx match
+          case x: QuotedExpandedStringArrayLiteralContext => Defines.String
+          case x: QuotedExpandedSymbolArrayLiteralContext => Defines.Symbol
+          case _ => logger.warn("Cannot determine type, defaulting to String"); Defines.String
+      case _ => logger.warn("Cannot determine type, defaulting to String"); Defines.String
+    }
+
+    if (ctx.hasInterpolation) {
+      DynamicLiteral(literalType, ctx.interpolations.map(visit))(ctx.toTextSpan)
+    } else {
+      StaticLiteral(literalType)(ctx.toTextSpan)
+    }
+  }
+
+  @tailrec
+  private def findParent(ctx: ParserRuleContext): Option[ParserRuleContext] = {
+    ctx match {
+      case x: QuotedExpandedSymbolArrayLiteralContext => Option(ctx)
+      case x: QuotedExpandedStringArrayLiteralContext => Option(ctx)
+      case null                                       => Option(ctx)
+      case _ =>
+        if ctx.parent != null then findParent(ctx.parent.asInstanceOf[ParserRuleContext])
+        else None
+    }
   }
 
   override def visitRangeExpression(ctx: RubyParser.RangeExpressionContext): RubyNode = {
