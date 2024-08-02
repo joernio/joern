@@ -69,8 +69,7 @@ class StringParserTests extends RubyParserFixture with Matchers {
         |  is a number."""".stripMargin)
   }
 
-  // TODO: Unknown nodes in RubyNodeCreator
-  "Expanded `%x` external command literal" ignore {
+  "Expanded `%x` external command literal" in {
     test("%x//")
     test("%x{l#{'s'}}")
   }
