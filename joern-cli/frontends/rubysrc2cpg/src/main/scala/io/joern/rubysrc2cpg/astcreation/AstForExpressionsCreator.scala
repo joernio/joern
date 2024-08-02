@@ -523,8 +523,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   protected def astForArrayLiteral(node: ArrayLiteral): Ast = {
-    if (node.isDynamic) {
-      logger.warn(s"Interpolated array literals are not supported yet: ${code(node)} ($relativeFileName), skipping")
+    if (node.isDynamic && node.isSymbolArray) {
+      logger.warn(
+        s"Interpolated symbol array literals are not supported yet: ${code(node)} ($relativeFileName), skipping"
+      )
       astForUnknown(node)
     } else {
       val arguments = if (node.text.startsWith("%")) {

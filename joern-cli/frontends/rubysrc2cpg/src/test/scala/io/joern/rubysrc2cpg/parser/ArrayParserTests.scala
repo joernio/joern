@@ -24,6 +24,14 @@ class ArrayParserTests extends RubyParserFixture with Matchers {
         |cod
         |dod)""".stripMargin
     )
+    test("%W(x#{1})")
+    test(
+      """%W[
+           | x#{0}
+           |]""".stripMargin,
+      "%W[x#{0}]"
+    )
+    test("%W()")
     test("%i<x y>")
     test("%i{x\\ y}")
     test("%i[x [y]]")
@@ -40,12 +48,7 @@ class ArrayParserTests extends RubyParserFixture with Matchers {
   }
 
   "fixme" ignore {
-    test("%I{}")      // Unknown in `RubyNodeCreator`
-    test("%W(x#{1})") // Interpolations are weird
-    test("""%W[
-           | x#{0}
-           |]""".stripMargin) // Interpolations are weird
-    test("%I(x#{0} x1)")      // Interpolations are weird
-    test("%W(x#{1})")         // Interpolations are weird
+    test("%I{}")         // Unknown in `RubyNodeCreator`
+    test("%I(x#{0} x1)") // Interpolations are weird
   }
 }

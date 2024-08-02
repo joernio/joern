@@ -342,6 +342,25 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     StaticLiteral(getBuiltInType(Defines.String))(ctx.toTextSpan)
   }
 
+  override def visitQuotedExpandedStringArrayLiteral(
+    ctx: RubyParser.QuotedExpandedStringArrayLiteralContext
+  ): RubyNode = {
+    val elements =
+      if Option(ctx.quotedExpandedArrayElementList()).isDefined then
+        ctx.quotedExpandedArrayElementList().elements.map(visit)
+      else List.empty
+
+    ArrayLiteral(elements)(ctx.toTextSpan)
+  }
+
+  override def visitQuotedExpandedArrayElement(ctx: RubyParser.QuotedExpandedArrayElementContext): RubyNode = {
+    if (ctx.hasInterpolation) {
+      DynamicLiteral(Defines.String, ctx.interpolations.map(visit))(ctx.toTextSpan)
+    } else {
+      StaticLiteral(Defines.String)(ctx.toTextSpan)
+    }
+  }
+
   override def visitDoubleQuotedStringExpression(ctx: RubyParser.DoubleQuotedStringExpressionContext): RubyNode = {
     if (!ctx.isInterpolated) {
       StaticLiteral(getBuiltInType(Defines.String))(ctx.toTextSpan)
