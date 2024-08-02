@@ -5,9 +5,15 @@ import org.scalatest.matchers.should.Matchers
 
 class BeginExpressionParserTests extends RubyParserFixture with Matchers {
   "Begin expression" in {
-    test("""begin
+    test(
+      """begin
         |1/0
         |rescue ZeroDivisionError => e
-        |end""".stripMargin)
+        |end""".stripMargin,
+      """begin
+        |1 / 0
+        |rescue ZeroDivisionError => e
+        |end""".stripMargin
+    )
   }
 }

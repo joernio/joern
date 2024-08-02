@@ -6,13 +6,19 @@ import org.scalatest.matchers.should.Matchers
 class StringParserTests extends RubyParserFixture with Matchers {
   "single quoted literal" in {
     test("''")
-    test("'x' 'y'")
-    test("""'x' \
+    test("'x' 'y'", "'x''y'")
+    test(
+      """'x' \
         | 'y'
-        |""".stripMargin)
-    test("""'x' \
+        |""".stripMargin,
+      "'x''y'"
+    )
+    test(
+      """'x' \
         | 'y' \
-        | 'z'""".stripMargin)
+        | 'z'""".stripMargin,
+      "'x''y''z'"
+    )
   }
 
   "non expanded `%q` literal" in {
@@ -48,10 +54,13 @@ class StringParserTests extends RubyParserFixture with Matchers {
 
   "double quoted string literal" in {
     test("\"\"")
-    test("\"x\" \"y\"")
-    test("""
+    test("\"x\" \"y\"", "\"x\"\"y\"")
+    test(
+      """
         |"x" \
-        | "y"""".stripMargin)
+        | "y"""".stripMargin,
+      "\"x\"\"y\""
+    )
   }
 
   "double quoted string interpolation" in {
@@ -64,4 +73,5 @@ class StringParserTests extends RubyParserFixture with Matchers {
     test("%x//")
     test("%x{l#{'s'}}")
   }
+
 }
