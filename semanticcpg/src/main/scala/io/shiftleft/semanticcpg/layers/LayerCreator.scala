@@ -36,17 +36,8 @@ abstract class LayerCreator {
     }
   }
 
-  protected def initSerializedCpg(outputDir: Option[String], passName: String, index: Int = 0): SerializedCpg = {
-    outputDir match {
-      case Some(dir) => new SerializedCpg((File(dir) / s"${index}_$passName").path.toAbsolutePath.toString)
-      case None      => new SerializedCpg()
-    }
-  }
-
   protected def runPass(pass: CpgPassBase, context: LayerCreatorContext, index: Int = 0): Unit = {
-    val serializedCpg = initSerializedCpg(context.outputDir, pass.name, index)
-    pass.createApplySerializeAndStore(serializedCpg)
-    serializedCpg.close()
+    pass.createAndApply()
   }
 
   def create(context: LayerCreatorContext): Unit
