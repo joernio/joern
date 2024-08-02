@@ -455,6 +455,17 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     }
   }
 
+  override def visitQuotedExpandedExternalCommandLiteral(
+    ctx: RubyParser.QuotedExpandedExternalCommandLiteralContext
+  ): String = {
+    val command =
+      if ctx.quotedExpandedLiteralStringContent.asScala.nonEmpty then
+        ctx.quotedExpandedLiteralStringContent.asScala.flatMap(_.children.asScala.map(visit)).mkString("")
+      else ""
+
+    s"${ctx.QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_START.getText}$command${ctx.QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_END.getText}"
+  }
+
   override def visitDoubleQuotedString(ctx: RubyParser.DoubleQuotedStringContext): String = {
     if (!ctx.isInterpolated) {
       ctx.getText
