@@ -37,9 +37,17 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case InterpolatedStringExpression      => astForInterpolatedStringExpression(expr)
       case ConditionalAccessExpression       => astForConditionalAccessExpression(expr)
       case SuppressNullableWarningExpression => astForSuppressNullableWarningExpression(expr)
+      case CoalesceExpression                => astForCoalesceExpression(expr)
       case _: BaseLambdaExpression           => astForSimpleLambdaExpression(expr)
       case _                                 => notHandledYet(expr)
     }
+  }
+
+  private def astForCoalesceExpression(coalesceExpression: DotNetNodeInfo): Seq[Ast] = {
+    val leftAst  = astForExpression(createDotNetNodeInfo(coalesceExpression.json(ParserKeys.Left)))
+    val rightAst = astForExpression(createDotNetNodeInfo(coalesceExpression.json(ParserKeys.Right)))
+
+    leftAst ++ rightAst
   }
 
   private def astForAwaitExpression(awaitExpr: DotNetNodeInfo): Seq[Ast] = {
