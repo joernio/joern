@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.testfixtures
 
 import io.joern.rubysrc2cpg.Config
-import io.joern.rubysrc2cpg.parser.{ResourceManagedParser, RubyNodeCreator, RubyParser}
+import io.joern.rubysrc2cpg.parser.{AstPrinter, ResourceManagedParser, RubyNodeCreator, RubyParser}
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.utils.{ConcurrentTaskUtil, TestCodeWriter}
 import org.scalatest.matchers.should.Matchers
@@ -81,16 +81,16 @@ class RubyParserFixture
   }
 
   def test(code: String, expected: String = null): Unit = {
-    val ast = parseCode(code).headOption match {
-      case Some(head) => Option(new RubyNodeCreator().visit(head))
+    val astPrinter = parseCode(code).headOption match {
+      case Some(head) => Option(AstPrinter().visit(head))
       case None       => None
     }
 
-    ast match {
+    astPrinter match {
       case Some(ast) =>
         val compareTo = if (expected != null) expected else code
-        ast.span.text shouldBe compareTo
-      case None => fail("AST generation failed")
+        ast shouldBe compareTo
+      case None => fail("AST Printer failed")
     }
   }
 }

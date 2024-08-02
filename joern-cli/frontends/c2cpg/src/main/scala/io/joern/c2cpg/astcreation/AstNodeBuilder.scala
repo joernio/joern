@@ -14,7 +14,7 @@ trait AstNodeBuilder { this: AstCreator =>
   protected def newNamespaceBlockNode(
     node: IASTNode,
     name: String,
-    fullname: String,
+    fullName: String,
     code: String,
     filename: String
   ): NewNamespaceBlock = {
@@ -24,7 +24,7 @@ trait AstNodeBuilder { this: AstCreator =>
       .columnNumber(column(node))
       .filename(filename)
       .name(name)
-      .fullName(fullname)
+      .fullName(fullName)
   }
 
   protected def newJumpTargetNode(node: IASTNode): NewJumpTarget = {

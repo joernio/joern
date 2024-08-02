@@ -1,6 +1,6 @@
 package io.joern.rubysrc2cpg.deprecated.parser
 
-import io.joern.rubysrc2cpg.parser.AstPrinter
+import io.joern.rubysrc2cpg.parser.AnltrAstPrinter
 import org.antlr.v4.runtime.{CharStreams, CommonTokenStream, ParserRuleContext}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -18,7 +18,7 @@ abstract class RubyParserAbstractTest extends AnyWordSpec with Matchers {
     new DeprecatedRubyParser(rubyStream(code))
 
   def printAst(withContext: DeprecatedRubyParser => ParserRuleContext, input: String): String =
-    omitWhitespaceLines(AstPrinter.print(withContext(rubyParser(input))))
+    omitWhitespaceLines(AnltrAstPrinter.print(withContext(rubyParser(input))))
 
   private def omitWhitespaceLines(text: String): String =
     text.lines().filter(_.strip().nonEmpty).collect(Collectors.joining("\n"))

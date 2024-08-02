@@ -5,11 +5,29 @@ import org.scalatest.matchers.should.Matchers
 
 class ClassDefinitionParserTests extends RubyParserFixture with Matchers {
   "class definitions" in {
-    test("class << self ; end")
-    test("class X 1 end")
-    test("""class << x
+    test(
+      "class << self ; end",
+      """class << self.<anon-class-0>
+        |end""".stripMargin
+    )
+    test(
+      "class X 1 end",
+      """class X
+        |def <body>
+        |1
+        |end
+        |end""".stripMargin
+    )
+    test(
+      """class << x
         | def show; puts self; end
         |end
-        |""".stripMargin)
+        |""".stripMargin,
+      """class << x
+        |def show
+        |puts self
+        |end
+        |end""".stripMargin
+    )
   }
 }

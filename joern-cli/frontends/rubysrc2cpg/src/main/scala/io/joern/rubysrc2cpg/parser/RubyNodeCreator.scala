@@ -342,6 +342,25 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     StaticLiteral(getBuiltInType(Defines.String))(ctx.toTextSpan)
   }
 
+  override def visitQuotedExpandedStringArrayLiteral(
+    ctx: RubyParser.QuotedExpandedStringArrayLiteralContext
+  ): RubyNode = {
+    val elements =
+      if Option(ctx.quotedExpandedArrayElementList()).isDefined then
+        ctx.quotedExpandedArrayElementList().elements.map(visit)
+      else List.empty
+
+    ArrayLiteral(elements)(ctx.toTextSpan)
+  }
+
+  override def visitQuotedExpandedArrayElement(ctx: RubyParser.QuotedExpandedArrayElementContext): RubyNode = {
+    if (ctx.hasInterpolation) {
+      DynamicLiteral(Defines.String, ctx.interpolations.map(visit))(ctx.toTextSpan)
+    } else {
+      StaticLiteral(Defines.String)(ctx.toTextSpan)
+    }
+  }
+
   override def visitDoubleQuotedStringExpression(ctx: RubyParser.DoubleQuotedStringExpressionContext): RubyNode = {
     if (!ctx.isInterpolated) {
       StaticLiteral(getBuiltInType(Defines.String))(ctx.toTextSpan)
@@ -926,7 +945,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
       }
   }
 
-  private def genInitFieldStmts(
+  def genInitFieldStmts(
     ctxBodyStatement: RubyParser.BodyStatementContext
   ): (RubyNode, List[RubyNode & RubyFieldIdentifier]) = {
     val loweredClassDecls = lowerSingletonClassDeclarations(ctxBodyStatement)
@@ -1015,7 +1034,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     * @return
     *   the class body as a statement list.
     */
-  private def lowerAliasStatementsToMethods(classBody: RubyNode): StatementList = {
+  def lowerAliasStatementsToMethods(classBody: RubyNode): StatementList = {
 
     val classBodyStmts = classBody match {
       case StatementList(stmts) => stmts
@@ -1065,7 +1084,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     *   - `initialize` MethodDeclaration with all non-allowed children nodes added
     *   - list of all nodes allowed directly under type decl
     */
-  private def filterNonAllowedTypeDeclChildren(stmts: StatementList): RubyNode = {
+  def filterNonAllowedTypeDeclChildren(stmts: StatementList): RubyNode = {
     val (initMethod, nonInitStmts) = stmts.statements.partition {
       case x: MethodDeclaration if x.methodName == Defines.Initialize => true
       case _                                                          => false
@@ -1094,7 +1113,13 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
         )
       }
 
-    StatementList(initMethod ++ otherTypeDeclChildren ++ updatedBodyMethod)(stmts.span)
+    val otherTypeDeclChildrenSpan =
+      if otherTypeDeclChildren.nonEmpty then "\n" + otherTypeDeclChildren.map(_.span.text).mkString("\n")
+      else ""
+
+    StatementList(initMethod ++ otherTypeDeclChildren ++ updatedBodyMethod)(
+      stmts.span.spanStart(updatedBodyMethod.headOption.map(x => x.span.text).getOrElse("") + otherTypeDeclChildrenSpan)
+    )
   }
 
   override def visitClassDefinition(ctx: RubyParser.ClassDefinitionContext): RubyNode = {

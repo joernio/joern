@@ -5,25 +5,45 @@ import org.scalatest.matchers.should.Matchers
 
 class UnlessConditionParserTests extends RubyParserFixture with Matchers {
   "Unless expression" in {
-    test("""unless foo
+    test(
+      """unless foo
         | bar
         |end
-        |""".stripMargin)
+        |""".stripMargin,
+      """unless foo
+        |bar
+        |end""".stripMargin
+    )
 
-    test("""unless foo; bar
+    test(
+      """unless foo; bar
         |end
-        |""".stripMargin)
+        |""".stripMargin,
+      """unless foo
+        |bar
+        |end""".stripMargin
+    )
 
-    test("""unless foo then
+    test(
+      """unless foo then
         | bar
         |end
-        |""".stripMargin)
+        |""".stripMargin,
+      """unless foo
+        |bar
+        |end""".stripMargin
+    )
 
-    test("""unless __LINE__ == 0 then
+    test(
+      """unless __LINE__ == 0 then
         |else
         |end
-        |""".stripMargin)
+        |""".stripMargin,
+      """unless __LINE__ == 0
+        |else
+        |end""".stripMargin
+    )
 
-    test("return(value) unless item")
+    test("return(value) unless item", "return value unless item")
   }
 }
