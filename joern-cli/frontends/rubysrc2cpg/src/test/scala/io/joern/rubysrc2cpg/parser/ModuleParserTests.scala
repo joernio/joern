@@ -5,6 +5,13 @@ import org.scalatest.matchers.should.Matchers
 
 class ModuleParserTests extends RubyParserFixture with Matchers {
   "Module Definition" in {
-    test("module Bar; end")
+    test(
+      "module Bar; end",
+      """module Bar
+        |def <body>
+        |
+        |end
+        |end""".stripMargin
+    )
   }
 }
