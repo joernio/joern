@@ -31,6 +31,7 @@ class AstCreator(
     with AstForExpressionsCreator
     with AstNodeBuilder
     with AstCreatorHelper
+    with FullNameProvider
     with MacroHandler
     with X2CpgAstNodeBuilder[IASTNode, AstCreator] {
 

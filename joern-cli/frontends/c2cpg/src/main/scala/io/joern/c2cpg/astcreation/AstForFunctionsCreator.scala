@@ -1,6 +1,5 @@
 package io.joern.c2cpg.astcreation
 
-import io.joern.x2cpg.Defines as X2CpgDefines
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Stack.*
@@ -68,7 +67,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     Ast(functionBinding).withBindsEdge(parentNode, functionBinding).withRefEdge(functionBinding, method)
   }
 
-  private def parameters(functionNode: IASTNode): Seq[IASTNode] = functionNode match {
+  final protected def parameters(functionNode: IASTNode): Seq[IASTNode] = functionNode match {
     case arr: IASTArrayDeclarator       => parameters(arr.getNestedDeclarator)
     case decl: CPPASTFunctionDeclarator => decl.getParameters.toIndexedSeq ++ parameters(decl.getNestedDeclarator)
     case decl: CASTFunctionDeclarator   => decl.getParameters.toIndexedSeq ++ parameters(decl.getNestedDeclarator)
@@ -81,21 +80,12 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   @tailrec
-  private def isVariadic(functionNode: IASTNode): Boolean = functionNode match {
+  final protected def isVariadic(functionNode: IASTNode): Boolean = functionNode match {
     case decl: CPPASTFunctionDeclarator            => decl.takesVarArgs()
     case decl: CASTFunctionDeclarator              => decl.takesVarArgs()
     case defn: IASTFunctionDefinition              => isVariadic(defn.getDeclarator)
     case lambdaExpression: ICPPASTLambdaExpression => isVariadic(lambdaExpression.getDeclarator)
     case _                                         => false
-  }
-
-  private def parameterListSignature(func: IASTNode): String = {
-    val variadic = if (isVariadic(func)) "..." else ""
-    val elements = parameters(func).map {
-      case p: IASTParameterDeclaration => typeForDeclSpecifier(p.getDeclSpecifier)
-      case other                       => typeForDeclSpecifier(other)
-    }
-    s"(${elements.mkString(",")}$variadic)"
   }
 
   private def setVariadic(parameterNodes: Seq[NewMethodParameterIn], func: IASTNode): Unit = {
@@ -117,26 +107,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   protected def astForMethodRefForLambda(lambdaExpression: ICPPASTLambdaExpression): Ast = {
-    val filename = fileName(lambdaExpression)
-
-    val returnType = lambdaExpression.getDeclarator match {
-      case declarator: IASTDeclarator =>
-        declarator.getTrailingReturnType match {
-          case id: IASTTypeId => typeForDeclSpecifier(id.getDeclSpecifier)
-          case null           => Defines.Any
-        }
-      case null => Defines.Any
-    }
-    val name        = nextClosureName()
-    val rawFullname = fullName(lambdaExpression)
-    val fixedFullName = if (rawFullname.contains("[") || rawFullname.contains("{")) {
-      // FIXME: the lambda may be located in something we are not able to generate a correct fullName yet
-      s"${X2CpgDefines.UnresolvedSignature}."
-    } else StringUtils.normalizeSpace(rawFullname)
-    val fullname    = s"$fixedFullName$name"
-    val signature   = StringUtils.normalizeSpace(s"$returnType${parameterListSignature(lambdaExpression)}")
-    val codeString  = code(lambdaExpression)
-    val methodNode_ = methodNode(lambdaExpression, name, codeString, fullname, Some(signature), filename)
+    val filename                                                  = fileName(lambdaExpression)
+    val MethodFullNameInfo(name, fullName, signature, returnType) = this.methodFullNameInfo(lambdaExpression)
+    val codeString                                                = code(lambdaExpression)
+    val methodNode_ = methodNode(lambdaExpression, name, codeString, fullName, Some(signature), filename)
 
     scope.pushNewScope(methodNode_)
     val parameterNodes = withIndex(parameters(lambdaExpression.getDeclarator)) { (p, i) =>
@@ -153,38 +127,18 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       methodReturnNode(lambdaExpression, registerType(returnType)),
       newModifierNode(ModifierTypes.LAMBDA) :: Nil
     )
-    val typeDeclAst = createFunctionTypeAndTypeDecl(lambdaExpression, methodNode_, name, fullname, signature)
+    val typeDeclAst = createFunctionTypeAndTypeDecl(lambdaExpression, methodNode_, name, fullName, signature)
     Ast.storeInDiffGraph(astForLambda.merge(typeDeclAst), diffGraph)
 
-    Ast(methodRefNode(lambdaExpression, codeString, fullname, registerType(fullname)))
+    Ast(methodRefNode(lambdaExpression, codeString, fullName, registerType(fullName)))
   }
 
   protected def astForFunctionDeclarator(funcDecl: IASTFunctionDeclarator): Ast = {
     funcDecl.getName.resolveBinding() match {
       case _: IFunction =>
-        val returnType = cleanType(
-          typeForDeclSpecifier(funcDecl.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclSpecifier)
-        )
-        val name = StringUtils.normalizeSpace(shortName(funcDecl))
-        val fixedName = if (name.isEmpty) {
-          nextClosureName()
-        } else name
-        val signature = StringUtils.normalizeSpace(s"$returnType${parameterListSignature(funcDecl)}")
-        val fullname = fullName(funcDecl) match {
-          case f
-              if funcDecl.isInstanceOf[CPPASTFunctionDeclarator] &&
-                (f == "" || f == s"${X2CpgDefines.UnresolvedNamespace}.") =>
-            s"${X2CpgDefines.UnresolvedNamespace}.$fixedName:$signature"
-          case f if funcDecl.isInstanceOf[CPPASTFunctionDeclarator] && f.contains("?") =>
-            s"${StringUtils.normalizeSpace(f).takeWhile(_ != ':')}:$signature"
-          case f if f == "" || f == s"${X2CpgDefines.UnresolvedNamespace}." =>
-            s"${X2CpgDefines.UnresolvedNamespace}.$fixedName"
-          case other if other.nonEmpty => StringUtils.normalizeSpace(other)
-          case other                   => s"${X2CpgDefines.UnresolvedNamespace}.$name"
-        }
-
-        val codeString = code(funcDecl.getParent)
-        val filename   = fileName(funcDecl)
+        val MethodFullNameInfo(name, fullName, signature, returnType) = this.methodFullNameInfo(funcDecl)
+        val codeString                                                = code(funcDecl.getParent)
+        val filename                                                  = fileName(funcDecl)
 
         val parameterNodeInfos = thisForCPPFunctions(funcDecl) ++ withIndex(parameters(funcDecl)) { (p, i) =>
           parameterNodeInfo(p, i)
@@ -209,10 +163,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           parameter = parameterNodeInfos,
           modifier = modifierFor(funcDecl).map(_.modifierType)
         )
-        registerMethodDeclaration(fullname, methodInfo)
+        registerMethodDeclaration(fullName, methodInfo)
         Ast()
       case cVariable: CVariable =>
-        val name       = StringUtils.normalizeSpace(shortName(funcDecl))
+        val name       = shortName(funcDecl)
         val tpe        = cleanType(ASTTypeUtil.getType(cVariable.getType))
         val codeString = code(funcDecl.getParent)
         val node       = localNode(funcDecl, name, codeString, registerType(tpe))
@@ -254,7 +208,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     Try(modifierFromString(funcDecl.getParent.getSyntax.getImage)).getOrElse(Nil)
   }
 
-  private def isCppConstructor(funcDef: IASTFunctionDefinition): Boolean = {
+  protected def isCppConstructor(funcDef: IASTFunctionDefinition): Boolean = {
     funcDef match {
       case cppFunc: CPPASTFunctionDefinition => cppFunc.getMemberInitializers.nonEmpty
       case _                                 => false
@@ -290,31 +244,12 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   protected def astForFunctionDefinition(funcDef: IASTFunctionDefinition): Ast = {
-    val filename = fileName(funcDef)
-    val returnType = if (isCppConstructor(funcDef)) {
-      typeFor(funcDef.asInstanceOf[CPPASTFunctionDefinition].getMemberInitializers.head.getInitializer)
-    } else typeForDeclSpecifier(funcDef.getDeclSpecifier)
-    val signature = StringUtils.normalizeSpace(s"$returnType${parameterListSignature(funcDef)}")
-    val name      = StringUtils.normalizeSpace(shortName(funcDef))
-    val fixedName = if (name.isEmpty) {
-      nextClosureName()
-    } else name
-    val fullname = fullName(funcDef) match {
-      case f
-          if funcDef.isInstanceOf[CPPASTFunctionDefinition] &&
-            (f == "" || f == s"${X2CpgDefines.UnresolvedNamespace}.") =>
-        s"${X2CpgDefines.UnresolvedNamespace}.$fixedName:$signature"
-      case f if funcDef.isInstanceOf[CPPASTFunctionDefinition] && f.contains("?") =>
-        s"${StringUtils.normalizeSpace(f).takeWhile(_ != ':')}:$signature"
-      case f if f == "" || f == s"${X2CpgDefines.UnresolvedNamespace}." =>
-        s"${X2CpgDefines.UnresolvedNamespace}.$fixedName"
-      case other if other.nonEmpty => StringUtils.normalizeSpace(other)
-      case other                   => s"${X2CpgDefines.UnresolvedNamespace}.$fixedName"
-    }
-    registerMethodDefinition(fullname)
+    val filename                                                  = fileName(funcDef)
+    val MethodFullNameInfo(name, fullName, signature, returnType) = this.methodFullNameInfo(funcDef)
+    registerMethodDefinition(fullName)
 
     val codeString  = code(funcDef)
-    val methodNode_ = methodNode(funcDef, fixedName, codeString, fullname, Some(signature), filename)
+    val methodNode_ = methodNode(funcDef, name, codeString, fullName, Some(signature), filename)
 
     methodAstParentStack.push(methodNode_)
     scope.pushNewScope(methodNode_)
@@ -348,7 +283,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     scope.popScope()
     methodAstParentStack.pop()
 
-    val typeDeclAst = createFunctionTypeAndTypeDecl(funcDef, methodNode_, fixedName, fullname, signature)
+    val typeDeclAst = createFunctionTypeAndTypeDecl(funcDef, methodNode_, name, fullName, signature)
     astForMethod.merge(typeDeclAst)
   }
 

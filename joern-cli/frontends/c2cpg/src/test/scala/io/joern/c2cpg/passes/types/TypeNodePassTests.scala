@@ -20,6 +20,18 @@ class TypeNodePassTests extends C2CpgSuite {
       bar.aliasTypeFullName shouldBe Option("char**")
     }
 
+    "be correct for reference to type" in {
+      val cpg = code(
+        """
+          |typedef const char (&TwoChars)[2];
+          |""".stripMargin,
+        "twochars.cpp"
+      )
+      val List(bar) = cpg.typeDecl.nameExact("TwoChars").l
+      bar.fullName shouldBe "TwoChars"
+      bar.aliasTypeFullName shouldBe Option("char(&)[2]")
+    }
+
     "be correct for static decl assignment" in {
       val cpg = code("""
           |void method() {
