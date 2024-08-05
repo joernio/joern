@@ -5,8 +5,10 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{Cpg, DispatchTypes, EdgeTypes, Operators}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import org.apache.commons.text.CaseUtils
 
+import java.util.regex.Pattern
 import scala.collection.mutable
 
 /** In some Ruby frameworks, it is common to have an autoloader library that implicitly loads requirements onto the
@@ -47,13 +49,13 @@ class ImplicitRequirePass(cpg: Cpg, programSummary: RubyProgramSummary) extends 
     //  case x: Method   => Iterator(x) ++ x.astChildren.collectAll[Method].flatMap(findMethodsViaAstChildren)
     //  case _           => Iterator.empty
     // }
-    cpg.method.fullName(module.fullName + ".*")
+    cpg.method.fullName(Pattern.quote(module.fullName) + ".*")
   }
 
   override def runOnPart(builder: DiffGraphBuilder, part: Method): Unit = {
     val identifiersToMatch = mutable.ArrayBuffer.empty[String]
 
-    val typeDecl = cpg.typeDecl.fullName(part.fullName + ".*").l
+    val typeDecl = cpg.typeDecl.fullName(Pattern.quote(part.fullName) + ".*").l
     typeDecl.inheritsFromTypeFullName.foreach(identifiersToMatch.append)
 
     val methods = findMethodsViaAstChildren(part).toList
@@ -62,7 +64,7 @@ class ImplicitRequirePass(cpg: Cpg, programSummary: RubyProgramSummary) extends 
       case x if x.name == Operators.alloc =>
         x.argument.isIdentifier.name
       case x =>
-        x.receiver.fieldAccess.fieldIdentifier.canonicalName
+        x.receiver.isCall.nameExact(Operators.fieldAccess).cast[OpNodes.FieldAccess].fieldIdentifier.canonicalName
     }
 
     identifiers.foreach(identifiersToMatch.append)
