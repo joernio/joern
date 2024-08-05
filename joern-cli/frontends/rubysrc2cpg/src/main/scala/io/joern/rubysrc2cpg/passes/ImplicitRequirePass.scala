@@ -40,37 +40,48 @@ class ImplicitRequirePass(cpg: Cpg, programSummary: RubyProgramSummary) extends 
   /** Collects methods within a module.
     */
   private def findMethodsViaAstChildren(module: Method): Iterator[Method] = {
-    Iterator(module) ++ module.astChildren.flatMap {
-      case x: TypeDecl => x.method.flatMap(findMethodsViaAstChildren)
-      case x: Method   => Iterator(x) ++ x.astChildren.collectAll[Method].flatMap(findMethodsViaAstChildren)
-      case _           => Iterator.empty
-    }
+    // TODO For now we have to go via the full name regex because the AST is not yet linked
+    // at the execution time of this pass.
+    // Iterator(module) ++ module.astChildren.flatMap {
+    //  case x: TypeDecl => x.method.flatMap(findMethodsViaAstChildren)
+    //  case x: Method   => Iterator(x) ++ x.astChildren.collectAll[Method].flatMap(findMethodsViaAstChildren)
+    //  case _           => Iterator.empty
+    // }
+    cpg.method.fullName(module.fullName + ".*")
   }
 
   override def runOnPart(builder: DiffGraphBuilder, part: Method): Unit = {
-    findMethodsViaAstChildren(part).ast.isCall
-      .flatMap {
-        case x if x.name == Operators.alloc =>
-          x.argument.isIdentifier
-        case x =>
-          x.receiver.fieldAccess.fieldIdentifier
-      }
-      .map {
-        case fi: FieldIdentifier => fi -> programSummary.matchingTypes(fi.canonicalName)
-        case i: Identifier       => i  -> programSummary.matchingTypes(i.name)
-      }
-      .distinct
-      .foreach { case (identifier, rubyTypes) =>
+    val identifiersToMatch = mutable.ArrayBuffer.empty[String]
+
+    val typeDecl = cpg.typeDecl.fullName(part.fullName + ".*").l
+    typeDecl.inheritsFromTypeFullName.foreach(identifiersToMatch.append)
+
+    val methods = findMethodsViaAstChildren(part).toList
+    val calls   = methods.ast.isCall.toList
+    val identifiers = calls.flatMap {
+      case x if x.name == Operators.alloc =>
+        x.argument.isIdentifier.name
+      case x =>
+        x.receiver.fieldAccess.fieldIdentifier.canonicalName
+    }
+
+    identifiers.foreach(identifiersToMatch.append)
+
+    identifiers.distinct
+      .foreach { identifierName =>
+        val rubyTypes = programSummary.matchingTypes(identifierName)
         val requireCalls = rubyTypes.flatMap { rubyType =>
           typeToPath.get(rubyType.name) match {
             case Some(path)
-                if identifier.file.name
+                if part.file.name
                   .map(_.replace("\\", "/"))
                   .headOption
                   .exists(x => rubyType.name.startsWith(x)) =>
               None // do not add an import to a file that defines the type
-            case Some(path) => Option(createRequireCall(builder, rubyType, path))
-            case None       => None
+            case Some(path) =>
+              Option(createRequireCall(builder, rubyType, path))
+            case None =>
+              None
           }
         }
         val startIndex = part.block.astChildren.size
