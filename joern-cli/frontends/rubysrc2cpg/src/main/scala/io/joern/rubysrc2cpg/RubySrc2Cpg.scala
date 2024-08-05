@@ -58,6 +58,11 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
           case Failure(exception)  => logger.warn(s"Could not parse file, skipping - ", exception); None
           case Success(astCreator) => Option(astCreator)
         }
+        .filter(x => {
+          if x.fileContent.isBlank then logger.warn(s"File content empty, skipping - ${x.fileName}")
+          x.fileContent.nonEmpty
+        })
+
       // Pre-parse the AST creators for high level structures
       val internalProgramSummary = ConcurrentTaskUtil
         .runUsingThreadPool(astCreators.map(x => () => x.summarize()).iterator)
