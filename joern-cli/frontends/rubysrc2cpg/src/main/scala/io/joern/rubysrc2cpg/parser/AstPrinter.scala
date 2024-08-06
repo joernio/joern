@@ -831,6 +831,20 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     s"$target${ctx.LBRACK.getText}$arg${ctx.RBRACK.getText}"
   }
 
+  override def visitBracketAssignmentExpression(ctx: RubyParser.BracketAssignmentExpressionContext): String = {
+    val op = ctx.assignmentOperator().getText
+
+    if (op != "=") {
+      defaultResult()
+    }
+
+    val lhsBase = visit(ctx.primaryValue())
+    val lhsArgs = Option(ctx.indexingArgumentList()).map(_.arguments).getOrElse(List()).map(visit)
+    val rhs     = visit(ctx.operatorExpression())
+
+    s"$lhsBase[${lhsArgs.mkString(",")}] $op ${rhs}"
+  }
+
   override def visitBracketedArrayLiteral(ctx: RubyParser.BracketedArrayLiteralContext): String = {
     val args = Option(ctx.indexingArgumentList()).map(_.arguments).getOrElse(List()).map(visit).mkString(",")
     s"${ctx.LBRACK.getText}$args${ctx.RBRACK.getText}"

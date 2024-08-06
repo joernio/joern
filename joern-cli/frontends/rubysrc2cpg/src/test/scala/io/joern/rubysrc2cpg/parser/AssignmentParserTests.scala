@@ -10,6 +10,7 @@ class AssignmentParserTests extends RubyParserFixture with Matchers {
 
   "Single assignment" in {
     test("x=1", "x = 1")
+    test("hash[:sym] = s[:sym]")
   }
 
   "Multiple assignment" in {
