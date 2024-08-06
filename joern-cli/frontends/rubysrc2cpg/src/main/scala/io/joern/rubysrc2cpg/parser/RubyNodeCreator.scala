@@ -825,6 +825,26 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     )(ctx.toTextSpan)
   }
 
+  override def visitBracketAssignmentExpression(ctx: RubyParser.BracketAssignmentExpressionContext): RubyNode = {
+    val op = ctx.assignmentOperator().getText
+
+    if (op != "=") {
+      logger.warn(s"Unsupported assignment operator for bracket assignment expression: $op")
+      defaultResult()
+    }
+
+    val lhsBase = visit(ctx.primaryValue())
+    val lhsArgs = Option(ctx.indexingArgumentList()).map(_.arguments).getOrElse(List()).map(visit)
+
+    val lhs = IndexAccess(lhsBase, lhsArgs)(
+      ctx.toTextSpan.spanStart(s"${lhsBase.span.text}[${lhsArgs.map(_.span.text).mkString(", ")}]")
+    )
+
+    val rhs = visit(ctx.operatorExpression())
+
+    SingleAssignment(lhs, op, rhs)(ctx.toTextSpan)
+  }
+
   override def visitBracketedArrayLiteral(ctx: RubyParser.BracketedArrayLiteralContext): RubyNode = {
     ArrayLiteral(Option(ctx.indexingArgumentList()).map(_.arguments).getOrElse(List()).map(visit))(ctx.toTextSpan)
   }
