@@ -45,10 +45,7 @@ class ArrayParserTests extends RubyParserFixture with Matchers {
         |y
         |z)""".stripMargin
     )
-  }
-
-  "fixme" ignore {
-    test("%I{}")         // Unknown in `RubyNodeCreator`
-    test("%I(x#{0} x1)") // Interpolations are weird
+    test("%I{}")
+    test("%I(x#{0} x1)")
   }
 }
