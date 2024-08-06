@@ -59,8 +59,7 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
           case Success(astCreator) => Option(astCreator)
         }
         .filter(x => {
-          if x.fileContent.isBlank then
-            logger.info(s"File content empty, skipping - ${x.fileName}")
+          if x.fileContent.isBlank then logger.info(s"File content empty, skipping - ${x.fileName}")
 
           !x.fileContent.isBlank
         })
