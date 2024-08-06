@@ -59,8 +59,10 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
           case Success(astCreator) => Option(astCreator)
         }
         .filter(x => {
-          if x.fileContent.isBlank then logger.warn(s"File content empty, skipping - ${x.fileName}")
-          x.fileContent.nonEmpty
+          if x.fileContent.isBlank then
+            logger.info(s"File content empty, skipping - ${x.fileName}")
+
+          !x.fileContent.isBlank
         })
 
       // Pre-parse the AST creators for high level structures
