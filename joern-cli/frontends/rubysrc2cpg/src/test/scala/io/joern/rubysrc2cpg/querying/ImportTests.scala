@@ -117,7 +117,9 @@ class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with In
       )
       .moreCode(
         """
-          |B.bar()
+          |def func()
+          |  B.bar()
+          |end
           |""".stripMargin,
         "Bar.rb"
       )
