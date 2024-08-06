@@ -423,6 +423,17 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     s"${ctx.QUOTED_EXPANDED_STRING_ARRAY_LITERAL_START.getText}$elements${ctx.QUOTED_EXPANDED_STRING_ARRAY_LITERAL_END.getText}"
   }
 
+  override def visitQuotedExpandedSymbolArrayLiteral(
+    ctx: RubyParser.QuotedExpandedSymbolArrayLiteralContext
+  ): String = {
+    val elements =
+      if Option(ctx.quotedExpandedArrayElementList()).isDefined then
+        ctx.quotedExpandedArrayElementList().elements.map(visit).mkString(" ")
+      else ""
+
+    s"${ctx.QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_START.getText}$elements${ctx.QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_END.getText}"
+  }
+
   override def visitQuotedExpandedArrayElement(ctx: RubyParser.QuotedExpandedArrayElementContext): String = {
     ctx.quotedExpandedArrayElementContent().asScala.flatMap(_.children.asScala.map(visit)).mkString
   }
