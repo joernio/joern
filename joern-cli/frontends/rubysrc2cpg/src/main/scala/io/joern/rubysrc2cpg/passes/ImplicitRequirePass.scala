@@ -62,9 +62,12 @@ class ImplicitRequirePass(cpg: Cpg, programSummary: RubyProgramSummary) extends 
     val calls   = methods.ast.isCall.toList
     val identifiers = calls.flatMap {
       case x if x.name == Operators.alloc =>
+        // TODO Once constructor invocations are lowered correctly, this case is not needed anymore.
         x.argument.isIdentifier.name
+      case x if x.methodFullName == Operators.fieldAccess && x.argument(1).code == "self" =>
+        x.asInstanceOf[OpNodes.FieldAccess].fieldIdentifier.canonicalName
       case x =>
-        x.receiver.isCall.nameExact(Operators.fieldAccess).cast[OpNodes.FieldAccess].fieldIdentifier.canonicalName
+        Iterator.empty
     }
 
     identifiers.foreach(identifiersToMatch.append)
