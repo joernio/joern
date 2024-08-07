@@ -52,15 +52,16 @@ class ImplicitRequirePass(cpg: Cpg, programSummary: RubyProgramSummary) extends 
     cpg.method.fullName(Pattern.quote(module.fullName) + ".*")
   }
 
-  override def runOnPart(builder: DiffGraphBuilder, part: Method): Unit = {
-    val identifiersToMatch = mutable.ArrayBuffer.empty[String]
+  override def runOnPart(builder: DiffGraphBuilder, moduleMethod: Method): Unit = {
+    val possiblyImportedSymbols = mutable.ArrayBuffer.empty[String]
 
-    val typeDecl = cpg.typeDecl.fullName(Pattern.quote(part.fullName) + ".*").l
-    typeDecl.inheritsFromTypeFullName.foreach(identifiersToMatch.append)
+    val typeDecl = cpg.typeDecl.fullName(Pattern.quote(moduleMethod.fullName) + ".*").l
+    typeDecl.inheritsFromTypeFullName.foreach(possiblyImportedSymbols.append)
 
-    val methods = findMethodsViaAstChildren(part).toList
-    val calls   = methods.ast.isCall.toList
-    val identifiers = calls.flatMap {
+    val methodsOfModule = findMethodsViaAstChildren(moduleMethod).toList
+    val callsOfModule   = methodsOfModule.ast.isCall.toList
+
+    val symbolsGatheredFromCalls = callsOfModule.flatMap {
       case x if x.name == Operators.alloc =>
         // TODO Once constructor invocations are lowered correctly, this case is not needed anymore.
         x.argument.isIdentifier.name
@@ -70,15 +71,15 @@ class ImplicitRequirePass(cpg: Cpg, programSummary: RubyProgramSummary) extends 
         Iterator.empty
     }
 
-    identifiers.foreach(identifiersToMatch.append)
+    possiblyImportedSymbols.appendAll(symbolsGatheredFromCalls)
 
-    identifiers.distinct
+    possiblyImportedSymbols.distinct
       .foreach { identifierName =>
         val rubyTypes = programSummary.matchingTypes(identifierName)
         val requireCalls = rubyTypes.flatMap { rubyType =>
           typeToPath.get(rubyType.name) match {
             case Some(path)
-                if part.file.name
+                if moduleMethod.file.name
                   .map(_.replace("\\", "/"))
                   .headOption
                   .exists(x => rubyType.name.startsWith(x)) =>
@@ -89,10 +90,10 @@ class ImplicitRequirePass(cpg: Cpg, programSummary: RubyProgramSummary) extends 
               None
           }
         }
-        val startIndex = part.block.astChildren.size
+        val startIndex = moduleMethod.block.astChildren.size
         requireCalls.zipWithIndex.foreach { case (call, idx) =>
           call.order(startIndex + idx)
-          builder.addEdge(part.block, call, EdgeTypes.AST)
+          builder.addEdge(moduleMethod.block, call, EdgeTypes.AST)
         }
       }
   }

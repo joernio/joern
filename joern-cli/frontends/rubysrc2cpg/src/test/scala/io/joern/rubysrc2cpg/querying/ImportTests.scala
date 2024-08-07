@@ -89,6 +89,107 @@ class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with In
     }
   }
 
+  "implicitly imported types in base class" should {
+    val cpg = code(
+      """
+        |class MyController < ApplicationController
+        |end
+        |""".stripMargin,
+      "app/controllers/my_controller.rb"
+    )
+      .moreCode(
+        """
+          |class ApplicationController
+          |end
+          |""".stripMargin,
+        "app/controllers/application_controller.rb"
+      )
+      .moreCode(
+        """
+          |GEM
+          |  remote: https://rubygems.org/
+          |  specs:
+          |    zeitwerk (2.2.1)
+          |""".stripMargin,
+        "Gemfile.lock"
+      )
+
+    "result in require statement of the file containing the symbol" in {
+      inside(cpg.imports.where(_.call.file.name(".*my_controller.rb")).toList) { case List(i) =>
+        i.importedAs shouldBe Some("app/controllers/application_controller")
+        i.importedEntity shouldBe Some("app/controllers/application_controller")
+      }
+    }
+  }
+
+  "implicitly imported types in include statement" should {
+    val cpg = code(
+      """
+        |class MyController
+        |  include ApplicationController
+        |end
+        |""".stripMargin,
+      "app/controllers/my_controller.rb"
+    )
+      .moreCode(
+        """
+          |class ApplicationController
+          |end
+          |""".stripMargin,
+        "app/controllers/application_controller.rb"
+      )
+      .moreCode(
+        """
+          |GEM
+          |  remote: https://rubygems.org/
+          |  specs:
+          |    zeitwerk (2.2.1)
+          |""".stripMargin,
+        "Gemfile.lock"
+      )
+
+    "result in require statement of the file containing the symbol" in {
+      inside(cpg.imports.where(_.call.file.name(".*my_controller.rb")).toList) { case List(i) =>
+        i.importedAs shouldBe Some("app/controllers/application_controller")
+        i.importedEntity shouldBe Some("app/controllers/application_controller")
+      }
+    }
+  }
+
+  "implicitly imported types in extend statement" should {
+    val cpg = code(
+      """
+        |class MyController
+        |  extend ApplicationController
+        |end
+        |""".stripMargin,
+      "app/controllers/my_controller.rb"
+    )
+      .moreCode(
+        """
+          |class ApplicationController
+          |end
+          |""".stripMargin,
+        "app/controllers/application_controller.rb"
+      )
+      .moreCode(
+        """
+          |GEM
+          |  remote: https://rubygems.org/
+          |  specs:
+          |    zeitwerk (2.2.1)
+          |""".stripMargin,
+        "Gemfile.lock"
+      )
+
+    "result in require statement of the file containing the symbol" in {
+      inside(cpg.imports.where(_.call.file.name(".*my_controller.rb")).toList) { case List(i) =>
+        i.importedAs shouldBe Some("app/controllers/application_controller")
+        i.importedEntity shouldBe Some("app/controllers/application_controller")
+      }
+    }
+  }
+
   "implicitly imported types (common in frameworks like Ruby on Rails)" should {
 
     val cpg = code(
