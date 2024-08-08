@@ -691,10 +691,10 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitMemberAccessCommand(ctx: RubyParser.MemberAccessCommandContext): RubyNode = {
-    val arg        = visit(ctx.commandArgument())
+    val args       = ctx.commandArgument.arguments.map(visit)
     val methodName = visit(ctx.methodName())
     val base       = visit(ctx.primary())
-    MemberCall(base, ".", methodName.text, List(arg))(ctx.toTextSpan)
+    MemberCall(base, ".", methodName.text, args)(ctx.toTextSpan)
   }
 
   override def visitConstantIdentifierVariable(ctx: RubyParser.ConstantIdentifierVariableContext): RubyNode = {

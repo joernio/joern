@@ -710,11 +710,16 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   }
 
   override def visitMemberAccessCommand(ctx: RubyParser.MemberAccessCommandContext): String = {
-    val arg        = visit(ctx.commandArgument())
+    val op =
+      if Option(ctx.AMPDOT()).isDefined then ctx.AMPDOT().getText
+      else if Option(ctx.COLON2()).isDefined then ctx.COLON2().getText
+      else ctx.DOT().getText
+
+    val args       = ctx.commandArgument.arguments.map(visit).mkString(", ")
     val methodName = visit(ctx.methodName)
     val base       = visit(ctx.primary())
 
-    s"$base.$methodName $arg"
+    s"$base$op$methodName $args"
   }
 
   override def visitConstantIdentifierVariable(ctx: RubyParser.ConstantIdentifierVariableContext): String = {
