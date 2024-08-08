@@ -130,25 +130,43 @@ class MethodDefinitionParserTests extends RubyParserFixture with Matchers {
     )
   }
 
-  "fixme" ignore {
-    // Initialize params / statements not being moved into the <body> method
-    test("""
+  "method defs in classes" in {
+    test(
+      """
            |class SomeClass
            | def initialize(
            |   name, age)
            | end
            |end
-           |""".stripMargin)
+           |""".stripMargin,
+      """class SomeClass
+        |def <body>
+        |
+        |end
+        |def initialize(
+        |   name, age)
+        | end
+        |end""".stripMargin
+    )
 
-    // Initialize params / statements not being moved into the <body> method
-    test("""
+    test(
+      """
            |class SomeClass
            | def initialize(
            |             name: nil, age
            |             )
            | end
            |end
-           |""".stripMargin)
-
+           |""".stripMargin,
+      """class SomeClass
+        |def <body>
+        |
+        |end
+        |def initialize(
+        |             name: nil, age
+        |             )
+        | end
+        |end""".stripMargin
+    )
   }
 }
