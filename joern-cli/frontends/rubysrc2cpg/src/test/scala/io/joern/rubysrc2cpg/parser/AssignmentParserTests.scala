@@ -4,13 +4,10 @@ import io.joern.rubysrc2cpg.testfixtures.RubyParserFixture
 import org.scalatest.matchers.should.Matchers
 
 class AssignmentParserTests extends RubyParserFixture with Matchers {
-  "fixme" ignore {
-    test("a = 1, 2, 3, 4") // Going into SimpleCommand instead of an Assignment
-  }
-
   "Single assignment" in {
     test("x=1", "x = 1")
     test("hash[:sym] = s[:sym]")
+    test("a = 1, 2, 3, 4")
   }
 
   "Multiple assignment" in {
