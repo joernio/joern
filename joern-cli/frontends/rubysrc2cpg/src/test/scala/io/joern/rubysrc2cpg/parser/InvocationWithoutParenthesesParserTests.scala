@@ -10,11 +10,6 @@ class InvocationWithoutParenthesesParserTests extends RubyParserFixture with Mat
     test("foo!")
   }
 
-  // TODO: Fix
-  "fixme" ignore {
-    test("foo&.bar 1,2") // second arg seems to be missing in RubyNodeCreator
-  }
-
   "command with do block" in {
     test(
       """it 'should print 1' do
@@ -27,6 +22,8 @@ class InvocationWithoutParenthesesParserTests extends RubyParserFixture with Mat
     )
 
     test("foo&.bar")
+
+    test("foo&.bar 1, 2")
   }
 
   "method invocation without parenthesis with reserved keywords" in {

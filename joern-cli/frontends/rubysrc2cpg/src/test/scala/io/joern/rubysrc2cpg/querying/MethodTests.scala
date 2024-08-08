@@ -878,4 +878,23 @@ class MethodTests extends RubyCode2CpgFixture {
       case xs => fail(s"Expected one call to exec, got [${xs.code.mkString(",")}]")
     }
   }
+
+  "MemberAccessCommand with two parameters" in {
+    val cpg = code("foo&.bar 1,2")
+
+    inside(cpg.call.name("bar").l) {
+      case barCall :: Nil =>
+        inside(barCall.argument.l) {
+          case _ :: (arg1: Literal) :: (arg2: Literal) :: Nil =>
+            arg1.code shouldBe "1"
+            arg1.typeFullName shouldBe RDefines.getBuiltInType(RDefines.Integer)
+
+            arg2.code shouldBe "2"
+            arg2.typeFullName shouldBe RDefines.getBuiltInType(RDefines.Integer)
+          case xs => fail(s"Expected three args, got [${xs.code.mkString(",")}]")
+        }
+
+      case xs => fail(s"Expected one call, got [${xs.code.mkString(",")}]")
+    }
+  }
 }
