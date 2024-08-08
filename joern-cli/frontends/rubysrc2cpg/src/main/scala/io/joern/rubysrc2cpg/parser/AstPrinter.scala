@@ -596,9 +596,9 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
         case (idAssign, arguments) if idAssign.endsWith("=") =>
           val argNode = arguments match {
             case arg :: Nil => arg
-            case xs         => visit(ctx.commandArgument())
+            case xs         => xs.mkString(", ")
           }
-          s"$idAssign $argNode"
+          s"${idAssign.stripSuffix("=")} = $argNode"
         case _ =>
           s"${visit(identifierCtx)} ${arguments.mkString(",")}"
       }
