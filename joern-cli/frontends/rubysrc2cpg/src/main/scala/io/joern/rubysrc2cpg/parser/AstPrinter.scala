@@ -452,8 +452,12 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     if (ctx.isStatic) {
       ctx.getText
     } else {
-      ctx.children.asScala.map(visit).mkString(" ")
+      ctx.children.asScala.map(visit).mkString("")
     }
+  }
+
+  override def visitRegexpLiteralContent(ctx: RubyParser.RegexpLiteralContentContext): String = {
+    ctx.children.asScala.map(visit).mkString
   }
 
   override def visitQuotedExpandedRegularExpressionLiteral(
@@ -462,7 +466,7 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     if (ctx.isStatic) {
       ctx.getText
     } else {
-      ctx.children.asScala.map(visit).mkString(" ")
+      ctx.children.asScala.map(visit).mkString
     }
   }
 
