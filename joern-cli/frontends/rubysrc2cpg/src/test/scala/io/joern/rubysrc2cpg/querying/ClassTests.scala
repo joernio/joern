@@ -952,7 +952,7 @@ class ClassTests extends RubyCode2CpgFixture {
     }
   }
 
-  "fixme" in {
+  "Class defined in Namespace" in {
     val cpg = code("""
         |class Api::V1::MobileController
         |end
@@ -964,6 +964,12 @@ class ClassTests extends RubyCode2CpgFixture {
         mobileTypeDecl.fullName shouldBe "Test0.rb:<main>.Api.V1.MobileController"
         mobileTypeDecl.astParentFullName shouldBe "Api.V1"
         mobileTypeDecl.astParentType shouldBe NodeTypes.NAMESPACE_BLOCK
+
+        mobileTypeDecl.astParent.isNamespaceBlock shouldBe true
+
+        val namespaceDecl = mobileTypeDecl.astParent.asInstanceOf[NamespaceBlock]
+        namespaceDecl.name shouldBe "Api.V1"
+        namespaceDecl.filename shouldBe "Test0.rb"
 
       case xs => fail(s"Expected one class decl, got [${xs.code.mkString(",")}]")
     }
