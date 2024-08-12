@@ -290,4 +290,13 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
     augeasReceiv.argument(2).asInstanceOf[FieldIdentifier].canonicalName shouldBe "open"
   }
 
+  "`nil` keyword as a member access should be a literal" in {
+    val cpg    = code("nil.to_json")
+    val toJson = cpg.fieldAccess.codeExact("nil.to_json").head
+    val nilRec = toJson.argument(1).asInstanceOf[Literal]
+
+    nilRec.code shouldBe "nil"
+    nilRec.lineNumber shouldBe Option(1)
+  }
+
 }

@@ -640,9 +640,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
       case Defines.Proc | Defines.Lambda => ProcOrLambdaExpr(visit(ctx.block()).asInstanceOf[Block])(ctx.toTextSpan)
       case Defines.Loop =>
         DoWhileExpression(
-          SimpleIdentifier(Option(Defines.getBuiltInType(Defines.TrueClass)))(
-            ctx.methodIdentifier().toTextSpan.spanStart("true")
-          ),
+          StaticLiteral(Defines.getBuiltInType(Defines.TrueClass))(ctx.methodIdentifier().toTextSpan.spanStart("true")),
           ctx.block() match {
             case b: RubyParser.DoBlockBlockContext =>
               visit(b.doBlock().bodyStatement())
@@ -714,7 +712,13 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitLocalIdentifierVariable(ctx: RubyParser.LocalIdentifierVariableContext): RubyNode = {
-    SimpleIdentifier()(ctx.toTextSpan)
+    // Sometimes pseudo variables aren't given precedence in the parser, so we double-check here
+    ctx.getText match {
+      case "nil"   => StaticLiteral(getBuiltInType(Defines.NilClass))(ctx.toTextSpan)
+      case "true"  => StaticLiteral(getBuiltInType(Defines.TrueClass))(ctx.toTextSpan)
+      case "false" => StaticLiteral(getBuiltInType(Defines.FalseClass))(ctx.toTextSpan)
+      case _       => SimpleIdentifier()(ctx.toTextSpan)
+    }
   }
 
   override def visitClassName(ctx: RubyParser.ClassNameContext): RubyNode = {
