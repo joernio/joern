@@ -1172,12 +1172,12 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
 
     val otherTypeDeclChildrenSpan = otherTypeDeclChildren match {
       case head :: tail => s"\n${head.span.text.concat(tail.map(_.span.text).mkString("\n"))}"
-      case _ => ""
+      case _            => ""
     }
 
     val initMethodSpanText = initMethod match {
       case head :: _ => s"\n${head.span.text}"
-      case _ => ""
+      case _         => ""
     }
 
     StatementList(initMethod ++ otherTypeDeclChildren ++ updatedBodyMethod)(
