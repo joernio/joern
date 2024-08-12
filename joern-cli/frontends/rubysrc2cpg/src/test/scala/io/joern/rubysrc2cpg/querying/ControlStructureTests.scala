@@ -93,6 +93,9 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     val List(breakNode) = cpg.break.l
     breakNode.code shouldBe "break"
     breakNode.lineNumber shouldBe Some(8)
+
+    // `loop` is lowered as a do-while loop with a true condition
+    cpg.controlStructure.condition("true").size shouldBe 1
   }
 
   "`if-end` statement is represented by an `IF` CONTROL_STRUCTURE node" in {
