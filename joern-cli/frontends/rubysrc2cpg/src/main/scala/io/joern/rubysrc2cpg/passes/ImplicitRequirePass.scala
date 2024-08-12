@@ -1,6 +1,8 @@
 package io.joern.rubysrc2cpg.passes
 
 import io.joern.rubysrc2cpg.datastructures.{RubyProgramSummary, RubyType}
+import io.joern.rubysrc2cpg.passes.GlobalTypes.{builtinPrefix, kernelPrefix}
+import io.joern.x2cpg.utils.NodeBuilders.{newCallNode, newFieldIdentifierNode, newIdentifierNode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{Cpg, DispatchTypes, EdgeTypes, Operators}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
@@ -85,7 +87,7 @@ class ImplicitRequirePass(cpg: Cpg, programSummary: RubyProgramSummary) extends 
                   .exists(x => rubyType.name.startsWith(x)) =>
               None // do not add an import to a file that defines the type
             case Some(path) =>
-              Option(createRequireCall(builder, rubyType, path))
+              Option(createRequireCall(builder, moduleMethod, path))
             case None =>
               None
           }
@@ -98,22 +100,52 @@ class ImplicitRequirePass(cpg: Cpg, programSummary: RubyProgramSummary) extends 
       }
   }
 
-  private def createRequireCall(builder: DiffGraphBuilder, rubyType: RubyType, path: String): NewCall = {
+  private def createRequireCall(builder: DiffGraphBuilder, moduleMethod: Method, path: String): NewCall = {
     val requireCallNode = NewCall()
       .name(importCallName)
       .code(s"$importCallName '$path'")
-      .methodFullName(s"__builtin.$importCallName")
+      .methodFullName(s"$kernelPrefix.require")
       .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
       .typeFullName(Defines.Any)
-    val receiverIdentifier =
-      NewIdentifier().name(importCallName).code(importCallName).typeFullName(Defines.Any).argumentIndex(0).order(1)
-    val pathLiteralNode = NewLiteral().code(s"'$path'").typeFullName("__builtin.String").argumentIndex(1).order(2)
     builder.addNode(requireCallNode)
-    builder.addEdge(requireCallNode, receiverIdentifier, EdgeTypes.AST)
-    builder.addEdge(requireCallNode, receiverIdentifier, EdgeTypes.ARGUMENT)
-    builder.addEdge(requireCallNode, receiverIdentifier, EdgeTypes.RECEIVER)
+    for {
+      selfParam <- moduleMethod.parameter.name(Defines.Self)
+    } {
+      // Create receiver: `self.require`
+      val selfIdentifier = newIdentifierNode(Defines.Self, Defines.Any).argumentIndex(1)
+      builder.addEdge(selfIdentifier, selfParam, EdgeTypes.REF)
+      val requireFieldIdentifier = newFieldIdentifierNode("require").argumentIndex(2)
+      val selfRequireFieldAccess = newCallNode(
+        Operators.fieldAccess,
+        Option(Defines.Any),
+        Defines.Any,
+        DispatchTypes.STATIC_DISPATCH,
+        code = "self.require"
+      ).argumentIndex(-1)
+      builder.addEdge(selfRequireFieldAccess, selfIdentifier, EdgeTypes.AST)
+      builder.addEdge(selfRequireFieldAccess, requireFieldIdentifier, EdgeTypes.AST)
+      builder.addEdge(selfRequireFieldAccess, selfIdentifier, EdgeTypes.ARGUMENT)
+      builder.addEdge(selfRequireFieldAccess, requireFieldIdentifier, EdgeTypes.ARGUMENT)
+
+      // Create base: `self`
+      val selfIdentifierBase = newIdentifierNode(Defines.Self, Defines.Any).argumentIndex(0)
+      builder.addEdge(selfIdentifierBase, selfParam, EdgeTypes.REF)
+
+      // Link arguments to call node
+      builder.addEdge(requireCallNode, selfRequireFieldAccess, EdgeTypes.AST)
+      builder.addEdge(requireCallNode, selfRequireFieldAccess, EdgeTypes.ARGUMENT)
+      builder.addEdge(requireCallNode, selfRequireFieldAccess, EdgeTypes.RECEIVER)
+
+      builder.addEdge(requireCallNode, selfIdentifierBase, EdgeTypes.AST)
+      builder.addEdge(requireCallNode, selfIdentifierBase, EdgeTypes.ARGUMENT)
+    }
+    // Create literal argument
+    val pathLiteralNode =
+      NewLiteral().code(s"'$path'").typeFullName(s"$builtinPrefix.String").argumentIndex(1).order(2)
+
     builder.addEdge(requireCallNode, pathLiteralNode, EdgeTypes.AST)
     builder.addEdge(requireCallNode, pathLiteralNode, EdgeTypes.ARGUMENT)
+
     requireCallNode
   }
 

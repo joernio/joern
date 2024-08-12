@@ -1,8 +1,11 @@
 package io.joern.rubysrc2cpg.querying
 
+import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.Main
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
 import org.scalatest.Inspectors
 
 class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with Inspectors {
@@ -256,6 +259,18 @@ class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with In
 
     "not import a type from the type's defining file" in {
       cpg.imports.where(_.call.file.name(".*B.rb")).size shouldBe 0
+    }
+
+    "create a `require` call following the correct format" in {
+      val require = cpg.call("require").head
+
+      val fieldAccessRec = require.receiver.head.asInstanceOf[FieldAccess]
+      fieldAccessRec.argument(1).code shouldBe Defines.Self
+      fieldAccessRec.argument(2).code shouldBe "require"
+
+      require.argument(0).code shouldBe Defines.Self
+
+      require.argument(1).label shouldBe NodeTypes.LITERAL
     }
 
   }
