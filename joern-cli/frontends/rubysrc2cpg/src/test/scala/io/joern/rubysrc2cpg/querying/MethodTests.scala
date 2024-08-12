@@ -13,6 +13,7 @@ class MethodTests extends RubyCode2CpgFixture {
   "`def f(x) = 1`" should {
     val cpg = code("""
         |def f(x) = 1
+        |f(1)
         |""".stripMargin)
 
     "be represented by a METHOD node" in {
@@ -27,6 +28,18 @@ class MethodTests extends RubyCode2CpgFixture {
       x.index shouldBe 1
       x.isVariadic shouldBe false
       x.lineNumber shouldBe Some(2)
+
+      val List(fSelf) = f.parameter.name(RDefines.Self).l
+      fSelf.index shouldBe 0
+      fSelf.isVariadic shouldBe false
+      fSelf.lineNumber shouldBe Some(2)
+      fSelf.referencingIdentifiers.size shouldBe 0
+
+      val List(mSelf) = cpg.method.isModule.parameter.name(RDefines.Self).l
+      mSelf.index shouldBe 0
+      mSelf.isVariadic shouldBe false
+      mSelf.lineNumber shouldBe Some(1)
+      mSelf.referencingIdentifiers.size shouldBe 3
     }
 
     "have a corresponding bound type" in {

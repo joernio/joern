@@ -182,7 +182,11 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
           .methodFullName(Operators.fieldAccess)
           .dispatchType(DispatchTypes.STATIC_DISPATCH)
           .typeFullName(Defines.Any)
-        callAst(fieldAccess, Seq(Ast(self), Ast(fi)))
+        val selfAst = scope
+          .lookupVariable(Defines.Self)
+          .map(selfParam => Ast(self).withRefEdge(self, selfParam))
+          .getOrElse(Ast(self))
+        callAst(fieldAccess, Seq(selfAst, Ast(fi)))
       }
       astForAssignment(typeRefIdent, typeRefNode, typeDecl.lineNumber, typeDecl.columnNumber)
     } else {

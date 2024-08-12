@@ -5,6 +5,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Id
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 import io.joern.rubysrc2cpg.passes.Defines.Main
+import io.joern.rubysrc2cpg.passes.Defines
 
 class FieldAccessTests extends RubyCode2CpgFixture {
 
@@ -50,7 +51,8 @@ class FieldAccessTests extends RubyCode2CpgFixture {
           case (self: Identifier) :: (sickDaysId: FieldIdentifier) :: Nil =>
             self.name shouldBe "self"
             self.code shouldBe "self"
-            self.typeFullName should endWith("PaidTimeOff")
+            self.typeFullName shouldBe Defines.Any
+            self.dynamicTypeHintFullName.head should endWith("PaidTimeOff")
 
             sickDaysId.canonicalName shouldBe "@sick_days_earned"
             sickDaysId.code shouldBe "sick_days_earned"

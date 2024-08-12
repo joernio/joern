@@ -732,8 +732,12 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
 
   private def astForSelfIdentifier(node: SelfIdentifier): Ast = {
     val thisIdentifier =
-      identifierNode(node, Defines.Self, code(node), scope.surroundingTypeFullName.getOrElse(Defines.Any))
-    Ast(thisIdentifier)
+      identifierNode(node, Defines.Self, code(node), Defines.Any, scope.surroundingTypeFullName.toList)
+
+    scope
+      .lookupVariable(Defines.Self)
+      .map(selfParam => Ast(thisIdentifier).withRefEdge(thisIdentifier, selfParam))
+      .getOrElse(Ast(thisIdentifier))
   }
 
   protected def astForUnknown(node: RubyNode): Ast = {
@@ -790,7 +794,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       MemberAccess(SelfIdentifier()(node.span.spanStart(Defines.Self)), ".", call.name)(node.span),
       stripLeadingAt = true
     )
-    val baseAst = Ast(identifierNode(node, Defines.Self, Defines.Self, receiverType))
+    val selfIdentifier = identifierNode(node, Defines.Self, Defines.Self, receiverType)
+    val baseAst = scope
+      .lookupVariable(Defines.Self)
+      .map(selfParam => Ast(selfIdentifier).withRefEdge(selfIdentifier, selfParam))
+      .getOrElse(Ast(selfIdentifier))
     callAst(call, argumentAst, Option(baseAst), Option(receiverAst))
   }
 

@@ -67,15 +67,16 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     if (isConstructor) scope.pushNewScope(ConstructorScope(fullName))
     else scope.pushNewScope(MethodScope(fullName, procParamGen.fresh))
 
-    val thisParameterAst = Ast(
-      newThisParameterNode(
-        name = Defines.Self,
-        code = Defines.Self,
-        typeFullName = scope.surroundingTypeFullName.getOrElse(Defines.Any),
-        line = method.lineNumber,
-        column = method.columnNumber
-      )
+    val thisParameterNode = newThisParameterNode(
+      name = Defines.Self,
+      code = Defines.Self,
+      typeFullName = Defines.Any,
+      line = method.lineNumber,
+      column = method.columnNumber,
+      dynamicTypeHintFullName = scope.surroundingTypeFullName.toList
     )
+    val thisParameterAst = Ast(thisParameterNode)
+    scope.addToScope(Defines.Self, thisParameterNode)
     val parameterAsts = thisParameterAst :: astForParameters(node.parameters)
 
     val optionalStatementList = statementListForOptionalParams(node.parameters)
@@ -365,15 +366,15 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
         createMethodTypeBindings(method, methodTypeDecl_)
 
-        val thisParameterAst = Ast(
-          newThisParameterNode(
-            name = Defines.Self,
-            code = thisParamCode,
-            typeFullName = astParentFullName.getOrElse(Defines.Any),
-            line = method.lineNumber,
-            column = method.columnNumber
-          )
+        val thisNode = newThisParameterNode(
+          name = Defines.Self,
+          code = thisParamCode,
+          typeFullName = astParentFullName.getOrElse(Defines.Any),
+          line = method.lineNumber,
+          column = method.columnNumber
         )
+        val thisParameterAst = Ast(thisNode)
+        scope.addToScope(Defines.Self, thisNode)
 
         val parameterAsts         = thisParameterAst :: astForParameters(node.parameters)
         val optionalStatementList = statementListForOptionalParams(node.parameters)
@@ -439,7 +440,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           .methodFullName(Operators.fieldAccess)
           .dispatchType(DispatchTypes.STATIC_DISPATCH)
           .typeFullName(Defines.Any)
-        callAst(fieldAccess, Seq(Ast(self), Ast(fi)))
+        val selfAst = scope
+          .lookupVariable(Defines.Self)
+          .map(selfParam => Ast(self).withRefEdge(self, selfParam))
+          .getOrElse(Ast(self))
+        callAst(fieldAccess, Seq(selfAst, Ast(fi)))
       }
 
       astForAssignment(methodRefIdent, methodRefNode, method.lineNumber, method.columnNumber)
