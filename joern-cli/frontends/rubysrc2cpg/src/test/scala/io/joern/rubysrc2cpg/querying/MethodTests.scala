@@ -39,7 +39,7 @@ class MethodTests extends RubyCode2CpgFixture {
       mSelf.index shouldBe 0
       mSelf.isVariadic shouldBe false
       mSelf.lineNumber shouldBe Some(1)
-      mSelf.referencingIdentifiers.size shouldBe 1
+      mSelf.referencingIdentifiers.size shouldBe 3
     }
 
     "have a corresponding bound type" in {
