@@ -1170,13 +1170,15 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
         )
       }
 
-    val otherTypeDeclChildrenSpan =
-      if otherTypeDeclChildren.nonEmpty then "\n" + otherTypeDeclChildren.map(_.span.text).mkString("\n")
-      else ""
+    val otherTypeDeclChildrenSpan = otherTypeDeclChildren match {
+      case head :: tail => s"\n${head.span.text.concat(tail.map(_.span.text).mkString("\n"))}"
+      case _ => ""
+    }
 
-    val initMethodSpanText =
-      if initMethod.nonEmpty then "\n" + initMethod.head.span.text
-      else ""
+    val initMethodSpanText = initMethod match {
+      case head :: _ => s"\n${head.span.text}"
+      case _ => ""
+    }
 
     StatementList(initMethod ++ otherTypeDeclChildren ++ updatedBodyMethod)(
       stmts.span.spanStart(
