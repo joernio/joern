@@ -1,17 +1,15 @@
 package io.joern.rubysrc2cpg.astcreation
 
-import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
-import io.joern.rubysrc2cpg.datastructures.{BlockScope, NamespaceScope, RubyProgramSummary, RubyScope, RubyStubbedType}
+import io.joern.rubysrc2cpg.datastructures.{BlockScope, NamespaceScope, RubyProgramSummary, RubyScope}
 import io.joern.rubysrc2cpg.parser.{RubyNodeCreator, RubyParser}
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newModifierNode}
+import io.joern.x2cpg.utils.NodeBuilders.{newModifierNode, newThisParameterNode}
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, ModifierTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.{Logger, LoggerFactory}
-import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 
 import java.util.regex.Matcher
 
@@ -97,6 +95,16 @@ class AstCreator(
       signature = None,
       fileName = relativeFileName
     )
+    val thisParameterNode = newThisParameterNode(
+      name = Defines.Self,
+      code = Defines.Self,
+      typeFullName = Defines.Any,
+      line = methodNode_.lineNumber,
+      column = methodNode_.columnNumber,
+      dynamicTypeHintFullName = fullName :: Nil
+    )
+    val thisParameterAst = Ast(thisParameterNode)
+    scope.addToScope(Defines.Self, thisParameterNode)
     val methodReturn = methodReturnNode(rootNode, Defines.Any)
 
     scope.newProgramScope
@@ -110,7 +118,7 @@ class AstCreator(
         scope.popScope()
         methodAst(
           methodNode_,
-          Seq.empty,
+          thisParameterAst :: Nil,
           bodyAst,
           methodReturn,
           newModifierNode(ModifierTypes.MODULE) :: newModifierNode(ModifierTypes.VIRTUAL) :: Nil
