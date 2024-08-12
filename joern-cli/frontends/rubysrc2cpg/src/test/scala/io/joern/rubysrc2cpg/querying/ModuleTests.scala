@@ -50,7 +50,7 @@ class ModuleTests extends RubyCode2CpgFixture {
     inside(cpg.typeDecl.name("MobileController").l) {
       case mobileTypeDecl :: Nil =>
         mobileTypeDecl.name shouldBe "MobileController"
-        mobileTypeDecl.fullName shouldBe "Api.V1.MobileController"
+        mobileTypeDecl.fullName shouldBe "Test0.rb:<main>.Api.V1.MobileController"
         mobileTypeDecl.astParentFullName shouldBe "Api.V1"
         mobileTypeDecl.astParentType shouldBe NodeTypes.NAMESPACE_BLOCK
 

@@ -71,7 +71,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       *   typeDecl node with updated fields
       */
     def populateAstParentValues(typeDecl: NewTypeDecl, astParentFullName: String): NewTypeDecl = {
-      scope.pushNewScope(NamespaceScope(astParentFullName))
+      val namespaceBlockFullName = s"${scope.surroundingScopeFullName.getOrElse("")}.${astParentFullName}"
+      scope.pushNewScope(NamespaceScope(s"${scope.surroundingScopeFullName.getOrElse("")}.${astParentFullName}"))
 
       typeDecl.astParentFullName(astParentFullName)
       typeDecl.astParentType(NodeTypes.NAMESPACE_BLOCK)
