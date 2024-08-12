@@ -794,7 +794,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       MemberAccess(SelfIdentifier()(node.span.spanStart(Defines.Self)), ".", call.name)(node.span),
       stripLeadingAt = true
     )
-    val baseAst = Ast(identifierNode(node, Defines.Self, Defines.Self, receiverType))
+    val selfIdentifier = identifierNode(node, Defines.Self, Defines.Self, receiverType)
+    val baseAst = scope
+      .lookupVariable(Defines.Self)
+      .map(selfParam => Ast(selfIdentifier).withRefEdge(selfIdentifier, selfParam))
+      .getOrElse(Ast(selfIdentifier))
     callAst(call, argumentAst, Option(baseAst), Option(receiverAst))
   }
 
