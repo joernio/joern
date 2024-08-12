@@ -3,8 +3,11 @@ package io.joern.rubysrc2cpg.parser
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{Block, *}
 import io.joern.rubysrc2cpg.parser.AntlrContextHelpers.*
 import io.joern.rubysrc2cpg.parser.RubyParser.{
+  ClassNameContext,
+  ClassPathContext,
   CommandWithDoBlockContext,
   ConstantVariableReferenceContext,
+  NestedClassPathContext,
   QuotedExpandedStringArrayLiteralContext,
   QuotedExpandedSymbolArrayLiteralContext
 }
@@ -948,10 +951,15 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   override def visitModuleDefinition(ctx: RubyParser.ModuleDefinitionContext): RubyNode = {
     val (nonFieldStmts, fields) = genInitFieldStmts(ctx.bodyStatement())
 
-    val moduleName = visit(ctx.classPath())
+    val (moduleName, namespaceDecl) = ctx.classPath match {
+      case x: NestedClassPathContext =>
+        (SimpleIdentifier()(ctx.toTextSpan.spanStart(x.CONSTANT_IDENTIFIER().getText)), namespaceDeclaration(x))
+      case _ => (visit(ctx.classPath()), None)
+    }
+
     val memberCall = createBodyMemberCall(moduleName.span.text, ctx.toTextSpan)
 
-    ModuleDeclaration(visit(ctx.classPath()), nonFieldStmts, fields, Option(memberCall))(ctx.toTextSpan)
+    ModuleDeclaration(moduleName, nonFieldStmts, fields, Option(memberCall), namespaceDecl)(ctx.toTextSpan)
   }
 
   override def visitSingletonClassDefinition(ctx: RubyParser.SingletonClassDefinitionContext): RubyNode = {
@@ -1185,17 +1193,45 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     val stmts = lowerAliasStatementsToMethods(nonFieldStmts)
 
     val classBody = filterNonAllowedTypeDeclChildren(stmts)
-    val className = visit(ctx.classPath())
+
+    val (className, namespaceDecl) = ctx.classPath match {
+      case x: NestedClassPathContext =>
+        (SimpleIdentifier()(ctx.toTextSpan.spanStart(x.CONSTANT_IDENTIFIER().getText)), namespaceDeclaration(x))
+      case _ => (visit(ctx.classPath()), None)
+    }
 
     val memberCall = createBodyMemberCall(className.span.text, ctx.toTextSpan)
 
     ClassDeclaration(
-      visit(ctx.classPath()),
+      className,
       Option(ctx.commandOrPrimaryValueClass()).map(visit),
       classBody,
       fields,
-      Option(memberCall)
+      Option(memberCall),
+      namespaceDecl
     )(ctx.toTextSpan)
+  }
+
+  private def namespaceDeclaration(ctx: RubyParser.NestedClassPathContext): Option[NamespaceDeclaration] = {
+    val namespaces = ctx.classPath match {
+      case x: NestedClassPathContext => buildNestedClassPath(ctx.classPath.asInstanceOf[NestedClassPathContext])
+      case x: ClassNameContext       => ctx.classPath().getText
+    }
+
+    Option(NamespaceDeclaration(namespaces.split("\\s+").toList)(ctx.toTextSpan))
+  }
+
+  private def buildNestedClassPath(ctx: RubyParser.NestedClassPathContext): String = {
+    Option(ctx.classPath()) match {
+      case Some(cp) =>
+        cp match {
+          case x: NestedClassPathContext => s"${buildNestedClassPath(x)} ${ctx.CONSTANT_IDENTIFIER()}"
+          case x: ClassNameContext       => s"${visit(ctx.classPath).span.text} ${ctx.CONSTANT_IDENTIFIER().getText}"
+        }
+      case None =>
+        ctx.CONSTANT_IDENTIFIER().getText
+    }
+
   }
 
   private def createBodyMemberCall(name: String, textSpan: TextSpan): TypeDeclBodyCall = {

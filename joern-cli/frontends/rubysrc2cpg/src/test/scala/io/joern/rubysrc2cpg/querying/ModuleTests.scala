@@ -3,6 +3,7 @@ package io.joern.rubysrc2cpg.querying
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.Main
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.semanticcpg.language.*
 
 class ModuleTests extends RubyCode2CpgFixture {
@@ -39,4 +40,20 @@ class ModuleTests extends RubyCode2CpgFixture {
     m.method.name.l shouldBe List(Defines.TypeDeclBody)
   }
 
+  "Module defined in Namespace" in {
+    val cpg = code("""
+        |module Api::V1::MobileController
+        |end
+        |""".stripMargin)
+
+    inside(cpg.typeDecl.name("MobileController").l) {
+      case mobileTypeDecl :: Nil =>
+        mobileTypeDecl.name shouldBe "MobileController"
+        mobileTypeDecl.fullName shouldBe "Test0.rb:<main>.Api.V1.MobileController"
+        mobileTypeDecl.astParentFullName shouldBe "Api.V1"
+        mobileTypeDecl.astParentType shouldBe NodeTypes.NAMESPACE_BLOCK
+
+      case xs => fail(s"Expected one class decl, got [${xs.code.mkString(",")}]")
+    }
+  }
 }

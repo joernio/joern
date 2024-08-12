@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
-import io.joern.rubysrc2cpg.datastructures.{BlockScope, MethodScope, ModuleScope, TypeScope}
+import io.joern.rubysrc2cpg.datastructures.{BlockScope, MethodScope, ModuleScope, NamespaceScope, TypeScope}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.joern.x2cpg.{Ast, ValidationMode}
@@ -51,7 +51,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val className     = nameIdentifier.text
     val inheritsFrom  = node.baseClass.map(getBaseClassName).toList
     val classFullName = computeFullName(className)
-    val typeDecl = typeDeclNode(
+    val typeDeclTemp = typeDeclNode(
       node = node,
       name = className,
       fullName = classFullName,
@@ -60,8 +60,40 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       inherits = inheritsFrom,
       alias = None
     )
-    scope.surroundingAstLabel.foreach(typeDecl.astParentType(_))
-    scope.surroundingScopeFullName.foreach(typeDecl.astParentFullName(_))
+
+    /** Pushes new NamespaceScope onto scope stack and populates AST_PARENT_FULL_NAME and AST_PARENT_TYPE for TypeDecls
+      * that are declared in a namespace
+      * @param typeDecl
+      *   \- TypeDecl node
+      * @param astParentFullName
+      *   \- Fullname of AstParent
+      * @return
+      *   typeDecl node with updated fields
+      */
+    def populateAstParentValues(typeDecl: NewTypeDecl, astParentFullName: String): NewTypeDecl = {
+      scope.pushNewScope(NamespaceScope(s"${scope.surroundingScopeFullName.getOrElse("")}.${astParentFullName}"))
+
+      typeDecl.astParentFullName(astParentFullName)
+      typeDecl.astParentType(NodeTypes.NAMESPACE_BLOCK)
+
+      typeDeclTemp.fullName(computeFullName(className))
+      typeDecl
+    }
+
+    val (typeDecl, shouldPopScope) = node match {
+      case x: ClassDeclaration if x.namespaceDeclaration.isDefined =>
+        populateAstParentValues(typeDeclTemp, x.namespaceDeclaration.get.namespaceParts.mkString("."))
+        (typeDeclTemp, true)
+      case x: ModuleDeclaration if x.namespaceDeclaration.isDefined => {
+        populateAstParentValues(typeDeclTemp, x.namespaceDeclaration.get.namespaceParts.mkString("."))
+        (typeDeclTemp, true)
+      }
+      case _ =>
+        scope.surroundingAstLabel.foreach(typeDeclTemp.astParentType(_))
+        scope.surroundingScopeFullName.foreach(typeDeclTemp.astParentFullName(_))
+        (typeDeclTemp, false)
+    }
+
     /*
       In Ruby, there are semantic differences between the ordinary class and singleton class (think "meta" class in
       Python). Similar to how Java allows both static and dynamic methods/fields/etc. within the same type declaration,
@@ -146,6 +178,9 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       }
 
     (typeDeclAst :: singletonTypeDeclAst :: Nil).foreach(Ast.storeInDiffGraph(_, diffGraph))
+
+    if shouldPopScope then scope.popScope()
+
     prefixAst :: bodyMemberCallAst :: Nil
   }
 

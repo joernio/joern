@@ -66,11 +66,14 @@ object RubyIntermediateAst {
     def bodyMemberCall: Option[TypeDeclBodyCall]
   }
 
+  final case class NamespaceDeclaration(namespaceParts: List[String])(span: TextSpan) extends RubyNode(span)
+
   final case class ModuleDeclaration(
     name: RubyNode,
     body: RubyNode,
     fields: List[RubyNode & RubyFieldIdentifier],
-    bodyMemberCall: Option[TypeDeclBodyCall]
+    bodyMemberCall: Option[TypeDeclBodyCall],
+    namespaceDeclaration: Option[NamespaceDeclaration]
   )(span: TextSpan)
       extends RubyNode(span)
       with TypeDeclaration {
@@ -82,7 +85,8 @@ object RubyIntermediateAst {
     baseClass: Option[RubyNode],
     body: RubyNode,
     fields: List[RubyNode & RubyFieldIdentifier],
-    bodyMemberCall: Option[TypeDeclBodyCall]
+    bodyMemberCall: Option[TypeDeclBodyCall],
+    namespaceDeclaration: Option[NamespaceDeclaration]
   )(span: TextSpan)
       extends RubyNode(span)
       with TypeDeclaration

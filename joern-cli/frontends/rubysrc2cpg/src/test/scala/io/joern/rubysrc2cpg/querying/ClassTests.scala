@@ -6,8 +6,9 @@ import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
-import io.joern.rubysrc2cpg.passes.Defines.{Main, TypeDeclBody, Initialize}
+import io.joern.rubysrc2cpg.passes.Defines.{Initialize, Main, TypeDeclBody}
 import io.joern.rubysrc2cpg.passes.GlobalTypes
+import io.shiftleft.codepropertygraph.generated.NodeTypes
 
 class ClassTests extends RubyCode2CpgFixture {
 
@@ -948,6 +949,39 @@ class ClassTests extends RubyCode2CpgFixture {
 
         case xs => fail(s"Expected body method and init method, got [${xs.code.mkString(",")}]")
       }
+    }
+  }
+
+  "fixme" in {
+    val cpg = code("""
+        |class Api::V1::MobileController
+        |end
+        |""".stripMargin)
+
+    inside(cpg.typeDecl.name("MobileController").l) {
+      case mobileTypeDecl :: Nil =>
+        mobileTypeDecl.name shouldBe "MobileController"
+        mobileTypeDecl.fullName shouldBe "Test0.rb:<main>.Api.V1.MobileController"
+        mobileTypeDecl.astParentFullName shouldBe "Api.V1"
+        mobileTypeDecl.astParentType shouldBe NodeTypes.NAMESPACE_BLOCK
+
+      case xs => fail(s"Expected one class decl, got [${xs.code.mkString(",")}]")
+    }
+  }
+
+  "Namespace scope is popping properly" in {
+    val cpg = code("""
+        |class Foo::Bar
+        |end
+        |
+        |class Baz
+        |end
+        |""".stripMargin)
+
+    inside(cpg.typeDecl.name("Baz").l) {
+      case bazTypeDecl :: Nil =>
+        bazTypeDecl.fullName shouldBe "Test0.rb:<main>.Baz"
+      case xs => fail(s"Expected one type decl, got [${xs.code.mkString(",")}]")
     }
   }
 }
