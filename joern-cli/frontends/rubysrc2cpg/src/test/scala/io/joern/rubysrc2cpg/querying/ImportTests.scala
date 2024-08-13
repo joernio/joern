@@ -1,8 +1,13 @@
 package io.joern.rubysrc2cpg.querying
 
+import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.Main
+import io.joern.rubysrc2cpg.passes.GlobalTypes.{builtinPrefix, kernelPrefix}
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.shiftleft.codepropertygraph.generated.nodes.Literal
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, NodeTypes}
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
 import org.scalatest.Inspectors
 
 class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with Inspectors {
@@ -256,6 +261,15 @@ class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with In
 
     "not import a type from the type's defining file" in {
       cpg.imports.where(_.call.file.name(".*B.rb")).size shouldBe 0
+    }
+
+    "create a `require_relative` call following the simplified format" in {
+      val require = cpg.call("require_relative").head
+      require.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      require.methodFullName shouldBe s"$kernelPrefix.require_relative"
+
+      val strLit = require.argument(1).asInstanceOf[Literal]
+      strLit.typeFullName shouldBe s"$builtinPrefix.String"
     }
 
   }
