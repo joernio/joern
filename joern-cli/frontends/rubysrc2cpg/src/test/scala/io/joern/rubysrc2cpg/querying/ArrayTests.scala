@@ -2,10 +2,11 @@ package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.passes.GlobalTypes.{builtinPrefix, kernelPrefix}
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Literal}
 import io.shiftleft.semanticcpg.language.*
 import io.joern.rubysrc2cpg.passes.Defines
+import io.joern.x2cpg.Defines as XDefines
 import io.shiftleft.codepropertygraph.generated.nodes.Literal
 
 class ArrayTests extends RubyCode2CpgFixture {
@@ -184,4 +185,19 @@ class ArrayTests extends RubyCode2CpgFixture {
     test2.code shouldBe "test_2"
     test2.typeFullName shouldBe Defines.getBuiltInType(Defines.Symbol)
   }
+
+  "shift-left operator interpreted as a call (append)" in {
+    val cpg = code("[1, 2, 3] << 4")
+
+    inside(cpg.call("<<").headOption) {
+      case Some(append) =>
+        append.name shouldBe "<<"
+        append.methodFullName shouldBe XDefines.DynamicCallUnknownFullName
+        append.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        append.argument(0).code shouldBe "[1, 2, 3]"
+        append.argument(1).code shouldBe "4"
+      case None => fail(s"Expected call `<<`")
+    }
+  }
+
 }
