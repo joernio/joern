@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.passes.GlobalTypes.builtinPrefix
-import io.joern.rubysrc2cpg.passes.Defines.Main
+import io.joern.rubysrc2cpg.passes.Defines.{Main, Initialize}
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -267,10 +267,11 @@ class DoBlockTests extends RubyCode2CpgFixture {
           inside(constrBlock.astChildren.l) {
             case (tmpLocal: Local) :: (tmpAssign: Call) :: (newCall: Call) :: (_: Identifier) :: Nil =>
               tmpLocal.name shouldBe "<tmp-0>"
-              tmpAssign.code shouldBe "<tmp-0> = Array.new(x) { |i| i += 1 }"
+              tmpAssign.code shouldBe s"<tmp-0> = Array.$Initialize"
 
-              newCall.name shouldBe "new"
-              newCall.methodFullName shouldBe s"$builtinPrefix.Array.initialize"
+              newCall.name shouldBe Initialize
+              newCall.methodFullName shouldBe Defines.Any
+              newCall.dynamicTypeHintFullName should contain(s"$builtinPrefix.Array.$Initialize")
 
               inside(newCall.argument.l) {
                 case (_: Identifier) :: (x: Identifier) :: (closure: TypeRef) :: Nil =>
