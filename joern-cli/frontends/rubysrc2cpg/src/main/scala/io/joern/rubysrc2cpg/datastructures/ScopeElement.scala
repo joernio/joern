@@ -2,8 +2,9 @@ package io.joern.rubysrc2cpg.datastructures
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{RubyFieldIdentifier, RubyNode}
 import io.joern.rubysrc2cpg.passes.Defines
+import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.{NamespaceLikeScope, TypedScopeElement}
-import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
+import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewFile}
 
 /** The namespace.
   * @param fullName
@@ -18,6 +19,8 @@ case class FieldDecl(
   isInitialized: Boolean,
   node: RubyNode & RubyFieldIdentifier
 ) extends TypedScopeElement
+
+case class FileScope(fileNode: NewFile) extends TypedScopeElement
 
 /** A type-like scope with a full name.
   */

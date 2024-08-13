@@ -4,7 +4,7 @@ import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.Main
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.NodeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.NamespaceBlock
+import io.shiftleft.codepropertygraph.generated.nodes.{File, NamespaceBlock}
 import io.shiftleft.semanticcpg.language.*
 
 class ModuleTests extends RubyCode2CpgFixture {
@@ -59,6 +59,10 @@ class ModuleTests extends RubyCode2CpgFixture {
         val namespaceDecl = mobileTypeDecl.astParent.asInstanceOf[NamespaceBlock]
         namespaceDecl.name shouldBe "Api.V1"
         namespaceDecl.filename shouldBe "Test0.rb"
+
+        namespaceDecl.astParent.isFile shouldBe true
+        val parentFileDecl = namespaceDecl.astParent.asInstanceOf[File]
+        parentFileDecl.name shouldBe "Test0.rb"
 
       case xs => fail(s"Expected one class decl, got [${xs.code.mkString(",")}]")
     }

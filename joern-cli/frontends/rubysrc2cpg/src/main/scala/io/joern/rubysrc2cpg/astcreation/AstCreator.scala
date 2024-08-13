@@ -2,7 +2,14 @@ package io.joern.rubysrc2cpg.astcreation
 
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
-import io.joern.rubysrc2cpg.datastructures.{BlockScope, NamespaceScope, RubyProgramSummary, RubyScope, RubyStubbedType}
+import io.joern.rubysrc2cpg.datastructures.{
+  BlockScope,
+  FileScope,
+  NamespaceScope,
+  RubyProgramSummary,
+  RubyScope,
+  RubyStubbedType
+}
 import io.joern.rubysrc2cpg.parser.{RubyNodeCreator, RubyParser}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newModifierNode}
@@ -77,7 +84,9 @@ class AstCreator(
       .fullName(fullName)
 
     scope.pushNewScope(NamespaceScope(fullName))
+    scope.pushNewScope(FileScope(fileNode))
     val rubyFakeMethodAst = astInFakeMethod(rootStatements)
+    scope.popScope()
     scope.popScope()
 
     Ast(fileNode).withChild(Ast(namespaceBlock).withChild(rubyFakeMethodAst))

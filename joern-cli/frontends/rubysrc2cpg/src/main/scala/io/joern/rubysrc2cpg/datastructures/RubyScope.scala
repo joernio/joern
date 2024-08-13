@@ -3,11 +3,11 @@ package io.joern.rubysrc2cpg.datastructures
 import better.files.File
 import io.joern.rubysrc2cpg.passes.GlobalTypes
 import io.joern.rubysrc2cpg.passes.GlobalTypes.builtinPrefix
-import io.joern.x2cpg.Defines
+import io.joern.x2cpg.{Ast, Defines}
 import io.joern.rubysrc2cpg.passes.Defines as RDefines
 import io.joern.x2cpg.datastructures.{TypedScopeElement, *}
 import io.shiftleft.codepropertygraph.generated.NodeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{DeclarationNew, NewLocal, NewMethodParameterIn}
+import io.shiftleft.codepropertygraph.generated.nodes.{DeclarationNew, NewFile, NewLocal, NewMethodParameterIn}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import java.io.File as JFile
@@ -369,6 +369,12 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
         case ScopeElement(x: TypeLikeScope, _)      => x.fullName
         case ScopeElement(x: MethodLikeScope, _)    => x.fullName
       }
+  }
+
+  def findFileNode(): Option[NewFile] = {
+    stack.collectFirst { case ScopeElement(x: FileScope, _) =>
+      x.fileNode
+    }
   }
 
 }

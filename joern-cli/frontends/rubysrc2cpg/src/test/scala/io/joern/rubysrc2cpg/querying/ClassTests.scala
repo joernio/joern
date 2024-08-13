@@ -971,6 +971,10 @@ class ClassTests extends RubyCode2CpgFixture {
         namespaceDecl.name shouldBe "Api.V1"
         namespaceDecl.filename shouldBe "Test0.rb"
 
+        namespaceDecl.astParent.isFile shouldBe true
+        val parentFileDecl = namespaceDecl.astParent.asInstanceOf[File]
+        parentFileDecl.name shouldBe "Test0.rb"
+
       case xs => fail(s"Expected one class decl, got [${xs.code.mkString(",")}]")
     }
   }

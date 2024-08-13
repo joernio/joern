@@ -8,6 +8,7 @@ import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{
   DispatchTypes,
+  EdgeTypes,
   EvaluationStrategies,
   ModifierTypes,
   NodeTypes,
@@ -74,12 +75,18 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       val namespaceBlockFullName = s"${scope.surroundingScopeFullName.getOrElse("")}.${astParentFullName}"
       scope.pushNewScope(NamespaceScope(s"${scope.surroundingScopeFullName.getOrElse("")}.${astParentFullName}"))
 
-      typeDecl.astParentFullName(astParentFullName)
-      typeDecl.astParentType(NodeTypes.NAMESPACE_BLOCK)
-
       val namespaceBlock =
         NewNamespaceBlock().name(astParentFullName).fullName(astParentFullName).filename(relativeFileName)
+
       diffGraph.addNode(namespaceBlock)
+
+      scope.findFileNode() match {
+        case Some(fileNode) => diffGraph.addEdge(fileNode, namespaceBlock, EdgeTypes.AST)
+        case None           => // do nothing
+      }
+
+      typeDecl.astParentFullName(astParentFullName)
+      typeDecl.astParentType(NodeTypes.NAMESPACE_BLOCK)
 
       typeDeclTemp.fullName(computeFullName(className))
       typeDecl
