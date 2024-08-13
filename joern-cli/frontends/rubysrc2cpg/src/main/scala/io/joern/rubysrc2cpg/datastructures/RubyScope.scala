@@ -4,7 +4,6 @@ import better.files.File
 import io.joern.rubysrc2cpg.passes.GlobalTypes
 import io.joern.rubysrc2cpg.passes.GlobalTypes.builtinPrefix
 import io.joern.x2cpg.Defines
-import io.joern.rubysrc2cpg.passes.Defines as RDefines
 import io.joern.x2cpg.datastructures.{TypedScopeElement, *}
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{DeclarationNew, NewLocal, NewMethodParameterIn}
