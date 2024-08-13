@@ -72,18 +72,15 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       *   typeDecl node with updated fields
       */
     def populateAstParentValues(typeDecl: NewTypeDecl, astParentFullName: String): NewTypeDecl = {
-      val namespaceBlockFullName = s"${scope.surroundingScopeFullName.getOrElse("")}.${astParentFullName}"
-      scope.pushNewScope(NamespaceScope(s"${scope.surroundingScopeFullName.getOrElse("")}.${astParentFullName}"))
+      val namespaceBlockFullName = s"${scope.surroundingScopeFullName.getOrElse("")}.$astParentFullName"
+      scope.pushNewScope(NamespaceScope(s"${scope.surroundingScopeFullName.getOrElse("")}.$astParentFullName"))
 
       val namespaceBlock =
         NewNamespaceBlock().name(astParentFullName).fullName(astParentFullName).filename(relativeFileName)
 
       diffGraph.addNode(namespaceBlock)
 
-      scope.findFileNode() match {
-        case Some(fileNode) => diffGraph.addEdge(fileNode, namespaceBlock, EdgeTypes.AST)
-        case None           => // do nothing
-      }
+      fileNode.foreach(diffGraph.addEdge(_, namespaceBlock, EdgeTypes.AST))
 
       typeDecl.astParentFullName(astParentFullName)
       typeDecl.astParentType(NodeTypes.NAMESPACE_BLOCK)
@@ -92,14 +89,10 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       typeDecl
     }
 
-    val (typeDecl, shouldPopScope) = node match {
-      case x: ClassDeclaration if x.namespaceDeclaration.isDefined =>
-        populateAstParentValues(typeDeclTemp, x.namespaceDeclaration.get.namespaceParts.mkString("."))
+    val (typeDecl, shouldPopAdditionalScope) = node match {
+      case x: NamespaceDeclaration if x.namespaceParts.isDefined =>
+        populateAstParentValues(typeDeclTemp, x.namespaceParts.get.mkString("."))
         (typeDeclTemp, true)
-      case x: ModuleDeclaration if x.namespaceDeclaration.isDefined => {
-        populateAstParentValues(typeDeclTemp, x.namespaceDeclaration.get.namespaceParts.mkString("."))
-        (typeDeclTemp, true)
-      }
       case _ =>
         scope.surroundingAstLabel.foreach(typeDeclTemp.astParentType(_))
         scope.surroundingScopeFullName.foreach(typeDeclTemp.astParentFullName(_))
@@ -191,7 +184,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     (typeDeclAst :: singletonTypeDeclAst :: Nil).foreach(Ast.storeInDiffGraph(_, diffGraph))
 
-    if shouldPopScope then scope.popScope()
+    if shouldPopAdditionalScope then scope.popScope()
 
     prefixAst :: bodyMemberCallAst :: Nil
   }

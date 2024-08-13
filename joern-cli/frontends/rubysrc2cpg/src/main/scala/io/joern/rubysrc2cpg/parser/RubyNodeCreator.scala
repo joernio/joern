@@ -1222,13 +1222,13 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     )(ctx.toTextSpan)
   }
 
-  private def namespaceDeclaration(ctx: RubyParser.NestedClassPathContext): Option[NamespaceDeclaration] = {
+  private def namespaceDeclaration(ctx: RubyParser.NestedClassPathContext): Option[List[String]] = {
     val namespaces = ctx.classPath match {
       case x: NestedClassPathContext => buildNestedClassPath(ctx.classPath.asInstanceOf[NestedClassPathContext])
       case x: ClassNameContext       => ctx.classPath().getText
     }
 
-    Option(NamespaceDeclaration(namespaces.split("\\s+").toList)(ctx.toTextSpan))
+    Option(namespaces.split("\\s+").toList)
   }
 
   private def buildNestedClassPath(ctx: RubyParser.NestedClassPathContext): String = {
