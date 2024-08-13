@@ -59,6 +59,8 @@ object RubyIntermediateAst {
 
   sealed trait AllowedTypeDeclarationChild
 
+  sealed trait Namespace
+
   sealed trait TypeDeclaration extends AllowedTypeDeclarationChild {
     def name: RubyNode
     def baseClass: Option[RubyNode]
@@ -66,14 +68,20 @@ object RubyIntermediateAst {
     def bodyMemberCall: Option[TypeDeclBodyCall]
   }
 
+  sealed trait NamespaceDeclaration {
+    def namespaceParts: Option[List[String]]
+  }
+
   final case class ModuleDeclaration(
     name: RubyNode,
     body: RubyNode,
     fields: List[RubyNode & RubyFieldIdentifier],
-    bodyMemberCall: Option[TypeDeclBodyCall]
+    bodyMemberCall: Option[TypeDeclBodyCall],
+    namespaceParts: Option[List[String]]
   )(span: TextSpan)
       extends RubyNode(span)
-      with TypeDeclaration {
+      with TypeDeclaration
+      with NamespaceDeclaration {
     def baseClass: Option[RubyNode] = None
   }
 
@@ -82,10 +90,12 @@ object RubyIntermediateAst {
     baseClass: Option[RubyNode],
     body: RubyNode,
     fields: List[RubyNode & RubyFieldIdentifier],
-    bodyMemberCall: Option[TypeDeclBodyCall]
+    bodyMemberCall: Option[TypeDeclBodyCall],
+    namespaceParts: Option[List[String]]
   )(span: TextSpan)
       extends RubyNode(span)
       with TypeDeclaration
+      with NamespaceDeclaration
 
   sealed trait AnonymousTypeDeclaration extends RubyNode with TypeDeclaration
 

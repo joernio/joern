@@ -36,6 +36,8 @@ class AstCreator(
 
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
 
+  protected var fileNode: Option[NewFile] = None
+
   protected var parseLevel: AstParseLevel = AstParseLevel.FULL_AST
 
   override protected def offset(node: RubyNode): Option[(Int, Int)] = node.offset
@@ -65,9 +67,9 @@ class AstCreator(
    * allowing for a straightforward representation of out-of-method statements.
    */
   protected def astForRubyFile(rootStatements: StatementList): Ast = {
-    val fileNode =
-      if enableFileContents then NewFile().name(relativeFileName).content(fileContent)
-      else NewFile().name(relativeFileName)
+    fileNode =
+      if enableFileContents then Option(NewFile().name(relativeFileName).content(fileContent))
+      else Option(NewFile().name(relativeFileName))
     val fullName = s"$relativeUnixStyleFileName:${NamespaceTraversal.globalNamespaceName}"
     val namespaceBlock = NewNamespaceBlock()
       .filename(relativeFileName)
@@ -78,7 +80,7 @@ class AstCreator(
     val rubyFakeMethodAst = astInFakeMethod(rootStatements)
     scope.popScope()
 
-    Ast(fileNode).withChild(Ast(namespaceBlock).withChild(rubyFakeMethodAst))
+    Ast(fileNode.get).withChild(Ast(namespaceBlock).withChild(rubyFakeMethodAst))
   }
 
   private def astInFakeMethod(rootNode: StatementList): Ast = {

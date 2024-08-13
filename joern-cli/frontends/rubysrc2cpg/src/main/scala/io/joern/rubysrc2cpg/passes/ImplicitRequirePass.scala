@@ -1,6 +1,8 @@
 package io.joern.rubysrc2cpg.passes
 
 import io.joern.rubysrc2cpg.datastructures.{RubyProgramSummary, RubyType}
+import io.joern.rubysrc2cpg.passes.GlobalTypes.{builtinPrefix, kernelPrefix}
+import io.joern.x2cpg.utils.NodeBuilders.{newCallNode, newFieldIdentifierNode, newIdentifierNode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{Cpg, DispatchTypes, EdgeTypes, Operators}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
@@ -17,7 +19,7 @@ import scala.collection.mutable
   */
 class ImplicitRequirePass(cpg: Cpg, programSummary: RubyProgramSummary) extends ForkJoinParallelCpgPass[Method](cpg) {
 
-  private val importCallName: String = "require"
+  private val importCallName: String = "require_relative"
   private val typeToPath             = mutable.Map.empty[String, String]
 
   override def init(): Unit = {
@@ -85,7 +87,7 @@ class ImplicitRequirePass(cpg: Cpg, programSummary: RubyProgramSummary) extends 
                   .exists(x => rubyType.name.startsWith(x)) =>
               None // do not add an import to a file that defines the type
             case Some(path) =>
-              Option(createRequireCall(builder, rubyType, path))
+              Option(createRequireCall(builder, moduleMethod, path))
             case None =>
               None
           }
@@ -98,20 +100,17 @@ class ImplicitRequirePass(cpg: Cpg, programSummary: RubyProgramSummary) extends 
       }
   }
 
-  private def createRequireCall(builder: DiffGraphBuilder, rubyType: RubyType, path: String): NewCall = {
+  private def createRequireCall(builder: DiffGraphBuilder, moduleMethod: Method, path: String): NewCall = {
     val requireCallNode = NewCall()
       .name(importCallName)
       .code(s"$importCallName '$path'")
-      .methodFullName(s"__builtin.$importCallName")
-      .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
+      .methodFullName(s"$kernelPrefix.$importCallName")
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .typeFullName(Defines.Any)
-    val receiverIdentifier =
-      NewIdentifier().name(importCallName).code(importCallName).typeFullName(Defines.Any).argumentIndex(0).order(1)
-    val pathLiteralNode = NewLiteral().code(s"'$path'").typeFullName("__builtin.String").argumentIndex(1).order(2)
     builder.addNode(requireCallNode)
-    builder.addEdge(requireCallNode, receiverIdentifier, EdgeTypes.AST)
-    builder.addEdge(requireCallNode, receiverIdentifier, EdgeTypes.ARGUMENT)
-    builder.addEdge(requireCallNode, receiverIdentifier, EdgeTypes.RECEIVER)
+    // Create literal argument
+    val pathLiteralNode =
+      NewLiteral().code(s"'$path'").typeFullName(s"$builtinPrefix.String").argumentIndex(1).order(2)
     builder.addEdge(requireCallNode, pathLiteralNode, EdgeTypes.AST)
     builder.addEdge(requireCallNode, pathLiteralNode, EdgeTypes.ARGUMENT)
     requireCallNode

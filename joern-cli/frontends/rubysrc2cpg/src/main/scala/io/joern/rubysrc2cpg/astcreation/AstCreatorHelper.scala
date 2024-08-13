@@ -170,8 +170,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       "&"   -> Operators.and,
       "|"   -> Operators.or,
       "^"   -> Operators.xor,
-      "<<"  -> Operators.shiftLeft,
-      ">>"  -> Operators.logicalShiftRight
+//      "<<"  -> Operators.shiftLeft,  Note: Generally Ruby abstracts this as an append operator based on the LHS
+      ">>" -> Operators.logicalShiftRight
     )
 
   protected val AssignmentOperatorNames: Map[String, String] = Map(
