@@ -2,9 +2,8 @@ package io.joern.rubysrc2cpg.datastructures
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{RubyFieldIdentifier, RubyNode}
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.{NamespaceLikeScope, TypedScopeElement}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewFile}
+import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
 
 /** The namespace.
   * @param fullName
