@@ -7,7 +7,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Call, Literal}
 import io.shiftleft.semanticcpg.language.*
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.Defines as XDefines
-import io.shiftleft.codepropertygraph.generated.nodes.Literal
 
 class ArrayTests extends RubyCode2CpgFixture {
 

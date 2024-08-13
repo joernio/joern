@@ -1,13 +1,12 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.rubysrc2cpg.passes.Defines.Main
+import io.joern.rubysrc2cpg.passes.Defines.{Initialize, Main}
 import io.joern.rubysrc2cpg.passes.GlobalTypes.{builtinPrefix, kernelPrefix}
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.nodes.Literal
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, NodeTypes}
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
 import org.scalatest.Inspectors
 
 class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with Inspectors {
