@@ -319,7 +319,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     }
 
     val constructorCall =
-      callNode(node, Defines.Initialize, Defines.Initialize, Defines.Any, DispatchTypes.DYNAMIC_DISPATCH)
+      callNode(node, code(node), Defines.Initialize, Defines.Any, DispatchTypes.DYNAMIC_DISPATCH)
     if fullName != XDefines.DynamicCallUnknownFullName then constructorCall.dynamicTypeHintFullName(Seq(fullName))
     val constructorRecv    = astForExpression(MemberAccess(node.target, ".", Defines.Initialize)(node.span))
     val constructorCallAst = callAst(constructorCall, argumentAsts, Option(tmpIdentifier), Option(constructorRecv))
