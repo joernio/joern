@@ -263,10 +263,10 @@ class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with In
       cpg.imports.where(_.call.file.name(".*B.rb")).size shouldBe 0
     }
 
-    "create a `require` call following the simplified format" in {
-      val require = cpg.call("require").head
+    "create a `require_relative` call following the simplified format" in {
+      val require = cpg.call("require_relative").head
       require.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      require.methodFullName shouldBe s"$kernelPrefix.require"
+      require.methodFullName shouldBe s"$kernelPrefix.require_relative"
 
       val strLit = require.argument(1).asInstanceOf[Literal]
       strLit.typeFullName shouldBe s"$builtinPrefix.String"

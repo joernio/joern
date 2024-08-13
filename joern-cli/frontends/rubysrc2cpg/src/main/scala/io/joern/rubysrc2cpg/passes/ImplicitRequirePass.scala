@@ -19,7 +19,7 @@ import scala.collection.mutable
   */
 class ImplicitRequirePass(cpg: Cpg, programSummary: RubyProgramSummary) extends ForkJoinParallelCpgPass[Method](cpg) {
 
-  private val importCallName: String = "require"
+  private val importCallName: String = "require_relative"
   private val typeToPath             = mutable.Map.empty[String, String]
 
   override def init(): Unit = {
@@ -104,7 +104,7 @@ class ImplicitRequirePass(cpg: Cpg, programSummary: RubyProgramSummary) extends 
     val requireCallNode = NewCall()
       .name(importCallName)
       .code(s"$importCallName '$path'")
-      .methodFullName(s"$kernelPrefix.require")
+      .methodFullName(s"$kernelPrefix.$importCallName")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .typeFullName(Defines.Any)
     builder.addNode(requireCallNode)
