@@ -105,47 +105,14 @@ class ImplicitRequirePass(cpg: Cpg, programSummary: RubyProgramSummary) extends 
       .name(importCallName)
       .code(s"$importCallName '$path'")
       .methodFullName(s"$kernelPrefix.require")
-      .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .typeFullName(Defines.Any)
     builder.addNode(requireCallNode)
-    for {
-      selfParam <- moduleMethod.parameter.name(Defines.Self)
-    } {
-      // Create receiver: `self.require`
-      val selfIdentifier = newIdentifierNode(Defines.Self, Defines.Any).argumentIndex(1)
-      builder.addEdge(selfIdentifier, selfParam, EdgeTypes.REF)
-      val requireFieldIdentifier = newFieldIdentifierNode("require").argumentIndex(2)
-      val selfRequireFieldAccess = newCallNode(
-        Operators.fieldAccess,
-        Option(Defines.Any),
-        Defines.Any,
-        DispatchTypes.STATIC_DISPATCH,
-        code = "self.require"
-      ).argumentIndex(-1)
-      builder.addEdge(selfRequireFieldAccess, selfIdentifier, EdgeTypes.AST)
-      builder.addEdge(selfRequireFieldAccess, requireFieldIdentifier, EdgeTypes.AST)
-      builder.addEdge(selfRequireFieldAccess, selfIdentifier, EdgeTypes.ARGUMENT)
-      builder.addEdge(selfRequireFieldAccess, requireFieldIdentifier, EdgeTypes.ARGUMENT)
-
-      // Create base: `self`
-      val selfIdentifierBase = newIdentifierNode(Defines.Self, Defines.Any).argumentIndex(0)
-      builder.addEdge(selfIdentifierBase, selfParam, EdgeTypes.REF)
-
-      // Link arguments to call node
-      builder.addEdge(requireCallNode, selfRequireFieldAccess, EdgeTypes.AST)
-      builder.addEdge(requireCallNode, selfRequireFieldAccess, EdgeTypes.ARGUMENT)
-      builder.addEdge(requireCallNode, selfRequireFieldAccess, EdgeTypes.RECEIVER)
-
-      builder.addEdge(requireCallNode, selfIdentifierBase, EdgeTypes.AST)
-      builder.addEdge(requireCallNode, selfIdentifierBase, EdgeTypes.ARGUMENT)
-    }
     // Create literal argument
     val pathLiteralNode =
       NewLiteral().code(s"'$path'").typeFullName(s"$builtinPrefix.String").argumentIndex(1).order(2)
-
     builder.addEdge(requireCallNode, pathLiteralNode, EdgeTypes.AST)
     builder.addEdge(requireCallNode, pathLiteralNode, EdgeTypes.ARGUMENT)
-
     requireCallNode
   }
 
