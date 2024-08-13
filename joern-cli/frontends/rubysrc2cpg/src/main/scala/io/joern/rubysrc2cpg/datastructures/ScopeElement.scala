@@ -20,8 +20,6 @@ case class FieldDecl(
   node: RubyNode & RubyFieldIdentifier
 ) extends TypedScopeElement
 
-case class FileScope(fileNode: NewFile) extends TypedScopeElement
-
 /** A type-like scope with a full name.
   */
 trait TypeLikeScope extends TypedScopeElement {
