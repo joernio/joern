@@ -83,7 +83,7 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
       val programSummary = internalProgramSummary ++= dependencySummary
 
       AstCreationPass(cpg, astCreators.map(_.withSummary(programSummary))).createAndApply()
-      if (cpg.dependency.name.contains("zeitwerk")) ImplicitRequirePass(cpg, programSummary).createAndApply()
+      if (cpg.dependency.name.contains("zeitwerk")) ImplicitRequirePass(cpg).createAndApply()
       ImportsPass(cpg).createAndApply()
       if config.downloadDependencies then {
         DependencySummarySolverPass(cpg, dependencySummary).createAndApply()

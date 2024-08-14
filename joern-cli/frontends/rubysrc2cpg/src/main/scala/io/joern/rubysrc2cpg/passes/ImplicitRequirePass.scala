@@ -1,8 +1,6 @@
 package io.joern.rubysrc2cpg.passes
 
-import io.joern.rubysrc2cpg.datastructures.{RubyProgramSummary, RubyType}
 import io.joern.rubysrc2cpg.passes.GlobalTypes.{builtinPrefix, kernelPrefix}
-import io.joern.x2cpg.utils.NodeBuilders.{newCallNode, newFieldIdentifierNode, newIdentifierNode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{Cpg, DispatchTypes, EdgeTypes, Operators}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
@@ -17,25 +15,29 @@ import scala.collection.mutable
   * stack. This pass makes these imports explicit. The most popular one is <a
   * href="https://github.com/fxn/zeitwerk">Zeitwerk</a> which we check in `Gemsfile.lock` to enable this pass.
   */
-class ImplicitRequirePass(cpg: Cpg, programSummary: RubyProgramSummary) extends ForkJoinParallelCpgPass[Method](cpg) {
+class ImplicitRequirePass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg) {
 
-  private val importCallName: String = "require_relative"
+  private val importCallName: String = "require"
   private val typeToPath             = mutable.Map.empty[String, String]
+  private val typeNameToFullName     = mutable.Map.empty[String, Set[TypeDecl]]
 
   override def init(): Unit = {
-    programSummary.pathToType
-      .map { case (path, types) =>
+    val importableTypes = cpg.typeDecl
+      .isExternal(false)
+      .filter { typeDecl =>
         // zeitwerk will match types that share the name of the path.
         // This match is insensitive to camel case, i.e, foo_bar will match type FooBar.
-        val fileName = path.split('/').last
-        path -> types.filter { t =>
-          val typeName = t.name.split("[.]").last
-          typeName == fileName || typeName == CaseUtils.toCamelCase(fileName, true, '_', '-')
-        }
+        val fileName = typeDecl.filename.split('/').last.stripSuffix(".rb")
+        val typeName = typeDecl.name
+        typeName == fileName || typeName == CaseUtils.toCamelCase(fileName, true, '_', '-')
       }
-      .foreach { case (path, types) =>
-        types.foreach { typ => typeToPath.put(typ.name, path) }
-      }
+      .l
+    importableTypes.foreach { typeDecl =>
+      typeToPath.put(typeDecl.fullName, typeDecl.filename.stripSuffix(".rb"))
+    }
+    importableTypes.groupBy(_.name).foreach { case (name, types) =>
+      typeNameToFullName.put(name, types.toSet)
+    }
   }
 
   override def generateParts(): Array[Method] =
@@ -77,17 +79,17 @@ class ImplicitRequirePass(cpg: Cpg, programSummary: RubyProgramSummary) extends 
 
     possiblyImportedSymbols.distinct
       .foreach { identifierName =>
-        val rubyTypes = programSummary.matchingTypes(identifierName)
+        val rubyTypes = typeNameToFullName.getOrElse(identifierName, Set.empty)
         val requireCalls = rubyTypes.flatMap { rubyType =>
-          typeToPath.get(rubyType.name) match {
-            case Some(path)
+          typeToPath.get(rubyType.fullName) match {
+            case Some(_)
                 if moduleMethod.file.name
                   .map(_.replace("\\", "/"))
                   .headOption
-                  .exists(x => rubyType.name.startsWith(x)) =>
+                  .exists(x => rubyType.fullName.startsWith(x)) =>
               None // do not add an import to a file that defines the type
             case Some(path) =>
-              Option(createRequireCall(builder, moduleMethod, path))
+              Option(createRequireCall(builder, path))
             case None =>
               None
           }
@@ -100,7 +102,7 @@ class ImplicitRequirePass(cpg: Cpg, programSummary: RubyProgramSummary) extends 
       }
   }
 
-  private def createRequireCall(builder: DiffGraphBuilder, moduleMethod: Method, path: String): NewCall = {
+  private def createRequireCall(builder: DiffGraphBuilder, path: String): NewCall = {
     val requireCallNode = NewCall()
       .name(importCallName)
       .code(s"$importCallName '$path'")
