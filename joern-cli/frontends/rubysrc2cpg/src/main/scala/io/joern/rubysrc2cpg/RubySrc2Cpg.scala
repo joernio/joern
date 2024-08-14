@@ -83,8 +83,6 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
       val programSummary = internalProgramSummary ++= dependencySummary
 
       AstCreationPass(cpg, astCreators.map(_.withSummary(programSummary))).createAndApply()
-      if (cpg.dependency.name.contains("zeitwerk")) ImplicitRequirePass(cpg).createAndApply()
-      ImportsPass(cpg).createAndApply()
       if config.downloadDependencies then {
         DependencySummarySolverPass(cpg, dependencySummary).createAndApply()
       }
@@ -170,12 +168,13 @@ object RubySrc2Cpg {
           new deprecated.passes.RubyTypeHintCallLinker(cpg),
           new NaiveCallLinker(cpg),
 
-          // Some of passes above create new methods, so, we
+          // Some of the passes above create new methods, so, we
           // need to run the ASTLinkerPass one more time
           new AstLinkerPass(cpg)
         )
     } else {
-      List(new RubyImportResolverPass(cpg)) ++
+      val implicitRequirePass = if (cpg.dependency.name.contains("zeitwerk")) ImplicitRequirePass(cpg) :: Nil else Nil
+      implicitRequirePass ++ List(ImportsPass(cpg), RubyImportResolverPass(cpg)) ++
         new passes.RubyTypeRecoveryPassGenerator(cpg, config = XTypeRecoveryConfig(iterations = 4))
           .generate() ++ List(new RubyTypeHintCallLinker(cpg), new NaiveCallLinker(cpg), new AstLinkerPass(cpg))
     }
