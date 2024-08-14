@@ -105,7 +105,7 @@ class AstCreator(
     val thisParameterNode = newThisParameterNode(
       name = Defines.Self,
       code = Defines.Self,
-      typeFullName = Defines.Any,
+      typeFullName = fullName,
       line = methodNode_.lineNumber,
       column = methodNode_.columnNumber,
       dynamicTypeHintFullName = fullName :: Nil
