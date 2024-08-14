@@ -52,7 +52,7 @@ class ConfigPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         |    }
         |}
         |""".stripMargin,
-    "Pipfile.lock"
+      "Pipfile.lock"
     )
 
     val config = cpg.configFile.name("Pipfile.lock").head
