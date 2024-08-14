@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.astcreation
 
 import flatgraph.DiffGraphApplier
-import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.StatementList
+import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{RubyNode, StatementList}
 import io.joern.rubysrc2cpg.datastructures.{RubyField, RubyMethod, RubyProgramSummary, RubyStubbedType, RubyType}
 import io.joern.rubysrc2cpg.parser.RubyNodeCreator
 import io.joern.rubysrc2cpg.passes.Defines
@@ -22,10 +22,15 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
 
   def summarize(asExternal: Boolean = false): RubyProgramSummary = {
     this.parseLevel = AstParseLevel.SIGNATURES
+
     Using.resource(Cpg.empty) { cpg =>
       // Build and store compilation unit AST
-      val rootNode = new RubyNodeCreator().visit(programCtx).asInstanceOf[StatementList]
-      val ast      = astForRubyFile(rootNode)
+      val rootNode = this.rootNode match {
+        case Some(rootNode) => rootNode.asInstanceOf[StatementList]
+        case None           => new RubyNodeCreator().visit(programCtx).asInstanceOf[StatementList]
+      }
+
+      val ast = astForRubyFile(rootNode)
       Ast.storeInDiffGraph(ast, diffGraph)
       DiffGraphApplier.applyDiff(cpg.graph, diffGraph)
 
@@ -37,7 +42,7 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
   }
 
   def withSummary(newSummary: RubyProgramSummary): AstCreator = {
-    AstCreator(fileName, programCtx, projectRoot, newSummary, enableFileContents, fileContent)
+    AstCreator(fileName, programCtx, projectRoot, newSummary, enableFileContents, fileContent, rootNode)
   }
 
   private def summarize(cpg: Cpg, asExternal: Boolean): RubyProgramSummary = {

@@ -2,10 +2,11 @@ package io.joern.rubysrc2cpg
 
 import better.files.File
 import io.joern.rubysrc2cpg.astcreation.AstCreator
+import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.StatementList
 import io.joern.rubysrc2cpg.datastructures.RubyProgramSummary
 import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser
 import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser.*
-import io.joern.rubysrc2cpg.parser.RubyParser
+import io.joern.rubysrc2cpg.parser.{RubyNodeCreator, RubyParser}
 import io.joern.rubysrc2cpg.passes.{
   AstCreationPass,
   ConfigFileCreationPass,
@@ -203,7 +204,8 @@ object RubySrc2Cpg {
               ctx,
               projectRoot,
               enableFileContents = !config.disableFileContent,
-              fileContent = fileContent
+              fileContent = fileContent,
+              rootNode = Option(new RubyNodeCreator().visit(ctx).asInstanceOf[StatementList])
             )(config.schemaValidation)
         }
       }
