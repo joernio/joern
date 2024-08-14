@@ -51,8 +51,7 @@ class FieldAccessTests extends RubyCode2CpgFixture {
           case (self: Identifier) :: (sickDaysId: FieldIdentifier) :: Nil =>
             self.name shouldBe "self"
             self.code shouldBe "self"
-            self.typeFullName shouldBe Defines.Any
-            self.dynamicTypeHintFullName.head should endWith("PaidTimeOff")
+            self.typeFullName should endWith("PaidTimeOff")
 
             sickDaysId.canonicalName shouldBe "@sick_days_earned"
             sickDaysId.code shouldBe "sick_days_earned"
