@@ -105,10 +105,9 @@ class AstCreator(
     val thisParameterNode = newThisParameterNode(
       name = Defines.Self,
       code = Defines.Self,
-      typeFullName = fullName,
+      typeFullName = Defines.Any,
       line = methodNode_.lineNumber,
-      column = methodNode_.columnNumber,
-      dynamicTypeHintFullName = fullName :: Nil
+      column = methodNode_.columnNumber
     )
     val thisParameterAst = Ast(thisParameterNode)
     scope.addToScope(Defines.Self, thisParameterNode)
