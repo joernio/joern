@@ -266,16 +266,17 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   protected def astForObjectInstantiation(node: RubyNode & ObjectInstantiation): Ast = {
-    val className  = node.target.text
-    val callName   = "new"
-    val methodName = Defines.Initialize
     /*
       We short-cut the call edge from `new` call to `initialize` method, however we keep the modelling of the receiver
       as referring to the singleton class.
      */
-    val (receiverTypeFullName, fullName) = scope.tryResolveTypeReference(className) match {
-      case Some(typeMetaData) => s"${typeMetaData.name}<class>" -> s"${typeMetaData.name}.$methodName"
-      case None               => XDefines.Any                   -> XDefines.DynamicCallUnknownFullName
+    val (receiverTypeFullName, fullName) = node.target match {
+      case x: (SimpleIdentifier | MemberAccess) =>
+        scope.tryResolveTypeReference(x.text) match {
+          case Some(typeMetaData) => s"${typeMetaData.name}<class>" -> s"${typeMetaData.name}.${Defines.Initialize}"
+          case None               => XDefines.Any                   -> XDefines.DynamicCallUnknownFullName
+        }
+      case _ => XDefines.Any -> XDefines.DynamicCallUnknownFullName
     }
     /*
       Similarly to some other frontends, we lower the constructor into two operations, e.g.,
@@ -287,7 +288,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val tmpName     = tmpGen.fresh
     val tmpTypeHint = receiverTypeFullName.stripSuffix("<class>")
-    val tmp         = SimpleIdentifier(Option(className))(node.span.spanStart(tmpName))
+    val tmp         = SimpleIdentifier(None)(node.span.spanStart(tmpName))
     val tmpLocal    = NewLocal().name(tmpName).code(tmpName).dynamicTypeHintFullName(Seq(tmpTypeHint))
     scope.addToScope(tmpName, tmpLocal)
 
@@ -298,12 +299,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     }
 
     // Assign tmp to <alloc>
-    val receiverAst = Ast(identifierNode(node, className, className, receiverTypeFullName))
-    val allocCall   = callNode(node, code(node), Operators.alloc, Operators.alloc, DispatchTypes.STATIC_DISPATCH)
-    val allocAst    = callAst(allocCall, Seq.empty, Option(receiverAst))
+    val allocCall = callNode(node, code(node), Operators.alloc, Operators.alloc, DispatchTypes.STATIC_DISPATCH)
+    val allocAst  = callAst(allocCall, Seq.empty)
     val assignmentCall = callNode(
       node,
-      s"${tmp.text} = ${code(node)}",
+      s"${tmp.text} = ${code(node.target)}.${Defines.Initialize}",
       Operators.assignment,
       Operators.assignment,
       DispatchTypes.STATIC_DISPATCH
@@ -318,8 +318,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         x.arguments.map(astForMethodCallArgument) :+ typeRef
     }
 
-    val constructorCall    = callNode(node, code(node), callName, fullName, DispatchTypes.DYNAMIC_DISPATCH)
-    val constructorCallAst = callAst(constructorCall, argumentAsts, Option(tmpIdentifier))
+    val constructorCall =
+      callNode(node, code(node), Defines.Initialize, Defines.Any, DispatchTypes.DYNAMIC_DISPATCH)
+    if fullName != XDefines.DynamicCallUnknownFullName then constructorCall.dynamicTypeHintFullName(Seq(fullName))
+    val constructorRecv    = astForExpression(MemberAccess(node.target, ".", Defines.Initialize)(node.span))
+    val constructorCallAst = callAst(constructorCall, argumentAsts, Option(tmpIdentifier), Option(constructorRecv))
     val retIdentifierAst   = tmpIdentifier
     scope.popScope()
 
@@ -732,7 +735,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
 
   private def astForSelfIdentifier(node: SelfIdentifier): Ast = {
     val thisIdentifier =
-      identifierNode(node, Defines.Self, code(node), Defines.Any, scope.surroundingTypeFullName.toList)
+      identifierNode(node, Defines.Self, code(node), scope.surroundingTypeFullName.getOrElse(Defines.Any))
 
     scope
       .lookupVariable(Defines.Self)
@@ -864,8 +867,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
 
   protected def astForFieldAccess(node: MemberAccess, stripLeadingAt: Boolean = false): Ast = {
     val (memberName, memberCode) = node.target match {
-      case _ if stripLeadingAt => node.memberName -> node.memberName.stripPrefix("@")
-      case _: TypeIdentifier   => node.memberName -> node.memberName
+      case _ if node.memberName == Defines.Initialize => Defines.Initialize -> Defines.Initialize
+      case _ if stripLeadingAt                        => node.memberName    -> node.memberName.stripPrefix("@")
+      case _: TypeIdentifier                          => node.memberName    -> node.memberName
       case _ if !node.memberName.startsWith("@") && node.memberName.headOption.exists(_.isLower) =>
         s"@${node.memberName}" -> node.memberName
       case _ => node.memberName -> node.memberName

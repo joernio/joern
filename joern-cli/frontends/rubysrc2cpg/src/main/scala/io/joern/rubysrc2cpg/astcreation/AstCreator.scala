@@ -19,7 +19,8 @@ class AstCreator(
   protected val projectRoot: Option[String] = None,
   protected val programSummary: RubyProgramSummary = RubyProgramSummary(),
   val enableFileContents: Boolean = false,
-  val fileContent: String = ""
+  val fileContent: String = "",
+  val rootNode: Option[RubyNode] = None
 )(implicit withSchemaValidation: ValidationMode)
     extends AstCreatorBase(fileName)
     with AstCreatorHelper
@@ -56,8 +57,12 @@ class AstCreator(
     relativeFileName.replaceAll(Matcher.quoteReplacement(java.io.File.separator), "/")
 
   override def createAst(): DiffGraphBuilder = {
-    val rootNode = new RubyNodeCreator().visit(programCtx).asInstanceOf[StatementList]
-    val ast      = astForRubyFile(rootNode)
+    val astRootNode = rootNode.match {
+      case Some(node) => node.asInstanceOf[StatementList]
+      case None       => new RubyNodeCreator().visit(programCtx).asInstanceOf[StatementList]
+    }
+
+    val ast = astForRubyFile(astRootNode)
     Ast.storeInDiffGraph(ast, diffGraph)
     diffGraph
   }
@@ -102,8 +107,7 @@ class AstCreator(
       code = Defines.Self,
       typeFullName = Defines.Any,
       line = methodNode_.lineNumber,
-      column = methodNode_.columnNumber,
-      dynamicTypeHintFullName = fullName :: Nil
+      column = methodNode_.columnNumber
     )
     val thisParameterAst = Ast(thisParameterNode)
     scope.addToScope(Defines.Self, thisParameterNode)

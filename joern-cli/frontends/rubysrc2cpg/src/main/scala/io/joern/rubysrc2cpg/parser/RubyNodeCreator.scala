@@ -692,10 +692,22 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitMemberAccessCommand(ctx: RubyParser.MemberAccessCommandContext): RubyNode = {
-    val args       = ctx.commandArgument.arguments.map(visit)
-    val methodName = visit(ctx.methodName())
-    val base       = visit(ctx.primary())
-    MemberCall(base, ".", methodName.text, args)(ctx.toTextSpan)
+    val args = ctx.commandArgument.arguments.map(visit)
+    val base = visit(ctx.primary())
+
+    if (ctx.methodName().getText == "new") {
+      base match {
+        case SingleAssignment(lhs, op, rhs) =>
+          // fixme: Parser packaging arguments from a parenthesis-less object instantiation is odd
+          val assignSpan = base.span.spanStart(s"${base.span.text}.new")
+          val rhsSpan    = rhs.span.spanStart(s"${rhs.span.text}.new")
+          SingleAssignment(lhs, op, SimpleObjectInstantiation(rhs, args)(rhsSpan))(assignSpan)
+        case _ => SimpleObjectInstantiation(base, args)(ctx.toTextSpan)
+      }
+    } else {
+      val methodName = visit(ctx.methodName())
+      MemberCall(base, ".", methodName.text, args)(ctx.toTextSpan)
+    }
   }
 
   override def visitConstantIdentifierVariable(ctx: RubyParser.ConstantIdentifierVariableContext): RubyNode = {

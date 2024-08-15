@@ -2,10 +2,11 @@ package io.joern.rubysrc2cpg
 
 import better.files.File
 import io.joern.rubysrc2cpg.astcreation.AstCreator
+import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.StatementList
 import io.joern.rubysrc2cpg.datastructures.RubyProgramSummary
 import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser
 import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser.*
-import io.joern.rubysrc2cpg.parser.RubyParser
+import io.joern.rubysrc2cpg.parser.{RubyNodeCreator, RubyParser}
 import io.joern.rubysrc2cpg.passes.{
   AstCreationPass,
   ConfigFileCreationPass,
@@ -82,8 +83,6 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
       val programSummary = internalProgramSummary ++= dependencySummary
 
       AstCreationPass(cpg, astCreators.map(_.withSummary(programSummary))).createAndApply()
-      if (cpg.dependency.name.contains("zeitwerk")) ImplicitRequirePass(cpg, programSummary).createAndApply()
-      ImportsPass(cpg).createAndApply()
       if config.downloadDependencies then {
         DependencySummarySolverPass(cpg, dependencySummary).createAndApply()
       }
@@ -169,12 +168,13 @@ object RubySrc2Cpg {
           new deprecated.passes.RubyTypeHintCallLinker(cpg),
           new NaiveCallLinker(cpg),
 
-          // Some of passes above create new methods, so, we
+          // Some of the passes above create new methods, so, we
           // need to run the ASTLinkerPass one more time
           new AstLinkerPass(cpg)
         )
     } else {
-      List(new RubyImportResolverPass(cpg)) ++
+      val implicitRequirePass = if (cpg.dependency.name.contains("zeitwerk")) ImplicitRequirePass(cpg) :: Nil else Nil
+      implicitRequirePass ++ List(ImportsPass(cpg), RubyImportResolverPass(cpg)) ++
         new passes.RubyTypeRecoveryPassGenerator(cpg, config = XTypeRecoveryConfig(iterations = 4))
           .generate() ++ List(new RubyTypeHintCallLinker(cpg), new NaiveCallLinker(cpg), new AstLinkerPass(cpg))
     }
@@ -203,7 +203,8 @@ object RubySrc2Cpg {
               ctx,
               projectRoot,
               enableFileContents = !config.disableFileContent,
-              fileContent = fileContent
+              fileContent = fileContent,
+              rootNode = Option(new RubyNodeCreator().visit(ctx).asInstanceOf[StatementList])
             )(config.schemaValidation)
         }
       }

@@ -19,7 +19,10 @@ class ConfigFileCreationPass(cpg: Cpg, requirementsTxt: String = "requirement.tx
     // HTM files
     extensionFilter(".htm"),
     // Requirements.txt
-    pathEndFilter(requirementsTxt)
+    pathEndFilter(requirementsTxt),
+    // Pipfile
+    pathEndFilter("Pipfile"),
+    pathEndFilter("Pipfile.lock")
   )
 
 }

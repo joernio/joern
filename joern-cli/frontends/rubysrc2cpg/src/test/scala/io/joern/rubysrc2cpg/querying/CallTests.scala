@@ -6,7 +6,7 @@ import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelPrefix
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, NodeTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
 class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
@@ -155,13 +155,15 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
   "a simple object instantiation" should {
 
     val cpg = code("""class A
+        |   def initialize(a, b)
+        |   end
         |end
         |
-        |a = A.new
+        |a = A.new 1, 2
         |""".stripMargin)
 
-    "create an assignment from `a` to an <init> invocation block" in {
-      inside(cpg.method.isModule.assignment.where(_.target.isIdentifier.name("a")).l) {
+    "create an assignment from `a` to an alloc lowering invocation block" in {
+      inside(cpg.method.isModule.assignment.and(_.target.isIdentifier.name("a"), _.source.isBlock).l) {
         case assignment :: Nil =>
           assignment.code shouldBe "a = A.new"
           inside(assignment.argument.l) {
@@ -174,7 +176,7 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
       }
     }
 
-    "create an assignment from a temp variable to the <init> call" in {
+    "create an assignment from a temp variable to the alloc call" in {
       inside(cpg.method.isModule.assignment.where(_.target.isIdentifier.name("<tmp-0>")).l) {
         case assignment :: Nil =>
           inside(assignment.argument.l) {
@@ -184,6 +186,7 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
               alloc.name shouldBe Operators.alloc
               alloc.methodFullName shouldBe Operators.alloc
               alloc.code shouldBe "A.new"
+              alloc.argument.size shouldBe 0
             case xs => fail(s"Expected one identifier and one call argument, got [${xs.code.mkString(",")}]")
           }
         case xs => fail(s"Expected a single assignment, got [${xs.code.mkString(",")}]")
@@ -191,14 +194,67 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
     }
 
     "create a call to the object's constructor, with the temp variable receiver" in {
-      inside(cpg.call.nameExact("new").l) {
+      inside(cpg.call.nameExact(RubyDefines.Initialize).l) {
         case constructor :: Nil =>
           inside(constructor.argument.l) {
-            case (a: Identifier) :: Nil =>
+            case (a: Identifier) :: (one: Literal) :: (two: Literal) :: Nil =>
               a.name shouldBe "<tmp-0>"
               a.typeFullName shouldBe s"Test0.rb:$Main.A"
               a.argumentIndex shouldBe 0
+
+              one.code shouldBe "1"
+              two.code shouldBe "2"
             case xs => fail(s"Expected one identifier and one call argument, got [${xs.code.mkString(",")}]")
+          }
+
+          val recv = constructor.receiver.head.asInstanceOf[Call]
+          recv.methodFullName shouldBe Operators.fieldAccess
+          recv.name shouldBe Operators.fieldAccess
+          recv.code shouldBe s"A.${RubyDefines.Initialize}"
+
+          recv.argument(1).label shouldBe NodeTypes.CALL
+          recv.argument(1).code shouldBe "self.A"
+          recv.argument(2).label shouldBe NodeTypes.FIELD_IDENTIFIER
+          recv.argument(2).code shouldBe RubyDefines.Initialize
+        case xs => fail(s"Expected a single alloc, got [${xs.code.mkString(",")}]")
+      }
+    }
+  }
+
+  "an object instantiation from some expression" should {
+    val cpg = code("""def foo
+        | params[:type].constantize.new(path)
+        |end
+        |""".stripMargin)
+
+    "create a call node on the receiver end of the constructor lowering" in {
+      inside(cpg.call.nameExact(RubyDefines.Initialize).l) {
+        case constructor :: Nil =>
+          inside(constructor.argument.l) {
+            case (a: Identifier) :: (selfPath: Call) :: Nil =>
+              a.name shouldBe "<tmp-0>"
+              a.typeFullName shouldBe Defines.Any
+              a.argumentIndex shouldBe 0
+
+              selfPath.code shouldBe "self.path"
+            case xs => fail(s"Expected one identifier and one call argument, got [${xs.code.mkString(",")}]")
+          }
+
+          val recv = constructor.receiver.head.asInstanceOf[Call]
+          recv.methodFullName shouldBe Operators.fieldAccess
+          recv.name shouldBe Operators.fieldAccess
+          recv.code shouldBe s"params[:type].constantize.${RubyDefines.Initialize}"
+
+          inside(recv.argument.l) { case (constantize: Call) :: (initialize: FieldIdentifier) :: Nil =>
+            constantize.code shouldBe "params[:type].constantize"
+            inside(constantize.argument.l) { case (indexAccess: Call) :: (const: FieldIdentifier) :: Nil =>
+              indexAccess.name shouldBe Operators.indexAccess
+              indexAccess.code shouldBe "params[:type]"
+
+              const.canonicalName shouldBe "constantize"
+            }
+
+            initialize.canonicalName shouldBe RubyDefines.Initialize
           }
         case xs => fail(s"Expected a single alloc, got [${xs.code.mkString(",")}]")
       }

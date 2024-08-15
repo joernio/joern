@@ -70,10 +70,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val thisParameterNode = newThisParameterNode(
       name = Defines.Self,
       code = Defines.Self,
-      typeFullName = Defines.Any,
+      typeFullName = scope.surroundingTypeFullName.getOrElse(Defines.Any),
       line = method.lineNumber,
-      column = method.columnNumber,
-      dynamicTypeHintFullName = scope.surroundingTypeFullName.toList
+      column = method.columnNumber
     )
     val thisParameterAst = Ast(thisParameterNode)
     scope.addToScope(Defines.Self, thisParameterNode)

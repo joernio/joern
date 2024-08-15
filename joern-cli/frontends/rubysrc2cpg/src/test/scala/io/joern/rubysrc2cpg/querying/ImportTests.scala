@@ -1,13 +1,12 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.rubysrc2cpg.passes.Defines.Main
+import io.joern.rubysrc2cpg.passes.Defines.{Initialize, Main}
 import io.joern.rubysrc2cpg.passes.GlobalTypes.{builtinPrefix, kernelPrefix}
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.nodes.Literal
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, NodeTypes}
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
 import org.scalatest.Inspectors
 
 class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with Inspectors {
@@ -62,7 +61,13 @@ class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with In
       )
 
       val List(newCall) =
-        cpg.method.isModule.filename("t1.rb").ast.isCall.methodFullName(".*\\.initialize").methodFullName.l
+        cpg.method.isModule
+          .filename("t1.rb")
+          .ast
+          .isCall
+          .dynamicTypeHintFullName
+          .filter(x => x.startsWith(path) && x.endsWith(Initialize))
+          .l
       newCall should startWith(s"$path.rb:")
     }
   }
@@ -263,10 +268,10 @@ class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with In
       cpg.imports.where(_.call.file.name(".*B.rb")).size shouldBe 0
     }
 
-    "create a `require_relative` call following the simplified format" in {
-      val require = cpg.call("require_relative").head
+    "create a `require` call following the simplified format" in {
+      val require = cpg.call("require").head
       require.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      require.methodFullName shouldBe s"$kernelPrefix.require_relative"
+      require.methodFullName shouldBe s"$kernelPrefix.require"
 
       val strLit = require.argument(1).asInstanceOf[Literal]
       strLit.typeFullName shouldBe s"$builtinPrefix.String"
@@ -285,12 +290,13 @@ class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with In
 
     "resolve calls to builtin functions" in {
       inside(cpg.call.methodFullName("(pp|csv).*").l) {
-        case csvParseCall :: csvTableInitCall :: ppCall :: Nil =>
+        case csvParseCall :: ppCall :: Nil =>
           csvParseCall.methodFullName shouldBe "csv.CSV.parse"
           ppCall.methodFullName shouldBe "pp.PP.pp"
-          csvTableInitCall.methodFullName shouldBe "csv.CSV.Table.initialize"
         case xs => fail(s"Expected three calls, got [${xs.code.mkString(",")}] instead")
       }
+
+      cpg.call(Initialize).dynamicTypeHintFullName.toSet should contain("csv.CSV.Table.initialize")
     }
   }
 
