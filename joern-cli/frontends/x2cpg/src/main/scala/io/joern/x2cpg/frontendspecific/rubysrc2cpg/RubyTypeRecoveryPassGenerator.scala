@@ -1,13 +1,13 @@
-package io.joern.rubysrc2cpg.passes
+package io.joern.x2cpg.frontendspecific.rubysrc2cpg
 
 import io.joern.x2cpg.Defines as XDefines
+import io.joern.x2cpg.frontendspecific.rubysrc2cpg.Constants.*
 import io.joern.x2cpg.passes.frontend.*
 import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
-import io.shiftleft.codepropertygraph.generated.{Cpg, Operators, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
+import io.shiftleft.codepropertygraph.generated.{Cpg, DiffGraphBuilder, Operators, PropertyNames}
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
+import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
 
 class RubyTypeRecoveryPassGenerator(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
     extends XTypeRecoveryPassGenerator[File](cpg, config) {
@@ -40,7 +40,7 @@ private class RecoverForRubyFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, 
   /** A heuristic method to determine if a call name is a constructor or not.
     */
   override protected def isConstructor(name: String): Boolean =
-    !name.isBlank && (name == "new" || name == Defines.Initialize)
+    !name.isBlank && (name == "new" || name == Initialize)
 
   override protected def hasTypes(node: AstNode): Boolean = node match {
     case x: Call if !x.methodFullName.startsWith("<operator>") =>

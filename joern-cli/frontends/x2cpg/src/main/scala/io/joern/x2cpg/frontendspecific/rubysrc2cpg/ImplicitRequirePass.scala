@@ -1,6 +1,7 @@
-package io.joern.rubysrc2cpg.passes
+package io.joern.x2cpg.frontendspecific.rubysrc2cpg
 
-import io.joern.rubysrc2cpg.passes.GlobalTypes.{builtinPrefix, kernelPrefix}
+import io.joern.x2cpg.Defines
+import io.joern.x2cpg.frontendspecific.rubysrc2cpg.Constants.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{Cpg, DispatchTypes, EdgeTypes, Operators}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
