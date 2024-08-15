@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal, Method}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 import io.joern.rubysrc2cpg.passes.Defines as RubyDefines
@@ -289,5 +289,4 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
       case xs => fail(s"Expected three lambdas, got ${xs.size} lambdas instead")
     }
   }
-
 }

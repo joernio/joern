@@ -11,7 +11,7 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import java.io.File as JFile
 import scala.collection.mutable
-import scala.reflect.{ClassTag, classTag}
+import scala.reflect.ClassTag
 import scala.util.Try
 
 class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
