@@ -27,13 +27,13 @@ class ImplicitRequirePass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg)
       .filter { typeDecl =>
         // zeitwerk will match types that share the name of the path.
         // This match is insensitive to camel case, i.e, foo_bar will match type FooBar.
-        val fileName = typeDecl.filename.split('/').last.stripSuffix(".rb")
+        val fileName = typeDecl.filename.split(Array('/', '\\')).last.stripSuffix(".rb")
         val typeName = typeDecl.name
         typeName == fileName || typeName == CaseUtils.toCamelCase(fileName, true, '_', '-')
       }
       .l
     importableTypes.foreach { typeDecl =>
-      typeToPath.put(typeDecl.fullName, typeDecl.filename.stripSuffix(".rb"))
+      typeToPath.put(typeDecl.fullName, typeDecl.filename.replace("\\", "/").stripSuffix(".rb"))
     }
     importableTypes.groupBy(_.name).foreach { case (name, types) =>
       typeNameToFullName.put(name, types.toSet)
