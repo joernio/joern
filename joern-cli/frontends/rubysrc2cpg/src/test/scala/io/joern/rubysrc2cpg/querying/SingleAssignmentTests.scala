@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal}
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal, Method}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 import io.joern.rubysrc2cpg.passes.Defines as RubyDefines
@@ -288,5 +288,30 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
         }
       case xs => fail(s"Expected three lambdas, got ${xs.size} lambdas instead")
     }
+  }
+
+  "Local node" in {
+    val cpg = code("""
+                     | def get_pto_schedule
+                     |    begin
+                     |       schedules = current_user.paid_time_off.schedule
+                     |       jfs = []
+                     |       schedules.each do |s|
+                     |          hash = Hash.new
+                     |          hash[:id] = s[:id]
+                     |          hash[:title] = s[:event_name]
+                     |          hash[:start] = s[:date_begin]
+                     |          hash[:end] = s[:date_end]
+                     |          jfs << hash
+                     |       end
+                     |    rescue
+                     |    end
+                     |    respond_to do |format|
+                     |       format.json { render json: jfs.to_json }
+                     |    end
+                     |  end
+                     |""".stripMargin)
+
+    cpg.method.name("get_pto_schedule").dotAst.l.foreach(println)
   }
 }

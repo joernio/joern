@@ -11,7 +11,7 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import java.io.File as JFile
 import scala.collection.mutable
-import scala.reflect.ClassTag
+import scala.reflect.{ClassTag, classTag}
 import scala.util.Try
 
 class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
@@ -123,6 +123,17 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
           case None => super.addToScope(identifier, variable)
         }
     }
+  }
+
+  def lookupLambdaVariable(identifier: String, methodFullName: String): List[DeclarationNew] = {
+    stack.collect {
+      case scopeElement if scopeElement.variables.contains(identifier) =>
+        scopeElement.scopeNode match {
+          case x: MethodScope if x.fullName != methodFullName => Option(scopeElement.variables(identifier))
+          case x: MethodScope                                 => None
+          case _                                              => Option(scopeElement.variables(identifier))
+        }
+    }.flatten
   }
 
   def addRequire(

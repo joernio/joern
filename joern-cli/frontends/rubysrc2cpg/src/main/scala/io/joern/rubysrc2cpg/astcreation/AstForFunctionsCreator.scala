@@ -93,7 +93,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     // Consider which variables are captured from the outer scope
     val stmtBlockAst = if (isClosure || isSingletonObjectMethod) {
       val baseStmtBlockAst = astForMethodBody(node.body, optionalStatementList)
-      transformAsClosureBody(refs, baseStmtBlockAst)
+      transformAsClosureBody(refs, baseStmtBlockAst, fullName)
     } else {
       if (methodName == Defines.TypeDeclBody) {
         val stmtList = node.body.asInstanceOf[StatementList]
@@ -171,13 +171,16 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     if isClosure || isSingletonObjectMethod then refs else createMethodRefPointer(method) :: Nil
   }
 
-  private def transformAsClosureBody(refs: List[Ast], baseStmtBlockAst: Ast) = {
+  private def transformAsClosureBody(refs: List[Ast], baseStmtBlockAst: Ast, methodFullName: String) = {
     // Determine which locals are captured
     val capturedLocalNodes = baseStmtBlockAst.nodes
       .collect { case x: NewIdentifier => x }
       .distinctBy(_.name)
-      .flatMap(i => scope.lookupVariable(i.name))
+      .map(i => scope.lookupLambdaVariable(i.name, methodFullName))
+      .filter(_.nonEmpty)
+      .flatten
       .toSet
+
     val capturedIdentifiers = baseStmtBlockAst.nodes.collect {
       case i: NewIdentifier if capturedLocalNodes.map(_.name).contains(i.name) => i
     }
@@ -199,8 +202,14 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           (param, param.name, param.code, closureBindingId)
       }
       .collect { case (capturedLocal, name, code, Some(closureBindingId)) =>
-        val capturingLocal = newLocalNode(name, code, Option(closureBindingId))
-        val closureBinding = newClosureBindingNode(closureBindingId, name, EvaluationStrategies.BY_REFERENCE)
+        val capturingLocal =
+          newLocalNode(name = name, typeFullName = Defines.Any, closureBindingId = Option(closureBindingId))
+
+        val closureBinding = newClosureBindingNode(
+          closureBindingId = closureBindingId,
+          originalName = name,
+          evaluationStrategy = EvaluationStrategies.BY_REFERENCE
+        )
 
         // Create new local node for lambda, with corresponding REF edges to identifiers and closure binding
         capturedBlockAst.root.foreach(rootBlock => diffGraph.addEdge(rootBlock, capturingLocal, EdgeTypes.AST))
