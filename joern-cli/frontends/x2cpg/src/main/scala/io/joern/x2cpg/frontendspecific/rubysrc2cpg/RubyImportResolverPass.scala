@@ -1,14 +1,12 @@
-package io.joern.rubysrc2cpg.passes
+package io.joern.x2cpg.frontendspecific.rubysrc2cpg
 
 import better.files.File
-import io.joern.rubysrc2cpg.deprecated.utils.PackageTable
-import io.joern.x2cpg.Defines as XDefines
-import io.shiftleft.semanticcpg.language.importresolver.*
+import io.joern.x2cpg.frontendspecific.rubysrc2cpg.Constants.*
 import io.joern.x2cpg.passes.frontend.XImportResolverPass
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.semanticcpg.language.*
-import io.joern.rubysrc2cpg.passes.Defines as RDefines
+import io.shiftleft.semanticcpg.language.importresolver.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import java.io.File as JFile
@@ -47,7 +45,7 @@ class RubyImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
         .flatMap(fullName =>
           Seq(
             ResolvedTypeDecl(fullName),
-            ResolvedMethod(s"$fullName.${Defines.Initialize}", "new", fullName.split("[.]").lastOption)
+            ResolvedMethod(s"$fullName.${Initialize}", "new", fullName.split("[.]").lastOption)
           )
         )
         .toSet
@@ -61,7 +59,7 @@ class RubyImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
       // Expose methods which are directly present in a file, without any module, TypeDecl
       val resolvedMethods = cpg.method
         .where(_.file.name(filePattern))
-        .where(_.nameExact(RDefines.Main))
+        .where(_.nameExact(Main))
         .astChildren
         .astChildren
         .isMethod

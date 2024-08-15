@@ -1,4 +1,4 @@
-package io.joern.rubysrc2cpg.passes
+package io.joern.x2cpg.frontendspecific.rubysrc2cpg
 
 import io.joern.x2cpg.Imports.createImportNodeAndLink
 import io.joern.x2cpg.X2Cpg.stripQuotes
