@@ -92,7 +92,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     // Consider which variables are captured from the outer scope
     val stmtBlockAst = if (isClosure || isSingletonObjectMethod) {
       val baseStmtBlockAst = astForMethodBody(node.body, optionalStatementList)
-      transformAsClosureBody(refs, baseStmtBlockAst, fullName)
+      transformAsClosureBody(refs, baseStmtBlockAst)
     } else {
       if (methodName == Defines.TypeDeclBody) {
         val stmtList = node.body.asInstanceOf[StatementList]
@@ -170,12 +170,12 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     if isClosure || isSingletonObjectMethod then refs else createMethodRefPointer(method) :: Nil
   }
 
-  private def transformAsClosureBody(refs: List[Ast], baseStmtBlockAst: Ast, methodFullName: String) = {
+  private def transformAsClosureBody(refs: List[Ast], baseStmtBlockAst: Ast) = {
     // Determine which locals are captured
     val capturedLocalNodes = baseStmtBlockAst.nodes
       .collect { case x: NewIdentifier => x }
       .distinctBy(_.name)
-      .map(i => scope.lookupLambdaVariable(i.name, methodFullName))
+      .map(i => scope.lookupLambdaVariable(i.name))
       .filter(_.nonEmpty)
       .flatten
       .toSet
