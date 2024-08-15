@@ -126,14 +126,10 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
   }
 
   def lookupLambdaVariable(identifier: String, methodFullName: String): List[DeclarationNew] = {
-    stack.collect {
+    stack.drop(1).collect {
       case scopeElement if scopeElement.variables.contains(identifier) =>
-        scopeElement.scopeNode match {
-          case x: MethodScope if x.fullName != methodFullName => Option(scopeElement.variables(identifier))
-          case x: MethodScope                                 => None
-          case _                                              => Option(scopeElement.variables(identifier))
-        }
-    }.flatten
+        scopeElement.variables(identifier)
+    }
   }
 
   def addRequire(
