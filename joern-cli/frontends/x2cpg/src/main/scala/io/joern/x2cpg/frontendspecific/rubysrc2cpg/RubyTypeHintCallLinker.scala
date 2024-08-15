@@ -1,6 +1,7 @@
-package io.joern.rubysrc2cpg.passes
+package io.joern.x2cpg.frontendspecific.rubysrc2cpg
 
 import io.joern.x2cpg.passes.frontend.XTypeHintCallLinker
+import io.joern.x2cpg.frontendspecific.rubysrc2cpg.Constants.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, NewMethod}
 import io.shiftleft.semanticcpg.language.*
@@ -26,8 +27,8 @@ class RubyTypeHintCallLinker(cpg: Cpg) extends XTypeHintCallLinker(cpg) {
     }
     val name =
       if (methodName.contains(pathSep) && methodName.length > methodName.lastIndexOf(pathSep) + 1)
-        val strippedMethod = methodName.stripPrefix(s"${GlobalTypes.kernelPrefix}.")
-        if GlobalTypes.kernelFunctions.contains(strippedMethod) then strippedMethod
+        val strippedMethod = methodName.stripPrefix(s"$kernelPrefix.")
+        if kernelFunctions.contains(strippedMethod) then strippedMethod
         else methodName.substring(methodName.lastIndexOf(pathSep) + pathSep.length)
       else methodName
     createMethodStub(name, methodName, call.argumentOut.size, isExternal, builder)

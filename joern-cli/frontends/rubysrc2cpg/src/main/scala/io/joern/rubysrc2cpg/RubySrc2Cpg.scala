@@ -11,14 +11,17 @@ import io.joern.rubysrc2cpg.passes.{
   AstCreationPass,
   ConfigFileCreationPass,
   DependencyPass,
-  DependencySummarySolverPass,
-  ImplicitRequirePass,
-  ImportsPass,
-  RubyImportResolverPass,
-  RubyTypeHintCallLinker
+  DependencySummarySolverPass
 }
 import io.joern.rubysrc2cpg.utils.DependencyDownloader
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
+import io.joern.x2cpg.frontendspecific.rubysrc2cpg.{
+  ImplicitRequirePass,
+  ImportsPass,
+  RubyImportResolverPass,
+  RubyTypeHintCallLinker,
+  RubyTypeRecoveryPassGenerator
+}
 import io.joern.x2cpg.passes.base.AstLinkerPass
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass, XTypeRecoveryConfig}
@@ -175,7 +178,7 @@ object RubySrc2Cpg {
     } else {
       val implicitRequirePass = if (cpg.dependency.name.contains("zeitwerk")) ImplicitRequirePass(cpg) :: Nil else Nil
       implicitRequirePass ++ List(ImportsPass(cpg), RubyImportResolverPass(cpg)) ++
-        new passes.RubyTypeRecoveryPassGenerator(cpg, config = XTypeRecoveryConfig(iterations = 4))
+        new RubyTypeRecoveryPassGenerator(cpg, config = XTypeRecoveryConfig(iterations = 4))
           .generate() ++ List(new RubyTypeHintCallLinker(cpg), new NaiveCallLinker(cpg), new AstLinkerPass(cpg))
     }
   }
