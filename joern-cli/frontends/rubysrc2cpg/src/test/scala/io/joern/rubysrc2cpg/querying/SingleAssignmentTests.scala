@@ -290,28 +290,4 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
     }
   }
 
-  "Local node" in {
-    val cpg = code("""
-                     | def get_pto_schedule
-                     |    begin
-                     |       schedules = current_user.paid_time_off.schedule
-                     |       jfs = []
-                     |       schedules.each do |s|
-                     |          hash = Hash.new
-                     |          hash[:id] = s[:id]
-                     |          hash[:title] = s[:event_name]
-                     |          hash[:start] = s[:date_begin]
-                     |          hash[:end] = s[:date_end]
-                     |          jfs << hash
-                     |       end
-                     |    rescue
-                     |    end
-                     |    respond_to do |format|
-                     |       format.json { render json: jfs.to_json }
-                     |    end
-                     |  end
-                     |""".stripMargin)
-
-    cpg.method.name("get_pto_schedule").dotAst.l.foreach(println)
-  }
 }
