@@ -20,6 +20,8 @@ private class RubyTypeRecovery(cpg: Cpg, state: XTypeRecoveryState, iteration: I
 
   override def compilationUnits: Iterator[File] = cpg.file.iterator
 
+  override def isParallel: Boolean = false
+
   override def generateRecoveryForCompilationUnitTask(
     unit: File,
     builder: DiffGraphBuilder
@@ -55,9 +57,14 @@ private class RecoverForRubyFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, 
     case x @ (_: Identifier | _: Local | _: MethodParameterIn) => symbolTable.append(x, x.getKnownTypes)
     case call: Call =>
       val tnfs =
-        if call.methodFullName == XDefines.DynamicCallUnknownFullName || call.methodFullName.startsWith("<operator>")
-        then (call.dynamicTypeHintFullName ++ call.possibleTypes).distinct
-        else (call.methodFullName +: (call.dynamicTypeHintFullName ++ call.possibleTypes)).distinct
+        if (
+          call.name != "initialize" && (call.methodFullName == XDefines.DynamicCallUnknownFullName || call.methodFullName
+            .startsWith("<operator>"))
+        ) {
+          (call.dynamicTypeHintFullName ++ call.possibleTypes).distinct
+        } else {
+          (call.methodFullName +: (call.dynamicTypeHintFullName ++ call.possibleTypes)).distinct
+        }
 
       symbolTable.append(call, tnfs.toSet)
     case _ =>

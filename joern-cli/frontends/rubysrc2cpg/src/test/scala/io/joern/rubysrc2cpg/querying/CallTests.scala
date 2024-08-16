@@ -355,4 +355,13 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
     nilRec.lineNumber shouldBe Option(1)
   }
 
+  "Object initialize calls should be DynamicUnknown" in {
+    val cpg = code("""Date.new(2013, 19, 20)""")
+
+    inside(cpg.call.name(RubyDefines.Initialize).l) {
+      case initCall :: Nil =>
+        initCall.methodFullName shouldBe Defines.DynamicCallUnknownFullName
+      case xs => fail(s"Expected one call to initialize, got ${xs.code.mkString}")
+    }
+  }
 }

@@ -270,7 +270,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
               tmpAssign.code shouldBe s"<tmp-0> = Array.$Initialize"
 
               newCall.name shouldBe Initialize
-              newCall.methodFullName shouldBe Defines.Any
+              newCall.methodFullName shouldBe Defines.DynamicCallUnknownFullName
               newCall.dynamicTypeHintFullName should contain(s"$builtinPrefix.Array.$Initialize")
 
               inside(newCall.argument.l) {
