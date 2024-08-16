@@ -910,4 +910,20 @@ class MethodTests extends RubyCode2CpgFixture {
       case xs => fail(s"Expected one call, got [${xs.code.mkString(",")}]")
     }
   }
+
+  "Method def in class defined in a namespace" in {
+    val cpg = code("""
+        |class Api::V1::MobileController
+        |  def show
+        |  end
+        |end
+        |""".stripMargin)
+
+    inside(cpg.method.name("show").l) {
+      case showMethod :: Nil =>
+        showMethod.astParentFullName shouldBe "Test0.rb:<main>.Api.V1.MobileController"
+        showMethod.astParentType shouldBe NodeTypes.TYPE_DECL
+      case xs => fail(s"Expected one methood, got ${xs.name.mkString(",")}")
+    }
+  }
 }
