@@ -294,7 +294,6 @@ class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with In
         case csvParseCall :: csvTableCall :: ppCall :: Nil =>
           csvParseCall.methodFullName shouldBe "csv.CSV.parse"
           csvTableCall.methodFullName shouldBe "csv.CSV.Table.initialize"
-          println(csvTableCall.methodFullName)
           ppCall.methodFullName shouldBe "pp.PP.pp"
         case xs => fail(s"Expected calls, got [${xs.code.mkString(",")}] instead")
       }
