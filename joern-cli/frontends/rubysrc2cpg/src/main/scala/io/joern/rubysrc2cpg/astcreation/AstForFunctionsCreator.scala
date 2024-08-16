@@ -374,10 +374,15 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
         createMethodTypeBindings(method, methodTypeDecl_)
 
+        val thisNodeTypeFullName = astParentFullName match {
+          case Some(fn) => s"$fn<class>"
+          case None     => Defines.Any
+        }
+
         val thisNode = newThisParameterNode(
           name = Defines.Self,
           code = thisParamCode,
-          typeFullName = astParentFullName.getOrElse(Defines.Any),
+          typeFullName = thisNodeTypeFullName,
           line = method.lineNumber,
           column = method.columnNumber
         )
