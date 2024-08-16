@@ -958,6 +958,16 @@ class ClassTests extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
+    inside(cpg.namespaceBlock.fullNameExact("Api.V1").typeDecl.l) {
+      case mobileNamespace :: mobileClassNamespace :: Nil =>
+        mobileNamespace.name shouldBe "MobileController"
+        mobileNamespace.fullName shouldBe "Test0.rb:<main>.Api.V1.MobileController"
+
+        mobileClassNamespace.name shouldBe "MobileController<class>"
+        mobileClassNamespace.fullName shouldBe "Test0.rb:<main>.Api.V1.MobileController<class>"
+      case xs => fail(s"Expected two namespace blocks, got ${xs.code.mkString(",")}")
+    }
+
     inside(cpg.typeDecl.name("MobileController").l) {
       case mobileTypeDecl :: Nil =>
         mobileTypeDecl.name shouldBe "MobileController"
