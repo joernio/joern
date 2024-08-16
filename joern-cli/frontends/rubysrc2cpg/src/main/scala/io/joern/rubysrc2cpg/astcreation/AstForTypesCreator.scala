@@ -49,18 +49,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     node: RubyNode & TypeDeclaration,
     nameIdentifier: SimpleIdentifier
   ): Seq[Ast] = {
-    val className     = nameIdentifier.text
-    val inheritsFrom  = node.baseClass.map(getBaseClassName).toList
-    val classFullName = computeFullName(className)
-    val typeDeclTemp = typeDeclNode(
-      node = node,
-      name = className,
-      fullName = classFullName,
-      filename = relativeFileName,
-      code = code(node),
-      inherits = inheritsFrom,
-      alias = None
-    )
+    val className    = nameIdentifier.text
+    val inheritsFrom = node.baseClass.map(getBaseClassName).toList
 
     /** Pushes new NamespaceScope onto scope stack and populates AST_PARENT_FULL_NAME and AST_PARENT_TYPE for TypeDecls
       * that are declared in a namespace
@@ -85,18 +75,40 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       typeDecl.astParentFullName(astParentFullName)
       typeDecl.astParentType(NodeTypes.NAMESPACE_BLOCK)
 
-      typeDeclTemp.fullName(computeFullName(className))
+      typeDecl.fullName(computeFullName(className))
       typeDecl
     }
 
-    val (typeDecl, shouldPopAdditionalScope) = node match {
+    val (typeDecl, classFullName, shouldPopAdditionalScope) = node match {
       case x: NamespaceDeclaration if x.namespaceParts.isDefined =>
+        val className = nameIdentifier.text
+        val typeDeclTemp = typeDeclNode(
+          node = node,
+          name = className,
+          fullName = Defines.Any,
+          filename = relativeFileName,
+          code = code(node),
+          inherits = inheritsFrom,
+          alias = None
+        )
         populateAstParentValues(typeDeclTemp, x.namespaceParts.get.mkString("."))
-        (typeDeclTemp, true)
+        val classFullName = typeDeclTemp.fullName
+
+        (typeDeclTemp, classFullName, true)
       case _ =>
+        val classFullName = computeFullName(className)
+        val typeDeclTemp = typeDeclNode(
+          node = node,
+          name = className,
+          fullName = classFullName,
+          filename = relativeFileName,
+          code = code(node),
+          inherits = inheritsFrom,
+          alias = None
+        )
         scope.surroundingAstLabel.foreach(typeDeclTemp.astParentType(_))
         scope.surroundingScopeFullName.foreach(typeDeclTemp.astParentFullName(_))
-        (typeDeclTemp, false)
+        (typeDeclTemp, classFullName, false)
     }
 
     /*
