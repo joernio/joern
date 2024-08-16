@@ -275,7 +275,7 @@ class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with In
       require.methodFullName shouldBe s"$kernelPrefix.require"
 
       val strLit = require.argument(1).asInstanceOf[Literal]
-      strLit.typeFullName shouldBe s"$builtinPrefix.String"
+      strLit.typeFullName shouldBe s"$kernelPrefix.String"
     }
 
   }
