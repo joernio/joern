@@ -994,4 +994,21 @@ class ClassTests extends RubyCode2CpgFixture {
       case xs => fail(s"Expected one type decl, got [${xs.code.mkString(",")}]")
     }
   }
+
+  "Self param in static method" in {
+    val cpg = code("""
+        |class Benefits < ApplicationRecord
+        |def self.save(file, backup = false)
+        |    data_path = Rails.root.join("public", "data")
+        |    full_file_name = "#{data_path}/#{file.original_filename}"
+        |    f = File.open(full_file_name, "wb+")
+        |    f.write file.read
+        |    f.close
+        |    make_backup(file, data_path, full_file_name) if backup == "true"
+        |end
+        |end
+        |""".stripMargin)
+
+    cpg.method.name("save").parameter.l.foreach(x => println(x.typeFullName))
+  }
 }

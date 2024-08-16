@@ -207,7 +207,7 @@ class MethodTests extends RubyCode2CpgFixture {
             inside(funcF.parameter.l) {
               case thisParam :: xParam :: Nil =>
                 thisParam.code shouldBe RDefines.Self
-                thisParam.typeFullName shouldBe s"Test0.rb:$Main.C"
+                thisParam.typeFullName shouldBe s"Test0.rb:$Main.C<class>"
                 thisParam.index shouldBe 0
                 thisParam.isVariadic shouldBe false
 
@@ -241,7 +241,7 @@ class MethodTests extends RubyCode2CpgFixture {
             inside(funcF.parameter.l) {
               case thisParam :: xParam :: Nil =>
                 thisParam.code shouldBe RDefines.Self
-                thisParam.typeFullName shouldBe s"Test0.rb:$Main.C"
+                thisParam.typeFullName shouldBe s"Test0.rb:$Main.C<class>"
                 thisParam.index shouldBe 0
                 thisParam.isVariadic shouldBe false
 
@@ -365,7 +365,7 @@ class MethodTests extends RubyCode2CpgFixture {
             case thisParam :: xParam :: Nil =>
               thisParam.name shouldBe RDefines.Self
               thisParam.code shouldBe "F"
-              thisParam.typeFullName shouldBe s"Test0.rb:$Main.F"
+              thisParam.typeFullName shouldBe s"Test0.rb:$Main.F<class>"
 
               xParam.name shouldBe "x"
             case xs => fail(s"Expected two parameters, got ${xs.name.mkString(", ")}")
@@ -375,7 +375,7 @@ class MethodTests extends RubyCode2CpgFixture {
             case thisParam :: xParam :: Nil =>
               thisParam.name shouldBe RDefines.Self
               thisParam.code shouldBe "F"
-              thisParam.typeFullName shouldBe s"Test0.rb:$Main.F"
+              thisParam.typeFullName shouldBe s"Test0.rb:$Main.F<class>"
 
               xParam.name shouldBe "x"
               xParam.code shouldBe "x"
