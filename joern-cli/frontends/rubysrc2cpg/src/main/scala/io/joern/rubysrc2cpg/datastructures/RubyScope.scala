@@ -125,7 +125,7 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
     }
   }
 
-  def lookupLambdaVariable(identifier: String): List[DeclarationNew] = {
+  def lookupVariableInOuterScope(identifier: String): List[DeclarationNew] = {
     stack.drop(1).collect {
       case scopeElement if scopeElement.variables.contains(identifier) =>
         scopeElement.variables(identifier)

@@ -175,7 +175,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val capturedLocalNodes = baseStmtBlockAst.nodes
       .collect { case x: NewIdentifier => x }
       .distinctBy(_.name)
-      .map(i => scope.lookupLambdaVariable(i.name))
+      .map(i => scope.lookupVariableInOuterScope(i.name))
       .filter(_.nonEmpty)
       .flatten
       .toSet
