@@ -381,4 +381,37 @@ class DoBlockTests extends RubyCode2CpgFixture {
 
   }
 
+  "One local node for variable in lambda only" in {
+    val cpg = code("""
+                     | def get_pto_schedule
+                     |    begin
+                     |       jfs = []
+                     |       schedules.each do |s|
+                     |          hash = Hash.new
+                     |          hash[:id] = s[:id]
+                     |          hash[:title] = s[:event_name]
+                     |          hash[:start] = s[:date_begin]
+                     |          hash[:end] = s[:date_end]
+                     |          jfs << hash
+                     |       end
+                     |    rescue
+                     |    end
+                     |  end
+                     |""".stripMargin)
+
+    inside(cpg.local.l) {
+      case jfsOutsideLocal :: hashInsideLocal :: jfsCapturedLocal :: _ :: Nil =>
+        jfsOutsideLocal.closureBindingId shouldBe None
+        hashInsideLocal.closureBindingId shouldBe None
+        jfsCapturedLocal.closureBindingId shouldBe Some("Test0.rb:<main>.get_pto_schedule.jfs")
+      case xs => fail(s"Expected 4 locals, got ${xs.code.mkString(",")}")
+    }
+
+    inside(cpg.method.isLambda.local.l) {
+      case hashLocal :: jfsLocal :: _ :: Nil =>
+        hashLocal.closureBindingId shouldBe None
+        jfsLocal.closureBindingId shouldBe Some("Test0.rb:<main>.get_pto_schedule.jfs")
+      case xs => fail(s"Expected 3 locals in lambda, got ${xs.code.mkString(",")}")
+    }
+  }
 }
