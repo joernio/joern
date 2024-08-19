@@ -337,27 +337,29 @@ class ControlStructureTests extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
-    val List(rescueNode) = cpg.method("test1").tryBlock.l
-    rescueNode.controlStructureType shouldBe ControlStructureTypes.TRY
-    val List(body, rescueBody1, rescueBody2, rescueBody3, elseBody, ensureBody) = rescueNode.astChildren.l
-    body.ast.isLiteral.code.l shouldBe List("1")
-    body.order shouldBe 1
+    inside(cpg.method("test1").controlStructure.l) {
+      case tryStruct :: rescue1Struct :: rescue2Struct :: rescue3Struct :: elseStruct :: ensureStruct :: Nil =>
+        tryStruct.controlStructureType shouldBe ControlStructureTypes.TRY
+        val List(body, _, _, _, _, _) = tryStruct.astChildren.l
+        body.ast.isLiteral.code.l shouldBe List("1")
 
-    rescueBody1.ast.isLiteral.code.l shouldBe List("2")
-    rescueBody1.order shouldBe 2
+        rescue1Struct.controlStructureType shouldBe ControlStructureTypes.CATCH
+        rescue1Struct.ast.isLocal.code.l shouldBe List("e")
+        rescue1Struct.ast.isLiteral.code.l shouldBe List("2")
 
-    rescueBody2.ast.isLiteral.code.l shouldBe List("3")
-    rescueBody2.order shouldBe 2
+        rescue2Struct.controlStructureType shouldBe ControlStructureTypes.CATCH
+        rescue2Struct.ast.isLiteral.code.l shouldBe List("3")
 
-    rescueBody3.ast.isLiteral.code.l shouldBe List("4")
-    rescueBody3.order shouldBe 2
+        rescue3Struct.controlStructureType shouldBe ControlStructureTypes.CATCH
+        rescue3Struct.ast.isLiteral.code.l shouldBe List("4")
 
-    elseBody.ast.isLiteral.code.l shouldBe List("5")
-    elseBody.order shouldBe 2
+        elseStruct.controlStructureType shouldBe ControlStructureTypes.ELSE
+        elseStruct.ast.isLiteral.code.l shouldBe List("5")
 
-    ensureBody.ast.isLiteral.code.l shouldBe List("6")
-    ensureBody.order shouldBe 3
-
+        ensureStruct.controlStructureType shouldBe ControlStructureTypes.FINALLY
+        ensureStruct.ast.isLiteral.code.l shouldBe List("6")
+      case xs => fail(s"Expected 6 structures, got ${xs.code.mkString(",")}")
+    }
   }
 
   "`begin ... ensure ... end is represented by a `TRY` CONTROL_STRUCTURE node" in {
@@ -370,18 +372,21 @@ class ControlStructureTests extends RubyCode2CpgFixture {
         |  end
         |end
         |""".stripMargin)
-    val List(rescueNode) = cpg.method("test2").tryBlock.l
-    rescueNode.controlStructureType shouldBe ControlStructureTypes.TRY
-    val List(body, defaultElseBody, ensureBody) = rescueNode.astChildren.l
 
-    body.ast.isLiteral.code.l shouldBe List("1")
-    body.order shouldBe 1
+    inside(cpg.method("test2").controlStructure.l) {
+      case tryStruct :: defaultElseStruct :: ensureStruct :: Nil =>
+        tryStruct.controlStructureType shouldBe ControlStructureTypes.TRY
+        val List(body, _, _) = tryStruct.astChildren.l
+        body.ast.isLiteral.code.l shouldBe List("1")
 
-    defaultElseBody.ast.isLiteral.code.l shouldBe List("nil")
-    ensureBody.order shouldBe 3
+        defaultElseStruct.controlStructureType shouldBe ControlStructureTypes.ELSE
+        defaultElseStruct.ast.isLiteral.code.l shouldBe List("nil")
 
-    ensureBody.ast.isLiteral.code.l shouldBe List("2")
-    ensureBody.order shouldBe 3
+        ensureStruct.controlStructureType shouldBe ControlStructureTypes.FINALLY
+        ensureStruct.ast.isLiteral.code.l shouldBe List("2")
+
+      case xs => fail(s"Expected two structures, got ${xs.code.mkString(",")}")
+    }
   }
 
   "`for .. in` control structure" should {

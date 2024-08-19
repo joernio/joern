@@ -725,18 +725,22 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
             case x: NewMethodParameterIn => Ast(x.dynamicTypeHintFullName(classes))
           }
           .toList
-        astForStatementList(x.thenClause.asStatementList).withChildren(variables)
+        val rescueNode = controlStructureNode(x.thenClause.asStatementList, ControlStructureTypes.CATCH, "catch")
+        Ast(rescueNode).withChild(astForStatementList(x.thenClause.asStatementList).withChildren(variables))
       }
-    val elseAst   = node.elseClause.map { x => astForStatementList(x.thenClause.asStatementList) }
-    val ensureAst = node.ensureClause.map { x => astForStatementList(x.thenClause.asStatementList) }
-    tryCatchAstWithOrder(
-      NewControlStructure()
-        .controlStructureType(ControlStructureTypes.TRY)
-        .code(code(node)),
-      tryAst,
-      rescueAsts ++ elseAst.toSeq,
-      ensureAst
-    )
+    val elseAst = node.elseClause.map { x =>
+      val astForClause = controlStructureNode(x.thenClause.asStatementList, ControlStructureTypes.ELSE, "else")
+      Ast(astForClause).withChild(astForStatementList(x.thenClause.asStatementList))
+    }
+
+    val ensureAst = node.ensureClause.map { x =>
+      val astForEnsureClause =
+        controlStructureNode(x.thenClause.asStatementList, ControlStructureTypes.FINALLY, "finally")
+      Ast(astForEnsureClause).withChild(astForStatementList(x.thenClause.asStatementList))
+    }
+
+    val tryNode = controlStructureNode(node.body.asStatementList, ControlStructureTypes.TRY, "try")
+    tryCatchAst(tryNode, tryAst, rescueAsts ++ elseAst, ensureAst)
   }
 
   private def astForSelfIdentifier(node: SelfIdentifier): Ast = {
