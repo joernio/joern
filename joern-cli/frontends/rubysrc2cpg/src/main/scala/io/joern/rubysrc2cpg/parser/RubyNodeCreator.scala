@@ -846,22 +846,14 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitBracketAssignmentExpression(ctx: RubyParser.BracketAssignmentExpressionContext): RubyNode = {
-    val op = ctx.assignmentOperator().getText
-
-    if (op != "=") {
-      logger.warn(s"Unsupported assignment operator for bracket assignment expression: $op")
-      defaultResult()
-    }
-
     val lhsBase = visit(ctx.primaryValue())
     val lhsArgs = Option(ctx.indexingArgumentList()).map(_.arguments).getOrElse(List()).map(visit)
 
     val lhs = IndexAccess(lhsBase, lhsArgs)(
       ctx.toTextSpan.spanStart(s"${lhsBase.span.text}[${lhsArgs.map(_.span.text).mkString(", ")}]")
     )
-
+    val op  = ctx.assignmentOperator().getText
     val rhs = visit(ctx.operatorExpression())
-
     SingleAssignment(lhs, op, rhs)(ctx.toTextSpan)
   }
 

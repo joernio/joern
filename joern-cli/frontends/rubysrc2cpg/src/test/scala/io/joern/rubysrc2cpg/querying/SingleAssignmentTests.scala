@@ -289,4 +289,84 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
       case xs => fail(s"Expected three lambdas, got ${xs.size} lambdas instead")
     }
   }
+
+  "Bracketed ||=" in {
+    val cpg = code("""
+        |hash[:id] ||= s[:id]
+        |""".stripMargin)
+
+    inside(cpg.call.name(Operators.assignmentOr).l) {
+      case assignmentCall :: Nil =>
+        assignmentCall.code shouldBe "hash[:id] ||= s[:id]"
+        assignmentCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+        inside(assignmentCall.argument.l) {
+          case lhs :: rhs :: Nil =>
+            lhs.code shouldBe "hash[:id]"
+            rhs.code shouldBe "s[:id]"
+          case xs => fail(s"Expected lhs and rhs arguments, got ${xs.code.mkString(",")}")
+        }
+      case xs => fail(s"Expected on assignmentOr call, got ${xs.code.mkString(",")}")
+    }
+  }
+
+  "Bracketed +=" in {
+    val cpg = code("""
+        |hash[:id] += s[:id]
+        |""".stripMargin)
+
+    inside(cpg.call.name(Operators.assignmentPlus).l) {
+      case assignmentCall :: Nil =>
+        assignmentCall.code shouldBe "hash[:id] += s[:id]"
+        assignmentCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+        inside(assignmentCall.argument.l) {
+          case lhs :: rhs :: Nil =>
+            lhs.code shouldBe "hash[:id]"
+            rhs.code shouldBe "s[:id]"
+          case xs => fail(s"Expected lhs and rhs arguments, got ${xs.code.mkString(",")}")
+        }
+      case xs => fail(s"Expected on assignmentOr call, got ${xs.code.mkString(",")}")
+    }
+  }
+
+  "Bracketed &&=" in {
+    val cpg = code("""
+        |hash[:id] &&= s[:id]
+        |""".stripMargin)
+
+    inside(cpg.call.name(Operators.assignmentAnd).l) {
+      case assignmentCall :: Nil =>
+        assignmentCall.code shouldBe "hash[:id] &&= s[:id]"
+        assignmentCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+        inside(assignmentCall.argument.l) {
+          case lhs :: rhs :: Nil =>
+            lhs.code shouldBe "hash[:id]"
+            rhs.code shouldBe "s[:id]"
+          case xs => fail(s"Expected lhs and rhs arguments, got ${xs.code.mkString(",")}")
+        }
+      case xs => fail(s"Expected on assignmentOr call, got ${xs.code.mkString(",")}")
+    }
+  }
+
+  "Bracketed /=" in {
+    val cpg = code("""
+        |hash[:id] /= s[:id]
+        |""".stripMargin)
+
+    inside(cpg.call.name(Operators.assignmentDivision).l) {
+      case assignmentCall :: Nil =>
+        assignmentCall.code shouldBe "hash[:id] /= s[:id]"
+        assignmentCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+        inside(assignmentCall.argument.l) {
+          case lhs :: rhs :: Nil =>
+            lhs.code shouldBe "hash[:id]"
+            rhs.code shouldBe "s[:id]"
+          case xs => fail(s"Expected lhs and rhs arguments, got ${xs.code.mkString(",")}")
+        }
+      case xs => fail(s"Expected on assignmentOr call, got ${xs.code.mkString(",")}")
+    }
+  }
 }
