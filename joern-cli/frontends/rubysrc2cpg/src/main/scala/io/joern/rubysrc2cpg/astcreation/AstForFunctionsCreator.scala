@@ -135,7 +135,14 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         )
     } else Ast()
 
-    val modifiers = mutable.Buffer(ModifierTypes.VIRTUAL)
+    val accessModifier =
+      // Initialize is guaranteed `private` by the Ruby interpreter (we include our <body> method here)
+      if (methodName == Defines.Initialize || methodName == Defines.TypeDeclBody) ModifierTypes.PRIVATE
+      // <main> functions are private functions on the Object class
+      else if (isSurroundedByProgramScope) ModifierTypes.PRIVATE
+      // Else, use whatever modifier has been user-defined (or is default for current scope)
+      else currentAccessModifier
+    val modifiers = mutable.Buffer(ModifierTypes.VIRTUAL, accessModifier)
     if (isClosure) modifiers.addOne(ModifierTypes.LAMBDA)
     if (isConstructor) modifiers.addOne(ModifierTypes.CONSTRUCTOR)
 
@@ -528,6 +535,20 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           )
           astForUnknown(body)
     }
+  }
+
+  private val accessModifierStack: mutable.Stack[String] = mutable.Stack.empty
+
+  protected def currentAccessModifier: String = {
+    accessModifierStack.headOption.getOrElse(ModifierTypes.PUBLIC)
+  }
+
+  protected def pushAccessModifier(name: String): Unit = {
+    accessModifierStack.push(name)
+  }
+
+  protected def popAccessModifier(): Unit = {
+    if (accessModifierStack.nonEmpty) accessModifierStack.pop()
   }
 
 }

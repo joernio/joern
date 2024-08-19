@@ -63,7 +63,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       */
     def populateAstParentValues(typeDecl: NewTypeDecl, astParentFullName: String): NewTypeDecl = {
       val namespaceBlockFullName = s"${scope.surroundingScopeFullName.getOrElse("")}.$astParentFullName"
-      scope.pushNewScope(NamespaceScope(s"${scope.surroundingScopeFullName.getOrElse("")}.$astParentFullName"))
+      scope.pushNewScope(NamespaceScope(namespaceBlockFullName))
+      pushAccessModifier(ModifierTypes.PUBLIC)
 
       val namespaceBlock =
         NewNamespaceBlock().name(astParentFullName).fullName(astParentFullName).filename(relativeFileName)
@@ -197,7 +198,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     (typeDeclAst :: singletonTypeDeclAst :: Nil).foreach(Ast.storeInDiffGraph(_, diffGraph))
 
     if shouldPopAdditionalScope then scope.popScope()
-
+    popAccessModifier()
     prefixAst :: bodyMemberCallAst :: Nil
   }
 
