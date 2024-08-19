@@ -39,6 +39,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     case node: SimpleCall                       => astForSimpleCall(node)
     case node: RequireCall                      => astForRequireCall(node)
     case node: IncludeCall                      => astForIncludeCall(node)
+    case node: RaiseCall                        => astForRaiseCall(node)
     case node: YieldExpr                        => astForYield(node)
     case node: RangeExpression                  => astForRange(node)
     case node: ArrayLiteral                     => astForArrayLiteral(node)
@@ -499,6 +500,12 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       node.argument.text.replaceAll("::", ".")
     ) // Maybe generate ast and get name in a more structured approach instead
     astForSimpleCall(node.asSimpleCall)
+  }
+
+  protected def astForRaiseCall(node: RaiseCall): Ast = {
+    val throwControlStruct = controlStructureNode(node, ControlStructureTypes.THROW, code(node))
+    val args               = node.arguments.map(astForExpression)
+    Ast(throwControlStruct).withChildren(args)
   }
 
   /** A yield in Ruby calls an explicit (or implicit) proc parameter and returns its value. This can be lowered as
