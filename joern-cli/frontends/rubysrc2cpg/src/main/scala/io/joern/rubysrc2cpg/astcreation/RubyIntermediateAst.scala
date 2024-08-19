@@ -381,6 +381,10 @@ object RubyIntermediateAst {
     def asSimpleCall: SimpleCall  = SimpleCall(target, arguments)(span)
   }
 
+  final case class RaiseCall(target: RubyNode, arguments: List[RubyNode])(span: TextSpan)
+      extends RubyNode(span)
+      with RubyCall
+
   /** Represents standalone `proc { ... }` or `lambda { ... }` expressions
     */
   final case class ProcOrLambdaExpr(block: Block)(span: TextSpan) extends RubyNode(span)

@@ -1,9 +1,10 @@
 package io.joern.rubysrc2cpg.querying
 
+import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelPrefix
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal}
 import io.shiftleft.semanticcpg.language.*
 
 class ControlStructureTests extends RubyCode2CpgFixture {
@@ -535,4 +536,41 @@ class ControlStructureTests extends RubyCode2CpgFixture {
       case xs => fail(s"Expected next to be continue, got [${xs.code.mkString(",")}]")
     }
   }
+
+  "A `raise` call with a string argument should generate a `throw` control structure with explicit `StandardError.new` call" in {
+    val cpg = code("raise 'Hello, world!'")
+    inside(cpg.controlStructure.l) {
+      case (ctrlStruct: ControlStructure) :: Nil =>
+        ctrlStruct.code shouldBe "raise 'Hello, world!'"
+        ctrlStruct.controlStructureType shouldBe ControlStructureTypes.THROW
+
+        val constructorBlock = ctrlStruct.astChildren.head.asInstanceOf[Block]
+        constructorBlock.ast.isCall.where(_.name(Operators.alloc)).nonEmpty shouldBe true
+
+        val initialize = constructorBlock.ast.isCall.name(Defines.Initialize).head
+        initialize.code shouldBe "StandardError.new('Hello, world!')"
+        val helloWorld = initialize.argument(1).asInstanceOf[Literal]
+        helloWorld.code shouldBe "'Hello, world!'"
+      case xs => fail(s"Expected single `throw` call, got [${xs.code.mkString(",")}]")
+    }
+  }
+
+  "A `raise` call with an explicit error argument should generate a `throw` control structure" in {
+    val cpg = code("raise ZeroDivisionError.new 'b should not be 0'")
+    inside(cpg.controlStructure.l) {
+      case (ctrlStruct: ControlStructure) :: Nil =>
+        ctrlStruct.code shouldBe "raise ZeroDivisionError.new 'b should not be 0'"
+        ctrlStruct.controlStructureType shouldBe ControlStructureTypes.THROW
+
+        val constructorBlock = ctrlStruct.astChildren.head.asInstanceOf[Block]
+        constructorBlock.ast.isCall.where(_.name(Operators.alloc)).nonEmpty shouldBe true
+
+        val initialize = constructorBlock.ast.isCall.name(Defines.Initialize).head
+        initialize.code shouldBe "ZeroDivisionError.new 'b should not be 0'"
+        val errMsg = initialize.argument(1).asInstanceOf[Literal]
+        errMsg.code shouldBe "'b should not be 0'"
+      case xs => fail(s"Expected single `throw` call, got [${xs.code.mkString(",")}]")
+    }
+  }
+
 }

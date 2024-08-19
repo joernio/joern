@@ -2,19 +2,11 @@ package io.joern.rubysrc2cpg.parser
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{Block, *}
 import io.joern.rubysrc2cpg.parser.AntlrContextHelpers.*
-import io.joern.rubysrc2cpg.parser.RubyParser.{
-  ClassNameContext,
-  ClassPathContext,
-  CommandWithDoBlockContext,
-  ConstantVariableReferenceContext,
-  NestedClassPathContext,
-  QuotedExpandedStringArrayLiteralContext,
-  QuotedExpandedSymbolArrayLiteralContext
-}
+import io.joern.rubysrc2cpg.parser.RubyParser.*
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
+import io.joern.rubysrc2cpg.passes.GlobalTypes.builtinPrefix
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
-import io.joern.x2cpg.Defines as XDefines
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.tree.{ParseTree, RuleNode}
 import org.slf4j.LoggerFactory
@@ -589,6 +581,15 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
           RequireCall(visit(identifierCtx), argument, true, true)(ctx.toTextSpan)
         case ("include", List(argument)) =>
           IncludeCall(visit(identifierCtx), argument)(ctx.toTextSpan)
+        case ("raise", List(argument: LiteralExpr)) =>
+          val simpleErrorId =
+            SimpleIdentifier(Option(s"$builtinPrefix.StandardError"))(argument.span.spanStart("StandardError"))
+          val implicitSimpleErrInst = SimpleObjectInstantiation(simpleErrorId, argument :: Nil)(
+            argument.span.spanStart(s"StandardError.new(${argument.text})")
+          )
+          RaiseCall(visit(identifierCtx), implicitSimpleErrInst :: Nil)(ctx.toTextSpan)
+        case ("raise", _) =>
+          RaiseCall(visit(identifierCtx), arguments)(ctx.toTextSpan)
         case (idAssign, arguments) if idAssign.endsWith("=") =>
           // fixme: This workaround handles a parser ambiguity with method identifiers having `=` and assignments.
           //  The Ruby parser gives precedence to assignments over methods called with this suffix however
