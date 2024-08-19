@@ -340,7 +340,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     inside(cpg.method("test1").controlStructure.l) {
       case tryStruct :: rescue1Struct :: rescue2Struct :: rescue3Struct :: elseStruct :: ensureStruct :: Nil =>
         tryStruct.controlStructureType shouldBe ControlStructureTypes.TRY
-        val List(body, _, _, _, _, _) = tryStruct.astChildren.l
+        val body = tryStruct.astChildren.head
         body.ast.isLiteral.code.l shouldBe List("1")
 
         rescue1Struct.controlStructureType shouldBe ControlStructureTypes.CATCH
@@ -376,7 +376,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     inside(cpg.method("test2").controlStructure.l) {
       case tryStruct :: defaultElseStruct :: ensureStruct :: Nil =>
         tryStruct.controlStructureType shouldBe ControlStructureTypes.TRY
-        val List(body, _, _) = tryStruct.astChildren.l
+        val body = tryStruct.astChildren.head
         body.ast.isLiteral.code.l shouldBe List("1")
 
         defaultElseStruct.controlStructureType shouldBe ControlStructureTypes.ELSE
