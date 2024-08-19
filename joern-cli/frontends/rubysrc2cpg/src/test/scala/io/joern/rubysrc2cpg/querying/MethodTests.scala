@@ -523,20 +523,16 @@ class MethodTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "Should be represented as a TRY structure" in {
-      inside(cpg.method.name("foo").tryBlock.l) {
-        case tryBlock :: Nil =>
-          tryBlock.controlStructureType shouldBe ControlStructureTypes.TRY
+      inside(cpg.method.name("foo").controlStructure.l) {
+        case tryStruct :: ensureStruct :: Nil =>
+          tryStruct.controlStructureType shouldBe ControlStructureTypes.TRY
+          val body = tryStruct.astChildren.head
+          body.ast.isLiteral.code.l shouldBe List("1")
 
-          inside(tryBlock.astChildren.l) {
-            case body :: ensureBody :: Nil =>
-              body.ast.isLiteral.code.l shouldBe List("1")
-              body.order shouldBe 1
+          ensureStruct.controlStructureType shouldBe ControlStructureTypes.FINALLY
+          ensureStruct.ast.isLiteral.code.l shouldBe List("2")
 
-              ensureBody.ast.isLiteral.code.l shouldBe List("2")
-              ensureBody.order shouldBe 3
-            case xs => fail(s"Expected body and ensureBody, got ${xs.code.mkString(", ")} instead")
-          }
-        case xs => fail(s"Expected one method, found ${xs.method.name.mkString(", ")} instead")
+        case xs => fail(s"Expected two structures, got ${xs.code.mkString(",")}")
       }
     }
   }
