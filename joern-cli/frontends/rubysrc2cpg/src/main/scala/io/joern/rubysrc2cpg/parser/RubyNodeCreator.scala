@@ -424,7 +424,9 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     val lhs = visit(ctx.lhs)
     val rhs = visit(ctx.rhs)
     val op  = ctx.assignmentOperator().getText
-    SingleAssignment(lhs, op, rhs)(ctx.toTextSpan)
+
+    if op == "||=" || op == "&&=" then lowerAssignmentOperator(lhs, rhs, op, ctx.toTextSpan)
+    else SingleAssignment(lhs, op, rhs)(ctx.toTextSpan)
   }
 
   private def flattenStatementLists(x: List[RubyNode]): List[RubyNode] = {
@@ -854,7 +856,60 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     )
     val op  = ctx.assignmentOperator().getText
     val rhs = visit(ctx.operatorExpression())
-    SingleAssignment(lhs, op, rhs)(ctx.toTextSpan)
+
+    if op == "||=" || op == "&&=" then lowerAssignmentOperator(lhs, rhs, op, ctx.toTextSpan)
+    else SingleAssignment(lhs, op, rhs)(ctx.toTextSpan)
+  }
+
+  /** Lowers the `||=` and `&&=` assignment operators to the respective `.nil?` checks
+    * @param lhs
+    * @param rhs
+    * @param op
+    * @param span
+    * @return
+    */
+  private def lowerAssignmentOperator(lhs: RubyNode, rhs: RubyNode, op: String, span: TextSpan): RubyNode = {
+    val condition  = nilCheckCondition(lhs, op, "nil?", span)
+    val thenClause = nilCheckThenClause(lhs, rhs, span)
+    nilCheckIfStatement(condition, thenClause, span)
+  }
+
+  /** Generates the requried `.nil?` check condition used in the lowering of `||=` and `&&=`
+    * @param lhs
+    * @param op
+    * @param memberName
+    * @param span
+    * @return
+    */
+  private def nilCheckCondition(lhs: RubyNode, op: String, memberName: String, span: TextSpan): RubyNode = {
+    val memberAccess =
+      MemberAccess(lhs, op = ".", memberName = "nil?")(span.spanStart(s"${lhs.span.text}.nil?"))
+    if op == "||=" then memberAccess
+    else UnaryExpression(op = "!", expression = memberAccess)(span.spanStart(s"!${memberAccess.span.text}"))
+  }
+
+  /** Generates the assignment and the `thenClause` used in the lowering of `||=` and `&&=`
+    * @param lhs
+    * @param rhs
+    * @param span
+    * @return
+    */
+  private def nilCheckThenClause(lhs: RubyNode, rhs: RubyNode, span: TextSpan): RubyNode = {
+    StatementList(List(SingleAssignment(lhs, "=", rhs)(span.spanStart(s"${lhs.span.text} = ${rhs.span.text}"))))(
+      span.spanStart(s"${lhs.span.text} = ${rhs.span.text}")
+    )
+  }
+
+  /** Generates the if statement for the lowering of `||=` and `&&=`
+    * @param condition
+    * @param thenClause
+    * @param span
+    * @return
+    */
+  private def nilCheckIfStatement(condition: RubyNode, thenClause: RubyNode, span: TextSpan): RubyNode = {
+    IfExpression(condition = condition, thenClause = thenClause, elsifClauses = List.empty, elseClause = None)(
+      span.spanStart(s"if ${condition.span.text} then ${thenClause.span.text} end")
+    )
   }
 
   override def visitBracketedArrayLiteral(ctx: RubyParser.BracketedArrayLiteralContext): RubyNode = {
