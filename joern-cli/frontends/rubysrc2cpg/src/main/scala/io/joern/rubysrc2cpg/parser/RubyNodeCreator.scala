@@ -711,6 +711,10 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     }
   }
 
+  override def visitOperatorExpressionCommand(ctx: RubyParser.OperatorExpressionCommandContext): RubyNode = {
+    visit(ctx.operatorExpression())
+  }
+
   override def visitConstantIdentifierVariable(ctx: RubyParser.ConstantIdentifierVariableContext): RubyNode = {
     SimpleIdentifier()(ctx.toTextSpan)
   }

@@ -141,7 +141,9 @@ methodInvocationWithoutParentheses
     ;
 
 command
-    :   primary NL? (AMPDOT | DOT | COLON2) methodName commandArgument
+    :   operatorExpression
+        # operatorExpressionCommand
+    |   primary NL? (AMPDOT | DOT | COLON2) methodName commandArgument
         # memberAccessCommand
     |   methodIdentifier commandArgument
         # simpleCommand
