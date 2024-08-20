@@ -424,7 +424,9 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     val lhs = visit(ctx.lhs)
     val rhs = visit(ctx.rhs)
     val op  = ctx.assignmentOperator().getText
-    SingleAssignment(lhs, op, rhs)(ctx.toTextSpan)
+
+    if op == "||=" || op == "&&=" then lowerAssignmentOperator(lhs, rhs, op, ctx.toTextSpan)
+    else SingleAssignment(lhs, op, rhs)(ctx.toTextSpan)
   }
 
   private def flattenStatementLists(x: List[RubyNode]): List[RubyNode] = {
@@ -734,10 +736,13 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   override def visitLocalIdentifierVariable(ctx: RubyParser.LocalIdentifierVariableContext): RubyNode = {
     // Sometimes pseudo variables aren't given precedence in the parser, so we double-check here
     ctx.getText match {
-      case "nil"   => StaticLiteral(getBuiltInType(Defines.NilClass))(ctx.toTextSpan)
-      case "true"  => StaticLiteral(getBuiltInType(Defines.TrueClass))(ctx.toTextSpan)
-      case "false" => StaticLiteral(getBuiltInType(Defines.FalseClass))(ctx.toTextSpan)
-      case _       => SimpleIdentifier()(ctx.toTextSpan)
+      case "nil"       => StaticLiteral(getBuiltInType(Defines.NilClass))(ctx.toTextSpan)
+      case "true"      => StaticLiteral(getBuiltInType(Defines.TrueClass))(ctx.toTextSpan)
+      case "false"     => StaticLiteral(getBuiltInType(Defines.FalseClass))(ctx.toTextSpan)
+      case "public"    => PublicModifier()(ctx.toTextSpan)
+      case "private"   => PrivateModifier()(ctx.toTextSpan)
+      case "protected" => ProtectedModifier()(ctx.toTextSpan)
+      case _           => SimpleIdentifier()(ctx.toTextSpan)
     }
   }
 
@@ -850,23 +855,50 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitBracketAssignmentExpression(ctx: RubyParser.BracketAssignmentExpressionContext): RubyNode = {
-    val op = ctx.assignmentOperator().getText
-
-    if (op != "=") {
-      logger.warn(s"Unsupported assignment operator for bracket assignment expression: $op")
-      defaultResult()
-    }
-
     val lhsBase = visit(ctx.primaryValue())
     val lhsArgs = Option(ctx.indexingArgumentList()).map(_.arguments).getOrElse(List()).map(visit)
 
     val lhs = IndexAccess(lhsBase, lhsArgs)(
       ctx.toTextSpan.spanStart(s"${lhsBase.span.text}[${lhsArgs.map(_.span.text).mkString(", ")}]")
     )
-
+    val op  = ctx.assignmentOperator().getText
     val rhs = visit(ctx.operatorExpression())
 
-    SingleAssignment(lhs, op, rhs)(ctx.toTextSpan)
+    if op == "||=" || op == "&&=" then lowerAssignmentOperator(lhs, rhs, op, ctx.toTextSpan)
+    else SingleAssignment(lhs, op, rhs)(ctx.toTextSpan)
+  }
+
+  /** Lowers the `||=` and `&&=` assignment operators to the respective `.nil?` checks
+    */
+  private def lowerAssignmentOperator(lhs: RubyNode, rhs: RubyNode, op: String, span: TextSpan): RubyNode = {
+    val condition  = nilCheckCondition(lhs, op, "nil?", span)
+    val thenClause = nilCheckThenClause(lhs, rhs, span)
+    nilCheckIfStatement(condition, thenClause, span)
+  }
+
+  /** Generates the requried `.nil?` check condition used in the lowering of `||=` and `&&=`
+    */
+  private def nilCheckCondition(lhs: RubyNode, op: String, memberName: String, span: TextSpan): RubyNode = {
+    val memberAccess =
+      MemberAccess(lhs, op = ".", memberName = "nil?")(span.spanStart(s"${lhs.span.text}.nil?"))
+    if op == "||=" then memberAccess
+    else UnaryExpression(op = "!", expression = memberAccess)(span.spanStart(s"!${memberAccess.span.text}"))
+  }
+
+  /** Generates the assignment and the `thenClause` used in the lowering of `||=` and `&&=`
+    */
+  private def nilCheckThenClause(lhs: RubyNode, rhs: RubyNode, span: TextSpan): RubyNode = {
+    StatementList(List(SingleAssignment(lhs, "=", rhs)(span.spanStart(s"${lhs.span.text} = ${rhs.span.text}"))))(
+      span.spanStart(s"${lhs.span.text} = ${rhs.span.text}")
+    )
+  }
+
+  /** Generates the if statement for the lowering of `||=` and `&&=`
+    */
+  private def nilCheckIfStatement(condition: RubyNode, thenClause: RubyNode, span: TextSpan): RubyNode = {
+    IfExpression(condition = condition, thenClause = thenClause, elsifClauses = List.empty, elseClause = None)(
+      span.spanStart(s"if ${condition.span.text} then ${thenClause.span.text} end")
+    )
   }
 
   override def visitBracketedArrayLiteral(ctx: RubyParser.BracketedArrayLiteralContext): RubyNode = {
@@ -1177,7 +1209,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     }
 
     val (allowedTypeDeclChildren, nonAllowedTypeDeclChildren) = nonInitStmts.partition {
-      case x: AllowedTypeDeclarationChild => true
+      case _: AllowedTypeDeclarationChild => true
       case _                              => false
     }
 
