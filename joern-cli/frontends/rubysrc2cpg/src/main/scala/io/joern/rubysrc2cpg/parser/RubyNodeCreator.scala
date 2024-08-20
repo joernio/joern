@@ -862,11 +862,6 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   /** Lowers the `||=` and `&&=` assignment operators to the respective `.nil?` checks
-    * @param lhs
-    * @param rhs
-    * @param op
-    * @param span
-    * @return
     */
   private def lowerAssignmentOperator(lhs: RubyNode, rhs: RubyNode, op: String, span: TextSpan): RubyNode = {
     val condition  = nilCheckCondition(lhs, op, "nil?", span)
@@ -875,11 +870,6 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   /** Generates the requried `.nil?` check condition used in the lowering of `||=` and `&&=`
-    * @param lhs
-    * @param op
-    * @param memberName
-    * @param span
-    * @return
     */
   private def nilCheckCondition(lhs: RubyNode, op: String, memberName: String, span: TextSpan): RubyNode = {
     val memberAccess =
@@ -889,10 +879,6 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   /** Generates the assignment and the `thenClause` used in the lowering of `||=` and `&&=`
-    * @param lhs
-    * @param rhs
-    * @param span
-    * @return
     */
   private def nilCheckThenClause(lhs: RubyNode, rhs: RubyNode, span: TextSpan): RubyNode = {
     StatementList(List(SingleAssignment(lhs, "=", rhs)(span.spanStart(s"${lhs.span.text} = ${rhs.span.text}"))))(
@@ -901,10 +887,6 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   /** Generates the if statement for the lowering of `||=` and `&&=`
-    * @param condition
-    * @param thenClause
-    * @param span
-    * @return
     */
   private def nilCheckIfStatement(condition: RubyNode, thenClause: RubyNode, span: TextSpan): RubyNode = {
     IfExpression(condition = condition, thenClause = thenClause, elsifClauses = List.empty, elseClause = None)(
