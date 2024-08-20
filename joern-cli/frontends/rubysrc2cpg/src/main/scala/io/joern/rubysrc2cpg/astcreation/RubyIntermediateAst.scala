@@ -1,5 +1,6 @@
 package io.joern.rubysrc2cpg.astcreation
 
+import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.AllowedTypeDeclarationChild
 import io.joern.rubysrc2cpg.passes.{Defines, GlobalTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 
@@ -384,6 +385,14 @@ object RubyIntermediateAst {
   final case class RaiseCall(target: RubyNode, arguments: List[RubyNode])(span: TextSpan)
       extends RubyNode(span)
       with RubyCall
+
+  sealed trait AccessModifier extends AllowedTypeDeclarationChild
+
+  final case class PublicModifier()(span: TextSpan) extends RubyNode(span) with AccessModifier
+
+  final case class PrivateModifier()(span: TextSpan) extends RubyNode(span) with AccessModifier
+
+  final case class ProtectedModifier()(span: TextSpan) extends RubyNode(span) with AccessModifier
 
   /** Represents standalone `proc { ... }` or `lambda { ... }` expressions
     */

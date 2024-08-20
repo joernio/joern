@@ -730,10 +730,13 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   override def visitLocalIdentifierVariable(ctx: RubyParser.LocalIdentifierVariableContext): RubyNode = {
     // Sometimes pseudo variables aren't given precedence in the parser, so we double-check here
     ctx.getText match {
-      case "nil"   => StaticLiteral(getBuiltInType(Defines.NilClass))(ctx.toTextSpan)
-      case "true"  => StaticLiteral(getBuiltInType(Defines.TrueClass))(ctx.toTextSpan)
-      case "false" => StaticLiteral(getBuiltInType(Defines.FalseClass))(ctx.toTextSpan)
-      case _       => SimpleIdentifier()(ctx.toTextSpan)
+      case "nil"       => StaticLiteral(getBuiltInType(Defines.NilClass))(ctx.toTextSpan)
+      case "true"      => StaticLiteral(getBuiltInType(Defines.TrueClass))(ctx.toTextSpan)
+      case "false"     => StaticLiteral(getBuiltInType(Defines.FalseClass))(ctx.toTextSpan)
+      case "public"    => PublicModifier()(ctx.toTextSpan)
+      case "private"   => PrivateModifier()(ctx.toTextSpan)
+      case "protected" => ProtectedModifier()(ctx.toTextSpan)
+      case _           => SimpleIdentifier()(ctx.toTextSpan)
     }
   }
 
@@ -1165,7 +1168,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     }
 
     val (allowedTypeDeclChildren, nonAllowedTypeDeclChildren) = nonInitStmts.partition {
-      case x: AllowedTypeDeclarationChild => true
+      case _: AllowedTypeDeclarationChild => true
       case _                              => false
     }
 

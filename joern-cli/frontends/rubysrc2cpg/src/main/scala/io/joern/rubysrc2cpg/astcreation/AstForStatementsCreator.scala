@@ -5,7 +5,7 @@ import io.joern.rubysrc2cpg.datastructures.BlockScope
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, ModifierTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewControlStructure, NewMethod, NewMethodRef, NewTypeDecl}
 
 trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -25,6 +25,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     case node: AnonymousTypeDeclaration   => astForAnonymousTypeDeclaration(node) :: Nil
     case node: TypeDeclaration            => astForClassDeclaration(node)
     case node: FieldsDeclaration          => astsForFieldDeclarations(node)
+    case node: AccessModifier             => registerAccessModifier(node)
     case node: MethodDeclaration          => astForMethodDeclaration(node)
     case node: SingletonMethodDeclaration => astForSingletonMethodDeclaration(node)
     case node: MultipleAssignment         => node.assignments.map(astForExpression)
@@ -57,6 +58,19 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       controlStructureAst(ifNode, Some(conditionAst), thenAst :: elseAsts)
     }
     foldIfExpression(builder)(node)
+  }
+
+  /** Registers the currently set access modifier for the current type (until it is reset later).
+    */
+  private def registerAccessModifier(node: AccessModifier): Seq[Ast] = {
+    val modifier = node match {
+      case PrivateModifier()   => ModifierTypes.PRIVATE
+      case ProtectedModifier() => ModifierTypes.PROTECTED
+      case PublicModifier()    => ModifierTypes.PUBLIC
+    }
+    popAccessModifier()          // pop off the current modifier in scope
+    pushAccessModifier(modifier) // push new one on
+    Nil
   }
 
   // Rewrites a nested `if T_1 then E_1 elsif T_2 then E_2 elsif ... elsif T_n then E_n else E_{n+1}`
