@@ -192,7 +192,8 @@ object GlobalTypes {
 
   /* Source: https://ruby-doc.org/3.2.2/Kernel.html
    *
-   * We comment-out methods that require an explicit "receiver" (target of member access.)
+   * We comment-out methods that require an explicit "receiver" (target of member access) and those that may be commonly
+   * shadowed.
    */
   val kernelFunctions: Set[String] = Set(
     "Array",
@@ -252,7 +253,7 @@ object GlobalTypes {
     "require",
     "require_all",
     "require_relative",
-    "select",
+//    "select",
     "set_trace_func",
     "sleep",
     "spawn",
