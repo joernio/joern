@@ -68,7 +68,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case ProtectedModifier() => ModifierTypes.PROTECTED
       case PublicModifier()    => ModifierTypes.PUBLIC
     }
-    pushAccessModifier(modifier)
+    popAccessModifier()          // pop off the current modifier in scope
+    pushAccessModifier(modifier) // push new one on
     Nil
   }
 
