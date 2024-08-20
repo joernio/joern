@@ -51,6 +51,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   ): Seq[Ast] = {
     val className    = nameIdentifier.text
     val inheritsFrom = node.baseClass.map(getBaseClassName).toList
+    pushAccessModifier(ModifierTypes.PUBLIC)
 
     /** Pushes new NamespaceScope onto scope stack and populates AST_PARENT_FULL_NAME and AST_PARENT_TYPE for TypeDecls
       * that are declared in a namespace
@@ -64,7 +65,6 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     def populateAstParentValues(typeDecl: NewTypeDecl, astParentFullName: String): NewTypeDecl = {
       val namespaceBlockFullName = s"${scope.surroundingScopeFullName.getOrElse("")}.$astParentFullName"
       scope.pushNewScope(NamespaceScope(namespaceBlockFullName))
-      pushAccessModifier(ModifierTypes.PUBLIC)
 
       val namespaceBlock =
         NewNamespaceBlock().name(astParentFullName).fullName(astParentFullName).filename(relativeFileName)
