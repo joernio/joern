@@ -299,12 +299,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val createAssignmentToTmp = !baseAstCache.contains(target)
     val tmpName = baseAstCache
       .updateWith(target) {
-        case Some(tmpName) =>
-          println(s"Cache hit ${target}")
-          Option(tmpName)
+        case Some(tmpName) => Option(tmpName)
         case None =>
           val tmpName = tmpGen.fresh
-          println(s"Cache miss ${tmpName} => ${target}")
           val tmpGenLocal = NewLocal().name(tmpName).code(tmpName).typeFullName(Defines.Any)
           scope.addToScope(tmpName, tmpGenLocal) match {
             case BlockScope(block) => diffGraph.addEdge(block, tmpGenLocal, EdgeTypes.AST)
