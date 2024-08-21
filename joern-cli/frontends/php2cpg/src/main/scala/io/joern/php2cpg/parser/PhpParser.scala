@@ -28,7 +28,7 @@ class PhpParser private (phpParserPath: String, phpIniPath: String, disableFileC
       inputFile.canonicalPath
     }
 
-    val command = phpParseCommand(absoluteInputPaths)
+    val command = phpParseCommand(inputPaths)
 
     val (returnValue, output) = ExternalCommand.runWithMergeStdoutAndStderr(command, ".")
     returnValue match {
