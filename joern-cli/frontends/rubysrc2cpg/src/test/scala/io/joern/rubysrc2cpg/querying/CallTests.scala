@@ -177,11 +177,11 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
     }
 
     "create an assignment from a temp variable to the alloc call" in {
-      inside(cpg.method.isModule.assignment.where(_.target.isIdentifier.name("<tmp-0>")).l) {
+      inside(cpg.method.isModule.assignment.where(_.target.isIdentifier.name("<tmp-1>")).l) {
         case assignment :: Nil =>
           inside(assignment.argument.l) {
             case (a: Identifier) :: (alloc: Call) :: Nil =>
-              a.name shouldBe "<tmp-0>"
+              a.name shouldBe "<tmp-1>"
 
               alloc.name shouldBe Operators.alloc
               alloc.methodFullName shouldBe Operators.alloc
@@ -198,7 +198,7 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
         case constructor :: Nil =>
           inside(constructor.argument.l) {
             case (a: Identifier) :: (one: Literal) :: (two: Literal) :: Nil =>
-              a.name shouldBe "<tmp-0>"
+              a.name shouldBe "<tmp-1>"
               a.typeFullName shouldBe s"Test0.rb:$Main.A"
               a.argumentIndex shouldBe 0
 
@@ -243,18 +243,21 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
           val recv = constructor.receiver.head.asInstanceOf[Call]
           recv.methodFullName shouldBe Operators.fieldAccess
           recv.name shouldBe Operators.fieldAccess
-          recv.code shouldBe s"params[:type].constantize.${RubyDefines.Initialize}"
+          recv.code shouldBe s"(<tmp-2> = params[:type].constantize).${RubyDefines.Initialize}"
 
-          inside(recv.argument.l) { case (constantize: Call) :: (initialize: FieldIdentifier) :: Nil =>
-            constantize.code shouldBe "params[:type].constantize"
-            inside(constantize.argument.l) { case (indexAccess: Call) :: (const: FieldIdentifier) :: Nil =>
-              indexAccess.name shouldBe Operators.indexAccess
-              indexAccess.code shouldBe "params[:type]"
+          recv.argument(2).asInstanceOf[FieldIdentifier].canonicalName shouldBe RubyDefines.Initialize
 
-              const.canonicalName shouldBe "constantize"
-            }
+          inside(recv.argument(1).start.isCall.argument(2).isCall.argument.l) {
+            case (paramsAssign: Call) :: (constantize: FieldIdentifier) :: Nil =>
+              paramsAssign.code shouldBe "<tmp-1> = params[:type]"
+              inside(paramsAssign.argument.l) { case (tmpIdent: Identifier) :: (indexAccess: Call) :: Nil =>
+                tmpIdent.name shouldBe "<tmp-1>"
 
-            initialize.canonicalName shouldBe RubyDefines.Initialize
+                indexAccess.name shouldBe Operators.indexAccess
+                indexAccess.code shouldBe "params[:type]"
+              }
+
+              constantize.canonicalName shouldBe "constantize"
           }
         case xs => fail(s"Expected a single alloc, got [${xs.code.mkString(",")}]")
       }
@@ -336,12 +339,12 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
     val cpg          = code("::Augeas.open { |aug| aug.get('/augeas/version') }")
     val augeasReceiv = cpg.call.nameExact("open").receiver.head.asInstanceOf[Call]
     augeasReceiv.methodFullName shouldBe Operators.fieldAccess
-    augeasReceiv.code shouldBe "::Augeas.open"
+    augeasReceiv.code shouldBe "(<tmp-0> = ::Augeas).open"
 
     val selfAugeas = augeasReceiv.argument(1).asInstanceOf[Call]
 
-    selfAugeas.argument(1).asInstanceOf[Identifier].name shouldBe RubyDefines.Self
-    selfAugeas.argument(2).asInstanceOf[FieldIdentifier].canonicalName shouldBe "Augeas"
+    selfAugeas.argument(1).asInstanceOf[Identifier].name shouldBe "<tmp-0>"
+    selfAugeas.argument(2).asInstanceOf[Call].code shouldBe "self::Augeas"
 
     augeasReceiv.argument(2).asInstanceOf[FieldIdentifier].canonicalName shouldBe "open"
   }
@@ -363,5 +366,36 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
         initCall.methodFullName shouldBe Defines.DynamicCallUnknownFullName
       case xs => fail(s"Expected one call to initialize, got ${xs.code.mkString}")
     }
+  }
+
+  "Member calls where the LHS is a call" should {
+
+    "assign the first call to a temp variable to avoid a second invocation at arg 0" in {
+      val cpg = code("a().b()")
+
+      val bCall = cpg.call("b").head
+      bCall.code shouldBe "(<tmp-0> = a()).b()"
+
+      // Check receiver
+      val bAccess = bCall.receiver.isCall.head
+      bAccess.name shouldBe Operators.fieldAccess
+      bAccess.methodFullName shouldBe Operators.fieldAccess
+      bAccess.code shouldBe "(<tmp-0> = a()).b"
+
+      bAccess.argument(2).asInstanceOf[FieldIdentifier].canonicalName shouldBe "b"
+
+      val aAssign = bAccess.argument(1).asInstanceOf[Call]
+      aAssign.name shouldBe Operators.assignment
+      aAssign.methodFullName shouldBe Operators.assignment
+      aAssign.code shouldBe "<tmp-0> = a()"
+
+      aAssign.argument(1).asInstanceOf[Identifier].name shouldBe "<tmp-0>"
+      aAssign.argument(2).asInstanceOf[Call].name shouldBe "a"
+
+      // Check (cached) base
+      val base = bCall.argument(0).asInstanceOf[Identifier]
+      base.name shouldBe "<tmp-0>"
+    }
+
   }
 }
