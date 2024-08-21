@@ -50,6 +50,7 @@ class AstCreationPass(config: Config, cpg: Cpg, parser: PhpParser)(implicit with
           val relativeFilename = if (filename == config.inputPath) {
             File(filename).name
           } else {
+            logger.warn(s"InputPath: ${config.inputPath} filename: $filename")
             File(config.inputPath).relativize(File(filename)).toString
           }
           diffGraph.absorb(
