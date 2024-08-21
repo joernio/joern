@@ -301,7 +301,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       .updateWith(target) {
         case Some(tmpName) => Option(tmpName)
         case None =>
-          val tmpName = tmpGen.fresh
+          val tmpName     = tmpGen.fresh
           val tmpGenLocal = NewLocal().name(tmpName).code(tmpName).typeFullName(Defines.Any)
           scope.addToScope(tmpName, tmpGenLocal) match {
             case BlockScope(block) => diffGraph.addEdge(block, tmpGenLocal, EdgeTypes.AST)
