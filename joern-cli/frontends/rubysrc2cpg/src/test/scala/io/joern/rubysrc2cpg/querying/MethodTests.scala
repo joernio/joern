@@ -7,6 +7,7 @@ import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, NodeTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, FieldAccess}
 
 class MethodTests extends RubyCode2CpgFixture {
 
@@ -558,23 +559,23 @@ class MethodTests extends RubyCode2CpgFixture {
               leftArg.name shouldBe "a"
 
               rightArg.name shouldBe "hexdigest"
-              rightArg.code shouldBe "Digest::MD5.hexdigest(password)"
+              rightArg.code shouldBe "(<tmp-1> = Digest::MD5).hexdigest(password)"
 
-              inside(rightArg.argument.l) {
-                case (md5: Call) :: (passwordArg: Identifier) :: Nil =>
-                  md5.name shouldBe Operators.fieldAccess
-                  md5.code shouldBe "Digest::MD5"
+              val hexDigestFa = rightArg.receiver.head.asInstanceOf[FieldAccess]
+              hexDigestFa.code shouldBe "(<tmp-1> = Digest::MD5).hexdigest"
 
-                  val md5Base = md5.argument(1).asInstanceOf[Call]
-                  md5.argument(2).asInstanceOf[FieldIdentifier].canonicalName shouldBe "MD5"
+              val tmp1Assign = hexDigestFa.argument(1).asInstanceOf[Assignment]
+              tmp1Assign.code shouldBe "<tmp-1> = Digest::MD5"
 
-                  md5Base.name shouldBe Operators.fieldAccess
-                  md5Base.code shouldBe "self.Digest"
+              val md5Fa = tmp1Assign.source.asInstanceOf[FieldAccess]
+              md5Fa.code shouldBe "(<tmp-0> = Digest)::MD5"
 
-                  md5Base.argument(1).asInstanceOf[Identifier].name shouldBe RDefines.Self
-                  md5Base.argument(2).asInstanceOf[FieldIdentifier].canonicalName shouldBe "Digest"
-                case xs => fail(s"Expected identifier and call, got ${xs.code.mkString(", ")} instead")
-              }
+              val tmp0Assign = md5Fa.argument(1).asInstanceOf[Assignment]
+              tmp0Assign.code shouldBe "<tmp-0> = Digest"
+
+              val digestFa = tmp0Assign.source.asInstanceOf[FieldAccess]
+              digestFa.argument(1).asInstanceOf[Identifier].name shouldBe RDefines.Self
+              digestFa.argument(2).asInstanceOf[FieldIdentifier].canonicalName shouldBe "Digest"
             case xs => fail(s"Expected 2 arguments, got ${xs.code.mkString(", ")} instead")
           }
         case None => fail("Expected if-condition")
@@ -674,12 +675,12 @@ class MethodTests extends RubyCode2CpgFixture {
     }
 
     "be placed in order of definition" in {
-      inside(cpg.method.name(RDefines.Main).filename("t1.rb").block.astChildren.l) {
+      inside(cpg.method.name(RDefines.Main).filename("t1.rb").block.astChildren.isCall.l) {
         case (a1: Call) :: (a2: Call) :: (a3: Call) :: (a4: Call) :: (a5: Call) :: Nil =>
           a1.code shouldBe "self.A = module A (...)"
-          a2.code shouldBe "self::A::<body>"
+          a2.code shouldBe "(<tmp-0> = self::A).<body>"
           a3.code shouldBe "self.B = class B (...)"
-          a4.code shouldBe "self::B::<body>"
+          a4.code shouldBe "(<tmp-1> = self::B).<body>"
           a5.code shouldBe "self.c = def c (...)"
         case xs => fail(s"Expected assignments to appear before definitions, instead got [${xs.mkString("\n")}]")
       }
@@ -766,15 +767,15 @@ class MethodTests extends RubyCode2CpgFixture {
     inside(cpg.call.name(".*retry!").l) {
       case batchCall :: Nil =>
         batchCall.name shouldBe "retry!"
-        batchCall.code shouldBe "batch.retry!()"
+        batchCall.code shouldBe "(<tmp-0> = batch).retry!()"
 
         inside(batchCall.receiver.l) {
           case (receiverCall: Call) :: Nil =>
             receiverCall.name shouldBe Operators.fieldAccess
-            receiverCall.code shouldBe "batch.retry!"
+            receiverCall.code shouldBe "(<tmp-0> = batch).retry!"
 
             val selfBatch = receiverCall.argument(1).asInstanceOf[Call]
-            selfBatch.code shouldBe "self.batch"
+            selfBatch.code shouldBe "<tmp-0> = batch"
 
             val retry = receiverCall.argument(2).asInstanceOf[FieldIdentifier]
             retry.code shouldBe "retry!"
@@ -794,15 +795,15 @@ class MethodTests extends RubyCode2CpgFixture {
     inside(cpg.call.name(".*retry!").l) {
       case batchCall :: Nil =>
         batchCall.name shouldBe "retry!"
-        batchCall.code shouldBe "batch::retry!()"
+        batchCall.code shouldBe "(<tmp-0> = batch).retry!()"
 
         inside(batchCall.receiver.l) {
           case (receiverCall: Call) :: Nil =>
             receiverCall.name shouldBe Operators.fieldAccess
-            receiverCall.code shouldBe "batch.retry!"
+            receiverCall.code shouldBe "(<tmp-0> = batch).retry!"
 
             val selfBatch = receiverCall.argument(1).asInstanceOf[Call]
-            selfBatch.code shouldBe "self.batch"
+            selfBatch.code shouldBe "<tmp-0> = batch"
 
             val retry = receiverCall.argument(2).asInstanceOf[FieldIdentifier]
             retry.code shouldBe "retry!"
@@ -822,15 +823,15 @@ class MethodTests extends RubyCode2CpgFixture {
     inside(cpg.call.name(".*retry!").l) {
       case batchCall :: Nil =>
         batchCall.name shouldBe "retry!"
-        batchCall.code shouldBe "retry.retry!()"
+        batchCall.code shouldBe "(<tmp-0> = retry).retry!()"
 
         inside(batchCall.receiver.l) {
           case (receiverCall: Call) :: Nil =>
             receiverCall.name shouldBe Operators.fieldAccess
-            receiverCall.code shouldBe "retry.retry!"
+            receiverCall.code shouldBe "(<tmp-0> = retry).retry!"
 
             val selfBatch = receiverCall.argument(1).asInstanceOf[Call]
-            selfBatch.code shouldBe "self.retry"
+            selfBatch.code shouldBe "<tmp-0> = retry"
 
             val retry = receiverCall.argument(2).asInstanceOf[FieldIdentifier]
             retry.code shouldBe "retry!"
@@ -850,15 +851,15 @@ class MethodTests extends RubyCode2CpgFixture {
     inside(cpg.call.name(".*retry!").l) {
       case batchCall :: Nil =>
         batchCall.name shouldBe "retry!"
-        batchCall.code shouldBe "retry::retry!()"
+        batchCall.code shouldBe "(<tmp-0> = retry).retry!()"
 
         inside(batchCall.receiver.l) {
           case (receiverCall: Call) :: Nil =>
             receiverCall.name shouldBe Operators.fieldAccess
-            receiverCall.code shouldBe "retry.retry!"
+            receiverCall.code shouldBe "(<tmp-0> = retry).retry!"
 
             val selfBatch = receiverCall.argument(1).asInstanceOf[Call]
-            selfBatch.code shouldBe "self.retry"
+            selfBatch.code shouldBe "<tmp-0> = retry"
 
             val retry = receiverCall.argument(2).asInstanceOf[FieldIdentifier]
             retry.code shouldBe "retry!"

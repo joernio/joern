@@ -361,9 +361,12 @@ class ClassTests extends RubyCode2CpgFixture {
 
     "generate an assignment to the variable `a` with the source being a constructor invocation of the class" in {
       inside(cpg.method.isModule.assignment.l) {
-        case aAssignment :: Nil =>
+        case aAssignment :: tmpAssign :: Nil =>
           aAssignment.target.code shouldBe "a"
-          aAssignment.source.code shouldBe "Class.new <anon-class-0> (...)"
+          aAssignment.source.code shouldBe "(<tmp-0> = Class.new <anon-class-0> (...)).new"
+
+          tmpAssign.target.code shouldBe "<tmp-0>"
+          tmpAssign.source.code shouldBe "self.Class.new <anon-class-0> (...)"
         case xs => fail(s"Expected a single assignment, but got [${xs.map(x => x.label -> x.code).mkString(",")}]")
       }
     }
@@ -613,14 +616,9 @@ class ClassTests extends RubyCode2CpgFixture {
         case Some(bodyCall) =>
           bodyCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
           bodyCall.methodFullName shouldBe s"Test0.rb:$Main.Foo.${RubyDefines.TypeDeclBody}"
-
+          bodyCall.code shouldBe "(<tmp-0> = self::Foo).<body>"
           bodyCall.receiver.isEmpty shouldBe true
-          inside(bodyCall.argumentOption(0)) {
-            case Some(selfArg: Call) =>
-              selfArg.name shouldBe Operators.fieldAccess
-              selfArg.code shouldBe "self::Foo"
-            case None => fail("Expected `self` argument")
-          }
+          bodyCall.argument(0).code shouldBe "<tmp-0>"
         case None => fail("Expected <body> call")
       }
     }
