@@ -147,6 +147,18 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
         Unknown()(ctx.toTextSpan)
   }
 
+  override def visitCommandTernaryOperatorExpression(ctx: CommandTernaryOperatorExpressionContext): RubyNode = {
+    val condition = visit(ctx.operatorExpression(0))
+    val thenBody  = visit(ctx.operatorExpression(1))
+    val elseBody  = visit(ctx.operatorExpression(2))
+    IfExpression(
+      condition,
+      thenBody,
+      List.empty,
+      Option(ElseClause(StatementList(elseBody :: Nil)(elseBody.span))(elseBody.span))
+    )(ctx.toTextSpan)
+  }
+
   override def visitTernaryOperatorExpression(ctx: RubyParser.TernaryOperatorExpressionContext): RubyNode = {
     val condition = visit(ctx.operatorExpression(0))
     val thenBody  = visit(ctx.operatorExpression(1))

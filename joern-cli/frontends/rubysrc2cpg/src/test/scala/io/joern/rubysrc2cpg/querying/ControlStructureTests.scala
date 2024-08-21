@@ -578,4 +578,38 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     }
   }
 
+  "Ternary if" in {
+    val cpg = code("""
+        |class Api::V1::UsersController < ApplicationController
+        |  def index
+        |    respond_with @user.admin ? User.all : @user
+        |  end
+        |end
+        |""".stripMargin)
+
+    inside(cpg.method.name("index").l) {
+      case indexMethod :: Nil =>
+        inside(indexMethod.call.name(Operators.conditional).l) {
+          case ternary :: Nil =>
+            ternary.code shouldBe "@user.admin ? User.all : @user"
+
+            inside(ternary.argument.l) {
+              case condition :: (leftOpt: Block) :: (rightOpt: Block) :: Nil =>
+                condition.code shouldBe "@user.admin"
+                condition.ast.isFieldIdentifier.code.l shouldBe List("@user", "admin")
+
+                leftOpt.ast.fieldAccess.code.head shouldBe "User.all"
+                leftOpt.ast.isFieldIdentifier.code.l shouldBe List("User", "all")
+
+                rightOpt.ast.fieldAccess.code.head shouldBe "self.@user"
+                rightOpt.ast.isFieldIdentifier.code.head shouldBe "@user"
+
+              case xs => fail(s"Expected two arguments, got ${xs.code.mkString(",")}")
+            }
+          case xs => fail(s"Expected one call for ternary, got ${xs.code.mkString(",")}")
+        }
+      case xs => fail(s"Expected one method, got ${xs.name.mkString(",")}")
+    }
+  }
+
 }
