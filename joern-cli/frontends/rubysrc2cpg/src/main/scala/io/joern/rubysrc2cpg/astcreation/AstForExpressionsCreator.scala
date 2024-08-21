@@ -209,13 +209,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       val argumentAsts = n.arguments.map(astForMethodCallArgument)
       val dispatchType = if (isStatic) DispatchTypes.STATIC_DISPATCH else DispatchTypes.DYNAMIC_DISPATCH
 
-      val call = callNode(
-        n,
-        s"$baseCode.${code(n).split('.').last}",
-        n.methodName,
-        XDefines.DynamicCallUnknownFullName,
-        dispatchType
-      )
+      val callCode = if (baseCode.contains("<tmp-")) {
+        val rhsCode = if (n.methodName == "new") n.methodName else code(n).replace("::", ".").split('.').last
+        s"$baseCode.$rhsCode"
+      } else {
+        code(n)
+      }
+      val call = callNode(n, callCode, n.methodName, XDefines.DynamicCallUnknownFullName, dispatchType)
       if methodFullName != XDefines.DynamicCallUnknownFullName then call.possibleTypes(Seq(methodFullName))
       if (isStatic) {
         callAst(call, argumentAsts, base = Option(baseAst)).copy(receiverEdges = Nil)

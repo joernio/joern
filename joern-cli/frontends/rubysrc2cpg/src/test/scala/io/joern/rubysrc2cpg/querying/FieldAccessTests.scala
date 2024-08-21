@@ -109,20 +109,19 @@ class FieldAccessTests extends RubyCode2CpgFixture {
     }
 
     "give external type accesses on script-level the `self.` base" in {
-      val call = cpg.method.isModule.call.codeExact("Base64::decode64()").head
+      val call = cpg.method.isModule.call.nameExact("decode64").head
       call.name shouldBe "decode64"
 
-      val base = call.argument(0).asInstanceOf[Call]
-      base.name shouldBe Operators.fieldAccess
-      base.code shouldBe "self.Base64"
+      val base = call.argument(0).asInstanceOf[Identifier]
+      base.code shouldBe "<tmp-1>"
 
       val receiver = call.receiver.isCall.head
       receiver.name shouldBe Operators.fieldAccess
-      receiver.code shouldBe "Base64.decode64"
+      receiver.code shouldBe "(<tmp-1> = Base64).decode64"
 
       val selfArg1 = receiver.argument(1).asInstanceOf[Call]
-      selfArg1.name shouldBe Operators.fieldAccess
-      selfArg1.code shouldBe "self.Base64"
+      selfArg1.name shouldBe Operators.assignment
+      selfArg1.code shouldBe "<tmp-1> = Base64"
 
       val selfArg2 = receiver.argument(2).asInstanceOf[FieldIdentifier]
       selfArg2.canonicalName shouldBe "decode64"
@@ -130,20 +129,19 @@ class FieldAccessTests extends RubyCode2CpgFixture {
     }
 
     "give internal type accesses on script-level the `self.` base" in {
-      val call = cpg.method.isModule.call.codeExact("Baz::func1()").head
+      val call = cpg.method.isModule.call.nameExact("func1").head
       call.name shouldBe "func1"
 
-      val base = call.argument(0).asInstanceOf[Call]
-      base.name shouldBe Operators.fieldAccess
-      base.code shouldBe "self.Baz"
+      val base = call.argument(0).asInstanceOf[Identifier]
+      base.code shouldBe "<tmp-2>"
 
       val receiver = call.receiver.isCall.head
       receiver.name shouldBe Operators.fieldAccess
-      receiver.code shouldBe "Baz.func1"
+      receiver.code shouldBe "(<tmp-2> = Baz).func1"
 
       val selfArg1 = receiver.argument(1).asInstanceOf[Call]
-      selfArg1.name shouldBe Operators.fieldAccess
-      selfArg1.code shouldBe "self.Baz"
+      selfArg1.name shouldBe Operators.assignment
+      selfArg1.code shouldBe "<tmp-2> = Baz"
 
       val selfArg2 = receiver.argument(2).asInstanceOf[FieldIdentifier]
       selfArg2.canonicalName shouldBe "func1"
@@ -175,17 +173,16 @@ class FieldAccessTests extends RubyCode2CpgFixture {
       val call = cpg.method.nameExact("func").call.nameExact("func1").head
       call.name shouldBe "func1"
 
-      val base = call.argument(0).asInstanceOf[Call]
-      base.name shouldBe Operators.fieldAccess
-      base.code shouldBe "self.Baz"
+      val base = call.argument(0).asInstanceOf[Identifier]
+      base.code shouldBe "<tmp-3>"
 
       val receiver = call.receiver.isCall.head
       receiver.name shouldBe Operators.fieldAccess
-      receiver.code shouldBe "Baz.func1"
+      receiver.code shouldBe "(<tmp-3> = Baz).func1"
 
       val selfArg1 = receiver.argument(1).asInstanceOf[Call]
-      selfArg1.name shouldBe Operators.fieldAccess
-      selfArg1.code shouldBe "self.Baz"
+      selfArg1.name shouldBe Operators.assignment
+      selfArg1.code shouldBe "<tmp-3> = Baz"
 
       val selfArg2 = receiver.argument(2).asInstanceOf[FieldIdentifier]
       selfArg2.canonicalName shouldBe "func1"
@@ -211,23 +208,24 @@ class FieldAccessTests extends RubyCode2CpgFixture {
 
     "create `TYPE_REF` targets for the field accesses" in {
       val call = cpg.call.nameExact("func").head
-      val base = call.argument(0).asInstanceOf[Call]
-      base.name shouldBe Operators.fieldAccess
-      base.code shouldBe "A::B"
-
-      base.argument(1).asInstanceOf[TypeRef].typeFullName shouldBe s"Test0.rb:$Main.A<class>"
-      base.argument(2).asInstanceOf[FieldIdentifier].canonicalName shouldBe "B"
+      val base = call.argument(0).asInstanceOf[Identifier]
+      base.code shouldBe "<tmp-0>"
 
       val receiver = call.receiver.isCall.head
       receiver.name shouldBe Operators.fieldAccess
-      receiver.code shouldBe "A::B.func"
+      receiver.code shouldBe "(<tmp-0> = A::B).func"
 
       val selfArg1 = receiver.argument(1).asInstanceOf[Call]
-      selfArg1.name shouldBe Operators.fieldAccess
-      selfArg1.code shouldBe "A::B"
+      selfArg1.name shouldBe Operators.assignment
+      selfArg1.code shouldBe "<tmp-0> = A::B"
 
-      selfArg1.argument(1).asInstanceOf[TypeRef].typeFullName shouldBe s"Test0.rb:$Main.A<class>"
-      selfArg1.argument(2).asInstanceOf[FieldIdentifier].canonicalName shouldBe "B"
+      selfArg1.argument(1).asInstanceOf[Identifier].code shouldBe s"<tmp-0>"
+
+      val abRhs = selfArg1.argument(2).asInstanceOf[Call]
+      abRhs.code shouldBe "A::B"
+
+      abRhs.argument(1).asInstanceOf[TypeRef].typeFullName shouldBe s"Test0.rb:$Main.A<class>"
+      abRhs.argument(2).asInstanceOf[FieldIdentifier].canonicalName shouldBe "B"
 
       val selfArg2 = receiver.argument(2).asInstanceOf[FieldIdentifier]
       selfArg2.canonicalName shouldBe "func"

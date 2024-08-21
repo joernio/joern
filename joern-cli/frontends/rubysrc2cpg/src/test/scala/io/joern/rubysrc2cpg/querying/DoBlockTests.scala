@@ -400,11 +400,14 @@ class DoBlockTests extends RubyCode2CpgFixture {
                      |""".stripMargin)
 
     inside(cpg.local.l) {
-      case jfsOutsideLocal :: hashInsideLocal :: jfsCapturedLocal :: _ :: Nil =>
+      case jfsOutsideLocal :: hashInsideLocal :: jfsCapturedLocal :: tmp0 :: tmp1 :: Nil =>
         jfsOutsideLocal.closureBindingId shouldBe None
         hashInsideLocal.closureBindingId shouldBe None
         jfsCapturedLocal.closureBindingId shouldBe Some("Test0.rb:<main>.get_pto_schedule.jfs")
-      case xs => fail(s"Expected 4 locals, got ${xs.code.mkString(",")}")
+
+        tmp0.name shouldBe "<tmp-0>"
+        tmp1.name shouldBe "<tmp-1>"
+      case xs => fail(s"Expected 5 locals, got ${xs.code.mkString(",")}")
     }
 
     inside(cpg.method.isLambda.local.l) {

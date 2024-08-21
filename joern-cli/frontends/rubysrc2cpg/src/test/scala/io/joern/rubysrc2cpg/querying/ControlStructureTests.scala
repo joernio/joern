@@ -595,7 +595,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
 
             inside(ternary.argument.l) {
               case condition :: (leftOpt: Block) :: (rightOpt: Block) :: Nil =>
-                condition.code shouldBe "@user.admin"
+                condition.code shouldBe "(<tmp-0> = @user).admin"
                 condition.ast.isFieldIdentifier.code.l shouldBe List("@user", "admin")
 
                 leftOpt.ast.fieldAccess.code.head shouldBe "User.all"
