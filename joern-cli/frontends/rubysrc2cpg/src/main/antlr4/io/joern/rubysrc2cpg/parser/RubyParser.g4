@@ -141,8 +141,8 @@ methodInvocationWithoutParentheses
     ;
 
 command
-    :   operatorExpression
-        # operatorExpressionCommand
+    :   operatorExpression QMARK NL* operatorExpression NL* COLON NL* operatorExpression
+        # commandTernaryOperatorExpression
     |   primary NL? (AMPDOT | DOT | COLON2) methodName commandArgument
         # memberAccessCommand
     |   methodIdentifier commandArgument
