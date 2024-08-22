@@ -1,5 +1,6 @@
 package io.joern.x2cpg.utils
 
+import java.io.File
 import java.util.concurrent.ConcurrentLinkedQueue
 import scala.sys.process.{Process, ProcessLogger}
 import scala.util.{Failure, Success, Try}
@@ -34,6 +35,22 @@ trait ExternalCommand {
     handleRunResult(Try(process.!(processLogger)), stdOutOutput.asScala.toSeq, stdErrOutput.asScala.toSeq)
   }
 
+  // We use the java ProcessBuilder API instead of the Scala version because it
+  // offers the possibility to merge stdout and stderr into one stream of output.
+  // Maybe the Scala version also offers this but since there is no documentation
+  // I was not able to figure it out.
+  def runWithMergeStdoutAndStderr(command: String, cwd: String): (Int, String) = {
+    val builder = new ProcessBuilder()
+    builder.command(command.split(' ')*)
+    builder.directory(new File(cwd))
+    builder.redirectErrorStream(true)
+
+    val process     = builder.start()
+    val outputBytes = process.getInputStream.readAllBytes()
+    val returnValue = process.waitFor()
+
+    (returnValue, new String(outputBytes))
+  }
 }
 
 object ExternalCommand extends ExternalCommand

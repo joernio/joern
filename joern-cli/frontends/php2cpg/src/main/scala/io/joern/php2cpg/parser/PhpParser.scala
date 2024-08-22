@@ -6,7 +6,10 @@ import io.joern.php2cpg.parser.Domain.PhpFile
 import io.joern.x2cpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
+import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.regex.Pattern
+import scala.collection.mutable
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
@@ -14,56 +17,114 @@ class PhpParser private (phpParserPath: String, phpIniPath: String, disableFileC
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  private def phpParseCommand(filename: String): String = {
+  private def phpParseCommand(filenames: collection.Seq[String]): String = {
     val phpParserCommands = "--with-recovery --resolve-names --json-dump"
-    s"php --php-ini $phpIniPath $phpParserPath $phpParserCommands $filename"
+    val filenamesString   = filenames.mkString(" ")
+    s"php --php-ini $phpIniPath $phpParserPath $phpParserCommands $filenamesString"
   }
 
-  def parseFile(inputPath: String): Option[(PhpFile, Option[String])] = {
-    val inputFile      = File(inputPath)
-    val inputFilePath  = inputFile.canonicalPath
-    val inputDirectory = inputFile.parent.canonicalPath
-    val command        = phpParseCommand(inputFilePath)
-    ExternalCommand.run(command, inputDirectory) match {
-      case Success(output) =>
-        val content = Option.unless(disableFileContent)(inputFile.contentAsString)
-        processParserOutput(output, inputFilePath).map((_, content))
-      case Failure(exception) =>
-        logger.error(s"Failure running php-parser with $command", exception.getMessage)
-        None
+  def parseFiles(inputPaths: collection.Seq[String]): collection.Seq[(String, Option[PhpFile], String)] = {
+    // We need to keep a map between the input path and its canonical representation in
+    // order to map back the canonical file name we get from the php parser.
+    // Otherwise later on file name/path processing might get confused because the returned
+    // file paths are in no relation to the input paths.
+    val canonicalToInputPath = mutable.HashMap.empty[String, String]
+
+    inputPaths.foreach { inputPath =>
+      val canonicalPath = Path.of(inputPath).toFile.getCanonicalPath
+      canonicalToInputPath.put(canonicalPath, inputPath)
+    }
+
+    val command = phpParseCommand(inputPaths)
+
+    val (returnValue, output) = ExternalCommand.runWithMergeStdoutAndStderr(command, ".")
+    returnValue match {
+      case 0 =>
+        val asJson = linesToJsonValues(output.lines().toArray(size => new Array[String](size)))
+        val asPhpFile = asJson.map { case (filename, jsonObjectOption, infoLines) =>
+          (filename, jsonToPhpFile(jsonObjectOption, filename), infoLines)
+        }
+        val withRemappedFileName = asPhpFile.map { case (filename, phpFileOption, infoLines) =>
+          (canonicalToInputPath.apply(filename), phpFileOption, infoLines)
+        }
+        withRemappedFileName
+      case exitCode =>
+        logger.error(s"Failure running php-parser with $command, exit code $exitCode")
+        Nil
     }
   }
 
-  private def processParserOutput(output: Seq[String], filename: String): Option[PhpFile] = {
-    val maybeJson = linesToJsonValue(output, filename)
-    maybeJson.flatMap(jsonValueToPhpFile(_, filename))
-  }
-
-  private def linesToJsonValue(lines: Seq[String], filename: String): Option[ujson.Value] = {
-    if (lines.exists(_.startsWith("["))) {
-      val jsonString = lines.dropWhile(_.charAt(0) != '[').mkString
-      Try(Option(ujson.read(jsonString))) match {
-        case Success(Some(value)) => Some(value)
-        case Success(None) =>
-          logger.error(s"Parsing json string for $filename resulted in null return value")
-          None
-        case Failure(exception) =>
-          logger.error(s"Parsing json string for $filename failed with exception", exception)
+  private def jsonToPhpFile(jsonObject: Option[ujson.Value], filename: String): Option[PhpFile] = {
+    val phpFile = jsonObject.flatMap { jsonObject =>
+      Try(Domain.fromJson(jsonObject)) match {
+        case Success(phpFile) =>
+          Some(phpFile)
+        case Failure(e) =>
+          logger.error(s"Failed to generate intermediate AST for $filename", e)
           None
       }
-    } else {
-      logger.warn(s"No JSON output for $filename")
-      None
     }
+    phpFile
   }
 
-  private def jsonValueToPhpFile(json: ujson.Value, filename: String): Option[PhpFile] = {
-    Try(Domain.fromJson(json)) match {
-      case Success(phpFile) => Some(phpFile)
-      case Failure(e) =>
-        logger.error(s"Failed to generate intermediate AST for $filename", e)
-        None
+  enum PARSE_MODE {
+    case PARSE_INFO, PARSE_JSON, SKIP_TRAILER
+  }
+
+  private def linesToJsonValues(
+    lines: collection.Seq[String]
+  ): collection.Seq[(String, Option[ujson.Value], String)] = {
+    val filePrefix    = "====> File "
+    val filenameRegex = Pattern.compile(s"$filePrefix(.*):")
+    val result        = mutable.ArrayBuffer.empty[(String, Option[ujson.Value], String)]
+
+    var filename  = ""
+    val infoLines = mutable.ArrayBuffer.empty[String]
+    val jsonLines = mutable.ArrayBuffer.empty[String]
+
+    var mode    = PARSE_MODE.SKIP_TRAILER
+    val linesIt = lines.iterator
+    while (linesIt.hasNext) {
+      val line = linesIt.next
+      mode match {
+        case PARSE_MODE.PARSE_INFO =>
+          if (line != "==> JSON dump:") {
+            infoLines.append(line)
+          } else {
+            mode = PARSE_MODE.PARSE_JSON
+          }
+        case PARSE_MODE.PARSE_JSON =>
+          jsonLines.append(line)
+          if (line.startsWith("]") || line == "[]") {
+            val jsonString = jsonLines.mkString
+
+            Try(Option(ujson.read(jsonString))) match {
+              case Success(option) =>
+                result.append((filename, option, infoLines.mkString))
+                if (option.isEmpty) {
+                  logger.error(s"Parsing json string for $filename resulted in null return value")
+                }
+              case Failure(exception) =>
+                result.append((filename, None, infoLines.mkString))
+                logger.error(s"Parsing json string for $filename failed with exception", exception)
+            }
+
+            mode = PARSE_MODE.SKIP_TRAILER
+          }
+        case _ =>
+      }
+
+      if (line.startsWith(filePrefix)) {
+        val matcher = filenameRegex.matcher(line)
+        if (matcher.find()) {
+          filename = matcher.group(1)
+          infoLines.clear()
+          jsonLines.clear()
+          mode = PARSE_MODE.PARSE_INFO
+        }
+      }
     }
+    result
   }
 }
 
