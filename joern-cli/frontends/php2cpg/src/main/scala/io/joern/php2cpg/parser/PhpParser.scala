@@ -24,8 +24,12 @@ class PhpParser private (phpParserPath: String, phpIniPath: String, disableFileC
   }
 
   def parseFiles(inputPaths: collection.Seq[String]): collection.Seq[(String, Option[PhpFile], String)] = {
+    // We need to keep a map between the input path and its canonical representation in
+    // order to map back the canonical file name we get from the php parser.
+    // Otherwise later on file name/path processing might get confused because the returned
+    // file paths are in no relation to the input paths.
     val canonicalToInputPath = mutable.HashMap.empty[String, String]
-    
+
     inputPaths.foreach { inputPath =>
       val canonicalPath = Path.of(inputPath).toFile.getCanonicalPath
       canonicalToInputPath.put(canonicalPath, inputPath)
