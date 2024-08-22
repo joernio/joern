@@ -6,6 +6,7 @@ import io.joern.php2cpg.parser.Domain.PhpFile
 import io.joern.x2cpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
+import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.regex.Pattern
 import scala.collection.mutable
@@ -23,9 +24,11 @@ class PhpParser private (phpParserPath: String, phpIniPath: String, disableFileC
   }
 
   def parseFiles(inputPaths: collection.Seq[String]): collection.Seq[(String, Option[PhpFile], String)] = {
-    val absoluteInputPaths = inputPaths.map { inputPath =>
-      val inputFile = File(inputPath)
-      inputFile.canonicalPath
+    val canonicalToInputPath = mutable.HashMap.empty[String, String]
+    
+    inputPaths.foreach { inputPath =>
+      val canonicalPath = Path.of(inputPath).toFile.getCanonicalPath
+      canonicalToInputPath.put(canonicalPath, inputPath)
     }
 
     val command = phpParseCommand(inputPaths)
@@ -33,29 +36,31 @@ class PhpParser private (phpParserPath: String, phpIniPath: String, disableFileC
     val (returnValue, output) = ExternalCommand.runWithMergeStdoutAndStderr(command, ".")
     returnValue match {
       case 0 =>
-        processParserOutput(output.lines().toArray(size => new Array[String](size)))
+        val asJson = linesToJsonValues(output.lines().toArray(size => new Array[String](size)))
+        val asPhpFile = asJson.map { case (filename, jsonObjectOption, infoLines) =>
+          (filename, jsonToPhpFile(jsonObjectOption, filename), infoLines)
+        }
+        val withRemappedFileName = asPhpFile.map { case (filename, phpFileOption, infoLines) =>
+          (canonicalToInputPath.apply(filename), phpFileOption, infoLines)
+        }
+        withRemappedFileName
       case exitCode =>
         logger.error(s"Failure running php-parser with $command, exit code $exitCode")
         Nil
     }
   }
 
-  private def processParserOutput(
-    outputLines: collection.Seq[String]
-  ): collection.Seq[(String, Option[PhpFile], String)] = {
-    val maybeJson = linesToJsonValues(outputLines)
-    maybeJson.map { case (filename, jsonObjectOption, infoLines) =>
-      val phpFileOption = jsonObjectOption.flatMap { jsonObject =>
-        Try(Domain.fromJson(jsonObject)) match {
-          case Success(phpFile) =>
-            Some(phpFile)
-          case Failure(e) =>
-            logger.error(s"Failed to generate intermediate AST for $filename", e)
-            None
-        }
+  private def jsonToPhpFile(jsonObject: Option[ujson.Value], filename: String): Option[PhpFile] = {
+    val phpFile = jsonObject.flatMap { jsonObject =>
+      Try(Domain.fromJson(jsonObject)) match {
+        case Success(phpFile) =>
+          Some(phpFile)
+        case Failure(e) =>
+          logger.error(s"Failed to generate intermediate AST for $filename", e)
+          None
       }
-      (filename, phpFileOption, infoLines)
     }
+    phpFile
   }
 
   enum PARSE_MODE {
