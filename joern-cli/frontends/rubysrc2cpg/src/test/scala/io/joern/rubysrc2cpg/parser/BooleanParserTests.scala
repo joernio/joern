@@ -22,5 +22,12 @@ class BooleanParserTests extends RubyParserFixture with Matchers {
     test("1 && !2")
     test("1 || 2 || 3")
     test("1 && 2 && 3")
+    test("1 != 2")
+    test("1 == [:b, :c]", "1 == [:b,:c]")
+    test("! foo 1", "!foo 1")
+  }
+
+  "Spaceship" in {
+    test("a <=> b")
   }
 }

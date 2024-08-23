@@ -40,6 +40,8 @@ class RescueClauseParserTests extends RubyParserFixture with Matchers {
         |rescue ZeroDivisionError => e
         |end""".stripMargin
     )
+
+    test("a (b rescue c)", "a b rescue c")
   }
 
 }

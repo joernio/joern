@@ -8,6 +8,7 @@ class InvocationWithoutParenthesesParserTests extends RubyParserFixture with Mat
     test("task.nil?")
     test("foo?")
     test("foo!")
+    test("foo a.b 1")
   }
 
   "command with do block" in {
@@ -22,7 +23,6 @@ class InvocationWithoutParenthesesParserTests extends RubyParserFixture with Mat
     )
 
     test("foo&.bar")
-
     test("foo&.bar 1, 2")
   }
 

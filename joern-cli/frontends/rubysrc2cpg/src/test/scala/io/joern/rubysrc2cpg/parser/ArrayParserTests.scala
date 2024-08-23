@@ -5,6 +5,10 @@ import io.joern.rubysrc2cpg.testfixtures.RubyParserFixture
 import org.scalatest.matchers.should.Matchers
 
 class ArrayParserTests extends RubyParserFixture with Matchers {
+  "fixme" ignore {
+    test("[1, 2 => 3]", "[1,2=> 3]") // syntax error
+  }
+
   "array structures" in {
     test("[]")
     test("%w[]")
@@ -47,5 +51,9 @@ class ArrayParserTests extends RubyParserFixture with Matchers {
     )
     test("%I{}")
     test("%I(x#{0} x1)")
+  }
+
+  "array params" in {
+    test("[1 => 2]", "[1=> 2]")
   }
 }

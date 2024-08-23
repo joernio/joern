@@ -4,6 +4,12 @@ import io.joern.rubysrc2cpg.testfixtures.RubyParserFixture
 import org.scalatest.matchers.should.Matchers
 
 class ProcDefinitionParserTests extends RubyParserFixture with Matchers {
+  "fixme" ignore {
+    test("->a{}")                   // Syntax error
+    test("->(b, c=1, *d, e, &f){}") // Syntax error
+    test("-> (a;b) {}")             // Syntax error
+  }
+
   "one-line proc definition" in {
     test("-> {}")
 
@@ -43,5 +49,24 @@ class ProcDefinitionParserTests extends RubyParserFixture with Matchers {
         |puts y
         |}""".stripMargin
     )
+
+    test(
+      """a -> do 1 end do 2 end""",
+      """a -> do
+        |1
+        |end do
+        |2
+        |end""".stripMargin
+    )
+
+    test(
+      """a ->() { g do end }""",
+      """a -> {
+        |g do
+        |end
+        |}""".stripMargin
+    )
+
+    test("""-> (k:) { }""", """->(k:) {}""")
   }
 }

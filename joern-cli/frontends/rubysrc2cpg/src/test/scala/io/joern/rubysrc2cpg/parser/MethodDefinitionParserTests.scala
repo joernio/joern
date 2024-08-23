@@ -4,6 +4,14 @@ import io.joern.rubysrc2cpg.testfixtures.RubyParserFixture
 import org.scalatest.matchers.should.Matchers
 
 class MethodDefinitionParserTests extends RubyParserFixture with Matchers {
+  "fixme" ignore {
+    test("def f(a=1, *b, c) end") // syntax error
+    test("def f(*,a) end")        // AstPrinter issue possibly
+    test("""def a(...)
+        |b(...)
+        |end""".stripMargin) // Syntax error
+  }
+
   "single line method definition" in {
     test(
       "def foo; end",
@@ -12,8 +20,27 @@ class MethodDefinitionParserTests extends RubyParserFixture with Matchers {
     )
 
     test(
+      """def foo arg = false
+        |end""".stripMargin,
+      """def foo(arg=false)
+        |end""".stripMargin
+    )
+
+    test(
       "def foo(x); end",
       """def foo(x)
+        |end""".stripMargin
+    )
+
+    test(
+      "def f(a=nil, b) end",
+      """def f(a=nil,b)
+        |end""".stripMargin
+    )
+
+    test(
+      "def f(a, b = :c, d) end",
+      """def f(a,b=:c,d)
         |end""".stripMargin
     )
 
@@ -70,6 +97,7 @@ class MethodDefinitionParserTests extends RubyParserFixture with Matchers {
       """def foo(name:,surname:)
         |end""".stripMargin
     )
+
   }
 
   "multi-line method definition" in {
@@ -84,6 +112,45 @@ class MethodDefinitionParserTests extends RubyParserFixture with Matchers {
         |rescue ZeroDivisionError => e
         |end""".stripMargin
     )
+
+    test("""def x(y)
+        |p(y)
+        |y *= 2
+        |return y
+        |end""".stripMargin)
+
+    test("""def test(**testing)
+        |test_splat(**testing)
+        |end""".stripMargin)
+
+    test(
+      """def fun(kw: :val)
+        |kw
+        |end""".stripMargin,
+      """def fun(kw::val)
+        |kw
+        |end""".stripMargin
+    )
+
+    test(
+      """def x a:, b:
+        |end""".stripMargin,
+      """def x(a:,b:)
+        |end""".stripMargin
+    )
+
+    test(
+      """def exec(cmd)
+        |system(cmd)
+        |rescue
+        |nil
+        |end""".stripMargin,
+      """def exec(cmd)
+        |system(cmd)
+        |rescue
+        |nil
+        |end""".stripMargin
+    )
   }
 
   "endless method definition" in {
@@ -91,6 +158,7 @@ class MethodDefinitionParserTests extends RubyParserFixture with Matchers {
     test("def foo =\n x", "def foo = x")
     test("def foo = \"something\"")
     test("def id(x) = x")
+    test("def foo = bar 42")
   }
 
   "method def with proc params" in {
@@ -103,7 +171,6 @@ class MethodDefinitionParserTests extends RubyParserFixture with Matchers {
         |yield
         |end""".stripMargin
     )
-
   }
 
   "method def for mandatory parameters" in {
@@ -168,5 +235,9 @@ class MethodDefinitionParserTests extends RubyParserFixture with Matchers {
         | end
         |end""".stripMargin
     )
+  }
+
+  "alias method" in {
+    test("alias :start :on")
   }
 }
