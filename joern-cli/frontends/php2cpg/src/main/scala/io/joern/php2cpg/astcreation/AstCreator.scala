@@ -10,7 +10,7 @@ import io.joern.x2cpg.Defines.{StaticInitMethodName, UnresolvedNamespace, Unreso
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.utils.IntervalKeyPool
 import io.joern.x2cpg.utils.NodeBuilders.*
-import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode}
+import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
@@ -888,10 +888,10 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
       val selfIdentifier = {
         val name = "self"
         val typ  = scope.getEnclosingTypeDeclTypeName
-        newIdentifierNode(name, typ.getOrElse("ANY"), typ.toList, memberNode.lineNumber).code(name)
+        newIdentifierNode(name, typ.getOrElse(Defines.Any), typ.toList, memberNode.lineNumber).code(name)
       }
       val fieldIdentifier = newFieldIdentifierNode(memberNode.name, memberNode.lineNumber)
-      val code = s"self::${memberNode.code.replace("static ", "").replace("case ", "").replace("const ", "")}"
+      val code            = s"self::${memberNode.code.replaceAll("(static|case|const) ", "")}"
       val fieldAccessNode = newOperatorCallNode(Operators.fieldAccess, code, line = memberNode.lineNumber)
       callAst(fieldAccessNode, List(selfIdentifier, fieldIdentifier).map(Ast(_)))
     }
