@@ -885,11 +885,15 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
       val fieldIdentifier = newFieldIdentifierNode(memberNode.name, memberNode.lineNumber)
       callAst(fieldAccessNode, List(identifier, fieldIdentifier).map(Ast(_))).withRefEdges(identifier, thisParam.toList)
     } else {
-      val identifierCode = memberNode.code.replaceAll("const ", "").replaceAll("case ", "")
-      val typeFullName   = Option(memberNode.typeFullName)
-      val identifier = newIdentifierNode(memberNode.name, typeFullName.getOrElse("ANY"))
-        .code(identifierCode)
-      Ast(identifier).withRefEdge(identifier, memberNode)
+      val selfIdentifier = {
+        val name = "self"
+        val typ  = scope.getEnclosingTypeDeclTypeName
+        newIdentifierNode(name, typ.getOrElse("ANY"), typ.toList, memberNode.lineNumber).code(name)
+      }
+      val fieldIdentifier = newFieldIdentifierNode(memberNode.name, memberNode.lineNumber)
+      val code = s"self::${memberNode.code.replace("static ", "").replace("case ", "").replace("const ", "")}"
+      val fieldAccessNode = newOperatorCallNode(Operators.fieldAccess, code, line = memberNode.lineNumber)
+      callAst(fieldAccessNode, List(selfIdentifier, fieldIdentifier).map(Ast(_)))
     }
     val value = astForExpr(valueExpr)
 
@@ -908,7 +912,7 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
       val name      = constDecl.name.name
       val code      = s"const $name"
       val someValue = Option(constDecl.value)
-      astForConstOrFieldValue(stmt, name, code, someValue, scope.addConstOrStaticInitToScope, isField = false)
+      astForConstOrStaticOrFieldValue(stmt, name, code, someValue, scope.addConstOrStaticInitToScope, isField = false)
         .withChildren(modifierAsts)
     }
   }
@@ -919,21 +923,35 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
     val name = stmt.name.name
     val code = s"case $name"
 
-    astForConstOrFieldValue(stmt, name, code, stmt.expr, scope.addConstOrStaticInitToScope, isField = false)
+    astForConstOrStaticOrFieldValue(stmt, name, code, stmt.expr, scope.addConstOrStaticInitToScope, isField = false)
       .withChild(finalModifier)
   }
 
   private def astsForPropertyStmt(stmt: PhpPropertyStmt): List[Ast] = {
     stmt.variables.map { varDecl =>
-      val modifierAsts = stmt.modifiers.map(newModifierNode).map(Ast(_))
+      val modifiers    = stmt.modifiers
+      val modifierAsts = modifiers.map(newModifierNode).map(Ast(_))
 
       val name = varDecl.name.name
-      astForConstOrFieldValue(stmt, name, s"$$$name", varDecl.defaultValue, scope.addFieldInitToScope, isField = true)
-        .withChildren(modifierAsts)
+      val ast = if (modifiers.contains(ModifierTypes.STATIC)) {
+        // A static member belongs to a class, not an instance
+        val memberCode = s"static $$$name"
+        astForConstOrStaticOrFieldValue(
+          stmt,
+          name,
+          memberCode,
+          varDecl.defaultValue,
+          scope.addConstOrStaticInitToScope,
+          false
+        )
+      } else
+        astForConstOrStaticOrFieldValue(stmt, name, s"$$$name", varDecl.defaultValue, scope.addFieldInitToScope, true)
+
+      ast.withChildren(modifierAsts)
     }
   }
 
-  private def astForConstOrFieldValue(
+  private def astForConstOrStaticOrFieldValue(
     originNode: PhpNode,
     name: String,
     code: String,
