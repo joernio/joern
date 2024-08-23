@@ -37,5 +37,7 @@ class RegexParserTests extends RubyParserFixture with Matchers {
 
     test("""unless /\A([^@\s]+)@((?:[-a-z0-9]+\.)+[a-z]{2,})\z/i.match?(value)
            |end""".stripMargin)
+
+    test("1 !~ 2")
   }
 }

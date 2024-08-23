@@ -69,7 +69,7 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     val condition = visit(ctx.expressionOrCommand())
     val body      = visit(ctx.doClause())
 
-    s"${ctx.UNTIL.getText} $condition $body$ls${ctx.END.getText}"
+    s"${ctx.UNTIL.getText} $condition$ls$body$ls${ctx.END.getText}"
   }
 
   override def visitBeginEndExpression(ctx: RubyParser.BeginEndExpressionContext): String = {
@@ -1104,6 +1104,7 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   }
 
   override def visitRescueClause(ctx: RubyParser.RescueClauseContext): String = {
+    val outputSb           = new StringBuilder(ctx.RESCUE().getText)
     val exceptionClassList = Option(ctx.exceptionClassList).map(visit).getOrElse("")
     val variables          = Option(ctx.exceptionVariableAssignment).map(visit).getOrElse("")
     val thenClause         = visit(ctx.thenClause)
@@ -1112,7 +1113,14 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
       if Option(ctx.thenClause().THEN()).isDefined then s" ${ctx.thenClause().THEN().getText}"
       else ""
 
-    s"${ctx.RESCUE().getText} $exceptionClassList => $variables $thenKeyword $thenClause".strip()
+    if exceptionClassList != "" then outputSb.append(s" $exceptionClassList")
+    if variables != "" then outputSb.append(s" => $variables")
+
+    outputSb.append(thenKeyword)
+
+    if thenClause != "" then outputSb.append(s"\n${thenClause}")
+
+    outputSb.toString()
   }
 
   override def visitEnsureClause(ctx: RubyParser.EnsureClauseContext): String = {

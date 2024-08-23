@@ -4,6 +4,13 @@ import io.joern.rubysrc2cpg.testfixtures.RubyParserFixture
 import org.scalatest.matchers.should.Matchers
 
 class InvocationWithParenthesisParserTests extends RubyParserFixture with Matchers {
+  "fixme" ignore {
+    test("foo.()")           // syntax error
+    test("defined?(42)")     // parentheses go missing
+    test("foo([:b, :c=> 1]") // syntax error
+    test("x(&)")             // Syntax error
+  }
+
   "method invocation with parenthesis" in {
     test("foo()")
     test(
@@ -20,6 +27,16 @@ class InvocationWithParenthesisParserTests extends RubyParserFixture with Matche
     test("foo(:region)")
     test("foo(:region,)", "foo(:region)")
     test("foo(if: true)")
+    test("foo(1, 2=>3)", "foo(1,2=> 3)")
+    test("foo(1, 2=>3,)", "foo(1,2=> 3)")
+    test("foo(1=> 2,)", "foo(1=> 2)")
+    test("foo(1, kw: 2, **3)", "foo(1,kw: 2,**3)")
+    test("foo(b, **1)", "foo(b,**1)")
+    test("""foo(b: if :c
+        |1
+        |else
+        |2
+        |end)""".stripMargin)
     test("foo&.bar()")
     test("foo&.bar(1, 2)", "foo&.bar(1,2)")
     test(
@@ -33,6 +50,19 @@ class InvocationWithParenthesisParserTests extends RubyParserFixture with Matche
         |bar
         |""".stripMargin,
       "foo.bar"
+    )
+
+    test("f(1, kw:2, **3)", "f(1,kw: 2,**3)")
+  }
+
+  "Method with comments" in {
+    test(
+      """# blah 1
+        |# blah 2
+        |def blah
+        |end""".stripMargin,
+      """def blah
+      |end""".stripMargin
     )
   }
 }

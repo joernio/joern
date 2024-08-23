@@ -29,5 +29,41 @@ class ClassDefinitionParserTests extends RubyParserFixture with Matchers {
         |end
         |end""".stripMargin
     )
+    test(
+      """class Foo
+        | def self.show
+        | end
+        |end
+        |""".stripMargin,
+      """class Foo
+        |def <body>
+        |
+        |end
+        |def self.show
+        | end
+        |end""".stripMargin
+    )
+  }
+
+  "class definitions with comments" in {
+    test(
+      """#blah 1
+        |#blah 2
+        |class X
+        |#blah 3
+        |def blah
+        |#blah4
+        |end
+        |end
+        |""".stripMargin,
+      """class X
+        |def <body>
+        |
+        |end
+        |def blah
+        |#blah4
+        |end
+        |end""".stripMargin
+    )
   }
 }

@@ -14,6 +14,12 @@ class ControlStructureParserTests extends RubyParserFixture with Matchers {
     )
   }
 
+  "until" in {
+    test("""until not var.nil?
+        |'foo'
+        |end""".stripMargin)
+  }
+
   "if" in {
     test(
       """if __LINE__ > 1 then
@@ -54,6 +60,27 @@ class ControlStructureParserTests extends RubyParserFixture with Matchers {
       |else
       |456
       |end""".stripMargin
+    )
+
+    test(
+      "if a..b then end",
+      """if a..b
+        |end""".stripMargin
+    )
+
+    test(
+      "if :x; end",
+      """if :x
+        |end""".stripMargin
+    )
+
+    test(
+      "if not var.nil? then 'foo' else 'bar'\nend",
+      """if not var.nil?
+        |'foo'
+        |else
+        |'bar'
+        |end""".stripMargin
     )
   }
 
