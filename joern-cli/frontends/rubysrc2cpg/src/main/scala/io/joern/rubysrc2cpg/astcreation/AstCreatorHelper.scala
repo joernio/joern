@@ -115,12 +115,19 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     astForAssignment(Ast(lhs), Ast(rhs), lineNumber, columnNumber)
   }
 
-  protected def astForAssignment(lhs: Ast, rhs: Ast, lineNumber: Option[Int], columnNumber: Option[Int]): Ast = {
-    val code = Seq(lhs, rhs).flatMap(_.root).collect { case x: ExpressionNew => x.code }.mkString(" = ")
+  protected def astForAssignment(
+    lhs: Ast,
+    rhs: Ast,
+    lineNumber: Option[Int],
+    columnNumber: Option[Int],
+    code: Option[String] = None
+  ): Ast = {
+    val _code =
+      code.getOrElse(Seq(lhs, rhs).flatMap(_.root).collect { case x: ExpressionNew => x.code }.mkString(" = "))
     val assignment = NewCall()
       .name(Operators.assignment)
       .methodFullName(Operators.assignment)
-      .code(code)
+      .code(_code)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .lineNumber(lineNumber)
       .columnNumber(columnNumber)

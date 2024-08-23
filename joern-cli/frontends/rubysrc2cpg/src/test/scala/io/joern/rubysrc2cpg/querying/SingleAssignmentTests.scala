@@ -319,7 +319,7 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
     inside(cpg.method.name("foo").controlStructure.l) {
       case ifStruct :: Nil =>
         ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
-        ifStruct.condition.code.l shouldBe List("hash[:id].nil?")
+        ifStruct.condition.code.l shouldBe List("(<tmp-0> = hash[:id]).nil?")
 
         inside(ifStruct.whenTrue.ast.isCall.name(Operators.assignment).l) {
           case assignmentCall :: Nil =>

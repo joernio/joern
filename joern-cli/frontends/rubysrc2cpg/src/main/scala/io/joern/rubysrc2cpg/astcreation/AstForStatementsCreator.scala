@@ -10,28 +10,31 @@ import io.shiftleft.codepropertygraph.generated.nodes.{NewControlStructure, NewM
 
 trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  protected def astsForStatement(node: RubyNode): Seq[Ast] = node match
-    case node: WhileExpression            => astForWhileStatement(node) :: Nil
-    case node: DoWhileExpression          => astForDoWhileStatement(node) :: Nil
-    case node: UntilExpression            => astForUntilStatement(node) :: Nil
-    case node: IfExpression               => astForIfStatement(node) :: Nil
-    case node: UnlessExpression           => astForUnlessStatement(node) :: Nil
-    case node: ForExpression              => astForForExpression(node) :: Nil
-    case node: CaseExpression             => astsForCaseExpression(node)
-    case node: StatementList              => astForStatementList(node) :: Nil
-    case node: SimpleCallWithBlock        => astForCallWithBlock(node) :: Nil
-    case node: MemberCallWithBlock        => astForCallWithBlock(node) :: Nil
-    case node: ReturnExpression           => astForReturnStatement(node) :: Nil
-    case node: AnonymousTypeDeclaration   => astForAnonymousTypeDeclaration(node) :: Nil
-    case node: TypeDeclaration            => astForClassDeclaration(node)
-    case node: FieldsDeclaration          => astsForFieldDeclarations(node)
-    case node: AccessModifier             => registerAccessModifier(node)
-    case node: MethodDeclaration          => astForMethodDeclaration(node)
-    case node: SingletonMethodDeclaration => astForSingletonMethodDeclaration(node)
-    case node: MultipleAssignment         => node.assignments.map(astForExpression)
-    case node: BreakStatement             => astForBreakStatement(node) :: Nil
-    case node: SingletonStatementList     => astForSingletonStatementList(node)
-    case _                                => astForExpression(node) :: Nil
+  protected def astsForStatement(node: RubyNode): Seq[Ast] = {
+    baseAstCache.clear() // A safe approximation on where to reset the cache
+    node match
+      case node: WhileExpression            => astForWhileStatement(node) :: Nil
+      case node: DoWhileExpression          => astForDoWhileStatement(node) :: Nil
+      case node: UntilExpression            => astForUntilStatement(node) :: Nil
+      case node: IfExpression               => astForIfStatement(node) :: Nil
+      case node: UnlessExpression           => astForUnlessStatement(node) :: Nil
+      case node: ForExpression              => astForForExpression(node) :: Nil
+      case node: CaseExpression             => astsForCaseExpression(node)
+      case node: StatementList              => astForStatementList(node) :: Nil
+      case node: SimpleCallWithBlock        => astForCallWithBlock(node) :: Nil
+      case node: MemberCallWithBlock        => astForCallWithBlock(node) :: Nil
+      case node: ReturnExpression           => astForReturnStatement(node) :: Nil
+      case node: AnonymousTypeDeclaration   => astForAnonymousTypeDeclaration(node) :: Nil
+      case node: TypeDeclaration            => astForClassDeclaration(node)
+      case node: FieldsDeclaration          => astsForFieldDeclarations(node)
+      case node: AccessModifier             => registerAccessModifier(node)
+      case node: MethodDeclaration          => astForMethodDeclaration(node)
+      case node: SingletonMethodDeclaration => astForSingletonMethodDeclaration(node)
+      case node: MultipleAssignment         => node.assignments.map(astForExpression)
+      case node: BreakStatement             => astForBreakStatement(node) :: Nil
+      case node: SingletonStatementList     => astForSingletonStatementList(node)
+      case _                                => astForExpression(node) :: Nil
+  }
 
   private def astForWhileStatement(node: WhileExpression): Ast = {
     val conditionAst = astForExpression(node.condition)

@@ -287,8 +287,7 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataF
                      |
                      |x = 1
                      |foo = Foo.new
-                     |y = foo
-                     | .bar(1)
+                     |y = foo.bar(1)
                      |puts y
                      |""".stripMargin)
 
@@ -296,25 +295,13 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataF
     val sink       = cpg.call.name("puts").argument(1).l
     val List(flow) = sink.reachableByFlows(src).map(flowToResultPairs).distinct.sortBy(_.length).l
     flow shouldBe List(
-      (
-        """|foo
-           | .bar(1)""".stripMargin,
-        11
-      ),
+      ("foo.bar(1)", 10),
       ("bar(self, x)", 3),
       ("return x", 4),
       ("RET", 3),
-      (
-        """|foo
-           | .bar(1)""".stripMargin,
-        10
-      ),
-      (
-        """|y = foo
-           | .bar(1)""".stripMargin,
-        10
-      ),
-      ("puts y", 12)
+      ("foo.bar(1)", 10),
+      ("y = foo.bar(1)", 10),
+      ("puts y", 11)
     )
   }
 
