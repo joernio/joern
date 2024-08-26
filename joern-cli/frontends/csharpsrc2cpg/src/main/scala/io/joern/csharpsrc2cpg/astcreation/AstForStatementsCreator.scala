@@ -220,7 +220,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val idxLtArgs =
       List(Ast(idxIdAtCond), fieldAccessAst)
     val ltCallCond = callAst(idxLt, idxLtArgs)
-    // Create the assignment from $element = $collection[_idx_]
+    // Create the assignment from $element = $collection[_idx_++]
     val idxIdAtCollAccess = idxIdenAtAssign.copy
     val collectIdxAccess = callNode(
       forEachStmt,
