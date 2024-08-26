@@ -31,8 +31,7 @@ class ControlFlow extends LayerCreator {
   override val dependsOn: List[String] = List(Base.overlayName)
 
   override def create(context: LayerCreatorContext): Unit = {
-    val cpg = context.cpg
-    ControlFlow.passes(cpg).foreach(_.createAndApply())
+    ControlFlow.passes(context.cpg).foreach(_.createAndApply())
   }
 
   // LayerCreators need one-arg constructor, because they're called by reflection from io.joern.console.Run

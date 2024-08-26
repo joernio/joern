@@ -31,8 +31,7 @@ class Base extends LayerCreator {
   override val description: String = Base.description
 
   override def create(context: LayerCreatorContext): Unit = {
-    val cpg = context.cpg
-    Base.passes(cpg).foreach(_.createAndApply())
+    Base.passes(context.cpg).foreach(_.createAndApply())
   }
 
   // LayerCreators need one-arg constructor, because they're called by reflection from io.joern.console.Run
