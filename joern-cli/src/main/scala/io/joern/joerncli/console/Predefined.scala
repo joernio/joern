@@ -9,7 +9,7 @@ object Predefined {
       "import _root_.io.joern.console.*",
       "import _root_.io.joern.joerncli.console.JoernConsole.*",
       "import _root_.io.shiftleft.codepropertygraph.cpgloading.*",
-      "import _root_.io.shiftleft.codepropertygraph.generated.*",
+      "import _root_.io.shiftleft.codepropertygraph.generated.{help => _, _}",
       "import _root_.io.shiftleft.codepropertygraph.generated.nodes.*",
       "import _root_.io.joern.dataflowengineoss.language.*",
       "import _root_.io.shiftleft.semanticcpg.language.*",
