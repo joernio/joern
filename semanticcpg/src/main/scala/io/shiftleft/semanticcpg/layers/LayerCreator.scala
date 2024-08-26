@@ -1,9 +1,6 @@
 package io.shiftleft.semanticcpg.layers
 
-import better.files.File
-import io.shiftleft.SerializedCpg
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.CpgPassBase
 import io.shiftleft.semanticcpg.Overlays
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -34,10 +31,6 @@ abstract class LayerCreator {
         Overlays.appendOverlayName(context.cpg, overlayName)
       }
     }
-  }
-
-  protected def runPass(pass: CpgPassBase, context: LayerCreatorContext, index: Int = 0): Unit = {
-    pass.createAndApply()
   }
 
   def create(context: LayerCreatorContext): Unit

@@ -25,10 +25,7 @@ class OssDataFlow(opts: OssDataFlowOptions)(implicit
   override val description: String = OssDataFlow.description
 
   override def create(context: LayerCreatorContext): Unit = {
-    val cpg                 = context.cpg
-    val enhancementExecList = Iterator(new ReachingDefPass(cpg, opts.maxNumberOfDefinitions))
-    enhancementExecList.zipWithIndex.foreach { case (pass, index) =>
-      runPass(pass, context, index)
-    }
+    val cpg = context.cpg
+    ReachingDefPass(cpg, opts.maxNumberOfDefinitions).createAndApply()
   }
 }

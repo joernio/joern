@@ -274,7 +274,7 @@ class Scan(options: ScanOptions)(implicit engineContext: EngineContext) extends 
       println("No queries matched current filter selection (total number of queries: `" + allQueries.length + "`)")
       return
     }
-    runPass(new ScanPass(context.cpg, queriesAfterFilter), context)
+    ScanPass(context.cpg, queriesAfterFilter).createAndApply()
     outputFindings(context.cpg)
 
   }
