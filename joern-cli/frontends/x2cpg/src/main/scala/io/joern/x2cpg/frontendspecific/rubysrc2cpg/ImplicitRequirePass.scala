@@ -7,23 +7,36 @@ import io.shiftleft.codepropertygraph.generated.{Cpg, DispatchTypes, EdgeTypes, 
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
+import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
 import org.apache.commons.text.CaseUtils
 
 import java.util.regex.Pattern
 import scala.collection.mutable
 
+/** A 3-tuple holding the (name, fullName, importPath) for types in the analysis.
+  */
+type TypeImportInfo = (String, String, String)
+
 /** In some Ruby frameworks, it is common to have an autoloader library that implicitly loads requirements onto the
   * stack. This pass makes these imports explicit. The most popular one is <a
   * href="https://github.com/fxn/zeitwerk">Zeitwerk</a> which we check in `Gemsfile.lock` to enable this pass.
+  *
+  * @param externalTypes
+  *   a list of additional types to consider that may be importable but are not in the CPG.
   */
-class ImplicitRequirePass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg) {
+class ImplicitRequirePass(cpg: Cpg, externalTypes: Seq[TypeImportInfo] = Nil)
+    extends ForkJoinParallelCpgPass[Method](cpg) {
 
-  private val importCallName: String = "require"
-  private val typeToPath             = mutable.Map.empty[String, String]
-  private val typeNameToFullName     = mutable.Map.empty[String, Set[TypeDecl]]
+  /** A 3-tuple holding the (name, fullName, importPath, isExternal) for types in the analysis.
+    */
+  private type TypeImportInfoInternal = (String, String, String, Boolean)
+
+  private val Require: String      = "require"
+  private val Self: String         = "self"
+  private val typeNameToImportInfo = mutable.Map.empty[String, Seq[TypeImportInfoInternal]]
 
   override def init(): Unit = {
-    val importableTypes = cpg.typeDecl
+    cpg.typeDecl
       .isExternal(false)
       .filter { typeDecl =>
         // zeitwerk will match types that share the name of the path.
@@ -32,17 +45,36 @@ class ImplicitRequirePass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg)
         val typeName = typeDecl.name
         typeName == fileName || typeName == CaseUtils.toCamelCase(fileName, true, '_', '-')
       }
-      .l
-    importableTypes.foreach { typeDecl =>
-      typeToPath.put(typeDecl.fullName, typeDecl.filename.replace("\\", "/").stripSuffix(".rb"))
-    }
-    importableTypes.groupBy(_.name).foreach { case (name, types) =>
-      typeNameToFullName.put(name, types.toSet)
+      .flatMap(getChildrenTypes(_, None))
+      .groupBy(_._1)
+      .foreach { case (typeName, typeImportInfos) =>
+        typeNameToImportInfo.put(typeName, typeImportInfos)
+      }
+    typeNameToImportInfo.addAll(externalTypes.map(x => (x._1, x._2, x._3, true)).groupBy(_._1))
+  }
+
+  private def typeToTypeImportInfo(typeDecl: TypeDecl, prependWith: Option[String]): Seq[TypeImportInfoInternal] = {
+    val typeName = typeDecl.name
+    if (typeName.endsWith("<class>")) {
+      Nil
+    } else {
+      // We add both "name" variants, i.e., for Foo::Bar, we have both Bar and Foo::Bar
+      (typeName +: prependWith.map(prefix => s"$prefix.${typeDecl.name}").toList).map(qualifiedTypeName =>
+        (qualifiedTypeName, typeDecl.fullName, normalizePath(typeDecl.filename), typeDecl.isExternal)
+      )
     }
   }
 
+  private def getChildrenTypes(typeDecl: TypeDecl, prependWith: Option[String] = None): Seq[TypeImportInfoInternal] = {
+    val childTypes = typeDecl.astChildren.isTypeDecl.not(_.methodBinding).l
+    typeToTypeImportInfo(typeDecl, prependWith) ++ childTypes
+      .flatMap(getChildrenTypes(_, prependWith.map(_.concat(s".${typeDecl.name}")).orElse(Option(typeDecl.name))))
+  }
+
+  private def normalizePath(path: String): String = path.replace("\\", "/").stripSuffix(".rb")
+
   override def generateParts(): Array[Method] =
-    cpg.method.isModule.whereNot(_.astChildren.isCall.nameExact(importCallName)).toArray
+    cpg.method.isModule.whereNot(_.astChildren.isCall.nameExact(Require)).toArray
 
   /** Collects methods within a module.
     */
@@ -59,55 +91,55 @@ class ImplicitRequirePass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg)
 
   override def runOnPart(builder: DiffGraphBuilder, moduleMethod: Method): Unit = {
     val possiblyImportedSymbols = mutable.ArrayBuffer.empty[String]
+    val currPath                = normalizePath(moduleMethod.filename)
 
     val typeDecl = cpg.typeDecl.fullName(Pattern.quote(moduleMethod.fullName) + ".*").l
-    typeDecl.inheritsFromTypeFullName.foreach(possiblyImportedSymbols.append)
+    typeDecl.inheritsFromTypeFullName.filterNot(_.endsWith("<class>")).foreach(possiblyImportedSymbols.append)
 
     val methodsOfModule = findMethodsViaAstChildren(moduleMethod).toList
     val callsOfModule   = methodsOfModule.ast.isCall.toList
+
+    callsOfModule.map(x => x.name -> x.code).foreach(println)
 
     val symbolsGatheredFromCalls = callsOfModule.flatMap {
       case x if x.name == Operators.alloc =>
         // TODO Once constructor invocations are lowered correctly, this case is not needed anymore.
         x.argument.isIdentifier.name
-      case x if x.methodFullName == Operators.fieldAccess && x.argument(1).code == "self" =>
-        x.asInstanceOf[OpNodes.FieldAccess].fieldIdentifier.canonicalName
-      case x =>
+      case x if x.methodFullName == Operators.fieldAccess =>
+        fullyQualifiedName(x.asInstanceOf[FieldAccess]) :: Nil
+      case _ =>
         Iterator.empty
     }
 
     possiblyImportedSymbols.appendAll(symbolsGatheredFromCalls)
 
+    var currOrder = moduleMethod.block.astChildren.size
     possiblyImportedSymbols.distinct
-      .foreach { identifierName =>
-        val rubyTypes = typeNameToFullName.getOrElse(identifierName, Set.empty)
-        val requireCalls = rubyTypes.flatMap { rubyType =>
-          typeToPath.get(rubyType.fullName) match {
-            case Some(_)
-                if moduleMethod.file.name
-                  .map(_.replace("\\", "/"))
-                  .headOption
-                  .exists(x => rubyType.fullName.startsWith(x)) =>
-              None // do not add an import to a file that defines the type
-            case Some(path) =>
-              Option(createRequireCall(builder, path))
-            case None =>
-              None
+      .flatMap { identifierName =>
+        typeNameToImportInfo
+          .getOrElse(identifierName, Seq.empty)
+          .sortBy(_._4) // sorting puts false first
+          .flatMap {
+            case (_, _, importPath, _) if importPath == currPath =>
+              None // ignore an import to a file that defines the type
+            case (_, _, importPath, _) =>
+              Option(importPath -> createRequireCall(builder, importPath))
           }
-        }
-        val startIndex = moduleMethod.block.astChildren.size
-        requireCalls.zipWithIndex.foreach { case (call, idx) =>
-          call.order(startIndex + idx)
-          builder.addEdge(moduleMethod.block, call, EdgeTypes.AST)
-        }
+          .headOption
+      }
+      .distinctBy(_._1)
+      .foreach { case (_, requireCall) =>
+        requireCall.order(currOrder)
+        builder.addEdge(moduleMethod.block, requireCall, EdgeTypes.AST)
+        currOrder += 1
       }
   }
 
   private def createRequireCall(builder: DiffGraphBuilder, path: String): NewCall = {
     val requireCallNode = NewCall()
-      .name(importCallName)
-      .code(s"$importCallName '$path'")
-      .methodFullName(s"$kernelPrefix.$importCallName")
+      .name(Require)
+      .code(s"$Require '$path'")
+      .methodFullName(s"$kernelPrefix.$Require")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .typeFullName(Defines.Any)
     builder.addNode(requireCallNode)
@@ -117,6 +149,17 @@ class ImplicitRequirePass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg)
     builder.addEdge(requireCallNode, pathLiteralNode, EdgeTypes.AST)
     builder.addEdge(requireCallNode, pathLiteralNode, EdgeTypes.ARGUMENT)
     requireCallNode
+  }
+
+  private def fullyQualifiedName(fa: FieldAccess): String = fieldAccessParts(fa).mkString(".")
+
+  private def fieldAccessParts(fa: FieldAccess): Seq[String] = {
+    fa.argument(1) match {
+      case subFa: Call if subFa.name == Operators.fieldAccess =>
+        fieldAccessParts(subFa.asInstanceOf[FieldAccess]) ++ fa.fieldIdentifier.map(_.canonicalName)
+      case self: Identifier if self.name == Self => fa.fieldIdentifier.map(_.canonicalName).toSeq
+      case _                                     => Seq.empty
+    }
   }
 
 }

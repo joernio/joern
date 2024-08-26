@@ -133,6 +133,77 @@ class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with In
     }
   }
 
+  "implicitly imported types in base class that are qualified names" should {
+    val cpg = code(
+      """
+        |class MyController < Controllers::ApplicationController
+        |end
+        |""".stripMargin,
+      "app/controllers/my_controller.rb"
+    )
+      .moreCode(
+        """
+          |module Controllers
+          | class ApplicationController
+          | end
+          |end
+          |""".stripMargin,
+        "app/controllers/controllers.rb"
+      )
+      .moreCode(
+        """
+          |GEM
+          |  remote: https://rubygems.org/
+          |  specs:
+          |    zeitwerk (2.2.1)
+          |""".stripMargin,
+        "Gemfile.lock"
+      )
+
+    "result in require statement of the file containing the symbol" in {
+      inside(cpg.imports.where(_.call.file.name(".*my_controller.rb")).toList) { case List(i) =>
+        i.importedAs shouldBe Some("app/controllers/controllers")
+        i.importedEntity shouldBe Some("app/controllers/controllers")
+      }
+    }
+  }
+
+  "implicitly imported types that are qualified names in an include statement" should {
+    val cpg = code(
+      """
+        |module MyController
+        | include Controllers::ApplicationController
+        |end
+        |""".stripMargin,
+      "app/controllers/my_controller.rb"
+    )
+      .moreCode(
+        """
+          |module Controllers
+          | class ApplicationController
+          | end
+          |end
+          |""".stripMargin,
+        "app/controllers/controllers.rb"
+      )
+      .moreCode(
+        """
+          |GEM
+          |  remote: https://rubygems.org/
+          |  specs:
+          |    zeitwerk (2.2.1)
+          |""".stripMargin,
+        "Gemfile.lock"
+      )
+
+    "result in require statement of the file containing the symbol" in {
+      inside(cpg.imports.where(_.call.file.name(".*my_controller.rb")).toList) { case List(i) =>
+        i.importedAs shouldBe Some("app/controllers/controllers")
+        i.importedEntity shouldBe Some("app/controllers/controllers")
+      }
+    }
+  }
+
   "implicitly imported types in include statement" should {
     val cpg = code(
       """
