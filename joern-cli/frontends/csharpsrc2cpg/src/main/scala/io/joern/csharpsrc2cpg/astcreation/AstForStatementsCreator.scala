@@ -6,10 +6,14 @@ import io.joern.csharpsrc2cpg.parser.ParserKeys
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
-import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.nodes.NewControlStructure
-import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  NewControlStructure,
+  NewFieldIdentifier,
+  NewIdentifier,
+  NewLiteral,
+  NewLocal
+}
 
 import scala.::
 import scala.util.Try
@@ -166,22 +170,100 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def astForForEachStatement(forEachStmt: DotNetNodeInfo): Seq[Ast] = {
-    val forEachNode     = controlStructureNode(forEachStmt, ControlStructureTypes.FOR, forEachStmt.code)
-    val iterableAst     = astForNode(forEachStmt.json(ParserKeys.Expression))
+    val int32Tfn    = BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
+    val forEachNode = controlStructureNode(forEachStmt, ControlStructureTypes.FOR, forEachStmt.code)
+    // Create the collection AST
+    def newCollectionAst = astForNode(forEachStmt.json(ParserKeys.Expression))
+    val collectionNode   = createDotNetNodeInfo(forEachStmt.json(ParserKeys.Expression))
+    val collectionCode   = code(collectionNode)
+    // Create the iterator variable
+    val iterName    = forEachStmt.json(ParserKeys.Identifier)(ParserKeys.Value).str
+    val iterNode    = forEachStmt.json(ParserKeys.Type)
+    val iterNodeTfn = nodeTypeFullName(createDotNetNodeInfo(iterNode))
+    val iterIdentifier =
+      identifierNode(
+        node = createDotNetNodeInfo(iterNode),
+        name = iterName,
+        code = iterName,
+        typeFullName = iterNodeTfn
+      )
+    val iterVarLocal = NewLocal().name(iterName).code(iterName).typeFullName(iterNodeTfn)
+    scope.addToScope(iterName, iterVarLocal)
+    // Create a de-sugared `idx` variable, i.e., var _idx_ = 0
+    val idxName         = "_idx_"
+    val idxLocal        = NewLocal().name(idxName).code(idxName).typeFullName(int32Tfn)
+    val idxIdenAtAssign = identifierNode(node = collectionNode, name = idxName, code = idxName, typeFullName = int32Tfn)
+    val idxAssignment =
+      callNode(forEachStmt, s"$idxName = 0", Operators.assignment, Operators.assignment, DispatchTypes.STATIC_DISPATCH)
+    val idxAssigmentArgs =
+      List(Ast(idxIdenAtAssign), Ast(NewLiteral().code("0").typeFullName(BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int))))
+    val idxAssignmentAst = callAst(idxAssignment, idxAssigmentArgs)
+    // Create condition based on `idx` variable, i.e., _idx_ < $collection.Count
+    val idxIdAtCond = idxIdenAtAssign.copy
+    val collectCountAccess = callNode(
+      forEachStmt,
+      s"$collectionCode.Count",
+      Operators.fieldAccess,
+      Operators.fieldAccess,
+      DispatchTypes.STATIC_DISPATCH
+    )
+    val fieldAccessAst =
+      callAst(collectCountAccess, newCollectionAst :+ Ast(NewFieldIdentifier().canonicalName("Count").code("Count")))
+    val idxLt =
+      callNode(
+        forEachStmt,
+        s"$idxName < $collectionCode.Count",
+        Operators.lessThan,
+        Operators.lessThan,
+        DispatchTypes.STATIC_DISPATCH
+      )
+    val idxLtArgs =
+      List(Ast(idxIdAtCond), fieldAccessAst)
+    val ltCallCond = callAst(idxLt, idxLtArgs)
+    // Create the assignment from $element = $collection[_idx_++]
+    val idxIdAtCollAccess = idxIdenAtAssign.copy
+    val collectIdxAccess = callNode(
+      forEachStmt,
+      s"$collectionCode[$idxName++]",
+      Operators.indexAccess,
+      Operators.indexAccess,
+      DispatchTypes.STATIC_DISPATCH
+    )
+    val postIncrAst = callAst(
+      callNode(
+        forEachStmt,
+        s"$idxName++",
+        Operators.postIncrement,
+        Operators.postIncrement,
+        DispatchTypes.STATIC_DISPATCH
+      ),
+      Ast(idxIdAtCollAccess) :: Nil
+    )
+    val indexAccessAst = callAst(collectIdxAccess, newCollectionAst :+ postIncrAst)
+    val iteratorAssignmentNode =
+      callNode(
+        forEachStmt,
+        s"$iterName = $collectionCode[$idxName++]",
+        Operators.assignment,
+        Operators.assignment,
+        DispatchTypes.STATIC_DISPATCH
+      )
+    val iteratorAssignmentArgs = List(Ast(iterIdentifier), indexAccessAst)
+    val iteratorAssignmentAst  = callAst(iteratorAssignmentNode, iteratorAssignmentArgs)
+
     val forEachBlockAst = astForBlock(createDotNetNodeInfo(forEachStmt.json(ParserKeys.Statement)))
 
-    val identifierValue = forEachStmt.json(ParserKeys.Identifier)(ParserKeys.Value).str
-    val _identifierNode =
-      identifierNode(
-        node = createDotNetNodeInfo(forEachStmt.json(ParserKeys.Type)),
-        name = identifierValue,
-        code = identifierValue,
-        typeFullName = nodeTypeFullName(createDotNetNodeInfo(forEachStmt.json(ParserKeys.Type)))
-      )
-
-    val iteratorVarAst = Ast(_identifierNode)
-
-    Seq(Ast(forEachNode).withChild(iteratorVarAst).withChildren(iterableAst).withChild(forEachBlockAst))
+    forAst(
+      forNode = forEachNode,
+      locals = Ast(idxLocal)
+        .withRefEdge(idxIdenAtAssign, idxLocal)
+        .withRefEdge(idxIdAtCond, idxLocal)
+        .withRefEdge(idxIdAtCollAccess, idxLocal) :: Ast(iterVarLocal).withRefEdge(iterIdentifier, iterVarLocal) :: Nil,
+      conditionAsts = ltCallCond :: Nil,
+      initAsts = idxAssignmentAst :: Nil,
+      updateAsts = iteratorAssignmentAst :: Nil,
+      bodyAst = forEachBlockAst
+    ) :: Nil
   }
 
   private def astForElseStatement(elseParserNode: DotNetNodeInfo): Ast = {
