@@ -3,12 +3,9 @@ package io.joern.php2cpg.querying
 import io.joern.php2cpg.Config
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.joern.x2cpg.Defines
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, Local, Member, Method}
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.codepropertygraph.generated.nodes.Block
-import io.shiftleft.codepropertygraph.generated.nodes.MethodRef
-import io.shiftleft.codepropertygraph.generated.nodes.TypeRef
 
 class TypeDeclTests extends PhpCode2CpgFixture {
 
@@ -248,19 +245,27 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         clinitMethod.filename shouldBe "foo.php"
         clinitMethod.file.name.l shouldBe List("foo.php")
 
-        inside(clinitMethod.body.astChildren.l) { case List(aAssign: Call, bAssign: Call) =>
-          aAssign.code shouldBe "A = \"A\""
-          inside(aAssign.astChildren.l) { case List(aIdentifier: Identifier, aLiteral: Literal) =>
-            aIdentifier.name shouldBe "A"
-            aIdentifier.code shouldBe "A"
+        inside(clinitMethod.body.astChildren.l) { case List(self: Local, aAssign: Call, bAssign: Call) =>
+          aAssign.code shouldBe "self::A = \"A\""
+          inside(aAssign.astChildren.l) { case List(aCall: Call, aLiteral: Literal) =>
+            inside(aCall.argument.l) { case List(aSelf: Identifier, aField: FieldIdentifier) =>
+              aSelf.name shouldBe "self"
+              aField.code shouldBe "A"
+            }
+            aCall.name shouldBe Operators.fieldAccess
+            aCall.code shouldBe "self::A"
 
             aLiteral.code shouldBe "\"A\""
           }
 
-          bAssign.code shouldBe "B = \"B\""
-          inside(bAssign.astChildren.l) { case List(bIdentifier: Identifier, bLiteral: Literal) =>
-            bIdentifier.name shouldBe "B"
-            bIdentifier.code shouldBe "B"
+          bAssign.code shouldBe "self::B = \"B\""
+          inside(bAssign.astChildren.l) { case List(bCall: Call, bLiteral: Literal) =>
+            inside(bCall.argument.l) { case List(bSelf: Identifier, bField: FieldIdentifier) =>
+              bSelf.name shouldBe "self"
+              bField.code shouldBe "B"
+            }
+            bCall.name shouldBe Operators.fieldAccess
+            bCall.code shouldBe "self::B"
 
             bLiteral.code shouldBe "\"B\""
           }
@@ -306,6 +311,42 @@ class TypeDeclTests extends PhpCode2CpgFixture {
         // TODO The typeFullName here is missing, even though we should get it. Fix with types in general.
         // fooRef.typeFullName shouldBe "foo\\Foo"
         fooRef.lineNumber shouldBe Some(6)
+      }
+    }
+  }
+
+  "static/const member of class should be put in <clinit> method" in {
+    val cpg = code("""<?php
+        |class Foo {
+        |  static $A = "A";
+        |  const B = "B";
+        |}
+        |""")
+
+    inside(cpg.method.nameExact(Defines.StaticInitMethodName).l) { case List(clinitMethod) =>
+      inside(clinitMethod.body.astChildren.l) { case List(self: Local, bAssign: Call, aAssign: Call) =>
+        self.name shouldBe "self"
+        inside(aAssign.astChildren.l) { case List(aCall: Call, aLiteral: Literal) =>
+          inside(aCall.argument.l) { case List(aSelf: Identifier, aField: FieldIdentifier) =>
+            aSelf.name shouldBe "self"
+            aField.code shouldBe "A"
+          }
+          aCall.name shouldBe Operators.fieldAccess
+          aCall.code shouldBe "self::$A"
+
+          aLiteral.code shouldBe "\"A\""
+        }
+
+        inside(bAssign.astChildren.l) { case List(bCall: Call, bLiteral: Literal) =>
+          inside(bCall.argument.l) { case List(bSelf: Identifier, bField: FieldIdentifier) =>
+            bSelf.name shouldBe "self"
+            bField.code shouldBe "B"
+          }
+          bCall.name shouldBe Operators.fieldAccess
+          bCall.code shouldBe "self::B" // Notice there is no `$` in front of the const member
+
+          bLiteral.code shouldBe "\"B\""
+        }
       }
     }
   }
