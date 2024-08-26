@@ -4,7 +4,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{Block, *}
 import io.joern.rubysrc2cpg.parser.AntlrContextHelpers.*
 import io.joern.rubysrc2cpg.parser.RubyParser.*
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
+import io.joern.rubysrc2cpg.passes.Defines.{Self, getBuiltInType}
 import io.joern.rubysrc2cpg.passes.GlobalTypes.builtinPrefix
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
 import org.antlr.v4.runtime.ParserRuleContext
@@ -41,6 +41,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitCompoundStatement(ctx: RubyParser.CompoundStatementContext): RubyNode = {
+    val a = ctx.getStatements.map(visit)
     StatementList(ctx.getStatements.map(visit))(ctx.toTextSpan)
   }
 
@@ -441,6 +442,40 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     else SingleAssignment(lhs, op, rhs)(ctx.toTextSpan)
   }
 
+  override def visitSingleAssignmentStatement(ctx: RubyParser.SingleAssignmentStatementContext): RubyNode = {
+    val lhs =
+      if Option(ctx.CONSTANT_IDENTIFIER()).isDefined then
+        MemberAccess(
+          SelfIdentifier()(ctx.toTextSpan.spanStart(Defines.Self)),
+          ctx.COLON2().getText,
+          ctx.CONSTANT_IDENTIFIER().getText
+        )(ctx.toTextSpan.spanStart(s"self::${ctx.CONSTANT_IDENTIFIER().getText}"))
+      else if Option(ctx.variable()).isDefined then visit(ctx.variable())
+      else if Option(ctx.indexingArgumentList()).isDefined then
+        val target = visit(ctx.primary())
+        val args =
+          Option(ctx.indexingArgumentList()).map(_.arguments).getOrElse(List()).map(visit)
+        IndexAccess(target, args)(
+          ctx.toTextSpan.spanStart(s"${target.span.text}[${args.map(_.span.text).mkString(",")}]")
+        )
+      else
+        val memberAccessOp = Option(ctx.DOT) match {
+          case Some(dot) => ctx.DOT().getText
+          case None      => ctx.COLON2().getText
+        }
+        val target     = visit(ctx.primary)
+        val methodName = visit(ctx.methodName)
+        MemberAccess(target, memberAccessOp, methodName.span.text)(
+          ctx.toTextSpan.spanStart(s"${target.span.text}$memberAccessOp${methodName.span.text}")
+        )
+
+    val rhs = visit(ctx.methodInvocationWithoutParentheses())
+    val op  = ctx.assignmentOperator().getText
+
+    if op == "||=" || op == "&&=" then lowerAssignmentOperator(lhs, rhs, op, ctx.toTextSpan)
+    else SingleAssignment(lhs, op, rhs)(ctx.toTextSpan)
+  }
+
   private def flattenStatementLists(x: List[RubyNode]): List[RubyNode] = {
     x match {
       case (head: StatementList) :: xs => head.statements ++ flattenStatementLists(xs)
@@ -568,11 +603,12 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitAttributeAssignmentExpression(ctx: RubyParser.AttributeAssignmentExpressionContext): RubyNode = {
-    val lhs        = visit(ctx.primaryValue())
-    val op         = ctx.op.getText
-    val memberName = ctx.methodName.getText
-    val rhs        = visit(ctx.operatorExpression())
-    AttributeAssignment(lhs, op, memberName, rhs)(ctx.toTextSpan)
+    val lhs                = visit(ctx.primaryValue())
+    val op                 = ctx.op.getText
+    val assignmentOperator = ctx.assignmentOperator().getText
+    val memberName         = ctx.methodName.getText
+    val rhs                = visit(ctx.operatorExpression())
+    AttributeAssignment(lhs, op, memberName, assignmentOperator, rhs)(ctx.toTextSpan)
   }
 
   override def visitSimpleCommand(ctx: RubyParser.SimpleCommandContext): RubyNode = {
