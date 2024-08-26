@@ -38,7 +38,7 @@ class ControlStructureDataflowTests extends CSharpCode2CpgFixture(withDataFlow =
     "find a path from element to Write and from i to assignment through a foreach loop" in {
       val elementSrc = cpg.identifier.nameExact("element").l
       val writeSink  = cpg.call.nameExact("Write").l
-      writeSink.reachableBy(elementSrc).size shouldBe 1
+      writeSink.reachableBy(elementSrc).size shouldBe 2
 
       val assignmentSrc = cpg.identifier.nameExact("i").lineNumber(10).l
       val newI          = cpg.identifier.nameExact("newI").l
