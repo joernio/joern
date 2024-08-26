@@ -149,9 +149,6 @@ class Ghidra2Cpg extends X2CpgFrontend[Config] {
     new LiteralPass(cpg, flatProgramAPI).createAndApply()
   }
 
-  private class HeadlessProjectConnection(projectManager: HeadlessGhidraProjectManager, connection: GhidraURLConnection)
-      extends DefaultProject(projectManager, connection) {}
-
   private class HeadlessGhidraProjectManager extends DefaultProjectManager {}
 }
 
