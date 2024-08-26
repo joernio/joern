@@ -1,10 +1,11 @@
 package io.joern.csharpsrc2cpg.querying.ast
 
 import io.joern.csharpsrc2cpg.testfixtures.CSharpCode2CpgFixture
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Local}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
-class LoopsTests extends CSharpCode2CpgFixture {
+class LoopsTests extends CSharpCode2CpgFixture(withDataFlow = true) {
   "AST Creation for loops" should {
     "be correct for foreach statement" in {
       val cpg = code(basicBoilerplate("""
@@ -19,22 +20,28 @@ class LoopsTests extends CSharpCode2CpgFixture {
         case forEachNode :: Nil =>
           forEachNode.controlStructureType shouldBe ControlStructureTypes.FOR
 
-          inside(forEachNode.astChildren.isIdentifier.l) {
-            case iteratorNode :: iterableNode :: Nil =>
-              iteratorNode.code shouldBe "element"
-              iteratorNode.typeFullName shouldBe "System.Int32"
+          inside(forEachNode.astChildren.l) {
+            case (idxLocal: Local) :: (elementLocal: Local) :: (initAssign: Call) :: (cond: Call) :: (update: Call) :: (forBlock: Block) :: Nil =>
+              idxLocal.name shouldBe "_idx_"
+              idxLocal.typeFullName shouldBe "System.Int32"
 
-              iterableNode.code shouldBe "fibNumbers"
-              // TODO: List will be fully qualified once the System types are known
-              iterableNode.typeFullName shouldBe "List"
-            case _ => fail("No node for iterable found in `foreach` statement")
-          }
+              elementLocal.name shouldBe "element"
+              elementLocal.typeFullName shouldBe "System.Int32"
 
-          inside(forEachNode.astChildren.isBlock.l) {
-            case blockNode :: Nil =>
+              initAssign.code shouldBe "_idx_ = 0"
+              initAssign.name shouldBe Operators.assignment
+              initAssign.methodFullName shouldBe Operators.assignment
+
+              cond.code shouldBe "_idx_ < fibNumbers.Count"
+              cond.name shouldBe Operators.lessThan
+              cond.methodFullName shouldBe Operators.lessThan
+
+              update.code shouldBe "element = fibNumbers[_idx_++]"
+              update.name shouldBe Operators.assignment
+              update.methodFullName shouldBe Operators.assignment
+
               val List(writeCall) = cpg.call.nameExact("Write").l
-              writeCall.astParent shouldBe blockNode
-            case _ => fail("Correct blockNode as child not found for `foreach` statement")
+              writeCall.astParent shouldBe forBlock
           }
 
         case _ => fail("No control structure node found for `foreach`.")
