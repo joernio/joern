@@ -14,6 +14,8 @@ import io.joern.x2cpg.Defines as X2CpgDefines
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.c.CVariable
 
+import scala.util.Try
+
 trait FullNameProvider { this: AstCreator =>
 
   protected type MethodLike = IASTFunctionDeclarator | IASTFunctionDefinition | ICPPASTLambdaExpression
@@ -53,7 +55,7 @@ trait FullNameProvider { this: AstCreator =>
 
   protected def typeFullNameInfo(typeLike: TypeLike): TypeFullNameInfo = {
     typeLike match {
-      case e: IASTElaboratedTypeSpecifier =>
+      case _: IASTElaboratedTypeSpecifier =>
         val name_     = shortName(typeLike)
         val fullName_ = registerType(cleanType(fullName(typeLike)))
         TypeFullNameInfo(name_, fullName_)
@@ -97,7 +99,7 @@ trait FullNameProvider { this: AstCreator =>
       case c: IASTCompositeTypeSpecifier  => ASTStringUtil.getSimpleName(c.getName)
       case e: IASTElaboratedTypeSpecifier => ASTStringUtil.getSimpleName(e.getName)
       case s: IASTNamedTypeSpecifier      => ASTStringUtil.getSimpleName(s.getName)
-      case l: ICPPASTLambdaExpression     => nextClosureName()
+      case _: ICPPASTLambdaExpression     => nextClosureName()
       case other =>
         notHandledYet(other)
         nextClosureName()
@@ -111,18 +113,17 @@ trait FullNameProvider { this: AstCreator =>
         StringUtils.normalizeSpace(fullName)
       case None =>
         val qualifiedName = node match {
-          case _: IASTTranslationUnit                            => ""
-          case alias: ICPPASTNamespaceAlias                      => ASTStringUtil.getQualifiedName(alias.getMappingName)
+          case _: IASTTranslationUnit       => ""
+          case alias: ICPPASTNamespaceAlias => fixQualifiedName(ASTStringUtil.getQualifiedName(alias.getMappingName))
           case namespace: ICPPASTNamespaceDefinition             => fullNameForICPPASTNamespaceDefinition(namespace)
           case compType: IASTCompositeTypeSpecifier              => fullNameForIASTCompositeTypeSpecifier(compType)
           case enumSpecifier: IASTEnumerationSpecifier           => fullNameForIASTEnumerationSpecifier(enumSpecifier)
-          case f: ICPPASTLambdaExpression                        => fullName(f.getParent)
           case f: IASTFunctionDeclarator                         => fullNameForIASTFunctionDeclarator(f)
           case f: IASTFunctionDefinition                         => fullNameForIASTFunctionDefinition(f)
           case e: IASTElaboratedTypeSpecifier                    => fullNameForIASTElaboratedTypeSpecifier(e)
           case d: IASTIdExpression                               => ASTStringUtil.getSimpleName(d.getName)
           case u: IASTUnaryExpression                            => code(u.getOperand)
-          case x: ICPPASTQualifiedName                           => ASTStringUtil.getQualifiedName(x)
+          case x: ICPPASTQualifiedName                           => fixQualifiedName(ASTStringUtil.getQualifiedName(x))
           case other if other != null && other.getParent != null => fullName(other.getParent)
           case other if other != null                            => notHandledYet(other); ""
           case null                                              => ""
@@ -155,7 +156,7 @@ trait FullNameProvider { this: AstCreator =>
       case f if f.isEmpty || f == s"${X2CpgDefines.UnresolvedNamespace}." =>
         s"${X2CpgDefines.UnresolvedNamespace}.$name"
       case other if other.nonEmpty => other
-      case other                   => s"${X2CpgDefines.UnresolvedNamespace}.$name"
+      case _                       => s"${X2CpgDefines.UnresolvedNamespace}.$name"
     }
   }
 
@@ -298,8 +299,27 @@ trait FullNameProvider { this: AstCreator =>
           case cVariable: CVariable => Option(cVariable.getName)
           case _                    => Option(declarator.getName.toString)
         }
-      case definition: ICPPASTFunctionDefinition =>
-        Option(fullName(definition.getDeclarator))
+      case definition: ICPPASTFunctionDefinition => Some(fullName(definition.getDeclarator))
+      case namespace: ICPPASTNamespaceDefinition =>
+        namespace.getName.resolveBinding() match {
+          case b: ICPPBinding => Option(b.getQualifiedName.mkString("."))
+          case _              => None
+        }
+      case compType: IASTCompositeTypeSpecifier =>
+        compType.getName.resolveBinding() match {
+          case b: ICPPBinding => Option(b.getQualifiedName.mkString("."))
+          case _              => None
+        }
+      case enumSpecifier: IASTEnumerationSpecifier =>
+        enumSpecifier.getName.resolveBinding() match {
+          case b: ICPPBinding => Option(b.getQualifiedName.mkString("."))
+          case _              => None
+        }
+      case e: IASTElaboratedTypeSpecifier =>
+        e.getName.resolveBinding() match {
+          case b: ICPPBinding => Option(b.getQualifiedName.mkString("."))
+          case _              => None
+        }
       case _ => None
     }
   }
@@ -327,24 +347,16 @@ trait FullNameProvider { this: AstCreator =>
     s"${fullName(enumSpecifier.getParent)}.${ASTStringUtil.getSimpleName(enumSpecifier.getName)}"
   }
 
+  private def fullNameForIASTElaboratedTypeSpecifier(e: IASTElaboratedTypeSpecifier): String = {
+    s"${fullName(e.getParent)}.${ASTStringUtil.getSimpleName(e.getName)}"
+  }
+
   private def fullNameForIASTFunctionDeclarator(f: IASTFunctionDeclarator): String = {
-    if (f.getParent.isInstanceOf[IASTFunctionDefinition]) {
-      s"${fullName(f.getParent)}"
-    } else {
-      s"${fullName(f.getParent)}.${shortName(f)}"
-    }
+    Try(fixQualifiedName(ASTStringUtil.getQualifiedName(f.getName))).getOrElse(nextClosureName())
   }
 
   private def fullNameForIASTFunctionDefinition(f: IASTFunctionDefinition): String = {
-    if (f.getDeclarator != null) {
-      ASTStringUtil.getQualifiedName(f.getDeclarator.getName)
-    } else {
-      s"${fullName(f.getParent)}.${shortName(f)}"
-    }
-  }
-
-  private def fullNameForIASTElaboratedTypeSpecifier(e: IASTElaboratedTypeSpecifier): String = {
-    s"${fullName(e.getParent)}.${ASTStringUtil.getSimpleName(e.getName)}"
+    Try(fixQualifiedName(ASTStringUtil.getQualifiedName(f.getDeclarator.getName))).getOrElse(nextClosureName())
   }
 
   protected final case class MethodFullNameInfo(name: String, fullName: String, signature: String, returnType: String)

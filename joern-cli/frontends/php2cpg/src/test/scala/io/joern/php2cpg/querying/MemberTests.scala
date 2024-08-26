@@ -4,7 +4,7 @@ import io.joern.php2cpg.parser.Domain
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, Literal}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, Literal, Local}
 import io.shiftleft.semanticcpg.language.*
 
 class MemberTests extends PhpCode2CpgFixture {
@@ -40,7 +40,8 @@ class MemberTests extends PhpCode2CpgFixture {
     "have a clinit method with the constant initializers" in {
 
       inside(cpg.method.nameExact(Defines.StaticInitMethodName).l) { case List(clinitMethod) =>
-        inside(clinitMethod.body.astChildren.l) { case List(aAssign: Call, bAssign: Call, cAssign: Call) =>
+        inside(clinitMethod.body.astChildren.l) { case List(self: Local, aAssign: Call, bAssign: Call, cAssign: Call) =>
+          self.name shouldBe "self"
           checkConstAssign(aAssign, "A")
           checkConstAssign(bAssign, "B")
           checkConstAssign(cAssign, "C")
@@ -213,9 +214,14 @@ class MemberTests extends PhpCode2CpgFixture {
     assign.name shouldBe Operators.assignment
     assign.methodFullName shouldBe Operators.assignment
 
-    inside(assign.argument.l) { case List(target: Identifier, source: Literal) =>
-      target.name shouldBe expectedValue
-      target.code shouldBe expectedValue
+    inside(assign.argument.l) { case List(target: Call, source: Literal) =>
+      inside(target.argument.l) { case List(base: Identifier, field: FieldIdentifier) =>
+        base.name shouldBe "self"
+        field.code shouldBe expectedValue
+      }
+
+      target.name shouldBe Operators.fieldAccess
+      target.code shouldBe s"self::$expectedValue"
       target.argumentIndex shouldBe 1
 
       source.code shouldBe s"\"$expectedValue\""
