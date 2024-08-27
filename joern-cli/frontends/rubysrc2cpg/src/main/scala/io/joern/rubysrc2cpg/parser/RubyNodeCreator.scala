@@ -41,7 +41,6 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitCompoundStatement(ctx: RubyParser.CompoundStatementContext): RubyNode = {
-    val a = ctx.getStatements.map(visit)
     StatementList(ctx.getStatements.map(visit))(ctx.toTextSpan)
   }
 
