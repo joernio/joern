@@ -27,7 +27,10 @@ trait FullNameProvider { this: AstCreator =>
     if (name.isEmpty) { name }
     else {
       val normalizedName = StringUtils.normalizeSpace(name)
-      normalizedName.stripPrefix(Defines.QualifiedNameSeparator).replace(Defines.QualifiedNameSeparator, ".")
+      normalizedName
+        .stripPrefix(Defines.QualifiedNameSeparator)
+        .replace(Defines.QualifiedNameSeparator, ".")
+        .stripPrefix(".")
     }
   }
 
@@ -35,7 +38,7 @@ trait FullNameProvider { this: AstCreator =>
     name.startsWith(Defines.QualifiedNameSeparator)
 
   protected def lastNameOfQualifiedName(name: String): String = {
-    val normalizedName = StringUtils.normalizeSpace(name)
+    val normalizedName = StringUtils.normalizeSpace(replaceOperator(name))
     val cleanedName = if (normalizedName.contains("<") && normalizedName.contains(">")) {
       name.substring(0, normalizedName.indexOf("<"))
     } else {
@@ -251,6 +254,14 @@ trait FullNameProvider { this: AstCreator =>
     lastNameOfQualifiedName(ASTStringUtil.getSimpleName(d.getName))
   }
 
+  private def replaceOperator(name: String): String = {
+    name
+      .replace("operator class ", "")
+      .replace("operator enum ", "")
+      .replace("operator struct ", "")
+      .replace("operator ", "")
+  }
+
   private def fullNameFromBinding(node: IASTNode): Option[String] = {
     node match {
       case id: CPPASTIdExpression =>
@@ -268,16 +279,27 @@ trait FullNameProvider { this: AstCreator =>
         }
       case declarator: CPPASTFunctionDeclarator =>
         declarator.getName.resolveBinding() match {
-          case function: ICPPFunction =>
-            val fullNameNoSig = function.getQualifiedName.mkString(".")
+          case function: ICPPFunction if declarator.getName.isInstanceOf[ICPPASTConversionName] =>
+            val tpe = typeFor(declarator.getName.asInstanceOf[ICPPASTConversionName].getTypeId)
+            val fullNameNoSig = fixQualifiedName(
+              function.getQualifiedName.takeWhile(!_.startsWith("operator ")).mkString(".")
+            )
             val fn = if (function.isExternC) {
-              function.getName
+              tpe
+            } else {
+              s"$fullNameNoSig.$tpe:${functionTypeToSignature(function.getType)}"
+            }
+            Option(fn)
+          case function: ICPPFunction =>
+            val fullNameNoSig = fixQualifiedName(replaceOperator(function.getQualifiedName.mkString(".")))
+            val fn = if (function.isExternC) {
+              replaceOperator(function.getName)
             } else {
               s"$fullNameNoSig:${functionTypeToSignature(function.getType)}"
             }
             Option(fn)
           case x @ (_: ICPPField | _: CPPVariable) =>
-            val fullNameNoSig = x.getQualifiedName.mkString(".")
+            val fullNameNoSig = fixQualifiedName(x.getQualifiedName.mkString("."))
             val fn = if (x.isExternC) {
               x.getName
             } else {
@@ -285,8 +307,8 @@ trait FullNameProvider { this: AstCreator =>
             }
             Option(fn)
           case _: IProblemBinding =>
-            val fullNameNoSig = ASTStringUtil.getQualifiedName(declarator.getName)
-            val fixedFullName = fixQualifiedName(fullNameNoSig).stripPrefix(".")
+            val fullNameNoSig = replaceOperator(ASTStringUtil.getQualifiedName(declarator.getName))
+            val fixedFullName = fixQualifiedName(fullNameNoSig)
             if (fixedFullName.isEmpty) {
               Option(s"${X2CpgDefines.UnresolvedNamespace}:${X2CpgDefines.UnresolvedSignature}")
             } else {
@@ -299,7 +321,8 @@ trait FullNameProvider { this: AstCreator =>
           case cVariable: CVariable => Option(cVariable.getName)
           case _                    => Option(declarator.getName.toString)
         }
-      case definition: ICPPASTFunctionDefinition => Some(fullName(definition.getDeclarator))
+      case definition: ICPPASTFunctionDefinition =>
+        Some(fullName(definition.getDeclarator))
       case namespace: ICPPASTNamespaceDefinition =>
         namespace.getName.resolveBinding() match {
           case b: ICPPBinding => Option(b.getQualifiedName.mkString("."))

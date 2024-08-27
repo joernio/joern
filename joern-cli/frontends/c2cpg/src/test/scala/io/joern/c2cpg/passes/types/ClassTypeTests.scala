@@ -184,4 +184,44 @@ class ClassTypeTests extends C2CpgSuite(FileDefaults.CPP_EXT) {
     }
   }
 
+  "handling C++ operator definitions" should {
+    "generate correct fullnames in classes" in {
+      val cpg = code("""
+          |class Foo {
+          |  public:
+          |    void operator delete (void *d) { free(d); }
+          |    bool operator == (const Foo &lhs, const Foo &rhs) { return false; }
+          |    Foo &Foo::operator + (const Foo &lhs, const Foo &rhs) { return null; }
+          |    Foo &Foo::operator() (const Foo &a) { return null; }
+          |    Foo &Foo::operator[] (int index) { return null; }
+          |}
+          |Foo &Foo::operator + (const Foo &lhs, const Foo &rhs)
+          |""".stripMargin)
+      val List(del, eq, plus, apply, idx) = cpg.typeDecl.nameExact("Foo").method.l
+      del.name shouldBe "delete"
+      del.fullName shouldBe "Foo.delete:void(void*)"
+      eq.name shouldBe "=="
+      eq.fullName shouldBe "Foo.==:bool(Foo &,Foo &)"
+      plus.name shouldBe "+"
+      plus.fullName shouldBe "Foo.+:Foo &(Foo &,Foo &)"
+      apply.name shouldBe "()"
+      apply.fullName shouldBe "Foo.():Foo &(Foo &)"
+      idx.name shouldBe "[]"
+      idx.fullName shouldBe "Foo.[]:Foo &(int)"
+    }
+
+    "generate correct fullnames in classes with conversions" in {
+      val cpg = code("""
+          |class Foo {
+          |  enum Kind { A, B, C } kind;
+          | public:
+          |   operator Kind() const { return kind; }
+          |};
+          |""".stripMargin)
+      val List(k) = cpg.typeDecl.nameExact("Foo").method.l
+      k.name shouldBe "Kind"
+      k.fullName shouldBe "Foo.Kind:Foo.Kind()"
+    }
+  }
+
 }
