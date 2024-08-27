@@ -532,13 +532,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       node.span.spanStart(s"${node.target.text}.${node.attributeName}")
     )
 
-    val assignmentOp = node.assignmentOperator match {
-      case "+=" => Operators.assignmentPlus
-      case "-=" => Operators.assignmentMinus
-      case "/=" => Operators.assignmentDivision
-      case "*=" => Operators.assignmentMultiplication
-      case _    => Operators.assignment
-    }
+    val assignmentOp = AssignmentOperatorNames(node.assignmentOperator)
 
     val lhsAst = astForFieldAccess(memberAccess, stripLeadingAt = true)
     val rhsAst = astForExpression(node.rhs)

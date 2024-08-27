@@ -449,7 +449,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
           SelfIdentifier()(ctx.toTextSpan.spanStart(Defines.Self)),
           ctx.COLON2().getText,
           ctx.CONSTANT_IDENTIFIER().getText
-        )(ctx.toTextSpan.spanStart(s"self::${ctx.CONSTANT_IDENTIFIER().getText}"))
+        )(ctx.toTextSpan.spanStart(s"$Self::${ctx.CONSTANT_IDENTIFIER().getText}"))
       else if Option(ctx.variable()).isDefined then visit(ctx.variable())
       else if Option(ctx.indexingArgumentList()).isDefined then
         val target = visit(ctx.primary())
