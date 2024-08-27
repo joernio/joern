@@ -531,10 +531,12 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val memberAccess = MemberAccess(node.target, ".", s"@${node.attributeName}")(
       node.span.spanStart(s"${node.target.text}.${node.attributeName}")
     )
-    val op     = Operators.assignment
+
+    val assignmentOp = AssignmentOperatorNames(node.assignmentOperator)
+
     val lhsAst = astForFieldAccess(memberAccess, stripLeadingAt = true)
     val rhsAst = astForExpression(node.rhs)
-    val call   = callNode(node, code(node), op, op, DispatchTypes.STATIC_DISPATCH)
+    val call   = callNode(node, code(node), assignmentOp, assignmentOp, DispatchTypes.STATIC_DISPATCH)
     callAst(call, Seq(lhsAst, rhsAst))
   }
 

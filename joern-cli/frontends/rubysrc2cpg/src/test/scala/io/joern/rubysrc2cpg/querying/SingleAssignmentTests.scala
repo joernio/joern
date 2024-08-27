@@ -397,4 +397,100 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
       case xs => fail(s"Expected on assignmentOr call, got ${xs.code.mkString(",")}")
     }
   }
+
+  "Single ||= Assignment" in {
+    val cpg = code("""
+        |def foo
+        |  A.B ||= c 1
+        |end
+        |""".stripMargin)
+
+    inside(cpg.method.name("foo").controlStructure.l) {
+      case ifStruct :: Nil =>
+        ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
+        ifStruct.condition.code.l shouldBe List("(<tmp-0> = A.B).nil?")
+
+        inside(ifStruct.whenTrue.ast.isCall.name(Operators.assignment).l) {
+          case assignmentCall :: Nil =>
+            assignmentCall.code shouldBe "A.B = c 1"
+            val List(lhs, rhs: Call) = assignmentCall.argument.l: @unchecked
+            lhs.code shouldBe "A.B"
+
+            rhs.code shouldBe "c 1"
+            val List(_, litArg) = rhs.argument.l
+            litArg.code shouldBe "1"
+          case xs => fail(s"Expected assignment call in true branch, got ${xs.code.mkString}")
+        }
+
+      case xs => fail(s"Expected one if statement, got ${xs.code.mkString(",")}")
+    }
+  }
+
+  "Single &&= Assignment" in {
+    val cpg = code("""
+                     |def foo
+                     |  A.B &&= c 1
+                     |end
+                     |""".stripMargin)
+
+    inside(cpg.method.name("foo").controlStructure.l) {
+      case ifStruct :: Nil =>
+        ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
+        ifStruct.condition.code.l shouldBe List("!A.B.nil?")
+
+        inside(ifStruct.whenTrue.ast.isCall.name(Operators.assignment).l) {
+          case assignmentCall :: Nil =>
+            assignmentCall.code shouldBe "A.B = c 1"
+            val List(lhs: Call, rhs: Call) = assignmentCall.argument.l: @unchecked
+            lhs.code shouldBe "A.B"
+            lhs.methodFullName shouldBe Operators.fieldAccess
+
+            rhs.code shouldBe "c 1"
+            val List(_, litArg) = rhs.argument.l
+            litArg.code shouldBe "1"
+          case xs => fail(s"Expected assignment call in true branch, got ${xs.code.mkString}")
+        }
+
+      case xs => fail(s"Expected one if statement, got ${xs.code.mkString(",")}")
+    }
+  }
+
+  "+= assignment operator" in {
+    val cpg = code("""
+        |A::b += 1
+        |""".stripMargin)
+
+    cpg.method.isModule.dotAst.l.foreach(println)
+
+    inside(cpg.call.name(Operators.assignmentPlus).l) {
+      case assignmentCall :: Nil =>
+        val List(lhs: Call, rhs) = assignmentCall.argument.l: @unchecked
+
+        lhs.code shouldBe "A.b"
+        lhs.methodFullName shouldBe Operators.fieldAccess
+
+        rhs.code shouldBe "1"
+      case xs => fail(s"Expected one call for assignment, got ${xs.code.mkString(",")}")
+    }
+  }
+
+  "*= assignment operator" in {
+    val cpg = code("""
+        |A::b *= 1
+        |""".stripMargin)
+
+    cpg.method.isModule.dotAst.l.foreach(println)
+
+    inside(cpg.call.name(Operators.assignmentMultiplication).l) {
+      case assignmentCall :: Nil =>
+        assignmentCall.code shouldBe "A::b *= 1"
+        val List(lhs: Call, rhs) = assignmentCall.argument.l: @unchecked
+
+        lhs.code shouldBe "A.b"
+        lhs.methodFullName shouldBe Operators.fieldAccess
+
+        rhs.code shouldBe "1"
+      case xs => fail(s"Expected one call for assignment, got ${xs.code.mkString(",")}")
+    }
+  }
 }

@@ -5,15 +5,9 @@ import org.scalatest.matchers.should.Matchers
 
 class AssignmentParserTests extends RubyParserFixture with Matchers {
   "fixme" ignore {
-    test("A.B ||= c 1")      // Possible string issue - result is missing A.B on LHS
-    test("a[:b] ||= c 1, 2") // Possible string issue - result is missing a[:b] on LHS
-    test("A::b += 1")        // Possible string issue - result is missing + in += operator
-    test("A::B *= c d")      // Possible string issue - result is missing A::B *= on LHS
-    test("A::b *= c d")      // Possible string issue - result is missing A::B *= on LHS
-    test("a.b ||= c 1")      // Possible string issue - result is missing a.b ||= on LHS
-    test("a = b, *c, d")     // Syntax error
-    test("*, a = b")         // Syntax error
-    test("*, x, y, z = f")   // Syntax error
+    test("a = b, *c, d")   // Syntax error
+    test("*, a = b")       // Syntax error
+    test("*, x, y, z = f") // Syntax error
   }
 
   "Single assignment" in {
@@ -30,6 +24,11 @@ class AssignmentParserTests extends RubyParserFixture with Matchers {
     test("@a = 42")
     test("a&.b = 1", "a&.b= 1")
     test("c = a&.b")
+    test("a.b ||= c 1", "if a.b.nil? then a.b = c 1 end")
+    test("A.B ||= c 1", "if A.B.nil? then A.B = c 1 end")
+    test("A::b += 1")
+    test("A::b *= c d")
+    test("a[:b] ||= c 1, 2", "if a[:b].nil? then a[:b] = c 1, 2 end")
   }
 
   "Multiple assignment" in {

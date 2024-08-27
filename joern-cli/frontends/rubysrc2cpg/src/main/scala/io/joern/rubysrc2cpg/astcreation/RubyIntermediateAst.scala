@@ -180,9 +180,14 @@ object RubyIntermediateAst {
 
   final case class SplattingRubyNode(name: RubyNode)(span: TextSpan) extends RubyNode(span)
 
-  final case class AttributeAssignment(target: RubyNode, op: String, attributeName: String, rhs: RubyNode)(
-    span: TextSpan
-  ) extends RubyNode(span)
+  final case class AttributeAssignment(
+    target: RubyNode,
+    op: String,
+    attributeName: String,
+    assignmentOperator: String,
+    rhs: RubyNode
+  )(span: TextSpan)
+      extends RubyNode(span)
 
   /** Any structure that conditionally modifies the control flow of the program.
     */

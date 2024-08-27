@@ -533,6 +533,10 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     s"$lhs $op $rhs"
   }
 
+  override def visitSingleAssignmentStatement(ctx: RubyParser.SingleAssignmentStatementContext): String = {
+    rubyNodeCreator.visitSingleAssignmentStatement(ctx).span.text
+  }
+
   override def visitMultipleAssignmentStatement(ctx: RubyParser.MultipleAssignmentStatementContext): String = {
     // TODO: fixme - ctx.toTextSpan is being used for individual elements in the building of a MultipleAssignment - needs
     //  to be fixed so that individual elements span texts can be used to build MultipleAssignment on AstPrinter side.
@@ -572,12 +576,13 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   }
 
   override def visitAttributeAssignmentExpression(ctx: RubyParser.AttributeAssignmentExpressionContext): String = {
-    val lhs        = visit(ctx.primaryValue())
-    val op         = ctx.op.getText
-    val memberName = ctx.methodName().getText
-    val rhs        = visit(ctx.operatorExpression())
+    val lhs          = visit(ctx.primaryValue())
+    val op           = ctx.op.getText
+    val assignmentOp = ctx.assignmentOperator.getText
+    val memberName   = ctx.methodName().getText
+    val rhs          = visit(ctx.operatorExpression())
 
-    s"$lhs$op$memberName = $rhs"
+    s"$lhs$op$memberName $assignmentOp $rhs"
   }
 
   override def visitSimpleCommand(ctx: RubyParser.SimpleCommandContext): String = {
