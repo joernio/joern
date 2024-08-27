@@ -7,7 +7,7 @@ import io.shiftleft.codepropertygraph.generated.{Cpg, DispatchTypes, EdgeTypes, 
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
-import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
+import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{FieldAccess, Assignment}
 import org.apache.commons.text.CaseUtils
 
 import java.util.regex.Pattern
@@ -15,7 +15,7 @@ import scala.collection.mutable
 
 /** A 3-tuple holding the (name, fullName, importPath) for types in the analysis.
   */
-type TypeImportInfo = (String, String, String)
+case class TypeImportInfo(name: String, fullName: String, importPath: String)
 
 /** In some Ruby frameworks, it is common to have an autoloader library that implicitly loads requirements onto the
   * stack. This pass makes these imports explicit. The most popular one is <a
@@ -27,13 +27,16 @@ type TypeImportInfo = (String, String, String)
 class ImplicitRequirePass(cpg: Cpg, externalTypes: Seq[TypeImportInfo] = Nil)
     extends ForkJoinParallelCpgPass[Method](cpg) {
 
-  /** A 3-tuple holding the (name, fullName, importPath, isExternal) for types in the analysis.
+  /** A tuple holding information about the type import info, additionally with a boolean indicating if it is external
+    * or not.
     */
-  private type TypeImportInfoInternal = (String, String, String, Boolean)
-
-  private val Require: String      = "require"
-  private val Self: String         = "self"
+  private type TypeImportInfoInternal = (TypeImportInfo, Boolean)
   private val typeNameToImportInfo = mutable.Map.empty[String, Seq[TypeImportInfoInternal]]
+
+  private val Require: String    = "require"
+  private val Self: String       = "self"
+  private val Initialize: String = "initialize"
+  private val Clazz: String      = "<class>"
 
   override def init(): Unit = {
     cpg.typeDecl
@@ -46,29 +49,36 @@ class ImplicitRequirePass(cpg: Cpg, externalTypes: Seq[TypeImportInfo] = Nil)
         typeName == fileName || typeName == CaseUtils.toCamelCase(fileName, true, '_', '-')
       }
       .flatMap(getChildrenTypes(_, None))
-      .groupBy(_._1)
+      .groupBy { case (typeImportInfo, _) => typeImportInfo.name }
       .foreach { case (typeName, typeImportInfos) =>
         typeNameToImportInfo.put(typeName, typeImportInfos)
       }
-    typeNameToImportInfo.addAll(externalTypes.map(x => (x._1, x._2, x._3, true)).groupBy(_._1))
+    typeNameToImportInfo.addAll(
+      externalTypes.map(x => (x, true)).groupBy { case (typeImportInfo, _) => typeImportInfo.name }
+    )
   }
 
   private def typeToTypeImportInfo(typeDecl: TypeDecl, prependWith: Option[String]): Seq[TypeImportInfoInternal] = {
     val typeName = typeDecl.name
-    if (typeName.endsWith("<class>")) {
+    if (typeName.endsWith(Clazz)) {
       Nil
     } else {
       // We add both "name" variants, i.e., for Foo::Bar, we have both Bar and Foo::Bar
-      (typeName +: prependWith.map(prefix => s"$prefix.${typeDecl.name}").toList).map(qualifiedTypeName =>
-        (qualifiedTypeName, typeDecl.fullName, normalizePath(typeDecl.filename), typeDecl.isExternal)
+      val qualifiedName = prependWith.map(prefix => s"$prefix.${typeDecl.name}").toList
+      (typeName +: qualifiedName).map(qualifiedTypeName =>
+        val typeImportInfo = TypeImportInfo(qualifiedTypeName, typeDecl.fullName, normalizePath(typeDecl.filename))
+        typeImportInfo -> typeDecl.isExternal
       )
     }
   }
 
   private def getChildrenTypes(typeDecl: TypeDecl, prependWith: Option[String] = None): Seq[TypeImportInfoInternal] = {
-    val childTypes = typeDecl.astChildren.isTypeDecl.not(_.methodBinding).l
-    typeToTypeImportInfo(typeDecl, prependWith) ++ childTypes
-      .flatMap(getChildrenTypes(_, prependWith.map(_.concat(s".${typeDecl.name}")).orElse(Option(typeDecl.name))))
+    val thisTypeImportInfo = typeToTypeImportInfo(typeDecl, prependWith)
+
+    val childrenTypes          = typeDecl.astChildren.isTypeDecl.not(_.methodBinding).l
+    val childPrefix            = prependWith.map(_.concat(s".${typeDecl.name}")).orElse(Option(typeDecl.name))
+    val childrenTypeImportInfo = childrenTypes.flatMap(getChildrenTypes(_, childPrefix))
+    thisTypeImportInfo ++ childrenTypeImportInfo
   }
 
   private def normalizePath(path: String): String = path.replace("\\", "/").stripSuffix(".rb")
@@ -94,22 +104,27 @@ class ImplicitRequirePass(cpg: Cpg, externalTypes: Seq[TypeImportInfo] = Nil)
     val currPath                = normalizePath(moduleMethod.filename)
 
     val typeDecl = cpg.typeDecl.fullName(Pattern.quote(moduleMethod.fullName) + ".*").l
-    typeDecl.inheritsFromTypeFullName.filterNot(_.endsWith("<class>")).foreach(possiblyImportedSymbols.append)
+    typeDecl.inheritsFromTypeFullName.filterNot(_.endsWith(Clazz)).foreach(possiblyImportedSymbols.append)
 
     val methodsOfModule = findMethodsViaAstChildren(moduleMethod).toList
     val callsOfModule   = methodsOfModule.ast.isCall.toList
 
-    callsOfModule.map(x => x.name -> x.code).foreach(println)
-
-    val symbolsGatheredFromCalls = callsOfModule.flatMap {
-      case x if x.name == Operators.alloc =>
-        // TODO Once constructor invocations are lowered correctly, this case is not needed anymore.
-        x.argument.isIdentifier.name
-      case x if x.methodFullName == Operators.fieldAccess =>
-        fullyQualifiedName(x.asInstanceOf[FieldAccess]) :: Nil
-      case _ =>
-        Iterator.empty
-    }
+    val symbolsGatheredFromCalls = callsOfModule
+      .flatMap {
+        case x if x.name == Initialize =>
+          x.receiver.headOption.flatMap {
+            case x: TypeRef    => Option(x.code.replace("::", "."))
+            case x: Identifier => Option(x.name)
+            case x: Call if x.name == Operators.fieldAccess =>
+              Option(fullyQualifiedName(x.asInstanceOf[FieldAccess]))
+            case _ => None
+          }.iterator
+        case x if x.methodFullName == Operators.fieldAccess =>
+          fullyQualifiedName(x.asInstanceOf[FieldAccess]) :: Nil
+        case _ =>
+          Iterator.empty
+      }
+      .filterNot(_.isBlank)
 
     possiblyImportedSymbols.appendAll(symbolsGatheredFromCalls)
 
@@ -118,16 +133,14 @@ class ImplicitRequirePass(cpg: Cpg, externalTypes: Seq[TypeImportInfo] = Nil)
       .flatMap { identifierName =>
         typeNameToImportInfo
           .getOrElse(identifierName, Seq.empty)
-          .sortBy(_._4) // sorting puts false first
-          .flatMap {
-            case (_, _, importPath, _) if importPath == currPath =>
-              None // ignore an import to a file that defines the type
-            case (_, _, importPath, _) =>
-              Option(importPath -> createRequireCall(builder, importPath))
+          .sortBy { case (_, isExternal) => isExternal } // sorting booleans puts false (internal) first
+          .collectFirst {
+            // ignore an import to a file that defines the type
+            case (TypeImportInfo(_, _, importPath), _) if importPath != currPath =>
+              importPath -> createRequireCall(builder, importPath)
           }
-          .headOption
       }
-      .distinctBy(_._1)
+      .distinctBy(x => x._1)
       .foreach { case (_, requireCall) =>
         requireCall.order(currOrder)
         builder.addEdge(moduleMethod.block, requireCall, EdgeTypes.AST)
@@ -158,7 +171,15 @@ class ImplicitRequirePass(cpg: Cpg, externalTypes: Seq[TypeImportInfo] = Nil)
       case subFa: Call if subFa.name == Operators.fieldAccess =>
         fieldAccessParts(subFa.asInstanceOf[FieldAccess]) ++ fa.fieldIdentifier.map(_.canonicalName)
       case self: Identifier if self.name == Self => fa.fieldIdentifier.map(_.canonicalName).toSeq
-      case _                                     => Seq.empty
+      case assignCall: Call if assignCall.name == Operators.assignment =>
+        val assign = assignCall.asInstanceOf[Assignment]
+        // Handle the tmp var assign of qualified names
+        (assign.target, assign.source) match {
+          case (lhs: Identifier, rhs: Call) if lhs.name.startsWith("<tmp-") && rhs.name == Operators.fieldAccess =>
+            fieldAccessParts(rhs.asInstanceOf[FieldAccess])
+          case _ => Seq.empty
+        }
+      case _ => Seq.empty
     }
   }
 

@@ -4,6 +4,7 @@ import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.{Initialize, Main}
 import io.joern.rubysrc2cpg.passes.GlobalTypes.{builtinPrefix, kernelPrefix}
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.joern.x2cpg.frontendspecific.rubysrc2cpg.{ImplicitRequirePass, ImportsPass, TypeImportInfo}
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.nodes.Literal
 import io.shiftleft.semanticcpg.language.*
@@ -481,4 +482,35 @@ class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with In
       }
     }
   }
+}
+
+class ImportWithAutoloadedExternalGemsTests extends RubyCode2CpgFixture(withPostProcessing = false) {
+
+  "use of a type specified as external" should {
+
+    val cpg = code(
+      """
+        |x = Base64.encode("Hello, world!")
+        |Bar::Foo.new
+        |""".stripMargin,
+      "encoder.rb"
+    )
+
+    ImplicitRequirePass(
+      cpg,
+      TypeImportInfo("Base64", "base64.Base64", "base64") :: TypeImportInfo("Bar.Foo", "x.y.Bar.Foo", "foobar") :: Nil
+    ).createAndApply()
+    ImportsPass(cpg).createAndApply()
+
+    "result in require statement of the file containing the symbol" in {
+      inside(cpg.imports.where(_.call.file.name(".*encoder.rb")).toList) { case List(i1, i2) =>
+        i1.importedAs shouldBe Some("base64")
+        i1.importedEntity shouldBe Some("base64")
+
+        i2.importedAs shouldBe Some("foobar")
+        i2.importedEntity shouldBe Some("foobar")
+      }
+    }
+  }
+
 }
