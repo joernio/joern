@@ -396,6 +396,35 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
       val base = bCall.argument(0).asInstanceOf[Identifier]
       base.name shouldBe "<tmp-0>"
     }
+  }
 
+  "Call with Array Argument" in {
+    val cpg = code("""
+        |def foo(a)
+        |  puts a
+        |end
+        |
+        |foo([:b, :c => 1])
+        |""".stripMargin)
+
+    inside(cpg.call.name("foo").l) {
+      case fooCall :: Nil =>
+        inside(fooCall.argument.l) {
+          case _ :: (arrayArg: Call) :: Nil =>
+            arrayArg.code shouldBe ":b, :c => 1"
+            arrayArg.methodFullName shouldBe Operators.arrayInitializer
+
+            inside(arrayArg.argument.l) {
+              case (elem1: Literal) :: (elem2: Call) :: Nil =>
+                elem1.code shouldBe ":b"
+                elem2.code shouldBe ":c => 1"
+
+                elem2.methodFullName shouldBe RubyDefines.RubyOperators.association
+              case xs => fail(s"Expected two args for elements, got ${xs.code.mkString(",")}")
+            }
+          case xs => fail(s"Expected two args, got ${xs.code.mkString(",")}")
+        }
+      case xs => fail(s"Expected one call for foo, got ${xs.code.mkString}")
+    }
   }
 }

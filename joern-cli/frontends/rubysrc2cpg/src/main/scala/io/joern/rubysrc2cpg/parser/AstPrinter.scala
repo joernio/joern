@@ -697,7 +697,9 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     outputSb.append(identifier)
 
     val args = ctx.argumentWithParentheses().arguments.map(visit).mkString(",")
-    outputSb.append(s"($args)")
+
+    if ctx.argumentWithParentheses().isArrayArgumentList then outputSb.append(s"([$args])")
+    else outputSb.append(s"($args)")
 
     if Option(ctx.block).isDefined then outputSb.append(s" ${visit(ctx.block)}")
     outputSb.toString

@@ -232,6 +232,11 @@ object AntlrContextHelpers {
       case ctx =>
         logger.warn(s"ArgumentWithParenthesesContextHelper - Unsupported argument type ${ctx.getClass}")
         List()
+
+    def isArrayArgumentList: Boolean = ctx match {
+      case ctx: ArgumentListArgumentWithParenthesesContext => ctx.argumentList().isArrayArgumentListContext
+      case _                                               => false
+    }
   }
 
   sealed implicit class ArgumentListContextHelper(ctx: ArgumentListContext) {
@@ -250,9 +255,16 @@ object AntlrContextHelpers {
         ).toList
       case ctx: BlockArgumentArgumentListContext =>
         Option(ctx.blockArgument()).toList
+      case ctx: ArrayArgumentListContext =>
+        val associations = ctx.association().asScala.toList
+        val symbols      = ctx.symbol().asScala.toList
+        (associations ++ symbols)
+          .sortBy(x => (x.toTextSpan.line, x.toTextSpan.column))
       case ctx =>
         logger.warn(s"ArgumentListContextHelper - Unsupported element type ${ctx.getClass.getSimpleName}")
         List()
+
+    def isArrayArgumentListContext: Boolean = ctx.isInstanceOf[ArrayArgumentListContext]
   }
 
   sealed implicit class CommandWithDoBlockContextHelper(ctx: CommandWithDoBlockContext) {

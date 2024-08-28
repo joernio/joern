@@ -718,14 +718,17 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   override def visitMethodCallWithParenthesesExpression(
     ctx: RubyParser.MethodCallWithParenthesesExpressionContext
   ): RubyNode = {
+    val callArgs = ctx.argumentWithParentheses().arguments.map(visit)
+
+    val args =
+      if (ctx.argumentWithParentheses().isArrayArgumentList) then
+        ArrayLiteral(callArgs)(ctx.toTextSpan.spanStart(callArgs.map(_.span.text).mkString(", "))) :: Nil
+      else callArgs
+
     if (Option(ctx.block()).isDefined) {
-      SimpleCallWithBlock(
-        visit(ctx.methodIdentifier()),
-        ctx.argumentWithParentheses().arguments.map(visit),
-        visit(ctx.block()).asInstanceOf[Block]
-      )(ctx.toTextSpan)
+      SimpleCallWithBlock(visit(ctx.methodIdentifier()), args, visit(ctx.block()).asInstanceOf[Block])(ctx.toTextSpan)
     } else {
-      SimpleCall(visit(ctx.methodIdentifier()), ctx.argumentWithParentheses().arguments.map(visit))(ctx.toTextSpan)
+      SimpleCall(visit(ctx.methodIdentifier()), args)(ctx.toTextSpan)
     }
   }
 

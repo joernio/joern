@@ -8,6 +8,7 @@ class AssignmentParserTests extends RubyParserFixture with Matchers {
     test("a = b, *c, d")   // Syntax error
     test("*, a = b")       // Syntax error
     test("*, x, y, z = f") // Syntax error
+    test("a = b, *c, d")   // Syntax error
   }
 
   "Single assignment" in {

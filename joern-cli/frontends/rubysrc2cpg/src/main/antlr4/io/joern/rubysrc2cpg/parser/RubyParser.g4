@@ -216,10 +216,12 @@ argumentList
         # operatorsArgumentList
     |   associationList (COMMA NL* splattingArgument)? (COMMA NL* blockArgument)?
         # associationsArgumentList
+    |   LBRACK ((symbol|association) COMMA? NL*)* RBRACK
+        # arrayArgumentList
     |   command
         # singleCommandArgumentList
     ;
-    
+
 commandArgumentList
     :   associationList
     |   primaryValueList (COMMA NL* associationList)?
