@@ -4,14 +4,6 @@ import io.joern.rubysrc2cpg.testfixtures.RubyParserFixture
 import org.scalatest.matchers.should.Matchers
 
 class CaseConditionParserTests extends RubyParserFixture with Matchers {
-  "fixme" ignore {
-    // Splat arg missing from output
-    test("""case a
-        |when *b then
-        |end
-        |""".stripMargin)
-  }
-
   "A case expression" in {
     test(
       """case something
@@ -61,5 +53,8 @@ class CaseConditionParserTests extends RubyParserFixture with Matchers {
         |end""".stripMargin
     )
 
+    test("""case a
+           |when *b then
+           |end""".stripMargin)
   }
 }

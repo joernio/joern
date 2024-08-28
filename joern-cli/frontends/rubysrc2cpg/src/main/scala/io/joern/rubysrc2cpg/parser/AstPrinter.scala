@@ -638,7 +638,7 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   override def visitIsDefinedExpression(ctx: RubyParser.IsDefinedExpressionContext): String = {
     val definedKeyword = visit(ctx.isDefinedKeyword)
     val value          = visit(ctx.expressionOrCommand())
-    s"$definedKeyword $value"
+    s"$definedKeyword($value)"
   }
 
   override def visitIsDefinedCommand(ctx: RubyParser.IsDefinedCommandContext): String = {
@@ -1061,7 +1061,8 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
 
   override def visitArrayParameter(ctx: RubyParser.ArrayParameterContext): String = {
     val identName = Option(ctx.LOCAL_VARIABLE_IDENTIFIER()).map(_.getText).getOrElse(ctx.getText)
-    s"${ctx.STAR.getText}$identName"
+    if identName == ctx.STAR.getText then ctx.STAR.getText
+    else s"${ctx.STAR.getText}$identName"
   }
 
   override def visitOptionalParameter(ctx: RubyParser.OptionalParameterContext): String = {
@@ -1173,8 +1174,8 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
       val matchArgsStr = matchArgs.mkString(",")
       outputSb.append(s" $matchArgsStr")
 
-      val matchSplatArgStr =
-        if matchSplatArg.isDefined then outputSb.append(s", $matchSplatArg")
+      if matchSplatArg.isDefined then outputSb.append(s", ${matchSplatArg.get}")
+    else if matchSplatArg.isDefined then outputSb.append(s" ${matchSplatArg.get}")
 
     if Option(ctx.thenClause().THEN).isDefined then outputSb.append(s" ${ctx.thenClause.THEN.getText}")
     if thenClause != "" then outputSb.append(s"$ls$thenClause")
