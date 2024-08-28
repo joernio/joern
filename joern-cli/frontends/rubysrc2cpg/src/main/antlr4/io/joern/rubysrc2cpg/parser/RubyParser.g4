@@ -177,12 +177,21 @@ indexingArgumentList
         # operatorExpressionListIndexingArgumentList
     |   operatorExpressionList COMMA splattingArgument
         # operatorExpressionListWithSplattingArgumentIndexingArgumentList
-    |   ((symbol|association) COMMA? NL*)*
-        #symbolOrAssociationIndexingArgumentList
+    |   (indexingArgument COMMA? NL*)*
+        #indexingArgumentIndexingArgumentList
     |   associationList COMMA?
         # associationListIndexingArgumentList
     |   splattingArgument
         # splattingArgumentIndexingArgumentList
+    ;
+
+indexingArgument
+    :   symbol
+        #symbolIndexingArgument
+    |   association
+        #associationIndexingArgument
+    |   sign=(PLUS | MINUS)? unsignedNumericLiteral
+        #numericLiteralIndexingArgument
     ;
 
 splattingArgument
