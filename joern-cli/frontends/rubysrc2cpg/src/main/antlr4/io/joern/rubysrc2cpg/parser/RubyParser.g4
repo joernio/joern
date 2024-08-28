@@ -177,6 +177,8 @@ indexingArgumentList
         # operatorExpressionListIndexingArgumentList
     |   operatorExpressionList COMMA splattingArgument
         # operatorExpressionListWithSplattingArgumentIndexingArgumentList
+    |   ((symbol|association) COMMA? NL*)*
+        #symbolOrAssociationIndexingArgumentList
     |   associationList COMMA?
         # associationListIndexingArgumentList
     |   splattingArgument
@@ -216,10 +218,12 @@ argumentList
         # operatorsArgumentList
     |   associationList (COMMA NL* splattingArgument)? (COMMA NL* blockArgument)?
         # associationsArgumentList
+    |   LBRACK indexingArgumentList? RBRACK
+        # arrayArgumentList
     |   command
         # singleCommandArgumentList
     ;
-    
+
 commandArgumentList
     :   associationList
     |   primaryValueList (COMMA NL* associationList)?

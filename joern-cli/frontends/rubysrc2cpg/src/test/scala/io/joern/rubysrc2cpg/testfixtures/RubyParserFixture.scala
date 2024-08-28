@@ -14,7 +14,12 @@ import java.nio.file.{Files, Path}
 import scala.util.{Failure, Success, Using}
 
 class RubyParserFixture
-    extends RubyFrontend(useDeprecatedFrontend = false, withDownloadDependencies = false, disableFileContent = true)
+    extends RubyFrontend(
+      useDeprecatedFrontend = false,
+      withDownloadDependencies = false,
+      disableFileContent = true,
+      antlrDebugging = false
+    )
     with TestCodeWriter
     with AnyWordSpecLike
     with Matchers {
