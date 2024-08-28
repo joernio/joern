@@ -97,6 +97,13 @@ class MethodDefinitionParserTests extends RubyParserFixture with Matchers {
         |end""".stripMargin
     )
 
+    // Parameters here are swapped around since we don't have access to line/col num so there is no sorting available,
+    // but they are sorted on the RubyNodeCreator side to be in the right order
+    test(
+      "def f(*,a) end",
+      """def f(a,*)
+        |end""".stripMargin
+    )
   }
 
   "multi-line method definition" in {

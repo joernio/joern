@@ -5,12 +5,12 @@ import org.scalatest.matchers.should.Matchers
 
 class InvocationWithParenthesisParserTests extends RubyParserFixture with Matchers {
   "fixme" ignore {
-    test("foo.()")       // syntax error
-    test("defined?(42)") // parentheses go missing
-    test("x(&)")         // Syntax error
+    test("foo.()") // syntax error
+    test("x(&)")   // Syntax error
   }
 
   "method invocation with parenthesis" in {
+    test("defined?(42)")
     test("foo()")
     test("foo([:c => 1, :d])", "foo([:c=> 1,:d])")
     test(
