@@ -411,7 +411,7 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
       case fooCall :: Nil =>
         inside(fooCall.argument.l) {
           case _ :: (arrayArg: Call) :: Nil =>
-            arrayArg.code shouldBe ":b, :c => 1"
+            arrayArg.code shouldBe "[:b, :c => 1]"
             arrayArg.methodFullName shouldBe Operators.arrayInitializer
 
             inside(arrayArg.argument.l) {

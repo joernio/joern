@@ -220,6 +220,11 @@ object AntlrContextHelpers {
       case ctx: AssociationListIndexingArgumentListContext   => ctx.associationList().associations
       case ctx: SplattingArgumentIndexingArgumentListContext => ctx.splattingArgument() :: Nil
       case ctx: OperatorExpressionListWithSplattingArgumentIndexingArgumentListContext => ctx.splattingArgument() :: Nil
+      case ctx: SymbolOrAssociationIndexListContext =>
+        val associations = ctx.association().asScala.toList
+        val symbols      = ctx.symbol().asScala.toList
+        (associations ++ symbols)
+          .sortBy(x => (x.toTextSpan.line, x.toTextSpan.column))
       case ctx =>
         logger.warn(s"IndexingArgumentListContextHelper - Unsupported argument type ${ctx.getClass}")
         List()
@@ -256,10 +261,7 @@ object AntlrContextHelpers {
       case ctx: BlockArgumentArgumentListContext =>
         Option(ctx.blockArgument()).toList
       case ctx: ArrayArgumentListContext =>
-        val associations = ctx.association().asScala.toList
-        val symbols      = ctx.symbol().asScala.toList
-        (associations ++ symbols)
-          .sortBy(x => (x.toTextSpan.line, x.toTextSpan.column))
+        Option(ctx.indexingArgumentList()).toList
       case ctx =>
         logger.warn(s"ArgumentListContextHelper - Unsupported element type ${ctx.getClass.getSimpleName}")
         List()
