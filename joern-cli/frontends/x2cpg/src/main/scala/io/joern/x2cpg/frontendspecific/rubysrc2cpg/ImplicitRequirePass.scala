@@ -7,15 +7,16 @@ import io.shiftleft.codepropertygraph.generated.{Cpg, DispatchTypes, EdgeTypes, 
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
-import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{FieldAccess, Assignment}
+import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, FieldAccess}
 import org.apache.commons.text.CaseUtils
 
 import java.util.regex.Pattern
+import scala.annotation.tailrec
 import scala.collection.mutable
 
-/** A 3-tuple holding the (name, fullName, importPath) for types in the analysis.
+/** A tuple holding the (name, importPath) for types in the analysis.
   */
-case class TypeImportInfo(name: String, fullName: String, importPath: String)
+case class TypeImportInfo(name: String, importPath: String)
 
 /** In some Ruby frameworks, it is common to have an autoloader library that implicitly loads requirements onto the
   * stack. This pass makes these imports explicit. The most popular one is <a
@@ -39,7 +40,7 @@ class ImplicitRequirePass(cpg: Cpg, externalTypes: Seq[TypeImportInfo] = Nil)
   private val Clazz: String      = "<class>"
 
   override def init(): Unit = {
-    cpg.typeDecl
+    val importableTypeInfo = cpg.typeDecl
       .isExternal(false)
       .filter { typeDecl =>
         // zeitwerk will match types that share the name of the path.
@@ -48,7 +49,13 @@ class ImplicitRequirePass(cpg: Cpg, externalTypes: Seq[TypeImportInfo] = Nil)
         val typeName = typeDecl.name
         typeName == fileName || typeName == CaseUtils.toCamelCase(fileName, true, '_', '-')
       }
-      .flatMap(getChildrenTypes(_, None))
+      .map { typeDecl =>
+        val typeImportInfo = TypeImportInfo(typeDecl.name, normalizePath(typeDecl.filename))
+        typeImportInfo -> typeDecl.isExternal
+      }
+      .l
+    // Group types by symbol and add to map for quicker retrieval later
+    importableTypeInfo
       .groupBy { case (typeImportInfo, _) => typeImportInfo.name }
       .foreach { case (typeName, typeImportInfos) =>
         typeNameToImportInfo.put(typeName, typeImportInfos)
@@ -58,30 +65,12 @@ class ImplicitRequirePass(cpg: Cpg, externalTypes: Seq[TypeImportInfo] = Nil)
     )
   }
 
-  private def typeToTypeImportInfo(typeDecl: TypeDecl, prependWith: Option[String]): Seq[TypeImportInfoInternal] = {
-    val typeName = typeDecl.name
-    if (typeName.endsWith(Clazz)) {
-      Nil
-    } else {
-      // We add both "name" variants, i.e., for Foo::Bar, we have both Bar and Foo::Bar
-      val qualifiedName = prependWith.map(prefix => s"$prefix.${typeDecl.name}").toList
-      (typeName +: qualifiedName).map(qualifiedTypeName =>
-        val typeImportInfo = TypeImportInfo(qualifiedTypeName, typeDecl.fullName, normalizePath(typeDecl.filename))
-        typeImportInfo -> typeDecl.isExternal
-      )
-    }
-  }
-
-  private def getChildrenTypes(typeDecl: TypeDecl, prependWith: Option[String] = None): Seq[TypeImportInfoInternal] = {
-    val thisTypeImportInfo = typeToTypeImportInfo(typeDecl, prependWith)
-
-    val childrenTypes          = typeDecl.astChildren.isTypeDecl.not(_.methodBinding).l
-    val childPrefix            = prependWith.map(_.concat(s".${typeDecl.name}")).orElse(Option(typeDecl.name))
-    val childrenTypeImportInfo = childrenTypes.flatMap(getChildrenTypes(_, childPrefix))
-    thisTypeImportInfo ++ childrenTypeImportInfo
-  }
-
   private def normalizePath(path: String): String = path.replace("\\", "/").stripSuffix(".rb")
+
+  private def getFieldBaseFromString(fieldAccessString: String): String = {
+    val normalizedFieldAccessString = fieldAccessString.replace("::", ".")
+    normalizedFieldAccessString.split('.').headOption.getOrElse(normalizedFieldAccessString)
+  }
 
   override def generateParts(): Array[Method] =
     cpg.method.isModule.whereNot(_.astChildren.isCall.nameExact(Require)).toArray
@@ -104,7 +93,10 @@ class ImplicitRequirePass(cpg: Cpg, externalTypes: Seq[TypeImportInfo] = Nil)
     val currPath                = normalizePath(moduleMethod.filename)
 
     val typeDecl = cpg.typeDecl.fullName(Pattern.quote(moduleMethod.fullName) + ".*").l
-    typeDecl.inheritsFromTypeFullName.filterNot(_.endsWith(Clazz)).foreach(possiblyImportedSymbols.append)
+    typeDecl.inheritsFromTypeFullName
+      .filterNot(_.endsWith(Clazz))
+      .map(getFieldBaseFromString)
+      .foreach(possiblyImportedSymbols.append)
 
     val methodsOfModule = findMethodsViaAstChildren(moduleMethod).toList
     val callsOfModule   = methodsOfModule.ast.isCall.toList
@@ -113,14 +105,14 @@ class ImplicitRequirePass(cpg: Cpg, externalTypes: Seq[TypeImportInfo] = Nil)
       .flatMap {
         case x if x.name == Initialize =>
           x.receiver.headOption.flatMap {
-            case x: TypeRef    => Option(x.code.replace("::", "."))
+            case x: TypeRef    => Option(getFieldBaseFromString(x.code))
             case x: Identifier => Option(x.name)
             case x: Call if x.name == Operators.fieldAccess =>
-              Option(fullyQualifiedName(x.asInstanceOf[FieldAccess]))
+              Option(fieldAccessBase(x.asInstanceOf[FieldAccess]))
             case _ => None
           }.iterator
         case x if x.methodFullName == Operators.fieldAccess =>
-          fullyQualifiedName(x.asInstanceOf[FieldAccess]) :: Nil
+          fieldAccessBase(x.asInstanceOf[FieldAccess]) :: Nil
         case _ =>
           Iterator.empty
       }
@@ -136,7 +128,7 @@ class ImplicitRequirePass(cpg: Cpg, externalTypes: Seq[TypeImportInfo] = Nil)
           .sortBy { case (_, isExternal) => isExternal } // sorting booleans puts false (internal) first
           .collectFirst {
             // ignore an import to a file that defines the type
-            case (TypeImportInfo(_, _, importPath), _) if importPath != currPath =>
+            case (TypeImportInfo(_, importPath), _) if importPath != currPath =>
               importPath -> createRequireCall(builder, importPath)
           }
       }
@@ -164,13 +156,13 @@ class ImplicitRequirePass(cpg: Cpg, externalTypes: Seq[TypeImportInfo] = Nil)
     requireCallNode
   }
 
-  private def fullyQualifiedName(fa: FieldAccess): String = fieldAccessParts(fa).mkString(".")
+  private def fieldAccessBase(fa: FieldAccess): String = fieldAccessParts(fa).headOption.getOrElse(fa.argument(1).code)
 
+  @tailrec
   private def fieldAccessParts(fa: FieldAccess): Seq[String] = {
     fa.argument(1) match {
-      case subFa: Call if subFa.name == Operators.fieldAccess =>
-        fieldAccessParts(subFa.asInstanceOf[FieldAccess]) ++ fa.fieldIdentifier.map(_.canonicalName)
-      case self: Identifier if self.name == Self => fa.fieldIdentifier.map(_.canonicalName).toSeq
+      case subFa: Call if subFa.name == Operators.fieldAccess => fieldAccessParts(subFa.asInstanceOf[FieldAccess])
+      case self: Identifier if self.name == Self              => fa.fieldIdentifier.map(_.canonicalName).toSeq
       case assignCall: Call if assignCall.name == Operators.assignment =>
         val assign = assignCall.asInstanceOf[Assignment]
         // Handle the tmp var assign of qualified names

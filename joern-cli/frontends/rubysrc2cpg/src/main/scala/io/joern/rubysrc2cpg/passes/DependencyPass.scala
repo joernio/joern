@@ -1,5 +1,6 @@
 package io.joern.rubysrc2cpg.passes
 
+import flatgraph.DiffGraphBuilder
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{ConfigFile, NewDependency}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
@@ -11,6 +12,18 @@ import io.shiftleft.semanticcpg.language.*
   *   the graph.
   */
 class DependencyPass(cpg: Cpg) extends ForkJoinParallelCpgPass[ConfigFile](cpg) {
+
+  /** Adds all necessary initial core gems.
+    */
+  override def init(): Unit = {
+    val diffGraph = Cpg.newDiffGraphBuilder
+    DependencyPass.CORE_GEMS
+      .map { coreGemName =>
+        NewDependency().name(coreGemName).version(DependencyPass.CORE_GEM_VERSION)
+      }
+      .foreach(diffGraph.addNode)
+    flatgraph.DiffGraphApplier.applyDiff(cpg.graph, diffGraph)
+  }
 
   /** @return
     *   the Gemfiles, while preferring `Gemfile.lock` files if present.
@@ -87,4 +100,108 @@ class DependencyPass(cpg: Cpg) extends ForkJoinParallelCpgPass[ConfigFile](cpg) 
     }
   }
 
+}
+
+object DependencyPass {
+  val CORE_GEM_VERSION: String = "3.0.0"
+  // Scraped from: https://ruby-doc.org/stdlib-$CORE_GEM_VERSION/
+  // These gems require explicit import but no entry required in `Gemsfile`
+  val CORE_GEMS: Set[String] = Set(
+    "abbrev",
+    "base64",
+    "benchmark",
+    "bigdecimal",
+    "bundler",
+    "cgi",
+    "coverage",
+    "csv",
+    "date",
+    "dbm",
+    "debug",
+    "delegate",
+    "did_you_mean",
+    "digest",
+    "drb",
+    "English",
+    "erb",
+    "etc",
+    "extmk",
+    "fcntl",
+    "fiddle",
+    "fileutils",
+    "find",
+    "forwardable",
+    "gdbm",
+    "getoptlong",
+    "io/console",
+    "io/nonblock",
+    "io/wait",
+    "ipaddr",
+    "irb",
+    "json",
+    "logger",
+    "matrix",
+    "minitest",
+    "mkmf",
+    "monitor",
+    "mutex_m",
+    "net/ftp",
+    "net/http",
+    "net/imap",
+    "net/pop",
+    "net/protocol",
+    "net/smtp",
+    "nkf",
+    "objspace",
+    "observer",
+    "open-uri",
+    "open3",
+    "openssl",
+    "optparse",
+    "ostruct",
+    "pathname",
+    "power_assert",
+    "pp",
+    "prettyprint",
+    "prime",
+    "pstore",
+    "psych",
+    "pty",
+    "racc",
+    "racc/parser",
+    "rake",
+    "rbs",
+    "readline",
+    "readline",
+    "reline",
+    "resolv",
+    "resolv-replace",
+    "rexml",
+    "rinda",
+    "ripper",
+    "rss",
+    "rubygems",
+    "securerandom",
+    "set",
+    "shellwords",
+    "singleton",
+    "socket",
+    "stringio",
+    "strscan",
+    "syslog",
+    "tempfile",
+    "test-unit",
+    "time",
+    "timeout",
+    "tmpdir",
+    "tracer",
+    "tsort",
+    "typeprof",
+    "un",
+    "uri",
+    "weakref",
+    "win32ole",
+    "yaml",
+    "zlib"
+  )
 }

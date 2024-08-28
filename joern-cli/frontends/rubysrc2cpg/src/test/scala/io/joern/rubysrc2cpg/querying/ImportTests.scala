@@ -496,10 +496,8 @@ class ImportWithAutoloadedExternalGemsTests extends RubyCode2CpgFixture(withPost
       "encoder.rb"
     )
 
-    ImplicitRequirePass(
-      cpg,
-      TypeImportInfo("Base64", "base64.Base64", "base64") :: TypeImportInfo("Bar.Foo", "x.y.Bar.Foo", "foobar") :: Nil
-    ).createAndApply()
+    ImplicitRequirePass(cpg, TypeImportInfo("Base64", "base64") :: TypeImportInfo("Bar", "foobar") :: Nil)
+      .createAndApply()
     ImportsPass(cpg).createAndApply()
 
     "result in require statement of the file containing the symbol" in {
