@@ -5,11 +5,8 @@ import io.joern.rubysrc2cpg.testfixtures.RubyParserFixture
 import org.scalatest.matchers.should.Matchers
 
 class ArrayParserTests extends RubyParserFixture with Matchers {
-  "fixme" ignore {
-    test("[1, 2 => 3]", "[1,2=> 3]") // syntax error
-  }
-
   "array structures" in {
+    test("[1, 2 => 3]", "[1,2=> 3]")
     test("[]")
     test("%w[]")
     test("%i[]")

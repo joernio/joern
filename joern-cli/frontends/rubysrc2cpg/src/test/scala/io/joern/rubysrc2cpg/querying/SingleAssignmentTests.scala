@@ -460,8 +460,6 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
         |A::b += 1
         |""".stripMargin)
 
-    cpg.method.isModule.dotAst.l.foreach(println)
-
     inside(cpg.call.name(Operators.assignmentPlus).l) {
       case assignmentCall :: Nil =>
         val List(lhs: Call, rhs) = assignmentCall.argument.l: @unchecked
@@ -478,8 +476,6 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
     val cpg = code("""
         |A::b *= 1
         |""".stripMargin)
-
-    cpg.method.isModule.dotAst.l.foreach(println)
 
     inside(cpg.call.name(Operators.assignmentMultiplication).l) {
       case assignmentCall :: Nil =>
