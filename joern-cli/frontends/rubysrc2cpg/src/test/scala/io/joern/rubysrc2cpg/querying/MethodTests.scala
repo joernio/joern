@@ -923,4 +923,19 @@ class MethodTests extends RubyCode2CpgFixture {
       case xs => fail(s"Expected one methood, got ${xs.name.mkString(",")}")
     }
   }
+
+  "Method def with mandatory arg after splat arg" in {
+    val cpg = code("""
+        |def foo(a=1, *b, c)
+        |end
+        |""".stripMargin)
+
+    inside(cpg.method.name("foo").parameter.l) {
+      case _ :: aParam :: bParam :: cParam :: Nil =>
+        aParam.code shouldBe "a=1"
+        bParam.code shouldBe "*b"
+        cParam.code shouldBe "c"
+      case xs => fail(s"Expected 4 params, got ${xs.code.mkString(",")}")
+    }
+  }
 }

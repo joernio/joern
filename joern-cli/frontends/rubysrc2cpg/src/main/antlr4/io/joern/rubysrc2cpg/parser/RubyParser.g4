@@ -535,7 +535,7 @@ methodParameterPart
     ;
 
 parameterList
-    :   mandatoryOrOptionalParameterList (COMMA NL* arrayParameter)? (COMMA NL* hashParameter)? (COMMA NL* procParameter)?
+    :   mandatoryOrOptionalParameterList (COMMA NL* arrayParameter)? (COMMA NL* hashParameter)? (COMMA NL* procParameter)? (COMMA NL* mandatoryOrOptionalParameterList2)?
     |   arrayParameter (COMMA NL* hashParameter)? (COMMA NL* procParameter)? (COMMA NL* mandatoryOrOptionalParameterList)?
     |   hashParameter (COMMA NL* procParameter)?
     |   procParameter
@@ -544,7 +544,11 @@ parameterList
 mandatoryOrOptionalParameterList
     :   mandatoryOrOptionalParameter (COMMA NL* mandatoryOrOptionalParameter)*
     ;
-    
+
+mandatoryOrOptionalParameterList2
+    :   mandatoryOrOptionalParameter (COMMA NL* mandatoryOrOptionalParameter)*
+    ;
+
 mandatoryOrOptionalParameter
     :   mandatoryParameter
         # mandatoryMandatoryOrOptionalParameter
