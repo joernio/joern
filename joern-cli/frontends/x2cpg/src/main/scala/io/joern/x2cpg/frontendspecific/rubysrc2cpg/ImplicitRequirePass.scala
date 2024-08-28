@@ -45,12 +45,12 @@ class ImplicitRequirePass(cpg: Cpg, externalTypes: Seq[TypeImportInfo] = Nil)
       .filter { typeDecl =>
         // zeitwerk will match types that share the name of the path.
         // This match is insensitive to camel case, i.e, foo_bar will match type FooBar.
-        val fileName = typeDecl.filename.split(Array('/', '\\')).last.stripSuffix(".rb")
+        val fileName = typeDecl.filename.split(Array('/', '\\')).last
         val typeName = typeDecl.name
         ImplicitRequirePass.isAutoloadable(typeName, fileName)
       }
       .map { typeDecl =>
-        val typeImportInfo = TypeImportInfo(typeDecl.name, normalizePath(typeDecl.filename))
+        val typeImportInfo = TypeImportInfo(typeDecl.name, ImplicitRequirePass.normalizePath(typeDecl.filename))
         typeImportInfo -> typeDecl.isExternal
       }
       .l
@@ -64,8 +64,6 @@ class ImplicitRequirePass(cpg: Cpg, externalTypes: Seq[TypeImportInfo] = Nil)
       externalTypes.map(x => (x, true)).groupBy { case (typeImportInfo, _) => typeImportInfo.name }
     )
   }
-
-  private def normalizePath(path: String): String = path.replace("\\", "/").stripSuffix(".rb")
 
   private def getFieldBaseFromString(fieldAccessString: String): String = {
     val normalizedFieldAccessString = fieldAccessString.replace("::", ".")
@@ -90,7 +88,7 @@ class ImplicitRequirePass(cpg: Cpg, externalTypes: Seq[TypeImportInfo] = Nil)
 
   override def runOnPart(builder: DiffGraphBuilder, moduleMethod: Method): Unit = {
     val possiblyImportedSymbols = mutable.ArrayBuffer.empty[String]
-    val currPath                = normalizePath(moduleMethod.filename)
+    val currPath                = ImplicitRequirePass.normalizePath(moduleMethod.filename)
 
     val typeDecl = cpg.typeDecl.fullName(Pattern.quote(moduleMethod.fullName) + ".*").l
     typeDecl.inheritsFromTypeFullName
@@ -185,6 +183,10 @@ object ImplicitRequirePass {
     *   true if the type is autoloadable from the given filename.
     */
   def isAutoloadable(typeName: String, fileName: String): Boolean = {
-    typeName == fileName || typeName == CaseUtils.toCamelCase(fileName, true, '_', '-')
+    val strippedFileName = normalizePath(fileName)
+    typeName == strippedFileName || typeName == CaseUtils.toCamelCase(strippedFileName, true, '_', '-')
   }
+
+  private def normalizePath(path: String): String = path.replace("\\", "/").stripSuffix(".rb")
+
 }
