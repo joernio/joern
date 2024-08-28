@@ -47,7 +47,7 @@ class ImplicitRequirePass(cpg: Cpg, externalTypes: Seq[TypeImportInfo] = Nil)
         // This match is insensitive to camel case, i.e, foo_bar will match type FooBar.
         val fileName = typeDecl.filename.split(Array('/', '\\')).last.stripSuffix(".rb")
         val typeName = typeDecl.name
-        typeName == fileName || typeName == CaseUtils.toCamelCase(fileName, true, '_', '-')
+        ImplicitRequirePass.isAutoloadable(typeName, fileName)
       }
       .map { typeDecl =>
         val typeImportInfo = TypeImportInfo(typeDecl.name, normalizePath(typeDecl.filename))
@@ -175,4 +175,16 @@ class ImplicitRequirePass(cpg: Cpg, externalTypes: Seq[TypeImportInfo] = Nil)
     }
   }
 
+}
+
+object ImplicitRequirePass {
+
+  /** Determines if the given type name and its corresponding parent file name allow for the type to be autoloaded by
+    * zeitwerk.
+    * @return
+    *   true if the type is autoloadable from the given filename.
+    */
+  def isAutoloadable(typeName: String, fileName: String): Boolean = {
+    typeName == fileName || typeName == CaseUtils.toCamelCase(fileName, true, '_', '-')
+  }
 }
