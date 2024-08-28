@@ -6,7 +6,7 @@ import org.scalatest.matchers.should.Matchers
 
 class ArrayParserTests extends RubyParserFixture with Matchers {
   "array structures" in {
-    test("[1, 2 => 3]", "[1,2=> 3]") // syntax error
+    test("[1, 2 => 3]", "[1,2=> 3]")
     test("[]")
     test("%w[]")
     test("%i[]")
