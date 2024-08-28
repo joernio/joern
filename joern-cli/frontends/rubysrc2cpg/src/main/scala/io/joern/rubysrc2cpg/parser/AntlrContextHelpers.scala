@@ -204,11 +204,12 @@ object AntlrContextHelpers {
 
   sealed implicit class ParameterListContextHelper(ctx: ParameterListContext) {
     def parameters: List[ParserRuleContext] = {
-      val mandatoryOrOptionals = Option(ctx.mandatoryOrOptionalParameterList()).map(_.parameters).getOrElse(List())
-      val arrayParameter       = Option(ctx.arrayParameter()).toList
-      val hashParameter        = Option(ctx.hashParameter()).toList
-      val procParameter        = Option(ctx.procParameter()).toList
-      mandatoryOrOptionals ++ arrayParameter ++ hashParameter ++ procParameter
+      val mandatoryOrOptionals  = Option(ctx.mandatoryOrOptionalParameterList()).map(_.parameters).getOrElse(List())
+      val arrayParameter        = Option(ctx.arrayParameter()).toList
+      val hashParameter         = Option(ctx.hashParameter()).toList
+      val procParameter         = Option(ctx.procParameter()).toList
+      val mandatoryOrOptionals2 = Option(ctx.mandatoryOrOptionalParameterList2()).toList
+      mandatoryOrOptionals ++ arrayParameter ++ hashParameter ++ procParameter ++ mandatoryOrOptionals2
     }
   }
 

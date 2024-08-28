@@ -6,7 +6,6 @@ import org.scalatest.matchers.should.Matchers
 class MethodDefinitionParserTests extends RubyParserFixture with Matchers {
   "fixme" ignore {
     test("def f(a=1, *b, c) end") // syntax error
-    test("def f(*,a) end")        // AstPrinter issue possibly
     test("""def a(...)
         |b(...)
         |end""".stripMargin) // Syntax error
