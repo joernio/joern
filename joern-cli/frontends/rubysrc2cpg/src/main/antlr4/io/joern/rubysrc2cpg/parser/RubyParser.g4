@@ -178,7 +178,7 @@ indexingArgumentList
     |   operatorExpressionList COMMA splattingArgument
         # operatorExpressionListWithSplattingArgumentIndexingArgumentList
     |   ((symbol|association) COMMA? NL*)*
-        #symbolOrAssociationIndexList
+        #symbolOrAssociationIndexingArgumentList
     |   associationList COMMA?
         # associationListIndexingArgumentList
     |   splattingArgument

@@ -220,7 +220,7 @@ object AntlrContextHelpers {
       case ctx: AssociationListIndexingArgumentListContext   => ctx.associationList().associations
       case ctx: SplattingArgumentIndexingArgumentListContext => ctx.splattingArgument() :: Nil
       case ctx: OperatorExpressionListWithSplattingArgumentIndexingArgumentListContext => ctx.splattingArgument() :: Nil
-      case ctx: SymbolOrAssociationIndexListContext =>
+      case ctx: SymbolOrAssociationIndexingArgumentListContext =>
         val associations = ctx.association().asScala.toList
         val symbols      = ctx.symbol().asScala.toList
         (associations ++ symbols)
