@@ -55,11 +55,9 @@ class ImplicitRequirePass(cpg: Cpg, externalTypes: Seq[TypeImportInfo] = Nil)
       }
       .l
     // Group types by symbol and add to map for quicker retrieval later
-    importableTypeInfo
-      .groupBy { case TypeImportInfoWithProvidence(typeImportInfo, _) => typeImportInfo.name }
-      .foreach { case (typeName, typeImportInfos) =>
-        typeNameToImportInfo.put(typeName, typeImportInfos)
-      }
+    typeNameToImportInfo.addAll(importableTypeInfo.groupBy { case TypeImportInfoWithProvidence(typeImportInfo, _) =>
+      typeImportInfo.name
+    })
     typeNameToImportInfo.addAll(externalTypes.map(TypeImportInfoWithProvidence(_, true)).groupBy {
       case TypeImportInfoWithProvidence(typeImportInfo, _) => typeImportInfo.name
     })
