@@ -4,6 +4,7 @@ import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.{Initialize, Main}
 import io.joern.rubysrc2cpg.passes.GlobalTypes.{builtinPrefix, kernelPrefix}
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.joern.x2cpg.frontendspecific.rubysrc2cpg.{ImplicitRequirePass, ImportsPass, TypeImportInfo}
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.nodes.Literal
 import io.shiftleft.semanticcpg.language.*
@@ -129,6 +130,77 @@ class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with In
       inside(cpg.imports.where(_.call.file.name(".*my_controller.rb")).toList) { case List(i) =>
         i.importedAs shouldBe Some("app/controllers/application_controller")
         i.importedEntity shouldBe Some("app/controllers/application_controller")
+      }
+    }
+  }
+
+  "implicitly imported types in base class that are qualified names" should {
+    val cpg = code(
+      """
+        |class MyController < Controllers::ApplicationController
+        |end
+        |""".stripMargin,
+      "app/controllers/my_controller.rb"
+    )
+      .moreCode(
+        """
+          |module Controllers
+          | class ApplicationController
+          | end
+          |end
+          |""".stripMargin,
+        "app/controllers/controllers.rb"
+      )
+      .moreCode(
+        """
+          |GEM
+          |  remote: https://rubygems.org/
+          |  specs:
+          |    zeitwerk (2.2.1)
+          |""".stripMargin,
+        "Gemfile.lock"
+      )
+
+    "result in require statement of the file containing the symbol" in {
+      inside(cpg.imports.where(_.call.file.name(".*my_controller.rb")).toList) { case List(i) =>
+        i.importedAs shouldBe Some("app/controllers/controllers")
+        i.importedEntity shouldBe Some("app/controllers/controllers")
+      }
+    }
+  }
+
+  "implicitly imported types that are qualified names in an include statement" should {
+    val cpg = code(
+      """
+        |module MyController
+        | include Controllers::ApplicationController
+        |end
+        |""".stripMargin,
+      "app/controllers/my_controller.rb"
+    )
+      .moreCode(
+        """
+          |module Controllers
+          | class ApplicationController
+          | end
+          |end
+          |""".stripMargin,
+        "app/controllers/controllers.rb"
+      )
+      .moreCode(
+        """
+          |GEM
+          |  remote: https://rubygems.org/
+          |  specs:
+          |    zeitwerk (2.2.1)
+          |""".stripMargin,
+        "Gemfile.lock"
+      )
+
+    "result in require statement of the file containing the symbol" in {
+      inside(cpg.imports.where(_.call.file.name(".*my_controller.rb")).toList) { case List(i) =>
+        i.importedAs shouldBe Some("app/controllers/controllers")
+        i.importedEntity shouldBe Some("app/controllers/controllers")
       }
     }
   }
@@ -410,4 +482,33 @@ class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with In
       }
     }
   }
+}
+
+class ImportWithAutoloadedExternalGemsTests extends RubyCode2CpgFixture(withPostProcessing = false) {
+
+  "use of a type specified as external" should {
+
+    val cpg = code(
+      """
+        |x = Base64.encode("Hello, world!")
+        |Bar::Foo.new
+        |""".stripMargin,
+      "encoder.rb"
+    )
+
+    ImplicitRequirePass(cpg, TypeImportInfo("Base64", "base64") :: TypeImportInfo("Bar", "foobar") :: Nil)
+      .createAndApply()
+    ImportsPass(cpg).createAndApply()
+
+    "result in require statement of the file containing the symbol" in {
+      inside(cpg.imports.where(_.call.file.name(".*encoder.rb")).toList) { case List(i1, i2) =>
+        i1.importedAs shouldBe Some("base64")
+        i1.importedEntity shouldBe Some("base64")
+
+        i2.importedAs shouldBe Some("foobar")
+        i2.importedEntity shouldBe Some("foobar")
+      }
+    }
+  }
+
 }
