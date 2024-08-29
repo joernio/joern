@@ -31,8 +31,8 @@ class ImplicitRequirePass(cpg: Cpg, externalTypes: Seq[TypeImportInfo] = Nil)
   /** A tuple holding information about the type import info, additionally with a boolean indicating if it is external
     * or not.
     */
-  private type TypeImportInfoInternal = (TypeImportInfo, Boolean)
-  private val typeNameToImportInfo = mutable.Map.empty[String, Seq[TypeImportInfoInternal]]
+  private case class TypeImportInfoWithProvidence(info: TypeImportInfo, isExternal: Boolean)
+  private val typeNameToImportInfo = mutable.Map.empty[String, Seq[TypeImportInfoWithProvidence]]
 
   private val Require: String    = "require"
   private val Self: String       = "self"
@@ -51,18 +51,18 @@ class ImplicitRequirePass(cpg: Cpg, externalTypes: Seq[TypeImportInfo] = Nil)
       }
       .map { typeDecl =>
         val typeImportInfo = TypeImportInfo(typeDecl.name, ImplicitRequirePass.normalizePath(typeDecl.filename))
-        typeImportInfo -> typeDecl.isExternal
+        TypeImportInfoWithProvidence(typeImportInfo, typeDecl.isExternal)
       }
       .l
     // Group types by symbol and add to map for quicker retrieval later
     importableTypeInfo
-      .groupBy { case (typeImportInfo, _) => typeImportInfo.name }
+      .groupBy { case TypeImportInfoWithProvidence(typeImportInfo, _) => typeImportInfo.name }
       .foreach { case (typeName, typeImportInfos) =>
         typeNameToImportInfo.put(typeName, typeImportInfos)
       }
-    typeNameToImportInfo.addAll(
-      externalTypes.map(x => (x, true)).groupBy { case (typeImportInfo, _) => typeImportInfo.name }
-    )
+    typeNameToImportInfo.addAll(externalTypes.map(TypeImportInfoWithProvidence(_, true)).groupBy {
+      case TypeImportInfoWithProvidence(typeImportInfo, _) => typeImportInfo.name
+    })
   }
 
   private def getFieldBaseFromString(fieldAccessString: String): String = {
@@ -123,14 +123,16 @@ class ImplicitRequirePass(cpg: Cpg, externalTypes: Seq[TypeImportInfo] = Nil)
       .flatMap { identifierName =>
         typeNameToImportInfo
           .getOrElse(identifierName, Seq.empty)
-          .sortBy { case (_, isExternal) => isExternal } // sorting booleans puts false (internal) first
+          .sortBy { case TypeImportInfoWithProvidence(_, isExternal) =>
+            isExternal // sorting booleans puts false (internal) first
+          }
           .collectFirst {
             // ignore an import to a file that defines the type
-            case (TypeImportInfo(_, importPath), _) if importPath != currPath =>
+            case TypeImportInfoWithProvidence(TypeImportInfo(_, importPath), _) if importPath != currPath =>
               importPath -> createRequireCall(builder, importPath)
           }
       }
-      .distinctBy(x => x._1)
+      .distinctBy { case (importPath, _) => importPath }
       .foreach { case (_, requireCall) =>
         requireCall.order(currOrder)
         builder.addEdge(moduleMethod.block, requireCall, EdgeTypes.AST)
