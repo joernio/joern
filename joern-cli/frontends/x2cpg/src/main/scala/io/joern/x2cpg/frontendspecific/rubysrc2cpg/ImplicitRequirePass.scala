@@ -183,8 +183,12 @@ object ImplicitRequirePass {
     *   true if the type is autoloadable from the given filename.
     */
   def isAutoloadable(typeName: String, fileName: String): Boolean = {
-    val strippedFileName = normalizePath(fileName)
-    typeName == strippedFileName || typeName == CaseUtils.toCamelCase(strippedFileName, true, '_', '-')
+    // We use lowercase as something like `openssl` and `OpenSSL` don't give obvious clues where capitalisation occurs
+    val strippedFileName  = normalizePath(fileName).toLowerCase
+    val lowerCaseTypeName = typeName.toLowerCase
+    lowerCaseTypeName == strippedFileName.toLowerCase || lowerCaseTypeName == CaseUtils
+      .toCamelCase(strippedFileName, true, '_', '-')
+      .toLowerCase
   }
 
   private def normalizePath(path: String): String = path.replace("\\", "/").stripSuffix(".rb")
