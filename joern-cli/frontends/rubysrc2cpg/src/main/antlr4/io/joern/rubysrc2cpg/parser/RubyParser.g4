@@ -83,8 +83,7 @@ multipleLeftHandSideExceptPacking
     ;
 
 packingLeftHandSide
-    :   STAR leftHandSide?
-    |   STAR leftHandSide (COMMA multipleLeftHandSideItem)*
+    :   STAR leftHandSide? (COMMA multipleLeftHandSideItem)*
     ;
 
 groupedLeftHandSide

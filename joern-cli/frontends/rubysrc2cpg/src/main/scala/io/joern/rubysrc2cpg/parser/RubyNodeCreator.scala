@@ -583,7 +583,12 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitPackingLeftHandSide(ctx: RubyParser.PackingLeftHandSideContext): RubyNode = {
-    val splatNode = SplattingRubyNode(visit(ctx.leftHandSide))(ctx.toTextSpan)
+    val splatNode = Option(ctx.leftHandSide()) match {
+      case Some(lhs) => SplattingRubyNode(visit(ctx.leftHandSide))(ctx.toTextSpan)
+      case None =>
+        SplattingRubyNode(MandatoryParameter("_")(ctx.toTextSpan.spanStart("_")))(ctx.toTextSpan.spanStart("*_"))
+    }
+
     Option(ctx.multipleLeftHandSideItem()).map(_.asScala.map(visit).toList).getOrElse(List.empty) match {
       case Nil => splatNode
       case xs  => StatementList(splatNode +: xs)(ctx.toTextSpan)

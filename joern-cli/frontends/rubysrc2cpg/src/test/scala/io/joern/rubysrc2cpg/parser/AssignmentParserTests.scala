@@ -5,10 +5,8 @@ import org.scalatest.matchers.should.Matchers
 
 class AssignmentParserTests extends RubyParserFixture with Matchers {
   "fixme" ignore {
-    test("a = b, *c, d")   // Syntax error
-    test("*, a = b")       // Syntax error
-    test("*, x, y, z = f") // Syntax error
-    test("a = b, *c, d")   // Syntax error
+    test("a = b, *c, d") // Syntax error
+    test("a = b, *c, d") // Syntax error
   }
 
   "Single assignment" in {
@@ -45,6 +43,8 @@ class AssignmentParserTests extends RubyParserFixture with Matchers {
     test("a, b, c, *s = f")
     test("*s, x, y, z = f")
     test("a = b 1 rescue 2")
+    test("*, a = b")
+    test("*, x, y, z = f")
   }
 
   "Destructured Assignment" in {

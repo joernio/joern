@@ -281,4 +281,30 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
 
   }
 
+  "Destructured assignment with naked splat" in {
+    val cpg = code("""
+        |*, a = 1, 2, 3
+        |""".stripMargin)
+
+    inside(cpg.assignment.l) {
+      case splatAssignment :: aAssignment :: Nil =>
+        aAssignment.code shouldBe "*, a = 1, 2, 3"
+        splatAssignment.code shouldBe "*, a = 1, 2, 3"
+
+        val List(a: Identifier, lit: Literal) = aAssignment.argumentOut.toList: @unchecked
+        a.name shouldBe "a"
+        lit.code shouldBe "3"
+
+        val List(splat: Identifier, arr: Call) = splatAssignment.argumentOut.toList: @unchecked
+        splat.name shouldBe "_"
+        arr.name shouldBe Operators.arrayInitializer
+        inside(arr.argumentOut.l) {
+          case (one: Literal) :: (two: Literal) :: Nil =>
+            one.code shouldBe "1"
+            two.code shouldBe "2"
+          case _ => fail("Unexpected number of array elements in `*`'s assignment")
+        }
+      case _ => fail("Unexpected number of assignments found")
+    }
+  }
 }
