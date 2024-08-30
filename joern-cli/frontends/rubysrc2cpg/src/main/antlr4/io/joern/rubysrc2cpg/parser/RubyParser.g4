@@ -128,13 +128,13 @@ methodInvocationWithoutParentheses
         # commandMethodInvocationWithoutParentheses
     |   chainedCommandWithDoBlock ((DOT | COLON2) methodName commandArgumentList)?
         # chainedMethodInvocationWithoutParentheses
-    |   RETURN primaryValueList
+    |   RETURN primaryValueListWithAssociation
         # returnMethodInvocationWithoutParentheses
     |   BREAK primaryValueList
         # breakMethodInvocationWithoutParentheses
     |   NEXT primaryValueList
         # nextMethodInvocationWithoutParentheses
-    |   YIELD yieldValueList
+    |   YIELD primaryValueListWithAssociation
         # yieldMethodInvocationWithoutParentheses
     ;
 
@@ -240,7 +240,7 @@ primaryValueList
     :   primaryValue (COMMA NL* primaryValue)*
     ;
 
-yieldValueList
+primaryValueListWithAssociation
     :   (primaryValue | association)? (COMMA NL* (primaryValue | association))*
     ;
 

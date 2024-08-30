@@ -174,7 +174,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   override def visitReturnMethodInvocationWithoutParentheses(
     ctx: RubyParser.ReturnMethodInvocationWithoutParenthesesContext
   ): RubyNode = {
-    val expressions = ctx.primaryValueList().primaryValue().asScala.map(visit).toList
+    val expressions = ctx.primaryValueListWithAssociation().elements.map(visit).toList
     ReturnExpression(expressions)(ctx.toTextSpan)
   }
 
@@ -748,7 +748,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   override def visitYieldMethodInvocationWithoutParentheses(
     ctx: RubyParser.YieldMethodInvocationWithoutParenthesesContext
   ): RubyNode = {
-    val arguments = ctx.yieldValueList().elements.map(visit).toList
+    val arguments = ctx.primaryValueListWithAssociation().elements.map(visit).toList
     YieldExpr(arguments)(ctx.toTextSpan)
   }
 
