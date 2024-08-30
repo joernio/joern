@@ -162,7 +162,7 @@ object AntlrContextHelpers {
     }
   }
 
-  sealed implicit class YieldValueListContextHelper(ctx: YieldValueListContext) {
+  sealed implicit class PrimaryValueListWithAssociationContextHelper(ctx: PrimaryValueListWithAssociationContext) {
     def elements: List[ParserRuleContext] = {
       ctx.children.asScala.collect {
         case x: PrimaryValueContext => x

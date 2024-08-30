@@ -456,4 +456,27 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
     }
   }
 
+  "a return with multiple values" in {
+    val cpg = code("""
+        |def foo
+        | return 1, :z => 1
+        |end
+        |""".stripMargin)
+
+    inside(cpg.method.nameExact("foo").ast.isReturn.headOption) {
+      case Some(ret) =>
+        val List(oneLiteral: Literal, zAssoc: Call) = ret.astChildren.l: @unchecked
+        oneLiteral.code shouldBe "1"
+        zAssoc.code shouldBe ":z => 1"
+        zAssoc.methodFullName shouldBe RubyOperators.association
+
+        inside(zAssoc.argument.l) {
+          case (key: Literal) :: (value: Literal) :: Nil =>
+            key.code shouldBe ":z"
+            value.code shouldBe "1"
+          case xs => fail(s"Expected two args, got ${xs.code.mkString(",")}")
+        }
+      case None => fail(s"Expected at least one retrun node")
+    }
+  }
 }

@@ -180,7 +180,7 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   override def visitReturnMethodInvocationWithoutParentheses(
     ctx: RubyParser.ReturnMethodInvocationWithoutParenthesesContext
   ): String = {
-    s"return ${ctx.primaryValueList().primaryValue().asScala.map(visit).toList.mkString(ls)}"
+    s"return ${ctx.primaryValueListWithAssociation().elements.map(visit).toList.mkString(",")}"
   }
 
   override def visitReturnWithoutArguments(ctx: RubyParser.ReturnWithoutArgumentsContext): String = {
@@ -719,7 +719,7 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   override def visitYieldMethodInvocationWithoutParentheses(
     ctx: RubyParser.YieldMethodInvocationWithoutParenthesesContext
   ): String = {
-    val args = ctx.yieldValueList().elements.map(visit).mkString(",")
+    val args = ctx.primaryValueListWithAssociation().elements.map(visit).mkString(",")
     s"${ctx.YIELD.getText} $args"
   }
 
