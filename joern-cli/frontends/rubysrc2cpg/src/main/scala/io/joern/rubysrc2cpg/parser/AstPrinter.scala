@@ -719,7 +719,7 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   override def visitYieldMethodInvocationWithoutParentheses(
     ctx: RubyParser.YieldMethodInvocationWithoutParenthesesContext
   ): String = {
-    val args = ctx.primaryValueList().primaryValue().asScala.map(visit).mkString(",")
+    val args = ctx.yieldValueList().elements.map(visit).mkString(",")
     s"${ctx.YIELD.getText} $args"
   }
 

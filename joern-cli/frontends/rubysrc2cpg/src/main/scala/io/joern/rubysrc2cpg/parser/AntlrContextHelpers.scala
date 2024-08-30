@@ -162,6 +162,15 @@ object AntlrContextHelpers {
     }
   }
 
+  sealed implicit class YieldValueListContextHelper(ctx: YieldValueListContext) {
+    def elements: List[ParserRuleContext] = {
+      ctx.children.asScala.collect {
+        case x: PrimaryValueContext => x
+        case x: AssociationContext  => x
+      }.toList
+    }
+  }
+
   sealed implicit class ModifierStatementContextHelpers(ctx: ModifierStatementContext) {
     def isUnless: Boolean = Option(ctx.statementModifier().UNLESS()).isDefined
     def isIf: Boolean     = Option(ctx.statementModifier().IF()).isDefined
