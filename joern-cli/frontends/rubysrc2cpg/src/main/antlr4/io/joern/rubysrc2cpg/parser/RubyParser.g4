@@ -136,7 +136,7 @@ methodInvocationWithoutParentheses
         # breakMethodInvocationWithoutParentheses
     |   NEXT primaryValueList
         # nextMethodInvocationWithoutParentheses
-    |   YIELD primaryValueList
+    |   YIELD yieldValueList
         # yieldMethodInvocationWithoutParentheses
     ;
 
@@ -240,6 +240,10 @@ commandArgumentList
 
 primaryValueList
     :   primaryValue (COMMA NL* primaryValue)*
+    ;
+
+yieldValueList
+    :   (primaryValue | association)? (COMMA NL* (primaryValue | association))*
     ;
 
 blockArgument
