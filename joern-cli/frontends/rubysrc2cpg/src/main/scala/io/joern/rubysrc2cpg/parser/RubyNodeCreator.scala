@@ -596,10 +596,13 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitMultipleRightHandSide(ctx: RubyParser.MultipleRightHandSideContext): RubyNode = {
-    val rhsSplatting = Option(ctx.splattingRightHandSide()).map(_.splattingArgument()).map(visit).toList
-    Option(ctx.operatorExpressionList())
-      .map(x => StatementList(x.operatorExpression().asScala.map(visit).toList ++ rhsSplatting)(ctx.toTextSpan))
-      .getOrElse(defaultResult())
+    val rhsStmts = ctx.children.asScala.collect {
+      case x: SplattingRightHandSideContext => visit(x) :: Nil
+      case x: OperatorExpressionListContext => x.operatorExpression.asScala.map(visit).toList
+    }.flatten
+
+    if rhsStmts.nonEmpty then StatementList(rhsStmts.toList)(ctx.toTextSpan)
+    else defaultResult()
   }
 
   override def visitSplattingArgument(ctx: RubyParser.SplattingArgumentContext): RubyNode = {

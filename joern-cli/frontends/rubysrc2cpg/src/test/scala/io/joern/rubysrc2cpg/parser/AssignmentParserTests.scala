@@ -4,11 +4,6 @@ import io.joern.rubysrc2cpg.testfixtures.RubyParserFixture
 import org.scalatest.matchers.should.Matchers
 
 class AssignmentParserTests extends RubyParserFixture with Matchers {
-  "fixme" ignore {
-    test("a = b, *c, d") // Syntax error
-    test("a = b, *c, d") // Syntax error
-  }
-
   "Single assignment" in {
     test("x=1", "x = 1")
     test("hash[:sym] = s[:sym]")
@@ -55,6 +50,7 @@ class AssignmentParserTests extends RubyParserFixture with Matchers {
     test("*a, b, c = 1, 2, 3, 4")
     test("a, b, c = 1, 2, *list")
     test("a, b, c = 1, *list")
+    test("a = b, *c, d")
   }
 
   "Class Constant Assign" in {

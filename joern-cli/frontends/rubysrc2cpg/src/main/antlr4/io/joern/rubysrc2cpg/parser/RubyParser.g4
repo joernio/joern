@@ -96,10 +96,9 @@ multipleLeftHandSideItem
     ;
 
 multipleRightHandSide
-    :   operatorExpressionList (COMMA splattingRightHandSide)?
-    |   splattingRightHandSide
+    :   (operatorExpressionList | splattingRightHandSide) (COMMA (operatorExpressionList | splattingRightHandSide))*
     ;
-     
+
 splattingRightHandSide
     :   splattingArgument
     ;

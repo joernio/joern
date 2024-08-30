@@ -307,4 +307,44 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
       case _ => fail("Unexpected number of assignments found")
     }
   }
+
+  "Destructered Assignment RHS" in {
+    val cpg = code("""
+        |a, *b, c = 1, 2, *d, *f, 4
+        |""".stripMargin)
+
+    inside(cpg.call.name(Operators.assignment).l) {
+      case aAssignment :: bAssignment :: cAssignment :: Nil =>
+        aAssignment.code shouldBe "a, *b, c = 1, 2, *d, *f, 4"
+        bAssignment.code shouldBe "a, *b, c = 1, 2, *d, *f, 4"
+        cAssignment.code shouldBe "a, *b, c = 1, 2, *d, *f, 4"
+
+        val List(a: Identifier, aLiteral: Literal) = aAssignment.argumentOut.toList: @unchecked
+        a.name shouldBe "a"
+        aLiteral.code shouldBe "1"
+
+        val List(splat: Identifier, arr: Call) = bAssignment.argumentOut.toList: @unchecked
+        splat.name shouldBe "b"
+        arr.name shouldBe Operators.arrayInitializer
+
+        inside(arr.argumentOut.l) {
+          case (two: Literal) :: (d: Call) :: (f: Call) :: Nil =>
+            two.code shouldBe "2"
+
+            d.code shouldBe "*d"
+            d.methodFullName shouldBe RubyOperators.splat
+
+            f.code shouldBe "*f"
+            f.methodFullName shouldBe RubyOperators.splat
+
+          case xs => fail(s"Unexpected number of array elements in `*`'s assignment, got ${xs.code.mkString(",")}")
+        }
+
+        val List(c: Identifier, cLiteral: Literal) = cAssignment.argumentOut.toList: @unchecked
+        c.name shouldBe "c"
+        cLiteral.code shouldBe "4"
+
+      case xs => fail(s"Expected 3 assignments, got ${xs.code.mkString(",")}")
+    }
+  }
 }
