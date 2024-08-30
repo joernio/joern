@@ -18,11 +18,10 @@ import scala.util.Try
 
 class JsSrc2Cpg extends X2CpgFrontend[Config] {
 
-  private val report: Report = new Report()
-
   def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
       File.usingTemporaryDirectory("jssrc2cpgOut") { tmpDir =>
+        val report       = new Report()
         val astGenResult = new AstGenRunner(config).execute(tmpDir)
         val hash         = HashUtil.sha256(astGenResult.parsedFiles.map { case (_, file) => File(file).path })
 

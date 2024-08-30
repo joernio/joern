@@ -2,10 +2,9 @@ package io.joern.c2cpg
 
 import io.joern.c2cpg.Frontend.*
 import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
+import io.joern.x2cpg.utils.server.FrontendHTTPServer
 import org.slf4j.LoggerFactory
 import scopt.OParser
-
-import scala.util.control.NonFatal
 
 final case class Config(
   includePaths: Set[String] = Set.empty,
@@ -110,21 +109,15 @@ private object Frontend {
 
 }
 
-object Main extends X2CpgMain(cmdLineParser, new C2Cpg()) {
+object Main extends X2CpgMain(cmdLineParser, new C2Cpg()) with FrontendHTTPServer[Config, C2Cpg] {
 
-  private val logger = LoggerFactory.getLogger(classOf[C2Cpg])
+  override protected def newDefaultConfig(): Config = Config()
 
-  def run(config: Config, c2cpg: C2Cpg): Unit = {
-    if (config.printIfDefsOnly) {
-      try {
-        c2cpg.printIfDefsOnly(config)
-      } catch {
-        case NonFatal(ex) =>
-          logger.error("Failed to print preprocessor statements.", ex)
-          throw ex
-      }
-    } else {
-      c2cpg.run(config)
+  override def run(config: Config, c2cpg: C2Cpg): Unit = {
+    config match {
+      case c if c.serverMode      => startup(config)
+      case c if c.printIfDefsOnly => c2cpg.printIfDefsOnly(config)
+      case _                      => c2cpg.run(config)
     }
   }
 
