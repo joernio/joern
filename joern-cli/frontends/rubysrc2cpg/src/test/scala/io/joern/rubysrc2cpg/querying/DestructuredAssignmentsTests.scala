@@ -281,6 +281,41 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
 
   }
 
+  "Destructered Assignment with splat in the middle" in {
+    val cpg = code("""
+        |a, *b, c = 1, 2, 3, 4, 5, 6
+        |""".stripMargin)
+
+    inside(cpg.call.name(Operators.assignment).l) {
+      case aAssignment :: bAssignment :: cAssignment :: Nil =>
+        aAssignment.code shouldBe "a, *b, c = 1, 2, 3, 4, 5, 6"
+        bAssignment.code shouldBe "a, *b, c = 1, 2, 3, 4, 5, 6"
+        cAssignment.code shouldBe "a, *b, c = 1, 2, 3, 4, 5, 6"
+
+        val List(a: Identifier, lit: Literal) = aAssignment.argumentOut.toList: @unchecked
+        a.name shouldBe "a"
+        lit.code shouldBe "1"
+
+        val List(splat: Identifier, arr: Call) = bAssignment.argumentOut.toList: @unchecked
+        splat.name shouldBe "b"
+        arr.name shouldBe Operators.arrayInitializer
+
+        inside(arr.argumentOut.l) {
+          case (two: Literal) :: (three: Literal) :: (four: Literal) :: (five: Literal) :: Nil =>
+            two.code shouldBe "2"
+            three.code shouldBe "3"
+            four.code shouldBe "4"
+            five.code shouldBe "5"
+          case _ => fail("Unexpected number of array elements in `*`'s assignment")
+        }
+
+        val List(c: Identifier, cLiteral: Literal) = cAssignment.argumentOut.toList: @unchecked
+        c.name shouldBe "c"
+        cLiteral.code shouldBe "6"
+      case xs => fail(s"Expected three assignments, got ${xs.code.mkString(",")}")
+    }
+  }
+
   "Destructured assignment with naked splat" in {
     val cpg = code("""
         |*, a = 1, 2, 3

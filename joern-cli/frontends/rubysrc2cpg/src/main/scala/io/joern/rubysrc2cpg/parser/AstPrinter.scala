@@ -560,12 +560,10 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   }
 
   override def visitMultipleRightHandSide(ctx: RubyParser.MultipleRightHandSideContext): String = {
-    val rhsStmts = ctx.children.asScala
-      .collect {
-        case x: RubyParser.SplattingRightHandSideContext => visit(x) :: Nil
-        case x: RubyParser.OperatorExpressionListContext => (x.operatorExpression.asScala.map(visit).toList)
-      }
-      .flatten
+    val rhsStmts = ctx.children.asScala.collect {
+      case x: RubyParser.SplattingRightHandSideContext => visit(x) :: Nil
+      case x: RubyParser.OperatorExpressionListContext => (x.operatorExpression.asScala.map(visit).toList)
+    }.flatten
 
     if rhsStmts.nonEmpty then rhsStmts.mkString(", ")
     else defaultResult()
