@@ -1,5 +1,6 @@
 package io.joern.rubysrc2cpg.querying
 
+import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
@@ -93,4 +94,33 @@ class ProcParameterAndYieldTests extends RubyCode2CpgFixture with Inspectors {
     })
   }
 
+  "A Yield statement with multiple arguments" in {
+    val cpg = code("""
+        |def foo
+        | yield 1, :z => 2
+        |end
+        |""".stripMargin)
+
+    inside(cpg.method.name("foo").call.nameExact("call").l) {
+      case yieldCall :: Nil =>
+        inside(yieldCall.argument.l) {
+          case (base: Identifier) :: (literalArg: Literal) :: (assocArg: Call) :: Nil =>
+            base.name shouldBe "<proc-param-0>"
+            base.code shouldBe "<proc-param-0>"
+
+            literalArg.code shouldBe "1"
+            assocArg.code shouldBe (":z => 2")
+
+            assocArg.methodFullName shouldBe RubyOperators.association
+            inside(assocArg.argument.l) {
+              case (key: Literal) :: (value: Literal) :: Nil =>
+                key.code shouldBe ":z"
+                value.code shouldBe "2"
+              case xs => fail(s"Expected 2 arguments for assoc call, got ${xs.code.mkString(",")}")
+            }
+          case xs => fail(s"Expected two arguments for yieldCall, got ${xs.code.mkString(",")}")
+        }
+      case xs => fail(s"Expected one call for yield, got ${xs.code.mkString(",")}")
+    }
+  }
 }

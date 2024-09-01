@@ -174,7 +174,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   override def visitReturnMethodInvocationWithoutParentheses(
     ctx: RubyParser.ReturnMethodInvocationWithoutParenthesesContext
   ): RubyNode = {
-    val expressions = ctx.primaryValueList().primaryValue().asScala.map(visit).toList
+    val expressions = ctx.primaryValueListWithAssociation().elements.map(visit).toList
     ReturnExpression(expressions)(ctx.toTextSpan)
   }
 
@@ -583,7 +583,12 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitPackingLeftHandSide(ctx: RubyParser.PackingLeftHandSideContext): RubyNode = {
-    val splatNode = SplattingRubyNode(visit(ctx.leftHandSide))(ctx.toTextSpan)
+    val splatNode = Option(ctx.leftHandSide()) match {
+      case Some(lhs) => SplattingRubyNode(visit(ctx.leftHandSide))(ctx.toTextSpan)
+      case None =>
+        SplattingRubyNode(MandatoryParameter("_")(ctx.toTextSpan.spanStart("_")))(ctx.toTextSpan.spanStart("*_"))
+    }
+
     Option(ctx.multipleLeftHandSideItem()).map(_.asScala.map(visit).toList).getOrElse(List.empty) match {
       case Nil => splatNode
       case xs  => StatementList(splatNode +: xs)(ctx.toTextSpan)
@@ -591,10 +596,13 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitMultipleRightHandSide(ctx: RubyParser.MultipleRightHandSideContext): RubyNode = {
-    val rhsSplatting = Option(ctx.splattingRightHandSide()).map(_.splattingArgument()).map(visit).toList
-    Option(ctx.operatorExpressionList())
-      .map(x => StatementList(x.operatorExpression().asScala.map(visit).toList ++ rhsSplatting)(ctx.toTextSpan))
-      .getOrElse(defaultResult())
+    val rhsStmts = ctx.children.asScala.collect {
+      case x: SplattingRightHandSideContext => visit(x) :: Nil
+      case x: OperatorExpressionListContext => x.operatorExpression.asScala.map(visit).toList
+    }.flatten
+
+    if rhsStmts.nonEmpty then StatementList(rhsStmts.toList)(ctx.toTextSpan)
+    else defaultResult()
   }
 
   override def visitSplattingArgument(ctx: RubyParser.SplattingArgumentContext): RubyNode = {
@@ -740,7 +748,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   override def visitYieldMethodInvocationWithoutParentheses(
     ctx: RubyParser.YieldMethodInvocationWithoutParenthesesContext
   ): RubyNode = {
-    val arguments = ctx.primaryValueList().primaryValue().asScala.map(visit).toList
+    val arguments = ctx.primaryValueListWithAssociation().elements.map(visit).toList
     YieldExpr(arguments)(ctx.toTextSpan)
   }
 

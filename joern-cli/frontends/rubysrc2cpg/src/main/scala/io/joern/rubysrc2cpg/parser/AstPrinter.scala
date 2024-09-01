@@ -180,7 +180,7 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   override def visitReturnMethodInvocationWithoutParentheses(
     ctx: RubyParser.ReturnMethodInvocationWithoutParenthesesContext
   ): String = {
-    s"return ${ctx.primaryValueList().primaryValue().asScala.map(visit).toList.mkString(ls)}"
+    s"return ${ctx.primaryValueListWithAssociation().elements.map(visit).toList.mkString(",")}"
   }
 
   override def visitReturnWithoutArguments(ctx: RubyParser.ReturnWithoutArgumentsContext): String = {
@@ -560,10 +560,13 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   }
 
   override def visitMultipleRightHandSide(ctx: RubyParser.MultipleRightHandSideContext): String = {
-    val rhsSplatting = Option(ctx.splattingRightHandSide()).map(_.splattingArgument()).map(visit).mkString(",")
-    Option(ctx.operatorExpressionList())
-      .map(x => s"${x.operatorExpression().asScala.map(visit).mkString(",")} $rhsSplatting")
-      .getOrElse(defaultResult())
+    val rhsStmts = ctx.children.asScala.collect {
+      case x: RubyParser.SplattingRightHandSideContext => visit(x) :: Nil
+      case x: RubyParser.OperatorExpressionListContext => (x.operatorExpression.asScala.map(visit).toList)
+    }.flatten
+
+    if rhsStmts.nonEmpty then rhsStmts.mkString(", ")
+    else defaultResult()
   }
 
   override def visitSplattingArgument(ctx: RubyParser.SplattingArgumentContext): String = {
@@ -716,7 +719,7 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   override def visitYieldMethodInvocationWithoutParentheses(
     ctx: RubyParser.YieldMethodInvocationWithoutParenthesesContext
   ): String = {
-    val args = ctx.primaryValueList().primaryValue().asScala.map(visit).mkString(",")
+    val args = ctx.primaryValueListWithAssociation().elements.map(visit).mkString(",")
     s"${ctx.YIELD.getText} $args"
   }
 

@@ -83,8 +83,7 @@ multipleLeftHandSideExceptPacking
     ;
 
 packingLeftHandSide
-    :   STAR leftHandSide?
-    |   STAR leftHandSide (COMMA multipleLeftHandSideItem)*
+    :   STAR leftHandSide? (COMMA multipleLeftHandSideItem)*
     ;
 
 groupedLeftHandSide
@@ -97,10 +96,9 @@ multipleLeftHandSideItem
     ;
 
 multipleRightHandSide
-    :   operatorExpressionList (COMMA splattingRightHandSide)?
-    |   splattingRightHandSide
+    :   (operatorExpressionList | splattingRightHandSide) (COMMA (operatorExpressionList | splattingRightHandSide))*
     ;
-     
+
 splattingRightHandSide
     :   splattingArgument
     ;
@@ -130,13 +128,13 @@ methodInvocationWithoutParentheses
         # commandMethodInvocationWithoutParentheses
     |   chainedCommandWithDoBlock ((DOT | COLON2) methodName commandArgumentList)?
         # chainedMethodInvocationWithoutParentheses
-    |   RETURN primaryValueList
+    |   RETURN primaryValueListWithAssociation
         # returnMethodInvocationWithoutParentheses
     |   BREAK primaryValueList
         # breakMethodInvocationWithoutParentheses
     |   NEXT primaryValueList
         # nextMethodInvocationWithoutParentheses
-    |   YIELD primaryValueList
+    |   YIELD primaryValueListWithAssociation
         # yieldMethodInvocationWithoutParentheses
     ;
 
@@ -240,6 +238,10 @@ commandArgumentList
 
 primaryValueList
     :   primaryValue (COMMA NL* primaryValue)*
+    ;
+
+primaryValueListWithAssociation
+    :   (primaryValue | association)? (COMMA NL* (primaryValue | association))*
     ;
 
 blockArgument

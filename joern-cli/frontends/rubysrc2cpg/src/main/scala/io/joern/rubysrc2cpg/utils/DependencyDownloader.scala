@@ -2,7 +2,7 @@ package io.joern.rubysrc2cpg.utils
 
 import better.files.File
 import io.joern.rubysrc2cpg.datastructures.RubyProgramSummary
-import io.joern.rubysrc2cpg.passes.Defines
+import io.joern.rubysrc2cpg.passes.{Defines, DependencyPass}
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg, parser}
 import io.joern.x2cpg.utils.ConcurrentTaskUtil
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -34,10 +34,15 @@ class DependencyDownloader(cpg: Cpg) {
     */
   def download(): RubyProgramSummary = {
     File.temporaryDirectory("joern-rubysrc2cpg").apply { dir =>
-      cpg.dependency.filterNot(_.name == Defines.Resolver).foreach { dependency =>
-        Try(Thread.sleep(100)) // Rate limit
-        downloadDependency(dir, dependency)
-      }
+      cpg.dependency
+        .filterNot(dep =>
+          dep.name == Defines.Resolver ||
+            (DependencyPass.CORE_GEMS.contains(dep.name) && DependencyPass.CORE_GEM_VERSION == dep.version)
+        )
+        .foreach { dependency =>
+          Try(Thread.sleep(100)) // Rate limit
+          downloadDependency(dir, dependency)
+        }
       untarDependencies(dir)
       summarizeDependencies(dir / "lib")
     }
