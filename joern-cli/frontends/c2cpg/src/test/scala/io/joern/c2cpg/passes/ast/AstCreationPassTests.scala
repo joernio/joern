@@ -500,6 +500,20 @@ class AstCreationPassTests extends AstC2CpgSuite {
       }
     }
 
+    "be correct for decl assignment with references" in {
+      val cpg = code(
+        """
+          |int addrOfLocalRef(struct x **foo) {
+          |  struct x &bar = **foo;
+          |  *foo = &bar;
+          |}""".stripMargin,
+        "foo.cc"
+      )
+      val List(barLocal) = cpg.method.nameExact("addrOfLocalRef").local.l
+      barLocal.name shouldBe "bar"
+      barLocal.code shouldBe "struct x& bar"
+    }
+
     "be correct for decl assignment of multiple locals" in {
       val cpg = code("""
           |void method(int x, int y) {

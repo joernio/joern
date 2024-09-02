@@ -330,7 +330,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     }
     if (pointers.isEmpty) { s"$tpe$arr" }
     else {
-      val refs = "*" * (pointers.length - pointers.count(_.isInstanceOf[ICPPASTReferenceOperator]))
+      val refs = pointers.map(_.getRawSignature).mkString("")
       s"$tpe$arr$refs".strip()
     }
   }
