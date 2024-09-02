@@ -6,24 +6,18 @@ import java.net.http.HttpRequest
 import java.net.URI
 import java.net.http.HttpRequest.BodyPublishers
 import java.net.http.HttpResponse.BodyHandlers
-import java.time.Duration
 import scala.util.Success
 import scala.util.Failure
 import scala.util.Try
 
-case class FrontendHTTPClient(
-  host: String = FrontendHTTPDefaults.host,
-  port: Int = FrontendHTTPDefaults.port,
-  timeout: Duration = FrontendHTTPDefaults.timeout
-) {
+case class FrontendHTTPClient(host: String = FrontendHTTPDefaults.host, port: Int = FrontendHTTPDefaults.port) {
 
-  private val underlyingClient: HttpClient = HttpClient.newBuilder().connectTimeout(timeout).build()
+  private val underlyingClient: HttpClient = HttpClient.newBuilder().build()
 
   def buildRequest(args: Array[String]): HttpRequest = {
     HttpRequest
       .newBuilder()
       .uri(URI.create(s"http://$host:$port/${FrontendHTTPDefaults.route}"))
-      .timeout(timeout)
       .header("Content-Type", "application/x-www-form-urlencoded")
       .POST(BodyPublishers.ofString(args.mkString("&")))
       .build()
