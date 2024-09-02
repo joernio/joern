@@ -6,7 +6,7 @@ object FrontendHTTPDefaults {
 
   val host: String      = "localhost"
   val port: Int         = 9000
-  val timeout: Duration = Duration.ofSeconds(5)
+  val timeout: Duration = Duration.ofSeconds(10)
   val route: String     = "run"
 
 }

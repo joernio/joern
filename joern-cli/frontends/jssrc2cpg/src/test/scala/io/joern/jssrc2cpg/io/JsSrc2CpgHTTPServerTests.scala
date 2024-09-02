@@ -8,11 +8,13 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import java.time.Duration
 import scala.util.Failure
 import scala.util.Success
 
 class JsSrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
+  private val testTimeout   = Duration.ofSeconds(30) // astgen is a bit slow on some Github runners
   private val testPort: Int = 9002
 
   private val projectUnderTest: File = {
@@ -44,7 +46,7 @@ class JsSrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndA
       cpgOutFile.deleteOnExit()
       val input  = projectUnderTest.path.toAbsolutePath.toString
       val output = cpgOutFile.toString
-      val client = FrontendHTTPClient(port = testPort)
+      val client = FrontendHTTPClient(port = testPort, timeout = testTimeout)
       val req    = client.buildRequest(Array(s"input=$input", s"output=$output"))
       client.sendRequest(req) match {
         case Failure(exception) => fail(exception.getMessage)
