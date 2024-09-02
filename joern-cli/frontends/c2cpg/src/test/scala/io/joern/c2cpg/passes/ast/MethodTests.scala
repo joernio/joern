@@ -94,7 +94,7 @@ class MethodTests extends C2CpgSuite {
         data.index shouldBe 1
         data.name shouldBe "data"
         data.code shouldBe "int &data"
-        data.typeFullName shouldBe "int"
+        data.typeFullName shouldBe "int&"
         data.isVariadic shouldBe false
       }
     }

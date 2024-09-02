@@ -54,11 +54,11 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
             val name          = Operators.alloc
             val tpe           = registerType(typeFor(d))
             val codeString    = code(d)
-            val allocCallNode = callNode(d, code(d), name, name, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
+            val allocCallNode = callNode(d, codeString, name, name, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
             val allocCallAst  = callAst(allocCallNode, d.getArrayModifiers.toIndexedSeq.map(astForNode))
             val operatorName  = Operators.assignment
             val assignmentCallNode =
-              callNode(d, code(d), operatorName, operatorName, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
+              callNode(d, codeString, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
             val left = astForNode(d.getName)
             callAst(assignmentCallNode, List(left, allocCallAst))
           }
