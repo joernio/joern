@@ -1,4 +1,4 @@
-package io.joern.c2cpg.io
+package io.joern.jssrc2cpg.io
 
 import better.files.File
 import io.joern.x2cpg.utils.server.FrontendHTTPClient
@@ -11,36 +11,36 @@ import org.scalatest.wordspec.AnyWordSpec
 import scala.util.Failure
 import scala.util.Success
 
-class C2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
+class JsSrc2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
-  private val testPort: Int = 9001
+  private val testPort: Int = 9002
 
   private val projectUnderTest: File = {
-    val dir  = File.newTemporaryDirectory("c2cpgTestsHttpTest")
-    val file = dir / "main.c"
+    val dir  = File.newTemporaryDirectory("jssrc2cpgTestsHttpTest")
+    val file = dir / "main.js"
     file.createIfNotExists(createParents = true)
     file.writeText("""
-        |int main(int argc, char *argv[]) {
-        |  print("Hello World!");
-        |}
-        |""".stripMargin)
+     |function main() {
+     |  console.log("Hello World!");
+     |}
+     |""".stripMargin)
     dir
   }
 
   override def beforeAll(): Unit = {
     // Start server
-    io.joern.c2cpg.Main.main(Array("", "--server", s"--server-port=$testPort"))
+    io.joern.jssrc2cpg.Main.main(Array("", "--server", s"--server-port=$testPort"))
   }
 
   override def afterAll(): Unit = {
     // Stop server
-    io.joern.c2cpg.Main.stop()
+    io.joern.jssrc2cpg.Main.stop()
     projectUnderTest.delete(swallowIOExceptions = true)
   }
 
-  "Using c2cpg in server mode" should {
+  "Using jssrc2cpg in server mode" should {
     "build CPGs correctly" in {
-      val cpgOutFile = File.newTemporaryFile("c2cpg.bin")
+      val cpgOutFile = File.newTemporaryFile("jssrc2cpg.bin")
       cpgOutFile.deleteOnExit()
       val input  = projectUnderTest.path.toAbsolutePath.toString
       val output = cpgOutFile.toString
@@ -52,7 +52,7 @@ class C2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndAfter
           out shouldBe output
           val cpg = CpgLoader.load(output)
           cpg.method.name.l should contain("main")
-          cpg.call.code.l shouldBe List("""print("Hello World!")""")
+          cpg.call.code.l should contain("""console.log("Hello World!")""")
       }
     }
   }

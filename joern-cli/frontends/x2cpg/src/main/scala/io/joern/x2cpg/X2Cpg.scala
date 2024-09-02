@@ -14,17 +14,15 @@ import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 
 object X2CpgConfig {
-  def defaultInputPath: String   = ""
-  def defaultOutputPath: String  = "cpg.bin"
-  def defaultServerMode: Boolean = false
-  def defaultServerPort: Int     = 9000
+  def defaultInputPath: String  = ""
+  def defaultOutputPath: String = "cpg.bin"
 }
 
 trait X2CpgConfig[R <: X2CpgConfig[R]] {
   var inputPath: String   = X2CpgConfig.defaultInputPath
   var outputPath: String  = X2CpgConfig.defaultOutputPath
-  var serverMode: Boolean = X2CpgConfig.defaultServerMode
-  var serverPort: Int     = X2CpgConfig.defaultServerPort
+  var serverMode: Boolean = false
+  var serverPort: Int     = 9000
 
   def withInputPath(inputPath: String): R = {
     this.inputPath = Paths.get(inputPath).toAbsolutePath.normalize().toString
