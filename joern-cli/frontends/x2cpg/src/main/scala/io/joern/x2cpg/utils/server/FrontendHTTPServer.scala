@@ -28,6 +28,8 @@ trait FrontendHTTPServer[T <: X2CpgConfig[T], X <: X2CpgFrontend[T]] { this: X2C
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
+  private var underlyingServer: Option[HTTPServer] = None
+
   protected def newDefaultConfig(): T
 
   /** Override to switch between single-threaded sequential or multi-threaded asynchronous execution of requests */
@@ -43,8 +45,9 @@ trait FrontendHTTPServer[T <: X2CpgConfig[T], X <: X2CpgFrontend[T]] { this: X2C
         .collectFirst { case Array(arg, value) if arg == "output" => value }
         .getOrElse(X2CpgConfig.defaultOutputPath)
       val arguments = params.collect {
-        case Array(arg, value) if arg == "input" => Array(value)
-        case Array(arg, value)                   => Array(s"--$arg", value)
+        case Array(arg, value) if arg == "input"        => Array(value)
+        case Array(arg, value) if value.strip().isEmpty => Array(s"--$arg")
+        case Array(arg, value)                          => Array(s"--$arg", value)
       }.flatten
       logger.debug("Got POST with arguments: " + arguments.mkString(" "))
 
@@ -61,18 +64,24 @@ trait FrontendHTTPServer[T <: X2CpgConfig[T], X <: X2CpgFrontend[T]] { this: X2C
     }
   }
 
-  protected def startup(config: T): Unit = {
-    val server = new HTTPServer(config.serverPort)
-    val host   = server.getVirtualHost(null)
-    server.setExecutor(executor)
-    host.addContexts(new FrontendHTTPHandler(server))
+  def stop(): Unit = {
+    underlyingServer.foreach { server =>
+      server.stop()
+      logger.debug("Server stopped.")
+    }
+  }
+
+  def startup(config: T): Unit = {
+    underlyingServer = Some(new HTTPServer(config.serverPort))
+    val host = underlyingServer.get.getVirtualHost(null)
+    underlyingServer.get.setExecutor(executor)
+    host.addContexts(new FrontendHTTPHandler(underlyingServer.get))
     try {
-      server.start()
+      underlyingServer.get.start()
       logger.debug(s"Server started on ${Option(host.getName).getOrElse("localhost")}:${config.serverPort}.")
     } finally {
       Runtime.getRuntime.addShutdownHook(new Thread(() => {
-        server.stop()
-        logger.debug("Server stopped.")
+        stop()
       }))
     }
   }
