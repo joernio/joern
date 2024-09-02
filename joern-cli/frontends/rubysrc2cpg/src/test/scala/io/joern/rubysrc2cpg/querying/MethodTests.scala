@@ -678,9 +678,9 @@ class MethodTests extends RubyCode2CpgFixture {
       inside(cpg.method.name(RDefines.Main).filename("t1.rb").block.astChildren.isCall.l) {
         case (a1: Call) :: (a2: Call) :: (a3: Call) :: (a4: Call) :: (a5: Call) :: Nil =>
           a1.code shouldBe "self.A = module A (...)"
-          a2.code shouldBe "(<tmp-0> = self::A).<body>"
+          a2.code shouldBe "(<tmp-0> = self::A)::<body>()"
           a3.code shouldBe "self.B = class B (...)"
-          a4.code shouldBe "(<tmp-1> = self::B).<body>"
+          a4.code shouldBe "(<tmp-1> = self::B)::<body>()"
           a5.code shouldBe "self.c = def c (...)"
         case xs => fail(s"Expected assignments to appear before definitions, instead got [${xs.mkString("\n")}]")
       }
@@ -795,7 +795,7 @@ class MethodTests extends RubyCode2CpgFixture {
     inside(cpg.call.name(".*retry!").l) {
       case batchCall :: Nil =>
         batchCall.name shouldBe "retry!"
-        batchCall.code shouldBe "(<tmp-0> = batch).retry!()"
+        batchCall.code shouldBe "(<tmp-0> = batch)::retry!()"
 
         inside(batchCall.receiver.l) {
           case (receiverCall: Call) :: Nil =>
@@ -851,7 +851,7 @@ class MethodTests extends RubyCode2CpgFixture {
     inside(cpg.call.name(".*retry!").l) {
       case batchCall :: Nil =>
         batchCall.name shouldBe "retry!"
-        batchCall.code shouldBe "(<tmp-0> = retry).retry!()"
+        batchCall.code shouldBe "(<tmp-0> = retry)::retry!()"
 
         inside(batchCall.receiver.l) {
           case (receiverCall: Call) :: Nil =>

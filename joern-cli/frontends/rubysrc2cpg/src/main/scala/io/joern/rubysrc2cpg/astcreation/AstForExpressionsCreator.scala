@@ -212,8 +212,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       val callCode = if (baseCode.contains("<tmp-")) {
         val rhsCode =
           if (n.methodName == "new") n.methodName
-          else code(n).replace("::", ".").takeWhile(c => c != '(' && c != ' ').split('.').last
-        s"$baseCode.$rhsCode"
+          else s"${n.methodName}(${n.arguments.map(code).mkString(", ")})"
+        s"$baseCode${n.op}$rhsCode"
       } else {
         code(n)
       }

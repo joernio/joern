@@ -433,7 +433,7 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
         |User.find_by(auth_token: cookies[:auth_token].to_s)
         |""".stripMargin)
 
-    cpg.call("find_by").code.head shouldBe "(<tmp-0> = User).find_by"
+    cpg.call("find_by").code.head shouldBe "(<tmp-0> = User).find_by(auth_token: cookies[:auth_token].to_s)"
     cpg.call(Operators.indexAccess).code.head shouldBe "cookies[:auth_token]"
     cpg.fieldAccess
       .where(_.fieldIdentifier.canonicalNameExact("@to_s"))
