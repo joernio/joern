@@ -427,4 +427,17 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
       case xs => fail(s"Expected one call for foo, got ${xs.code.mkString}")
     }
   }
+
+  "Calls separated by `tmp` should render correct `code` properties" in {
+    val cpg = code("""
+        |User.find_by(auth_token: cookies[:auth_token].to_s)
+        |""".stripMargin)
+
+    cpg.call("find_by").code.head shouldBe "(<tmp-0> = User).find_by(auth_token: cookies[:auth_token].to_s)"
+    cpg.call(Operators.indexAccess).code.head shouldBe "cookies[:auth_token]"
+    cpg.fieldAccess
+      .where(_.fieldIdentifier.canonicalNameExact("@to_s"))
+      .code
+      .head shouldBe "(<tmp-1> = cookies[:auth_token]).to_s"
+  }
 }

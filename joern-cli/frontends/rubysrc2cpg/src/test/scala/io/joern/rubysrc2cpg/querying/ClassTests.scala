@@ -616,7 +616,7 @@ class ClassTests extends RubyCode2CpgFixture {
         case Some(bodyCall) =>
           bodyCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
           bodyCall.methodFullName shouldBe s"Test0.rb:$Main.Foo.${RubyDefines.TypeDeclBody}"
-          bodyCall.code shouldBe "(<tmp-0> = self::Foo).<body>"
+          bodyCall.code shouldBe "(<tmp-0> = self::Foo)::<body>()"
           bodyCall.receiver.isEmpty shouldBe true
           bodyCall.argument(0).code shouldBe "<tmp-0>"
         case None => fail("Expected <body> call")
