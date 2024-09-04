@@ -143,16 +143,17 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val classBody =
       node.body.asInstanceOf[StatementList] // for now (bodyStatement is a superset of stmtList)
 
-    def handleDefaultConstructor(bodyAsts: Seq[Ast]): Seq[Ast] = bodyAsts match {
-      case bodyAsts if scope.shouldGenerateDefaultConstructor && this.parseLevel == AstParseLevel.FULL_AST =>
+    val classBodyAsts = {
+      val bodyAsts = classBody.statements.flatMap(astsForStatement)
+      if (scope.shouldGenerateDefaultConstructor && this.parseLevel == AstParseLevel.FULL_AST) {
         val bodyStart  = classBody.span.spanStart()
         val initBody   = StatementList(List())(bodyStart)
         val methodDecl = astForMethodDeclaration(MethodDeclaration(Defines.Initialize, List(), initBody)(bodyStart))
         methodDecl ++ bodyAsts
-      case bodyAsts => bodyAsts
+      } else {
+        bodyAsts
+      }
     }
-
-    val classBodyAsts = handleDefaultConstructor(classBody.statements.flatMap(astsForStatement))
 
     val fields = node match {
       case classDecl: ClassDeclaration   => classDecl.fields
