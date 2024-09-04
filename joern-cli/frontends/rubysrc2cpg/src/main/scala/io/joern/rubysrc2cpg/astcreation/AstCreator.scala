@@ -27,6 +27,7 @@ class AstCreator(
     with AstCreatorHelper
     with AstForStatementsCreator
     with AstForExpressionsCreator
+    with AstForControlStructuresCreator
     with AstForFunctionsCreator
     with AstForTypesCreator
     with AstSummaryVisitor

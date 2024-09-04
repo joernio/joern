@@ -26,6 +26,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   protected val baseAstCache = mutable.Map.empty[RubyNode, String]
 
   protected def astForExpression(node: RubyNode): Ast = node match
+    case node: ControlFlowExpression => astForControlStructureExpression(node)
+//    case node: SimpleCallWithBlock              => astForCallWithBlock(node)
+//    case node: MemberCallWithBlock              => astForCallWithBlock(node)
+//    case node: RubyCallWithBlock[_]             => astForCallWithBlock(node)
     case node: StaticLiteral                    => astForStaticLiteral(node)
     case node: HereDocNode                      => astForHereDoc(node)
     case node: DynamicLiteral                   => astForDynamicLiteral(node)
@@ -48,10 +52,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     case node: ArrayLiteral                     => astForArrayLiteral(node)
     case node: HashLiteral                      => astForHashLiteral(node)
     case node: Association                      => astForAssociation(node)
-    case node: IfExpression                     => astForIfExpression(node)
-    case node: UnlessExpression                 => astForUnlessExpression(node)
-    case node: RescueExpression                 => astForRescueExpression(node)
-    case node: CaseExpression                   => blockAst(NewBlock(), astsForCaseExpression(node).toList)
     case node: MandatoryParameter               => astForMandatoryParameter(node)
     case node: SplattingRubyNode                => astForSplattingRubyNode(node)
     case node: AnonymousTypeDeclaration         => astForAnonymousTypeDeclaration(node)
@@ -62,7 +62,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     case node: BreakStatement                   => astForBreakStatement(node)
     case node: StatementList                    => astForStatementList(node)
     case node: ReturnExpression                 => astForReturnStatement(node)
-    case node: NextExpression                   => astForNextExpression(node)
     case node: DummyNode                        => Ast(node.node)
     case node: Unknown                          => astForUnknown(node)
     case x =>
@@ -344,6 +343,30 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
           .getOrElse(defaultBehaviour)
       case None => defaultBehaviour
     }
+  }
+
+  /* `foo(<args>) do <params> <stmts> end` is lowered as a METHOD node shaped like so:
+   * ```
+   * <method_ref> = def <lambda>0(<params>)
+   *   <stmts>
+   * end
+   * foo(<args>, <method_ref>)
+   * ```
+   */
+  protected def astForCallWithBlock[C <: RubyCall](node: RubyNode & RubyCallWithBlock[C]): Ast = {
+    val Seq(typeRef, _)  = astForDoBlock(node.block): @unchecked
+    val typeRefDummyNode = typeRef.root.map(DummyNode(_)(node.span)).toList
+
+    // Create call with argument referencing the MethodRef
+    val callWithLambdaArg = node.withoutBlock match {
+      case x: SimpleCall => astForSimpleCall(x.copy(arguments = x.arguments ++ typeRefDummyNode)(x.span))
+      case x: MemberCall => astForMemberCall(x.copy(arguments = x.arguments ++ typeRefDummyNode)(x.span))
+      case x =>
+        logger.warn(s"Unhandled call-with-block type ${code(x)}, creating anonymous method structures only")
+        Ast()
+    }
+
+    callWithLambdaArg
   }
 
   protected def astForObjectInstantiation(node: RubyNode & ObjectInstantiation): Ast = {
@@ -781,29 +804,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         )
       )
     )
-  }
-
-  // Recursively lowers into a ternary conditional call
-  protected def astForIfExpression(node: IfExpression): Ast = {
-    def builder(node: IfExpression, conditionAst: Ast, thenAst: Ast, elseAsts: List[Ast]): Ast = {
-      // We want to make sure there's always an «else» clause in a ternary operator.
-      // The default value is a `nil` literal.
-      val elseAsts_ = if (elseAsts.isEmpty) {
-        List(astForNilBlock)
-      } else {
-        elseAsts
-      }
-
-      val call = callNode(node, code(node), Operators.conditional, Operators.conditional, DispatchTypes.STATIC_DISPATCH)
-      callAst(call, conditionAst :: thenAst :: elseAsts_)
-    }
-
-    foldIfExpression(builder)(node)
-  }
-
-  protected def astForUnlessExpression(node: UnlessExpression): Ast = {
-    val notConditionAst = UnaryExpression("!", node.condition)(node.condition.span)
-    astForExpression(IfExpression(notConditionAst, node.trueBranch, List(), node.falseBranch)(node.span))
   }
 
   protected def astForRescueExpression(node: RescueExpression): Ast = {
