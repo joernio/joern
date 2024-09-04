@@ -22,8 +22,8 @@ object Predefined {
     shared ++
       Seq("import _root_.io.joern.joerncli.console.Joern.*") ++
       Run.codeForRunCommand().linesIterator ++
-      Help.codeForHelpCommand(classOf[io.joern.joerncli.console.JoernConsole]).linesIterator ++
-      Seq("ossDataFlowOptions = opts.ossdataflow")
+      Help.codeForHelpCommand(classOf[io.joern.joerncli.console.JoernConsole]).linesIterator //++
+    //  Seq("ossDataFlowOptions = opts.ossdataflow")
   }
 
 }
