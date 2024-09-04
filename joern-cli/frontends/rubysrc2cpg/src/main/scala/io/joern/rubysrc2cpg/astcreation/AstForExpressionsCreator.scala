@@ -461,10 +461,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
                       case _                 =>
                     }
                     astForExpression(node.lhs)
-                  case x: SplattingRubyNode
-                      if x.name.isInstanceOf[SimpleIdentifier] && scope.lookupVariable(code(x.name)).isEmpty =>
-                    val name  = code(x.name)
-                    val local = localNode(x.name, name, name, Defines.Any)
+                  case SplattingRubyNode(nameNode: SimpleIdentifier) if scope.lookupVariable(code(nameNode)).isEmpty =>
+                    val name  = code(nameNode)
+                    val local = localNode(nameNode, name, name, Defines.Any)
                     scope.addToScope(name, local) match {
                       case BlockScope(block) => diffGraph.addEdge(block, local, EdgeTypes.AST)
                       case _                 =>
