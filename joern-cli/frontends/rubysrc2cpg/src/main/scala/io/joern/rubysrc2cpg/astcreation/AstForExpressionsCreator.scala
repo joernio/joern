@@ -207,8 +207,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       val dispatchType = if (isStatic) DispatchTypes.STATIC_DISPATCH else DispatchTypes.DYNAMIC_DISPATCH
 
       val callCode = if (baseCode.contains("<tmp-")) {
-        val rhsCode = if (n.methodName == "new") n.methodName else code(n).replace("::", ".").split('.').last
-        s"$baseCode.$rhsCode"
+        val rhsCode =
+          if (n.methodName == "new") n.methodName
+          else s"${n.methodName}(${n.arguments.map(code).mkString(", ")})"
+        s"$baseCode${n.op}$rhsCode"
       } else {
         code(n)
       }
