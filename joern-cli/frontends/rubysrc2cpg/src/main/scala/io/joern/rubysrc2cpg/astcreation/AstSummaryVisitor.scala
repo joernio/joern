@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.astcreation
 
 import flatgraph.DiffGraphApplier
-import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{RubyNode, StatementList}
+import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{RubyExpression, StatementList}
 import io.joern.rubysrc2cpg.datastructures.{RubyField, RubyMethod, RubyProgramSummary, RubyStubbedType, RubyType}
 import io.joern.rubysrc2cpg.parser.RubyNodeCreator
 import io.joern.rubysrc2cpg.passes.Defines

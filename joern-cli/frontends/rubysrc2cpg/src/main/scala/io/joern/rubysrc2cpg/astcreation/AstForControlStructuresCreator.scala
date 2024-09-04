@@ -2,8 +2,9 @@ package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   BinaryExpression,
+  BreakExpression,
   CaseExpression,
-  ControlFlowExpression,
+  ControlFlowStatement,
   DoWhileExpression,
   ElseClause,
   ForExpression,
@@ -11,7 +12,8 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   MemberCall,
   NextExpression,
   RescueExpression,
-  RubyNode,
+  ReturnExpression,
+  RubyExpression,
   SimpleIdentifier,
   SingleAssignment,
   SplattingRubyNode,
@@ -29,7 +31,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
 
 trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  protected def astForControlStructureExpression(node: ControlFlowExpression): Ast = node match {
+  protected def astForControlStructureExpression(node: ControlFlowStatement): Ast = node match {
     case node: WhileExpression   => astForWhileStatement(node)
     case node: DoWhileExpression => astForDoWhileStatement(node)
     case node: UntilExpression   => astForUntilStatement(node)
@@ -39,6 +41,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     case node: ForExpression     => astForForExpression(node)
     case node: RescueExpression  => astForRescueExpression(node)
     case node: NextExpression    => astForNextExpression(node)
+    case node: BreakExpression   => astForBreakExpression(node)
   }
 
   private def astForWhileStatement(node: WhileExpression): Ast = {
@@ -89,7 +92,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     controlStructureAst(ifNode, Some(notConditionAst), thenAst :: elseAsts)
   }
 
-  protected def astForElseClause(node: RubyNode): Ast = {
+  protected def astForElseClause(node: RubyExpression): Ast = {
     node match
       case elseNode: ElseClause =>
         elseNode.thenClause match
@@ -112,11 +115,11 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
 
   protected def astsForCaseExpression(node: CaseExpression): Seq[Ast] = {
     // TODO: Clean up the below
-    def goCase(expr: Option[SimpleIdentifier]): List[RubyNode] = {
-      val elseThenClause: Option[RubyNode] = node.elseClause.map(_.asInstanceOf[ElseClause].thenClause)
-      val whenClauses                      = node.whenClauses.map(_.asInstanceOf[WhenClause])
-      val ifElseChain = whenClauses.foldRight[Option[RubyNode]](elseThenClause) {
-        (whenClause: WhenClause, restClause: Option[RubyNode]) =>
+    def goCase(expr: Option[SimpleIdentifier]): List[RubyExpression] = {
+      val elseThenClause: Option[RubyExpression] = node.elseClause.map(_.asInstanceOf[ElseClause].thenClause)
+      val whenClauses                            = node.whenClauses.map(_.asInstanceOf[WhenClause])
+      val ifElseChain = whenClauses.foldRight[Option[RubyExpression]](elseThenClause) {
+        (whenClause: WhenClause, restClause: Option[RubyExpression]) =>
           // We translate multiple match expressions into an or expression.
           //
           // A single match expression is compared using `.===` to the case target expression if it is present

@@ -1,6 +1,6 @@
 package io.joern.rubysrc2cpg.astcreation
 
-import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
+import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{RubyStatement, *}
 import io.joern.rubysrc2cpg.datastructures.BlockScope
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
@@ -10,13 +10,13 @@ import io.shiftleft.codepropertygraph.generated.nodes.{NewControlStructure, NewM
 
 trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  protected def astsForStatement(node: RubyNode): Seq[Ast] = {
+  protected def astsForStatement(node: RubyExpression): Seq[Ast] = {
     baseAstCache.clear() // A safe approximation on where to reset the cache
     node match {
       case node: IfExpression               => astForIfStatement(node)
       case node: CaseExpression             => astsForCaseExpression(node)
       case node: StatementList              => astForStatementList(node) :: Nil
-      case node: ReturnExpression           => astForReturnStatement(node) :: Nil
+      case node: ReturnExpression           => astForReturnExpression(node) :: Nil
       case node: AnonymousTypeDeclaration   => astForAnonymousTypeDeclaration(node) :: Nil
       case node: TypeDeclaration            => astForClassDeclaration(node)
       case node: FieldsDeclaration          => astsForFieldDeclarations(node)
@@ -24,7 +24,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case node: MethodDeclaration          => astForMethodDeclaration(node)
       case node: SingletonMethodDeclaration => astForSingletonMethodDeclaration(node)
       case node: MultipleAssignment         => node.assignments.map(astForExpression)
-      case node: BreakStatement             => astForBreakStatement(node) :: Nil
+      case node: BreakExpression            => astForBreakExpression(node) :: Nil
       case node: SingletonStatementList     => astForSingletonStatementList(node)
       case _                                => astForExpression(node) :: Nil
     }
@@ -61,11 +61,11 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     builder(node, conditionAst, thenAst, elseAsts)
   }
 
-  private def astForThenClause(node: RubyNode): Ast = astForStatementList(node.asStatementList)
+  private def astForThenClause(node: RubyExpression): Ast = astForStatementList(node.asStatementList)
 
   private def astsForElseClauses(
-    elsIfClauses: List[RubyNode],
-    elseClause: Option[RubyNode],
+    elsIfClauses: List[RubyExpression],
+    elseClause: Option[RubyExpression],
     astForIf: IfExpression => Ast
   ): List[Ast] = {
     elsIfClauses match
@@ -90,7 +90,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     blockAst(block, statementAsts)
   }
 
-  protected def astForDoBlock(block: Block & RubyNode): Seq[Ast] = {
+  protected def astForDoBlock(block: Block & RubyExpression): Seq[Ast] = {
     // Create closure structures: [MethodDecl, TypeRef, MethodRef]
     val methodName = nextClosureName()
 
@@ -104,7 +104,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     methodAstsWithRefs
   }
 
-  protected def astForReturnStatement(node: ReturnExpression): Ast = {
+  protected def astForReturnExpression(node: ReturnExpression): Ast = {
     val argumentAsts = node.expressions.map(astForExpression)
     val returnNode_  = returnNode(node, code(node))
     returnAst(returnNode_, argumentAsts)
@@ -133,7 +133,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     blockAst(block, stmtAsts)
   }
 
-  private def astsForImplicitReturnStatement(node: RubyNode): Seq[Ast] = {
+  private def astsForImplicitReturnStatement(node: RubyExpression): Seq[Ast] = {
     def elseReturnNil(span: TextSpan) = Option {
       ElseClause(
         StatementList(
@@ -145,27 +145,27 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     }
 
     node match
-      case expr: ControlFlowExpression =>
-        def transform(e: RubyNode & ControlFlowExpression): RubyNode =
+      case expr: ControlFlowStatement =>
+        def transform(e: RubyExpression & ControlFlowStatement): RubyExpression =
           transformLastRubyNodeInControlFlowExpressionBody(e, returnLastNode(_, transform), elseReturnNil)
         astsForStatement(transform(expr))
       case node: MemberCallWithBlock => returnAstForRubyCall(node)
       case node: SimpleCallWithBlock => returnAstForRubyCall(node)
       case _: (LiteralExpr | BinaryExpression | UnaryExpression | SimpleIdentifier | SelfIdentifier | IndexAccess |
             Association | YieldExpr | RubyCall | RubyFieldIdentifier | HereDocNode | Unknown) =>
-        astForReturnStatement(ReturnExpression(List(node))(node.span)) :: Nil
+        astForReturnExpression(ReturnExpression(List(node))(node.span)) :: Nil
       case node: SingleAssignment =>
-        astForSingleAssignment(node) :: List(astForReturnStatement(ReturnExpression(List(node.lhs))(node.span)))
+        astForSingleAssignment(node) :: List(astForReturnExpression(ReturnExpression(List(node.lhs))(node.span)))
       case node: AttributeAssignment =>
         List(
           astForAttributeAssignment(node),
           astForReturnFieldAccess(MemberAccess(node.target, node.op, node.attributeName)(node.span))
         )
       case node: MemberAccess    => astForReturnMemberCall(node) :: Nil
-      case ret: ReturnExpression => astForReturnStatement(ret) :: Nil
+      case ret: ReturnExpression => astForReturnExpression(ret) :: Nil
       case node: (MethodDeclaration | SingletonMethodDeclaration) =>
         (astsForStatement(node) :+ astForReturnMethodDeclarationSymbolName(node)).toList
-      case _: BreakStatement => astsForStatement(node).toList
+      case _: BreakExpression => astsForStatement(node).toList
       case node =>
         logger.warn(
           s"Implicit return here not supported yet: ${node.text} (${node.getClass.getSimpleName}), only generating statement"
@@ -173,7 +173,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         astsForStatement(node).toList
   }
 
-  private def returnAstForRubyCall[C <: RubyCall](node: RubyNode & RubyCallWithBlock[C]): Seq[Ast] = {
+  private def returnAstForRubyCall[C <: RubyCall](node: RubyExpression & RubyCallWithBlock[C]): Seq[Ast] = {
     val callAst = astForCallWithBlock(node)
     returnAst(returnNode(node, code(node)), List(callAst)) :: Nil
   }
@@ -184,7 +184,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   // The evaluation of a MethodDeclaration returns its name in symbol form.
   // E.g. `def f = 0` ===> `:f`
-  private def astForReturnMethodDeclarationSymbolName(node: RubyNode & ProcedureDeclaration): Ast = {
+  private def astForReturnMethodDeclarationSymbolName(node: RubyExpression & ProcedureDeclaration): Ast = {
     val literalNode_ = literalNode(node, s":${node.methodName}", getBuiltInType(Defines.Symbol))
     val returnNode_  = returnNode(node, literalNode_.code)
     returnAst(returnNode_, Seq(Ast(literalNode_)))
@@ -198,7 +198,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     returnAst(returnNode(node, code(node)), List(astForMemberCall(node)))
   }
 
-  protected def astForBreakStatement(node: BreakStatement): Ast = {
+  protected def astForBreakExpression(node: BreakExpression): Ast = {
     val _node = NewControlStructure()
       .controlStructureType(ControlStructureTypes.BREAK)
       .lineNumber(line(node))
@@ -218,17 +218,20 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     * @return
     *   the RubyNode with an explicit expression
     */
-  private def returnLastNode(x: RubyNode, transform: (RubyNode & ControlFlowExpression) => RubyNode): RubyNode = {
-    def statementListReturningLastExpression(stmts: List[RubyNode]): List[RubyNode] = stmts match {
-      case (head: ControlFlowClause) :: Nil     => clauseReturningLastExpression(head) :: Nil
-      case (head: ControlFlowExpression) :: Nil => transform(head) :: Nil
-      case (head: ReturnExpression) :: Nil      => head :: Nil
-      case head :: Nil                          => ReturnExpression(head :: Nil)(head.span) :: Nil
-      case Nil                                  => List.empty
-      case head :: tail                         => head :: statementListReturningLastExpression(tail)
+  private def returnLastNode(
+    x: RubyExpression,
+    transform: (RubyExpression & ControlFlowStatement) => RubyExpression
+  ): RubyExpression = {
+    def statementListReturningLastExpression(stmts: List[RubyExpression]): List[RubyExpression] = stmts match {
+      case (head: ControlFlowClause) :: Nil    => clauseReturningLastExpression(head) :: Nil
+      case (head: ControlFlowStatement) :: Nil => transform(head) :: Nil
+      case (head: ReturnExpression) :: Nil     => head :: Nil
+      case head :: Nil                         => ReturnExpression(head :: Nil)(head.span) :: Nil
+      case Nil                                 => List.empty
+      case head :: tail                        => head :: statementListReturningLastExpression(tail)
     }
 
-    def clauseReturningLastExpression(x: RubyNode & ControlFlowClause): RubyNode = x match {
+    def clauseReturningLastExpression(x: RubyExpression & ControlFlowClause): RubyExpression = x match {
       case RescueClause(exceptionClassList, assignment, thenClause) =>
         RescueClause(exceptionClassList, assignment, returnLastNode(thenClause, transform))(x.span)
       case EnsureClause(thenClause)           => EnsureClause(returnLastNode(thenClause, transform))(x.span)
@@ -239,12 +242,12 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     }
 
     x match {
-      case StatementList(statements)   => StatementList(statementListReturningLastExpression(statements))(x.span)
-      case clause: ControlFlowClause   => clauseReturningLastExpression(clause)
-      case node: ControlFlowExpression => transform(node)
-      case node: BreakStatement        => node
-      case node: ReturnExpression      => node
-      case _                           => ReturnExpression(x :: Nil)(x.span)
+      case StatementList(statements)  => StatementList(statementListReturningLastExpression(statements))(x.span)
+      case clause: ControlFlowClause  => clauseReturningLastExpression(clause)
+      case node: ControlFlowStatement => transform(node)
+      case node: BreakExpression      => node
+      case node: ReturnExpression     => node
+      case _                          => ReturnExpression(x :: Nil)(x.span)
     }
   }
 
@@ -256,10 +259,10 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     *   RubyNode with transform function applied
     */
   protected def transformLastRubyNodeInControlFlowExpressionBody(
-    node: RubyNode & ControlFlowExpression,
-    transform: RubyNode => RubyNode,
+    node: RubyExpression & ControlFlowStatement,
+    transform: RubyExpression => RubyExpression,
     defaultElseBranch: TextSpan => Option[ElseClause]
-  ): RubyNode = {
+  ): RubyExpression = {
     node match {
       case RescueExpression(body, rescueClauses, elseClause, ensureClause) =>
         // Ensure never returns a value, only the main body, rescue & else clauses
@@ -293,7 +296,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           whenClauses.map(transform),
           elseClause.map(transform).orElse(defaultElseBranch(node.span))
         )(node.span)
-      case next: NextExpression => next
+      case next: NextExpression   => next
+      case break: BreakExpression => break
     }
   }
 }

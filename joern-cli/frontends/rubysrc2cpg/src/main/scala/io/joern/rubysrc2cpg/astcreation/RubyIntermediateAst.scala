@@ -1,6 +1,6 @@
 package io.joern.rubysrc2cpg.astcreation
 
-import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.AllowedTypeDeclarationChild
+import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{AllowedTypeDeclarationChild, RubyStatement}
 import io.joern.rubysrc2cpg.passes.{Defines, GlobalTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 
@@ -19,7 +19,9 @@ object RubyIntermediateAst {
     def spanStart(newText: String = ""): TextSpan = TextSpan(line, column, line, column, offset, newText)
   }
 
-  sealed class RubyNode(val span: TextSpan) {
+  /** Most-if-not-all constructs in Ruby evaluate to some value, so we name the base class `RubyExpression`.
+    */
+  sealed class RubyExpression(val span: TextSpan) {
     def line: Option[Int] = span.line
 
     def column: Option[Int] = span.column
@@ -33,16 +35,23 @@ object RubyIntermediateAst {
     def text: String = span.text
   }
 
-  implicit class RubyNodeHelper(node: RubyNode) {
+  /** Ruby statements evaluate to some value (and thus are expressions), but also perform some operation, e.g.,
+    * assignments, method definitions, etc.
+    */
+  sealed trait RubyStatement extends RubyExpression
+
+  implicit class RubyExpressionHelper(node: RubyExpression) {
     def asStatementList: StatementList = node match {
       case stmtList: StatementList => stmtList
       case _                       => StatementList(List(node))(node.span)
     }
   }
 
-  final case class Unknown()(span: TextSpan) extends RubyNode(span)
+  final case class Unknown()(span: TextSpan) extends RubyExpression(span)
 
-  final case class StatementList(statements: List[RubyNode])(span: TextSpan) extends RubyNode(span) {
+  final case class StatementList(statements: List[RubyExpression])(span: TextSpan)
+      extends RubyExpression(span)
+      with RubyStatement {
     override def text: String = statements.size match
       case 0 | 1 => span.text
       case _     => "(...)"
@@ -50,7 +59,9 @@ object RubyIntermediateAst {
     def size: Int = statements.size
   }
 
-  final case class SingletonStatementList(statements: List[RubyNode])(span: TextSpan) extends RubyNode(span) {
+  final case class SingletonStatementList(statements: List[RubyExpression])(span: TextSpan)
+      extends RubyExpression(span)
+      with RubyStatement {
     override def text: String = statements.size match
       case 0 | 1 => span.text
       case _     => "(...)"
@@ -60,142 +71,146 @@ object RubyIntermediateAst {
 
   sealed trait AllowedTypeDeclarationChild
 
-  sealed trait Namespace
-
-  sealed trait TypeDeclaration extends AllowedTypeDeclarationChild {
-    def name: RubyNode
-    def baseClass: Option[RubyNode]
-    def body: RubyNode
+  sealed trait TypeDeclaration extends AllowedTypeDeclarationChild with RubyStatement {
+    def name: RubyExpression
+    def baseClass: Option[RubyExpression]
+    def body: RubyExpression
     def bodyMemberCall: Option[TypeDeclBodyCall]
   }
 
-  sealed trait NamespaceDeclaration {
+  sealed trait NamespaceDeclaration extends RubyStatement {
     def namespaceParts: Option[List[String]]
   }
 
   final case class ModuleDeclaration(
-    name: RubyNode,
-    body: RubyNode,
-    fields: List[RubyNode & RubyFieldIdentifier],
+    name: RubyExpression,
+    body: RubyExpression,
+    fields: List[RubyExpression & RubyFieldIdentifier],
     bodyMemberCall: Option[TypeDeclBodyCall],
     namespaceParts: Option[List[String]]
   )(span: TextSpan)
-      extends RubyNode(span)
+      extends RubyExpression(span)
       with TypeDeclaration
       with NamespaceDeclaration {
-    def baseClass: Option[RubyNode] = None
+    def baseClass: Option[RubyExpression] = None
   }
 
   final case class ClassDeclaration(
-    name: RubyNode,
-    baseClass: Option[RubyNode],
-    body: RubyNode,
-    fields: List[RubyNode & RubyFieldIdentifier],
+    name: RubyExpression,
+    baseClass: Option[RubyExpression],
+    body: RubyExpression,
+    fields: List[RubyExpression & RubyFieldIdentifier],
     bodyMemberCall: Option[TypeDeclBodyCall],
     namespaceParts: Option[List[String]]
   )(span: TextSpan)
-      extends RubyNode(span)
+      extends RubyExpression(span)
       with TypeDeclaration
       with NamespaceDeclaration
 
-  sealed trait AnonymousTypeDeclaration extends RubyNode with TypeDeclaration
+  sealed trait AnonymousTypeDeclaration extends RubyExpression with TypeDeclaration
 
   final case class AnonymousClassDeclaration(
-    name: RubyNode,
-    baseClass: Option[RubyNode],
-    body: RubyNode,
+    name: RubyExpression,
+    baseClass: Option[RubyExpression],
+    body: RubyExpression,
     bodyMemberCall: Option[TypeDeclBodyCall] = None
   )(span: TextSpan)
-      extends RubyNode(span)
+      extends RubyExpression(span)
       with AnonymousTypeDeclaration
 
   final case class SingletonClassDeclaration(
-    name: RubyNode,
-    baseClass: Option[RubyNode],
-    body: RubyNode,
+    name: RubyExpression,
+    baseClass: Option[RubyExpression],
+    body: RubyExpression,
     bodyMemberCall: Option[TypeDeclBodyCall] = None
   )(span: TextSpan)
-      extends RubyNode(span)
+      extends RubyExpression(span)
       with AnonymousTypeDeclaration
 
-  final case class FieldsDeclaration(fieldNames: List[RubyNode])(span: TextSpan)
-      extends RubyNode(span)
+  final case class FieldsDeclaration(fieldNames: List[RubyExpression])(span: TextSpan)
+      extends RubyExpression(span)
       with AllowedTypeDeclarationChild {
     def hasGetter: Boolean = text.startsWith("attr_reader") || text.startsWith("attr_accessor")
 
     def hasSetter: Boolean = text.startsWith("attr_writer") || text.startsWith("attr_accessor")
   }
 
-  sealed trait ProcedureDeclaration {
+  sealed trait ProcedureDeclaration extends RubyStatement {
     def methodName: String
-    def parameters: List[RubyNode]
-    def body: RubyNode
+    def parameters: List[RubyExpression]
+    def body: RubyExpression
   }
 
-  final case class MethodDeclaration(methodName: String, parameters: List[RubyNode], body: RubyNode)(span: TextSpan)
-      extends RubyNode(span)
+  final case class MethodDeclaration(methodName: String, parameters: List[RubyExpression], body: RubyExpression)(
+    span: TextSpan
+  ) extends RubyExpression(span)
       with ProcedureDeclaration
       with AllowedTypeDeclarationChild
 
   final case class SingletonMethodDeclaration(
-    target: RubyNode,
+    target: RubyExpression,
     methodName: String,
-    parameters: List[RubyNode],
-    body: RubyNode
+    parameters: List[RubyExpression],
+    body: RubyExpression
   )(span: TextSpan)
-      extends RubyNode(span)
+      extends RubyExpression(span)
       with ProcedureDeclaration
       with AllowedTypeDeclarationChild
 
   final case class SingletonObjectMethodDeclaration(
     methodName: String,
-    parameters: List[RubyNode],
-    body: RubyNode,
-    baseClass: RubyNode
+    parameters: List[RubyExpression],
+    body: RubyExpression,
+    baseClass: RubyExpression
   )(span: TextSpan)
-      extends RubyNode(span)
+      extends RubyExpression(span)
       with ProcedureDeclaration
 
   sealed trait MethodParameter {
     def name: String
   }
 
-  final case class MandatoryParameter(name: String)(span: TextSpan) extends RubyNode(span) with MethodParameter
+  final case class MandatoryParameter(name: String)(span: TextSpan) extends RubyExpression(span) with MethodParameter
 
-  final case class OptionalParameter(name: String, defaultExpression: RubyNode)(span: TextSpan)
-      extends RubyNode(span)
+  final case class OptionalParameter(name: String, defaultExpression: RubyExpression)(span: TextSpan)
+      extends RubyExpression(span)
       with MethodParameter
 
-  final case class GroupedParameter(name: String, tmpParam: RubyNode, multipleAssignment: RubyNode)(span: TextSpan)
-      extends RubyNode(span)
+  final case class GroupedParameter(name: String, tmpParam: RubyExpression, multipleAssignment: RubyExpression)(
+    span: TextSpan
+  ) extends RubyExpression(span)
       with MethodParameter
 
   sealed trait CollectionParameter extends MethodParameter
 
-  final case class ArrayParameter(name: String)(span: TextSpan) extends RubyNode(span) with CollectionParameter
+  final case class ArrayParameter(name: String)(span: TextSpan) extends RubyExpression(span) with CollectionParameter
 
-  final case class HashParameter(name: String)(span: TextSpan) extends RubyNode(span) with CollectionParameter
+  final case class HashParameter(name: String)(span: TextSpan) extends RubyExpression(span) with CollectionParameter
 
-  final case class ProcParameter(name: String)(span: TextSpan) extends RubyNode(span) with MethodParameter
+  final case class ProcParameter(name: String)(span: TextSpan) extends RubyExpression(span) with MethodParameter
 
-  final case class SingleAssignment(lhs: RubyNode, op: String, rhs: RubyNode)(span: TextSpan) extends RubyNode(span)
+  final case class SingleAssignment(lhs: RubyExpression, op: String, rhs: RubyExpression)(span: TextSpan)
+      extends RubyExpression(span)
+      with RubyStatement
 
-  final case class MultipleAssignment(assignments: List[SingleAssignment])(span: TextSpan) extends RubyNode(span)
+  final case class MultipleAssignment(assignments: List[SingleAssignment])(span: TextSpan)
+      extends RubyExpression(span)
+      with RubyStatement
 
-  final case class SplattingRubyNode(name: RubyNode)(span: TextSpan) extends RubyNode(span)
+  final case class SplattingRubyNode(target: RubyExpression)(span: TextSpan) extends RubyExpression(span)
 
   final case class AttributeAssignment(
-    target: RubyNode,
+    target: RubyExpression,
     op: String,
     attributeName: String,
     assignmentOperator: String,
-    rhs: RubyNode
+    rhs: RubyExpression
   )(span: TextSpan)
-      extends RubyNode(span)
+      extends RubyExpression(span)
 
-  /** Any structure that conditionally modifies the control flow of the program.
+  /** Any structure that conditionally modifies the control flow of the program. These also behave as statements.
     */
-  sealed trait ControlFlowExpression
+  sealed trait ControlFlowStatement extends RubyStatement
 
   /** A control structure's clause, which may contain an additional control structures.
     */
@@ -212,83 +227,99 @@ object RubyIntermediateAst {
   sealed trait SingletonMethodIdentifier
 
   final case class RescueExpression(
-    body: RubyNode,
+    body: RubyExpression,
     rescueClauses: List[RescueClause],
     elseClause: Option[ElseClause],
     ensureClause: Option[EnsureClause]
   )(span: TextSpan)
-      extends RubyNode(span)
-      with ControlFlowExpression
+      extends RubyExpression(span)
+      with ControlFlowStatement
 
   final case class RescueClause(
-    exceptionClassList: Option[RubyNode],
-    variables: Option[RubyNode],
-    thenClause: RubyNode
+    exceptionClassList: Option[RubyExpression],
+    variables: Option[RubyExpression],
+    thenClause: RubyExpression
   )(span: TextSpan)
-      extends RubyNode(span)
+      extends RubyExpression(span)
       with ControlFlowClause
 
-  final case class EnsureClause(thenClause: RubyNode)(span: TextSpan) extends RubyNode(span) with ControlFlowClause
+  final case class EnsureClause(thenClause: RubyExpression)(span: TextSpan)
+      extends RubyExpression(span)
+      with ControlFlowClause
 
-  final case class WhileExpression(condition: RubyNode, body: RubyNode)(span: TextSpan)
-      extends RubyNode(span)
-      with ControlFlowExpression
+  final case class WhileExpression(condition: RubyExpression, body: RubyExpression)(span: TextSpan)
+      extends RubyExpression(span)
+      with ControlFlowStatement
 
-  final case class DoWhileExpression(condition: RubyNode, body: RubyNode)(span: TextSpan)
-      extends RubyNode(span)
-      with ControlFlowExpression
+  final case class DoWhileExpression(condition: RubyExpression, body: RubyExpression)(span: TextSpan)
+      extends RubyExpression(span)
+      with ControlFlowStatement
 
-  final case class UntilExpression(condition: RubyNode, body: RubyNode)(span: TextSpan)
-      extends RubyNode(span)
-      with ControlFlowExpression
+  final case class UntilExpression(condition: RubyExpression, body: RubyExpression)(span: TextSpan)
+      extends RubyExpression(span)
+      with ControlFlowStatement
 
   final case class IfExpression(
-    condition: RubyNode,
-    thenClause: RubyNode,
-    elsifClauses: List[RubyNode],
-    elseClause: Option[RubyNode]
+    condition: RubyExpression,
+    thenClause: RubyExpression,
+    elsifClauses: List[RubyExpression],
+    elseClause: Option[RubyExpression]
   )(span: TextSpan)
-      extends RubyNode(span)
-      with ControlFlowExpression
+      extends RubyExpression(span)
+      with ControlFlowStatement
+      with RubyStatement
 
-  final case class ElsIfClause(condition: RubyNode, thenClause: RubyNode)(span: TextSpan)
-      extends RubyNode(span)
+  final case class ElsIfClause(condition: RubyExpression, thenClause: RubyExpression)(span: TextSpan)
+      extends RubyExpression(span)
       with ControlFlowClause
 
-  final case class ElseClause(thenClause: RubyNode)(span: TextSpan) extends RubyNode(span) with ControlFlowClause
+  final case class ElseClause(thenClause: RubyExpression)(span: TextSpan)
+      extends RubyExpression(span)
+      with ControlFlowClause
 
-  final case class UnlessExpression(condition: RubyNode, trueBranch: RubyNode, falseBranch: Option[RubyNode])(
-    span: TextSpan
-  ) extends RubyNode(span)
-      with ControlFlowExpression
+  final case class UnlessExpression(
+    condition: RubyExpression,
+    trueBranch: RubyExpression,
+    falseBranch: Option[RubyExpression]
+  )(span: TextSpan)
+      extends RubyExpression(span)
+      with ControlFlowStatement
 
-  final case class ForExpression(forVariable: RubyNode, iterableVariable: RubyNode, doBlock: RubyNode)(span: TextSpan)
-      extends RubyNode(span)
-      with ControlFlowExpression
+  final case class ForExpression(
+    forVariable: RubyExpression,
+    iterableVariable: RubyExpression,
+    doBlock: RubyExpression
+  )(span: TextSpan)
+      extends RubyExpression(span)
+      with ControlFlowStatement
 
   final case class CaseExpression(
-    expression: Option[RubyNode],
-    whenClauses: List[RubyNode],
-    elseClause: Option[RubyNode]
+    expression: Option[RubyExpression],
+    whenClauses: List[RubyExpression],
+    elseClause: Option[RubyExpression]
   )(span: TextSpan)
-      extends RubyNode(span)
-      with ControlFlowExpression
+      extends RubyExpression(span)
+      with ControlFlowStatement
 
   final case class WhenClause(
-    matchExpressions: List[RubyNode],
-    matchSplatExpression: Option[RubyNode],
-    thenClause: RubyNode
+    matchExpressions: List[RubyExpression],
+    matchSplatExpression: Option[RubyExpression],
+    thenClause: RubyExpression
   )(span: TextSpan)
-      extends RubyNode(span)
+      extends RubyExpression(span)
       with ControlFlowClause
 
-  final case class NextExpression()(span: TextSpan) extends RubyNode(span) with ControlFlowExpression
+  final case class NextExpression()(span: TextSpan) extends RubyExpression(span) with ControlFlowStatement
 
-  final case class ReturnExpression(expressions: List[RubyNode])(span: TextSpan) extends RubyNode(span)
+  final case class BreakExpression()(span: TextSpan) extends RubyExpression(span) with ControlFlowStatement
+
+  final case class ReturnExpression(expressions: List[RubyExpression])(span: TextSpan)
+      extends RubyExpression(span)
+      with RubyStatement
 
   /** Represents an unqualified identifier e.g. `X`, `x`,  `@@x`, `$x`, `$<`, etc. */
   final case class SimpleIdentifier(typeFullName: Option[String] = None)(span: TextSpan)
-      extends RubyNode(span)
+      extends RubyExpression(span)
       with RubyIdentifier
       with SingletonMethodIdentifier {
     override def toString: String = s"SimpleIdentifier(${span.text}, $typeFullName)"
@@ -296,18 +327,20 @@ object RubyIntermediateAst {
 
   /** Represents a type reference successfully determined, e.g. module A; end; A
     */
-  final case class TypeIdentifier(typeFullName: String)(span: TextSpan) extends RubyNode(span) with RubyIdentifier {
+  final case class TypeIdentifier(typeFullName: String)(span: TextSpan)
+      extends RubyExpression(span)
+      with RubyIdentifier {
     def isBuiltin: Boolean        = typeFullName.startsWith(GlobalTypes.builtinPrefix)
     override def toString: String = s"TypeIdentifier(${span.text}, $typeFullName)"
   }
 
   /** Represents a InstanceFieldIdentifier e.g `@x` */
-  final case class InstanceFieldIdentifier()(span: TextSpan) extends RubyNode(span) with RubyFieldIdentifier
+  final case class InstanceFieldIdentifier()(span: TextSpan) extends RubyExpression(span) with RubyFieldIdentifier
 
   /** Represents a ClassFieldIdentifier e.g `@@x` */
-  final case class ClassFieldIdentifier()(span: TextSpan) extends RubyNode(span) with RubyFieldIdentifier
+  final case class ClassFieldIdentifier()(span: TextSpan) extends RubyExpression(span) with RubyFieldIdentifier
 
-  final case class SelfIdentifier()(span: TextSpan) extends RubyNode(span) with SingletonMethodIdentifier
+  final case class SelfIdentifier()(span: TextSpan) extends RubyExpression(span) with SingletonMethodIdentifier
 
   /** Represents some kind of literal expression.
     */
@@ -316,7 +349,7 @@ object RubyIntermediateAst {
   }
 
   /** Represents a non-interpolated literal. */
-  final case class StaticLiteral(typeFullName: String)(span: TextSpan) extends RubyNode(span) with LiteralExpr {
+  final case class StaticLiteral(typeFullName: String)(span: TextSpan) extends RubyExpression(span) with LiteralExpr {
     def isSymbol: Boolean = text.startsWith(":")
 
     def isString: Boolean = text.startsWith("\"") || text.startsWith("'")
@@ -332,17 +365,22 @@ object RubyIntermediateAst {
     }
   }
 
-  final case class DynamicLiteral(typeFullName: String, expressions: List[RubyNode])(span: TextSpan)
-      extends RubyNode(span)
+  final case class DynamicLiteral(typeFullName: String, expressions: List[RubyExpression])(span: TextSpan)
+      extends RubyExpression(span)
       with LiteralExpr
 
-  final case class RangeExpression(lowerBound: RubyNode, upperBound: RubyNode, rangeOperator: RangeOperator)(
-    span: TextSpan
-  ) extends RubyNode(span)
+  final case class RangeExpression(
+    lowerBound: RubyExpression,
+    upperBound: RubyExpression,
+    rangeOperator: RangeOperator
+  )(span: TextSpan)
+      extends RubyExpression(span)
 
-  final case class RangeOperator(exclusive: Boolean)(span: TextSpan) extends RubyNode(span)
+  final case class RangeOperator(exclusive: Boolean)(span: TextSpan) extends RubyExpression(span)
 
-  final case class ArrayLiteral(elements: List[RubyNode])(span: TextSpan) extends RubyNode(span) with LiteralExpr {
+  final case class ArrayLiteral(elements: List[RubyExpression])(span: TextSpan)
+      extends RubyExpression(span)
+      with LiteralExpr {
     def isSymbolArray: Boolean = text.take(2).toLowerCase.startsWith("%i")
 
     def isStringArray: Boolean = text.take(2).toLowerCase.startsWith("%w")
@@ -354,60 +392,62 @@ object RubyIntermediateAst {
     def typeFullName: String = Defines.getBuiltInType(Defines.Array)
   }
 
-  final case class HashLiteral(elements: List[RubyNode])(span: TextSpan) extends RubyNode(span) with LiteralExpr {
+  final case class HashLiteral(elements: List[RubyExpression])(span: TextSpan)
+      extends RubyExpression(span)
+      with LiteralExpr {
     def typeFullName: String = Defines.getBuiltInType(Defines.Hash)
   }
 
-  final case class Association(key: RubyNode, value: RubyNode)(span: TextSpan) extends RubyNode(span)
+  final case class Association(key: RubyExpression, value: RubyExpression)(span: TextSpan) extends RubyExpression(span)
 
   /** Represents a call.
     */
   sealed trait RubyCall {
-    def target: RubyNode
-    def arguments: List[RubyNode]
+    def target: RubyExpression
+    def arguments: List[RubyExpression]
   }
 
   /** Represents traditional calls, e.g. `foo`, `foo x, y`, `foo(x,y)` */
-  final case class SimpleCall(target: RubyNode, arguments: List[RubyNode])(span: TextSpan)
-      extends RubyNode(span)
+  final case class SimpleCall(target: RubyExpression, arguments: List[RubyExpression])(span: TextSpan)
+      extends RubyExpression(span)
       with RubyCall
 
   final case class RequireCall(
-    target: RubyNode,
-    argument: RubyNode,
+    target: RubyExpression,
+    argument: RubyExpression,
     isRelative: Boolean = false,
     isWildCard: Boolean = false
   )(span: TextSpan)
-      extends RubyNode(span)
+      extends RubyExpression(span)
       with RubyCall {
-    def arguments: List[RubyNode] = List(argument)
-    def asSimpleCall: SimpleCall  = SimpleCall(target, arguments)(span)
+    def arguments: List[RubyExpression] = List(argument)
+    def asSimpleCall: SimpleCall        = SimpleCall(target, arguments)(span)
   }
 
-  final case class IncludeCall(target: RubyNode, argument: RubyNode)(span: TextSpan)
-      extends RubyNode(span)
+  final case class IncludeCall(target: RubyExpression, argument: RubyExpression)(span: TextSpan)
+      extends RubyExpression(span)
       with RubyCall {
-    def arguments: List[RubyNode] = List(argument)
-    def asSimpleCall: SimpleCall  = SimpleCall(target, arguments)(span)
+    def arguments: List[RubyExpression] = List(argument)
+    def asSimpleCall: SimpleCall        = SimpleCall(target, arguments)(span)
   }
 
-  final case class RaiseCall(target: RubyNode, arguments: List[RubyNode])(span: TextSpan)
-      extends RubyNode(span)
+  final case class RaiseCall(target: RubyExpression, arguments: List[RubyExpression])(span: TextSpan)
+      extends RubyExpression(span)
       with RubyCall
 
   sealed trait AccessModifier extends AllowedTypeDeclarationChild
 
-  final case class PublicModifier()(span: TextSpan) extends RubyNode(span) with AccessModifier
+  final case class PublicModifier()(span: TextSpan) extends RubyExpression(span) with AccessModifier
 
-  final case class PrivateModifier()(span: TextSpan) extends RubyNode(span) with AccessModifier
+  final case class PrivateModifier()(span: TextSpan) extends RubyExpression(span) with AccessModifier
 
-  final case class ProtectedModifier()(span: TextSpan) extends RubyNode(span) with AccessModifier
+  final case class ProtectedModifier()(span: TextSpan) extends RubyExpression(span) with AccessModifier
 
   /** Represents standalone `proc { ... }` or `lambda { ... }` expressions
     */
-  final case class ProcOrLambdaExpr(block: Block)(span: TextSpan) extends RubyNode(span)
+  final case class ProcOrLambdaExpr(block: Block)(span: TextSpan) extends RubyExpression(span)
 
-  final case class YieldExpr(arguments: List[RubyNode])(span: TextSpan) extends RubyNode(span)
+  final case class YieldExpr(arguments: List[RubyExpression])(span: TextSpan) extends RubyExpression(span)
 
   /** Represents a call with a block argument.
     */
@@ -415,51 +455,53 @@ object RubyIntermediateAst {
 
     def block: Block
 
-    def withoutBlock: RubyNode & C
+    def withoutBlock: RubyExpression & C
   }
 
-  final case class SimpleCallWithBlock(target: RubyNode, arguments: List[RubyNode], block: Block)(span: TextSpan)
-      extends RubyNode(span)
+  final case class SimpleCallWithBlock(target: RubyExpression, arguments: List[RubyExpression], block: Block)(
+    span: TextSpan
+  ) extends RubyExpression(span)
       with RubyCallWithBlock[SimpleCall] {
     def withoutBlock: SimpleCall = SimpleCall(target, arguments)(span)
   }
 
   /** Represents member calls, e.g. `x.y(z,w)` */
-  final case class MemberCall(target: RubyNode, op: String, methodName: String, arguments: List[RubyNode])(
+  final case class MemberCall(target: RubyExpression, op: String, methodName: String, arguments: List[RubyExpression])(
     span: TextSpan
-  ) extends RubyNode(span)
+  ) extends RubyExpression(span)
       with RubyCall
 
   /** Special class for `<body>` calls of type decls.
     */
-  final case class TypeDeclBodyCall(target: RubyNode, typeName: String)(span: TextSpan)
-      extends RubyNode(span)
+  final case class TypeDeclBodyCall(target: RubyExpression, typeName: String)(span: TextSpan)
+      extends RubyExpression(span)
       with RubyCall {
 
     def toMemberCall: MemberCall = MemberCall(target, op, Defines.TypeDeclBody, arguments)(span)
 
-    def arguments: List[RubyNode] = Nil
+    def arguments: List[RubyExpression] = Nil
 
     def op: String = "::"
   }
 
   final case class MemberCallWithBlock(
-    target: RubyNode,
+    target: RubyExpression,
     op: String,
     methodName: String,
-    arguments: List[RubyNode],
+    arguments: List[RubyExpression],
     block: Block
   )(span: TextSpan)
-      extends RubyNode(span)
+      extends RubyExpression(span)
       with RubyCallWithBlock[MemberCall] {
     def withoutBlock: MemberCall = MemberCall(target, op, methodName, arguments)(span)
   }
 
   /** Represents index accesses, e.g. `x[0]`, `self.x.y[1, 2]` */
-  final case class IndexAccess(target: RubyNode, indices: List[RubyNode])(span: TextSpan) extends RubyNode(span)
+  final case class IndexAccess(target: RubyExpression, indices: List[RubyExpression])(span: TextSpan)
+      extends RubyExpression(span)
 
-  final case class MemberAccess(target: RubyNode, op: String, memberName: String)(span: TextSpan)
-      extends RubyNode(span) {
+  final case class MemberAccess(target: RubyExpression, op: String, memberName: String)(span: TextSpan)
+      extends RubyExpression(span) {
     override def toString: String = s"${target.text}.$memberName"
   }
 
@@ -467,38 +509,41 @@ object RubyIntermediateAst {
     */
   sealed trait ObjectInstantiation extends RubyCall
 
-  final case class SimpleObjectInstantiation(target: RubyNode, arguments: List[RubyNode])(span: TextSpan)
-      extends RubyNode(span)
+  final case class SimpleObjectInstantiation(target: RubyExpression, arguments: List[RubyExpression])(span: TextSpan)
+      extends RubyExpression(span)
       with ObjectInstantiation
 
-  final case class ObjectInstantiationWithBlock(target: RubyNode, arguments: List[RubyNode], block: Block)(
+  final case class ObjectInstantiationWithBlock(target: RubyExpression, arguments: List[RubyExpression], block: Block)(
     span: TextSpan
-  ) extends RubyNode(span)
+  ) extends RubyExpression(span)
       with ObjectInstantiation
       with RubyCallWithBlock[SimpleObjectInstantiation] {
     def withoutBlock: SimpleObjectInstantiation = SimpleObjectInstantiation(target, arguments)(span)
   }
 
   /** Represents a `do` or `{ .. }` (braces) block. */
-  final case class Block(parameters: List[RubyNode], body: RubyNode)(span: TextSpan) extends RubyNode(span) {
+  final case class Block(parameters: List[RubyExpression], body: RubyExpression)(span: TextSpan)
+      extends RubyExpression(span)
+      with RubyStatement {
 
-    def toMethodDeclaration(name: String, parameters: Option[List[RubyNode]]): MethodDeclaration = parameters match {
-      case Some(givenParameters) => MethodDeclaration(name, givenParameters, body)(span)
-      case None                  => MethodDeclaration(name, this.parameters, body)(span)
-    }
+    def toMethodDeclaration(name: String, parameters: Option[List[RubyExpression]]): MethodDeclaration =
+      parameters match {
+        case Some(givenParameters) => MethodDeclaration(name, givenParameters, body)(span)
+        case None                  => MethodDeclaration(name, this.parameters, body)(span)
+      }
   }
 
   /** A dummy class for wrapping around `NewNode` and allowing it to integrate with RubyNode classes.
     */
-  final case class DummyNode(node: NewNode)(span: TextSpan) extends RubyNode(span)
+  final case class DummyNode(node: NewNode)(span: TextSpan) extends RubyExpression(span)
 
-  final case class UnaryExpression(op: String, expression: RubyNode)(span: TextSpan) extends RubyNode(span)
+  final case class UnaryExpression(op: String, expression: RubyExpression)(span: TextSpan) extends RubyExpression(span)
 
-  final case class BinaryExpression(lhs: RubyNode, op: String, rhs: RubyNode)(span: TextSpan) extends RubyNode(span)
+  final case class BinaryExpression(lhs: RubyExpression, op: String, rhs: RubyExpression)(span: TextSpan)
+      extends RubyExpression(span)
 
-  final case class HereDocNode(content: String)(span: TextSpan) extends RubyNode(span)
+  final case class HereDocNode(content: String)(span: TextSpan) extends RubyExpression(span)
 
-  final case class AliasStatement(oldName: String, newName: String)(span: TextSpan) extends RubyNode(span)
+  final case class AliasStatement(oldName: String, newName: String)(span: TextSpan) extends RubyExpression(span)
 
-  final case class BreakStatement()(span: TextSpan) extends RubyNode(span)
 }

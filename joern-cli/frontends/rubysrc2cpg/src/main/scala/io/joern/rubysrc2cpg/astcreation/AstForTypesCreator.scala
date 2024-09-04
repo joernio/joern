@@ -20,7 +20,7 @@ import scala.collection.mutable
 
 trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  protected def astForClassDeclaration(node: RubyNode & TypeDeclaration): Seq[Ast] = {
+  protected def astForClassDeclaration(node: RubyExpression & TypeDeclaration): Seq[Ast] = {
     node.name match
       case name: SimpleIdentifier => astForSimpleNamedClassDeclaration(node, name)
       case name =>
@@ -28,7 +28,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         astForUnknown(node) :: Nil
   }
 
-  private def getBaseClassName(node: RubyNode): String = {
+  private def getBaseClassName(node: RubyExpression): String = {
     node match
       case simpleIdentifier: SimpleIdentifier =>
         simpleIdentifier.text
@@ -46,7 +46,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   }
 
   private def astForSimpleNamedClassDeclaration(
-    node: RubyNode & TypeDeclaration,
+    node: RubyExpression & TypeDeclaration,
     nameIdentifier: SimpleIdentifier
   ): Seq[Ast] = {
     val className    = nameIdentifier.text
@@ -252,7 +252,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     node.fieldNames.flatMap(astsForSingleFieldDeclaration(node, _))
   }
 
-  private def astsForSingleFieldDeclaration(node: FieldsDeclaration, nameNode: RubyNode): Seq[Ast] = {
+  private def astsForSingleFieldDeclaration(node: FieldsDeclaration, nameNode: RubyExpression): Seq[Ast] = {
     nameNode match
       case nameAsSymbol: StaticLiteral if nameAsSymbol.isSymbol =>
         val fieldName   = nameAsSymbol.innerText.prepended('@')
