@@ -465,7 +465,27 @@ doBlock
 
 blockParameter
     :   BAR NL* BAR
-    |   BAR NL* parameterList NL* BAR
+    |   BAR NL* blockParameterList NL* BAR
+    ;
+
+blockParameterList
+    :   mandatoryOrOptionalOrGroupedParameterList (COMMA NL* arrayParameter)? (COMMA NL* mandatoryOrGroupedParameterList)* (COMMA NL* hashParameter)? (COMMA NL* procParameter)?
+    |   arrayParameter (COMMA NL* mandatoryOrGroupedParameterList)* (COMMA NL* hashParameter)? (COMMA NL* procParameter)?
+    |   hashParameter (COMMA NL* procParameter)?
+    |   procParameter
+    ;
+
+mandatoryOrOptionalOrGroupedParameterList
+    :   (mandatoryOrOptionalParameter | groupedParameterList) (COMMA NL* (mandatoryOrOptionalParameter | groupedParameterList))*
+    ;
+
+mandatoryOrGroupedParameterList
+    :   (mandatoryParameter | groupedParameterList) (COMMA NL* (mandatoryParameter | groupedParameterList))*
+    ;
+
+groupedParameterList
+    :   LPAREN mandatoryParameter (COMMA NL* arrayParameter)? (COMMA NL* mandatoryParameter)* RPAREN
+    |   LPAREN arrayParameter (COMMA NL* mandatoryParameter)* RPAREN
     ;
 
 thenClause
@@ -537,8 +557,8 @@ methodParameterPart
     ;
 
 parameterList
-    :   mandatoryOrOptionalParameterList (COMMA NL* arrayParameter)? (COMMA NL* hashParameter)? (COMMA NL* procParameter)? (COMMA NL* mandatoryOrOptionalParameterList2)?
-    |   arrayParameter (COMMA NL* hashParameter)? (COMMA NL* procParameter)? (COMMA NL* mandatoryOrOptionalParameterList)?
+    :   mandatoryOrOptionalParameterList (COMMA NL* arrayParameter)? (COMMA NL* mandatoryParameterList)? (COMMA NL* hashParameter)? (COMMA NL* procParameter)?
+    |   arrayParameter (COMMA NL* mandatoryParameterList)? (COMMA NL* hashParameter)? (COMMA NL* procParameter)?
     |   hashParameter (COMMA NL* procParameter)?
     |   procParameter
     ;
@@ -547,8 +567,8 @@ mandatoryOrOptionalParameterList
     :   mandatoryOrOptionalParameter (COMMA NL* mandatoryOrOptionalParameter)*
     ;
 
-mandatoryOrOptionalParameterList2
-    :   mandatoryOrOptionalParameter (COMMA NL* mandatoryOrOptionalParameter)*
+mandatoryParameterList
+    :   mandatoryParameter (COMMA NL* mandatoryParameter)*
     ;
 
 mandatoryOrOptionalParameter

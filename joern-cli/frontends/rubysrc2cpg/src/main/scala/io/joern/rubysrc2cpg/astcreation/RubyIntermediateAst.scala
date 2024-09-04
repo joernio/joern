@@ -166,6 +166,10 @@ object RubyIntermediateAst {
       extends RubyNode(span)
       with MethodParameter
 
+  final case class GroupedParameter(name: String, tmpParam: RubyNode, multipleAssignment: RubyNode)(span: TextSpan)
+      extends RubyNode(span)
+      with MethodParameter
+
   sealed trait CollectionParameter extends MethodParameter
 
   final case class ArrayParameter(name: String)(span: TextSpan) extends RubyNode(span) with CollectionParameter

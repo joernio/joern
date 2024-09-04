@@ -16,7 +16,8 @@ import scala.jdk.CollectionConverters.*
 
 /** Converts an ANTLR Ruby Parse Tree into the intermediate Ruby AST.
   */
-class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
+class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGenerator(id => s"<tmp-$id>"))
+    extends RubyParserBaseVisitor[RubyNode] {
 
   private val logger       = LoggerFactory.getLogger(getClass)
   private val classNameGen = FreshNameGenerator(id => s"<anon-class-$id>")
@@ -420,9 +421,45 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitCurlyBracesBlock(ctx: RubyParser.CurlyBracesBlockContext): RubyNode = {
-    val parameters = Option(ctx.blockParameter()).fold(List())(_.parameters).map(visit)
-    val body       = visit(ctx.compoundStatement())
-    Block(parameters, body)(ctx.toTextSpan)
+    val parameters =
+      Option(ctx.blockParameter()).fold(List())(_.parameters).map(visit).sortBy(x => (x.span.line, x.span.column))
+
+    val assignments = parameters.collect { case x: GroupedParameter =>
+      x.multipleAssignment
+    }
+
+    val body                = visit(ctx.compoundStatement())
+    val bodyWithAssignments = StatementList(assignments ++ body.asStatementList.statements)(body.span)
+
+    Block(parameters, bodyWithAssignments)(ctx.toTextSpan)
+  }
+
+  override def visitGroupedParameterList(ctx: RubyParser.GroupedParameterListContext): RubyNode = {
+    val freshTmpVar       = variableNameGen.fresh
+    val tmpMandatoryParam = MandatoryParameter(freshTmpVar)(ctx.toTextSpan.spanStart(freshTmpVar))
+
+    val singleAssignments = ctx.parameters.map { param =>
+      val rhsSplattingNode = SplattingRubyNode(tmpMandatoryParam)(ctx.toTextSpan.spanStart(s"*$freshTmpVar"))
+      val lhs = param match {
+        case x: MandatoryParameterContext => SimpleIdentifier()(ctx.toTextSpan.spanStart(x.getText))
+        case x: ArrayParameterContext =>
+          SplattingRubyNode(SimpleIdentifier()(ctx.toTextSpan.spanStart(x.getText.stripPrefix("*"))))(
+            ctx.toTextSpan.spanStart(s"${x.getText}")
+          )
+        case x =>
+          logger.warn(s"Invalid parameter type in grouped parameter list: ${x.getClass}")
+          defaultResult()
+      }
+      SingleAssignment(lhs, "=", rhsSplattingNode)(
+        ctx.toTextSpan.spanStart(s"${lhs.span.text} = ${rhsSplattingNode.span.text}")
+      )
+    }
+
+    GroupedParameter(
+      tmpMandatoryParam.span.text,
+      tmpMandatoryParam,
+      MultipleAssignment(singleAssignments.toList)(ctx.toTextSpan)
+    )(ctx.toTextSpan)
   }
 
   override def visitDoBlock(ctx: RubyParser.DoBlockContext): RubyNode = {

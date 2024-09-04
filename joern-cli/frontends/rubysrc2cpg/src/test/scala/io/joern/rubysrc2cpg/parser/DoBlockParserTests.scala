@@ -5,21 +5,47 @@ import org.scalatest.matchers.should.Matchers
 
 class DoBlockParserTests extends RubyParserFixture with Matchers {
   "fixme" ignore {
-    test("f { |(*a)| }")              // syntax error
-    test("f { |a, (b, c), d| }")      // syntax error
-    test("a { |b, c=1, *d, e, &f| }") // syntax error
-    test("a { |b, *c, d| }")          // syntax error
+    test("f { |a, (b, c), d| }") // syntax error
     test(
       "break foo arg do |bar| end"
     ) // syntax error - possibly false syntax error due to just having a code sample starting with break which our parser doesn't allow
-    test("f { |(*, a)| }")             // syntax error
-    test("f { |(a, *b, c)| }")         // syntax error
     test("yield foo arg do |bar| end") // syntax error
-    test("f { |a, (b, *, c)| }")       // syntax error
     test("a.b do | ; c | end")         // syntax error
+    test("f { |a, (b, *, c)| }")
+    test("a { |b, c=1, *d, e, &f| }")
   }
 
   "Some block" in {
+    test(
+      "a { |b, *c, d| }",
+      """a {
+        |{|b,*c,d|}
+        |}""".stripMargin
+    )
+
+    test(
+      "f { |(*a)| }",
+      """f {
+        |{|(*a)|}
+        |}""".stripMargin
+    )
+
+    // Order on params is out because we sort by line/col in RubyNode creator but we don't have access to that
+    // in the AstPrinter
+    test(
+      "f { |(*, a)| }",
+      """f {
+        |{|(a, *)|}
+        |}""".stripMargin
+    )
+
+    test(
+      "f { |(a, *b, c)| }",
+      """f {
+        |{|(a, c, *b)|}
+        |}""".stripMargin
+    )
+
     test(
       "def foo &block;end",
       """def foo(&block)
@@ -75,6 +101,13 @@ class DoBlockParserTests extends RubyParserFixture with Matchers {
       """a.b do
         |end""".stripMargin
     )
+
+    test(
+      "f { |(*, a)| }",
+      """f {
+        |{|(a, *)|}
+        |}""".stripMargin
+    )
   }
 
   "Block arguments" in {
@@ -128,6 +161,13 @@ class DoBlockParserTests extends RubyParserFixture with Matchers {
         |{|kw::val|
         |kw
         |}
+        |}""".stripMargin
+    )
+
+    test(
+      "a { |b, *c, d| }",
+      """a {
+        |{|b,*c,d|}
         |}""".stripMargin
     )
   }

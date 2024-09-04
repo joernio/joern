@@ -279,6 +279,18 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         )
         scope.addToScope(node.name, parameterIn)
         Ast(parameterIn)
+      case node: GroupedParameter =>
+        val parameterIn = parameterInNode(
+          node = node.tmpParam,
+          name = node.name,
+          code = code(node.tmpParam),
+          index = index,
+          isVariadic = false,
+          evaluationStrategy = EvaluationStrategies.BY_REFERENCE,
+          typeFullName = None
+        )
+        scope.addToScope(node.name, parameterIn)
+        Ast(parameterIn)
       case node =>
         logger.warn(
           s"${node.getClass.getSimpleName} parameters are not supported yet: ${code(node)} ($relativeFileName), skipping"

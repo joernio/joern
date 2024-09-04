@@ -186,7 +186,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     }
     def generatedNode: StatementList = node.expression
       .map { e =>
-        val tmp = SimpleIdentifier(None)(e.span.spanStart(tmpGen.fresh))
+        val tmp = SimpleIdentifier(None)(e.span.spanStart(this.tmpGen.fresh))
         StatementList(
           List(SingleAssignment(tmp, "=", e)(e.span)) ++
             goCase(Some(tmp))
