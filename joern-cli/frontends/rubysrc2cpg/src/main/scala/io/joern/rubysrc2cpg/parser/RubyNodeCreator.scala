@@ -6,7 +6,7 @@ import io.joern.rubysrc2cpg.parser.RubyParser.*
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.{Self, getBuiltInType}
 import io.joern.rubysrc2cpg.passes.GlobalTypes.builtinPrefix
-import io.joern.rubysrc2cpg.utils.{FreshNameGenerator}
+import io.joern.rubysrc2cpg.utils.FreshNameGenerator
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.tree.{ParseTree, RuleNode}
 import org.slf4j.LoggerFactory
