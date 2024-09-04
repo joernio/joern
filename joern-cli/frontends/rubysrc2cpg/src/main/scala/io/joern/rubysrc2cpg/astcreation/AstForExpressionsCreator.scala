@@ -22,7 +22,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
 
   /** For tracking aliased calls that occur on the LHS of a member access or call.
-   */
+    */
   protected val baseAstCache = mutable.Map.empty[RubyNode, String]
 
   protected def astForExpression(node: RubyNode): Ast = node match
