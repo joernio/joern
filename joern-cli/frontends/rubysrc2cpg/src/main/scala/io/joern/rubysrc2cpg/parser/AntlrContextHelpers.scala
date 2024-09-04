@@ -143,7 +143,7 @@ object AntlrContextHelpers {
   }
 
   sealed implicit class BlockParameterContextHelper(ctx: BlockParameterContext) {
-    def parameters: List[ParserRuleContext] = Option(ctx.parameterList()).map(_.parameters).getOrElse(List())
+    def parameters: List[ParserRuleContext] = Option(ctx.blockParameterList()).map(_.parameters).getOrElse(List())
   }
 
   sealed implicit class CommandArgumentContextHelper(ctx: CommandArgumentContext) {
@@ -207,18 +207,53 @@ object AntlrContextHelpers {
     def parameters: List[ParserRuleContext] = ctx.mandatoryOrOptionalParameter().asScala.toList
   }
 
+  sealed implicit class MandatoryOrOptionalOrGroupedParameterListContextHelper(
+    ctx: MandatoryOrOptionalOrGroupedParameterListContext
+  ) {
+    def parameters: List[ParserRuleContext] =
+      ctx.mandatoryOrOptionalParameter().asScala.toList ++ ctx.groupedParameterList().asScala.toList
+  }
+
+  sealed implicit class MandatoryOrGroupedParameterListContextHelper(ctx: MandatoryOrGroupedParameterListContext) {
+    def parameters: List[ParserRuleContext] =
+      ctx.mandatoryParameter().asScala.toList ++ ctx.groupedParameterList().asScala.toList
+  }
+
+  sealed implicit class GroupedParameterListContextHelper(ctx: GroupedParameterListContext) {
+    def parameters: List[ParserRuleContext] = {
+      val arrayParameter      = Option(ctx.arrayParameter()).toList
+      val mandatoryParameters = ctx.mandatoryParameter.asScala.toList
+
+      mandatoryParameters ++ arrayParameter
+    }
+  }
+
   sealed implicit class MethodParameterPartContextHelper(ctx: MethodParameterPartContext) {
     def parameters: List[ParserRuleContext] = Option(ctx.parameterList()).map(_.parameters).getOrElse(List())
   }
 
   sealed implicit class ParameterListContextHelper(ctx: ParameterListContext) {
     def parameters: List[ParserRuleContext] = {
-      val mandatoryOrOptionals  = Option(ctx.mandatoryOrOptionalParameterList()).map(_.parameters).getOrElse(List())
-      val arrayParameter        = Option(ctx.arrayParameter()).toList
-      val hashParameter         = Option(ctx.hashParameter()).toList
-      val procParameter         = Option(ctx.procParameter()).toList
-      val mandatoryOrOptionals2 = Option(ctx.mandatoryOrOptionalParameterList2()).toList
-      mandatoryOrOptionals ++ arrayParameter ++ hashParameter ++ procParameter ++ mandatoryOrOptionals2
+      val mandatoryOrOptionals = Option(ctx.mandatoryOrOptionalParameterList()).map(_.parameters).getOrElse(List())
+      val arrayParameter       = Option(ctx.arrayParameter()).toList
+      val hashParameter        = Option(ctx.hashParameter()).toList
+      val procParameter        = Option(ctx.procParameter()).toList
+      val mandatoryParams      = Option(ctx.mandatoryParameterList()).toList
+      mandatoryOrOptionals ++ arrayParameter ++ hashParameter ++ procParameter ++ mandatoryParams
+    }
+  }
+
+  sealed implicit class BlockParameterListContextHelper(ctx: BlockParameterListContext) {
+    def parameters: List[ParserRuleContext] = {
+      val mandatoryOrOptionalOrGrouped =
+        Option(ctx.mandatoryOrOptionalOrGroupedParameterList()).map(_.parameters).getOrElse(List())
+      val arrayParameter = Option(ctx.arrayParameter()).toList
+      val hashParameter  = Option(ctx.hashParameter()).toList
+      val procParameter  = Option(ctx.procParameter()).toList
+      val mandatoryOrGrouped =
+        Option(ctx.mandatoryOrGroupedParameterList().asScala).map(_.flatten(_.parameters)).getOrElse(List())
+
+      mandatoryOrOptionalOrGrouped ++ arrayParameter ++ hashParameter ++ procParameter ++ mandatoryOrGrouped
     }
   }
 

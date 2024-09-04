@@ -5,7 +5,6 @@ import io.joern.rubysrc2cpg.datastructures.BlockScope
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.GlobalTypes
 import io.joern.rubysrc2cpg.passes.Defines.{RubyOperators, getBuiltInType}
-import io.joern.rubysrc2cpg.utils.FreshNameGenerator
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{
@@ -22,10 +21,8 @@ import scala.collection.mutable
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
 
-  val tmpGen: FreshNameGenerator[String] = FreshNameGenerator(i => s"<tmp-$i>")
-
   /** For tracking aliased calls that occur on the LHS of a member access or call.
-    */
+   */
   protected val baseAstCache = mutable.Map.empty[RubyNode, String]
 
   protected def astForExpression(node: RubyNode): Ast = node match
@@ -301,7 +298,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       .updateWith(target) {
         case Some(tmpName) => Option(tmpName)
         case None =>
-          val tmpName     = tmpGen.fresh
+          val tmpName     = this.tmpGen.fresh
           val tmpGenLocal = NewLocal().name(tmpName).code(tmpName).typeFullName(Defines.Any)
           scope.addToScope(tmpName, tmpGenLocal) match {
             case BlockScope(block) => diffGraph.addEdge(block, tmpGenLocal, EdgeTypes.AST)
@@ -368,7 +365,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val block = blockNode(node)
     scope.pushNewScope(BlockScope(block))
 
-    val tmpName     = tmpGen.fresh
+    val tmpName     = this.tmpGen.fresh
     val tmpTypeHint = receiverTypeFullName.stripSuffix("<class>")
     val tmp         = SimpleIdentifier(None)(node.span.spanStart(tmpName))
     val tmpLocal    = NewLocal().name(tmpName).code(tmpName).dynamicTypeHintFullName(Seq(tmpTypeHint))
@@ -457,6 +454,15 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
                   case x: SimpleIdentifier if scope.lookupVariable(code(x)).isEmpty =>
                     val name  = code(x)
                     val local = localNode(x, name, name, Defines.Any)
+                    scope.addToScope(name, local) match {
+                      case BlockScope(block) => diffGraph.addEdge(block, local, EdgeTypes.AST)
+                      case _                 =>
+                    }
+                    astForExpression(node.lhs)
+                  case x: SplattingRubyNode
+                      if x.name.isInstanceOf[SimpleIdentifier] && scope.lookupVariable(code(x.name)).isEmpty =>
+                    val name  = code(x.name)
+                    val local = localNode(x.name, name, name, Defines.Any)
                     scope.addToScope(name, local) match {
                       case BlockScope(block) => diffGraph.addEdge(block, local, EdgeTypes.AST)
                       case _                 =>
@@ -642,7 +648,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   protected def astForHashLiteral(node: HashLiteral): Ast = {
-    val tmp = tmpGen.fresh
+    val tmp = this.tmpGen.fresh
 
     def tmpAst(tmpNode: Option[RubyNode] = None) = astForSimpleIdentifier(
       SimpleIdentifier()(tmpNode.map(_.span).getOrElse(node.span).spanStart(tmp))

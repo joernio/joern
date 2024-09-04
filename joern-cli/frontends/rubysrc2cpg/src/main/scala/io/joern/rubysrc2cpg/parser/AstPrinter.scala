@@ -3,8 +3,10 @@ package io.joern.rubysrc2cpg.parser
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.parser.AntlrContextHelpers.*
 import io.joern.rubysrc2cpg.parser.RubyParser.{
+  ArrayParameterContext,
   CommandWithDoBlockContext,
   ConstantVariableReferenceContext,
+  MandatoryParameterContext,
   MethodCallExpressionContext
 }
 import io.joern.rubysrc2cpg.passes.Defines
@@ -18,7 +20,8 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   private val ls              = "\n"
   private val rubyNodeCreator = new RubyNodeCreator
 
-  private val classNameGen = FreshNameGenerator(id => s"<anon-class-$id>")
+  private val classNameGen    = FreshNameGenerator(id => s"<anon-class-$id>")
+  private val variableNameGen = FreshNameGenerator(id => s"<tmp-$id>")
 
   protected def freshClassName(): String = {
     classNameGen.fresh
@@ -507,6 +510,10 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     if body != "" then outputSb.append(s"$ls$body$ls")
 
     outputSb.append(ctx.RCURLY.getText).toString
+  }
+
+  override def visitGroupedParameterList(ctx: RubyParser.GroupedParameterListContext): String = {
+    s"(${ctx.parameters.map(_.getText).mkString(", ")})"
   }
 
   override def visitDoBlock(ctx: RubyParser.DoBlockContext): String = {

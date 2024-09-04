@@ -1,9 +1,10 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.passes.GlobalTypes.builtinPrefix
-import io.joern.rubysrc2cpg.passes.Defines.{Main, Initialize}
+import io.joern.rubysrc2cpg.passes.Defines.{Initialize, Main}
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
@@ -415,6 +416,64 @@ class DoBlockTests extends RubyCode2CpgFixture {
         hashLocal.closureBindingId shouldBe None
         jfsLocal.closureBindingId shouldBe Some("Test0.rb:<main>.get_pto_schedule.jfs")
       case xs => fail(s"Expected 3 locals in lambda, got ${xs.code.mkString(",")}")
+    }
+  }
+
+  "Various do-block parameters" should {
+    val cpg = code("""
+        |f { |a, (b, c), *d, e, (f, *g), **h, &i| }
+        |""".stripMargin)
+
+    "Generate correct parameters" in {
+      cpg.method.isLambda.dotAst.l.foreach(println)
+      inside(cpg.method.isLambda.parameter.l) {
+        case _ :: aParam :: tmp0Param :: dParam :: eParam :: tmp1Param :: hParam :: iParam :: Nil =>
+          aParam.name shouldBe "a"
+          aParam.code shouldBe "a"
+
+          tmp0Param.name shouldBe "<tmp-0>"
+          tmp0Param.code shouldBe "<tmp-0>"
+
+          dParam.name shouldBe "d"
+          dParam.code shouldBe "*d"
+
+          eParam.name shouldBe "e"
+          eParam.code shouldBe "e"
+
+          tmp1Param.name shouldBe "<tmp-1>"
+          tmp1Param.code shouldBe "<tmp-1>"
+
+          hParam.name shouldBe "h"
+          hParam.code shouldBe "**h"
+
+          iParam.name shouldBe "i"
+          iParam.code shouldBe "&i"
+        case xs => fail(s"Expected 8 parameters, got [${xs.name.mkString(", ")}]")
+      }
+    }
+
+    "Generate required locals" in {
+      inside(cpg.method.isLambda.body.local.l) {
+        case bLocal :: cLocal :: fLocal :: gSplatLocal :: Nil =>
+          bLocal.code shouldBe "b"
+          cLocal.code shouldBe "c"
+
+          fLocal.code shouldBe "f"
+          gSplatLocal.code shouldBe "g"
+        case xs => fail(s"Expected 4 locals, got [${xs.name.mkString(", ")}]")
+      }
+    }
+
+    "Generate required `assignment` calls" in {
+      inside(cpg.method.isLambda.call(Operators.assignment).l) {
+        case bAssign :: cAssign :: fAssign :: gAssign :: Nil =>
+          bAssign.code shouldBe "b = *<tmp-0>"
+          cAssign.code shouldBe "c = *<tmp-0>"
+
+          fAssign.code shouldBe "f = *<tmp-1>"
+          gAssign.code shouldBe "*g = *<tmp-1>"
+        case xs => fail(s"Expected 4 assignments, got [${xs.code.mkString(", ")}]")
+      }
     }
   }
 }

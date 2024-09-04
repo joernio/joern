@@ -4,6 +4,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.{BlockScope, NamespaceScope, RubyProgramSummary, RubyScope}
 import io.joern.rubysrc2cpg.parser.{RubyNodeCreator, RubyParser}
 import io.joern.rubysrc2cpg.passes.Defines
+import io.joern.rubysrc2cpg.utils.FreshNameGenerator
 import io.joern.x2cpg.utils.NodeBuilders.{newModifierNode, newThisParameterNode}
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, ModifierTypes}
@@ -30,6 +31,8 @@ class AstCreator(
     with AstForTypesCreator
     with AstSummaryVisitor
     with AstNodeBuilder[RubyNode, AstCreator] {
+
+  val tmpGen: FreshNameGenerator[String] = FreshNameGenerator(i => s"<tmp-$i>")
 
   /* Used to track variable names and their LOCAL nodes.
    */
@@ -59,7 +62,7 @@ class AstCreator(
   override def createAst(): DiffGraphBuilder = {
     val astRootNode = rootNode.match {
       case Some(node) => node.asInstanceOf[StatementList]
-      case None       => new RubyNodeCreator().visit(programCtx).asInstanceOf[StatementList]
+      case None       => new RubyNodeCreator(tmpGen).visit(programCtx).asInstanceOf[StatementList]
     }
 
     val ast = astForRubyFile(astRootNode)
