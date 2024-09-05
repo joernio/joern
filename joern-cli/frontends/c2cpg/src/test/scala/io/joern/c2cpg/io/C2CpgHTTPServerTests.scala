@@ -10,21 +10,24 @@ import org.scalatest.wordspec.AnyWordSpec
 
 import scala.util.Failure
 import scala.util.Success
+import scala.collection.parallel.CollectionConverters.RangeIsParallelizable
 
 class C2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   private val testPort: Int = 9001
 
-  private val projectUnderTest: File = {
+  private def newProjectUnderTest(index: Option[Int] = None): File = {
     val dir  = File.newTemporaryDirectory("c2cpgTestsHttpTest")
     val file = dir / "main.c"
     file.createIfNotExists(createParents = true)
-    file.writeText("""
-        |int main(int argc, char *argv[]) {
+    val indexStr = index.map(_.toString).getOrElse("")
+    file.writeText(s"""
+        |int main$indexStr(int argc, char *argv[]) {
         |  print("Hello World!");
         |}
         |""".stripMargin)
-    dir
+    file.deleteOnExit()
+    dir.deleteOnExit()
   }
 
   override def beforeAll(): Unit = {
@@ -35,17 +38,17 @@ class C2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndAfter
   override def afterAll(): Unit = {
     // Stop server
     io.joern.c2cpg.Main.stop()
-    projectUnderTest.delete(swallowIOExceptions = true)
   }
 
   "Using c2cpg in server mode" should {
-    "build CPGs correctly" in {
+    "build CPGs correctly (single test)" in {
       val cpgOutFile = File.newTemporaryFile("c2cpg.bin")
       cpgOutFile.deleteOnExit()
-      val input  = projectUnderTest.path.toAbsolutePath.toString
-      val output = cpgOutFile.toString
-      val client = FrontendHTTPClient(port = testPort)
-      val req    = client.buildRequest(Array(s"input=$input", s"output=$output"))
+      val projectUnderTest = newProjectUnderTest()
+      val input            = projectUnderTest.path.toAbsolutePath.toString
+      val output           = cpgOutFile.toString
+      val client           = FrontendHTTPClient(port = testPort)
+      val req              = client.buildRequest(Array(s"input=$input", s"output=$output"))
       client.sendRequest(req) match {
         case Failure(exception) => fail(exception.getMessage)
         case Success(out) =>
@@ -53,6 +56,26 @@ class C2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndAfter
           val cpg = CpgLoader.load(output)
           cpg.method.name.l should contain("main")
           cpg.call.code.l shouldBe List("""print("Hello World!")""")
+      }
+    }
+
+    "build CPGs correctly (multi-threaded test)" in {
+      (0 until 10).par.foreach { index =>
+        val cpgOutFile = File.newTemporaryFile("c2cpg.bin")
+        cpgOutFile.deleteOnExit()
+        val projectUnderTest = newProjectUnderTest(Some(index))
+        val input            = projectUnderTest.path.toAbsolutePath.toString
+        val output           = cpgOutFile.toString
+        val client           = FrontendHTTPClient(port = testPort)
+        val req              = client.buildRequest(Array(s"input=$input", s"output=$output"))
+        client.sendRequest(req) match {
+          case Failure(exception) => fail(exception.getMessage)
+          case Success(out) =>
+            out shouldBe output
+            val cpg = CpgLoader.load(output)
+            cpg.method.name.l should contain(s"main$index")
+            cpg.call.code.l shouldBe List("""print("Hello World!")""")
+        }
       }
     }
   }
