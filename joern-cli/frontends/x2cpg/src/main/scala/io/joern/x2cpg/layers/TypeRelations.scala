@@ -20,10 +20,7 @@ class TypeRelations extends LayerCreator {
   override val dependsOn: List[String] = List(Base.overlayName)
 
   override def create(context: LayerCreatorContext): Unit = {
-    val cpg = context.cpg
-    TypeRelations.passes(cpg).zipWithIndex.foreach { case (pass, index) =>
-      runPass(pass, context, index)
-    }
+    TypeRelations.passes(context.cpg).foreach(_.createAndApply())
   }
 
   // Layers need one-arg constructor, because they're called by reflection from io.joern.console.Run

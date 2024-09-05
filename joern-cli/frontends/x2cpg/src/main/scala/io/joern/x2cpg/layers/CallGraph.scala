@@ -22,10 +22,7 @@ class CallGraph extends LayerCreator {
   override val dependsOn: List[String] = List(TypeRelations.overlayName)
 
   override def create(context: LayerCreatorContext): Unit = {
-    val cpg = context.cpg
-    CallGraph.passes(cpg).zipWithIndex.foreach { case (pass, index) =>
-      runPass(pass, context, index)
-    }
+    CallGraph.passes(context.cpg).foreach(_.createAndApply())
   }
 
   // LayerCreators need one-arg constructor, because they're called by reflection from io.joern.console.Run

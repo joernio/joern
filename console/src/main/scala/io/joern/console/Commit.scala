@@ -26,7 +26,7 @@ class Commit(opts: CommitOptions) extends LayerCreator {
         builder.absorb(opts.diffGraphBuilder)
       }
     }
-    runPass(pass, context)
+    pass.createAndApply()
     opts.diffGraphBuilder = Cpg.newDiffGraphBuilder
   }
 

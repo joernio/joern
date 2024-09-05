@@ -22,7 +22,7 @@ object Run {
             query.store()(builder)
           }
         }
-        runPass(pass, context)
+        pass.createAndApply()
       }
     })
   }
