@@ -17,7 +17,7 @@ import scala.jdk.CollectionConverters.*
 /** Converts an ANTLR Ruby Parse Tree into the intermediate Ruby AST.
   */
 class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGenerator(id => s"<tmp-$id>"))
-    extends RubyParserBaseVisitor[RubyNode] {
+    extends RubyParserBaseVisitor[RubyExpression] {
 
   private val logger       = LoggerFactory.getLogger(getClass)
   private val classNameGen = FreshNameGenerator(id => s"<anon-class-$id>")
@@ -28,28 +28,28 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
 
   private def defaultTextSpan(code: String = ""): TextSpan = TextSpan(None, None, None, None, None, code)
 
-  override def defaultResult(): RubyNode = Unknown()(defaultTextSpan())
+  override def defaultResult(): RubyExpression = Unknown()(defaultTextSpan())
 
-  override protected def shouldVisitNextChild(node: RuleNode, currentResult: RubyNode): Boolean =
+  override protected def shouldVisitNextChild(node: RuleNode, currentResult: RubyExpression): Boolean =
     currentResult.isInstanceOf[Unknown]
 
-  override def visit(tree: ParseTree): RubyNode = {
+  override def visit(tree: ParseTree): RubyExpression = {
     Option(tree).map(super.visit).getOrElse(defaultResult())
   }
 
-  override def visitProgram(ctx: RubyParser.ProgramContext): RubyNode = {
+  override def visitProgram(ctx: RubyParser.ProgramContext): RubyExpression = {
     visit(ctx.compoundStatement())
   }
 
-  override def visitCompoundStatement(ctx: RubyParser.CompoundStatementContext): RubyNode = {
+  override def visitCompoundStatement(ctx: RubyParser.CompoundStatementContext): RubyExpression = {
     StatementList(ctx.getStatements.map(visit))(ctx.toTextSpan)
   }
 
-  override def visitNextWithoutArguments(ctx: RubyParser.NextWithoutArgumentsContext): RubyNode = {
+  override def visitNextWithoutArguments(ctx: RubyParser.NextWithoutArgumentsContext): RubyExpression = {
     NextExpression()(ctx.toTextSpan)
   }
 
-  override def visitGroupingStatement(ctx: RubyParser.GroupingStatementContext): RubyNode = {
+  override def visitGroupingStatement(ctx: RubyParser.GroupingStatementContext): RubyExpression = {
     // When there's only 1 statement, we can use it directly, instead of wrapping it in a StatementList.
     val statements = ctx.compoundStatement().getStatements.map(visit)
     if (statements.size == 1) {
@@ -59,27 +59,27 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     }
   }
 
-  override def visitStatements(ctx: RubyParser.StatementsContext): RubyNode = {
+  override def visitStatements(ctx: RubyParser.StatementsContext): RubyExpression = {
     StatementList(ctx.statement().asScala.map(visit).toList)(ctx.toTextSpan)
   }
 
-  override def visitWhileExpression(ctx: RubyParser.WhileExpressionContext): RubyNode = {
+  override def visitWhileExpression(ctx: RubyParser.WhileExpressionContext): RubyExpression = {
     val condition = visit(ctx.expressionOrCommand())
     val body      = visit(ctx.doClause())
     WhileExpression(condition, body)(ctx.toTextSpan)
   }
 
-  override def visitUntilExpression(ctx: RubyParser.UntilExpressionContext): RubyNode = {
+  override def visitUntilExpression(ctx: RubyParser.UntilExpressionContext): RubyExpression = {
     val condition = visit(ctx.expressionOrCommand())
     val body      = visit(ctx.doClause())
     UntilExpression(condition, body)(ctx.toTextSpan)
   }
 
-  override def visitBeginEndExpression(ctx: RubyParser.BeginEndExpressionContext): RubyNode = {
+  override def visitBeginEndExpression(ctx: RubyParser.BeginEndExpressionContext): RubyExpression = {
     visit(ctx.bodyStatement())
   }
 
-  override def visitIfExpression(ctx: RubyParser.IfExpressionContext): RubyNode = {
+  override def visitIfExpression(ctx: RubyParser.IfExpressionContext): RubyExpression = {
     val condition = visit(ctx.expressionOrCommand())
     val thenBody  = visit(ctx.thenClause())
     val elsifs    = ctx.elsifClause().asScala.map(visit).toList
@@ -87,34 +87,34 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     IfExpression(condition, thenBody, elsifs, elseBody)(ctx.toTextSpan)
   }
 
-  override def visitElsifClause(ctx: RubyParser.ElsifClauseContext): RubyNode = {
+  override def visitElsifClause(ctx: RubyParser.ElsifClauseContext): RubyExpression = {
     ElsIfClause(visit(ctx.expressionOrCommand()), visit(ctx.thenClause()))(ctx.toTextSpan)
   }
 
-  override def visitElseClause(ctx: RubyParser.ElseClauseContext): RubyNode = {
+  override def visitElseClause(ctx: RubyParser.ElseClauseContext): RubyExpression = {
     ElseClause(visit(ctx.compoundStatement()))(ctx.toTextSpan)
   }
 
-  override def visitUnlessExpression(ctx: RubyParser.UnlessExpressionContext): RubyNode = {
+  override def visitUnlessExpression(ctx: RubyParser.UnlessExpressionContext): RubyExpression = {
     val condition = visit(ctx.expressionOrCommand())
     val thenBody  = visit(ctx.thenClause())
     val elseBody  = Option(ctx.elseClause()).map(visit)
     UnlessExpression(condition, thenBody, elseBody)(ctx.toTextSpan)
   }
 
-  override def visitForExpression(ctx: RubyParser.ForExpressionContext): RubyNode = {
+  override def visitForExpression(ctx: RubyParser.ForExpressionContext): RubyExpression = {
     val forVariable      = visit(ctx.forVariable())
     val iterableVariable = visit(ctx.commandOrPrimaryValue())
     val doBlock          = visit(ctx.doClause())
     ForExpression(forVariable, iterableVariable, doBlock)(ctx.toTextSpan)
   }
 
-  override def visitForVariable(ctx: RubyParser.ForVariableContext): RubyNode = {
+  override def visitForVariable(ctx: RubyParser.ForVariableContext): RubyExpression = {
     if (ctx.leftHandSide() != null) visit(ctx.leftHandSide())
     else visit(ctx.multipleLeftHandSide())
   }
 
-  override def visitModifierStatement(ctx: RubyParser.ModifierStatementContext): RubyNode = {
+  override def visitModifierStatement(ctx: RubyParser.ModifierStatementContext): RubyExpression = {
     ctx.statementModifier().getText match
       case "if" =>
         val condition = visit(ctx.expressionOrCommand())
@@ -148,7 +148,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
         Unknown()(ctx.toTextSpan)
   }
 
-  override def visitCommandTernaryOperatorExpression(ctx: CommandTernaryOperatorExpressionContext): RubyNode = {
+  override def visitCommandTernaryOperatorExpression(ctx: CommandTernaryOperatorExpressionContext): RubyExpression = {
     val condition = visit(ctx.operatorExpression(0))
     val thenBody  = visit(ctx.operatorExpression(1))
     val elseBody  = visit(ctx.operatorExpression(2))
@@ -160,7 +160,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     )(ctx.toTextSpan)
   }
 
-  override def visitTernaryOperatorExpression(ctx: RubyParser.TernaryOperatorExpressionContext): RubyNode = {
+  override def visitTernaryOperatorExpression(ctx: RubyParser.TernaryOperatorExpressionContext): RubyExpression = {
     val condition = visit(ctx.operatorExpression(0))
     val thenBody  = visit(ctx.operatorExpression(1))
     val elseBody  = visit(ctx.operatorExpression(2))
@@ -174,16 +174,16 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
 
   override def visitReturnMethodInvocationWithoutParentheses(
     ctx: RubyParser.ReturnMethodInvocationWithoutParenthesesContext
-  ): RubyNode = {
+  ): RubyExpression = {
     val expressions = ctx.primaryValueListWithAssociation().elements.map(visit).toList
     ReturnExpression(expressions)(ctx.toTextSpan)
   }
 
-  override def visitReturnWithoutArguments(ctx: RubyParser.ReturnWithoutArgumentsContext): RubyNode = {
+  override def visitReturnWithoutArguments(ctx: RubyParser.ReturnWithoutArgumentsContext): RubyExpression = {
     ReturnExpression(Nil)(ctx.toTextSpan)
   }
 
-  override def visitNumericLiteral(ctx: RubyParser.NumericLiteralContext): RubyNode = {
+  override def visitNumericLiteral(ctx: RubyParser.NumericLiteralContext): RubyExpression = {
     if (ctx.hasSign) {
       UnaryExpression(ctx.sign.getText, visit(ctx.unsignedNumericLiteral()))(ctx.toTextSpan)
     } else {
@@ -191,19 +191,19 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     }
   }
 
-  override def visitUnaryExpression(ctx: RubyParser.UnaryExpressionContext): RubyNode = {
+  override def visitUnaryExpression(ctx: RubyParser.UnaryExpressionContext): RubyExpression = {
     UnaryExpression(ctx.unaryOperator().getText, visit(ctx.primaryValue()))(ctx.toTextSpan)
   }
 
-  override def visitUnaryMinusExpression(ctx: RubyParser.UnaryMinusExpressionContext): RubyNode = {
+  override def visitUnaryMinusExpression(ctx: RubyParser.UnaryMinusExpressionContext): RubyExpression = {
     UnaryExpression(ctx.MINUS().getText, visit(ctx.primaryValue()))(ctx.toTextSpan)
   }
 
-  override def visitNotExpressionOrCommand(ctx: RubyParser.NotExpressionOrCommandContext): RubyNode = {
+  override def visitNotExpressionOrCommand(ctx: RubyParser.NotExpressionOrCommandContext): RubyExpression = {
     UnaryExpression(ctx.NOT().getText, visit(ctx.expressionOrCommand()))(ctx.toTextSpan)
   }
 
-  override def visitCommandExpressionOrCommand(ctx: RubyParser.CommandExpressionOrCommandContext): RubyNode = {
+  override def visitCommandExpressionOrCommand(ctx: RubyParser.CommandExpressionOrCommandContext): RubyExpression = {
     val methodInvocation = visit(ctx.methodInvocationWithoutParentheses())
     if (Option(ctx.EMARK()).isDefined) {
       UnaryExpression(ctx.EMARK().getText, methodInvocation)(ctx.toTextSpan)
@@ -212,18 +212,18 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     }
   }
 
-  override def visitCommandWithDoBlock(ctx: CommandWithDoBlockContext): RubyNode = {
+  override def visitCommandWithDoBlock(ctx: CommandWithDoBlockContext): RubyExpression = {
     val name = Option(ctx.methodIdentifier()).orElse(Option(ctx.methodName())).map(visit).getOrElse(defaultResult())
     val arguments = ctx.arguments.map(visit)
     val block     = visit(ctx.doBlock()).asInstanceOf[Block]
     SimpleCallWithBlock(name, arguments, block)(ctx.toTextSpan)
   }
 
-  override def visitHereDocs(ctx: RubyParser.HereDocsContext): RubyNode = {
+  override def visitHereDocs(ctx: RubyParser.HereDocsContext): RubyExpression = {
     HereDocNode(ctx.hereDoc().getText)(ctx.toTextSpan)
   }
 
-  override def visitPrimaryOperatorExpression(ctx: RubyParser.PrimaryOperatorExpressionContext): RubyNode = {
+  override def visitPrimaryOperatorExpression(ctx: RubyParser.PrimaryOperatorExpressionContext): RubyExpression = {
     super.visitPrimaryOperatorExpression(ctx) match {
       case expr @ BinaryExpression(SimpleCall(lhs: SimpleIdentifier, Nil), "*", rhs) if lhs.text.endsWith("=") =>
         // fixme: This workaround handles a parser ambiguity with method identifiers having `=` and assignments with
@@ -236,115 +236,117 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     }
   }
 
-  override def visitPowerExpression(ctx: RubyParser.PowerExpressionContext): RubyNode = {
+  override def visitPowerExpression(ctx: RubyParser.PowerExpressionContext): RubyExpression = {
     BinaryExpression(visit(ctx.primaryValue(0)), ctx.powerOperator.getText, visit(ctx.primaryValue(1)))(ctx.toTextSpan)
   }
 
-  override def visitAdditiveExpression(ctx: RubyParser.AdditiveExpressionContext): RubyNode = {
+  override def visitAdditiveExpression(ctx: RubyParser.AdditiveExpressionContext): RubyExpression = {
     BinaryExpression(visit(ctx.primaryValue(0)), ctx.additiveOperator().getText, visit(ctx.primaryValue(1)))(
       ctx.toTextSpan
     )
   }
 
-  override def visitMultiplicativeExpression(ctx: RubyParser.MultiplicativeExpressionContext): RubyNode = {
+  override def visitMultiplicativeExpression(ctx: RubyParser.MultiplicativeExpressionContext): RubyExpression = {
     BinaryExpression(visit(ctx.primaryValue(0)), ctx.multiplicativeOperator().getText, visit(ctx.primaryValue(1)))(
       ctx.toTextSpan
     )
   }
 
-  override def visitLogicalAndExpression(ctx: RubyParser.LogicalAndExpressionContext): RubyNode = {
+  override def visitLogicalAndExpression(ctx: RubyParser.LogicalAndExpressionContext): RubyExpression = {
     BinaryExpression(visit(ctx.primaryValue(0)), ctx.andOperator.getText, visit(ctx.primaryValue(1)))(ctx.toTextSpan)
   }
 
-  override def visitLogicalOrExpression(ctx: RubyParser.LogicalOrExpressionContext): RubyNode = {
+  override def visitLogicalOrExpression(ctx: RubyParser.LogicalOrExpressionContext): RubyExpression = {
     BinaryExpression(visit(ctx.primaryValue(0)), ctx.orOperator.getText, visit(ctx.primaryValue(1)))(ctx.toTextSpan)
   }
 
   override def visitKeywordAndOrExpressionOrCommand(
     ctx: RubyParser.KeywordAndOrExpressionOrCommandContext
-  ): RubyNode = {
+  ): RubyExpression = {
     BinaryExpression(visit(ctx.lhs), ctx.binOp.getText, visit(ctx.rhs))(ctx.toTextSpan)
   }
 
-  override def visitShiftExpression(ctx: RubyParser.ShiftExpressionContext): RubyNode = {
+  override def visitShiftExpression(ctx: RubyParser.ShiftExpressionContext): RubyExpression = {
     BinaryExpression(visit(ctx.primaryValue(0)), ctx.bitwiseShiftOperator().getText, visit(ctx.primaryValue(1)))(
       ctx.toTextSpan
     )
   }
 
-  override def visitBitwiseAndExpression(ctx: RubyParser.BitwiseAndExpressionContext): RubyNode = {
+  override def visitBitwiseAndExpression(ctx: RubyParser.BitwiseAndExpressionContext): RubyExpression = {
     BinaryExpression(visit(ctx.primaryValue(0)), ctx.bitwiseAndOperator.getText, visit(ctx.primaryValue(1)))(
       ctx.toTextSpan
     )
   }
 
-  override def visitBitwiseOrExpression(ctx: RubyParser.BitwiseOrExpressionContext): RubyNode = {
+  override def visitBitwiseOrExpression(ctx: RubyParser.BitwiseOrExpressionContext): RubyExpression = {
     BinaryExpression(visit(ctx.primaryValue(0)), ctx.bitwiseOrOperator().getText, visit(ctx.primaryValue(1)))(
       ctx.toTextSpan
     )
   }
 
-  override def visitRelationalExpression(ctx: RubyParser.RelationalExpressionContext): RubyNode = {
+  override def visitRelationalExpression(ctx: RubyParser.RelationalExpressionContext): RubyExpression = {
     BinaryExpression(visit(ctx.primaryValue(0)), ctx.relationalOperator().getText, visit(ctx.primaryValue(1)))(
       ctx.toTextSpan
     )
   }
 
-  override def visitEqualityExpression(ctx: RubyParser.EqualityExpressionContext): RubyNode = {
+  override def visitEqualityExpression(ctx: RubyParser.EqualityExpressionContext): RubyExpression = {
     BinaryExpression(visit(ctx.primaryValue(0)), ctx.equalityOperator().getText, visit(ctx.primaryValue(1)))(
       ctx.toTextSpan
     )
   }
 
-  override def visitDecimalUnsignedLiteral(ctx: RubyParser.DecimalUnsignedLiteralContext): RubyNode = {
+  override def visitDecimalUnsignedLiteral(ctx: RubyParser.DecimalUnsignedLiteralContext): RubyExpression = {
     StaticLiteral(getBuiltInType(Defines.Integer))(ctx.toTextSpan)
   }
 
-  override def visitBinaryUnsignedLiteral(ctx: RubyParser.BinaryUnsignedLiteralContext): RubyNode = {
+  override def visitBinaryUnsignedLiteral(ctx: RubyParser.BinaryUnsignedLiteralContext): RubyExpression = {
     StaticLiteral(getBuiltInType(Defines.Integer))(ctx.toTextSpan)
   }
 
-  override def visitOctalUnsignedLiteral(ctx: RubyParser.OctalUnsignedLiteralContext): RubyNode = {
+  override def visitOctalUnsignedLiteral(ctx: RubyParser.OctalUnsignedLiteralContext): RubyExpression = {
     StaticLiteral(getBuiltInType(Defines.Integer))(ctx.toTextSpan)
   }
 
-  override def visitHexadecimalUnsignedLiteral(ctx: RubyParser.HexadecimalUnsignedLiteralContext): RubyNode = {
+  override def visitHexadecimalUnsignedLiteral(ctx: RubyParser.HexadecimalUnsignedLiteralContext): RubyExpression = {
     StaticLiteral(getBuiltInType(Defines.Integer))(ctx.toTextSpan)
   }
 
   override def visitFloatWithExponentUnsignedLiteral(
     ctx: RubyParser.FloatWithExponentUnsignedLiteralContext
-  ): RubyNode = {
+  ): RubyExpression = {
     StaticLiteral(getBuiltInType(Defines.Float))(ctx.toTextSpan)
   }
 
   override def visitFloatWithoutExponentUnsignedLiteral(
     ctx: RubyParser.FloatWithoutExponentUnsignedLiteralContext
-  ): RubyNode = {
+  ): RubyExpression = {
     StaticLiteral(getBuiltInType(Defines.Float))(ctx.toTextSpan)
   }
 
-  override def visitPureSymbolLiteral(ctx: RubyParser.PureSymbolLiteralContext): RubyNode = {
+  override def visitPureSymbolLiteral(ctx: RubyParser.PureSymbolLiteralContext): RubyExpression = {
     StaticLiteral(getBuiltInType(Defines.Symbol))(ctx.toTextSpan)
   }
 
-  override def visitSingleQuotedSymbolLiteral(ctx: RubyParser.SingleQuotedSymbolLiteralContext): RubyNode = {
+  override def visitSingleQuotedSymbolLiteral(ctx: RubyParser.SingleQuotedSymbolLiteralContext): RubyExpression = {
     StaticLiteral(getBuiltInType(Defines.Symbol))(ctx.toTextSpan)
   }
 
-  override def visitNilPseudoVariable(ctx: RubyParser.NilPseudoVariableContext): RubyNode = {
+  override def visitNilPseudoVariable(ctx: RubyParser.NilPseudoVariableContext): RubyExpression = {
     StaticLiteral(getBuiltInType(Defines.NilClass))(ctx.toTextSpan)
   }
 
-  override def visitTruePseudoVariable(ctx: RubyParser.TruePseudoVariableContext): RubyNode = {
+  override def visitTruePseudoVariable(ctx: RubyParser.TruePseudoVariableContext): RubyExpression = {
     StaticLiteral(getBuiltInType(Defines.TrueClass))(ctx.toTextSpan)
   }
 
-  override def visitFalsePseudoVariable(ctx: RubyParser.FalsePseudoVariableContext): RubyNode = {
+  override def visitFalsePseudoVariable(ctx: RubyParser.FalsePseudoVariableContext): RubyExpression = {
     StaticLiteral(getBuiltInType(Defines.FalseClass))(ctx.toTextSpan)
   }
 
-  override def visitSingleQuotedStringExpression(ctx: RubyParser.SingleQuotedStringExpressionContext): RubyNode = {
+  override def visitSingleQuotedStringExpression(
+    ctx: RubyParser.SingleQuotedStringExpressionContext
+  ): RubyExpression = {
     if (!ctx.isInterpolated) {
       StaticLiteral(getBuiltInType(Defines.String))(ctx.toTextSpan)
     } else {
@@ -352,13 +354,15 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     }
   }
 
-  override def visitQuotedNonExpandedStringLiteral(ctx: RubyParser.QuotedNonExpandedStringLiteralContext): RubyNode = {
+  override def visitQuotedNonExpandedStringLiteral(
+    ctx: RubyParser.QuotedNonExpandedStringLiteralContext
+  ): RubyExpression = {
     StaticLiteral(getBuiltInType(Defines.String))(ctx.toTextSpan)
   }
 
   override def visitQuotedExpandedStringArrayLiteral(
     ctx: RubyParser.QuotedExpandedStringArrayLiteralContext
-  ): RubyNode = {
+  ): RubyExpression = {
     val elements =
       if Option(ctx.quotedExpandedArrayElementList()).isDefined then
         ctx.quotedExpandedArrayElementList().elements.map(visit)
@@ -367,7 +371,9 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     ArrayLiteral(elements)(ctx.toTextSpan)
   }
 
-  override def visitDoubleQuotedStringExpression(ctx: RubyParser.DoubleQuotedStringExpressionContext): RubyNode = {
+  override def visitDoubleQuotedStringExpression(
+    ctx: RubyParser.DoubleQuotedStringExpressionContext
+  ): RubyExpression = {
     if (!ctx.isInterpolated) {
       StaticLiteral(getBuiltInType(Defines.String))(ctx.toTextSpan)
     } else {
@@ -375,7 +381,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     }
   }
 
-  override def visitDoubleQuotedSymbolLiteral(ctx: RubyParser.DoubleQuotedSymbolLiteralContext): RubyNode = {
+  override def visitDoubleQuotedSymbolLiteral(ctx: RubyParser.DoubleQuotedSymbolLiteralContext): RubyExpression = {
     if (!ctx.isInterpolated) {
       StaticLiteral(getBuiltInType(Defines.Symbol))(ctx.toTextSpan)
     } else {
@@ -383,7 +389,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     }
   }
 
-  override def visitQuotedExpandedStringLiteral(ctx: RubyParser.QuotedExpandedStringLiteralContext): RubyNode = {
+  override def visitQuotedExpandedStringLiteral(ctx: RubyParser.QuotedExpandedStringLiteralContext): RubyExpression = {
     if (!ctx.isInterpolated) {
       StaticLiteral(getBuiltInType(Defines.String))(ctx.toTextSpan)
     } else {
@@ -391,7 +397,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     }
   }
 
-  override def visitRegularExpressionLiteral(ctx: RubyParser.RegularExpressionLiteralContext): RubyNode = {
+  override def visitRegularExpressionLiteral(ctx: RubyParser.RegularExpressionLiteralContext): RubyExpression = {
     if (ctx.isStatic) {
       StaticLiteral(getBuiltInType(Defines.Regexp))(ctx.toTextSpan)
     } else {
@@ -401,7 +407,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
 
   override def visitQuotedExpandedRegularExpressionLiteral(
     ctx: RubyParser.QuotedExpandedRegularExpressionLiteralContext
-  ): RubyNode = {
+  ): RubyExpression = {
     if (ctx.isStatic) {
       StaticLiteral(getBuiltInType(Defines.Regexp))(ctx.toTextSpan)
     } else {
@@ -411,7 +417,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
 
   override def visitQuotedExpandedExternalCommandLiteral(
     ctx: RubyParser.QuotedExpandedExternalCommandLiteralContext
-  ): RubyNode = {
+  ): RubyExpression = {
     val commandLiteral =
       if ctx.quotedExpandedLiteralStringContent.asScala.nonEmpty then
         StaticLiteral(Defines.String)(ctx.quotedExpandedLiteralStringContent.asScala.toList.map(_.toTextSpan).head)
@@ -420,7 +426,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     SimpleCall(SimpleIdentifier()(ctx.toTextSpan.spanStart("exec")), List(commandLiteral))(ctx.toTextSpan)
   }
 
-  override def visitCurlyBracesBlock(ctx: RubyParser.CurlyBracesBlockContext): RubyNode = {
+  override def visitCurlyBracesBlock(ctx: RubyParser.CurlyBracesBlockContext): RubyExpression = {
     val parameters =
       Option(ctx.blockParameter()).fold(List())(_.parameters).map(visit).sortBy(x => (x.span.line, x.span.column))
 
@@ -434,7 +440,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     Block(parameters, bodyWithAssignments)(ctx.toTextSpan)
   }
 
-  override def visitGroupedParameterList(ctx: RubyParser.GroupedParameterListContext): RubyNode = {
+  override def visitGroupedParameterList(ctx: RubyParser.GroupedParameterListContext): RubyExpression = {
     val freshTmpVar       = variableNameGen.fresh
     val tmpMandatoryParam = MandatoryParameter(freshTmpVar)(ctx.toTextSpan.spanStart(freshTmpVar))
 
@@ -462,14 +468,14 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     )(ctx.toTextSpan)
   }
 
-  override def visitDoBlock(ctx: RubyParser.DoBlockContext): RubyNode = {
+  override def visitDoBlock(ctx: RubyParser.DoBlockContext): RubyExpression = {
     val parameters = Option(ctx.blockParameter()).fold(List())(_.parameters).map(visit)
     val body       = visit(ctx.bodyStatement())
     Block(parameters, body)(ctx.toTextSpan)
   }
   override def visitLocalVariableAssignmentExpression(
     ctx: RubyParser.LocalVariableAssignmentExpressionContext
-  ): RubyNode = {
+  ): RubyExpression = {
     val lhs = visit(ctx.lhs)
     val rhs = visit(ctx.rhs)
     val op  = ctx.assignmentOperator().getText
@@ -478,7 +484,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     else SingleAssignment(lhs, op, rhs)(ctx.toTextSpan)
   }
 
-  override def visitSingleAssignmentStatement(ctx: RubyParser.SingleAssignmentStatementContext): RubyNode = {
+  override def visitSingleAssignmentStatement(ctx: RubyParser.SingleAssignmentStatementContext): RubyExpression = {
     val lhs =
       if Option(ctx.CONSTANT_IDENTIFIER()).isDefined then
         MemberAccess(
@@ -512,7 +518,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     else SingleAssignment(lhs, op, rhs)(ctx.toTextSpan)
   }
 
-  private def flattenStatementLists(x: List[RubyNode]): List[RubyNode] = {
+  private def flattenStatementLists(x: List[RubyExpression]): List[RubyExpression] = {
     x match {
       case (head: StatementList) :: xs => head.statements ++ flattenStatementLists(xs)
       case head :: tail                => head +: flattenStatementLists(tail)
@@ -520,7 +526,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     }
   }
 
-  override def visitMultipleAssignmentStatement(ctx: RubyParser.MultipleAssignmentStatementContext): RubyNode = {
+  override def visitMultipleAssignmentStatement(ctx: RubyParser.MultipleAssignmentStatementContext): RubyExpression = {
 
     /** Recursively expand and duplicate splatting nodes so that they line up with what they consume.
       *
@@ -529,7 +535,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
       * @param expandSize
       *   how many more duplicates to create.
       */
-    def slurp(nodes: List[RubyNode], expandSize: Int): List[RubyNode] = nodes match {
+    def slurp(nodes: List[RubyExpression], expandSize: Int): List[RubyExpression] = nodes match {
       case (head: SplattingRubyNode) :: tail if expandSize > 0 => head :: slurp(head :: tail, expandSize - 1)
       case head :: tail                                        => head :: slurp(tail, expandSize)
       case Nil                                                 => List.empty
@@ -604,7 +610,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     MultipleAssignment(assignments)(ctx.toTextSpan)
   }
 
-  override def visitMultipleLeftHandSide(ctx: RubyParser.MultipleLeftHandSideContext): RubyNode = {
+  override def visitMultipleLeftHandSide(ctx: RubyParser.MultipleLeftHandSideContext): RubyExpression = {
     val multiLhsItems = ctx.multipleLeftHandSideItem.asScala.map(visit).toList
     val packingLHSNodes = Option(ctx.packingLeftHandSide)
       .map(visit)
@@ -619,7 +625,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     StatementList(statements)(ctx.toTextSpan)
   }
 
-  override def visitPackingLeftHandSide(ctx: RubyParser.PackingLeftHandSideContext): RubyNode = {
+  override def visitPackingLeftHandSide(ctx: RubyParser.PackingLeftHandSideContext): RubyExpression = {
     val splatNode = Option(ctx.leftHandSide()) match {
       case Some(lhs) => SplattingRubyNode(visit(ctx.leftHandSide))(ctx.toTextSpan)
       case None =>
@@ -632,7 +638,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     }
   }
 
-  override def visitMultipleRightHandSide(ctx: RubyParser.MultipleRightHandSideContext): RubyNode = {
+  override def visitMultipleRightHandSide(ctx: RubyParser.MultipleRightHandSideContext): RubyExpression = {
     val rhsStmts = ctx.children.asScala.collect {
       case x: SplattingRightHandSideContext => visit(x) :: Nil
       case x: OperatorExpressionListContext => x.operatorExpression.asScala.map(visit).toList
@@ -642,11 +648,13 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     else defaultResult()
   }
 
-  override def visitSplattingArgument(ctx: RubyParser.SplattingArgumentContext): RubyNode = {
+  override def visitSplattingArgument(ctx: RubyParser.SplattingArgumentContext): RubyExpression = {
     SplattingRubyNode(visit(ctx.operatorExpression()))(ctx.toTextSpan)
   }
 
-  override def visitAttributeAssignmentExpression(ctx: RubyParser.AttributeAssignmentExpressionContext): RubyNode = {
+  override def visitAttributeAssignmentExpression(
+    ctx: RubyParser.AttributeAssignmentExpressionContext
+  ): RubyExpression = {
     val lhs                = visit(ctx.primaryValue())
     val op                 = ctx.op.getText
     val assignmentOperator = ctx.assignmentOperator().getText
@@ -655,7 +663,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     AttributeAssignment(lhs, op, memberName, assignmentOperator, rhs)(ctx.toTextSpan)
   }
 
-  override def visitSimpleCommand(ctx: RubyParser.SimpleCommandContext): RubyNode = {
+  override def visitSimpleCommand(ctx: RubyParser.SimpleCommandContext): RubyExpression = {
     if (Option(ctx.commandArgument()).map(_.getText).exists(_.startsWith("::"))) {
       val memberName = ctx.commandArgument().getText.stripPrefix("::")
       if (memberName.headOption.exists(_.isUpper)) { // Constant accesses are upper-case 1st letter
@@ -701,19 +709,23 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     }
   }
 
-  override def visitSuperWithParentheses(ctx: RubyParser.SuperWithParenthesesContext): RubyNode = {
+  override def visitSuperWithParentheses(ctx: RubyParser.SuperWithParenthesesContext): RubyExpression = {
     val block     = Option(ctx.block()).map(visit)
     val arguments = Option(ctx.argumentWithParentheses()).map(_.arguments.map(visit)).getOrElse(Nil)
     visitSuperCall(ctx, arguments, block)
   }
 
-  override def visitSuperWithoutParentheses(ctx: RubyParser.SuperWithoutParenthesesContext): RubyNode = {
+  override def visitSuperWithoutParentheses(ctx: RubyParser.SuperWithoutParenthesesContext): RubyExpression = {
     val block     = Option(ctx.block()).map(visit)
     val arguments = Option(ctx.argumentList()).map(_.elements.map(visit)).getOrElse(Nil)
     visitSuperCall(ctx, arguments, block)
   }
 
-  private def visitSuperCall(ctx: ParserRuleContext, arguments: List[RubyNode], block: Option[RubyNode]): RubyNode = {
+  private def visitSuperCall(
+    ctx: ParserRuleContext,
+    arguments: List[RubyExpression],
+    block: Option[RubyExpression]
+  ): RubyExpression = {
     val callName = SimpleIdentifier()(ctx.toTextSpan.spanStart("super"))
     block match {
       case Some(body) => SimpleCallWithBlock(callName, arguments, body.asInstanceOf[Block])(ctx.toTextSpan)
@@ -721,19 +733,21 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     }
   }
 
-  override def visitIsDefinedExpression(ctx: RubyParser.IsDefinedExpressionContext): RubyNode = {
+  override def visitIsDefinedExpression(ctx: RubyParser.IsDefinedExpressionContext): RubyExpression = {
     SimpleCall(visit(ctx.isDefinedKeyword), visit(ctx.expressionOrCommand()) :: Nil)(ctx.toTextSpan)
   }
 
-  override def visitIsDefinedCommand(ctx: RubyParser.IsDefinedCommandContext): RubyNode = {
+  override def visitIsDefinedCommand(ctx: RubyParser.IsDefinedCommandContext): RubyExpression = {
     SimpleCall(visit(ctx.isDefinedKeyword), visit(ctx.primaryValue()) :: Nil)(ctx.toTextSpan)
   }
 
-  override def visitMethodCallExpression(ctx: RubyParser.MethodCallExpressionContext): RubyNode = {
+  override def visitMethodCallExpression(ctx: RubyParser.MethodCallExpressionContext): RubyExpression = {
     SimpleCall(visit(ctx.methodOnlyIdentifier()), List())(ctx.toTextSpan)
   }
 
-  override def visitMethodCallWithBlockExpression(ctx: RubyParser.MethodCallWithBlockExpressionContext): RubyNode = {
+  override def visitMethodCallWithBlockExpression(
+    ctx: RubyParser.MethodCallWithBlockExpressionContext
+  ): RubyExpression = {
     ctx.methodIdentifier().getText match {
       case Defines.Proc | Defines.Lambda => ProcOrLambdaExpr(visit(ctx.block()).asInstanceOf[Block])(ctx.toTextSpan)
       case Defines.Loop =>
@@ -754,7 +768,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     }
   }
 
-  override def visitLambdaExpression(ctx: RubyParser.LambdaExpressionContext): RubyNode = {
+  override def visitLambdaExpression(ctx: RubyParser.LambdaExpressionContext): RubyExpression = {
     val parameters = Option(ctx.parameterList()).fold(List())(_.parameters).map(visit)
     val body       = visit(ctx.block()).asInstanceOf[Block]
     ProcOrLambdaExpr(Block(parameters, body)(ctx.toTextSpan))(ctx.toTextSpan)
@@ -762,7 +776,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
 
   override def visitMethodCallWithParenthesesExpression(
     ctx: RubyParser.MethodCallWithParenthesesExpressionContext
-  ): RubyNode = {
+  ): RubyExpression = {
     val callArgs = ctx.argumentWithParentheses().arguments.map(visit)
 
     val args =
@@ -777,19 +791,19 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     }
   }
 
-  override def visitYieldExpression(ctx: RubyParser.YieldExpressionContext): RubyNode = {
+  override def visitYieldExpression(ctx: RubyParser.YieldExpressionContext): RubyExpression = {
     val arguments = Option(ctx.argumentWithParentheses()).iterator.flatMap(_.arguments).map(visit).toList
     YieldExpr(arguments)(ctx.toTextSpan)
   }
 
   override def visitYieldMethodInvocationWithoutParentheses(
     ctx: RubyParser.YieldMethodInvocationWithoutParenthesesContext
-  ): RubyNode = {
+  ): RubyExpression = {
     val arguments = ctx.primaryValueListWithAssociation().elements.map(visit).toList
     YieldExpr(arguments)(ctx.toTextSpan)
   }
 
-  override def visitMemberAccessCommand(ctx: RubyParser.MemberAccessCommandContext): RubyNode = {
+  override def visitMemberAccessCommand(ctx: RubyParser.MemberAccessCommandContext): RubyExpression = {
     val args = ctx.commandArgument.arguments.map(visit)
     val base = visit(ctx.primary())
 
@@ -808,23 +822,23 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     }
   }
 
-  override def visitConstantIdentifierVariable(ctx: RubyParser.ConstantIdentifierVariableContext): RubyNode = {
+  override def visitConstantIdentifierVariable(ctx: RubyParser.ConstantIdentifierVariableContext): RubyExpression = {
     SimpleIdentifier()(ctx.toTextSpan)
   }
 
-  override def visitGlobalIdentifierVariable(ctx: RubyParser.GlobalIdentifierVariableContext): RubyNode = {
+  override def visitGlobalIdentifierVariable(ctx: RubyParser.GlobalIdentifierVariableContext): RubyExpression = {
     SimpleIdentifier()(ctx.toTextSpan)
   }
 
-  override def visitClassIdentifierVariable(ctx: RubyParser.ClassIdentifierVariableContext): RubyNode = {
+  override def visitClassIdentifierVariable(ctx: RubyParser.ClassIdentifierVariableContext): RubyExpression = {
     ClassFieldIdentifier()(ctx.toTextSpan)
   }
 
-  override def visitInstanceIdentifierVariable(ctx: RubyParser.InstanceIdentifierVariableContext): RubyNode = {
+  override def visitInstanceIdentifierVariable(ctx: RubyParser.InstanceIdentifierVariableContext): RubyExpression = {
     InstanceFieldIdentifier()(ctx.toTextSpan)
   }
 
-  override def visitLocalIdentifierVariable(ctx: RubyParser.LocalIdentifierVariableContext): RubyNode = {
+  override def visitLocalIdentifierVariable(ctx: RubyParser.LocalIdentifierVariableContext): RubyExpression = {
     // Sometimes pseudo variables aren't given precedence in the parser, so we double-check here
     ctx.getText match {
       case "nil"       => StaticLiteral(getBuiltInType(Defines.NilClass))(ctx.toTextSpan)
@@ -837,39 +851,39 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     }
   }
 
-  override def visitClassName(ctx: RubyParser.ClassNameContext): RubyNode = {
+  override def visitClassName(ctx: RubyParser.ClassNameContext): RubyExpression = {
     SimpleIdentifier()(ctx.toTextSpan)
   }
 
-  override def visitMethodIdentifier(ctx: RubyParser.MethodIdentifierContext): RubyNode = {
+  override def visitMethodIdentifier(ctx: RubyParser.MethodIdentifierContext): RubyExpression = {
     SimpleIdentifier()(ctx.toTextSpan)
   }
 
-  override def visitMethodOnlyIdentifier(ctx: RubyParser.MethodOnlyIdentifierContext): RubyNode = {
+  override def visitMethodOnlyIdentifier(ctx: RubyParser.MethodOnlyIdentifierContext): RubyExpression = {
     SimpleIdentifier()(ctx.toTextSpan)
   }
 
-  override def visitIsDefinedKeyword(ctx: RubyParser.IsDefinedKeywordContext): RubyNode = {
+  override def visitIsDefinedKeyword(ctx: RubyParser.IsDefinedKeywordContext): RubyExpression = {
     SimpleIdentifier()(ctx.toTextSpan)
   }
 
-  override def visitLinePseudoVariable(ctx: RubyParser.LinePseudoVariableContext): RubyNode = {
+  override def visitLinePseudoVariable(ctx: RubyParser.LinePseudoVariableContext): RubyExpression = {
     SimpleIdentifier(Some(getBuiltInType(Defines.Integer)))(ctx.toTextSpan)
   }
 
-  override def visitFilePseudoVariable(ctx: RubyParser.FilePseudoVariableContext): RubyNode = {
+  override def visitFilePseudoVariable(ctx: RubyParser.FilePseudoVariableContext): RubyExpression = {
     SimpleIdentifier(Some(getBuiltInType(Defines.String)))(ctx.toTextSpan)
   }
 
-  override def visitEncodingPseudoVariable(ctx: RubyParser.EncodingPseudoVariableContext): RubyNode = {
+  override def visitEncodingPseudoVariable(ctx: RubyParser.EncodingPseudoVariableContext): RubyExpression = {
     SimpleIdentifier(Some(getBuiltInType(Defines.Encoding)))(ctx.toTextSpan)
   }
 
-  override def visitSelfPseudoVariable(ctx: RubyParser.SelfPseudoVariableContext): RubyNode = {
+  override def visitSelfPseudoVariable(ctx: RubyParser.SelfPseudoVariableContext): RubyExpression = {
     SelfIdentifier()(ctx.toTextSpan)
   }
 
-  override def visitMemberAccessExpression(ctx: RubyParser.MemberAccessExpressionContext): RubyNode = {
+  override def visitMemberAccessExpression(ctx: RubyParser.MemberAccessExpressionContext): RubyExpression = {
     val hasArguments = Option(ctx.argumentWithParentheses()).isDefined
     val hasBlock     = Option(ctx.block()).isDefined
     val isClassDecl =
@@ -932,20 +946,20 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     Unknown()(ctx.toTextSpan)
   }
 
-  override def visitConstantVariableReference(ctx: ConstantVariableReferenceContext): RubyNode = {
+  override def visitConstantVariableReference(ctx: ConstantVariableReferenceContext): RubyExpression = {
     MemberAccess(SelfIdentifier()(ctx.toTextSpan.spanStart(Defines.Self)), "::", ctx.CONSTANT_IDENTIFIER().getText)(
       ctx.toTextSpan
     )
   }
 
-  override def visitIndexingAccessExpression(ctx: RubyParser.IndexingAccessExpressionContext): RubyNode = {
+  override def visitIndexingAccessExpression(ctx: RubyParser.IndexingAccessExpressionContext): RubyExpression = {
     IndexAccess(
       visit(ctx.primaryValue()),
       Option(ctx.indexingArgumentList()).map(_.arguments).getOrElse(List()).map(visit)
     )(ctx.toTextSpan)
   }
 
-  override def visitBracketAssignmentExpression(ctx: RubyParser.BracketAssignmentExpressionContext): RubyNode = {
+  override def visitBracketAssignmentExpression(ctx: RubyParser.BracketAssignmentExpressionContext): RubyExpression = {
     val lhsBase = visit(ctx.primaryValue())
     val lhsArgs = Option(ctx.indexingArgumentList()).map(_.arguments).getOrElse(List()).map(visit)
 
@@ -961,7 +975,12 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
 
   /** Lowers the `||=` and `&&=` assignment operators to the respective `.nil?` checks
     */
-  private def lowerAssignmentOperator(lhs: RubyNode, rhs: RubyNode, op: String, span: TextSpan): RubyNode = {
+  private def lowerAssignmentOperator(
+    lhs: RubyExpression,
+    rhs: RubyExpression,
+    op: String,
+    span: TextSpan
+  ): RubyExpression = {
     val condition  = nilCheckCondition(lhs, op, "nil?", span)
     val thenClause = nilCheckThenClause(lhs, rhs, span)
     nilCheckIfStatement(condition, thenClause, span)
@@ -969,7 +988,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
 
   /** Generates the requried `.nil?` check condition used in the lowering of `||=` and `&&=`
     */
-  private def nilCheckCondition(lhs: RubyNode, op: String, memberName: String, span: TextSpan): RubyNode = {
+  private def nilCheckCondition(lhs: RubyExpression, op: String, memberName: String, span: TextSpan): RubyExpression = {
     val memberAccess =
       MemberAccess(lhs, op = ".", memberName = "nil?")(span.spanStart(s"${lhs.span.text}.nil?"))
     if op == "||=" then memberAccess
@@ -978,7 +997,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
 
   /** Generates the assignment and the `thenClause` used in the lowering of `||=` and `&&=`
     */
-  private def nilCheckThenClause(lhs: RubyNode, rhs: RubyNode, span: TextSpan): RubyNode = {
+  private def nilCheckThenClause(lhs: RubyExpression, rhs: RubyExpression, span: TextSpan): RubyExpression = {
     StatementList(List(SingleAssignment(lhs, "=", rhs)(span.spanStart(s"${lhs.span.text} = ${rhs.span.text}"))))(
       span.spanStart(s"${lhs.span.text} = ${rhs.span.text}")
     )
@@ -986,19 +1005,23 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
 
   /** Generates the if statement for the lowering of `||=` and `&&=`
     */
-  private def nilCheckIfStatement(condition: RubyNode, thenClause: RubyNode, span: TextSpan): RubyNode = {
+  private def nilCheckIfStatement(
+    condition: RubyExpression,
+    thenClause: RubyExpression,
+    span: TextSpan
+  ): RubyExpression = {
     IfExpression(condition = condition, thenClause = thenClause, elsifClauses = List.empty, elseClause = None)(
       span.spanStart(s"if ${condition.span.text} then ${thenClause.span.text} end")
     )
   }
 
-  override def visitBracketedArrayLiteral(ctx: RubyParser.BracketedArrayLiteralContext): RubyNode = {
+  override def visitBracketedArrayLiteral(ctx: RubyParser.BracketedArrayLiteralContext): RubyExpression = {
     ArrayLiteral(Option(ctx.indexingArgumentList()).map(_.arguments).getOrElse(List()).map(visit))(ctx.toTextSpan)
   }
 
   override def visitQuotedNonExpandedStringArrayLiteral(
     ctx: RubyParser.QuotedNonExpandedStringArrayLiteralContext
-  ): RubyNode = {
+  ): RubyExpression = {
     val elements = Option(ctx.quotedNonExpandedArrayElementList())
       .map(_.elements)
       .getOrElse(List())
@@ -1008,7 +1031,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
 
   override def visitQuotedNonExpandedSymbolArrayLiteral(
     ctx: RubyParser.QuotedNonExpandedSymbolArrayLiteralContext
-  ): RubyNode = {
+  ): RubyExpression = {
     val elements = Option(ctx.quotedNonExpandedArrayElementList())
       .map(_.elements)
       .getOrElse(List())
@@ -1018,7 +1041,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
 
   override def visitQuotedExpandedSymbolArrayLiteral(
     ctx: RubyParser.QuotedExpandedSymbolArrayLiteralContext
-  ): RubyNode = {
+  ): RubyExpression = {
     if (Option(ctx.quotedExpandedArrayElementList).isDefined) {
       ArrayLiteral(ctx.quotedExpandedArrayElementList().elements.map(visit))(ctx.toTextSpan)
     } else {
@@ -1026,7 +1049,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     }
   }
 
-  override def visitQuotedExpandedArrayElement(ctx: RubyParser.QuotedExpandedArrayElementContext): RubyNode = {
+  override def visitQuotedExpandedArrayElement(ctx: RubyParser.QuotedExpandedArrayElementContext): RubyExpression = {
     val literalType = findParent(ctx) match {
       case Some(parentCtx) =>
         parentCtx match
@@ -1055,7 +1078,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     }
   }
 
-  override def visitRangeExpression(ctx: RubyParser.RangeExpressionContext): RubyNode = {
+  override def visitRangeExpression(ctx: RubyParser.RangeExpressionContext): RubyExpression = {
     RangeExpression(
       visit(ctx.primaryValue(0)),
       visit(ctx.primaryValue(1)),
@@ -1063,15 +1086,15 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     )(ctx.toTextSpan)
   }
 
-  override def visitRangeOperator(ctx: RubyParser.RangeOperatorContext): RubyNode = {
+  override def visitRangeOperator(ctx: RubyParser.RangeOperatorContext): RubyExpression = {
     RangeOperator(Option(ctx.DOT2()).isEmpty)(ctx.toTextSpan)
   }
 
-  override def visitHashLiteral(ctx: RubyParser.HashLiteralContext): RubyNode = {
+  override def visitHashLiteral(ctx: RubyParser.HashLiteralContext): RubyExpression = {
     HashLiteral(Option(ctx.associationList()).map(_.associations).getOrElse(List()).map(visit))(ctx.toTextSpan)
   }
 
-  override def visitAssociationElement(ctx: RubyParser.AssociationElementContext): RubyNode = {
+  override def visitAssociationElement(ctx: RubyParser.AssociationElementContext): RubyExpression = {
     ctx.associationKey().getText match {
       case "if" =>
         Association(SimpleIdentifier()(ctx.toTextSpan.spanStart("if")), visit(ctx.operatorExpression()))(ctx.toTextSpan)
@@ -1080,7 +1103,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     }
   }
 
-  override def visitAssociationHashArgument(ctx: RubyParser.AssociationHashArgumentContext): RubyNode = {
+  override def visitAssociationHashArgument(ctx: RubyParser.AssociationHashArgumentContext): RubyExpression = {
     val identifierName = Option(ctx.LOCAL_VARIABLE_IDENTIFIER()).map(_.getText)
 
     identifierName match {
@@ -1092,7 +1115,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     }
   }
 
-  override def visitModuleDefinition(ctx: RubyParser.ModuleDefinitionContext): RubyNode = {
+  override def visitModuleDefinition(ctx: RubyParser.ModuleDefinitionContext): RubyExpression = {
     val (nonFieldStmts, fields) = genInitFieldStmts(ctx.bodyStatement())
 
     val (moduleName, namespaceDecl) = ctx.classPath match {
@@ -1106,7 +1129,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     ModuleDeclaration(moduleName, nonFieldStmts, fields, Option(memberCall), namespaceDecl)(ctx.toTextSpan)
   }
 
-  override def visitSingletonClassDefinition(ctx: RubyParser.SingletonClassDefinitionContext): RubyNode = {
+  override def visitSingletonClassDefinition(ctx: RubyParser.SingletonClassDefinitionContext): RubyExpression = {
     val baseClass = Option(ctx.commandOrPrimaryValueClass()).map(visit)
     val body      = visit(ctx.bodyStatement()).asInstanceOf[StatementList]
 
@@ -1137,7 +1160,9 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     }
   }
 
-  private def findFieldsInMethodDecls(methodDecls: List[MethodDeclaration]): List[RubyNode & RubyFieldIdentifier] = {
+  private def findFieldsInMethodDecls(
+    methodDecls: List[MethodDeclaration]
+  ): List[RubyExpression & RubyFieldIdentifier] = {
     // TODO: Handle case where body of method is not a StatementList
     methodDecls
       .flatMap { x =>
@@ -1149,21 +1174,21 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
           case _ => List.empty
         }
       }
-      .collect { case x: (RubyNode & RubyFieldIdentifier) =>
+      .collect { case x: (RubyExpression & RubyFieldIdentifier) =>
         x
       }
   }
 
   def genInitFieldStmts(
     ctxBodyStatement: RubyParser.BodyStatementContext
-  ): (RubyNode, List[RubyNode & RubyFieldIdentifier]) = {
+  ): (RubyExpression, List[RubyExpression & RubyFieldIdentifier]) = {
     val loweredClassDecls = lowerSingletonClassDeclarations(ctxBodyStatement)
 
     /** Generates SingleAssignment RubyNodes for list of fields and fields found in method decls
       */
     def genSingleAssignmentStmtList(
-      fields: List[RubyNode],
-      fieldsInMethodDecls: List[RubyNode]
+      fields: List[RubyExpression],
+      fieldsInMethodDecls: List[RubyExpression]
     ): List[SingleAssignment] = {
       (fields ++ fieldsInMethodDecls).map { x =>
         SingleAssignment(x, "=", StaticLiteral(getBuiltInType(Defines.NilClass))(x.span.spanStart("nil")))(
@@ -1174,7 +1199,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
 
     /** Partition RubyFields into InstanceFieldIdentifiers and ClassFieldIdentifiers
       */
-    def partitionRubyFields(fields: List[RubyNode]): (List[RubyNode], List[RubyNode]) = {
+    def partitionRubyFields(fields: List[RubyExpression]): (List[RubyExpression], List[RubyExpression]) = {
       fields.partition {
         case _: InstanceFieldIdentifier => true
         case _                          => false
@@ -1184,8 +1209,8 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     loweredClassDecls match {
       case stmtList: StatementList =>
         val (rubyFieldIdentifiers, otherStructures) = stmtList.statements.partition {
-          case x: (RubyNode & RubyFieldIdentifier) => true
-          case _                                   => false
+          case x: (RubyExpression & RubyFieldIdentifier) => true
+          case _                                         => false
         }
         val (fieldAssignments, rest) = otherStructures
           .map {
@@ -1231,7 +1256,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
 
         (
           StatementList(bodyMethod +: rest)(bodyMethod.span),
-          combinedFields.asInstanceOf[List[RubyNode & RubyFieldIdentifier]]
+          combinedFields.asInstanceOf[List[RubyExpression & RubyFieldIdentifier]]
         )
       case decls => (decls, List.empty)
     }
@@ -1243,7 +1268,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     * @return
     *   the class body as a statement list.
     */
-  def lowerAliasStatementsToMethods(classBody: RubyNode): StatementList = {
+  def lowerAliasStatementsToMethods(classBody: RubyExpression): StatementList = {
 
     val classBodyStmts = classBody match {
       case StatementList(stmts) => stmts
@@ -1293,7 +1318,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     *   - `initialize` MethodDeclaration with all non-allowed children nodes added
     *   - list of all nodes allowed directly under type decl
     */
-  def filterNonAllowedTypeDeclChildren(stmts: StatementList): RubyNode = {
+  def filterNonAllowedTypeDeclChildren(stmts: StatementList): RubyExpression = {
     val (initMethod, nonInitStmts) = stmts.statements.partition {
       case x: MethodDeclaration if x.methodName == Defines.Initialize => true
       case _                                                          => false
@@ -1341,7 +1366,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     )
   }
 
-  override def visitClassDefinition(ctx: RubyParser.ClassDefinitionContext): RubyNode = {
+  override def visitClassDefinition(ctx: RubyParser.ClassDefinitionContext): RubyExpression = {
     val (nonFieldStmts, fields) = genInitFieldStmts(ctx.bodyStatement())
 
     val stmts = lowerAliasStatementsToMethods(nonFieldStmts)
@@ -1403,7 +1428,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     * @return
     *   RubyNode with lowered MethodDeclarations where required
     */
-  private def lowerSingletonClassDeclarations(ctx: RubyParser.BodyStatementContext): RubyNode = {
+  private def lowerSingletonClassDeclarations(ctx: RubyParser.BodyStatementContext): RubyExpression = {
     visit(ctx) match {
       case stmtList: StatementList =>
         StatementList(stmtList.statements.flatMap {
@@ -1429,7 +1454,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     }
   }
 
-  override def visitMethodDefinition(ctx: RubyParser.MethodDefinitionContext): RubyNode = {
+  override def visitMethodDefinition(ctx: RubyParser.MethodDefinitionContext): RubyExpression = {
     val params =
       Option(ctx.methodParameterPart().parameterList())
         .fold(List())(_.parameters)
@@ -1439,7 +1464,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     MethodDeclaration(ctx.definedMethodName().getText, params, visit(ctx.bodyStatement()))(ctx.toTextSpan)
   }
 
-  override def visitEndlessMethodDefinition(ctx: RubyParser.EndlessMethodDefinitionContext): RubyNode = {
+  override def visitEndlessMethodDefinition(ctx: RubyParser.EndlessMethodDefinitionContext): RubyExpression = {
     val body = visit(ctx.statement()) match {
       case x: StatementList => x
       case x                => StatementList(x :: Nil)(x.span)
@@ -1451,7 +1476,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     )(ctx.toTextSpan)
   }
 
-  override def visitSingletonMethodDefinition(ctx: RubyParser.SingletonMethodDefinitionContext): RubyNode = {
+  override def visitSingletonMethodDefinition(ctx: RubyParser.SingletonMethodDefinitionContext): RubyExpression = {
     SingletonMethodDeclaration(
       visit(ctx.singletonObject()),
       ctx.definedMethodName().getText,
@@ -1460,33 +1485,33 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     )(ctx.toTextSpan)
   }
 
-  override def visitProcParameter(ctx: RubyParser.ProcParameterContext): RubyNode = {
+  override def visitProcParameter(ctx: RubyParser.ProcParameterContext): RubyExpression = {
     ProcParameter(
       Option(ctx.procParameterName).map(_.LOCAL_VARIABLE_IDENTIFIER()).map(_.getText()).getOrElse(ctx.getText())
     )(ctx.toTextSpan)
   }
 
-  override def visitHashParameter(ctx: RubyParser.HashParameterContext): RubyNode = {
+  override def visitHashParameter(ctx: RubyParser.HashParameterContext): RubyExpression = {
     val identifierName = Option(ctx.LOCAL_VARIABLE_IDENTIFIER()).map(_.getText).getOrElse(ctx.getText)
     HashParameter(identifierName)(ctx.toTextSpan)
   }
 
-  override def visitArrayParameter(ctx: RubyParser.ArrayParameterContext): RubyNode = {
+  override def visitArrayParameter(ctx: RubyParser.ArrayParameterContext): RubyExpression = {
     ArrayParameter(Option(ctx.LOCAL_VARIABLE_IDENTIFIER()).map(_.getText).getOrElse(ctx.getText))(ctx.toTextSpan)
   }
 
-  override def visitOptionalParameter(ctx: RubyParser.OptionalParameterContext): RubyNode = {
+  override def visitOptionalParameter(ctx: RubyParser.OptionalParameterContext): RubyExpression = {
     OptionalParameter(
       ctx.optionalParameterName().LOCAL_VARIABLE_IDENTIFIER().toString,
       visit(ctx.operatorExpression())
     )(ctx.toTextSpan)
   }
 
-  override def visitMandatoryParameter(ctx: RubyParser.MandatoryParameterContext): RubyNode = {
+  override def visitMandatoryParameter(ctx: RubyParser.MandatoryParameterContext): RubyExpression = {
     MandatoryParameter(ctx.LOCAL_VARIABLE_IDENTIFIER().toString)(ctx.toTextSpan)
   }
 
-  override def visitVariableLeftHandSide(ctx: RubyParser.VariableLeftHandSideContext): RubyNode = {
+  override def visitVariableLeftHandSide(ctx: RubyParser.VariableLeftHandSideContext): RubyExpression = {
     if (Option(ctx.primary()).isEmpty) {
       MandatoryParameter(ctx.toTextSpan.text)(ctx.toTextSpan)
     } else {
@@ -1495,7 +1520,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     }
   }
 
-  override def visitBodyStatement(ctx: RubyParser.BodyStatementContext): RubyNode = {
+  override def visitBodyStatement(ctx: RubyParser.BodyStatementContext): RubyExpression = {
     val body = visit(ctx.compoundStatement())
     val rescueClauses =
       Option(ctx.rescueClause.asScala).fold(List())(_.map(visit).toList).collect { case x: RescueClause => x }
@@ -1509,36 +1534,36 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     }
   }
 
-  override def visitExceptionClassList(ctx: RubyParser.ExceptionClassListContext): RubyNode = {
+  override def visitExceptionClassList(ctx: RubyParser.ExceptionClassListContext): RubyExpression = {
     Option(ctx.multipleRightHandSide()).map(visitMultipleRightHandSide).getOrElse(visit(ctx.operatorExpression()))
   }
 
-  override def visitRescueClause(ctx: RubyParser.RescueClauseContext): RubyNode = {
+  override def visitRescueClause(ctx: RubyParser.RescueClauseContext): RubyExpression = {
     val exceptionClassList = Option(ctx.exceptionClassList).map(visit)
     val variables          = Option(ctx.exceptionVariableAssignment).map(visit)
     val thenClause         = visit(ctx.thenClause)
     RescueClause(exceptionClassList, variables, thenClause)(ctx.toTextSpan)
   }
 
-  override def visitEnsureClause(ctx: RubyParser.EnsureClauseContext): RubyNode = {
+  override def visitEnsureClause(ctx: RubyParser.EnsureClauseContext): RubyExpression = {
     EnsureClause(visit(ctx.compoundStatement()))(ctx.toTextSpan)
   }
 
-  override def visitCaseWithExpression(ctx: RubyParser.CaseWithExpressionContext): RubyNode = {
+  override def visitCaseWithExpression(ctx: RubyParser.CaseWithExpressionContext): RubyExpression = {
     val expression  = Option(ctx.expressionOrCommand()).map(visit)
     val whenClauses = Option(ctx.whenClause().asScala).fold(List())(_.map(visit).toList)
     val elseClause  = Option(ctx.elseClause()).map(visit)
     CaseExpression(expression, whenClauses, elseClause)(ctx.toTextSpan)
   }
 
-  override def visitCaseWithoutExpression(ctx: RubyParser.CaseWithoutExpressionContext): RubyNode = {
+  override def visitCaseWithoutExpression(ctx: RubyParser.CaseWithoutExpressionContext): RubyExpression = {
     val expression  = None
     val whenClauses = Option(ctx.whenClause().asScala).fold(List())(_.map(visit).toList)
     val elseClause  = Option(ctx.elseClause()).map(visit)
     CaseExpression(expression, whenClauses, elseClause)(ctx.toTextSpan)
   }
 
-  override def visitWhenClause(ctx: RubyParser.WhenClauseContext): RubyNode = {
+  override def visitWhenClause(ctx: RubyParser.WhenClauseContext): RubyExpression = {
     val whenArgs = ctx.whenArgument()
     val matchArgs =
       Option(whenArgs.operatorExpressionList()).iterator.flatMap(_.operatorExpression().asScala).map(visit).toList
@@ -1547,7 +1572,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     WhenClause(matchArgs, matchSplatArg, thenClause)(ctx.toTextSpan)
   }
 
-  override def visitAssociationKey(ctx: RubyParser.AssociationKeyContext): RubyNode = {
+  override def visitAssociationKey(ctx: RubyParser.AssociationKeyContext): RubyExpression = {
     Option(ctx.operatorExpression()) match {
       case Some(ctx) if ctx.isKeyword => SimpleIdentifier()(ctx.toTextSpan)
       case Some(ctx)                  => visit(ctx)
@@ -1555,12 +1580,12 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     }
   }
 
-  override def visitAliasStatement(ctx: RubyParser.AliasStatementContext): RubyNode = {
+  override def visitAliasStatement(ctx: RubyParser.AliasStatementContext): RubyExpression = {
     AliasStatement(ctx.oldName.getText, ctx.newName.getText)(ctx.toTextSpan)
   }
 
-  override def visitBreakWithoutArguments(ctx: RubyParser.BreakWithoutArgumentsContext): RubyNode = {
-    BreakStatement()(ctx.toTextSpan)
+  override def visitBreakWithoutArguments(ctx: RubyParser.BreakWithoutArgumentsContext): RubyExpression = {
+    BreakExpression()(ctx.toTextSpan)
   }
 
 }

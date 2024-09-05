@@ -1016,7 +1016,5 @@ class ClassTests extends RubyCode2CpgFixture {
         |end
         |end
         |""".stripMargin)
-
-    cpg.method.name("save").parameter.l.foreach(x => println(x.typeFullName))
   }
 }

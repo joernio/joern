@@ -21,16 +21,17 @@ class AstCreator(
   protected val programSummary: RubyProgramSummary = RubyProgramSummary(),
   val enableFileContents: Boolean = false,
   val fileContent: String = "",
-  val rootNode: Option[RubyNode] = None
+  val rootNode: Option[RubyExpression] = None
 )(implicit withSchemaValidation: ValidationMode)
     extends AstCreatorBase(fileName)
     with AstCreatorHelper
     with AstForStatementsCreator
     with AstForExpressionsCreator
+    with AstForControlStructuresCreator
     with AstForFunctionsCreator
     with AstForTypesCreator
     with AstSummaryVisitor
-    with AstNodeBuilder[RubyNode, AstCreator] {
+    with AstNodeBuilder[RubyExpression, AstCreator] {
 
   val tmpGen: FreshNameGenerator[String] = FreshNameGenerator(i => s"<tmp-$i>")
 
@@ -44,7 +45,7 @@ class AstCreator(
 
   protected var parseLevel: AstParseLevel = AstParseLevel.FULL_AST
 
-  override protected def offset(node: RubyNode): Option[(Int, Int)] = node.offset
+  override protected def offset(node: RubyExpression): Option[(Int, Int)] = node.offset
 
   protected val relativeFileName: String =
     projectRoot

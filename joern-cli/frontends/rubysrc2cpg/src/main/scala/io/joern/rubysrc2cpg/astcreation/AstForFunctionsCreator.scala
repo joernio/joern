@@ -37,7 +37,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     *   a method declaration with additional refs and types if specified.
     */
   protected def astForMethodDeclaration(
-    node: RubyNode & ProcedureDeclaration,
+    node: RubyExpression & ProcedureDeclaration,
     isClosure: Boolean = false,
     isSingletonObjectMethod: Boolean = false
   ): Seq[Ast] = {
@@ -237,7 +237,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   // TODO: remaining cases
-  protected def astForParameter(node: RubyNode, index: Int): Ast = {
+  protected def astForParameter(node: RubyExpression, index: Int): Ast = {
     node match {
       case node: (MandatoryParameter | OptionalParameter) =>
         val parameterIn = parameterInNode(
@@ -299,11 +299,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     }
   }
 
-  private def generateTextSpan(node: RubyNode, text: String): TextSpan = {
+  private def generateTextSpan(node: RubyExpression, text: String): TextSpan = {
     TextSpan(node.span.line, node.span.column, node.span.lineEnd, node.span.columnEnd, node.span.offset, text)
   }
 
-  protected def statementForOptionalParam(node: OptionalParameter): RubyNode = {
+  protected def statementForOptionalParam(node: OptionalParameter): RubyExpression = {
     val defaultExprNode = node.defaultExpression
 
     IfExpression(
@@ -485,13 +485,13 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     }
   }
 
-  private def astForParameters(parameters: List[RubyNode]): List[Ast] = {
+  private def astForParameters(parameters: List[RubyExpression]): List[Ast] = {
     parameters.zipWithIndex.map { case (parameterNode, index) =>
       astForParameter(parameterNode, index + 1)
     }
   }
 
-  private def statementListForOptionalParams(params: List[RubyNode]): StatementList = {
+  private def statementListForOptionalParams(params: List[RubyExpression]): StatementList = {
     StatementList(
       params
         .collect { case x: OptionalParameter =>
@@ -502,7 +502,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   private def astForMethodBody(
-    body: RubyNode,
+    body: RubyExpression,
     optionalStatementList: StatementList,
     returnLastExpression: Boolean = true
   ): Ast = {
@@ -531,7 +531,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     }
   }
 
-  private def astForConstructorMethodBody(body: RubyNode, optionalStatementList: StatementList): Ast = {
+  private def astForConstructorMethodBody(body: RubyExpression, optionalStatementList: StatementList): Ast = {
     if (this.parseLevel == AstParseLevel.SIGNATURES) {
       Ast()
     } else {

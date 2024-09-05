@@ -5,7 +5,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   InstanceFieldIdentifier,
   MemberAccess,
   RubyFieldIdentifier,
-  RubyNode
+  RubyExpression
 }
 import io.joern.rubysrc2cpg.datastructures.{BlockScope, FieldDecl}
 import io.joern.rubysrc2cpg.passes.Defines
@@ -42,12 +42,12 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     }
   }
 
-  override def column(node: RubyNode): Option[Int]    = node.column
-  override def columnEnd(node: RubyNode): Option[Int] = node.columnEnd
-  override def line(node: RubyNode): Option[Int]      = node.line
-  override def lineEnd(node: RubyNode): Option[Int]   = node.lineEnd
+  override def column(node: RubyExpression): Option[Int]    = node.column
+  override def columnEnd(node: RubyExpression): Option[Int] = node.columnEnd
+  override def line(node: RubyExpression): Option[Int]      = node.line
+  override def lineEnd(node: RubyExpression): Option[Int]   = node.lineEnd
 
-  override def code(node: RubyNode): String = shortenCode(node.text)
+  override def code(node: RubyExpression): String = shortenCode(node.text)
 
   protected def isBuiltin(x: String): Boolean            = kernelFunctions.contains(x)
   protected def prefixAsKernelDefined(x: String): String = s"$kernelPrefix$pathSep$x"
@@ -55,7 +55,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def isBundledClass(x: String): Boolean       = GlobalTypes.bundledClasses.contains(x)
   protected def pathSep                                  = "."
 
-  private def astForFieldInstance(name: String, node: RubyNode & RubyFieldIdentifier): Ast = {
+  private def astForFieldInstance(name: String, node: RubyExpression & RubyFieldIdentifier): Ast = {
     val identName = node match {
       case _: InstanceFieldIdentifier => Defines.Self
       case _: ClassFieldIdentifier    => scope.surroundingTypeFullName.map(_.split("[.]").last).getOrElse(Defines.Any)
@@ -70,7 +70,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     )
   }
 
-  protected def handleVariableOccurrence(node: RubyNode): Ast = {
+  protected def handleVariableOccurrence(node: RubyExpression): Ast = {
     val name       = code(node)
     val identifier = identifierNode(node, name, name, Defines.Any)
     val typeRef    = scope.tryResolveTypeReference(name)

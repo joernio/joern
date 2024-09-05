@@ -425,7 +425,6 @@ class DoBlockTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "Generate correct parameters" in {
-      cpg.method.isLambda.dotAst.l.foreach(println)
       inside(cpg.method.isLambda.parameter.l) {
         case _ :: aParam :: tmp0Param :: dParam :: eParam :: tmp1Param :: hParam :: iParam :: Nil =>
           aParam.name shouldBe "a"

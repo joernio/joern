@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Local}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.codepropertygraph.generated.nodes.Call
@@ -47,10 +47,9 @@ class ConditionalTests extends RubyCode2CpgFixture {
     inside(cpg.call(Operators.conditional).l) {
       case cond :: Nil =>
         inside(cond.argument.l) {
-          case x :: y :: z :: Nil => {
+          case x :: y :: z :: Nil =>
             x.code shouldBe "x"
             List(y, z).isBlock.astChildren.isIdentifier.code.l shouldBe List("y", "z")
-          }
           case xs => fail(s"Expected exactly three arguments to conditional, got [${xs.code.mkString(",")}]")
         }
       case xs => fail(s"Expected exactly one conditional, got [${xs.code.mkString(",")}]")
@@ -61,15 +60,11 @@ class ConditionalTests extends RubyCode2CpgFixture {
     val cpg = code("""x, y, z = false, true, false
                      |f(unless x then y else z end)
                      |""".stripMargin)
-    inside(cpg.call(Operators.conditional).l) {
-      case cond :: Nil =>
-        inside(cond.argument.l) {
-          case x :: y :: z :: Nil => {
-            List(x).isCall.name(Operators.logicalNot).argument.code.l shouldBe List("x")
-            List(y, z).isBlock.astChildren.isIdentifier.code.l shouldBe List("y", "z")
-          }
-          case xs => fail(s"Expected exactly three arguments to conditional, got [${xs.code.mkString(",")}]")
-        }
+    inside(cpg.controlStructure.controlStructureTypeExact(ControlStructureTypes.IF).l) {
+      case ifNode :: Nil =>
+        ifNode.whenTrue.astChildren.code.l shouldBe List("y")
+        ifNode.whenFalse.astChildren.code.l shouldBe List("z")
+        ifNode.condition.isCall.name(Operators.logicalNot).argument.code.l shouldBe List("x")
       case xs => fail(s"Expected exactly one conditional, got [${xs.code.mkString(",")}]")
     }
   }

@@ -20,7 +20,7 @@ import scala.collection.mutable
 
 trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  protected def astForClassDeclaration(node: RubyNode & TypeDeclaration): Seq[Ast] = {
+  protected def astForClassDeclaration(node: RubyExpression & TypeDeclaration): Seq[Ast] = {
     node.name match
       case name: SimpleIdentifier => astForSimpleNamedClassDeclaration(node, name)
       case name =>
@@ -28,7 +28,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         astForUnknown(node) :: Nil
   }
 
-  private def getBaseClassName(node: RubyNode): String = {
+  private def getBaseClassName(node: RubyExpression): String = {
     node match
       case simpleIdentifier: SimpleIdentifier =>
         simpleIdentifier.text
@@ -46,7 +46,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   }
 
   private def astForSimpleNamedClassDeclaration(
-    node: RubyNode & TypeDeclaration,
+    node: RubyExpression & TypeDeclaration,
     nameIdentifier: SimpleIdentifier
   ): Seq[Ast] = {
     val className    = nameIdentifier.text
@@ -143,16 +143,17 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val classBody =
       node.body.asInstanceOf[StatementList] // for now (bodyStatement is a superset of stmtList)
 
-    def handleDefaultConstructor(bodyAsts: Seq[Ast]): Seq[Ast] = bodyAsts match {
-      case bodyAsts if scope.shouldGenerateDefaultConstructor && this.parseLevel == AstParseLevel.FULL_AST =>
+    val classBodyAsts = {
+      val bodyAsts = classBody.statements.flatMap(astsForStatement)
+      if (scope.shouldGenerateDefaultConstructor && this.parseLevel == AstParseLevel.FULL_AST) {
         val bodyStart  = classBody.span.spanStart()
         val initBody   = StatementList(List())(bodyStart)
         val methodDecl = astForMethodDeclaration(MethodDeclaration(Defines.Initialize, List(), initBody)(bodyStart))
         methodDecl ++ bodyAsts
-      case bodyAsts => bodyAsts
+      } else {
+        bodyAsts
+      }
     }
-
-    val classBodyAsts = handleDefaultConstructor(classBody.statements.flatMap(astsForStatement))
 
     val fields = node match {
       case classDecl: ClassDeclaration   => classDecl.fields
@@ -251,7 +252,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     node.fieldNames.flatMap(astsForSingleFieldDeclaration(node, _))
   }
 
-  private def astsForSingleFieldDeclaration(node: FieldsDeclaration, nameNode: RubyNode): Seq[Ast] = {
+  private def astsForSingleFieldDeclaration(node: FieldsDeclaration, nameNode: RubyExpression): Seq[Ast] = {
     nameNode match
       case nameAsSymbol: StaticLiteral if nameAsSymbol.isSymbol =>
         val fieldName   = nameAsSymbol.innerText.prepended('@')
