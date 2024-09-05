@@ -8,17 +8,20 @@ import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.utils.Report
+import org.slf4j.LoggerFactory
 
 import java.util.regex.Pattern
+import scala.util.control.NonFatal
 import scala.util.Try
 import scala.util.matching.Regex
 
 class C2Cpg extends X2CpgFrontend[Config] {
 
-  private val report: Report = new Report()
+  private val logger = LoggerFactory.getLogger(classOf[C2Cpg])
 
   def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
+      val report = new Report()
       new MetaDataPass(cpg, Languages.NEWC, config.inputPath).createAndApply()
       val astCreationPass = new AstCreationPass(cpg, config, report)
       astCreationPass.createAndApply()
@@ -31,8 +34,14 @@ class C2Cpg extends X2CpgFrontend[Config] {
   }
 
   def printIfDefsOnly(config: Config): Unit = {
-    val stmts = new PreprocessorPass(config).run().mkString(",")
-    println(stmts)
+    try {
+      val stmts = new PreprocessorPass(config).run().mkString(",")
+      println(stmts)
+    } catch {
+      case NonFatal(ex) =>
+        logger.error("Failed to print preprocessor statements.", ex)
+        throw ex
+    }
   }
 
 }

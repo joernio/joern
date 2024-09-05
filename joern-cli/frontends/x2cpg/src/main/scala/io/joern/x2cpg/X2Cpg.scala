@@ -14,12 +14,15 @@ import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 
 object X2CpgConfig {
+  def defaultInputPath: String  = ""
   def defaultOutputPath: String = "cpg.bin"
 }
 
 trait X2CpgConfig[R <: X2CpgConfig[R]] {
-  var inputPath: String  = ""
-  var outputPath: String = X2CpgConfig.defaultOutputPath
+  var inputPath: String   = X2CpgConfig.defaultInputPath
+  var outputPath: String  = X2CpgConfig.defaultOutputPath
+  var serverMode: Boolean = false
+  var serverPort: Int     = 9000
 
   def withInputPath(inputPath: String): R = {
     this.inputPath = Paths.get(inputPath).toAbsolutePath.normalize().toString
@@ -28,6 +31,16 @@ trait X2CpgConfig[R <: X2CpgConfig[R]] {
 
   def withOutputPath(x: String): R = {
     this.outputPath = x
+    this.asInstanceOf[R]
+  }
+
+  def withServerMode(x: Boolean): R = {
+    this.serverMode = x
+    this.asInstanceOf[R]
+  }
+
+  def withServerPort(x: Int): R = {
+    this.serverPort = x
     this.asInstanceOf[R]
   }
 
@@ -73,6 +86,8 @@ trait X2CpgConfig[R <: X2CpgConfig[R]] {
   def withInheritedFields(config: R): R = {
     this.inputPath = config.inputPath
     this.outputPath = config.outputPath
+    this.serverMode = config.serverMode
+    this.serverPort = config.serverPort
     this.defaultIgnoredFilesRegex = config.defaultIgnoredFilesRegex
     this.ignoredFilesRegex = config.ignoredFilesRegex
     this.ignoredFiles = config.ignoredFiles
@@ -112,9 +127,10 @@ object DependencyDownloadConfig {
   * @param frontend
   *   the frontend to use for CPG creation
   */
-abstract class X2CpgMain[T <: X2CpgConfig[T], X <: X2CpgFrontend[?]](val cmdLineParser: OParser[Unit, T], frontend: X)(
-  implicit defaultConfig: T
-) {
+abstract class X2CpgMain[T <: X2CpgConfig[T], X <: X2CpgFrontend[T]](
+  val cmdLineParser: OParser[Unit, T],
+  val frontend: X
+)(implicit defaultConfig: T) {
 
   private val logger = LoggerFactory.getLogger(classOf[X2CpgMain[T, X]])
 
@@ -162,7 +178,7 @@ abstract class X2CpgMain[T <: X2CpgConfig[T], X <: X2CpgFrontend[?]](val cmdLine
 
 /** Trait that represents a CPG generator, where T is the frontend configuration class.
   */
-trait X2CpgFrontend[T <: X2CpgConfig[?]] {
+trait X2CpgFrontend[T <: X2CpgConfig[T]] {
 
   /** Create a CPG according to given configuration. Returns CPG wrapped in a `Try`, making it possible to detect and
     * inspect exceptions in CPG generation. To be provided by the frontend.
@@ -182,12 +198,14 @@ trait X2CpgFrontend[T <: X2CpgConfig[?]] {
         case Failure(exception) =>
           Failure(exception)
       }
-    }.recover { exception =>
-      // We explicitly rethrow the exception so that every frontend will
-      // terminate with exit code 1 if there was an exception during createCpg.
-      // Frontend maintainer may want to catch that RuntimeException on their end
-      // to add custom error handling.
-      throw exception
+    } match {
+      case Failure(exception) =>
+        // We explicitly rethrow the exception so that every frontend will
+        // terminate with exit code 1 if there was an exception during createCpg.
+        // Frontend maintainer may want to catch that RuntimeException on their end
+        // to add custom error handling.
+        throw exception
+      case Success(_) => // this is fine
     }
   }
 
@@ -287,6 +305,14 @@ object X2Cpg {
         .text(
           "add the raw source code to the content field of FILE nodes to allow for method source retrieval via offset fields (disabled by default)"
         ),
+      opt[Unit]("server")
+        .action((_, c) => c.withServerMode(true))
+        .hidden()
+        .text("runs this frontend in server mode (disabled by default)"),
+      opt[Int]("server-port")
+        .action((x, c) => c.withServerPort(x))
+        .hidden()
+        .text(s"Port on which to expose the frontend server (default: $X2CpgConfig.defaultServerPort"),
       opt[Unit]("disable-file-content")
         .action((_, c) => c.withDisableFileContent(true))
         .hidden()
