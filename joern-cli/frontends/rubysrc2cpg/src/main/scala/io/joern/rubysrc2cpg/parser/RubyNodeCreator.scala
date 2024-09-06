@@ -464,7 +464,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     GroupedParameter(
       tmpMandatoryParam.span.text,
       tmpMandatoryParam,
-      MultipleAssignment(singleAssignments.toList)(ctx.toTextSpan)
+      GroupedParameterDesugaring(singleAssignments)(ctx.toTextSpan)
     )(ctx.toTextSpan)
   }
 
@@ -607,7 +607,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     } else {
       defaultAssignments
     }
-    MultipleAssignment(assignments)(ctx.toTextSpan)
+    DefaultMultipleAssignment(assignments)(ctx.toTextSpan)
   }
 
   override def visitMultipleLeftHandSide(ctx: RubyParser.MultipleLeftHandSideContext): RubyExpression = {
@@ -627,7 +627,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
 
   override def visitPackingLeftHandSide(ctx: RubyParser.PackingLeftHandSideContext): RubyExpression = {
     val splatNode = Option(ctx.leftHandSide()) match {
-      case Some(lhs) => SplattingRubyNode(visit(ctx.leftHandSide))(ctx.toTextSpan)
+      case Some(lhs) => SplattingRubyNode(visit(lhs))(ctx.toTextSpan)
       case None =>
         SplattingRubyNode(MandatoryParameter("_")(ctx.toTextSpan.spanStart("_")))(ctx.toTextSpan.spanStart("*_"))
     }

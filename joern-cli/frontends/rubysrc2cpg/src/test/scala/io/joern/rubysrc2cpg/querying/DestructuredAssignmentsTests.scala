@@ -382,4 +382,25 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
       case xs => fail(s"Expected 3 assignments, got ${xs.code.mkString(",")}")
     }
   }
+
+  "multi-assignments as a return value" should {
+
+    val cpg = code("""
+        |def f
+        | a, b = 1, 2 # => return [1, 2]
+        |end
+        |""".stripMargin)
+
+    "create an explicit return of the LHS values as an array" in {
+      val arrayLiteral = cpg.method.name("f").methodReturn.toReturn.astChildren.isCall.head
+
+      arrayLiteral.name shouldBe Operators.arrayInitializer
+      arrayLiteral.methodFullName shouldBe Operators.arrayInitializer
+      arrayLiteral.code shouldBe "a, b = 1, 2"
+
+      arrayLiteral.astChildren.isIdentifier.code.l shouldBe List("a", "b")
+    }
+
+  }
+
 }

@@ -474,5 +474,10 @@ class DoBlockTests extends RubyCode2CpgFixture {
         case xs => fail(s"Expected 4 assignments, got [${xs.code.mkString(", ")}]")
       }
     }
+
+    "Return nil and not the desugaring" in {
+      val nilLiteral = cpg.method.isLambda.methodReturn.toReturn.astChildren.isLiteral.head
+      nilLiteral.code shouldBe "return nil"
+    }
   }
 }

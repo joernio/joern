@@ -5,8 +5,8 @@ import io.joern.rubysrc2cpg.datastructures.BlockScope
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, ModifierTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewControlStructure, NewMethod, NewMethodRef, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.NewControlStructure
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, ModifierTypes}
 
 trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -156,6 +156,13 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         astForReturnExpression(ReturnExpression(List(node))(node.span)) :: Nil
       case node: SingleAssignment =>
         astForSingleAssignment(node) :: List(astForReturnExpression(ReturnExpression(List(node.lhs))(node.span)))
+      case node: DefaultMultipleAssignment =>
+        astsForStatement(node) ++ astsForImplicitReturnStatement(ArrayLiteral(node.assignments.map(_.lhs))(node.span))
+      case node: GroupedParameterDesugaring =>
+        // If the desugaring is the last expression, then we should return nil
+        val nilReturnSpan    = node.span.spanStart("return nil")
+        val nilReturnLiteral = StaticLiteral(Defines.NilClass)(nilReturnSpan)
+        astsForStatement(node) ++ astsForImplicitReturnStatement(nilReturnLiteral)
       case node: AttributeAssignment =>
         List(
           astForAttributeAssignment(node),
@@ -165,7 +172,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case ret: ReturnExpression => astForReturnExpression(ret) :: Nil
       case node: (MethodDeclaration | SingletonMethodDeclaration) =>
         (astsForStatement(node) :+ astForReturnMethodDeclarationSymbolName(node)).toList
-      case _: BreakExpression => astsForStatement(node).toList
       case node =>
         logger.warn(
           s"Implicit return here not supported yet: ${node.text} (${node.getClass.getSimpleName}), only generating statement"
@@ -192,10 +198,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   private def astForReturnMemberCall(node: MemberAccess): Ast = {
     returnAst(returnNode(node, code(node)), List(astForMemberAccess(node)))
-  }
-
-  private def astForReturnMemberCall(node: MemberCall): Ast = {
-    returnAst(returnNode(node, code(node)), List(astForMemberCall(node)))
   }
 
   protected def astForBreakExpression(node: BreakExpression): Ast = {
@@ -245,7 +247,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case StatementList(statements)  => StatementList(statementListReturningLastExpression(statements))(x.span)
       case clause: ControlFlowClause  => clauseReturningLastExpression(clause)
       case node: ControlFlowStatement => transform(node)
-      case node: BreakExpression      => node
       case node: ReturnExpression     => node
       case _                          => ReturnExpression(x :: Nil)(x.span)
     }
