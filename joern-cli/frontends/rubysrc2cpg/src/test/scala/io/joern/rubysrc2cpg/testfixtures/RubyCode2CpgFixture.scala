@@ -3,7 +3,6 @@ package io.joern.rubysrc2cpg.testfixtures
 import io.joern.dataflowengineoss.language.Path
 import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
 import io.joern.dataflowengineoss.testfixtures.{SemanticCpgTestFixture, SemanticTestCpg}
-import io.joern.rubysrc2cpg.deprecated.utils.PackageTable
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
 import io.joern.x2cpg.testfixtures.*
 import io.joern.x2cpg.ValidationMode
@@ -14,19 +13,14 @@ import org.scalatest.Tag
 import java.io.File
 import org.scalatest.Inside
 
-trait RubyFrontend(
-  useDeprecatedFrontend: Boolean,
-  withDownloadDependencies: Boolean,
-  disableFileContent: Boolean,
-  antlrDebugging: Boolean
-) extends LanguageFrontend {
+trait RubyFrontend(withDownloadDependencies: Boolean, disableFileContent: Boolean, antlrDebugging: Boolean)
+    extends LanguageFrontend {
   override val fileSuffix: String = ".rb"
 
   implicit val config: Config =
     getConfig()
       .map(_.asInstanceOf[Config])
       .getOrElse(Config().withSchemaValidation(ValidationMode.Enabled))
-      .withUseDeprecatedFrontend(useDeprecatedFrontend)
       .withDownloadDependencies(withDownloadDependencies)
       .withDisableFileContent(disableFileContent)
       .withAntlrDebugging(antlrDebugging)
@@ -38,13 +32,11 @@ trait RubyFrontend(
 }
 
 class DefaultTestCpgWithRuby(
-  packageTable: Option[PackageTable],
-  useDeprecatedFrontend: Boolean,
   downloadDependencies: Boolean = false,
   disableFileContent: Boolean = true,
   antlrDebugging: Boolean = false
 ) extends DefaultTestCpg
-    with RubyFrontend(useDeprecatedFrontend, downloadDependencies, disableFileContent, antlrDebugging)
+    with RubyFrontend(downloadDependencies, disableFileContent, antlrDebugging)
     with SemanticTestCpg {
 
   override protected def applyPasses(): Unit = {
@@ -53,11 +45,6 @@ class DefaultTestCpgWithRuby(
   }
 
   override protected def applyPostProcessingPasses(): Unit = {
-    packageTable match {
-      case Some(table) =>
-        RubySrc2Cpg.packageTableInfo.set(table)
-      case None =>
-    }
     RubySrc2Cpg.postProcessingPasses(this, config).foreach(_.createAndApply())
   }
 }
@@ -68,17 +55,9 @@ class RubyCode2CpgFixture(
   downloadDependencies: Boolean = false,
   disableFileContent: Boolean = true,
   extraFlows: List[FlowSemantic] = List.empty,
-  packageTable: Option[PackageTable] = None,
-  useDeprecatedFrontend: Boolean = false,
   antlrDebugging: Boolean = false
 ) extends Code2CpgFixture(() =>
-      new DefaultTestCpgWithRuby(
-        packageTable,
-        useDeprecatedFrontend,
-        downloadDependencies,
-        disableFileContent,
-        antlrDebugging
-      )
+      new DefaultTestCpgWithRuby(downloadDependencies, disableFileContent, antlrDebugging)
         .withOssDataflow(withDataFlow)
         .withExtraFlows(extraFlows)
         .withPostProcessingPasses(withPostProcessing)
@@ -95,20 +74,11 @@ class RubyCode2CpgFixture(
 }
 
 class RubyCfgTestCpg(
-  useDeprecatedFrontend: Boolean = true,
   downloadDependencies: Boolean = false,
   disableFileContent: Boolean = true,
   antlrDebugging: Boolean = false
 ) extends CfgTestCpg
-    with RubyFrontend(useDeprecatedFrontend, downloadDependencies, disableFileContent, antlrDebugging) {
+    with RubyFrontend(downloadDependencies, disableFileContent, antlrDebugging) {
   override val fileSuffix: String = ".rb"
 
 }
-
-/** Denotes a test which has been similarly ported to the new frontend.
-  */
-object SameInNewFrontend extends Tag("SameInNewFrontend")
-
-/** Denotes a test which has been ported to the new frontend, but has different expectations.
-  */
-object DifferentInNewFrontend extends Tag("DifferentInNewFrontend")
