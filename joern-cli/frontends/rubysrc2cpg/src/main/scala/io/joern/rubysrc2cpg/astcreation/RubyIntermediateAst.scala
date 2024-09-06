@@ -176,9 +176,12 @@ object RubyIntermediateAst {
       extends RubyExpression(span)
       with MethodParameter
 
-  final case class GroupedParameter(name: String, tmpParam: RubyExpression, multipleAssignment: RubyExpression)(
-    span: TextSpan
-  ) extends RubyExpression(span)
+  final case class GroupedParameter(
+    name: String,
+    tmpParam: RubyExpression,
+    multipleAssignment: GroupedParameterDesugaring
+  )(span: TextSpan)
+      extends RubyExpression(span)
       with MethodParameter
 
   sealed trait CollectionParameter extends MethodParameter
@@ -193,9 +196,17 @@ object RubyIntermediateAst {
       extends RubyExpression(span)
       with RubyStatement
 
-  final case class MultipleAssignment(assignments: List[SingleAssignment])(span: TextSpan)
+  trait MultipleAssignment extends RubyStatement {
+    def assignments: List[SingleAssignment]
+  }
+
+  final case class DefaultMultipleAssignment(assignments: List[SingleAssignment])(span: TextSpan)
       extends RubyExpression(span)
-      with RubyStatement
+      with MultipleAssignment
+
+  final case class GroupedParameterDesugaring(assignments: List[SingleAssignment])(span: TextSpan)
+      extends RubyExpression(span)
+      with MultipleAssignment
 
   final case class SplattingRubyNode(target: RubyExpression)(span: TextSpan) extends RubyExpression(span)
 
