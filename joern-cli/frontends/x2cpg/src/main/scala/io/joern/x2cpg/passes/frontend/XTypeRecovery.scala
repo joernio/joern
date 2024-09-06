@@ -1,30 +1,21 @@
 package io.joern.x2cpg.passes.frontend
 
 import io.joern.x2cpg.{Defines, X2CpgConfig}
-import io.shiftleft.codepropertygraph.generated.{
-  Cpg,
-  DispatchTypes,
-  EdgeTypes,
-  NodeTypes,
-  Operators,
-  Properties,
-  PropertyNames
-}
 import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.passes.{CpgPass, CpgPassBase, ForkJoinParallelCpgPass}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.importresolver.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, FieldAccess}
 import org.slf4j.{Logger, LoggerFactory}
-import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
-import scopt.OParser
+import scopt.{DefaultOParserSetup, OParser}
 
 import java.util.regex.Pattern
 import scala.annotation.tailrec
 import scala.collection.mutable
-import scala.util.{Failure, Success, Try}
 import scala.util.matching.Regex
+import scala.util.{Failure, Success, Try}
 
 /** @param iterations
   *   the number of iterations to run.
@@ -38,7 +29,9 @@ object XTypeRecoveryConfig {
 
   def parse(cmdLineArgs: Seq[String]): XTypeRecoveryConfig = {
     OParser
-      .parse(parserOptions, cmdLineArgs, XTypeRecoveryConfig())
+      .parse(parserOptions, cmdLineArgs, XTypeRecoveryConfig(), new DefaultOParserSetup {
+        override def errorOnUnknownArgument = false
+      })
       .getOrElse(
         throw new RuntimeException(
           s"unable to parse XTypeRecoveryConfig from commandline arguments ${cmdLineArgs.mkString(" ")}"
@@ -82,7 +75,7 @@ object XTypeRecoveryConfig {
             logger.warn(s"Large iteration count of $x will take a while to terminate")
           }
           success
-        }
+        },
     )
   }
 
@@ -103,8 +96,7 @@ class XTypeRecoveryState(val config: XTypeRecoveryConfig = XTypeRecoveryConfig()
 
 object XTypeRecoveryPassGenerator {
   private def linkMembersToTheirRefs(cpg: Cpg, builder: DiffGraphBuilder): Unit = {
-    import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromIteratorExt
-    import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
+    import io.joern.x2cpg.passes.frontend.XTypeRecovery.{AllNodeTypesFromIteratorExt, AllNodeTypesFromNodeExt}
 
     def getFieldBaseTypes(fieldAccess: FieldAccess): Iterator[TypeDecl] = {
       fieldAccess
@@ -304,8 +296,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   state: XTypeRecoveryState
 ) extends Runnable {
 
-  import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
-  import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromIteratorExt
+  import io.joern.x2cpg.passes.frontend.XTypeRecovery.{AllNodeTypesFromIteratorExt, AllNodeTypesFromNodeExt}
 
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
 

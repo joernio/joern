@@ -2,6 +2,7 @@ package io.joern.x2cpg
 
 import better.files.File
 import io.joern.x2cpg.X2Cpg.{applyDefaultOverlays, withErrorsToConsole}
+import io.joern.x2cpg.frontendspecific.FrontendArgsDelimitor
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
@@ -265,7 +266,10 @@ object X2Cpg {
     initialConf: R
   ): Option[R] = {
     val parser = commandLineParser(frontendSpecific)
-    OParser.parse(parser, args, initialConf)
+    val argsCorrected = args.takeWhile(_ != s"--$FrontendArgsDelimitor")
+    if (args != argsCorrected)
+      logger.info(s"Args specified after the `--$FrontendArgsDelimitor` separator will be ignored")
+    OParser.parse(parser, argsCorrected, initialConf)
   }
 
   /** Create a command line parser that can be extended to add options specific for the frontend.

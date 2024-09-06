@@ -10,4 +10,7 @@ package io.joern.x2cpg
   * Otherwise we'll end in jar hell with various incompatible versions of many different dependencies, and complex
   * issues with things like OSGI and JPMS.
   */
-package object frontendspecific
+package object frontendspecific {
+  // Special string used to separate joern-parse opts from frontend-specific opts
+  val FrontendArgsDelimitor = "--frontend-args"
+}
