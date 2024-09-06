@@ -164,7 +164,6 @@ abstract class X2CpgMain[T <: X2CpgConfig[T], X <: X2CpgFrontend[T]](
           run(config, frontend)
         } catch {
           case ex: Throwable =>
-            println(ex.getMessage)
             ex.printStackTrace()
             System.exit(1)
         }
