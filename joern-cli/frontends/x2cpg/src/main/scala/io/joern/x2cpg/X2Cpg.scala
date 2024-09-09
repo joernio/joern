@@ -266,10 +266,7 @@ object X2Cpg {
     initialConf: R
   ): Option[R] = {
     val parser = commandLineParser(frontendSpecific)
-    val argsCorrected = args.takeWhile(_ != s"--$FrontendArgsDelimitor")
-    if (args != argsCorrected)
-      logger.info(s"Args specified after the `--$FrontendArgsDelimitor` separator will be ignored")
-    OParser.parse(parser, argsCorrected, initialConf)
+    OParser.parse(parser, args, initialConf)
   }
 
   /** Create a command line parser that can be extended to add options specific for the frontend.

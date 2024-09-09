@@ -38,8 +38,4 @@ class X2CpgTests extends AnyWordSpec with Matchers {
       }
     }
   }
-
-//  "argument parsing" should {
-//    "ignore all arguments after `--frontend-arguments`"
-//  }
 }
