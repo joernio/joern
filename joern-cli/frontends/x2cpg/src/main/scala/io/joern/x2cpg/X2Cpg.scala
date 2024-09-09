@@ -2,6 +2,7 @@ package io.joern.x2cpg
 
 import better.files.File
 import io.joern.x2cpg.X2Cpg.{applyDefaultOverlays, withErrorsToConsole}
+import io.joern.x2cpg.frontendspecific.FrontendArgsDelimitor
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
@@ -164,7 +165,6 @@ abstract class X2CpgMain[T <: X2CpgConfig[T], X <: X2CpgFrontend[T]](
           run(config, frontend)
         } catch {
           case ex: Throwable =>
-            println(ex.getMessage)
             ex.printStackTrace()
             System.exit(1)
         }
