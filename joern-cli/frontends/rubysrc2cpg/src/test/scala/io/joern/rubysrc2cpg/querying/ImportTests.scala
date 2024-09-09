@@ -24,6 +24,42 @@ class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with In
     call.argument.where(_.argumentIndexGt(0)).code.l shouldBe List("'test'")
   }
 
+  "`require_relative 'test'` is a CALL node with an IMPORT node pointing to it" in {
+    val cpg = code("""
+        |require_relative 'test'
+        |""".stripMargin)
+    val List(importNode) = cpg.imports.l
+    importNode.importedEntity shouldBe Some("test")
+    importNode.importedAs shouldBe Some("test")
+    val List(call) = importNode.call.l
+    call.callee.name.l shouldBe List("require_relative")
+    call.argument.where(_.argumentIndexGt(0)).code.l shouldBe List("'test'")
+  }
+
+  "`load 'test'` is a CALL node with an IMPORT node pointing to it" in {
+    val cpg = code("""
+        |load 'test'
+        |""".stripMargin)
+    val List(importNode) = cpg.imports.l
+    importNode.importedEntity shouldBe Some("test")
+    importNode.importedAs shouldBe Some("test")
+    val List(call) = importNode.call.l
+    call.callee.name.l shouldBe List("load")
+    call.argument.where(_.argumentIndexGt(0)).code.l shouldBe List("'test'")
+  }
+
+  "`require_all 'test'` is a CALL node with an IMPORT node pointing to it" in {
+    val cpg = code("""
+        |require_all 'test'
+        |""".stripMargin)
+    val List(importNode) = cpg.imports.l
+    importNode.importedEntity shouldBe Some("test")
+    importNode.importedAs shouldBe Some("test")
+    val List(call) = importNode.call.l
+    call.callee.name.l shouldBe List("require_all")
+    call.argument.where(_.argumentIndexGt(0)).code.l shouldBe List("'test'")
+  }
+
   "`begin require 'test' rescue LoadError end` has a CALL node with an IMPORT node pointing to it" in {
     val cpg = code("""
                      |begin 
