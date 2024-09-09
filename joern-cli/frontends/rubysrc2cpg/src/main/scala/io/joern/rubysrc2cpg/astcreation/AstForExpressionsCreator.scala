@@ -601,7 +601,16 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       case _                                  => None
     }
     pathOpt.foreach(path => scope.addRequire(projectRoot.get, fileName, path, node.isRelative, node.isWildCard))
-    astForSimpleCall(node.asSimpleCall)
+
+    val callName = node.target.text
+    val requireCallNode = NewCall()
+      .name(node.target.text)
+      .code(code(node))
+      .methodFullName(getBuiltInType(callName))
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .typeFullName(Defines.Any)
+    val arguments = astForExpression(node.argument) :: Nil
+    callAst(requireCallNode, arguments)
   }
 
   protected def astForIncludeCall(node: IncludeCall): Ast = {
