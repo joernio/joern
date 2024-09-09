@@ -319,6 +319,13 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
     inArg.argumentName shouldBe Option("in")
   }
 
+  "Calls with named arguments using symbols and hash rocket syntax" in {
+    val cpg                      = code("render :foo => \"bar\"")
+    val List(_, barArg: Literal) = cpg.call.nameExact("render").argument.l: @unchecked
+    barArg.code shouldBe "\"bar\""
+    barArg.argumentName shouldBe Option("foo")
+  }
+
   "named parameters in parenthesis-less call with a known keyword as the association key should shadow the keyword" in {
     val cpg = code("""
         |foo retry: 3
