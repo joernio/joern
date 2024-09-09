@@ -954,18 +954,25 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForKeywordArgument(assoc: Association): Ast = {
+
+    def setArgumentName(argumentAst: Ast, name: String): Ast = {
+      argumentAst.root.collectFirst { case x: ExpressionNew =>
+        x.argumentName_=(Option(name))
+        x.argumentIndex_=(-1)
+      }
+      argumentAst
+    }
+
     val value = astForExpression(assoc.value)
-    assoc.key match
-      case keyIdentifier: SimpleIdentifier =>
-        value.root.collectFirst { case x: ExpressionNew =>
-          x.argumentName_=(Option(keyIdentifier.text))
-          x.argumentIndex_=(-1)
-        }
-        value
+    assoc.key match {
+      case keyIdentifier: SimpleIdentifier => setArgumentName(value, keyIdentifier.text)
+      case symbol @ StaticLiteral(typ) if typ == getBuiltInType(Defines.Symbol) =>
+        setArgumentName(value, symbol.text.stripPrefix(":"))
       case _: (LiteralExpr | RubyCall) => astForExpression(assoc)
       case x =>
         logger.warn(s"Not explicitly handled argument association key of type ${x.getClass.getSimpleName}")
         astForExpression(assoc)
+    }
   }
 
   protected def astForSplattingRubyNode(node: SplattingRubyNode): Ast = {
