@@ -7,6 +7,7 @@ import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.{Self, getBuiltInType}
 import io.joern.rubysrc2cpg.passes.GlobalTypes.builtinPrefix
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
+import io.joern.x2cpg.frontendspecific.rubysrc2cpg.ImportsPass
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.tree.{ParseTree, RuleNode}
 import org.slf4j.LoggerFactory
@@ -675,12 +676,10 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
       val identifierCtx = ctx.methodIdentifier()
       val arguments     = ctx.commandArgument().arguments.map(visit)
       (identifierCtx.getText, arguments) match {
-        case ("require", List(argument)) =>
-          RequireCall(visit(identifierCtx), argument)(ctx.toTextSpan)
-        case ("require_relative", List(argument)) =>
-          RequireCall(visit(identifierCtx), argument, true)(ctx.toTextSpan)
-        case ("require_all", List(argument)) =>
-          RequireCall(visit(identifierCtx), argument, true, true)(ctx.toTextSpan)
+        case (requireLike, List(argument)) if ImportsPass.ImportCallNames.contains(requireLike) =>
+          val isRelative = requireLike == "require_relative" || requireLike == "require_all"
+          val isWildcard = requireLike == "require_all"
+          RequireCall(visit(identifierCtx), argument, isRelative, isWildcard)(ctx.toTextSpan)
         case ("include", List(argument)) =>
           IncludeCall(visit(identifierCtx), argument)(ctx.toTextSpan)
         case ("raise", List(argument: LiteralExpr)) =>

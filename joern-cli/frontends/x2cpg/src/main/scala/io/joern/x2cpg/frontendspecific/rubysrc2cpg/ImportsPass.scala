@@ -9,9 +9,7 @@ import io.shiftleft.semanticcpg.language.*
 
 class ImportsPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Call](cpg) {
 
-  private val importCallName: Seq[String] = Seq("require", "load", "require_relative", "require_all")
-
-  override def generateParts(): Array[Call] = cpg.call.nameExact(importCallName*).toArray
+  override def generateParts(): Array[Call] = cpg.call.nameExact(ImportsPass.ImportCallNames.toSeq*).toArray
 
   override def runOnPart(diffGraph: DiffGraphBuilder, call: Call): Unit = {
     val importedEntity = stripQuotes(call.argument.isLiteral.code.l match {
@@ -21,4 +19,8 @@ class ImportsPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Call](cpg) {
     val importNode = createImportNodeAndLink(importedEntity, importedEntity, Some(call), diffGraph)
     if (call.name == "require_all") importNode.isWildcard(true)
   }
+}
+
+object ImportsPass {
+  val ImportCallNames: Set[String] = Set("require", "load", "require_relative", "require_all")
 }
