@@ -29,9 +29,14 @@ object XTypeRecoveryConfig {
 
   def parse(cmdLineArgs: Seq[String]): XTypeRecoveryConfig = {
     OParser
-      .parse(parserOptions, cmdLineArgs, XTypeRecoveryConfig(), new DefaultOParserSetup {
-        override def errorOnUnknownArgument = false
-      })
+      .parse(
+        parserOptions,
+        cmdLineArgs,
+        XTypeRecoveryConfig(),
+        new DefaultOParserSetup {
+          override def errorOnUnknownArgument = false
+        }
+      )
       .getOrElse(
         throw new RuntimeException(
           s"unable to parse XTypeRecoveryConfig from commandline arguments ${cmdLineArgs.mkString(" ")}"
@@ -75,7 +80,7 @@ object XTypeRecoveryConfig {
             logger.warn(s"Large iteration count of $x will take a while to terminate")
           }
           success
-        },
+        }
     )
   }
 
