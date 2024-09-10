@@ -176,7 +176,11 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
   override def visitReturnMethodInvocationWithoutParentheses(
     ctx: RubyParser.ReturnMethodInvocationWithoutParenthesesContext
   ): RubyExpression = {
-    val expressions = ctx.primaryValueListWithAssociation().elements.map(visit).toList
+    val expressions = Option(ctx.primaryValueListWithAssociation().methodInvocationWithoutParentheses()) match {
+      case Some(methodInvocation) => visit(methodInvocation) :: Nil
+      case None                   => ctx.primaryValueListWithAssociation().elements.map(visit).toList
+    }
+
     ReturnExpression(expressions)(ctx.toTextSpan)
   }
 
