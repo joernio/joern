@@ -403,8 +403,12 @@ primaryValue
         # logicalAndExpression
     |   primaryValue orOperator=BAR2        NL* primaryValue
         # logicalOrExpression
-    |   primaryValue rangeOperator          NL* primaryValue
-        # rangeExpression
+    |   primaryValue rangeOperator
+        # endlessRangeExpression
+    |   rangeOperator primaryValue
+        # beginlessRangeExpression
+    |   primaryValue rangeOperator NL* primaryValue
+        # boundedRangeExpression
     |   hereDoc
         # hereDocs
     ;
