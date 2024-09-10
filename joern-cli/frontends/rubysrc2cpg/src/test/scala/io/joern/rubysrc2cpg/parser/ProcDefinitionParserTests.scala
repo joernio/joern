@@ -5,12 +5,13 @@ import org.scalatest.matchers.should.Matchers
 
 class ProcDefinitionParserTests extends RubyParserFixture with Matchers {
   "fixme" ignore {
-    test("->a{}")                   // Syntax error
-    test("->(b, c=1, *d, e, &f){}") // Syntax error
-    test("-> (a;b) {}")             // Syntax error
+    test("-> (a;b) {}") // Syntax error
   }
 
   "one-line proc definition" in {
+    test("->a{}", "->(a) {}")
+    test("->(b, c=1, *d, e, &f){}", "->(b,c=1,*d,&f,e) {}")
+
     test("-> {}")
 
     test(
