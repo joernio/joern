@@ -43,7 +43,7 @@ class TypeTraversal(val traversal: Iterator[Type]) extends AnyVal {
   /** Direct and transitive base types of the corresponding type declaration.
     */
   def baseTypeTransitive: Iterator[Type] =
-    traversal.repeat(_.baseType)(_.emitAllButFirst)
+    traversal.repeat(_.baseType)(_.emitAllButFirst.dedup)
 
   /** Direct derived types.
     */
@@ -53,7 +53,7 @@ class TypeTraversal(val traversal: Iterator[Type]) extends AnyVal {
   /** Direct and transitive derived types.
     */
   def derivedTypeTransitive: Iterator[Type] =
-    traversal.repeat(_.derivedType)(_.emitAllButFirst)
+    traversal.repeat(_.derivedType)(_.emitAllButFirst.dedup)
 
   /** Type declarations which derive from this type.
     */
@@ -68,7 +68,7 @@ class TypeTraversal(val traversal: Iterator[Type]) extends AnyVal {
   /** Direct and transitive alias types.
     */
   def aliasTypeTransitive: Iterator[Type] =
-    traversal.repeat(_.aliasType)(_.emitAllButFirst)
+    traversal.repeat(_.aliasType)(_.emitAllButFirst.dedup)
 
   def localOfType: Iterator[Local] =
     traversal._localViaEvalTypeIn
