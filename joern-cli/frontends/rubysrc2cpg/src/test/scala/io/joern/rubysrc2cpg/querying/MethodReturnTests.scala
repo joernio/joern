@@ -497,9 +497,12 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
         val List(ifReturnTrue: Return) = ifNode.whenTrue.isBlock.astChildren.isReturn.l
         ifReturnTrue.code shouldBe "return render json: {}, status: :internal_server_error"
 
-        val List(_, jsonArg, statusArg) = ifReturnTrue.astChildren.isCall.argument.l: @unchecked
+        val List(_, jsonArg: Block, statusArg: Literal) = ifReturnTrue.astChildren.isCall.argument.l: @unchecked
         jsonArg.argumentName shouldBe Some("json")
         jsonArg.code shouldBe "<empty>"
+
+        val List(_: Identifier, hashInitCall: Call) = jsonArg.astChildren.isCall.argument.l: @unchecked
+        hashInitCall.methodFullName shouldBe RubyOperators.hashInitializer
 
         statusArg.argumentName shouldBe Some("status")
         statusArg.code shouldBe ":internal_server_error"
