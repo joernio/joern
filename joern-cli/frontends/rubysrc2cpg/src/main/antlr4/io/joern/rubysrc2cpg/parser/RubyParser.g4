@@ -169,10 +169,10 @@ commandWithDoBlock
     ;
 
 indexingArgumentList
-    :   command
-        # commandIndexingArgumentList
-    |   operatorExpressionList COMMA?
+    :   operatorExpressionList COMMA?
         # operatorExpressionListIndexingArgumentList
+    |   command
+        # commandIndexingArgumentList
     |   operatorExpressionList COMMA splattingArgument
         # operatorExpressionListWithSplattingArgumentIndexingArgumentList
     |   (indexingArgument COMMA? NL*)*
@@ -403,12 +403,12 @@ primaryValue
         # logicalAndExpression
     |   primaryValue orOperator=BAR2        NL* primaryValue
         # logicalOrExpression
+    |   primaryValue rangeOperator NL* primaryValue
+        # boundedRangeExpression
     |   primaryValue rangeOperator
         # endlessRangeExpression
     |   rangeOperator primaryValue
         # beginlessRangeExpression
-    |   primaryValue rangeOperator NL* primaryValue
-        # boundedRangeExpression
     |   hereDoc
         # hereDocs
     ;
