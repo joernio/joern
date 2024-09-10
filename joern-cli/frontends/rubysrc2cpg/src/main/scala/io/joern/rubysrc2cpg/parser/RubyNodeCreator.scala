@@ -1078,10 +1078,43 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     }
   }
 
-  override def visitRangeExpression(ctx: RubyParser.RangeExpressionContext): RubyExpression = {
+  override def visitBoundedRangeExpression(ctx: RubyParser.BoundedRangeExpressionContext): RubyExpression = {
     RangeExpression(
       visit(ctx.primaryValue(0)),
       visit(ctx.primaryValue(1)),
+      visit(ctx.rangeOperator()).asInstanceOf[RangeOperator]
+    )(ctx.toTextSpan)
+  }
+
+  override def visitEndlessRangeExpression(ctx: RubyParser.EndlessRangeExpressionContext): RubyExpression = {
+    val infinityUpperBound =
+      MemberAccess(
+        SimpleIdentifier(Option(getBuiltInType(Defines.Float)))(ctx.toTextSpan.spanStart("Float")),
+        "::",
+        "INFINITY"
+      )(ctx.toTextSpan.spanStart("Float::INFINITY"))
+
+    RangeExpression(
+      visit(ctx.primaryValue),
+      infinityUpperBound,
+      visit(ctx.rangeOperator()).asInstanceOf[RangeOperator]
+    )(ctx.toTextSpan)
+  }
+
+  override def visitBeginlessRangeExpression(ctx: RubyParser.BeginlessRangeExpressionContext): RubyExpression = {
+    val lowerBoundInfinity =
+      UnaryExpression(
+        "-",
+        MemberAccess(
+          SimpleIdentifier(Option(getBuiltInType(Defines.Float)))(ctx.toTextSpan.spanStart("Float")),
+          "::",
+          "INFINITY"
+        )(ctx.toTextSpan.spanStart("Float::INFINITY"))
+      )(ctx.toTextSpan.spanStart("-Float::INFINITY"))
+
+    RangeExpression(
+      lowerBoundInfinity,
+      visit(ctx.primaryValue),
       visit(ctx.rangeOperator()).asInstanceOf[RangeOperator]
     )(ctx.toTextSpan)
   }

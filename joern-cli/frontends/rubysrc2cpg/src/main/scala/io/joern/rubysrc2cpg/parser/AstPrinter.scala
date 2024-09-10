@@ -929,12 +929,26 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     s"${ctx.QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_START.getText}$elementsString${ctx.QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_END.getText}"
   }
 
-  override def visitRangeExpression(ctx: RubyParser.RangeExpressionContext): String = {
+  override def visitBoundedRangeExpression(ctx: RubyParser.BoundedRangeExpressionContext): String = {
     val lowerBound = visit(ctx.primaryValue(0))
     val upperBound = visit(ctx.primaryValue(1))
     val op         = visit(ctx.rangeOperator())
 
     s"$lowerBound$op$upperBound"
+  }
+
+  override def visitEndlessRangeExpression(ctx: RubyParser.EndlessRangeExpressionContext): String = {
+    val lowerBound = visit(ctx.primaryValue)
+    val op         = ctx.rangeOperator().getText
+
+    s"$lowerBound${op}Float::INFINITY"
+  }
+
+  override def visitBeginlessRangeExpression(ctx: RubyParser.BeginlessRangeExpressionContext): String = {
+    val upperBound = visit(ctx.primaryValue)
+    val op         = ctx.rangeOperator().getText
+
+    s"-Float::INFINITY$op$upperBound"
   }
 
   override def visitRangeOperator(ctx: RubyParser.RangeOperatorContext): String = {
