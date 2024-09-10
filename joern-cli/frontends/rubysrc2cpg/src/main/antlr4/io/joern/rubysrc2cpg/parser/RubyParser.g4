@@ -311,7 +311,7 @@ primaryValue
         # singletonMethodDefinition
     |   DEF definedMethodName (LPAREN parameterList? RPAREN)? EQ NL* statement
         # endlessMethodDefinition
-    |   MINUSGT (LPAREN? blockParameterList? RPAREN?)? block
+    |   MINUSGT lambdaExpressionParameterList block
         # lambdaExpression
 
         // Control structures
@@ -407,6 +407,11 @@ primaryValue
         # rangeExpression
     |   hereDoc
         # hereDocs
+    ;
+
+lambdaExpressionParameterList
+    :   LPAREN blockParameterList? RPAREN
+    |   blockParameterList?
     ;
 
 // Non-nested calls
