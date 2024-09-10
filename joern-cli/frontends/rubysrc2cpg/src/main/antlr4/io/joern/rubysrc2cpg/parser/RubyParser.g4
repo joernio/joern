@@ -311,7 +311,7 @@ primaryValue
         # singletonMethodDefinition
     |   DEF definedMethodName (LPAREN parameterList? RPAREN)? EQ NL* statement
         # endlessMethodDefinition
-    |   MINUSGT (LPAREN parameterList? RPAREN)? block
+    |   MINUSGT (LPAREN? blockParameterList? RPAREN?)? block
         # lambdaExpression
 
         // Control structures

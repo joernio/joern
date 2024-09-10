@@ -768,7 +768,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
   }
 
   override def visitLambdaExpression(ctx: RubyParser.LambdaExpressionContext): RubyExpression = {
-    val parameters = Option(ctx.parameterList()).fold(List())(_.parameters).map(visit)
+    val parameters = Option(ctx.blockParameterList()).fold(List())(_.parameters).map(visit)
     val body       = visit(ctx.block()).asInstanceOf[Block]
     ProcOrLambdaExpr(Block(parameters, body)(ctx.toTextSpan))(ctx.toTextSpan)
   }
