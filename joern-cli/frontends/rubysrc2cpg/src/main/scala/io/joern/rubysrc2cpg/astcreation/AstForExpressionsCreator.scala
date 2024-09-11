@@ -226,7 +226,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
             val typeName = surroundingType.split('.').last
             TypeIdentifier(s"$surroundingType<class>")(x.span.spanStart(typeName))
           case None if scope.lookupVariable(x.text).isDefined => x
-          case None => MemberAccess(SelfIdentifier()(x.span.spanStart(Defines.Self)), ".", x.text)(x.span)
+          case None if x.text.charAt(0).isUpper => // calls have lower-case first character
+            MemberAccess(SelfIdentifier()(x.span.spanStart(Defines.Self)), ".", x.text)(x.span)
+          case None => MemberCall(SelfIdentifier()(x.span.spanStart(Defines.Self)), ".", x.text, Nil)(x.span)
         }
       case x @ MemberAccess(ma, _, _) => x.copy(target = determineMemberAccessBase(ma))(x.span)
       case _                          => target
