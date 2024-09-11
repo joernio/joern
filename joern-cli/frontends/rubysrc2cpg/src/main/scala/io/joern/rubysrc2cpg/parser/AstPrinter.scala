@@ -183,7 +183,12 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   override def visitReturnMethodInvocationWithoutParentheses(
     ctx: RubyParser.ReturnMethodInvocationWithoutParenthesesContext
   ): String = {
-    s"return ${ctx.primaryValueListWithAssociation().elements.map(visit).toList.mkString(",")}"
+    val expressions = Option(ctx.primaryValueListWithAssociation().methodInvocationWithoutParentheses()) match {
+      case Some(methodInvocation) => visit(methodInvocation) :: Nil
+      case None                   => ctx.primaryValueListWithAssociation().elements.map(visit).toList
+    }
+
+    s"return ${expressions.toList.mkString(",")}"
   }
 
   override def visitReturnWithoutArguments(ctx: RubyParser.ReturnWithoutArgumentsContext): String = {

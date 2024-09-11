@@ -11,5 +11,6 @@ class ReturnParserTests extends RubyParserFixture with Matchers {
     test("return y(z:1)", "return y(z: 1)")
     test("return y(z=> 1)")
     test("return 1, :z => 1", "return 1,:z=> 1")
+    test("return render 1,2,3")
   }
 }

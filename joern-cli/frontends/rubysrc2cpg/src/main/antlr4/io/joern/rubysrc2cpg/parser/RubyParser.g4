@@ -242,6 +242,7 @@ primaryValueList
 
 primaryValueListWithAssociation
     :   (primaryValue | association)? (COMMA NL* (primaryValue | association))*
+    |   methodInvocationWithoutParentheses
     ;
 
 blockArgument
