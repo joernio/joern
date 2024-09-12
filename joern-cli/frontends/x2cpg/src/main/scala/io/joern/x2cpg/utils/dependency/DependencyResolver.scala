@@ -19,7 +19,6 @@ case class DependencyResolverParams(
 
 object DependencyResolver {
   private val logger                         = LoggerFactory.getLogger(getClass)
-  private val defaultGradleProjectName       = "app"
   private val defaultGradleConfigurationName = "compileClasspath"
   private val MaxSearchDepth: Int            = 4
 
@@ -31,9 +30,10 @@ object DependencyResolver {
       if (isMavenBuildFile(buildFile))
         // TODO: implement
         None
-      else if (isGradleBuildFile(buildFile))
+      else if (isGradleBuildFile(buildFile)) {
+        // TODO: Don't limit this to the default configuration name
         getCoordinatesForGradleProject(buildFile.getParent, defaultGradleConfigurationName)
-      else {
+      } else {
         logger.warn(s"Found unsupported build file $buildFile")
         Nil
       }
@@ -84,10 +84,9 @@ object DependencyResolver {
     projectDir: Path
   ): Option[collection.Seq[String]] = {
     logger.info("resolving Gradle dependencies at {}", projectDir)
-    val gradleProjectName = params.forGradle.getOrElse(GradleConfigKeys.ProjectName, defaultGradleProjectName)
-    val gradleConfiguration =
-      params.forGradle.getOrElse(GradleConfigKeys.ConfigurationName, defaultGradleConfigurationName)
-    GradleDependencies.get(projectDir, gradleProjectName, gradleConfiguration) match {
+    val gradleProjectName   = params.forGradle.get(GradleConfigKeys.ProjectName)
+    val gradleConfiguration = params.forGradle.get(GradleConfigKeys.ConfigurationName)
+    GradleDependencies.get(projectDir, None, None) match {
       case Some(deps) => Some(deps)
       case None =>
         logger.warn(s"Could not download Gradle dependencies for project at path `$projectDir`")
