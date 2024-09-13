@@ -168,6 +168,18 @@ commandWithDoBlock
     |   primary (DOT | COLON2) methodName argumentList doBlock
     ;
 
+bracketedArrayElementList
+    :   bracketedArrayElement (COMMA? NL* bracketedArrayElement)* COMMA?
+    ;
+
+bracketedArrayElement
+    :   operatorExpressionList
+    |   command
+    |   indexingArgument
+    |   associationList
+    |   splattingArgument
+    ;
+
 indexingArgumentList
     :   operatorExpressionList COMMA?
         # operatorExpressionListIndexingArgumentList
@@ -179,7 +191,7 @@ indexingArgumentList
         #indexingArgumentIndexingArgumentList
     |   associationList COMMA?
         # associationListIndexingArgumentList
-    |   splattingArgument
+    |   splattingArgument (COMMA NL* splattingArgument)*
         # splattingArgumentIndexingArgumentList
     ;
 
@@ -339,7 +351,7 @@ primaryValue
         # methodCallWithParentheses
 
         // Literals
-    |   LBRACK NL* indexingArgumentList? NL* RBRACK
+    |   LBRACK NL* bracketedArrayElementList? NL* RBRACK
         # bracketedArrayLiteral
     |   QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_START quotedNonExpandedArrayElementList? QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END
         # quotedNonExpandedStringArrayLiteral

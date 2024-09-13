@@ -1020,7 +1020,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
   }
 
   override def visitBracketedArrayLiteral(ctx: RubyParser.BracketedArrayLiteralContext): RubyExpression = {
-    ArrayLiteral(Option(ctx.indexingArgumentList()).map(_.arguments).getOrElse(List()).map(visit))(ctx.toTextSpan)
+    ArrayLiteral(Option(ctx.bracketedArrayElementList()).map(_.elements).getOrElse(List()).map(visit))(ctx.toTextSpan)
   }
 
   override def visitQuotedNonExpandedStringArrayLiteral(

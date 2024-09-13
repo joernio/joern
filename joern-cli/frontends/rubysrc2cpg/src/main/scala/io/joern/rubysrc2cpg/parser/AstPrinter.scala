@@ -880,7 +880,8 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   }
 
   override def visitBracketedArrayLiteral(ctx: RubyParser.BracketedArrayLiteralContext): String = {
-    val args = Option(ctx.indexingArgumentList()).map(_.arguments).getOrElse(List()).map(visit).mkString(",")
+    val args = Option(ctx.bracketedArrayElementList()).map(_.elements).getOrElse(List()).map(visit).mkString(",")
+
     s"${ctx.LBRACK.getText}$args${ctx.RBRACK.getText}"
   }
 
