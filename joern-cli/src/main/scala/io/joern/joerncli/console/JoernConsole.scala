@@ -6,7 +6,7 @@ import io.joern.console.workspacehandling.{ProjectFile, WorkspaceLoader}
 import io.joern.console.{Console, ConsoleConfig, InstallConfig}
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
-import io.joern.dataflowengineoss.semanticsloader.FullNameSemantics
+import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.Cpg
 
 import java.nio.file.Path
@@ -25,7 +25,7 @@ class JoernConsole extends Console[JoernProject](new JoernWorkspaceLoader) {
 
   override val config: ConsoleConfig = JoernConsole.defaultConfig
 
-  implicit var semantics: FullNameSemantics = context.semantics
+  implicit var semantics: Semantics = context.semantics
 
   // this is set to be `opts.ossdataflow` on initialization of the shell
   var ossDataFlowOptions: OssDataFlowOptions = new OssDataFlowOptions()

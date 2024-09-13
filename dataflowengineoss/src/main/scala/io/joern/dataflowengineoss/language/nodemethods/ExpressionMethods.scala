@@ -8,7 +8,7 @@ class ExpressionMethods[NodeType <: Expression](val node: NodeType) extends AnyV
 
   /** Determine whether evaluation of the call this argument is a part of results in usage of this argument.
     */
-  def isUsed(implicit semantics: FullNameSemantics): Boolean = {
+  def isUsed(implicit semantics: Semantics): Boolean = {
     val s = semanticsForCallByArg
     s.isEmpty || s.exists(_.mappings.exists {
       case FlowMapping(ParameterNode(_, Some(srcName)), _) if node.argumentName.isDefined =>
@@ -21,7 +21,7 @@ class ExpressionMethods[NodeType <: Expression](val node: NodeType) extends AnyV
 
   /** Determine whether evaluation of the call this argument is a part of results in definition of this argument.
     */
-  def isDefined(implicit semantics: FullNameSemantics): Boolean = {
+  def isDefined(implicit semantics: Semantics): Boolean = {
     val s = semanticsForCallByArg.l
     s.isEmpty || s.exists { semantic =>
       semantic.mappings.exists {
@@ -51,7 +51,7 @@ class ExpressionMethods[NodeType <: Expression](val node: NodeType) extends AnyV
     * @return
     *   true if there is flow defined between the two nodes, false if otherwise.
     */
-  def hasDefinedFlowTo(tgt: Expression)(implicit semantics: FullNameSemantics): Boolean = {
+  def hasDefinedFlowTo(tgt: Expression)(implicit semantics: Semantics): Boolean = {
     val s = semanticsForCallByArg.l
     s.isEmpty || s.exists { semantic =>
       semantic.mappings.exists {
@@ -72,10 +72,8 @@ class ExpressionMethods[NodeType <: Expression](val node: NodeType) extends AnyV
 
   /** Retrieve flow semantic for the call this argument is a part of.
     */
-  def semanticsForCallByArg(implicit semantics: FullNameSemantics): Iterator[FlowSemantic] = {
-    argToMethods(node).flatMap { method =>
-      semantics.forMethod(method.fullName)
-    }
+  def semanticsForCallByArg(implicit semantics: Semantics): Iterator[FlowSemantic] = {
+    argToMethods(node).flatMap(semantics.forMethod)
   }
 
   private def argToMethods(arg: Expression): Iterator[Method] = {

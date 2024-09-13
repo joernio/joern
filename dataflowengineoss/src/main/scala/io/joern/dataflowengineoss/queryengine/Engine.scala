@@ -4,7 +4,7 @@ import flatgraph.Edge
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.passes.reachingdef.EdgeValidator
-import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, FullNameSemantics}
+import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.semanticcpg.language.*
@@ -197,13 +197,13 @@ object Engine {
     *   the path that has been expanded to reach the `curNode`
     */
   def expandIn(curNode: CfgNode, path: Vector[PathElement], callSiteStack: List[Call] = List())(implicit
-    semantics: FullNameSemantics
+    semantics: Semantics
   ): Vector[PathElement] = {
     ddgInE(curNode, path, callSiteStack).flatMap(x => elemForEdge(x, callSiteStack))
   }
 
   private def elemForEdge(e: Edge, callSiteStack: List[Call] = List())(implicit
-    semantics: FullNameSemantics
+    semantics: Semantics
   ): Option[PathElement] = {
     val curNode = e.dst.asInstanceOf[CfgNode]
     val parNode = e.src.asInstanceOf[CfgNode]
@@ -240,7 +240,7 @@ object Engine {
     }
   }
 
-  def isOutputArgOfInternalMethod(arg: Expression)(implicit semantics: FullNameSemantics): Boolean = {
+  def isOutputArgOfInternalMethod(arg: Expression)(implicit semantics: Semantics): Boolean = {
     arg.inCall.l match {
       case List(call) =>
         methodsForCall(call).internal.isNotStub.nonEmpty && semanticsForCall(call).isEmpty
@@ -287,14 +287,12 @@ object Engine {
   def isCallToInternalMethod(call: Call): Boolean = {
     methodsForCall(call).internal.nonEmpty
   }
-  def isCallToInternalMethodWithoutSemantic(call: Call)(implicit semantics: FullNameSemantics): Boolean = {
+  def isCallToInternalMethodWithoutSemantic(call: Call)(implicit semantics: Semantics): Boolean = {
     isCallToInternalMethod(call) && semanticsForCall(call).isEmpty
   }
 
-  def semanticsForCall(call: Call)(implicit semantics: FullNameSemantics): List[FlowSemantic] = {
-    Engine.methodsForCall(call).flatMap { method =>
-      semantics.forMethod(method.fullName)
-    }
+  def semanticsForCall(call: Call)(implicit semantics: Semantics): List[FlowSemantic] = {
+    Engine.methodsForCall(call).flatMap(semantics.forMethod)
   }
 
 }
@@ -305,7 +303,7 @@ object Engine {
   * @param config
   *   additional configurations for the data flow engine.
   */
-case class EngineContext(semantics: FullNameSemantics = DefaultSemantics(), config: EngineConfig = EngineConfig())
+case class EngineContext(semantics: Semantics = DefaultSemantics(), config: EngineConfig = EngineConfig())
 
 /** Various configurations for the data flow engine.
   * @param maxCallDepth

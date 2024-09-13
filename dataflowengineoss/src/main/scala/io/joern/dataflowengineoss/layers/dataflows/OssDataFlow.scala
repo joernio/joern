@@ -2,7 +2,7 @@ package io.joern.dataflowengineoss.layers.dataflows
 
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.passes.reachingdef.ReachingDefPass
-import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, FullNameSemantics}
+import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, FullNameSemantics, Semantics}
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
 
 object OssDataFlow {
@@ -18,7 +18,7 @@ class OssDataFlowOptions(
 ) extends LayerCreatorOptions {}
 
 class OssDataFlow(opts: OssDataFlowOptions)(implicit
-  s: FullNameSemantics = FullNameSemantics.fromList(DefaultSemantics().elements ++ opts.extraFlows)
+  s: Semantics = FullNameSemantics.fromList(DefaultSemantics().elements ++ opts.extraFlows)
 ) extends LayerCreator {
 
   override val overlayName: String = OssDataFlow.overlayName

@@ -1,7 +1,7 @@
 package io.joern.dataflowengineoss.queryengine
 
 import io.joern.dataflowengineoss.queryengine.QueryEngineStatistics.{PATH_CACHE_HITS, PATH_CACHE_MISSES}
-import io.joern.dataflowengineoss.semanticsloader.FullNameSemantics
+import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
@@ -28,8 +28,8 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
     * list is returned. Otherwise, the task is solved and its results are returned.
     */
   override def call(): TaskSummary = {
-    implicit val sem: FullNameSemantics = context.semantics
-    val path                            = Vector(PathElement(task.sink, task.callSiteStack))
+    implicit val sem: Semantics = context.semantics
+    val path                    = Vector(PathElement(task.sink, task.callSiteStack))
     val table: mutable.Map[TaskFingerprint, Vector[ReachableByResult]] = mutable.Map()
     results(task.sink, path, table, task.callSiteStack)
     // TODO why do we update the call depth here?
@@ -73,7 +73,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
     path: Vector[PathElement],
     table: mutable.Map[TaskFingerprint, Vector[ReachableByResult]],
     callSiteStack: List[Call]
-  )(implicit semantics: FullNameSemantics): Vector[ReachableByResult] = {
+  )(implicit semantics: Semantics): Vector[ReachableByResult] = {
 
     val curNode = path.head.node
 

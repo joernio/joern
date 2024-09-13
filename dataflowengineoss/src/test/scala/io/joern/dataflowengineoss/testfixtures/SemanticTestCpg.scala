@@ -47,6 +47,8 @@ trait SemanticTestCpg { this: TestCpg =>
   */
 trait SemanticCpgTestFixture(extraFlows: List[FlowSemantic] = List.empty) {
 
-  implicit val context: EngineContext = EngineContext(FullNameSemantics.fromList(DefaultSemantics().elements ++ extraFlows))
+  implicit val context: EngineContext = EngineContext(
+    FullNameSemantics.fromList(DefaultSemantics().elements ++ extraFlows)
+  )
 
 }

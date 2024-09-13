@@ -4,16 +4,18 @@ import better.files.*
 import io.joern.console.scan.{ScanPass, outputFindings}
 import io.joern.console.{BridgeBase, DefaultArgumentProvider, Query, QueryDatabase}
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
-import io.joern.dataflowengineoss.semanticsloader.FullNameSemantics
+import io.joern.dataflowengineoss.semanticsloader.{Semantics, NoSemantics}
 import io.joern.joerncli.JoernScan.getQueriesFromQueryDb
 import io.joern.joerncli.Scan.{allTag, defaultTag}
 import io.joern.joerncli.console.ReplBridge
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder}
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
+
 import java.io.PrintStream
 import org.json4s.native.Serialization
 import org.json4s.{Formats, NoTypeHints}
+
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 
@@ -128,7 +130,7 @@ object JoernScan extends BridgeBase {
   }
 
   private def dumpQueriesAsJson(outFileName: String): Unit = {
-    implicit val engineContext: EngineContext = EngineContext(FullNameSemantics.empty)
+    implicit val engineContext: EngineContext = EngineContext(NoSemantics)
     implicit val formats: AnyRef & Formats    = Serialization.formats(NoTypeHints)
     val queryDb                               = new QueryDatabase(new JoernDefaultArgumentProvider(0))
     better.files
@@ -179,7 +181,7 @@ object JoernScan extends BridgeBase {
   }
 
   private def queryNames(): List[String] = {
-    implicit val engineContext: EngineContext = EngineContext(FullNameSemantics.empty)
+    implicit val engineContext: EngineContext = EngineContext(NoSemantics)
     getQueriesFromQueryDb(new JoernDefaultArgumentProvider(0)).map(_.name)
   }
 

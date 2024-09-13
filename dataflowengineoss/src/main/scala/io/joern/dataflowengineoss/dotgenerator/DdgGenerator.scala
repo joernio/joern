@@ -4,7 +4,7 @@ import io.joern.dataflowengineoss.DefaultSemantics
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.joern.dataflowengineoss.language.*
-import io.joern.dataflowengineoss.semanticsloader.FullNameSemantics
+import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.semanticcpg.dotgenerator.DotSerializer.{Edge, Graph}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.utils.MemberAccess.isGenericMemberAccessName
@@ -16,7 +16,7 @@ class DdgGenerator {
   val edgeType          = "DDG"
   private val edgeCache = mutable.Map[StoredNode, List[Edge]]()
 
-  def generate(methodNode: Method)(implicit semantics: FullNameSemantics = DefaultSemantics()): Graph = {
+  def generate(methodNode: Method)(implicit semantics: Semantics = DefaultSemantics()): Graph = {
     val entryNode                  = methodNode
     val paramNodes                 = methodNode.parameter.l
     val allOtherNodes              = methodNode.cfgNode.l
@@ -63,7 +63,7 @@ class DdgGenerator {
   )
 
   private def inEdgesToDisplay(dstNode: StoredNode, visited: List[StoredNode] = List())(implicit
-    semantics: FullNameSemantics
+    semantics: Semantics
   ): List[Edge] = {
 
     if (edgeCache.contains(dstNode)) {
@@ -84,7 +84,7 @@ class DdgGenerator {
     }
   }
 
-  private def expand(v: StoredNode)(implicit semantics: FullNameSemantics): Iterator[Edge] = {
+  private def expand(v: StoredNode)(implicit semantics: Semantics): Iterator[Edge] = {
 
     val allInEdges = v
       .inE(EdgeTypes.REACHING_DEF)

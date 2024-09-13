@@ -10,7 +10,7 @@ import flatgraph.formats.graphson.GraphSONExporter
 import flatgraph.formats.neo4jcsv.Neo4jCsvExporter
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.layers.dataflows.*
-import io.joern.dataflowengineoss.semanticsloader.FullNameSemantics
+import io.joern.dataflowengineoss.semanticsloader.{NoSemantics, Semantics}
 import io.joern.joerncli.CpgBasedTool.exitIfInvalid
 import io.joern.x2cpg.layers.*
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -95,8 +95,8 @@ object JoernExport {
   }
 
   def exportCpg(cpg: Cpg, representation: Representation.Value, format: Format.Value, outDir: Path): Unit = {
-    implicit val semantics: FullNameSemantics = DefaultSemantics()
-    if (semantics.elements.isEmpty) {
+    implicit val semantics: Semantics = DefaultSemantics()
+    if (semantics == NoSemantics) {
       System.err.println("Warning: semantics are empty.")
     }
 

@@ -3,7 +3,7 @@ package io.joern.dataflowengineoss.language
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.queryengine.*
 import io.joern.dataflowengineoss.queryengine.SourcesToStartingPoints.sourceTravsToStartingPoints
-import io.joern.dataflowengineoss.semanticsloader.FullNameSemantics
+import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
@@ -14,14 +14,14 @@ import scala.collection.parallel.CollectionConverters.*
   */
 class ExtendedCfgNode(val traversal: Iterator[CfgNode]) extends AnyVal {
 
-  def ddgIn(implicit semantics: FullNameSemantics = DefaultSemantics()): Iterator[CfgNode] = {
+  def ddgIn(implicit semantics: Semantics = DefaultSemantics()): Iterator[CfgNode] = {
     val cache  = mutable.HashMap[CfgNode, Vector[PathElement]]()
     val result = traversal.flatMap(x => x.ddgIn(Vector(PathElement(x)), withInvisible = false, cache))
     cache.clear()
     result
   }
 
-  def ddgInPathElem(implicit semantics: FullNameSemantics = DefaultSemantics()): Iterator[PathElement] = {
+  def ddgInPathElem(implicit semantics: Semantics = DefaultSemantics()): Iterator[PathElement] = {
     val cache  = mutable.HashMap[CfgNode, Vector[PathElement]]()
     val result = traversal.flatMap(x => x.ddgInPathElem(Vector(PathElement(x)), withInvisible = false, cache))
     cache.clear()

@@ -2,7 +2,7 @@ package io.joern.dataflowengineoss.passes.reachingdef
 
 import io.joern.dataflowengineoss.{globalFromLiteral, identifierToFirstUsages}
 import io.joern.dataflowengineoss.queryengine.AccessPathUsage.toTrackedBaseAndAccessPathSimple
-import io.joern.dataflowengineoss.semanticsloader.FullNameSemantics
+import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
 import io.shiftleft.semanticcpg.accesspath.MatchResult
@@ -13,9 +13,9 @@ import scala.collection.{Set, mutable}
 
 /** Creation of data dependence edges based on solution of the ReachingDefProblem.
   */
-class DdgGenerator(semantics: FullNameSemantics) {
+class DdgGenerator(semantics: Semantics) {
 
-  implicit val s: FullNameSemantics = semantics
+  implicit val s: Semantics = semantics
 
   /** Once reaching definitions have been computed, we create a data dependence graph by checking which reaching
     * definitions are relevant, meaning that a symbol is propagated that is used by the target node.

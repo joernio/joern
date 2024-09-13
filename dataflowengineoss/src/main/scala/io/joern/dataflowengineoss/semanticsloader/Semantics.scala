@@ -1,5 +1,25 @@
 package io.joern.dataflowengineoss.semanticsloader
 
+import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.nodes.Method
+
+trait Semantics {
+
+  /** Useful for `Semantics` that benefit from having some kind of internal state tailored to the current CPG.
+    */
+  def initialize(cpg: Cpg): Unit
+
+  def forMethod(method: Method): Option[FlowSemantic]
+}
+
+/** The empty Semantics */
+object NoSemantics extends Semantics {
+
+  override def initialize(cpg: Cpg): Unit = {}
+
+  override def forMethod(method: Method): Option[FlowSemantic] = None
+}
+
 case class FlowSemantic(methodFullName: String, mappings: List[FlowPath] = List.empty, regex: Boolean = false)
 
 object FlowSemantic {

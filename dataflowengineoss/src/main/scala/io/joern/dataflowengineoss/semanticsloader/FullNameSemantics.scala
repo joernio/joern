@@ -1,6 +1,8 @@
 package io.joern.dataflowengineoss.semanticsloader
 
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.nodes.Method
+import io.shiftleft.semanticcpg.language.*
 
 import scala.collection.mutable
 
@@ -20,7 +22,7 @@ object FullNameSemantics {
 
 }
 
-class FullNameSemantics private (methodToSemantic: mutable.Map[String, FlowSemantic]) {
+class FullNameSemantics private (methodToSemantic: mutable.Map[String, FlowSemantic]) extends Semantics {
 
   /** The map below keeps a mapping between results of a regex and the regex string it matches. e.g.
     *
@@ -30,7 +32,7 @@ class FullNameSemantics private (methodToSemantic: mutable.Map[String, FlowSeman
 
   /** Initialize all the method semantics that use regex with all their regex results before query time.
     */
-  def loadRegexSemantics(cpg: Cpg): Unit = {
+  override def initialize(cpg: Cpg): Unit = {
     import io.shiftleft.semanticcpg.language._
 
     methodToSemantic.filter(_._2.regex).foreach { case (regexString, _) =>
@@ -42,10 +44,12 @@ class FullNameSemantics private (methodToSemantic: mutable.Map[String, FlowSeman
 
   def elements: List[FlowSemantic] = methodToSemantic.values.toList
 
-  def forMethod(fullName: String): Option[FlowSemantic] = regexMatchedFullNames.get(fullName) match {
+  private def forMethod(fullName: String): Option[FlowSemantic] = regexMatchedFullNames.get(fullName) match {
     case Some(matchedFullName) => methodToSemantic.get(matchedFullName)
     case None                  => methodToSemantic.get(fullName)
   }
+
+  override def forMethod(method: Method): Option[FlowSemantic] = forMethod(method.fullName)
 
   def serialize: String = {
     elements
