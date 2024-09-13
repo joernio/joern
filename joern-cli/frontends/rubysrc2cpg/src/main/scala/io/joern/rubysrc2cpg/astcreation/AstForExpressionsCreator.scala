@@ -226,7 +226,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
             val typeName = surroundingType.split('.').last
             TypeIdentifier(s"$surroundingType<class>")(x.span.spanStart(typeName))
           case None if scope.lookupVariable(x.text).isDefined => x
-          case None => MemberAccess(SelfIdentifier()(x.span.spanStart(Defines.Self)), ".", x.text)(x.span)
+          case None if x.text.charAt(0).isUpper => // calls have lower-case first character
+            MemberAccess(SelfIdentifier()(x.span.spanStart(Defines.Self)), ".", x.text)(x.span)
+          case None => MemberCall(SelfIdentifier()(x.span.spanStart(Defines.Self)), ".", x.text, Nil)(x.span)
         }
       case x @ MemberAccess(ma, _, _) => x.copy(target = determineMemberAccessBase(ma))(x.span)
       case _                          => target
@@ -601,7 +603,16 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       case _                                  => None
     }
     pathOpt.foreach(path => scope.addRequire(projectRoot.get, fileName, path, node.isRelative, node.isWildCard))
-    astForSimpleCall(node.asSimpleCall)
+
+    val callName = node.target.text
+    val requireCallNode = NewCall()
+      .name(node.target.text)
+      .code(code(node))
+      .methodFullName(getBuiltInType(callName))
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .typeFullName(Defines.Any)
+    val arguments = astForExpression(node.argument) :: Nil
+    callAst(requireCallNode, arguments)
   }
 
   protected def astForIncludeCall(node: IncludeCall): Ast = {
@@ -954,18 +965,25 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForKeywordArgument(assoc: Association): Ast = {
+
+    def setArgumentName(argumentAst: Ast, name: String): Ast = {
+      argumentAst.root.collectFirst { case x: ExpressionNew =>
+        x.argumentName_=(Option(name))
+        x.argumentIndex_=(-1)
+      }
+      argumentAst
+    }
+
     val value = astForExpression(assoc.value)
-    assoc.key match
-      case keyIdentifier: SimpleIdentifier =>
-        value.root.collectFirst { case x: ExpressionNew =>
-          x.argumentName_=(Option(keyIdentifier.text))
-          x.argumentIndex_=(-1)
-        }
-        value
+    assoc.key match {
+      case keyIdentifier: SimpleIdentifier => setArgumentName(value, keyIdentifier.text)
+      case symbol @ StaticLiteral(typ) if typ == getBuiltInType(Defines.Symbol) =>
+        setArgumentName(value, symbol.text.stripPrefix(":"))
       case _: (LiteralExpr | RubyCall) => astForExpression(assoc)
       case x =>
         logger.warn(s"Not explicitly handled argument association key of type ${x.getClass.getSimpleName}")
         astForExpression(assoc)
+    }
   }
 
   protected def astForSplattingRubyNode(node: SplattingRubyNode): Ast = {

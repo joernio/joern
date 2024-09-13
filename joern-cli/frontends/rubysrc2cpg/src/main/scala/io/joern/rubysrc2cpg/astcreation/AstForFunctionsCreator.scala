@@ -180,7 +180,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   private def transformAsClosureBody(refs: List[Ast], baseStmtBlockAst: Ast) = {
     // Determine which locals are captured
     val capturedLocalNodes = baseStmtBlockAst.nodes
-      .collect { case x: NewIdentifier => x }
+      .collect { case x: NewIdentifier if x.name != Defines.Self => x } // Self identifiers are handled separately
       .distinctBy(_.name)
       .map(i => scope.lookupVariableInOuterScope(i.name))
       .filter(_.nonEmpty)

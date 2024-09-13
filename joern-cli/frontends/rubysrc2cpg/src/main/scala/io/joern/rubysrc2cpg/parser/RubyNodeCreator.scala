@@ -7,6 +7,7 @@ import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.{Self, getBuiltInType}
 import io.joern.rubysrc2cpg.passes.GlobalTypes.builtinPrefix
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
+import io.joern.x2cpg.frontendspecific.rubysrc2cpg.ImportsPass
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.tree.{ParseTree, RuleNode}
 import org.slf4j.LoggerFactory
@@ -175,7 +176,11 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
   override def visitReturnMethodInvocationWithoutParentheses(
     ctx: RubyParser.ReturnMethodInvocationWithoutParenthesesContext
   ): RubyExpression = {
-    val expressions = ctx.primaryValueListWithAssociation().elements.map(visit).toList
+    val expressions = Option(ctx.primaryValueListWithAssociation().methodInvocationWithoutParentheses()) match {
+      case Some(methodInvocation) => visit(methodInvocation) :: Nil
+      case None                   => ctx.primaryValueListWithAssociation().elements.map(visit).toList
+    }
+
     ReturnExpression(expressions)(ctx.toTextSpan)
   }
 
@@ -464,7 +469,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     GroupedParameter(
       tmpMandatoryParam.span.text,
       tmpMandatoryParam,
-      MultipleAssignment(singleAssignments.toList)(ctx.toTextSpan)
+      GroupedParameterDesugaring(singleAssignments)(ctx.toTextSpan)
     )(ctx.toTextSpan)
   }
 
@@ -607,7 +612,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     } else {
       defaultAssignments
     }
-    MultipleAssignment(assignments)(ctx.toTextSpan)
+    DefaultMultipleAssignment(assignments)(ctx.toTextSpan)
   }
 
   override def visitMultipleLeftHandSide(ctx: RubyParser.MultipleLeftHandSideContext): RubyExpression = {
@@ -627,7 +632,7 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
 
   override def visitPackingLeftHandSide(ctx: RubyParser.PackingLeftHandSideContext): RubyExpression = {
     val splatNode = Option(ctx.leftHandSide()) match {
-      case Some(lhs) => SplattingRubyNode(visit(ctx.leftHandSide))(ctx.toTextSpan)
+      case Some(lhs) => SplattingRubyNode(visit(lhs))(ctx.toTextSpan)
       case None =>
         SplattingRubyNode(MandatoryParameter("_")(ctx.toTextSpan.spanStart("_")))(ctx.toTextSpan.spanStart("*_"))
     }
@@ -675,12 +680,10 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
       val identifierCtx = ctx.methodIdentifier()
       val arguments     = ctx.commandArgument().arguments.map(visit)
       (identifierCtx.getText, arguments) match {
-        case ("require", List(argument)) =>
-          RequireCall(visit(identifierCtx), argument)(ctx.toTextSpan)
-        case ("require_relative", List(argument)) =>
-          RequireCall(visit(identifierCtx), argument, true)(ctx.toTextSpan)
-        case ("require_all", List(argument)) =>
-          RequireCall(visit(identifierCtx), argument, true, true)(ctx.toTextSpan)
+        case (requireLike, List(argument)) if ImportsPass.ImportCallNames.contains(requireLike) =>
+          val isRelative = requireLike == "require_relative" || requireLike == "require_all"
+          val isWildcard = requireLike == "require_all"
+          RequireCall(visit(identifierCtx), argument, isRelative, isWildcard)(ctx.toTextSpan)
         case ("include", List(argument)) =>
           IncludeCall(visit(identifierCtx), argument)(ctx.toTextSpan)
         case ("raise", List(argument: LiteralExpr)) =>
@@ -769,8 +772,9 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
   }
 
   override def visitLambdaExpression(ctx: RubyParser.LambdaExpressionContext): RubyExpression = {
-    val parameters = Option(ctx.parameterList()).fold(List())(_.parameters).map(visit)
-    val body       = visit(ctx.block()).asInstanceOf[Block]
+    val parameters =
+      Option(ctx.lambdaExpressionParameterList().blockParameterList()).fold(List())(_.parameters).map(visit)
+    val body = visit(ctx.block()).asInstanceOf[Block]
     ProcOrLambdaExpr(Block(parameters, body)(ctx.toTextSpan))(ctx.toTextSpan)
   }
 
@@ -1078,10 +1082,43 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
     }
   }
 
-  override def visitRangeExpression(ctx: RubyParser.RangeExpressionContext): RubyExpression = {
+  override def visitBoundedRangeExpression(ctx: RubyParser.BoundedRangeExpressionContext): RubyExpression = {
     RangeExpression(
       visit(ctx.primaryValue(0)),
       visit(ctx.primaryValue(1)),
+      visit(ctx.rangeOperator()).asInstanceOf[RangeOperator]
+    )(ctx.toTextSpan)
+  }
+
+  override def visitEndlessRangeExpression(ctx: RubyParser.EndlessRangeExpressionContext): RubyExpression = {
+    val infinityUpperBound =
+      MemberAccess(
+        SimpleIdentifier(Option(getBuiltInType(Defines.Float)))(ctx.toTextSpan.spanStart("Float")),
+        "::",
+        "INFINITY"
+      )(ctx.toTextSpan.spanStart("Float::INFINITY"))
+
+    RangeExpression(
+      visit(ctx.primaryValue),
+      infinityUpperBound,
+      visit(ctx.rangeOperator()).asInstanceOf[RangeOperator]
+    )(ctx.toTextSpan)
+  }
+
+  override def visitBeginlessRangeExpression(ctx: RubyParser.BeginlessRangeExpressionContext): RubyExpression = {
+    val lowerBoundInfinity =
+      UnaryExpression(
+        "-",
+        MemberAccess(
+          SimpleIdentifier(Option(getBuiltInType(Defines.Float)))(ctx.toTextSpan.spanStart("Float")),
+          "::",
+          "INFINITY"
+        )(ctx.toTextSpan.spanStart("Float::INFINITY"))
+      )(ctx.toTextSpan.spanStart("-Float::INFINITY"))
+
+    RangeExpression(
+      lowerBoundInfinity,
+      visit(ctx.primaryValue),
       visit(ctx.rangeOperator()).asInstanceOf[RangeOperator]
     )(ctx.toTextSpan)
   }

@@ -283,6 +283,25 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
     }
   }
 
+  "a parenthesis-less call as the base of a member access" should {
+    val cpg = code("""
+        |def f(p)
+        | src.join(",")
+        |end
+        |
+        |def src = [1, 2]
+        |""".stripMargin)
+
+    "correctly create a `src` call instead of identifier" in {
+      inside(cpg.call("src").l) {
+        case src :: Nil =>
+          src.name shouldBe "src"
+          src.methodFullName shouldBe s"Test0.rb:$Main.src"
+        case xs => fail(s"Expected exactly one `src` call, instead got [${xs.code.mkString(",")}]")
+      }
+    }
+  }
+
   "an identifier sharing the name of a previously defined method" should {
     val cpg = code("""
         |def foo()
@@ -317,6 +336,13 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
     val List(_, inArg) = cpg.call.nameExact("on").argument.l: @unchecked
     inArg.code shouldBe ":sequence"
     inArg.argumentName shouldBe Option("in")
+  }
+
+  "Calls with named arguments using symbols and hash rocket syntax" in {
+    val cpg                      = code("render :foo => \"bar\"")
+    val List(_, barArg: Literal) = cpg.call.nameExact("render").argument.l: @unchecked
+    barArg.code shouldBe "\"bar\""
+    barArg.argumentName shouldBe Option("foo")
   }
 
   "named parameters in parenthesis-less call with a known keyword as the association key should shadow the keyword" in {

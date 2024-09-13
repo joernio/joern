@@ -183,7 +183,12 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   override def visitReturnMethodInvocationWithoutParentheses(
     ctx: RubyParser.ReturnMethodInvocationWithoutParenthesesContext
   ): String = {
-    s"return ${ctx.primaryValueListWithAssociation().elements.map(visit).toList.mkString(",")}"
+    val expressions = Option(ctx.primaryValueListWithAssociation().methodInvocationWithoutParentheses()) match {
+      case Some(methodInvocation) => visit(methodInvocation) :: Nil
+      case None                   => ctx.primaryValueListWithAssociation().elements.map(visit).toList
+    }
+
+    s"return ${expressions.toList.mkString(",")}"
   }
 
   override def visitReturnWithoutArguments(ctx: RubyParser.ReturnWithoutArgumentsContext): String = {
@@ -689,8 +694,11 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   override def visitLambdaExpression(ctx: RubyParser.LambdaExpressionContext): String = {
     val outputSb = new StringBuilder(ctx.MINUSGT.getText)
 
-    val params = Option(ctx.parameterList()).fold(List())(_.parameters).map(visit).mkString(",")
-    val body   = visit(ctx.block())
+    val params = Option(ctx.lambdaExpressionParameterList().blockParameterList())
+      .fold(List())(_.parameters)
+      .map(visit)
+      .mkString(",")
+    val body = visit(ctx.block())
 
     if params != "" then outputSb.append(s"($params)")
     if body != "" then outputSb.append(s" $body")
@@ -926,12 +934,26 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
     s"${ctx.QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_START.getText}$elementsString${ctx.QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_END.getText}"
   }
 
-  override def visitRangeExpression(ctx: RubyParser.RangeExpressionContext): String = {
+  override def visitBoundedRangeExpression(ctx: RubyParser.BoundedRangeExpressionContext): String = {
     val lowerBound = visit(ctx.primaryValue(0))
     val upperBound = visit(ctx.primaryValue(1))
     val op         = visit(ctx.rangeOperator())
 
     s"$lowerBound$op$upperBound"
+  }
+
+  override def visitEndlessRangeExpression(ctx: RubyParser.EndlessRangeExpressionContext): String = {
+    val lowerBound = visit(ctx.primaryValue)
+    val op         = ctx.rangeOperator().getText
+
+    s"$lowerBound${op}Float::INFINITY"
+  }
+
+  override def visitBeginlessRangeExpression(ctx: RubyParser.BeginlessRangeExpressionContext): String = {
+    val upperBound = visit(ctx.primaryValue)
+    val op         = ctx.rangeOperator().getText
+
+    s"-Float::INFINITY$op$upperBound"
   }
 
   override def visitRangeOperator(ctx: RubyParser.RangeOperatorContext): String = {

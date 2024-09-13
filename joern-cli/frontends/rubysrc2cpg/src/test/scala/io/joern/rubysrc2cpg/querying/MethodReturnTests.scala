@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.querying
 import io.joern.rubysrc2cpg.passes.Defines.{Main, RubyOperators}
 import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelPrefix
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
@@ -477,6 +477,40 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
           case xs => fail(s"Expected two args, got ${xs.code.mkString(",")}")
         }
       case None => fail(s"Expected at least one retrun node")
+    }
+  }
+
+  "Return with methodInvocationWithoutParentheses" in {
+    val cpg = code("""
+        |def foo()
+        | return render json: {}, status: :internal_server_error unless success
+        |end
+        |""".stripMargin)
+
+    inside(cpg.method.name("foo").body.astChildren.isControlStructure.l) {
+      case ifNode :: Nil =>
+        ifNode.controlStructureType shouldBe ControlStructureTypes.IF
+
+        val List(notCall: Call) = ifNode.condition.l: @unchecked
+        notCall.methodFullName shouldBe Operators.logicalNot
+
+        val List(ifReturnTrue: Return) = ifNode.whenTrue.isBlock.astChildren.isReturn.l
+        ifReturnTrue.code shouldBe "return render json: {}, status: :internal_server_error"
+
+        val List(_, jsonArg: Block, statusArg: Literal) = ifReturnTrue.astChildren.isCall.argument.l: @unchecked
+        jsonArg.argumentName shouldBe Some("json")
+        jsonArg.code shouldBe "<empty>"
+
+        val List(_: Identifier, hashInitCall: Call) = jsonArg.astChildren.isCall.argument.l: @unchecked
+        hashInitCall.methodFullName shouldBe RubyOperators.hashInitializer
+
+        statusArg.argumentName shouldBe Some("status")
+        statusArg.code shouldBe ":internal_server_error"
+
+        val List(ifReturnFalse: Return) = ifNode.whenFalse.isBlock.astChildren.isReturn.l
+        ifReturnFalse.code shouldBe "return nil"
+
+      case xs => fail(s"Expected two method returns, got [${xs.code.mkString(",")}]")
     }
   }
 }

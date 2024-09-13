@@ -169,10 +169,10 @@ commandWithDoBlock
     ;
 
 indexingArgumentList
-    :   command
-        # commandIndexingArgumentList
-    |   operatorExpressionList COMMA?
+    :   operatorExpressionList COMMA?
         # operatorExpressionListIndexingArgumentList
+    |   command
+        # commandIndexingArgumentList
     |   operatorExpressionList COMMA splattingArgument
         # operatorExpressionListWithSplattingArgumentIndexingArgumentList
     |   (indexingArgument COMMA? NL*)*
@@ -242,6 +242,7 @@ primaryValueList
 
 primaryValueListWithAssociation
     :   (primaryValue | association)? (COMMA NL* (primaryValue | association))*
+    |   methodInvocationWithoutParentheses
     ;
 
 blockArgument
@@ -311,7 +312,7 @@ primaryValue
         # singletonMethodDefinition
     |   DEF definedMethodName (LPAREN parameterList? RPAREN)? EQ NL* statement
         # endlessMethodDefinition
-    |   MINUSGT (LPAREN parameterList? RPAREN)? block
+    |   MINUSGT lambdaExpressionParameterList block
         # lambdaExpression
 
         // Control structures
@@ -403,10 +404,19 @@ primaryValue
         # logicalAndExpression
     |   primaryValue orOperator=BAR2        NL* primaryValue
         # logicalOrExpression
-    |   primaryValue rangeOperator          NL* primaryValue
-        # rangeExpression
+    |   primaryValue rangeOperator NL* primaryValue
+        # boundedRangeExpression
+    |   primaryValue rangeOperator
+        # endlessRangeExpression
+    |   rangeOperator primaryValue
+        # beginlessRangeExpression
     |   hereDoc
         # hereDocs
+    ;
+
+lambdaExpressionParameterList
+    :   LPAREN blockParameterList? RPAREN
+    |   blockParameterList?
     ;
 
 // Non-nested calls
