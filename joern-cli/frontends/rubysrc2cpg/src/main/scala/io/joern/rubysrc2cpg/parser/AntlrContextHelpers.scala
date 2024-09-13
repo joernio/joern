@@ -257,13 +257,34 @@ object AntlrContextHelpers {
     }
   }
 
+  sealed implicit class BracketedArrayElementListContextHelper(ctx: BracketedArrayElementListContext) {
+    def elements: List[ParserRuleContext] = {
+      ctx.bracketedArrayElement.asScala.flatMap(_.element).toList
+    }
+  }
+
+  sealed implicit class BracketedArrayElementContextHelper(ctx: BracketedArrayElementContext) {
+    def element: List[ParserRuleContext] = {
+      ctx.children.asScala
+        .collect {
+          case x: OperatorExpressionListContext => x.operatorExpression().asScala
+          case x: CommandContext                => x :: Nil
+          case x: AssociationListContext        => x.associations
+          case x: SplattingArgumentContext      => x :: Nil
+          case x: IndexingArgumentContext       => x :: Nil
+        }
+        .toList
+        .flatten
+    }
+  }
+
   sealed implicit class IndexingArgumentListContextHelper(ctx: IndexingArgumentListContext) {
     def arguments: List[ParserRuleContext] = ctx match
       case ctx: CommandIndexingArgumentListContext => List(ctx.command())
       case ctx: OperatorExpressionListIndexingArgumentListContext =>
         ctx.operatorExpressionList().operatorExpression().asScala.toList
       case ctx: AssociationListIndexingArgumentListContext   => ctx.associationList().associations
-      case ctx: SplattingArgumentIndexingArgumentListContext => ctx.splattingArgument() :: Nil
+      case ctx: SplattingArgumentIndexingArgumentListContext => ctx.splattingArgument().asScala.toList
       case ctx: OperatorExpressionListWithSplattingArgumentIndexingArgumentListContext => ctx.splattingArgument() :: Nil
       case ctx: IndexingArgumentIndexingArgumentListContext =>
         ctx.indexingArgument().asScala.toList

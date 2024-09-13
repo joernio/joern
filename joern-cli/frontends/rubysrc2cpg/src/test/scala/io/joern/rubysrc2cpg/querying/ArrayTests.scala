@@ -3,9 +3,10 @@ package io.joern.rubysrc2cpg.querying
 import io.joern.rubysrc2cpg.passes.GlobalTypes.{builtinPrefix, kernelPrefix}
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Literal}
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal}
 import io.shiftleft.semanticcpg.language.*
 import io.joern.rubysrc2cpg.passes.Defines
+import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.x2cpg.Defines as XDefines
 
 class ArrayTests extends RubyCode2CpgFixture {
@@ -209,6 +210,47 @@ class ArrayTests extends RubyCode2CpgFixture {
         argAssoc.code shouldBe "2 => 1"
         argAssoc.methodFullName shouldBe Defines.RubyOperators.association
       case xs => fail(s"Expected two elements for array init, got ${xs.code.mkString(",")}")
+    }
+  }
+
+  "Array with mixed elements" in {
+    val cpg = code("""
+                     |[
+                     |   *::ApplicationSettingsHelper.visible_attributes,
+                     |   { default_branch_protection_defaults: [
+                     |     :allow_force_push,
+                     |     :developer_can_initial_push,
+                     |     {
+                     |       allowed_to_merge: [:access_level],
+                     |       allowed_to_push: [:access_level]
+                     |      }
+                     |   ] },
+                     |   :can_create_organization,
+                     |   *::ApplicationSettingsHelper.some_other_attributes,
+                     |]
+                     |""".stripMargin)
+
+    cpg.call.name(Operators.arrayInitializer).headOption match {
+      case Some(arrayInit) =>
+        inside(arrayInit.argument.l) {
+          case (splatArgOne: Call) :: (hashLiteralArg: Block) :: (symbolArg: Literal) :: (splatArgTwo: Call) :: Nil =>
+            splatArgOne.methodFullName shouldBe RubyOperators.splat
+            splatArgOne.code shouldBe "*::ApplicationSettingsHelper.visible_attributes"
+
+            symbolArg.code shouldBe ":can_create_organization"
+            symbolArg.typeFullName shouldBe Defines.getBuiltInType(Defines.Symbol)
+
+            splatArgTwo.methodFullName shouldBe RubyOperators.splat
+            splatArgTwo.code shouldBe "*::ApplicationSettingsHelper.some_other_attributes"
+
+            val List(hashInitAssignment: Call, _) =
+              hashLiteralArg.astChildren.isCall.name(Operators.assignment).l: @unchecked
+            val List(_: Identifier, hashInitCall: Call) = hashInitAssignment.argument.l: @unchecked
+            hashInitCall.methodFullName shouldBe RubyOperators.hashInitializer
+
+          case xs => fail(s"Expected 4 arguments, got [${xs.code.mkString(",")}]")
+        }
+      case None => fail("Expected one call for head arrayInit")
     }
   }
 }
