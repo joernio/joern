@@ -187,7 +187,7 @@ indexingArgumentList
         # commandIndexingArgumentList
     |   operatorExpressionList COMMA splattingArgument
         # operatorExpressionListWithSplattingArgumentIndexingArgumentList
-    |   (indexingArgument COMMA? NL*)*
+    |   indexingArgument (COMMA? NL* indexingArgument)*
         #indexingArgumentIndexingArgumentList
     |   associationList COMMA?
         # associationListIndexingArgumentList
@@ -324,7 +324,7 @@ primaryValue
         # singletonMethodDefinition
     |   DEF definedMethodName (LPAREN parameterList? RPAREN)? EQ NL* statement
         # endlessMethodDefinition
-    |   MINUSGT lambdaExpressionParameterList block
+    |   MINUSGT lambdaExpressionParameterList? block
         # lambdaExpression
 
         // Control structures
@@ -428,7 +428,7 @@ primaryValue
 
 lambdaExpressionParameterList
     :   LPAREN blockParameterList? RPAREN
-    |   blockParameterList?
+    |   blockParameterList
     ;
 
 // Non-nested calls
@@ -498,11 +498,22 @@ blockParameterList
     ;
 
 mandatoryOrOptionalOrGroupedParameterList
-    :   (mandatoryOrOptionalParameter | groupedParameterList) (COMMA NL* (mandatoryOrOptionalParameter | groupedParameterList))*
+    :   mandatoryOrOptionalOrGroupedParameter (COMMA NL* mandatoryOrOptionalOrGroupedParameter)*
+    ;
+
+mandatoryOrOptionalOrGroupedParameter
+    :   mandatoryParameter
+    |   optionalParameter
+    |   groupedParameterList
     ;
 
 mandatoryOrGroupedParameterList
-    :   (mandatoryParameter | groupedParameterList) (COMMA NL* (mandatoryParameter | groupedParameterList))*
+    :   mandatoryOrGroupedParameter (COMMA NL* mandatoryOrGroupedParameter)*
+    ;
+
+mandatoryOrGroupedParameter
+    :   mandatoryParameter
+    |   groupedParameterList
     ;
 
 groupedParameterList
