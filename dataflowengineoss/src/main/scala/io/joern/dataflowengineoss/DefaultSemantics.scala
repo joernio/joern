@@ -1,6 +1,6 @@
 package io.joern.dataflowengineoss
 
-import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, PassThroughMapping, Semantics}
+import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, PassThroughMapping, FullNameSemantics}
 import io.shiftleft.codepropertygraph.generated.Operators
 
 import scala.annotation.unused
@@ -10,9 +10,9 @@ object DefaultSemantics {
   /** @return
     *   a default set of common external procedure calls for all languages.
     */
-  def apply(): Semantics = {
+  def apply(): FullNameSemantics = {
     val list = operatorFlows ++ cFlows ++ javaFlows
-    Semantics.fromList(list)
+    FullNameSemantics.fromList(list)
   }
 
   private def F = (x: String, y: List[(Int, Int)]) => FlowSemantic.from(x, y)
@@ -157,6 +157,6 @@ object DefaultSemantics {
     *   procedure semantics for operators and common external Java calls only.
     */
   @unused
-  def javaSemantics(): Semantics = Semantics.fromList(operatorFlows ++ javaFlows)
+  def javaSemantics(): FullNameSemantics = FullNameSemantics.fromList(operatorFlows ++ javaFlows)
 
 }

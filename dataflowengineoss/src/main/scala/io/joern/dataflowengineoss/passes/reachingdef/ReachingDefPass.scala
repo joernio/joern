@@ -1,6 +1,6 @@
 package io.joern.dataflowengineoss.passes.reachingdef
 
-import io.joern.dataflowengineoss.semanticsloader.Semantics
+import io.joern.dataflowengineoss.semanticsloader.FullNameSemantics
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.passes.ForkJoinParallelCpgPass
@@ -11,7 +11,7 @@ import scala.collection.mutable
 
 /** A pass that calculates reaching definitions ("data dependencies").
   */
-class ReachingDefPass(cpg: Cpg, maxNumberOfDefinitions: Int = 4000)(implicit s: Semantics)
+class ReachingDefPass(cpg: Cpg, maxNumberOfDefinitions: Int = 4000)(implicit s: FullNameSemantics)
     extends ForkJoinParallelCpgPass[Method](cpg) {
 
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)

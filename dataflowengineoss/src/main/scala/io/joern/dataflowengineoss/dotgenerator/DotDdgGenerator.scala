@@ -1,16 +1,18 @@
 package io.joern.dataflowengineoss.dotgenerator
 
 import io.joern.dataflowengineoss.DefaultSemantics
-import io.joern.dataflowengineoss.semanticsloader.Semantics
+import io.joern.dataflowengineoss.semanticsloader.FullNameSemantics
 import io.shiftleft.codepropertygraph.generated.nodes.Method
 import io.shiftleft.semanticcpg.dotgenerator.DotSerializer
 
 object DotDdgGenerator {
 
-  def toDotDdg(traversal: Iterator[Method])(implicit semantics: Semantics = DefaultSemantics()): Iterator[String] =
+  def toDotDdg(traversal: Iterator[Method])(implicit
+    semantics: FullNameSemantics = DefaultSemantics()
+  ): Iterator[String] =
     traversal.map(dotGraphForMethod)
 
-  private def dotGraphForMethod(method: Method)(implicit semantics: Semantics): String = {
+  private def dotGraphForMethod(method: Method)(implicit semantics: FullNameSemantics): String = {
     val ddgGenerator = new DdgGenerator()
     val ddg          = ddgGenerator.generate(method)
     DotSerializer.dotGraph(Option(method), ddg)

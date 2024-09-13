@@ -4,7 +4,7 @@ import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.language.Path
 import io.joern.dataflowengineoss.layers.dataflows.*
 import io.joern.dataflowengineoss.queryengine.EngineContext
-import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
+import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, FullNameSemantics}
 import io.joern.dataflowengineoss.testfixtures.{SemanticCpgTestFixture, SemanticTestCpg}
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.frontendspecific.pysrc2cpg.{

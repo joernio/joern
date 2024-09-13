@@ -3,13 +3,13 @@ package io.joern.scanners.android
 import io.joern.scanners.*
 import io.joern.console.*
 import io.joern.dataflowengineoss.queryengine.EngineContext
-import io.joern.dataflowengineoss.semanticsloader.Semantics
+import io.joern.dataflowengineoss.semanticsloader.FullNameSemantics
 import io.joern.macros.QueryMacros.*
 import io.shiftleft.semanticcpg.language.*
 import io.joern.dataflowengineoss.language.*
 
 object Intents extends QueryBundle {
-  implicit val engineContext: EngineContext = EngineContext(Semantics.empty)
+  implicit val engineContext: EngineContext = EngineContext(FullNameSemantics.empty)
   implicit val resolver: ICallResolver      = NoResolve
 
   @q

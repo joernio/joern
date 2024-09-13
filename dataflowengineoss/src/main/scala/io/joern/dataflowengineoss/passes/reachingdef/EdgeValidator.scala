@@ -8,7 +8,7 @@ import io.joern.dataflowengineoss.semanticsloader.{
   FlowSemantic,
   ParameterNode,
   PassThroughMapping,
-  Semantics
+  FullNameSemantics
 }
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode, Expression, StoredNode}
 import io.shiftleft.semanticcpg.language.*
@@ -17,7 +17,7 @@ object EdgeValidator {
 
   /** Determines whether the edge from `parentNode`to `childNode` is valid, according to the given semantics.
     */
-  def isValidEdge(childNode: CfgNode, parentNode: CfgNode)(implicit semantics: Semantics): Boolean =
+  def isValidEdge(childNode: CfgNode, parentNode: CfgNode)(implicit semantics: FullNameSemantics): Boolean =
     (childNode, parentNode) match {
       case (childNode: Expression, parentNode)
           if isCallRetval(parentNode) || !isValidEdgeToExpression(parentNode, childNode) =>
@@ -36,7 +36,9 @@ object EdgeValidator {
       case (_, parentNode)                                 => !isCallRetval(parentNode)
     }
 
-  private def isValidEdgeToExpression(parNode: CfgNode, curNode: Expression)(implicit semantics: Semantics): Boolean =
+  private def isValidEdgeToExpression(parNode: CfgNode, curNode: Expression)(implicit
+    semantics: FullNameSemantics
+  ): Boolean =
     parNode match {
       case parentNode: Expression =>
         val sameCallSite = parentNode.inCall.l == curNode.start.inCall.l
@@ -48,7 +50,7 @@ object EdgeValidator {
 
   /** Is it a CALL for which semantics exist but don't taint its return value?
     */
-  private def isCallRetval(parentNode: StoredNode)(implicit semantics: Semantics): Boolean =
+  private def isCallRetval(parentNode: StoredNode)(implicit semantics: FullNameSemantics): Boolean =
     parentNode match {
       case call: Call => semantics.forMethod(call.methodFullName).exists(!explicitlyFlowsToReturnValue(_))
       case _          => false

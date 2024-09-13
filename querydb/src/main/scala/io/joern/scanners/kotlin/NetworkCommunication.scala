@@ -3,14 +3,14 @@ package io.joern.scanners.kotlin
 import io.joern.scanners.*
 import io.joern.console.*
 import io.joern.dataflowengineoss.queryengine.EngineContext
-import io.joern.dataflowengineoss.semanticsloader.Semantics
+import io.joern.dataflowengineoss.semanticsloader.FullNameSemantics
 import io.joern.dataflowengineoss.language.*
 import io.joern.macros.QueryMacros.*
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.*
 
 object NetworkCommunication extends QueryBundle {
-  implicit val engineContext: EngineContext = EngineContext(Semantics.empty)
+  implicit val engineContext: EngineContext = EngineContext(FullNameSemantics.empty)
   implicit val resolver: ICallResolver      = NoResolve
 
   // todo: improve by including trust managers created via `object` expressions

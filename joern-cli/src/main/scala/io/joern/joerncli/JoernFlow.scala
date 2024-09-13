@@ -3,7 +3,7 @@ package io.joern.joerncli
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
-import io.joern.dataflowengineoss.semanticsloader.Semantics
+import io.joern.dataflowengineoss.semanticsloader.FullNameSemantics
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn
 import io.shiftleft.semanticcpg.language.*
@@ -38,8 +38,8 @@ object JoernFlow {
       debugOut(s"Number of sources: ${sources.size}\n")
       debugOut(s"Number of sinks: ${sinks.size}\n")
 
-      implicit val semantics: Semantics = DefaultSemantics()
-      val engineConfig                  = EngineConfig(config.depth)
+      implicit val semantics: FullNameSemantics = DefaultSemantics()
+      val engineConfig                          = EngineConfig(config.depth)
       debugOut(s"Analysis depth: ${engineConfig.maxCallDepth}\n")
       implicit val context: EngineContext = EngineContext(semantics, engineConfig)
 

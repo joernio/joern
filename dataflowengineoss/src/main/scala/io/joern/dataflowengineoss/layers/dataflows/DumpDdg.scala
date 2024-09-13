@@ -3,7 +3,7 @@ package io.joern.dataflowengineoss.layers.dataflows
 import better.files.File
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.language.*
-import io.joern.dataflowengineoss.semanticsloader.Semantics
+import io.joern.dataflowengineoss.semanticsloader.FullNameSemantics
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
 
@@ -18,7 +18,8 @@ object DumpDdg {
   def defaultOpts: DdgDumpOptions = DdgDumpOptions("out")
 }
 
-class DumpDdg(options: DdgDumpOptions)(implicit semantics: Semantics = DefaultSemantics()) extends LayerCreator {
+class DumpDdg(options: DdgDumpOptions)(implicit semantics: FullNameSemantics = DefaultSemantics())
+    extends LayerCreator {
   override val overlayName: String       = DumpDdg.overlayName
   override val description: String       = DumpDdg.description
   override val storeOverlayName: Boolean = false

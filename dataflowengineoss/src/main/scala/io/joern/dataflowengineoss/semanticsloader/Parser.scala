@@ -2,68 +2,12 @@ package io.joern.dataflowengineoss.semanticsloader
 
 import io.joern.dataflowengineoss.SemanticsParser.MappingContext
 import io.joern.dataflowengineoss.{SemanticsBaseListener, SemanticsLexer, SemanticsParser}
-import io.shiftleft.codepropertygraph.generated.Cpg
 import org.antlr.v4.runtime.tree.ParseTreeWalker
 import org.antlr.v4.runtime.{CharStream, CharStreams, CommonTokenStream}
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 
-object Semantics {
-
-  def fromList(elements: List[FlowSemantic]): Semantics = {
-    new Semantics(
-      mutable.Map.newBuilder
-        .addAll(elements.map { e =>
-          e.methodFullName -> e
-        })
-        .result()
-    )
-  }
-
-  def empty: Semantics = fromList(List())
-
-}
-
-class Semantics private (methodToSemantic: mutable.Map[String, FlowSemantic]) {
-
-  /** The map below keeps a mapping between results of a regex and the regex string it matches. e.g.
-    *
-    * `path/to/file.py:<module>.Foo.sink` -> `^path.*Foo\\.sink$`
-    */
-  private val regexMatchedFullNames = mutable.HashMap.empty[String, String]
-
-  /** Initialize all the method semantics that use regex with all their regex results before query time.
-    */
-  def loadRegexSemantics(cpg: Cpg): Unit = {
-    import io.shiftleft.semanticcpg.language._
-
-    methodToSemantic.filter(_._2.regex).foreach { case (regexString, _) =>
-      cpg.method.fullName(regexString).fullName.foreach { methodMatch =>
-        regexMatchedFullNames.put(methodMatch, regexString)
-      }
-    }
-  }
-
-  def elements: List[FlowSemantic] = methodToSemantic.values.toList
-
-  def forMethod(fullName: String): Option[FlowSemantic] = regexMatchedFullNames.get(fullName) match {
-    case Some(matchedFullName) => methodToSemantic.get(matchedFullName)
-    case None                  => methodToSemantic.get(fullName)
-  }
-
-  def serialize: String = {
-    elements
-      .sortBy(_.methodFullName)
-      .map { elem =>
-        s"\"${elem.methodFullName}\" " + elem.mappings
-          .collect { case FlowMapping(x, y) => s"$x -> $y" }
-          .mkString(" ")
-      }
-      .mkString("\n")
-  }
-
-}
 case class FlowSemantic(methodFullName: String, mappings: List[FlowPath] = List.empty, regex: Boolean = false)
 
 object FlowSemantic {
