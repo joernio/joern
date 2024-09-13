@@ -8,7 +8,7 @@ import org.antlr.v4.runtime.{CharStream, CharStreams, CommonTokenStream}
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 
-class Parser() {
+class FullNameSemanticsParser {
 
   def parse(input: String): List[FlowSemantic] = {
     val charStream = CharStreams.fromString(input)
