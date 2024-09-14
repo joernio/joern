@@ -5,17 +5,35 @@ import org.scalatest.matchers.should.Matchers
 
 class DoBlockParserTests extends RubyParserFixture with Matchers {
   "fixme" ignore {
-    test("f { |a, (b, c), d| }") // syntax error
     test(
       "break foo arg do |bar| end"
     ) // syntax error - possibly false syntax error due to just having a code sample starting with break which our parser doesn't allow
     test("yield foo arg do |bar| end") // syntax error
     test("a.b do | ; c | end")         // syntax error
-    test("f { |a, (b, *, c)| }")
-    test("a { |b, c=1, *d, e, &f| }")
   }
 
   "Some block" in {
+    test(
+      "f { |a, (b, *, c)| }",
+      """f {
+        |{|a,(b, c, *)|}
+        |}""".stripMargin
+    )
+
+    test(
+      "a { |b, c=1, *d, e, &f| }",
+      """a {
+        |{|b,c=1,*d,&f,e|}
+        |}""".stripMargin
+    )
+
+    test(
+      "f { |a, (b, c), d| }",
+      """f {
+        |{|a,(b, c),d|}
+        |}""".stripMargin
+    )
+
     test(
       "a { |b, *c, d| }",
       """a {

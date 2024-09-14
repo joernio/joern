@@ -694,10 +694,12 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   override def visitLambdaExpression(ctx: RubyParser.LambdaExpressionContext): String = {
     val outputSb = new StringBuilder(ctx.MINUSGT.getText)
 
-    val params = Option(ctx.lambdaExpressionParameterList().blockParameterList())
-      .fold(List())(_.parameters)
-      .map(visit)
-      .mkString(",")
+    val params = Option(ctx.lambdaExpressionParameterList()) match {
+      case Some(parameterList) =>
+        Option(parameterList.blockParameterList()).fold(List())(_.parameters).map(visit).mkString(",")
+      case None => ""
+    }
+
     val body = visit(ctx.block())
 
     if params != "" then outputSb.append(s"($params)")

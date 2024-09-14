@@ -211,12 +211,12 @@ object AntlrContextHelpers {
     ctx: MandatoryOrOptionalOrGroupedParameterListContext
   ) {
     def parameters: List[ParserRuleContext] =
-      ctx.mandatoryOrOptionalParameter().asScala.toList ++ ctx.groupedParameterList().asScala.toList
+      ctx.mandatoryOrOptionalOrGroupedParameter().asScala.toList
   }
 
   sealed implicit class MandatoryOrGroupedParameterListContextHelper(ctx: MandatoryOrGroupedParameterListContext) {
     def parameters: List[ParserRuleContext] =
-      ctx.mandatoryParameter().asScala.toList ++ ctx.groupedParameterList().asScala.toList
+      ctx.mandatoryOrGroupedParameter().asScala.toList
   }
 
   sealed implicit class GroupedParameterListContextHelper(ctx: GroupedParameterListContext) {
