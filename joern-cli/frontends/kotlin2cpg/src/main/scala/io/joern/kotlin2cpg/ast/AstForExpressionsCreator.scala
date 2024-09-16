@@ -341,14 +341,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val callKind        = typeInfoProvider.bindingKind(expr)
     val isExtensionCall = callKind == CallKind.ExtensionCall
 
-    val hasThisSuperOrNameRefReceiver = expr.getReceiverExpression match {
-      case _: KtThisExpression          => true
-      case _: KtNameReferenceExpression => true
-      case _: KtSuperExpression         => true
-      case _                            => false
-    }
     val hasNameRefSelector = expr.getSelectorExpression.isInstanceOf[KtNameReferenceExpression]
-    val isFieldAccessCall  = hasThisSuperOrNameRefReceiver && hasNameRefSelector
     val isCallToSuper = expr.getReceiverExpression match {
       case _: KtSuperExpression => true
       case _                    => false
@@ -366,10 +359,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val outAst =
       if (isCtorCtorCall.getOrElse(false)) {
         astForQualifiedExpressionCtor(expr, argIdx, argNameMaybe)
-      } else if (isFieldAccessCall) {
-        astForQualifiedExpressionFieldAccess(expr, argIdx, argNameMaybe)
       } else if (isExtensionCall) {
         astForQualifiedExpressionExtensionCall(expr, argIdx, argNameMaybe)
+      } else if (hasNameRefSelector) {
+        astForQualifiedExpressionFieldAccess(expr, argIdx, argNameMaybe)
       } else if (isCallToSuper) {
         astForQualifiedExpressionCallToSuper(expr, argIdx, argNameMaybe)
       } else if (noAstForReceiver) {
