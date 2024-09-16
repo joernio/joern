@@ -256,8 +256,9 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
       case _ =>
         typeInfoProvider
           .typeFromImports(entry.getShortName.toString, entry.getContainingKtFile)
-          .getOrElse(TypeConstants.any)
+          .getOrElse(s"${Defines.UnresolvedNamespace}.${entry.getShortName.toString}")
     })
+
     val node =
       NewAnnotation()
         .code(entry.getText)
