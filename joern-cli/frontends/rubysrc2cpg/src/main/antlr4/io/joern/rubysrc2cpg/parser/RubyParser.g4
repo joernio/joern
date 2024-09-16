@@ -168,6 +168,18 @@ commandWithDoBlock
     |   primary (DOT | COLON2) methodName argumentList doBlock
     ;
 
+bracketedArrayElementList
+    :   bracketedArrayElement (COMMA? NL* bracketedArrayElement)* COMMA?
+    ;
+
+bracketedArrayElement
+    :   operatorExpressionList
+    |   command
+    |   indexingArgument
+    |   associationList
+    |   splattingArgument
+    ;
+
 indexingArgumentList
     :   operatorExpressionList COMMA?
         # operatorExpressionListIndexingArgumentList
@@ -175,11 +187,11 @@ indexingArgumentList
         # commandIndexingArgumentList
     |   operatorExpressionList COMMA splattingArgument
         # operatorExpressionListWithSplattingArgumentIndexingArgumentList
-    |   (indexingArgument COMMA? NL*)*
+    |   indexingArgument (COMMA? NL* indexingArgument)*
         #indexingArgumentIndexingArgumentList
     |   associationList COMMA?
         # associationListIndexingArgumentList
-    |   splattingArgument
+    |   splattingArgument (COMMA NL* splattingArgument)*
         # splattingArgumentIndexingArgumentList
     ;
 
@@ -312,7 +324,7 @@ primaryValue
         # singletonMethodDefinition
     |   DEF definedMethodName (LPAREN parameterList? RPAREN)? EQ NL* statement
         # endlessMethodDefinition
-    |   MINUSGT lambdaExpressionParameterList block
+    |   MINUSGT lambdaExpressionParameterList? block
         # lambdaExpression
 
         // Control structures
@@ -339,7 +351,7 @@ primaryValue
         # methodCallWithParentheses
 
         // Literals
-    |   LBRACK NL* indexingArgumentList? NL* RBRACK
+    |   LBRACK NL* bracketedArrayElementList? NL* RBRACK
         # bracketedArrayLiteral
     |   QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_START quotedNonExpandedArrayElementList? QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END
         # quotedNonExpandedStringArrayLiteral
@@ -416,7 +428,7 @@ primaryValue
 
 lambdaExpressionParameterList
     :   LPAREN blockParameterList? RPAREN
-    |   blockParameterList?
+    |   blockParameterList
     ;
 
 // Non-nested calls
@@ -486,11 +498,22 @@ blockParameterList
     ;
 
 mandatoryOrOptionalOrGroupedParameterList
-    :   (mandatoryOrOptionalParameter | groupedParameterList) (COMMA NL* (mandatoryOrOptionalParameter | groupedParameterList))*
+    :   mandatoryOrOptionalOrGroupedParameter (COMMA NL* mandatoryOrOptionalOrGroupedParameter)*
+    ;
+
+mandatoryOrOptionalOrGroupedParameter
+    :   mandatoryParameter
+    |   optionalParameter
+    |   groupedParameterList
     ;
 
 mandatoryOrGroupedParameterList
-    :   (mandatoryParameter | groupedParameterList) (COMMA NL* (mandatoryParameter | groupedParameterList))*
+    :   mandatoryOrGroupedParameter (COMMA NL* mandatoryOrGroupedParameter)*
+    ;
+
+mandatoryOrGroupedParameter
+    :   mandatoryParameter
+    |   groupedParameterList
     ;
 
 groupedParameterList
