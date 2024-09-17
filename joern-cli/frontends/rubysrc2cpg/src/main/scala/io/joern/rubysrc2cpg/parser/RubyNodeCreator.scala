@@ -258,11 +258,21 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
   }
 
   override def visitLogicalAndExpression(ctx: RubyParser.LogicalAndExpressionContext): RubyExpression = {
-    BinaryExpression(visit(ctx.primaryValue(0)), ctx.andOperator.getText, visit(ctx.primaryValue(1)))(ctx.toTextSpan)
+    val rhs = Option(ctx.RETURN()) match {
+      case Some(returnExpr) => ReturnExpression(List.empty)(ctx.toTextSpan.spanStart(returnExpr.toString))
+      case None             => visit(ctx.primaryValue(1))
+    }
+
+    BinaryExpression(visit(ctx.primaryValue(0)), ctx.andOperator.getText, rhs)(ctx.toTextSpan)
   }
 
   override def visitLogicalOrExpression(ctx: RubyParser.LogicalOrExpressionContext): RubyExpression = {
-    BinaryExpression(visit(ctx.primaryValue(0)), ctx.orOperator.getText, visit(ctx.primaryValue(1)))(ctx.toTextSpan)
+    val rhs = Option(ctx.RETURN()) match {
+      case Some(returnExpr) => ReturnExpression(List.empty)(ctx.toTextSpan.spanStart(returnExpr.toString))
+      case None             => visit(ctx.primaryValue(1))
+    }
+
+    BinaryExpression(visit(ctx.primaryValue(0)), ctx.orOperator.getText, rhs)(ctx.toTextSpan)
   }
 
   override def visitKeywordAndOrExpressionOrCommand(
