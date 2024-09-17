@@ -1,11 +1,11 @@
 package io.joern.scanners.android
 
 import io.joern.dataflowengineoss.queryengine.EngineContext
-import io.joern.dataflowengineoss.semanticsloader.Semantics
+import io.joern.dataflowengineoss.semanticsloader.NoSemantics
 import io.joern.suites.KotlinQueryTestSuite
 
 class RootDetectionTests extends KotlinQueryTestSuite(RootDetection) {
-  implicit val engineContext: EngineContext = EngineContext(Semantics.empty)
+  implicit val engineContext: EngineContext = EngineContext(NoSemantics)
 
   "the `rootDetectionViaFileChecks` query" when {
     "should match on all multi-file positive examples" in {

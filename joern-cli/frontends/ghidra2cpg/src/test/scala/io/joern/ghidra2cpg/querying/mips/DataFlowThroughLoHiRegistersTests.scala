@@ -3,7 +3,7 @@ package io.joern.ghidra2cpg.querying.mips
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
-import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
+import io.joern.dataflowengineoss.semanticsloader.{FullNameSemanticsParser, FullNameSemantics, Semantics}
 import io.joern.ghidra2cpg.fixtures.GhidraBinToCpgSuite
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -37,7 +37,7 @@ class DataFlowThroughLoHiRegistersTests extends GhidraBinToCpgSuite {
        |"<operator>.incBy" 1->1 2->1 3->1 4->1
        |"<operator>.rotateRight" 2->1
        |""".stripMargin
-  implicit val semantics: Semantics   = Semantics.fromList(new Parser().parse(customSemantics))
+  implicit val semantics: Semantics   = FullNameSemantics.fromList(new FullNameSemanticsParser().parse(customSemantics))
   implicit val context: EngineContext = EngineContext(semantics)
 
   "should find flows through `div*` instructions" in {

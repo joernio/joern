@@ -2,7 +2,7 @@ package io.joern.dumpq
 
 import io.joern.console.{DefaultArgumentProvider, QueryDatabase}
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
-import io.joern.dataflowengineoss.semanticsloader.Semantics
+import io.joern.dataflowengineoss.semanticsloader.NoSemantics
 import org.json4s.{Formats, NoTypeHints}
 import org.json4s.native.Serialization
 
@@ -13,7 +13,7 @@ object Main {
   }
 
   def dumpQueries(): Unit = {
-    implicit val engineContext: EngineContext = EngineContext(Semantics.empty)
+    implicit val engineContext: EngineContext = EngineContext(NoSemantics)
     implicit val formats: AnyRef & Formats =
       Serialization.formats(NoTypeHints)
     val queryDb = new QueryDatabase(new JoernDefaultArgumentProvider(0))

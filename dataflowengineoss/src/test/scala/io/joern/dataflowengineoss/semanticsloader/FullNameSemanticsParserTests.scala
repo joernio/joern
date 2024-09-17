@@ -3,10 +3,10 @@ package io.joern.dataflowengineoss.semanticsloader
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class ParserTests extends AnyWordSpec with Matchers {
+class FullNameSemanticsParserTests extends AnyWordSpec with Matchers {
 
   class Fixture() {
-    val parser = new Parser()
+    val parser = new FullNameSemanticsParser()
   }
 
   "Parser" should {

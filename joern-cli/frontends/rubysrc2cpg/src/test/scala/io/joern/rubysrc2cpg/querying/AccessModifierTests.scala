@@ -2,6 +2,8 @@ package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.rubysrc2cpg.passes.Defines
+import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.semanticcpg.language.*
 
 class AccessModifierTests extends RubyCode2CpgFixture {
@@ -84,6 +86,22 @@ class AccessModifierTests extends RubyCode2CpgFixture {
 
     cpg.method("baz").isPublic.size shouldBe 1
     cpg.method("test").isPrivate.size shouldBe 1
+  }
+
+  "an identifier sharing the same name as an access modifier in an unambiguous spot should not be confused" in {
+    val cpg = code("""
+        |  def message_params
+        |    {
+        |      private: @private
+        |    }
+        |  end
+        |""".stripMargin)
+
+    val privateKey  = cpg.literal(":private").head
+    val indexAccess = privateKey.astParent.asInstanceOf[Call]
+    indexAccess.name shouldBe Operators.indexAccess
+    indexAccess.methodFullName shouldBe Operators.indexAccess
+    indexAccess.code shouldBe "<tmp-0>[:private]"
   }
 
 }

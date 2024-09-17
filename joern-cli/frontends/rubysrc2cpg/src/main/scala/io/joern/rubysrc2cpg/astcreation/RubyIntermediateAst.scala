@@ -446,13 +446,21 @@ object RubyIntermediateAst {
       extends RubyExpression(span)
       with RubyCall
 
-  sealed trait AccessModifier extends AllowedTypeDeclarationChild
+  sealed trait AccessModifier extends AllowedTypeDeclarationChild {
+    def toSimpleIdentifier: SimpleIdentifier
+  }
 
-  final case class PublicModifier()(span: TextSpan) extends RubyExpression(span) with AccessModifier
+  final case class PublicModifier()(span: TextSpan) extends RubyExpression(span) with AccessModifier {
+    override def toSimpleIdentifier: SimpleIdentifier = SimpleIdentifier(None)(span)
+  }
 
-  final case class PrivateModifier()(span: TextSpan) extends RubyExpression(span) with AccessModifier
+  final case class PrivateModifier()(span: TextSpan) extends RubyExpression(span) with AccessModifier {
+    override def toSimpleIdentifier: SimpleIdentifier = SimpleIdentifier(None)(span)
+  }
 
-  final case class ProtectedModifier()(span: TextSpan) extends RubyExpression(span) with AccessModifier
+  final case class ProtectedModifier()(span: TextSpan) extends RubyExpression(span) with AccessModifier {
+    override def toSimpleIdentifier: SimpleIdentifier = SimpleIdentifier(None)(span)
+  }
 
   /** Represents standalone `proc { ... }` or `lambda { ... }` expressions
     */

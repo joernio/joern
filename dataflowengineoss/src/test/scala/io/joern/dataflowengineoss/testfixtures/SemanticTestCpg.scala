@@ -3,7 +3,7 @@ package io.joern.dataflowengineoss.testfixtures
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
-import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
+import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, FullNameSemantics}
 import io.joern.x2cpg.testfixtures.TestCpg
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
@@ -37,7 +37,7 @@ trait SemanticTestCpg { this: TestCpg =>
       val context = new LayerCreatorContext(this)
       val options = new OssDataFlowOptions(extraFlows = _extraFlows)
       new OssDataFlow(options).run(context)
-      this.context = EngineContext(Semantics.fromList(DefaultSemantics().elements ++ _extraFlows))
+      this.context = EngineContext(FullNameSemantics.fromList(DefaultSemantics().elements ++ _extraFlows))
     }
   }
 
@@ -47,6 +47,8 @@ trait SemanticTestCpg { this: TestCpg =>
   */
 trait SemanticCpgTestFixture(extraFlows: List[FlowSemantic] = List.empty) {
 
-  implicit val context: EngineContext = EngineContext(Semantics.fromList(DefaultSemantics().elements ++ extraFlows))
+  implicit val context: EngineContext = EngineContext(
+    FullNameSemantics.fromList(DefaultSemantics().elements ++ extraFlows)
+  )
 
 }
