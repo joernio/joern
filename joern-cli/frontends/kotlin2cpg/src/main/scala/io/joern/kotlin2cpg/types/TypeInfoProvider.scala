@@ -13,8 +13,8 @@ import org.jetbrains.kotlin.psi.{
   KtExpression,
   KtFile,
   KtLambdaExpression,
-  KtNamedFunction,
   KtNameReferenceExpression,
+  KtNamedFunction,
   KtParameter,
   KtPrimaryConstructor,
   KtProperty,
@@ -23,10 +23,13 @@ import org.jetbrains.kotlin.psi.{
   KtTypeAlias,
   KtTypeReference
 }
+import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.types.KotlinType
 
 case class AnonymousObjectContext(declaration: KtElement)
 
 trait TypeInfoProvider(val typeRenderer: TypeRenderer = new TypeRenderer()) {
+  val bindingContext: BindingContext
   def isExtensionFn(fn: KtNamedFunction): Boolean
 
   def usedAsExpression(expr: KtExpression): Option[Boolean]
@@ -112,6 +115,8 @@ trait TypeInfoProvider(val typeRenderer: TypeRenderer = new TypeRenderer()) {
   def typeFullName(expr: KtCallExpression, defaultValue: String): String
 
   def typeFullName(expr: KtParameter, defaultValue: String): String
+
+  def typeFullName(typ: KotlinType): String
 
   def typeFullName(expr: KtDestructuringDeclarationEntry, defaultValue: String): String
 
