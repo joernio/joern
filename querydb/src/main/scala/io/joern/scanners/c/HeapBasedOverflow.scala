@@ -5,12 +5,12 @@ import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.shiftleft.semanticcpg.language.*
 import io.joern.dataflowengineoss.language.*
 import io.joern.console.*
-import io.joern.dataflowengineoss.semanticsloader.Semantics
+import io.joern.dataflowengineoss.semanticsloader.NoSemantics
 import io.joern.macros.QueryMacros.*
 
 object HeapBasedOverflow extends QueryBundle {
 
-  implicit val engineContext: EngineContext = EngineContext(Semantics.empty)
+  implicit val engineContext: EngineContext = EngineContext(NoSemantics)
   implicit val resolver: ICallResolver      = NoResolve
 
   /** Find calls to malloc where the first argument contains an arithmetic expression, the allocated buffer flows into

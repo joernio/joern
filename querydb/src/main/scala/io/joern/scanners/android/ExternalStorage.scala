@@ -3,13 +3,13 @@ package io.joern.scanners.android
 import io.joern.console.*
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.queryengine.EngineContext
-import io.joern.dataflowengineoss.semanticsloader.Semantics
+import io.joern.dataflowengineoss.semanticsloader.NoSemantics
 import io.joern.macros.QueryMacros.*
 import io.joern.scanners.*
 import io.shiftleft.semanticcpg.language.*
 
 object ExternalStorage extends QueryBundle {
-  implicit val engineContext: EngineContext = EngineContext(Semantics.empty)
+  implicit val engineContext: EngineContext = EngineContext(NoSemantics)
   implicit val resolver: ICallResolver      = NoResolve
 
   // TODO: improve matching around external storage permissions
