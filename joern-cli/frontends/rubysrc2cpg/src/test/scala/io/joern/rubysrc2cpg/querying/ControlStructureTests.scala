@@ -612,4 +612,42 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     }
   }
 
+  "RETURN keyword in logicalAndExpression" in {
+    val cpg = code("""
+        |def foo
+        | if (a == 1 && return)
+        |   puts a
+        | end
+        |end
+        |""".stripMargin)
+
+    inside(cpg.method.name("foo").controlStructure.l) {
+      case ifStruct :: Nil =>
+        ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
+
+        val List(_: Call, returnCall: Return) = ifStruct.condition.isCall.argument.l: @unchecked
+        returnCall.code shouldBe "return"
+
+      case xs => fail(s"Expected one control strucuture, got [${xs.code.mkString(",")}]")
+    }
+  }
+
+  "RETURN keyword in logicalOrExpression" in {
+    val cpg = code("""
+        |def foo
+        |   if (a == 10 || return)
+        |     puts a
+        |   end
+        |end
+        |""".stripMargin)
+
+    inside(cpg.method.name("foo").controlStructure.l) {
+      case orIfStruct :: Nil =>
+        orIfStruct.controlStructureType shouldBe ControlStructureTypes.IF
+
+        val List(_: Call, returnCall: Return) = orIfStruct.condition.isCall.argument.l: @unchecked
+        returnCall.code shouldBe "return"
+      case xs => fail(s"Expected one IF structure, got [${xs.code.mkString(",")}]")
+    }
+  }
 }
