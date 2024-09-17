@@ -58,6 +58,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     case node: SelfIdentifier                   => astForSelfIdentifier(node)
     case node: StatementList                    => astForStatementList(node)
     case node: ReturnExpression                 => astForReturnExpression(node)
+    case node: AccessModifier                   => astForSimpleIdentifier(node.toSimpleIdentifier)
     case node: DummyNode                        => Ast(node.node)
     case node: Unknown                          => astForUnknown(node)
     case x =>
@@ -718,6 +719,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
 
   protected def astForAssociationHash(node: Association, tmp: String): List[Ast] = {
     node.key match {
+      case mod: AccessModifier =>
+        // Modifiers aren't allowed here, will be shadowed by a simple identifier
+        astForAssociationHash(node.copy(key = mod.toSimpleIdentifier)(node.span), tmp)
+      case iden: SimpleIdentifier =>
+        // An identifier here will always be interpreted as a symbol
+        val sym = StaticLiteral(getBuiltInType(Defines.Symbol))(iden.span.spanStart(s":${iden.text}"))
+        astForAssociationHash(node.copy(key = sym)(node.span), tmp)
       case rangeExpr: RangeExpression =>
         val expandedList = generateStaticLiteralsForRange(rangeExpr).map { x =>
           astForSingleKeyValue(x, node.value, tmp)
@@ -728,7 +736,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         } else {
           astForSingleKeyValue(node.key, node.value, tmp) :: Nil
         }
-
       case _ => astForSingleKeyValue(node.key, node.value, tmp) :: Nil
     }
   }
