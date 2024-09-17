@@ -30,7 +30,7 @@ class HashTests extends RubyCode2CpgFixture {
 
     val List(assocCall) = hashCall.inCall.astSiblings.assignment.l
     val List(x, one)    = assocCall.argument.l
-    x.code shouldBe "<tmp-0>[x]"
+    x.code shouldBe "<tmp-0>[:x]"
     one.code shouldBe "1"
   }
 
