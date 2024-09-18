@@ -18,7 +18,8 @@ trait RubyFrontend(
   useDeprecatedFrontend: Boolean,
   withDownloadDependencies: Boolean,
   disableFileContent: Boolean,
-  antlrDebugging: Boolean
+  antlrDebugging: Boolean,
+  antlrProfiling: Boolean
 ) extends LanguageFrontend {
   override val fileSuffix: String = ".rb"
 
@@ -30,6 +31,7 @@ trait RubyFrontend(
       .withDownloadDependencies(withDownloadDependencies)
       .withDisableFileContent(disableFileContent)
       .withAntlrDebugging(antlrDebugging)
+      .withAntlrProfiling(antlrProfiling)
 
   override def execute(sourceCodeFile: File): Cpg = {
     new RubySrc2Cpg().createCpg(sourceCodeFile.getAbsolutePath).get
@@ -42,9 +44,10 @@ class DefaultTestCpgWithRuby(
   useDeprecatedFrontend: Boolean,
   downloadDependencies: Boolean = false,
   disableFileContent: Boolean = true,
-  antlrDebugging: Boolean = false
+  antlrDebugging: Boolean = false,
+  antlrProfiling: Boolean = false
 ) extends DefaultTestCpg
-    with RubyFrontend(useDeprecatedFrontend, downloadDependencies, disableFileContent, antlrDebugging)
+    with RubyFrontend(useDeprecatedFrontend, downloadDependencies, disableFileContent, antlrDebugging, antlrProfiling)
     with SemanticTestCpg {
 
   override protected def applyPasses(): Unit = {
@@ -70,14 +73,16 @@ class RubyCode2CpgFixture(
   extraFlows: List[FlowSemantic] = List.empty,
   packageTable: Option[PackageTable] = None,
   useDeprecatedFrontend: Boolean = false,
-  antlrDebugging: Boolean = false
+  antlrDebugging: Boolean = false,
+  antlrProfiling: Boolean = false
 ) extends Code2CpgFixture(() =>
       new DefaultTestCpgWithRuby(
         packageTable,
         useDeprecatedFrontend,
         downloadDependencies,
         disableFileContent,
-        antlrDebugging
+        antlrDebugging,
+        antlrProfiling
       )
         .withOssDataflow(withDataFlow)
         .withExtraFlows(extraFlows)
@@ -98,9 +103,10 @@ class RubyCfgTestCpg(
   useDeprecatedFrontend: Boolean = true,
   downloadDependencies: Boolean = false,
   disableFileContent: Boolean = true,
-  antlrDebugging: Boolean = false
+  antlrDebugging: Boolean = false,
+  antlrProfiling: Boolean = false
 ) extends CfgTestCpg
-    with RubyFrontend(useDeprecatedFrontend, downloadDependencies, disableFileContent, antlrDebugging) {
+    with RubyFrontend(useDeprecatedFrontend, downloadDependencies, disableFileContent, antlrDebugging, antlrProfiling) {
   override val fileSuffix: String = ".rb"
 
 }
