@@ -11,6 +11,10 @@ import java.util
 import scala.collection.mutable.ListBuffer
 import scala.util.{Try, Using}
 
+/** Summarizes the result of parsing a file.
+  */
+case class ParserResult(program: Try[RubyParser.ProgramContext], errors: List[String], warnings: List[String])
+
 /** A consumable wrapper for the RubyParser class used to parse the given file and be disposed thereafter.
   * @param inputDir
   *   the directory of the target to parse.
@@ -38,8 +42,9 @@ class AntlrParser(inputDir: File, filename: String, withDebugging: Boolean = fal
     profilerOpt = Option(profiler)
   }
 
-  def parse(): (Try[RubyParser.ProgramContext], List[String]) = {
-    val errors = ListBuffer[String]()
+  def parse(): ParserResult = {
+    val errors   = ListBuffer[String]()
+    val warnings = ListBuffer[String]()
     parser.removeErrorListeners()
     parser.addErrorListener(new ANTLRErrorListener {
       override def syntaxError(
@@ -63,7 +68,19 @@ class AntlrParser(inputDir: File, filename: String, withDebugging: Boolean = fal
         exact: Boolean,
         ambigAlts: util.BitSet,
         configs: ATNConfigSet
-      ): Unit = {}
+      ): Unit = {
+        val atn            = recognizer.getATN
+        val decisionNumber = dfa.decision
+        val ruleIndex      = atn.decisionToState.get(decisionNumber).ruleIndex
+        val ruleName       = recognizer.getRuleNames()(ruleIndex)
+
+        val startToken = recognizer.getTokenStream.get(startIndex)
+        val stopToken  = recognizer.getTokenStream.get(stopIndex)
+
+        warnings.append(
+          s"Parser ambiguity detected for rule '$ruleName' from token '${startToken.getText}' to '${stopToken.getText}', alternatives: ${ambigAlts.toString}"
+        )
+      }
 
       override def reportAttemptingFullContext(
         recognizer: Parser,
@@ -90,6 +107,7 @@ class AntlrParser(inputDir: File, filename: String, withDebugging: Boolean = fal
       // If profiling is enabled, read metrics and write accompanying file
       profilerOpt.foreach { profiler =>
         val logFilename = filename.replaceAll("\\.[^.]+$", "") + ".log"
+        val atn         = parser.getATN
         Using.resource(FileWriter(logFilename)) { logFile =>
           logFile.write("Profiling information for file: " + filename + "\n\n")
 
@@ -97,11 +115,15 @@ class AntlrParser(inputDir: File, filename: String, withDebugging: Boolean = fal
           var totalLookaheadOps     = 0L
 
           profiler.getDecisionInfo.foreach { decision =>
-            logFile.write(s"Decision ${decision.decision}:\n")
+            val decisionNumber = decision.decision
+            val ruleIndex      = atn.decisionToState.get(decisionNumber).ruleIndex
+            val ruleName       = parser.getRuleNames()(ruleIndex)
+
+            logFile.write(s"Decision $decisionNumber ($ruleName):\n")
             logFile.write(s"  Invocations: ${decision.invocations}\n")
             logFile.write(s"  Time (ns): ${decision.timeInPrediction}\n")
             logFile.write(s"  SLL lookahead operations: ${decision.SLL_TotalLook}\n")
-            logFile.write(s"  LL lookahead operations: ${decision.LL_TotalLook}\n\n")
+            logFile.write(s"  LL lookahead operations: ${decision.LL_TotalLook}\n")
 
             totalTimeInPrediction += decision.timeInPrediction
             totalLookaheadOps += decision.SLL_TotalLook + decision.LL_TotalLook
@@ -113,7 +135,7 @@ class AntlrParser(inputDir: File, filename: String, withDebugging: Boolean = fal
 
       program
     }
-    (program, errors.toList)
+    ParserResult(program, errors.toList, warnings.toList)
   }
 }
 
@@ -143,13 +165,14 @@ class ResourceManagedParser(clearLimit: Double, debug: Boolean = false, profilin
     maybeDecisionToDFA = Option(interp.decisionToDFA)
     maybeAtn = Option(interp.atn)
     val usedMemory = runtime.freeMemory.toDouble / runtime.totalMemory.toDouble
-    if (usedMemory >= clearLimit) {
+    if (usedMemory >= clearLimit && !profiling) { // Profiler may need the DFA for approximating time used at decisions
       logger.debug(s"Runtime memory consumption at $usedMemory, clearing ANTLR DFA cache")
       clearDFA()
     }
 
-    val (programCtx, errors) = antlrParser.parse()
+    val ParserResult(programCtx, errors, warnings) = antlrParser.parse()
     errors.foreach(logger.warn)
+    if (profiling) warnings.foreach(logger.warn)
     programCtx
   }
 
