@@ -28,19 +28,9 @@ object IonTypeLoader extends Loader {
       case None => Right(typ)
       case Some(IonType.STRING) => loop(r, parseTextField(r, typ))
       case Some(IonType.STRUCT) => {
-        val fieldName = r.getFieldName()
+        // Toplevel struct/object
         r.stepIn()
-        fieldName match
-          case "METHOD" => {
-            val m = parseMethod(r)
-            r.stepOut()
-            loop(r, typ.copy(methods = typ.methods :+ m))
-          }
-          case "MEMBER" => {
-            val m = parseMember(r)
-            r.stepOut()
-            loop(r, typ.copy(members = typ.members :+ m))
-          }
+        loop(r, typ)
       }
       case Some(IonType.LIST) => {
         val fieldName = r.getFieldName()
@@ -61,10 +51,35 @@ object IonTypeLoader extends Loader {
             r.stepOut()
             loop(r, typ.copy(typeParams = typ.typeParams ::: tps))
           }
+          case "METHODS" => {
+            val methods = parseStructList(r, r => parseMethod(r))
+            r.stepOut()
+            loop(r, typ.copy(methods = methods))
+          }
+          case "MEMBERS" => {
+            val members = parseStructList(r, r => parseMember(r))
+            r.stepOut()
+            loop(r, typ.copy(members = members))
+          }
       }
       case Some(_) => {
         Left(s"Failed to parse type info text, did not expect IonType: $ty: ${r.stringValue()}")
       }
+  }
+  
+  private def parseStructList[T](r: IonReader, structParser: IonReader => T): List[T] =
+//    Option(r.next()) match
+//      case Some(_) => structParser(r) :: parseStructList(r, structParser)
+//      case None => List()
+        
+    {
+    var result: List[T] = List()
+    while (r.next() != null) {
+      r.stepIn()
+      result = result :+ structParser(r)
+      r.stepOut()
+    }
+    result
   }
 
   private def parseTextField(r: IonReader, typ: TypeDecl): TypeDecl =

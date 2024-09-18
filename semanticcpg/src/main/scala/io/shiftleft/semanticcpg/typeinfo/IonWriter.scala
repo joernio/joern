@@ -5,7 +5,7 @@ import com.amazon.ion.system.IonTextWriterBuilder
 
 import java.io.ByteArrayOutputStream
 
-object IonStringWriter {
+object IonWriter extends Writer  {
   def writeToString(ty: TypeDecl): String = {
     val out = ByteArrayOutputStream()
     val w: IonWriter = IonTextWriterBuilder.pretty().build(out)
@@ -28,8 +28,15 @@ object IonStringWriter {
     ty.inherits.foreach(w.writeString)
     w.stepOut()
 
+    w.setFieldName("METHODS")
+    w.stepIn(IonType.LIST)
     ty.methods.foreach(writeMethod(w))
+    w.stepOut()
+
+    w.setFieldName("MEMBERS")
+    w.stepIn(IonType.LIST)
     ty.members.foreach(writeMember(w))
+    w.stepOut()
 
     w.setFieldName("DEPENDS")
     w.stepIn(IonType.LIST)
@@ -42,7 +49,6 @@ object IonStringWriter {
   }
 
   private def writeMethod(w: IonWriter)(m: Method): Unit = {
-    w.setFieldName("METHOD")
     w.stepIn(IonType.STRUCT)
     w.setFieldName("NAME")
     w.writeString(m.name)
@@ -54,7 +60,6 @@ object IonStringWriter {
   }
 
   private def writeMember(w: IonWriter)(m: Member): Unit = {
-    w.setFieldName("MEMBER")
     w.stepIn(IonType.STRUCT)
     w.setFieldName("NAME")
     w.writeString(m.name)

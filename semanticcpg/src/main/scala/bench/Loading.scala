@@ -40,18 +40,19 @@ object DataGen {
 @BenchmarkMode(Array(Mode.AverageTime))
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 class Loading {
-  var currentString: String = _
-  var result: Either[String, TypeDecl] = _
+  val n = 100
+  val types = DataGen.genTypeDecls(n)
+  val ionStrings = types.map(IonWriter.writeToString)
+  val jsonStrings = types.map(JsonWriter.writeToString)
   
-  @Setup
-  def prepare: Unit = 
-    currentString = IonStringWriter.writeToString(DataGen.genTypeDecl())
-    println(s"Current data is: $currentString")
-  
-  @TearDown
-  def check: Unit = assert(result.isRight)
-  
-  @Benchmark 
-  def run: Unit = 
-    result = IonTypeLoader.parse(currentString)
+//  @Setup
+//  def prepare: Unit = 
+//    currentString = IonWriter.writeToString(DataGen.genTypeDecl())
+//  
+//  @TearDown
+//  def check: Unit = assert(result.isRight)
+//  
+//  @Benchmark 
+//  def run: Unit = 
+//    result = IonTypeLoader.parse(currentString)
 }

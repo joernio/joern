@@ -1,6 +1,5 @@
 package typeinfo
 
-
 import io.shiftleft.semanticcpg.typeinfo.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -15,15 +14,19 @@ class IonTextWritingTests extends AnyWordSpec with Matchers {
       | INHERITS:[
       |   "java.lang.Cloneable"
       | ],
-      | METHOD:{
-      |   NAME:"bigIntegerValue",
-      |   FULL_NAME:"com.amazon.ion.IonFloat.bigIntegerValue:java.math.BigInteger()",
-      |   SIGNATURE:"java.math.BigInteger()"
-      | },
-      | MEMBER:{
-      |   NAME:"EMPTY_ARRAY",
-      |   TYPE_FULL_NAME:"com.amazon.ion.IonValue"
-      | },
+      | METHODS:[
+      |   {
+      |     NAME:"bigIntegerValue",
+      |     FULL_NAME:"com.amazon.ion.IonFloat.bigIntegerValue:java.math.BigInteger()",
+      |     SIGNATURE:"java.math.BigInteger()"
+      |   }
+      | ],
+      | MEMBERS:[
+      |   {
+      |     NAME:"EMPTY_ARRAY",
+      |     TYPE_FULL_NAME:"com.amazon.ion.IonValue"
+      |   }
+      | ],
       | DEPENDS:[
       |   {
       |     FULL_NAME: "java.lang",
@@ -39,7 +42,8 @@ class IonTextWritingTests extends AnyWordSpec with Matchers {
       "write same output as input from loader" in {
         val typ: Either[String, TypeDecl] = IonTypeLoader.parse(test1)
         typ.isRight shouldEqual true
-        val output: String = IonStringWriter.writeToString(typ.right.get)
+        
+        val output: String = IonWriter.writeToString(typ.right.get)
         output shouldEqual test1
       }
     }
