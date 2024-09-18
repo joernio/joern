@@ -2,28 +2,41 @@ package io.joern.rubysrc2cpg.parser
 
 import better.files.File
 import org.antlr.v4.runtime.*
-import org.antlr.v4.runtime.atn.{ATN, ATNConfigSet}
+import org.antlr.v4.runtime.atn.{ATN, ATNConfigSet, ProfilingATNSimulator}
 import org.antlr.v4.runtime.dfa.DFA
 import org.slf4j.LoggerFactory
-
+import java.io.FileWriter
 import java.io.File.separator
 import java.util
 import scala.collection.mutable.ListBuffer
-import scala.util.Try
+import scala.util.{Try, Using}
 
 /** A consumable wrapper for the RubyParser class used to parse the given file and be disposed thereafter.
   * @param inputDir
   *   the directory of the target to parse.
   * @param filename
   *   the file path to the file to be parsed.
+  * @param withDebugging
+  *   if set, will enable the ANTLR debugger, i.e, printing of the parse tree.
+  * @param withProfiler
+  *   if set, will enable a profiler and dump logs for each parsed file alongside it.
   */
-class AntlrParser(inputDir: File, filename: String) {
+class AntlrParser(inputDir: File, filename: String, withDebugging: Boolean = false, withProfiler: Boolean = false) {
 
   private val charStream = CharStreams.fromFileName(filename)
   private val lexer      = new RubyLexer(charStream)
 
-  private val tokenStream = new CommonTokenStream(RubyLexerPostProcessor(lexer))
-  val parser: RubyParser  = new RubyParser(tokenStream)
+  private val tokenStream                                = new CommonTokenStream(RubyLexerPostProcessor(lexer))
+  val parser: RubyParser                                 = new RubyParser(tokenStream)
+  private var profilerOpt: Option[ProfilingATNSimulator] = None
+
+  parser.setTrace(withDebugging)
+  if (withProfiler) {
+    val profiler = new ProfilingATNSimulator(parser)
+    parser.setInterpreter(profiler)
+    parser.setProfile(true)
+    profilerOpt = Option(profiler)
+  }
 
   def parse(): (Try[RubyParser.ProgramContext], List[String]) = {
     val errors = ListBuffer[String]()
@@ -70,7 +83,37 @@ class AntlrParser(inputDir: File, filename: String) {
         configs: ATNConfigSet
       ): Unit = {}
     })
-    (Try(parser.program()), errors.toList)
+
+    val program = Try {
+      val program = parser.program()
+
+      // If profiling is enabled, read metrics and write accompanying file
+      profilerOpt.foreach { profiler =>
+        val logFilename = filename.replaceAll("\\.[^.]+$", "") + ".log"
+        Using.resource(FileWriter(logFilename)) { logFile =>
+          logFile.write("Profiling information for file: " + filename + "\n\n")
+
+          var totalTimeInPrediction = 0L
+          var totalLookaheadOps     = 0L
+
+          profiler.getDecisionInfo.foreach { decision =>
+            logFile.write(s"Decision ${decision.decision}:\n")
+            logFile.write(s"  Invocations: ${decision.invocations}\n")
+            logFile.write(s"  Time (ns): ${decision.timeInPrediction}\n")
+            logFile.write(s"  SLL lookahead operations: ${decision.SLL_TotalLook}\n")
+            logFile.write(s"  LL lookahead operations: ${decision.LL_TotalLook}\n\n")
+
+            totalTimeInPrediction += decision.timeInPrediction
+            totalLookaheadOps += decision.SLL_TotalLook + decision.LL_TotalLook
+          }
+          logFile.write(s"Total time in prediction: $totalTimeInPrediction ns\n")
+          logFile.write(s"Total lookahead operations: $totalLookaheadOps\n")
+        }
+      }
+
+      program
+    }
+    (program, errors.toList)
   }
 }
 
@@ -84,7 +127,8 @@ class AntlrParser(inputDir: File, filename: String) {
   * @param clearLimit
   *   the percentage of used heap to clear the DFA-cache on.
   */
-class ResourceManagedParser(clearLimit: Double, debug: Boolean = false) extends AutoCloseable {
+class ResourceManagedParser(clearLimit: Double, debug: Boolean = false, profiling: Boolean = false)
+    extends AutoCloseable {
 
   private val logger                                 = LoggerFactory.getLogger(getClass)
   private val runtime                                = Runtime.getRuntime
@@ -93,9 +137,8 @@ class ResourceManagedParser(clearLimit: Double, debug: Boolean = false) extends 
 
   def parse(inputFile: File, filename: String): Try[RubyParser.ProgramContext] = {
     val inputDir    = if inputFile.isDirectory then inputFile else inputFile.parent
-    val antlrParser = AntlrParser(inputDir, filename)
-    antlrParser.parser.setTrace(debug) // enables printing of ANTLR parse tree
-    val interp = antlrParser.parser.getInterpreter
+    val antlrParser = AntlrParser(inputDir, filename, debug, profiling)
+    val interp      = antlrParser.parser.getInterpreter
     // We need to grab a live instance in order to get the static variables as they are protected from static access
     maybeDecisionToDFA = Option(interp.decisionToDFA)
     maybeAtn = Option(interp.atn)
