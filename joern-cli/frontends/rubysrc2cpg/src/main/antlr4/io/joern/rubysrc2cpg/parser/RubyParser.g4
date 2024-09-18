@@ -258,7 +258,7 @@ primaryValueListWithAssociation
     ;
 
 blockArgument
-    :   AMP operatorExpression
+    :   AMP operatorExpression?
     ;
     
 // --------------------------------------------------------
@@ -632,7 +632,7 @@ hashParameter
     ;
 
 procParameter
-    :   AMP procParameterName
+    :   AMP procParameterName?
     ;
 
 procParameterName

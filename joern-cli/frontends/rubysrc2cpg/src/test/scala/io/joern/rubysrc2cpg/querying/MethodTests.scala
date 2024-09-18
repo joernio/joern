@@ -938,4 +938,50 @@ class MethodTests extends RubyCode2CpgFixture {
       case xs => fail(s"Expected 4 params, got ${xs.code.mkString(",")}")
     }
   }
+
+  "Unnamed proc parameters" should {
+    val cpg = code("""
+        |def outer_method(&)
+        |  puts "In outer_method"
+        |  inner_method(&)
+        |end
+        |
+        |def inner_method(&)
+        |  puts "In inner_method"
+        |  yield if block_given?
+        |end
+        |
+        |outer_method do
+        |  puts "Hello from the block!"
+        |end
+        |""".stripMargin)
+
+    "generate and reference proc param" in {
+      inside(cpg.method.name("outer_method").l) {
+        case outerMethod :: Nil =>
+          val List(_, procParam) = outerMethod.parameter.l
+          procParam.name shouldBe "<proc-param-0>"
+
+          inside(outerMethod.call.name("inner_method").argument.l) {
+            case _ :: procParamArg :: Nil =>
+              procParamArg.code shouldBe "<proc-param-0>"
+            case xs => fail(s"Expected two arguments, got [${xs.code.mkString(",")}]")
+          }
+
+        case xs => fail(s"Expected one method def, got [${xs.name.mkString(",")}]")
+      }
+    }
+
+    "call correct proc param in `yield`" in {
+      inside(cpg.method.name("inner_method").l) {
+        case innerMethod :: Nil =>
+          val List(_, procParam) = innerMethod.parameter.l
+          procParam.name shouldBe "<proc-param-1>"
+
+          innerMethod.call.nameExact("call").argument.isIdentifier.name.l shouldBe List("<proc-param-1>")
+
+        case xs => fail(s"Expected one method def, got [${xs.name.mkString(",")}]")
+      }
+    }
+  }
 }

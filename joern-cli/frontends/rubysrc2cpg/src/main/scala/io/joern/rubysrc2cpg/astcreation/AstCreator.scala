@@ -33,7 +33,8 @@ class AstCreator(
     with AstSummaryVisitor
     with AstNodeBuilder[RubyExpression, AstCreator] {
 
-  val tmpGen: FreshNameGenerator[String] = FreshNameGenerator(i => s"<tmp-$i>")
+  val tmpGen: FreshNameGenerator[String]                      = FreshNameGenerator(i => s"<tmp-$i>")
+  val procParamGen: FreshNameGenerator[Left[String, Nothing]] = FreshNameGenerator(i => Left(s"<proc-param-$i>"))
 
   /* Used to track variable names and their LOCAL nodes.
    */
@@ -63,7 +64,7 @@ class AstCreator(
   override def createAst(): DiffGraphBuilder = {
     val astRootNode = rootNode.match {
       case Some(node) => node.asInstanceOf[StatementList]
-      case None       => new RubyNodeCreator(tmpGen).visit(programCtx).asInstanceOf[StatementList]
+      case None       => new RubyNodeCreator(tmpGen, procParamGen).visit(programCtx).asInstanceOf[StatementList]
     }
 
     val ast = astForRubyFile(astRootNode)

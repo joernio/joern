@@ -17,8 +17,10 @@ import scala.jdk.CollectionConverters.*
 
 /** Converts an ANTLR Ruby Parse Tree into the intermediate Ruby AST.
   */
-class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGenerator(id => s"<tmp-$id>"))
-    extends RubyParserBaseVisitor[RubyExpression] {
+class RubyNodeCreator(
+  variableNameGen: FreshNameGenerator[String] = FreshNameGenerator(id => s"<tmp-$id>"),
+  procParamGen: FreshNameGenerator[Left[String, Nothing]] = FreshNameGenerator(id => Left(s"<proc-param-$id>"))
+) extends RubyParserBaseVisitor[RubyExpression] {
 
   private val logger       = LoggerFactory.getLogger(getClass)
   private val classNameGen = FreshNameGenerator(id => s"<anon-class-$id>")
@@ -794,7 +796,12 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
   override def visitMethodCallWithParenthesesExpression(
     ctx: RubyParser.MethodCallWithParenthesesExpressionContext
   ): RubyExpression = {
-    val callArgs = ctx.argumentWithParentheses().arguments.map(visit)
+    val callArgs = ctx.argumentWithParentheses().arguments.map {
+      case x: BlockArgumentContext =>
+        if Option(x.operatorExpression()).isDefined then visit(x)
+        else SimpleIdentifier()(ctx.toTextSpan.spanStart(procParamGen.current.value))
+      case x => visit(x)
+    }
 
     val args =
       if (ctx.argumentWithParentheses().isArrayArgumentList) then
@@ -1536,9 +1543,14 @@ class RubyNodeCreator(variableNameGen: FreshNameGenerator[String] = FreshNameGen
   }
 
   override def visitProcParameter(ctx: RubyParser.ProcParameterContext): RubyExpression = {
-    ProcParameter(
-      Option(ctx.procParameterName).map(_.LOCAL_VARIABLE_IDENTIFIER()).map(_.getText()).getOrElse(ctx.getText())
-    )(ctx.toTextSpan)
+    val procParamName =
+      Option(ctx.procParameterName()).map(_.LOCAL_VARIABLE_IDENTIFIER()).map(_.getText()).getOrElse(ctx.getText) match {
+        case "&" =>
+          procParamGen.fresh.value
+        case x => x
+      }
+
+    ProcParameter(procParamName)(ctx.toTextSpan)
   }
 
   override def visitHashParameter(ctx: RubyParser.HashParameterContext): RubyExpression = {
