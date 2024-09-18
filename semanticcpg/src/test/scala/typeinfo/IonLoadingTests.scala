@@ -17,6 +17,7 @@ class IonLoadingTests extends AnyWordSpec with Matchers {
       | FULL_NAME: "com.amazon.ion.IonFloat",
       | NAME: "IonFloat",
       | TYPE_PARAMETERS: [],
+      | INHERITS: ["java.lang.Cloneable"],
       | METHOD: {
       |   NAME: "bigIntegerValue",
       |   FULL_NAME: "com.amazon.ion.IonFloat.bigIntegerValue:java.math.BigInteger()",
@@ -35,13 +36,12 @@ class IonLoadingTests extends AnyWordSpec with Matchers {
       |     VERSION: "4.1.2",
       |   }
       | ],
-      | INHERITS: ["java.lang.Cloneable"],
       |}
       |""".stripMargin
     
     "simple struct reader" should {
       "read into object without errors" in {
-        val typ = Loader.parse(test1)
+        val typ = IonTypeLoader.parse(test1)
         typ.isRight shouldBe true
         typ.toString shouldBe ""
       }
