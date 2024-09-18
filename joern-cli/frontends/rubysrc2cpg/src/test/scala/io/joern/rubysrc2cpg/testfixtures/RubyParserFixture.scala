@@ -18,7 +18,8 @@ class RubyParserFixture
       useDeprecatedFrontend = false,
       withDownloadDependencies = false,
       disableFileContent = true,
-      antlrDebugging = false
+      antlrDebugging = false,
+      antlrProfiling = false
     )
     with TestCodeWriter
     with AnyWordSpecLike
