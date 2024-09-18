@@ -310,8 +310,8 @@ abstract class AstCreatorBase(filename: String)(implicit withSchemaValidation: V
       .withReceiverEdges(callNode, receiverRoot)
   }
 
-  def setArgumentIndices(arguments: Seq[Ast]): Unit = {
-    var currIndex = 1
+  def setArgumentIndices(arguments: Seq[Ast], start: Int = 1): Unit = {
+    var currIndex = start
     arguments.foreach { a =>
       a.root match {
         case Some(x: ExpressionNew) =>

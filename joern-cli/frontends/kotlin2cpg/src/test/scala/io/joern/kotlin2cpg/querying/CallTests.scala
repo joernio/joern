@@ -659,4 +659,28 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       call.argument.isEmpty shouldBe true
     }
   }
+
+  "have correct call to private class method" in {
+    val cpg = code("""
+                     |package somePackage
+                     |class A {
+                     |  private fun func1() {
+                     |  }
+                     |  fun func2() {
+                     |    func1()
+                     |  }
+                     |}
+                     |""".stripMargin)
+
+    inside(cpg.call.nameExact("func1").l) { case List(call) =>
+      call.methodFullName shouldBe "somePackage.A.func1:void()"
+      call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+      call.receiver.isEmpty shouldBe true
+      inside(call.argument.l) { case List(argument: Identifier) =>
+        argument.name shouldBe "this"
+        argument.argumentIndex shouldBe 0
+      }
+    }
+  }
 }

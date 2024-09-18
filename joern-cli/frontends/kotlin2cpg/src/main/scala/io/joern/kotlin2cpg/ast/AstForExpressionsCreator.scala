@@ -462,19 +462,19 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val call           = bindingContext.get(BindingContext.CALL, expr.getCalleeExpression)
     val resolvedCall   = bindingContext.get(BindingContext.RESOLVED_CALL, call)
 
-    val dispatchType =
+    val (dispatchType, instanceAsArgument) =
       if (resolvedCall == null) {
-        DispatchTypes.STATIC_DISPATCH
+        (DispatchTypes.STATIC_DISPATCH, false)
       } else {
         if (resolvedCall.getDispatchReceiver == null) {
-          DispatchTypes.STATIC_DISPATCH
+          (DispatchTypes.STATIC_DISPATCH, false)
         } else {
           resolvedCall.getResultingDescriptor match {
             case functionDescriptor: FunctionDescriptor
                 if functionDescriptor.getVisibility == DescriptorVisibilities.PRIVATE =>
-              DispatchTypes.STATIC_DISPATCH
+              (DispatchTypes.STATIC_DISPATCH, true)
             case _ =>
-              DispatchTypes.DYNAMIC_DISPATCH
+              (DispatchTypes.DYNAMIC_DISPATCH, true)
           }
         }
       }
@@ -486,7 +486,25 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val annotationsAsts = annotations.map(astForAnnotationEntry)
     val astWithAnnotations =
       if (dispatchType == DispatchTypes.STATIC_DISPATCH) {
-        callAst(withArgumentIndex(node, argIdx).argumentName(argNameMaybe), argAsts.toList)
+        val compoundArgAsts =
+          if (instanceAsArgument) {
+            val instanceArgument = identifierNode(
+              expr,
+              Constants.this_,
+              Constants.this_,
+              typeInfoProvider.typeFullName(resolvedCall.getDispatchReceiver.getType)
+            )
+            val args = argAsts.prepended(Ast(instanceArgument))
+            setArgumentIndices(args, 0)
+            args
+          } else {
+            setArgumentIndices(argAsts, 1)
+            argAsts
+          }
+
+        Ast(withArgumentIndex(node, argIdx).argumentName(argNameMaybe))
+          .withChildren(compoundArgAsts)
+          .withArgEdges(node, compoundArgAsts.flatMap(_.root))
           .withChildren(annotationsAsts)
       } else {
         val receiverNode = identifierNode(
