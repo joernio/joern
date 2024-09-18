@@ -10,7 +10,7 @@ import io.shiftleft.semanticcpg.language.*
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 
-class ExtendedCfgNodeMethods[NodeType <: CfgNode](val node: NodeType) extends AnyVal {
+class ExtendedCfgNodeMethods[CfgNodeType <: CfgNode](val node: CfgNodeType) extends AnyVal {
 
   /** Convert to nearest AST node
     */
