@@ -3,6 +3,7 @@ package typeinfo
 import io.shiftleft.semanticcpg.typeinfo.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import scala.util.Try
 
 class IonTextWritingTests extends AnyWordSpec with Matchers {
   private val test1: String = """
@@ -40,10 +41,10 @@ class IonTextWritingTests extends AnyWordSpec with Matchers {
 
     "simple struct writer" should {
       "write same output as input from loader" in {
-        val typ: Either[String, TypeDecl] = IonTypeLoader.parse(test1)
-        typ.isRight shouldEqual true
+        val typ: Try[TypeDecl] = IonTypeLoader.parse(test1)
+        typ.isSuccess shouldEqual true
         
-        val output: String = IonWriter.writeToString(typ.right.get)
+        val output: String = IonWriter.writeToString(typ.get)
         output shouldEqual test1
       }
     }

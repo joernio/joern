@@ -3,6 +3,7 @@ package typeinfo
 import io.shiftleft.semanticcpg.typeinfo.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import scala.util.Try
 
 class JsonLoaderTests extends AnyWordSpec with Matchers {
   private val test1: String =
@@ -38,10 +39,10 @@ class JsonLoaderTests extends AnyWordSpec with Matchers {
 
   "simple struct reader" should {
     "read into object without errors" in {
-      val result: Either[String, TypeDecl] = JsonLoader.parse(test1)
-      result.isRight shouldEqual true
+      val result: Try[TypeDecl] = JsonLoader.parse(test1)
+      result.isSuccess shouldEqual true
 
-      val t = result.right.get
+      val t = result.get
       t.fullName shouldEqual "com.amazon.ion.IonFloat"
       t.name shouldEqual "IonFloat"
       t.typeParams shouldBe empty

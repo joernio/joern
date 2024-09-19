@@ -2,30 +2,30 @@ package io.shiftleft.semanticcpg.typeinfo
 
 import com.amazon.ion.{IonReader, IonType}
 import com.amazon.ion.system.IonReaderBuilder
-
 import scala.annotation.tailrec
+import scala.util.{Try, Failure};
 
 object IonTypeLoader extends Loader {
-  def parse(data: String): Either[String, TypeDecl] = {
+  def parse(data: String): Try[TypeDecl] = {
     val b = IonReaderBuilder.standard()
     val r = b.build(data)
     Option(r.next()) match
       case None => {
         r.close()
-        Right(TypeDecl())
+        Try(TypeDecl())
       }
       case Some(_) => {
         r.stepIn()
-        val typ = loop(r)
+        val typ = Try(loop(r))
         r.close()
         typ
       }
   }
 
-  private def loop(r: IonReader, typ: TypeDecl = TypeDecl()): Either[String, TypeDecl] = {
+  private def loop(r: IonReader, typ: TypeDecl = TypeDecl()): TypeDecl = {
     val ty = Option(r.next())
     ty match
-      case None => Right(typ)
+      case None => typ
       case Some(IonType.STRING) => loop(r, parseTextField(r, typ))
       case Some(IonType.STRUCT) => {
         // Toplevel struct/object
@@ -63,7 +63,7 @@ object IonTypeLoader extends Loader {
           }
       }
       case Some(_) => {
-        Left(s"Failed to parse type info text, did not expect IonType: $ty: ${r.stringValue()}")
+        throw new IllegalArgumentException(s"Failed to parse type info text, did not expect IonType: $ty: ${r.stringValue()}")
       }
   }
   

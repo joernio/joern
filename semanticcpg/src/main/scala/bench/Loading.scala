@@ -45,14 +45,9 @@ class Loading {
   val ionStrings = types.map(IonWriter.writeToString)
   val jsonStrings = types.map(JsonWriter.writeToString)
   
-//  @Setup
-//  def prepare: Unit = 
-//    currentString = IonWriter.writeToString(DataGen.genTypeDecl())
-//  
-//  @TearDown
-//  def check: Unit = assert(result.isRight)
-//  
-//  @Benchmark 
-//  def run: Unit = 
-//    result = IonTypeLoader.parse(currentString)
+  @Benchmark 
+  def ionLoadFromString = ionStrings.foreach(IonTypeLoader.parse)
+    
+  @Benchmark
+  def jsonLoadFromString = jsonStrings.foreach(JsonLoader.parse)
 }

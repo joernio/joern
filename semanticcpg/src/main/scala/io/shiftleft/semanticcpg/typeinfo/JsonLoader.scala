@@ -3,7 +3,8 @@ package io.shiftleft.semanticcpg.typeinfo
 import org.json4s.*
 import org.json4s.FieldSerializer.*
 import org.json4s.native.JsonMethods.*
-import org.json4s.native.Serialization;
+import org.json4s.native.Serialization
+import scala.util.Try;
 
 object JsonLoader extends Loader {
   private val dependencySerializer = FieldSerializer[Dependency](
@@ -41,5 +42,5 @@ object JsonLoader extends Loader {
   // TODO
   implicit val format: Formats = DefaultFormats + dependencySerializer + memberSerializer + methodSerializer + typeDeclSerializer
 
-  override def parse(data: String): Either[String, TypeDecl] = Right(Serialization.read(data))
+  override def parse(data: String): Try[TypeDecl] = Try(Serialization.read(data))
 }
