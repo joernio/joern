@@ -49,10 +49,14 @@ object Constants {
 case class GradleDepsInitScript(contents: String, taskName: String, destinationDir: Path)
 
 object GradleDependencies {
-  private val logger           = LoggerFactory.getLogger(getClass)
-  private val initScriptPrefix = "x2cpg.init.gradle"
-  private val taskNamePrefix   = "x2cpgCopyDeps"
-  private val tempDirPrefix    = "x2cpgDependencies"
+  private val logger                                     = LoggerFactory.getLogger(getClass)
+  private val initScriptPrefix                           = "x2cpg.init.gradle"
+  private val taskNamePrefix                             = "x2cpgCopyDeps"
+  private val tempDirPrefix                              = "x2cpgDependencies"
+  private val defaultAndroidConfigurationName            = "releaseRuntimeClasspath"
+  private val defaultRuntimeConfigurationName            = "runtimeClasspath"
+  private[dependency] val defaultGradleConfigurationName = "compileClasspath"
+  private[dependency] val defaultGradleAppName           = "app"
 
   // works with Gradle 5.1+ because the script makes use of `task.register`:
   //   https://docs.gradle.org/current/userguide/task_configuration_avoidance.html
@@ -60,10 +64,22 @@ object GradleDependencies {
     taskName: String,
     destination: String,
     gradleProjectNames: List[String],
-    gradleConfigurationNames: List[String]
+    gradleConfigurationNames: List[String],
+    projectInfo: GradleProjectInfo
   ): String = {
-    val projectNamesString       = gradleProjectNames.map(name => s"\"$name\"").mkString(",")
-    val configurationNamesString = gradleConfigurationNames.map(name => s"\"$name\"").mkString(",")
+    val projectNamesString = gradleProjectNames.map(name => s"\"$name\"").mkString(",")
+    // TODO: This logic exists to avoid potential issues with conflicting dependencies in different configurations
+    //  since only a single default or given configuration will be chosen if available. If no obvious configuration can
+    //  be found, fetch dependencies for multiple.
+    val allTargetsHaveDefaultConfiguration =
+      projectInfo.projectConfigurationInfo.values.iterator.forall(_.contains(defaultAndroidConfigurationName))
+    val configurationNamesString =
+      if (allTargetsHaveDefaultConfiguration && gradleConfigurationNames.contains(defaultAndroidConfigurationName))
+        defaultAndroidConfigurationName
+      else
+        gradleConfigurationNames.map(name => s"\"$name\"").mkString(",")
+
+    logger.info(s"Creating gradle android init script for configurations $configurationNamesString")
     s"""
        |allprojects {
        |  afterEvaluate { project ->
@@ -121,7 +137,17 @@ object GradleDependencies {
     gradleConfigurationNames: List[String]
   ): String = {
     val into = destination.replaceAll("\\\\", "/")
-    val fromConfigurations = ("runtimeClasspath" :: gradleConfigurationNames)
+    // TODO: This logic exists to avoid potential issues with conflicting dependencies in different configurations
+    //  since only a single default or given configuration will be chosen if available. If no obvious configuration can
+    //  be found, fetch dependencies for multiple.
+    val configurationNames =
+      if (gradleConfigurationNames.contains(defaultRuntimeConfigurationName))
+        defaultRuntimeConfigurationName :: Nil
+      else
+        defaultRuntimeConfigurationName :: gradleConfigurationNames
+
+    logger.info(s"Creating non-android gradle init script for configuration names ${configurationNames.mkString(", ")}")
+    val fromConfigurations = configurationNames
       .map(configuration => s"from configurations.$configuration")
       .toSet
       .mkString("\n")
@@ -140,12 +166,19 @@ object GradleDependencies {
     destinationDir: Path,
     forAndroid: Boolean,
     gradleProjectNames: List[String],
-    gradleConfigurationNames: List[String]
+    gradleConfigurationNames: List[String],
+    projectInfo: GradleProjectInfo
   ): GradleDepsInitScript = {
     val taskName = taskNamePrefix + "_" + (Random.alphanumeric take 8).toList.mkString
     val content =
       if (forAndroid) {
-        gradle5OrLaterAndroidInitScript(taskName, destinationDir.toString, gradleProjectNames, gradleConfigurationNames)
+        gradle5OrLaterAndroidInitScript(
+          taskName,
+          destinationDir.toString,
+          gradleProjectNames,
+          gradleConfigurationNames,
+          projectInfo
+        )
       } else {
         gradle5OrLaterInitScript(taskName, destinationDir.toString, gradleConfigurationNames)
       }
@@ -290,6 +323,12 @@ object GradleDependencies {
           Some(result)
         case Failure(ex) =>
           logger.warn(s"Caught exception while executing Gradle task: ${ex.getMessage}")
+          val androidSdkError = "Define a valid SDK location with an ANDROID_HOME environment variable"
+          if (stderrStream.toString.contains(androidSdkError)) {
+            logger.warn(
+              "A missing Android SDK configuration caused gradle dependency fetching failures. Please define a valid SDK location with an ANDROID_HOME environment variable or by setting the sdk.dir path in your project's local properties file"
+            )
+          }
           logger.debug(s"Gradle task execution stdout: \n$stdoutStream")
           logger.debug(s"Gradle task execution stderr: \n$stderrStream")
           None
@@ -327,12 +366,12 @@ object GradleDependencies {
     projectDir: Path,
     projectNameOverride: Option[String],
     configurationNameOverride: Option[String]
-  ): Option[collection.Seq[String]] = {
+  ): Map[String, collection.Seq[String]] = {
     logger.info(s"Fetching Gradle project information at path `$projectDir`.")
     getGradleProjectInfo(projectDir) match {
       case Some(projectInfo) if projectInfo.gradleVersionMajorMinor()._1 < 5 =>
         logger.warn(s"Unsupported Gradle version `${projectInfo.gradleVersion}`")
-        None
+        Map.empty
       case Some(projectInfo) =>
         Try(File.newTemporaryDirectory(tempDirPrefix).deleteOnExit()) match {
           case Success(destinationDir) =>
@@ -350,7 +389,8 @@ object GradleDependencies {
                     destinationDir.path,
                     projectInfo.hasAndroidSubproject,
                     projectNames,
-                    projectInfo.configurationNames
+                    configurationNames,
+                    projectInfo
                   )
                 initScriptFile.write(initScript.contents)
 
@@ -365,50 +405,52 @@ object GradleDependencies {
                 Try(makeConnection(projectDir.toFile)) match {
                   case Success(connection) =>
                     Using.resource(connection) { c =>
-                      Option(projectNames.flatMap { projectName =>
+                      projectNames.flatMap { projectName =>
                         val taskName =
-                          if (projectName.startsWith(":"))
-                            s"${projectName.tail}:${initScript.taskName}"
+                          if (projectInfo.projectConfigurationInfo.contains(s":$projectName"))
+                            s"$projectName:${initScript.taskName}"
                           else
                             initScript.taskName
+
+                        val x = 2
                         runGradleTask(
                           c,
                           projectName,
                           taskName,
                           initScript.destinationDir,
                           initScriptFile.pathAsString
-                        ) match {
-                          case Some(deps) =>
-                            deps.map { d =>
-                              if (!d.endsWith(Constants.aarFileExtension)) d
-                              else
-                                extractClassesJarFromAar(File(d)) match {
-                                  case Some(path) => path.toString
-                                  case None       => d
-                                }
-                            }
-                          case None => Nil
+                        ) map { deps =>
+                          val depsOutput = deps.map { d =>
+                            if (!d.endsWith(Constants.aarFileExtension)) d
+                            else
+                              extractClassesJarFromAar(File(d)) match {
+                                case Some(path) => path.toString
+                                case None       => d
+                              }
+                          }
+
+                          projectName -> depsOutput
                         }
-                      })
+                      }.toMap
                     }
                   case Failure(ex) =>
                     logger.warn(s"Caught exception while trying to establish a Gradle connection: ${ex.getMessage}")
                     logger.debug(s"Full exception: ", ex)
-                    None
+                    Map.empty
                 }
               case Failure(ex) =>
                 logger.warn(s"Could not create temporary file for Gradle init script: ${ex.getMessage}")
                 logger.debug(s"Full exception: ", ex)
-                None
+                Map.empty
             }
           case Failure(ex) =>
             logger.warn(s"Could not create temporary directory for saving dependency files: ${ex.getMessage}")
             logger.debug("Full exception: ", ex)
-            None
+            Map.empty
         }
       case None =>
         logger.warn("Could not fetch Gradle project information")
-        None
+        Map.empty
     }
   }
 }
