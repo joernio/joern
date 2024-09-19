@@ -2,24 +2,30 @@ package io.shiftleft.semanticcpg.typeinfo
 
 import com.amazon.ion.{IonReader, IonType}
 import com.amazon.ion.system.IonReaderBuilder
+
+import java.io.IOException
 import scala.annotation.tailrec
-import scala.util.{Try, Failure};
+import scala.util.{Failure, Try, Using};
 
 object IonTypeLoader extends Loader {
   def parse(data: String): Try[TypeDecl] = {
-    val b = IonReaderBuilder.standard()
-    val r = b.build(data)
-    Option(r.next()) match
-      case None => {
-        r.close()
-        Try(TypeDecl())
-      }
-      case Some(_) => {
-        r.stepIn()
-        val typ = Try(loop(r))
-        r.close()
-        typ
-      }
+    val reader = IonReaderBuilder.standard().build(data)
+    val typ = Try(loop(reader))
+    for {
+      _ <- Try(reader.close())
+      typ <- typ
+    } yield
+      typ
+//    try {
+//      reader.close()
+//    } catch {
+//      case e => Failure(e)
+//    } finally {
+//      reader.close()
+//    }
+//    val typ = Try(loop(reader))
+//    r.close()
+//    typ
   }
 
   private def loop(r: IonReader, typ: TypeDecl = TypeDecl()): TypeDecl = {

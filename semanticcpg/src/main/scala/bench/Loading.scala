@@ -27,11 +27,11 @@ object DataGen {
     TypeDecl(
       fullName = genFqName(),
       name = genName(),
-      typeParams = genList(Random.nextInt(20), genTypeParam),
-      methods = genList(Random.nextInt(1000), genMethod),
-      members = genList(Random.nextInt(1000), genMember),
-      dependencies = genList(Random.nextInt(500), genDependency),
-      inherits = genList(Random.nextInt(100), genFqName)
+      typeParams = genList(Random.nextInt(2), genTypeParam),
+      methods = genList(Random.nextInt(100), genMethod),
+      members = genList(Random.nextInt(100), genMember),
+      dependencies = genList(Random.nextInt(20), genDependency),
+      inherits = genList(Random.nextInt(6), genFqName)
     )
   def genTypeDecls(n: Int): Array[TypeDecl] = Array.fill(n){genTypeDecl()}
 }
@@ -40,7 +40,7 @@ object DataGen {
 @BenchmarkMode(Array(Mode.AverageTime))
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 class Loading {
-  val n = 100
+  val n = 40
   val types = DataGen.genTypeDecls(n)
   val ionStrings = types.map(IonWriter.writeToString)
   val jsonStrings = types.map(JsonWriter.writeToString)
