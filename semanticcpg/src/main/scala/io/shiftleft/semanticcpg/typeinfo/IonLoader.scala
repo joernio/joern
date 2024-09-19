@@ -7,26 +7,18 @@ import java.io.IOException
 import scala.annotation.tailrec
 import scala.util.{Failure, Try, Using};
 
-object IonTypeLoader extends Loader {
-  def parse(data: String): Try[TypeDecl] = {
-    val reader = IonReaderBuilder.standard().build(data)
-    val typ = Try(loop(reader))
-    for {
-      _ <- Try(reader.close())
-      typ <- typ
-    } yield
-      typ
-//    try {
-//      reader.close()
-//    } catch {
-//      case e => Failure(e)
-//    } finally {
-//      reader.close()
-//    }
-//    val typ = Try(loop(reader))
-//    r.close()
-//    typ
-  }
+object IonLoader extends Loader {
+  def parse(data: String): Try[TypeDecl] = 
+    Using.Manager { use =>
+      val reader = use(IonReaderBuilder.standard().build(data))
+      loop(reader)
+    }
+
+  override def parse(data: Array[Byte]): Try[TypeDecl] =
+    Using.Manager { use =>
+      val reader = use(IonReaderBuilder.standard().build(data))
+      loop(reader)
+    }
 
   private def loop(r: IonReader, typ: TypeDecl = TypeDecl()): TypeDecl = {
     val ty = Option(r.next())

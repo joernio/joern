@@ -5,7 +5,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import scala.util.Try
 
-class IonLoadingTests extends AnyWordSpec with Matchers {
+class IonLoaderTests extends AnyWordSpec with Matchers {
   private val test1: String = """
       |{
       | FULL_NAME:"com.amazon.ion.IonFloat",
@@ -38,7 +38,7 @@ class IonLoadingTests extends AnyWordSpec with Matchers {
     
   "simple struct reader" should {
     "read into object without errors" in {
-      val result: Try[TypeDecl] = IonTypeLoader.parse(test1)
+      val result: Try[TypeDecl] = IonLoader.parse(test1)
       result.isSuccess shouldEqual true
       
       val t = result.get

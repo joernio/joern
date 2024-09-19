@@ -42,8 +42,9 @@ class JsonWriterTests extends AnyWordSpec with Matchers {
       val typ: Try[TypeDecl] = JsonLoader.parse(test1)
       typ.isSuccess shouldEqual true
 
-      val output: String = JsonWriter.writeToString(typ.get)
-      output shouldEqual test1
+      val output: Try[String] = JsonWriter.writeToString(typ.get)
+      output.isSuccess shouldEqual true
+      output.get shouldEqual test1
     }
   }
 }

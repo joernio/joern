@@ -5,7 +5,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import scala.util.Try
 
-class IonTextWritingTests extends AnyWordSpec with Matchers {
+class IonWriterTests extends AnyWordSpec with Matchers {
   private val test1: String = """
       |{
       | FULL_NAME:"com.amazon.ion.IonFloat",
@@ -41,11 +41,12 @@ class IonTextWritingTests extends AnyWordSpec with Matchers {
 
     "simple struct writer" should {
       "write same output as input from loader" in {
-        val typ: Try[TypeDecl] = IonTypeLoader.parse(test1)
+        val typ: Try[TypeDecl] = IonLoader.parse(test1)
         typ.isSuccess shouldEqual true
         
-        val output: String = IonWriter.writeToString(typ.get)
-        output shouldEqual test1
+        val output: Try[String] = IonWriter.writeToString(typ.get)
+        output.isSuccess shouldEqual true
+        output.get shouldEqual test1
       }
     }
 }

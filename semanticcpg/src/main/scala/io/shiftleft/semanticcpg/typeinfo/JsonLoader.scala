@@ -4,7 +4,10 @@ import org.json4s.*
 import org.json4s.FieldSerializer.*
 import org.json4s.native.JsonMethods.*
 import org.json4s.native.Serialization
-import scala.util.Try;
+
+import java.io.ByteArrayInputStream
+import java.util.zip.ZipInputStream
+import scala.util.{Try, Using};
 
 object JsonLoader extends Loader {
   private val dependencySerializer = FieldSerializer[Dependency](
@@ -43,4 +46,12 @@ object JsonLoader extends Loader {
   implicit val format: Formats = DefaultFormats + dependencySerializer + memberSerializer + methodSerializer + typeDeclSerializer
 
   override def parse(data: String): Try[TypeDecl] = Try(Serialization.read(data))
+  
+  override def parse(data: Array[Byte]): Try[TypeDecl] = 
+    Using.Manager { use =>
+      val bytes = use(ByteArrayInputStream(data))
+      val zip = use(ZipInputStream(bytes))
+      val jsonStr = String(zip.readAllBytes(), "UTF-8")
+      Serialization.read(jsonStr)
+    }
 }

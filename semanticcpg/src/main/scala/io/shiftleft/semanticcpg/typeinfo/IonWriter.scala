@@ -1,15 +1,29 @@
 package io.shiftleft.semanticcpg.typeinfo
 
 import com.amazon.ion.{IonType, IonWriter}
-import com.amazon.ion.system.IonTextWriterBuilder
+import com.amazon.ion.system.{IonBinaryWriterBuilder, IonTextWriterBuilder}
 
 import java.io.ByteArrayOutputStream
+import scala.util.{Try, Using}
 
 object IonWriter extends Writer  {
-  def writeToString(ty: TypeDecl): String = {
-    val out = ByteArrayOutputStream()
-    val w: IonWriter = IonTextWriterBuilder.pretty().build(out)
+  override def writeToString(ty: TypeDecl): Try[String] = 
+    Using.Manager { use =>
+      val out = use(ByteArrayOutputStream())
+      val w: IonWriter = use(IonTextWriterBuilder.pretty().build(out))
+      writeType(ty, w)
+      out.toString
+    }
 
+  def writeToBinaryFormat(ty: TypeDecl): Try[Array[Byte]] =
+    Using.Manager { use => 
+      val out = use(ByteArrayOutputStream())
+      val w: IonWriter = use(IonBinaryWriterBuilder.standard().build(out))
+      writeType(ty, w)
+      out.toByteArray
+    }
+  
+  private def writeType(ty: TypeDecl, w: IonWriter): Unit = {
     w.stepIn(IonType.STRUCT)
 
     w.setFieldName("FULL_NAME")
@@ -44,10 +58,8 @@ object IonWriter extends Writer  {
     w.stepOut() // dependency list
 
     w.stepOut() // main struct
-
-    out.toString
   }
-
+  
   private def writeMethod(w: IonWriter)(m: Method): Unit = {
     w.stepIn(IonType.STRUCT)
     w.setFieldName("NAME")
@@ -58,7 +70,7 @@ object IonWriter extends Writer  {
     w.writeString(m.signature)
     w.stepOut()
   }
-
+  
   private def writeMember(w: IonWriter)(m: Member): Unit = {
     w.stepIn(IonType.STRUCT)
     w.setFieldName("NAME")
@@ -67,7 +79,7 @@ object IonWriter extends Writer  {
     w.writeString(m.typeFullName)
     w.stepOut()
   }
-
+  
   private def writeDependency(w: IonWriter)(d: Dependency): Unit = {
     w.stepIn(IonType.STRUCT)
     w.setFieldName("FULL_NAME")

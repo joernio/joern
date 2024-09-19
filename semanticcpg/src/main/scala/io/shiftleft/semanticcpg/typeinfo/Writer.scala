@@ -1,9 +1,8 @@
 package io.shiftleft.semanticcpg.typeinfo
 
 import java.io.ByteArrayOutputStream
+import scala.util.Try
 
-// TODO: Try on writeToFile
 trait Writer:
-  def writeToString(ty: TypeDecl): String
-//  def write(ty: TypeDecl): ByteArrayOutputStream
-//  def writeToFile(ty: TypeDecl, filename: String): Unit
+  def writeToBinaryFormat(ty: TypeDecl): Try[Array[Byte]]
+  def writeToString(ty: TypeDecl): Try[String]
