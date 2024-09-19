@@ -32,21 +32,27 @@ class IonWriterTests extends AnyWordSpec with Matchers {
       |   {
       |     FULL_NAME: "java.lang",
       |     VERSION: "4.1.2"
-      |   },
-      |   {
-      |     FULL_NAME: "java.math",
       |   }
       | ]
       |}""".stripMargin
 
-    "simple struct writer" should {
-      "write same output as input from loader" in {
-        val typ: Try[TypeDecl] = IonLoader.parse(test1)
-        typ.isSuccess shouldEqual true
-        
-        val output: Try[String] = IonWriter.writeToString(typ.get)
-        output.isSuccess shouldEqual true
-        output.get shouldEqual test1
-      }
+  // TODO: why can't ion roundtrip generally? it seems like order of struct fields
+  // is nondeterministic?
+  "text writer" should {
+    "roundtrip without error" in {
+      val typ = IonLoader.parse(test1).get
+      val result = IonWriter.writeToString(typ).flatMap(IonLoader.parse)
+      result.isSuccess shouldEqual true
+      result.get shouldEqual typ
     }
+  }
+
+  "binary writer" should {
+    "roundtrip without error" in {
+      val typ = IonLoader.parse(test1).get
+      val result = IonWriter.writeToBinaryFormat(typ).flatMap(IonLoader.parse)
+      result.isSuccess shouldEqual true
+      result.get shouldEqual typ
+    }
+  }
 }

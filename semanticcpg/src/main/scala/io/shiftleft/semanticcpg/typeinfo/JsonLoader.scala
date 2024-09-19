@@ -51,7 +51,9 @@ object JsonLoader extends Loader {
     Using.Manager { use =>
       val bytes = use(ByteArrayInputStream(data))
       val zip = use(ZipInputStream(bytes))
+      val entry = zip.getNextEntry
       val jsonStr = String(zip.readAllBytes(), "UTF-8")
+      zip.closeEntry()
       Serialization.read(jsonStr)
     }
 }

@@ -12,6 +12,7 @@ object IonWriter extends Writer  {
       val out = use(ByteArrayOutputStream())
       val w: IonWriter = use(IonTextWriterBuilder.pretty().build(out))
       writeType(ty, w)
+      w.finish()
       out.toString
     }
 
@@ -20,6 +21,7 @@ object IonWriter extends Writer  {
       val out = use(ByteArrayOutputStream())
       val w: IonWriter = use(IonBinaryWriterBuilder.standard().build(out))
       writeType(ty, w)
+      w.finish()
       out.toByteArray
     }
   

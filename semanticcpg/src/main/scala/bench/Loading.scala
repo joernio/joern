@@ -4,12 +4,13 @@ import io.shiftleft.semanticcpg.typeinfo.*
 import org.openjdk.jmh.annotations.*
 
 import java.util.concurrent.TimeUnit
-import scala.util.Try
+import scala.util.{Random, Try}
   
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.AverageTime))
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 class Loading {
+  Random.setSeed(1401204)
   val n = 40
   val types = DataGen.genTypeDecls(n)
   val ionStrings = types.map(IonWriter.writeToString).filter(_.isSuccess).map(_.get)

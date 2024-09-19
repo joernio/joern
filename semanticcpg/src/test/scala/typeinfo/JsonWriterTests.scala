@@ -1,8 +1,10 @@
 package typeinfo
 
 import io.shiftleft.semanticcpg.typeinfo.*
+import org.apache.commons.math3.random.RandomDataGenerator
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
 import scala.util.Try
 
 class JsonWriterTests extends AnyWordSpec with Matchers {
@@ -37,14 +39,21 @@ class JsonWriterTests extends AnyWordSpec with Matchers {
       | ]
       |}""".stripMargin
 
-  "simple struct writer" should {
-    "write same output as input from loader" in {
-      val typ: Try[TypeDecl] = JsonLoader.parse(test1)
-      typ.isSuccess shouldEqual true
-
-      val output: Try[String] = JsonWriter.writeToString(typ.get)
-      output.isSuccess shouldEqual true
-      output.get shouldEqual test1
+  "text writer" should {
+    "roundtrip without error" in {
+      val typ = DataGen.genTypeDecl()
+      val result = JsonWriter.writeToString(typ).flatMap(JsonLoader.parse)
+      result.isSuccess shouldEqual true
+      result.get shouldEqual typ
+    }
+  }
+  
+  "binary writer" should {
+    "roundtrip without error" in {
+      val typ = DataGen.genTypeDecl()
+      val result = JsonWriter.writeToBinaryFormat(typ).flatMap(JsonLoader.parse)
+      result.isSuccess shouldEqual true
+      result.get shouldEqual typ
     }
   }
 }

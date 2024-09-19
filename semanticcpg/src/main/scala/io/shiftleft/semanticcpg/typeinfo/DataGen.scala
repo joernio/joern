@@ -1,11 +1,10 @@
-package bench
+package io.shiftleft.semanticcpg.typeinfo
 
 import io.shiftleft.semanticcpg.typeinfo.{Dependency, Member, Method, TypeDecl}
 
 import scala.util.Random
 
 object DataGen {
-  Random.setSeed(1401204)
   private def shouldGenVersion(): Boolean = Random.nextInt(10) <= 6
   private def genLength(bnd: Int): Int = Random.nextInt(bnd)
   private def genName(): String = Random.nextString(8 + genLength(18))
