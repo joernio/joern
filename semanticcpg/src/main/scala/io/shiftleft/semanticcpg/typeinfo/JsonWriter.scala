@@ -17,23 +17,11 @@ object JsonWriter extends Writer {
 
   def writeToString(ty: TypeDecl): Try[String] = Try(Serialization.writePretty(ty))
   
-  def writeToBinaryFormat(ty: TypeDecl): Try[Array[Byte]] = {
+  def writeToBinaryFormat(ty: TypeDecl): Try[Array[Byte]] = 
     Using.Manager { use =>
       val bytes = use(ByteArrayOutputStream())
       val zip = use(ZipOutputStream(bytes))
       zip.write(Serialization.writePretty(ty).getBytes("UTF-8"))
       bytes.toByteArray
-//      for {
-//        jsonStr <- writeToString(ty)
-//        jsonBytes <- Try(jsonStr.getBytes("UTF-8"))
-//        _ <- Try(zip.write(jsonBytes))
-//      } yield
-//        bytes.toByteArray
-
-
-//      writeToString(ty).flatMap(jsonStr => jsonStr.getBytes("UTF-8"))
-//      zip.write(writeToString(ty).getBytes("UTF-8"))
-//      bytes.toByteArray
     }
-  }
 }
