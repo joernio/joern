@@ -74,10 +74,10 @@ class Scope {
 
   def popNamespaceScope(): NamespaceScope = popScope[NamespaceScope]()
 
-  private def popScope[ScopeType <: JavaScopeElement](): ScopeType = {
+  private def popScope[ScopeType0 <: JavaScopeElement](): ScopeType0 = {
     val scope = scopeStack.head
     scopeStack = scopeStack.tail
-    scope.asInstanceOf[ScopeType]
+    scope.asInstanceOf[ScopeType0]
   }
 
   def addTopLevelType(name: String, typeFullName: String): Unit = {
