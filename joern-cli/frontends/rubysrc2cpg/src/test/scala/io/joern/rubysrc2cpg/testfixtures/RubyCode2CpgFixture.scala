@@ -13,8 +13,12 @@ import org.scalatest.Tag
 import java.io.File
 import org.scalatest.Inside
 
-trait RubyFrontend(withDownloadDependencies: Boolean, disableFileContent: Boolean, antlrDebugging: Boolean, antlrProfiling: Boolean)
-    extends LanguageFrontend {
+trait RubyFrontend(
+  withDownloadDependencies: Boolean,
+  disableFileContent: Boolean,
+  antlrDebugging: Boolean,
+  antlrProfiling: Boolean
+) extends LanguageFrontend {
   override val fileSuffix: String = ".rb"
 
   implicit val config: Config =
@@ -60,9 +64,7 @@ class RubyCode2CpgFixture(
   antlrDebugging: Boolean = false,
   antlrProfiling: Boolean = false
 ) extends Code2CpgFixture(() =>
-      new DefaultTestCpgWithRuby(downloadDependencies, disableFileContent, antlrDebugging,
-        antlrProfiling
-      )
+      new DefaultTestCpgWithRuby(downloadDependencies, disableFileContent, antlrDebugging, antlrProfiling)
         .withOssDataflow(withDataFlow)
         .withExtraFlows(extraFlows)
         .withPostProcessingPasses(withPostProcessing)

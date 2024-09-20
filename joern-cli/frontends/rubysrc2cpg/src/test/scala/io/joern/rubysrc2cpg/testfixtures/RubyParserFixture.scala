@@ -14,7 +14,10 @@ import java.nio.file.{Files, Path}
 import scala.util.{Failure, Success, Using}
 
 class RubyParserFixture
-    extends RubyFrontend(withDownloadDependencies = false, disableFileContent = true, antlrDebugging = false,
+    extends RubyFrontend(
+      withDownloadDependencies = false,
+      disableFileContent = true,
+      antlrDebugging = false,
       antlrProfiling = false
     )
     with TestCodeWriter
