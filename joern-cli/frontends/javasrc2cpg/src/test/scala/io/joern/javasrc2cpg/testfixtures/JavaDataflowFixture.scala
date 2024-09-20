@@ -3,7 +3,6 @@ package io.joern.javasrc2cpg.testfixtures
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
-import io.joern.javasrc2cpg.JavaSrc2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Expression, Literal}
 import io.shiftleft.semanticcpg.language.*
@@ -16,7 +15,7 @@ class JavaDataflowFixture(extraFlows: List[FlowSemantic] = List.empty) extends A
   implicit lazy val engineContext: EngineContext = EngineContext()
 
   val code: String  = ""
-  lazy val cpg: Cpg = JavaSrc2CpgTestContext.buildCpgWithDataflow(code, extraFlows = extraFlows)
+  lazy val cpg: Cpg = JavaSrcTestCpg().withOssDataflow().withExtraFlows(extraFlows).moreCode(code)
 
   def getConstSourceSink(
     methodName: String,
