@@ -26,8 +26,6 @@ import scala.collection.mutable
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  val procParamGen = FreshNameGenerator(i => Left(s"<proc-param-$i>"))
-
   /** Creates method declaration related structures.
     * @param node
     *   the node to create the AST structure from.
@@ -65,7 +63,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     val isSurroundedByProgramScope = scope.isSurroundedByProgramScope
     if (isConstructor) scope.pushNewScope(ConstructorScope(fullName))
-    else scope.pushNewScope(MethodScope(fullName, procParamGen.fresh))
+    else scope.pushNewScope(MethodScope(fullName, this.procParamGen.fresh))
 
     val thisParameterNode = newThisParameterNode(
       name = Defines.Self,
@@ -371,7 +369,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
             }
         }
 
-        scope.pushNewScope(MethodScope(fullName, procParamGen.fresh))
+        scope.pushNewScope(MethodScope(fullName, this.procParamGen.fresh))
         val method = methodNode(
           node = node,
           name = node.methodName,
