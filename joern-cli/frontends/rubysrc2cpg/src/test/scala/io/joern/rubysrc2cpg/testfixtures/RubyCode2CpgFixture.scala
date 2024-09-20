@@ -4,14 +4,15 @@ import io.joern.dataflowengineoss.language.Path
 import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
 import io.joern.dataflowengineoss.testfixtures.{SemanticCpgTestFixture, SemanticTestCpg}
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
-import io.joern.x2cpg.testfixtures.*
 import io.joern.x2cpg.ValidationMode
+import io.joern.x2cpg.testfixtures.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
-import org.scalatest.Tag
+import org.scalatest.Inside
 
 import java.io.File
-import org.scalatest.Inside
+import java.nio.file.Files
+import scala.jdk.CollectionConverters.*
 
 trait RubyFrontend(
   withDownloadDependencies: Boolean,
@@ -31,7 +32,28 @@ trait RubyFrontend(
       .withAntlrProfiling(antlrProfiling)
 
   override def execute(sourceCodeFile: File): Cpg = {
-    new RubySrc2Cpg().createCpg(sourceCodeFile.getAbsolutePath).get
+    val cpg = new RubySrc2Cpg().createCpg(sourceCodeFile.getAbsolutePath).get
+    if (antlrProfiling) {
+      if (sourceCodeFile.isDirectory) {
+        Files
+          .walk(sourceCodeFile.toPath)
+          .iterator()
+          .asScala
+          .filter(_.getFileName.toString.endsWith(".log"))
+          .map(_.toFile)
+          .foreach(printAntlrProfilingInfo)
+      } else {
+        printAntlrProfilingInfo(sourceCodeFile)
+      }
+    }
+    cpg
+  }
+
+  private def printAntlrProfilingInfo(logfile: File): Unit = {
+    if (logfile.exists()) {
+      println(Files.readString(logfile.toPath))
+      logfile.delete() // cleanup
+    }
   }
 
 }
@@ -40,7 +62,7 @@ class DefaultTestCpgWithRuby(
   downloadDependencies: Boolean = false,
   disableFileContent: Boolean = true,
   antlrDebugging: Boolean = false,
-  antlrProfiling: Boolean = false
+  antlrProfiling: Boolean
 ) extends DefaultTestCpg
     with RubyFrontend(downloadDependencies, disableFileContent, antlrDebugging, antlrProfiling)
     with SemanticTestCpg {
