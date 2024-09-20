@@ -14,11 +14,26 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Random, Success, Try, Using}
 
+case class ProjectNameInfo(projectName: String, isSubproject: Boolean) {
+  override def toString: String = {
+    if (isSubproject)
+      s":$projectName"
+    else
+      projectName
+  }
+
+  def makeGradleTaskName(taskName: String): String = {
+    if (isSubproject)
+      s"$projectName:$taskName"
+    else
+      taskName
+  }
+}
+
 case class GradleProjectInfo(
-  projectConfigurationInfo: Map[String, List[String]],
+  subprojects: Map[ProjectNameInfo, List[String]],
   gradleVersion: String,
-  tasks: Seq[String],
-  hasAndroidSubproject: Boolean = false
+  hasAndroidSubproject: Boolean
 ) {
   def gradleVersionMajorMinor(): (Int, Int) = {
     def isValidPart(part: String) = part.forall(Character.isDigit)
@@ -31,66 +46,61 @@ case class GradleProjectInfo(
       (-1, -1)
     }
   }
-
-  def projectsWithDependencies: List[String] = projectConfigurationInfo.collect {
-    case (projectName, dependencies) if dependencies.nonEmpty => projectName
-  }.toList
-
-  def configurationNames: List[String] = projectConfigurationInfo.values.flatten.toSet.toList
-}
-
-object Constants {
-  val aarFileExtension            = "aar"
-  val gradleAndroidPropertyPrefix = "android"
-  val gradlePropertiesTaskName    = "properties"
-  val jarInsideAarFileName        = "classes.jar"
 }
 
 case class GradleDepsInitScript(contents: String, taskName: String, destinationDir: Path)
 
 object GradleDependencies {
-  private val logger                                     = LoggerFactory.getLogger(getClass)
-  private val initScriptPrefix                           = "x2cpg.init.gradle"
-  private val taskNamePrefix                             = "x2cpgCopyDeps"
-  private val tempDirPrefix                              = "x2cpgDependencies"
-  private val defaultAndroidConfigurationName            = "releaseRuntimeClasspath"
-  private val defaultRuntimeConfigurationName            = "runtimeClasspath"
-  private[dependency] val defaultGradleConfigurationName = "compileClasspath"
-  private[dependency] val defaultGradleAppName           = "app"
+  private val aarFileExtension            = "aar"
+  private val gradleAndroidPropertyPrefix = "android"
+  private val gradlePropertiesTaskName    = "properties"
+  private val jarInsideAarFileName        = "classes.jar"
+  private val defaultConfigurationName    = "releaseRuntimeClasspath"
+  private val initScriptPrefix            = "x2cpg.init.gradle"
+  private val taskNamePrefix              = "x2cpgCopyDeps"
+  private val tempDirPrefix               = "x2cpgDependencies"
+  private val defaultGradleAppName        = "app"
+
+  private val logger = LoggerFactory.getLogger(getClass)
 
   // works with Gradle 5.1+ because the script makes use of `task.register`:
   //   https://docs.gradle.org/current/userguide/task_configuration_avoidance.html
-  private def gradle5OrLaterAndroidInitScript(
-    taskName: String,
-    destination: String,
-    gradleProjectNames: List[String],
-    gradleConfigurationNames: List[String],
-    projectInfo: GradleProjectInfo
-  ): String = {
-    val projectNamesString = gradleProjectNames.map(name => s"\"$name\"").mkString(",")
-    // TODO: This logic exists to avoid potential issues with conflicting dependencies in different configurations
-    //  since only a single default or given configuration will be chosen if available. If no obvious configuration can
-    //  be found, fetch dependencies for multiple.
-    val allTargetsHaveDefaultConfiguration =
-      projectInfo.projectConfigurationInfo.values.iterator.forall(_.contains(defaultAndroidConfigurationName))
-    val configurationNamesString =
-      if (allTargetsHaveDefaultConfiguration && gradleConfigurationNames.contains(defaultAndroidConfigurationName))
-        defaultAndroidConfigurationName
-      else
-        gradleConfigurationNames.map(name => s"\"$name\"").mkString(",")
+  private def getInitScriptContent(taskName: String, destination: String, projectInfo: GradleProjectInfo): String = {
+    val projectConfigurationString = projectInfo.subprojects
+      .map { case (projectNameInfo, configurationNames) =>
+        val quotedConfigurationNames = configurationNames.map(name => s"\"$name\"").mkString(", ")
+        s"${projectNameInfo.projectName}: [$quotedConfigurationNames]"
+      }
+      .mkString(", ")
 
-    logger.info(s"Creating gradle android init script for configurations $configurationNamesString")
+    val taskCreationFunction = projectInfo.gradleVersionMajorMinor() match {
+      case (major, minor) if major >= 5 && minor >= 1 => "tasks.register"
+      case _                                          => "tasks.create"
+    }
+
+    val androidTaskDefinition = Option.when(projectInfo.hasAndroidSubproject)(s"""
+           |def androidDepsCopyTaskName = taskName + "_androidDeps"
+           |      $taskCreationFunction(androidDepsCopyTaskName, Copy) {
+           |        duplicatesStrategy = 'include'
+           |        into destinationDir
+           |        from project.configurations.find { it.name.equals("androidApis") }
+           |      }
+           |""".stripMargin)
+
+    val dependsOnAndroidTask = Option.when(projectInfo.hasAndroidSubproject)("dependsOn androidDepsCopyTaskName")
+
     s"""
        |allprojects {
        |  afterEvaluate { project ->
        |    def taskName = "$taskName"
        |    def destinationDir = "${destination.replaceAll("\\\\", "/")}"
-       |    def gradleProjectNames = [$projectNamesString]
-       |    def gradleConfigurationNames = [$configurationNamesString]
+       |    def gradleProjectConfigurations = [$projectConfigurationString]
        |
-       |    if (gradleProjectNames.contains(project.name)) {
+       |    if (gradleProjectConfigurations.containsKey(project.name)) {
+       |      def gradleConfigurationNames = gradleProjectConfigurations.get(project.name)
+       |      
        |      def compileDepsCopyTaskName = taskName + "_compileDeps"
-       |      tasks.register(compileDepsCopyTaskName, Copy) {
+       |      $taskCreationFunction(compileDepsCopyTaskName, Copy) {
        |
        |        def selectedConfigs = project.configurations.findAll {
        |          configuration -> gradleConfigurationNames.contains(configuration.getName())
@@ -113,14 +123,9 @@ object GradleDependencies {
        |        into destinationDir
        |        from result.resolvedComponents.collect { it.getArtifacts(SourcesArtifact).collect { it.file } }
        |      }
-       |      def androidDepsCopyTaskName = taskName + "_androidDeps"
-       |      tasks.register(androidDepsCopyTaskName, Copy) {
-       |        duplicatesStrategy = 'include'
-       |        into destinationDir
-       |        from project.configurations.find { it.name.equals("androidApis") }
-       |      }
-       |      tasks.register(taskName, Copy) {
-       |        dependsOn androidDepsCopyTaskName
+       |      ${androidTaskDefinition.getOrElse("")}
+       |      $taskCreationFunction(taskName, Copy) {
+       |        ${dependsOnAndroidTask.getOrElse("")} 
        |        dependsOn compileDepsCopyTaskName
        |      }
        |    }
@@ -129,60 +134,9 @@ object GradleDependencies {
        |""".stripMargin
   }
 
-  // this init script _should_ work with Gradle >=4, but has not been tested thoroughly
-  // TODO: add test cases for older Gradle versions
-  private def gradle5OrLaterInitScript(
-    taskName: String,
-    destination: String,
-    gradleConfigurationNames: List[String]
-  ): String = {
-    val into = destination.replaceAll("\\\\", "/")
-    // TODO: This logic exists to avoid potential issues with conflicting dependencies in different configurations
-    //  since only a single default or given configuration will be chosen if available. If no obvious configuration can
-    //  be found, fetch dependencies for multiple.
-    val configurationNames =
-      if (gradleConfigurationNames.contains(defaultRuntimeConfigurationName))
-        defaultRuntimeConfigurationName :: Nil
-      else
-        defaultRuntimeConfigurationName :: gradleConfigurationNames
-
-    logger.info(s"Creating non-android gradle init script for configuration names ${configurationNames.mkString(", ")}")
-    val fromConfigurations = configurationNames
-      .map(configuration => s"from configurations.$configuration")
-      .toSet
-      .mkString("\n")
-    s"""
-     |allprojects {
-     |  apply plugin: 'java'
-     |  task $taskName(type: Copy) {
-     |    $fromConfigurations
-     |    into "$into"
-     |  }
-     |}
-     |""".stripMargin
-  }
-
-  private def makeInitScript(
-    destinationDir: Path,
-    forAndroid: Boolean,
-    gradleProjectNames: List[String],
-    gradleConfigurationNames: List[String],
-    projectInfo: GradleProjectInfo
-  ): GradleDepsInitScript = {
+  private def makeInitScript(destinationDir: Path, projectInfo: GradleProjectInfo): GradleDepsInitScript = {
     val taskName = taskNamePrefix + "_" + (Random.alphanumeric take 8).toList.mkString
-    val content =
-      if (forAndroid) {
-        gradle5OrLaterAndroidInitScript(
-          taskName,
-          destinationDir.toString,
-          gradleProjectNames,
-          gradleConfigurationNames,
-          projectInfo
-        )
-      } else {
-        gradle5OrLaterInitScript(taskName, destinationDir.toString, gradleConfigurationNames)
-      }
-
+    val content  = getInitScriptContent(taskName, destinationDir.toString, projectInfo)
     GradleDepsInitScript(content, taskName, destinationDir)
   }
 
@@ -215,52 +169,145 @@ object GradleDependencies {
     results.filterNot(_.toLowerCase.contains("test")).toList
   }
 
-  private def getGradleProjectInfo(projectDir: Path): Option[GradleProjectInfo] = {
+  private def getGradleProjectInfo(
+    projectDir: Path,
+    projectNameOverride: Option[String],
+    configurationNameOverride: Option[String]
+  ): Option[GradleProjectInfo] = {
     Try(makeConnection(projectDir.toFile)) match {
       case Success(gradleConnection) =>
         Using.resource(gradleConnection) { connection =>
           try {
             val buildEnv = connection.getModel[BuildEnvironment](classOf[BuildEnvironment])
             val project  = connection.getModel[GradleProject](classOf[GradleProject])
-            val allProjectNames =
-              project.getName :: project.getChildren.asScala.map(child => s":${child.getName}").toList
-            val allPropertiesTasksNames = Constants.gradlePropertiesTaskName :: project.getChildren.asScala
-              .map(child => s"${child.getName}:${Constants.gradlePropertiesTaskName}")
+
+            val availableProjectNames = ProjectNameInfo(project.getName, false) :: project.getChildren.asScala
+              .map(child => ProjectNameInfo(child.getName, true))
               .toList
-            val hasAndroidPrefixGradleProperty = allPropertiesTasksNames.exists { taskName =>
-              runGradleTask(connection, taskName) match {
+
+            val availableProjectNamesString = availableProjectNames.mkString(" ")
+
+            logger.debug(s"Found gradle project names ${availableProjectNames.mkString(" ")}")
+
+            val selectedProjectNames = if (projectNameOverride.isDefined) {
+              val overrideName = projectNameOverride.get
+              availableProjectNames.find(_.projectName == overrideName) match {
+                case Some(projectInfo) =>
+                  logger.debug(s"Only fetching dependencies for overridden project name $overrideName")
+                  projectInfo :: Nil
+
+                case None =>
+                  logger.warn(
+                    s"Project name override was specified for dependency fetching ($overrideName), but no such project found."
+                  )
+                  logger.warn(
+                    s"Falling back to fetching dependencies for all available project names: $availableProjectNamesString"
+                  )
+                  availableProjectNames
+              }
+            } else {
+              availableProjectNames.find(_.projectName == defaultGradleAppName) match {
+                case Some(defaultProjectInfo) =>
+                  // TODO: This is a temporary check to avoid issues that could arise from subprojects using conflicting
+                  //  versions of dependencies. Ideally dependencies for all of these projects will be fetched with
+                  //  any conflicts handled in the consumer.
+                  logger.debug(s"Found project with default name ($defaultGradleAppName)")
+                  logger.debug(s"Fetching dependencies only for default project ($defaultGradleAppName)")
+                  defaultProjectInfo :: Nil
+
+                case None =>
+                  logger.debug(s"No project name override or project with default name ($defaultGradleAppName) found.")
+                  logger.debug(s"Fetching dependencies for all available projects: $availableProjectNamesString")
+                  availableProjectNames
+              }
+            }
+
+            val selectedConfigurations = selectedProjectNames.flatMap { projectNameInfo =>
+              val dependenciesTaskName = projectNameInfo.makeGradleTaskName("dependencies")
+
+              val availableConfigurations = runGradleTask(connection, dependenciesTaskName) match {
                 case Some(out) =>
-                  out.split('\n').exists(_.startsWith(Constants.gradleAndroidPropertyPrefix))
+                  getConfigurationsWithDependencies(out) match {
+                    case Nil =>
+                      logger.debug(s"No configurations with dependencies found for project $projectNameInfo")
+                      Nil
+                    case deps =>
+                      logger.debug(
+                        s"Found the following configurations with dependencies for project $projectNameInfo: ${deps.mkString(", ")}"
+                      )
+                      deps
+                  }
+                case None =>
+                  logger.warn(s"Failure executing dependencies task $dependenciesTaskName")
+                  Nil
+              }
+
+              val availableConfigurationsString = availableConfigurations.mkString(", ")
+
+              val selectedConfigurations = if (availableConfigurations.isEmpty) {
+                // Skip logging below, since no available configurations already logged
+                Nil
+              } else if (configurationNameOverride.isDefined) {
+                val overrideName = configurationNameOverride.get
+                availableConfigurations.find(_ == overrideName) match {
+                  case Some(configurationName) =>
+                    logger.debug(s"Only fetching dependencies for overridden configuration $overrideName")
+                    configurationName :: Nil
+
+                  case None =>
+                    logger.warn(
+                      s"Configuration name override was specified for dependency fetching ($overrideName), but no such configuration found for project $projectNameInfo."
+                    )
+                    logger.warn(
+                      s"Falling back to fetching dependencies for all available configurations: $availableConfigurationsString"
+                    )
+                    availableConfigurations
+                }
+              } else {
+                availableConfigurations.find(_ == defaultConfigurationName) match {
+                  case Some(defaultConfigurationName) =>
+                    // TODO: This is a temporary check to avoid issues that could arise from subprojects using conflicting
+                    //  versions of dependencies. Ideally dependencies for all of these configurations will be fetched with
+                    //  any conflicts handled in the consumer.
+                    logger.debug(
+                      s"Found default configuration name ($defaultConfigurationName) for project $projectNameInfo"
+                    )
+                    logger.debug(
+                      s"Fetching dependencies only for default configuration ($defaultConfigurationName) for project $projectNameInfo"
+                    )
+                    defaultConfigurationName :: Nil
+
+                  case None =>
+                    logger.debug(
+                      s"No configuration override or configuration with default name ($defaultConfigurationName) found for project $projectNameInfo."
+                    )
+                    logger.debug(
+                      s"Fetching dependencies for all available configurations for project $projectNameInfo: $availableConfigurationsString"
+                    )
+                    availableConfigurations
+                }
+              }
+
+              Option.when(selectedConfigurations.nonEmpty) {
+                projectNameInfo -> selectedConfigurations
+              }
+            }.toMap
+
+            val includesAndroidProject = selectedProjectNames.exists { projectNameInfo =>
+              val propertiesTaskName = projectNameInfo.makeGradleTaskName(gradlePropertiesTaskName)
+
+              runGradleTask(connection, propertiesTaskName) match {
+                case Some(out) =>
+                  out.lines().iterator().asScala.exists(_.startsWith(gradleAndroidPropertyPrefix))
                 case None => false
               }
             }
-            val configurationInfo = allProjectNames.map { projectName =>
-              val dependenciesTaskName = if (projectName.startsWith(":")) {
-                projectName.tail ++ ":dependencies"
-              } else {
-                "dependencies"
-              }
-              val configurations = runGradleTask(connection, dependenciesTaskName) match {
-                case Some(out) =>
-                  getConfigurationsWithDependencies(out)
-                case None => Nil
-              }
 
-              projectName -> configurations
-            }.toMap
-            val info = GradleProjectInfo(
-              configurationInfo,
-              buildEnv.getGradle.getGradleVersion,
-              project.getTasks.asScala.map(_.getName).toSeq,
-              hasAndroidPrefixGradleProperty
-            )
-            if (hasAndroidPrefixGradleProperty) {
-              val validProjectNames = List(project.getName) ++ project.getChildren.getAll.asScala.map(_.getName)
-              logger.debug(s"Found Gradle projects: ${validProjectNames.mkString(",")}")
-              Some(info)
-            } else {
-              Some(info)
-            }
+            val gradleVersion = buildEnv.getGradle.getGradleVersion
+
+            val gradleProjectInfo = GradleProjectInfo(selectedConfigurations, gradleVersion, includesAndroidProject)
+
+            Option(gradleProjectInfo)
           } catch {
             case t: Throwable =>
               logger.warn(s"Caught exception while trying use Gradle connection: ${t.getMessage}")
@@ -295,13 +342,12 @@ object GradleDependencies {
 
   private def runGradleTask(
     connection: ProjectConnection,
-    projectName: String,
     taskName: String,
     destinationDir: Path,
     initScriptPath: String
   ): Option[collection.Seq[String]] = {
     Using.resources(new ByteArrayOutputStream, new ByteArrayOutputStream) { case (stdoutStream, stderrStream) =>
-      logger.info(s"Executing gradle task '${taskName}'...")
+      logger.debug(s"Executing gradle task '${taskName}'...")
 
       Try(
         connection
@@ -319,7 +365,7 @@ object GradleDependencies {
               .collect(Collectors.toList[Path])
               .asScala
               .map(_.toAbsolutePath.toString)
-          logger.info(s"Resolved `${result.size}` dependency files.")
+          logger.info(s"Task $taskName resolved `${result.size}` dependency files.")
           Some(result)
         case Failure(ex) =>
           logger.warn(s"Caught exception while executing Gradle task: ${ex.getMessage}")
@@ -337,14 +383,14 @@ object GradleDependencies {
   }
 
   private def extractClassesJarFromAar(aar: File): Option[Path] = {
-    val newPath           = aar.path.toString.replaceFirst(Constants.aarFileExtension + "$", "jar")
+    val newPath           = aar.path.toString.replaceFirst(aarFileExtension + "$", "jar")
     val aarUnzipDirSuffix = ".unzipped"
     val outDir            = File(aar.path.toString + aarUnzipDirSuffix)
-    aar.unzipTo(outDir, _.getName == Constants.jarInsideAarFileName)
+    aar.unzipTo(outDir, _.getName == jarInsideAarFileName)
     val outFile = File(newPath)
     val classesJarEntries =
       outDir.listRecursively
-        .filter(_.path.getFileName.toString == Constants.jarInsideAarFileName)
+        .filter(_.path.getFileName.toString == jarInsideAarFileName)
         .toList
     if (classesJarEntries.size != 1) {
       logger.warn(s"Found aar file without `classes.jar` inside at path ${aar.path}")
@@ -368,60 +414,29 @@ object GradleDependencies {
     configurationNameOverride: Option[String]
   ): Map[String, collection.Seq[String]] = {
     logger.info(s"Fetching Gradle project information at path `$projectDir`.")
-    getGradleProjectInfo(projectDir) match {
+    getGradleProjectInfo(projectDir, projectNameOverride, configurationNameOverride) match {
       case Some(projectInfo) if projectInfo.gradleVersionMajorMinor()._1 < 5 =>
         logger.warn(s"Unsupported Gradle version `${projectInfo.gradleVersion}`")
         Map.empty
+
       case Some(projectInfo) =>
         Try(File.newTemporaryDirectory(tempDirPrefix).deleteOnExit()) match {
           case Success(destinationDir) =>
             Try(File.newTemporaryFile(initScriptPrefix).deleteOnExit()) match {
               case Success(initScriptFile) =>
-                val projectNames =
-                  projectNameOverride
-                    .map(List(_))
-                    .getOrElse(projectInfo.projectsWithDependencies.map(_.stripPrefix(":")))
-
-                val configurationNames =
-                  configurationNameOverride.map(List(_)).getOrElse(projectInfo.configurationNames)
-                val initScript =
-                  makeInitScript(
-                    destinationDir.path,
-                    projectInfo.hasAndroidSubproject,
-                    projectNames,
-                    configurationNames,
-                    projectInfo
-                  )
+                val initScript = makeInitScript(destinationDir.path, projectInfo)
                 initScriptFile.write(initScript.contents)
 
-                projectNameOverride.foreach(name => logger.debug(s"Found overridden project name: $name"))
-                configurationNameOverride.foreach(name => logger.debug(s"Found overridden configuration name: $name"))
-                logger.debug(
-                  "Detected following project names and configurations with dependencies (ignored if overridden):"
-                )
-                projectInfo.projectConfigurationInfo.foreach { case (projectName, configurations) =>
-                  logger.debug(s"- $projectName: ${configurations.mkString(", ")}")
-                }
                 Try(makeConnection(projectDir.toFile)) match {
                   case Success(connection) =>
                     Using.resource(connection) { c =>
-                      projectNames.flatMap { projectName =>
-                        val taskName =
-                          if (projectInfo.projectConfigurationInfo.contains(s":$projectName"))
-                            s"$projectName:${initScript.taskName}"
-                          else
-                            initScript.taskName
+                      projectInfo.subprojects.keys.flatMap { projectNameInfo =>
+                        val taskName = projectNameInfo.makeGradleTaskName(initScript.taskName)
 
                         val x = 2
-                        runGradleTask(
-                          c,
-                          projectName,
-                          taskName,
-                          initScript.destinationDir,
-                          initScriptFile.pathAsString
-                        ) map { deps =>
+                        runGradleTask(c, taskName, initScript.destinationDir, initScriptFile.pathAsString) map { deps =>
                           val depsOutput = deps.map { d =>
-                            if (!d.endsWith(Constants.aarFileExtension)) d
+                            if (!d.endsWith(aarFileExtension)) d
                             else
                               extractClassesJarFromAar(File(d)) match {
                                 case Some(path) => path.toString
@@ -429,7 +444,7 @@ object GradleDependencies {
                               }
                           }
 
-                          projectName -> depsOutput
+                          projectNameInfo.projectName -> depsOutput
                         }
                       }.toMap
                     }

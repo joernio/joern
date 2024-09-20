@@ -3,7 +3,6 @@ package io.joern.x2cpg.utils.dependency
 import better.files.File
 import io.joern.x2cpg.utils.ExternalCommand
 import io.joern.x2cpg.utils.dependency.GradleConfigKeys.GradleConfigKey
-import io.joern.x2cpg.utils.dependency.GradleDependencies.{defaultGradleAppName, defaultGradleConfigurationName}
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Path
@@ -32,7 +31,7 @@ object DependencyResolver {
         None
       else if (isGradleBuildFile(buildFile)) {
         // TODO: Don't limit this to the default configuration name
-        getCoordinatesForGradleProject(buildFile.getParent, defaultGradleConfigurationName)
+        getCoordinatesForGradleProject(buildFile.getParent, "compileClasspath")
       } else {
         logger.warn(s"Found unsupported build file $buildFile")
         Nil
@@ -86,24 +85,10 @@ object DependencyResolver {
     logger.info("resolving Gradle dependencies at {}", projectDir)
     val gradleProjectName   = params.forGradle.get(GradleConfigKeys.ProjectName)
     val gradleConfiguration = params.forGradle.get(GradleConfigKeys.ConfigurationName)
-    // TODO: This logic exists to avoid potential issues with conflicting dependencies in multi-project builds. Ideally
-    //  the API would return the projectName -> dependencies map for the frontends to handle as required. For
-    //  javasrc2cpg this would mean creating separate type solvers for the different projects, but for kotlin2cpg this
-    //  is TBD.
+
     GradleDependencies.get(projectDir, gradleProjectName, gradleConfiguration) match {
-      case dependenciesMap if gradleProjectName.isDefined && dependenciesMap.contains(gradleProjectName.get) =>
-        logger.info(s"Only using dependencies for given project name `${gradleProjectName.get}`")
-        Option(dependenciesMap(gradleProjectName.get))
-
-      case dependenciesMap if dependenciesMap.contains(defaultGradleAppName) =>
-        logger.info(s"Only using dependencies for default project name `$defaultGradleAppName`")
-        Option(dependenciesMap(defaultGradleAppName))
-
-      case dependenciesMap if dependenciesMap.nonEmpty =>
-        logger.info(
-          s"Using dependencies for all found projects since no override was given and a project with the default app name `$defaultGradleAppName` was not found"
-        )
-        Option(dependenciesMap.values.flatten.toSeq)
+      case dependenciesMap if dependenciesMap.values.exists(_.nonEmpty) =>
+        Option(dependenciesMap.values.flatten.toSet.toSeq)
 
       case _ =>
         logger.warn(s"Could not download Gradle dependencies for project at path `$projectDir`")
