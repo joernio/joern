@@ -11,7 +11,8 @@ final case class Config(
   useDeprecatedFrontend: Boolean = false,
   downloadDependencies: Boolean = false,
   useTypeStubs: Boolean = true,
-  antlrDebug: Boolean = false
+  antlrDebug: Boolean = false,
+  antlrProfiling: Boolean = false
 ) extends X2CpgConfig[Config]
     with DependencyDownloadConfig[Config]
     with TypeRecoveryParserConfig[Config]
@@ -31,6 +32,10 @@ final case class Config(
 
   def withAntlrDebugging(value: Boolean): Config = {
     copy(antlrDebug = value).withInheritedFields(this)
+  }
+
+  def withAntlrProfiling(value: Boolean): Config = {
+    copy(antlrProfiling = value).withInheritedFields(this)
   }
 
   override def withDownloadDependencies(value: Boolean): Config = {
@@ -69,6 +74,9 @@ private object Frontend {
       opt[Unit]("antlrDebug")
         .hidden()
         .action((_, c) => c.withAntlrDebugging(true)),
+      opt[Unit]("antlrProfile")
+        .hidden()
+        .action((_, c) => c.withAntlrProfiling(true)),
       opt[Unit]("enable-file-content")
         .action((_, c) => c.withDisableFileContent(false))
         .text("Enable file content"),

@@ -55,7 +55,9 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
   }
 
   private def newCreateCpgAction(cpg: Cpg, config: Config): Unit = {
-    Using.resource(new parser.ResourceManagedParser(config.antlrCacheMemLimit, config.antlrDebug)) { parser =>
+    Using.resource(
+      new parser.ResourceManagedParser(config.antlrCacheMemLimit, config.antlrDebug, config.antlrProfiling)
+    ) { parser =>
       val astCreators = ConcurrentTaskUtil
         .runUsingThreadPool(RubySrc2Cpg.generateParserTasks(parser, config, cpg.metaData.root.headOption))
         .flatMap {
