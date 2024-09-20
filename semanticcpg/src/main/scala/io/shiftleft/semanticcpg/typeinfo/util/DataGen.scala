@@ -1,4 +1,4 @@
-package io.shiftleft.semanticcpg.typeinfo
+package io.shiftleft.semanticcpg.typeinfo.util
 
 import io.shiftleft.semanticcpg.typeinfo.{Member, Method, TypeDecl}
 

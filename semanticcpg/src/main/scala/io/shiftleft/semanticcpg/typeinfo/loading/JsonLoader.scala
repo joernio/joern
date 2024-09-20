@@ -1,5 +1,6 @@
 package io.shiftleft.semanticcpg.typeinfo
 
+import io.shiftleft.semanticcpg.typeinfo.loading.Loader
 import org.json4s.*
 import org.json4s.FieldSerializer.*
 import org.json4s.native.JsonMethods.*

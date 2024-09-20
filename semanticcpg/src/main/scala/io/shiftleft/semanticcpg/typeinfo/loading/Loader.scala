@@ -1,4 +1,6 @@
-package io.shiftleft.semanticcpg.typeinfo
+package io.shiftleft.semanticcpg.typeinfo.loading
+
+import io.shiftleft.semanticcpg.typeinfo.TypeDecl
 
 import scala.util.Try;
 

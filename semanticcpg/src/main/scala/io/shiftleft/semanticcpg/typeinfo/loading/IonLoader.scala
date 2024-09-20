@@ -2,6 +2,7 @@ package io.shiftleft.semanticcpg.typeinfo
 
 import com.amazon.ion.{IonReader, IonType}
 import com.amazon.ion.system.IonReaderBuilder
+import io.shiftleft.semanticcpg.typeinfo.loading.Loader
 
 import java.io.IOException
 import scala.annotation.tailrec

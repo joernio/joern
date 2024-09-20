@@ -1,6 +1,7 @@
 package bench
 
 import io.shiftleft.semanticcpg.typeinfo.*
+import io.shiftleft.semanticcpg.typeinfo.util.DataGen
 import org.openjdk.jmh.annotations.*
 
 import java.util.concurrent.TimeUnit

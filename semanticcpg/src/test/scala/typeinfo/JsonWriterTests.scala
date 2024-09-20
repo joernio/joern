@@ -1,6 +1,7 @@
 package typeinfo
 
 import io.shiftleft.semanticcpg.typeinfo.*
+import io.shiftleft.semanticcpg.typeinfo.util.DataGen
 import org.apache.commons.math3.random.RandomDataGenerator
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
