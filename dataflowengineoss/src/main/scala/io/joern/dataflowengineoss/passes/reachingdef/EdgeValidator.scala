@@ -1,7 +1,7 @@
 package io.joern.dataflowengineoss.passes.reachingdef
 
 import io.joern.dataflowengineoss.language.*
-import io.joern.dataflowengineoss.queryengine.Engine.isOutputArgOfInternalMethod
+import io.joern.dataflowengineoss.queryengine.Engine.{isOutputArgOfInternalMethod, semanticsForCall}
 import io.joern.dataflowengineoss.semanticsloader.{
   FlowMapping,
   FlowPath,
@@ -50,7 +50,7 @@ object EdgeValidator {
     */
   private def isCallRetval(parentNode: StoredNode)(implicit semantics: Semantics): Boolean =
     parentNode match {
-      case call: Call => semantics.forMethod(call.methodFullName).exists(!explicitlyFlowsToReturnValue(_))
+      case call: Call => semanticsForCall(call).exists(!explicitlyFlowsToReturnValue(_))
       case _          => false
     }
 

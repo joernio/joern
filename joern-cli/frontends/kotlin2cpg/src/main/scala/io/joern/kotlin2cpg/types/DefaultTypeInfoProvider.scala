@@ -52,7 +52,7 @@ import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.DescriptorUtils.getSuperclassDescriptors
 import org.jetbrains.kotlin.resolve.`lazy`.descriptors.LazyClassDescriptor
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedClassDescriptor
-import org.jetbrains.kotlin.types.TypeUtils
+import org.jetbrains.kotlin.types.{KotlinType, TypeUtils}
 import org.jetbrains.kotlin.types.error.ErrorType
 import org.slf4j.LoggerFactory
 
@@ -323,6 +323,10 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment, typeRenderer: 
       .getOrElse(defaultValue)
   }
 
+  def typeFullName(typ: KotlinType): String = {
+    typeRenderer.render(typ)
+  }
+
   def expressionType(expr: KtExpression, defaultValue: String): String = {
     Option(bindingContext.get(BindingContext.EXPRESSION_TYPE_INFO, expr))
       .flatMap(tpeInfo => Option(tpeInfo.getType))
@@ -403,11 +407,8 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment, typeRenderer: 
         val relevantDesc = originalDesc match {
           case typedDesc: TypeAliasConstructorDescriptorImpl =>
             typedDesc.getUnderlyingConstructorDescriptor
-          case typedDesc: FunctionDescriptor if !typedDesc.isActual =>
-            val overriddenDescriptors = typedDesc.getOverriddenDescriptors.asScala.toList
-            if (overriddenDescriptors.nonEmpty) overriddenDescriptors.head
-            else typedDesc
-          case _ => originalDesc
+          case _ =>
+            originalDesc
         }
         val returnTypeFullName =
           if (isConstructorCall(expr).getOrElse(false)) TypeConstants.void

@@ -7,4 +7,8 @@ class FreshNameGenerator[T](template: Int => T) {
     counter += 1
     name
   }
+
+  def current: T = {
+    template(counter - 1)
+  }
 }

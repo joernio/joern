@@ -292,9 +292,7 @@ object Engine {
   }
 
   def semanticsForCall(call: Call)(implicit semantics: Semantics): List[FlowSemantic] = {
-    Engine.methodsForCall(call).flatMap { method =>
-      semantics.forMethod(method.fullName)
-    }
+    Engine.methodsForCall(call).flatMap(semantics.forMethod)
   }
 
 }

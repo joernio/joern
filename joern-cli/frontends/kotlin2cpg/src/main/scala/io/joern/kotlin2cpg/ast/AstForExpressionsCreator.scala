@@ -11,9 +11,11 @@ import io.joern.x2cpg.utils.NodeBuilders
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethodRef
+import org.jetbrains.kotlin.descriptors.{DescriptorVisibilities, FunctionDescriptor}
 import org.jetbrains.kotlin.lexer.KtToken
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.resolve.BindingContext
 
 import scala.jdk.CollectionConverters.*
 
@@ -341,14 +343,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val callKind        = typeInfoProvider.bindingKind(expr)
     val isExtensionCall = callKind == CallKind.ExtensionCall
 
-    val hasThisSuperOrNameRefReceiver = expr.getReceiverExpression match {
-      case _: KtThisExpression          => true
-      case _: KtNameReferenceExpression => true
-      case _: KtSuperExpression         => true
-      case _                            => false
-    }
     val hasNameRefSelector = expr.getSelectorExpression.isInstanceOf[KtNameReferenceExpression]
-    val isFieldAccessCall  = hasThisSuperOrNameRefReceiver && hasNameRefSelector
     val isCallToSuper = expr.getReceiverExpression match {
       case _: KtSuperExpression => true
       case _                    => false
@@ -366,10 +361,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val outAst =
       if (isCtorCtorCall.getOrElse(false)) {
         astForQualifiedExpressionCtor(expr, argIdx, argNameMaybe)
-      } else if (isFieldAccessCall) {
-        astForQualifiedExpressionFieldAccess(expr, argIdx, argNameMaybe)
       } else if (isExtensionCall) {
         astForQualifiedExpressionExtensionCall(expr, argIdx, argNameMaybe)
+      } else if (hasNameRefSelector) {
+        astForQualifiedExpressionFieldAccess(expr, argIdx, argNameMaybe)
       } else if (isCallToSuper) {
         astForQualifiedExpressionCallToSuper(expr, argIdx, argNameMaybe)
       } else if (noAstForReceiver) {
@@ -463,21 +458,70 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       else s"$methodFqName:$explicitSignature"
     val (fullName, signature) = typeInfoProvider.fullNameWithSignature(expr, (explicitFullName, explicitSignature))
 
+    val bindingContext = typeInfoProvider.bindingContext
+    val call           = bindingContext.get(BindingContext.CALL, expr.getCalleeExpression)
+    val resolvedCall   = bindingContext.get(BindingContext.RESOLVED_CALL, call)
+
+    val (dispatchType, instanceAsArgument) =
+      if (resolvedCall == null) {
+        (DispatchTypes.STATIC_DISPATCH, false)
+      } else {
+        if (resolvedCall.getDispatchReceiver == null) {
+          (DispatchTypes.STATIC_DISPATCH, false)
+        } else {
+          resolvedCall.getResultingDescriptor match {
+            case functionDescriptor: FunctionDescriptor
+                if functionDescriptor.getVisibility == DescriptorVisibilities.PRIVATE =>
+              (DispatchTypes.STATIC_DISPATCH, true)
+            case _ =>
+              (DispatchTypes.DYNAMIC_DISPATCH, true)
+          }
+        }
+      }
+
     // TODO: add test case to confirm whether the ANY fallback makes sense (could be void)
     val returnType = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
-    val node = callNode(
-      expr,
-      expr.getText,
-      referencedName,
-      fullName,
-      DispatchTypes.STATIC_DISPATCH,
-      Some(signature),
-      Some(returnType)
-    )
+    val node = callNode(expr, expr.getText, referencedName, fullName, dispatchType, Some(signature), Some(returnType))
+
     val annotationsAsts = annotations.map(astForAnnotationEntry)
     val astWithAnnotations =
-      callAst(withArgumentIndex(node, argIdx).argumentName(argNameMaybe), argAsts.toList)
-        .withChildren(annotationsAsts)
+      if (dispatchType == DispatchTypes.STATIC_DISPATCH) {
+        val compoundArgAsts =
+          if (instanceAsArgument) {
+            val instanceArgument = identifierNode(
+              expr,
+              Constants.this_,
+              Constants.this_,
+              typeInfoProvider.typeFullName(resolvedCall.getDispatchReceiver.getType)
+            )
+            val args = argAsts.prepended(Ast(instanceArgument))
+            setArgumentIndices(args, 0)
+            args
+          } else {
+            setArgumentIndices(argAsts, 1)
+            argAsts
+          }
+
+        Ast(withArgumentIndex(node, argIdx).argumentName(argNameMaybe))
+          .withChildren(compoundArgAsts)
+          .withArgEdges(node, compoundArgAsts.flatMap(_.root))
+          .withChildren(annotationsAsts)
+      } else {
+        val receiverNode = identifierNode(
+          expr,
+          Constants.this_,
+          Constants.this_,
+          typeInfoProvider.typeFullName(resolvedCall.getDispatchReceiver.getType)
+        )
+
+        callAst(
+          withArgumentIndex(node, argIdx).argumentName(argNameMaybe),
+          argAsts.toList,
+          base = Some(Ast(receiverNode))
+        )
+          .withChildren(annotationsAsts)
+      }
+
     List(astWithAnnotations)
   }
 

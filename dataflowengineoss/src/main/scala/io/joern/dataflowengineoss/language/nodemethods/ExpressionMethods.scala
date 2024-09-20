@@ -73,9 +73,7 @@ class ExpressionMethods[NodeType <: Expression](val node: NodeType) extends AnyV
   /** Retrieve flow semantic for the call this argument is a part of.
     */
   def semanticsForCallByArg(implicit semantics: Semantics): Iterator[FlowSemantic] = {
-    argToMethods(node).flatMap { method =>
-      semantics.forMethod(method.fullName)
-    }
+    argToMethods(node).flatMap(semantics.forMethod)
   }
 
   private def argToMethods(arg: Expression): Iterator[Method] = {

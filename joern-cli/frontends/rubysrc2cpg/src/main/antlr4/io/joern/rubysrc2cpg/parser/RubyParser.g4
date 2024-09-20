@@ -258,7 +258,7 @@ primaryValueListWithAssociation
     ;
 
 blockArgument
-    :   AMP operatorExpression
+    :   AMP operatorExpression?
     ;
     
 // --------------------------------------------------------
@@ -412,9 +412,9 @@ primaryValue
         # relationalExpression
     |   primaryValue equalityOperator       NL* primaryValue
         # equalityExpression
-    |   primaryValue andOperator=AMP2       NL* primaryValue
+    |   primaryValue andOperator=AMP2       NL* (primaryValue | RETURN)
         # logicalAndExpression
-    |   primaryValue orOperator=BAR2        NL* primaryValue
+    |   primaryValue orOperator=BAR2        NL* (primaryValue | RETURN)
         # logicalOrExpression
     |   primaryValue rangeOperator NL* primaryValue
         # boundedRangeExpression
@@ -632,7 +632,7 @@ hashParameter
     ;
 
 procParameter
-    :   AMP procParameterName
+    :   AMP procParameterName?
     ;
 
 procParameterName

@@ -1,6 +1,7 @@
 package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.{Annotation, AnnotationLiteral}
 import io.shiftleft.semanticcpg.language.*
 
@@ -606,7 +607,7 @@ class AnnotationsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     }
   }
 
-  "CPG for code with a custom annotation" should {
+  "CPG for code with a custom annotation and fallback handling" should {
     val cpg = code("""
         |package mypkg
         |import retrofit2.http.POST
@@ -618,12 +619,16 @@ class AnnotationsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         |}
         |""".stripMargin)
 
-    "contain an ANNOTATION node" in {
-      cpg.all.collectAll[Annotation].codeExact("@POST(\"/name\")").size shouldBe 1
-    }
-
     "the ANNOTATION node should have correct full name" in {
-      cpg.all.collectAll[Annotation].codeExact("@POST(\"/name\")").fullName.head shouldBe "retrofit2.http.POST"
+      inside(cpg.annotation.codeExact("@POST(\"/name\")").l) { case List(annotation) =>
+        annotation.fullName shouldBe "retrofit2.http.POST"
+      }
+      inside(cpg.annotation.code(".*Headers.*").l) { case List(annotation) =>
+        annotation.fullName shouldBe s"${Defines.UnresolvedNamespace}.Headers"
+      }
+      inside(cpg.annotation.code(".*Body.*").l) { case List(annotation) =>
+        annotation.fullName shouldBe s"${Defines.UnresolvedNamespace}.Body"
+      }
     }
   }
 }
