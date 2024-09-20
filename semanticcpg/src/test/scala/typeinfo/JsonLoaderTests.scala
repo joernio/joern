@@ -28,12 +28,6 @@ class JsonLoaderTests extends AnyWordSpec with Matchers {
       |     "NAME":"EMPTY_ARRAY",
       |     "TYPE_FULL_NAME":"com.amazon.ion.IonValue"
       |   }
-      | ],
-      | "DEPENDS":[
-      |   {
-      |     "FULL_NAME": "java.lang",
-      |     "VERSION": "4.1.2"
-      |   }
       | ]
       |}""".stripMargin
 
@@ -59,11 +53,6 @@ class JsonLoaderTests extends AnyWordSpec with Matchers {
       val member = t.members.head
       member.name shouldBe "EMPTY_ARRAY"
       member.typeFullName shouldBe "com.amazon.ion.IonValue"
-
-      t.dependencies should have length 1
-      val dependency = t.dependencies.head
-      dependency.fullName shouldBe "java.lang"
-      dependency.version shouldBe Some("4.1.2")
     }
   }
 }

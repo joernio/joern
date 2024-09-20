@@ -64,21 +64,6 @@ type::{
 }
 
 type::{
-  name: dependency,
-  type: struct,
-  fields: closed::{
-    FULL_NAME: { type: full_name, occurs: required },
-    VERSION: { type: version, occurs: optional }
-  }
-}
-
-type::{
-  name: depends,
-  type: list,
-  element: dependency
-}
-
-type::{
   name: type_decl,
   type: struct,
   fields: closed::{
@@ -87,7 +72,6 @@ type::{
     TYPE_PARAMETERS: type_parameters,
     INHERITS: inherits,
     METHODS: methods,
-    MEMBERS: members,
-    DEPENDS: depends
+    MEMBERS: members
   }
 }

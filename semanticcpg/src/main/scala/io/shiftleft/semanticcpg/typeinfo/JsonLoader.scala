@@ -10,11 +10,6 @@ import java.util.zip.ZipInputStream
 import scala.util.{Try, Using};
 
 object JsonLoader extends Loader {
-  private val dependencySerializer = FieldSerializer[Dependency](
-    renameTo("fullName", "FULL_NAME") orElse renameTo("version", "VERSION"),
-    renameFrom("FULL_NAME", "fullName") orElse renameFrom("VERSION", "version"),
-  )
-
   private val memberSerializer = FieldSerializer[Member](
     renameTo("typeFullName", "TYPE_FULL_NAME") orElse renameTo("name", "NAME"),
     renameFrom("TYPE_FULL_NAME", "typeFullName") orElse renameFrom("NAME", "name")
@@ -31,19 +26,17 @@ object JsonLoader extends Loader {
       renameTo("typeParams", "TYPE_PARAMETERS") orElse
       renameTo("inherits", "INHERITS") orElse
       renameTo("methods", "METHODS") orElse
-      renameTo("members", "MEMBERS") orElse
-      renameTo("dependencies", "DEPENDS"),
+      renameTo("members", "MEMBERS"),
     renameFrom("FULL_NAME", "fullName") orElse 
       renameFrom("NAME", "name") orElse
       renameFrom("TYPE_PARAMETERS", "typeParams") orElse
       renameFrom("INHERITS", "inherits") orElse
       renameFrom("METHODS", "methods") orElse
-      renameFrom("MEMBERS", "members") orElse
-      renameFrom("DEPENDS", "dependencies")  
+      renameFrom("MEMBERS", "members")  
   )
 
   // TODO
-  implicit val format: Formats = DefaultFormats + dependencySerializer + memberSerializer + methodSerializer + typeDeclSerializer
+  implicit val format: Formats = DefaultFormats + memberSerializer + methodSerializer + typeDeclSerializer
 
   override def parse(data: String): Try[TypeDecl] = Try(Serialization.read(data))
   

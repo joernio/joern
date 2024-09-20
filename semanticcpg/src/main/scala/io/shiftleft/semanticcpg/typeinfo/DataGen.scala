@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.typeinfo
 
-import io.shiftleft.semanticcpg.typeinfo.{Dependency, Member, Method, TypeDecl}
+import io.shiftleft.semanticcpg.typeinfo.{Member, Method, TypeDecl}
 
 import scala.util.Random
 
@@ -14,8 +14,6 @@ object DataGen {
   private def genList[T](n: Int, gen: () => T): List[T] =
     if n == 0 then List() else gen() :: genList(n - 1, gen)
   private def genVersion(): Option[String] = Some(s"${Random.nextInt(1000)}.${Random.nextInt(1000)}.${Random.nextInt(1000)}")
-  private def genDependency(): Dependency =
-    Dependency(fullName = genFqName(), version = if shouldGenVersion() then genVersion() else None)
   private def genMember(): Member =
     Member(name = genName(), typeFullName = genFqName())
   private def genMethod(): Method =
@@ -27,7 +25,6 @@ object DataGen {
       typeParams = genList(Random.nextInt(2), genTypeParam),
       methods = genList(Random.nextInt(100), genMethod),
       members = genList(Random.nextInt(100), genMember),
-      dependencies = genList(Random.nextInt(20), genDependency),
       inherits = genList(Random.nextInt(6), genFqName)
     )
   def genTypeDecls(n: Int): Array[TypeDecl] = Array.fill(n){genTypeDecl()}

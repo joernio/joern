@@ -34,11 +34,6 @@ object IonLoader extends Loader {
         val fieldName = r.getFieldName()
         r.stepIn()
         fieldName match
-          case "DEPENDS" => {
-            val ds = parseDependencies(r)
-            r.stepOut()
-            loop(r, typ.copy(dependencies = typ.dependencies ::: ds))
-          }
           case "INHERITS" => {
             val is = parseStringListContainer(r)
             r.stepOut()
@@ -103,26 +98,6 @@ object IonLoader extends Loader {
         r.getFieldName() match
           case "NAME" => parseMember(r, m.copy(name = r.stringValue()))
           case "TYPE_FULL_NAME" => parseMember(r, m.copy(typeFullName = r.stringValue()))
-
-  @tailrec
-  private def parseDependency(r: IonReader, d: Dependency = Dependency()): Dependency =
-    Option(r.next()) match
-      case None => d
-      case Some(_) =>
-        r.getFieldName() match
-          case "FULL_NAME" => parseDependency(r, d.copy(fullName = r.stringValue()))
-          case "VERSION" => parseDependency(r, d.copy(version = Some(r.stringValue())))
-
-  @tailrec
-  private def parseDependencies(r: IonReader, ds: List[Dependency] = List()): List[Dependency] =
-    Option(r.next()) match
-      case None => ds
-      case Some(IonType.STRUCT) => {
-        r.stepIn()
-        val dep = parseDependency(r)
-        r.stepOut()
-        parseDependencies(r, ds :+ dep)
-      }
 
   @tailrec
   private def parseStringListContainer(r: IonReader, strs: List[String] = List()): List[String] =

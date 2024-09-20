@@ -27,12 +27,6 @@ class IonWriterTests extends AnyWordSpec with Matchers {
       |     NAME:"EMPTY_ARRAY",
       |     TYPE_FULL_NAME:"com.amazon.ion.IonValue"
       |   }
-      | ],
-      | DEPENDS:[
-      |   {
-      |     FULL_NAME: "java.lang",
-      |     VERSION: "4.1.2"
-      |   }
       | ]
       |}""".stripMargin
 

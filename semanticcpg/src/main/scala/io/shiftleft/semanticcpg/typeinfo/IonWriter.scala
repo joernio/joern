@@ -54,11 +54,6 @@ object IonWriter extends Writer  {
     ty.members.foreach(writeMember(w))
     w.stepOut()
 
-    w.setFieldName("DEPENDS")
-    w.stepIn(IonType.LIST)
-    ty.dependencies.foreach(writeDependency(w))
-    w.stepOut() // dependency list
-
     w.stepOut() // main struct
   }
   
@@ -79,19 +74,6 @@ object IonWriter extends Writer  {
     w.writeString(m.name)
     w.setFieldName("TYPE_FULL_NAME")
     w.writeString(m.typeFullName)
-    w.stepOut()
-  }
-  
-  private def writeDependency(w: IonWriter)(d: Dependency): Unit = {
-    w.stepIn(IonType.STRUCT)
-    w.setFieldName("FULL_NAME")
-    w.writeString(d.fullName)
-    d.version match
-      case Some(v) => {
-        w.setFieldName("VERSION")
-        w.writeString(v)
-      }
-      case _ => // do nothing
     w.stepOut()
   }
 }
