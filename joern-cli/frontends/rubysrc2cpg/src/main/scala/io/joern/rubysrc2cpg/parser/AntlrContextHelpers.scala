@@ -272,6 +272,8 @@ object AntlrContextHelpers {
           case x: AssociationListContext        => x.associations
           case x: SplattingArgumentContext      => x :: Nil
           case x: IndexingArgumentContext       => x :: Nil
+          case x: IndexingArgumentListContext   => x.arguments
+          case x: HashLiteralContext            => x :: Nil
         }
         .toList
         .flatten
@@ -280,7 +282,6 @@ object AntlrContextHelpers {
 
   sealed implicit class IndexingArgumentListContextHelper(ctx: IndexingArgumentListContext) {
     def arguments: List[ParserRuleContext] = ctx match
-      case ctx: CommandIndexingArgumentListContext => List(ctx.command())
       case ctx: OperatorExpressionListIndexingArgumentListContext =>
         ctx.operatorExpressionList().operatorExpression().asScala.toList
       case ctx: AssociationListIndexingArgumentListContext   => ctx.associationList().associations

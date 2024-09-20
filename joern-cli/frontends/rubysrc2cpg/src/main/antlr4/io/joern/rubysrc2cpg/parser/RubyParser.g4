@@ -173,18 +173,16 @@ bracketedArrayElementList
     ;
 
 bracketedArrayElement
-    :   operatorExpressionList
+    :   indexingArgument
     |   command
-    |   indexingArgument
-    |   associationList
+    |   hashLiteral
     |   splattingArgument
+    |   indexingArgumentList
     ;
 
 indexingArgumentList
     :   operatorExpressionList COMMA?
         # operatorExpressionListIndexingArgumentList
-    |   command
-        # commandIndexingArgumentList
     |   operatorExpressionList COMMA splattingArgument
         # operatorExpressionListWithSplattingArgumentIndexingArgumentList
     |   indexingArgument (COMMA? NL* indexingArgument)*
@@ -298,6 +296,10 @@ primary
         # primaryValuePrimary
     ;
 
+hashLiteral
+    : LCURLY NL* (associationList COMMA?)? NL* RCURLY
+    ;
+
 primaryValue
     :   // Assignment expressions
         lhs=variable assignmentOperator NL* rhs=operatorExpression
@@ -361,8 +363,8 @@ primaryValue
         # quotedExpandedStringArrayLiteral
     |   QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_START quotedExpandedArrayElementList? QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_END
         # quotedExpandedSymbolArrayLiteral
-    |   LCURLY NL* (associationList COMMA?)? NL* RCURLY
-        # hashLiteral
+    |   hashLiteral
+        # primaryValueHashLiteral
     |   sign=(PLUS | MINUS)? unsignedNumericLiteral
         # numericLiteral
     |   singleQuotedString singleOrDoubleQuotedString*

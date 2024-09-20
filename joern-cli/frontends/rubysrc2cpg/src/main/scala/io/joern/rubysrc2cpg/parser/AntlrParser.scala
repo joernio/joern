@@ -78,7 +78,7 @@ class AntlrParser(inputDir: File, filename: String, withDebugging: Boolean = fal
         val stopToken  = recognizer.getTokenStream.get(stopIndex)
 
         warnings.append(
-          s"Parser ambiguity detected for rule '$ruleName' from token '${startToken.getText}' to '${stopToken.getText}', alternatives: ${ambigAlts.toString}"
+          s"Parser ambiguity detected for rule '$ruleName' (decision ${dfa.decision}) from token '${startToken.getText}' [startIndex=$startIndex] to '${stopToken.getText}' [stopIndex=$stopIndex], alternatives: ${ambigAlts.toString}"
         )
       }
 
