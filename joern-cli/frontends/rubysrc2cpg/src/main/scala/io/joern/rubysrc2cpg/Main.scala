@@ -8,10 +8,10 @@ import scopt.OParser
 
 final case class Config(
   antlrCacheMemLimit: Double = 0.6d,
-  useDeprecatedFrontend: Boolean = false,
   downloadDependencies: Boolean = false,
   useTypeStubs: Boolean = true,
-  antlrDebug: Boolean = false
+  antlrDebug: Boolean = false,
+  antlrProfiling: Boolean = false
 ) extends X2CpgConfig[Config]
     with DependencyDownloadConfig[Config]
     with TypeRecoveryParserConfig[Config]
@@ -25,12 +25,12 @@ final case class Config(
     copy(antlrCacheMemLimit = value).withInheritedFields(this)
   }
 
-  def withUseDeprecatedFrontend(value: Boolean): Config = {
-    copy(useDeprecatedFrontend = value).withInheritedFields(this)
-  }
-
   def withAntlrDebugging(value: Boolean): Config = {
     copy(antlrDebug = value).withInheritedFields(this)
+  }
+
+  def withAntlrProfiling(value: Boolean): Config = {
+    copy(antlrProfiling = value).withInheritedFields(this)
   }
 
   override def withDownloadDependencies(value: Boolean): Config = {
@@ -59,16 +59,16 @@ private object Frontend {
             failure(s"$x may result in too many evictions and reduce performance, try a value between 0.3 - 0.8.")
           case x if x > 0.8 =>
             failure(s"$x may result in too much memory usage and thrashing, try a value between 0.3 - 0.8.")
-          case x =>
+          case _ =>
             success
         }
         .text("sets the heap usage threshold at which the ANTLR DFA cache is cleared during parsing (default 0.6)"),
-      opt[Unit]("useDeprecatedFrontend")
-        .action((_, c) => c.withUseDeprecatedFrontend(true))
-        .text("uses the original (but deprecated) Ruby frontend (default false)"),
       opt[Unit]("antlrDebug")
         .hidden()
         .action((_, c) => c.withAntlrDebugging(true)),
+      opt[Unit]("antlrProfile")
+        .hidden()
+        .action((_, c) => c.withAntlrProfiling(true)),
       opt[Unit]("enable-file-content")
         .action((_, c) => c.withDisableFileContent(false))
         .text("Enable file content"),

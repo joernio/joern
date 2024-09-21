@@ -173,18 +173,16 @@ bracketedArrayElementList
     ;
 
 bracketedArrayElement
-    :   operatorExpressionList
+    :   indexingArgument
     |   command
-    |   indexingArgument
-    |   associationList
+    |   hashLiteral
     |   splattingArgument
+    |   indexingArgumentList
     ;
 
 indexingArgumentList
     :   operatorExpressionList COMMA?
         # operatorExpressionListIndexingArgumentList
-    |   command
-        # commandIndexingArgumentList
     |   operatorExpressionList COMMA splattingArgument
         # operatorExpressionListWithSplattingArgumentIndexingArgumentList
     |   indexingArgument (COMMA? NL* indexingArgument)*
@@ -258,7 +256,7 @@ primaryValueListWithAssociation
     ;
 
 blockArgument
-    :   AMP operatorExpression
+    :   AMP operatorExpression?
     ;
     
 // --------------------------------------------------------
@@ -296,6 +294,10 @@ primary
         # retryWithoutArguments
     |   primaryValue
         # primaryValuePrimary
+    ;
+
+hashLiteral
+    : LCURLY NL* (associationList COMMA?)? NL* RCURLY
     ;
 
 primaryValue
@@ -361,8 +363,8 @@ primaryValue
         # quotedExpandedStringArrayLiteral
     |   QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_START quotedExpandedArrayElementList? QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_END
         # quotedExpandedSymbolArrayLiteral
-    |   LCURLY NL* (associationList COMMA?)? NL* RCURLY
-        # hashLiteral
+    |   hashLiteral
+        # primaryValueHashLiteral
     |   sign=(PLUS | MINUS)? unsignedNumericLiteral
         # numericLiteral
     |   singleQuotedString singleOrDoubleQuotedString*
@@ -632,7 +634,7 @@ hashParameter
     ;
 
 procParameter
-    :   AMP procParameterName
+    :   AMP procParameterName?
     ;
 
 procParameterName

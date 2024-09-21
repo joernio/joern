@@ -1,13 +1,13 @@
 package io.joern.rubysrc2cpg.testfixtures
 
+import better.files.File as BFile
 import io.joern.rubysrc2cpg.Config
-import io.joern.rubysrc2cpg.parser.{AstPrinter, ResourceManagedParser, RubyNodeCreator, RubyParser}
+import io.joern.rubysrc2cpg.parser.{AstPrinter, ResourceManagedParser, RubyParser}
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.utils.{ConcurrentTaskUtil, TestCodeWriter}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.slf4j.LoggerFactory
-import better.files.File as BFile
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path}
@@ -15,10 +15,10 @@ import scala.util.{Failure, Success, Using}
 
 class RubyParserFixture
     extends RubyFrontend(
-      useDeprecatedFrontend = false,
       withDownloadDependencies = false,
       disableFileContent = true,
-      antlrDebugging = false
+      antlrDebugging = false,
+      antlrProfiling = false
     )
     with TestCodeWriter
     with AnyWordSpecLike

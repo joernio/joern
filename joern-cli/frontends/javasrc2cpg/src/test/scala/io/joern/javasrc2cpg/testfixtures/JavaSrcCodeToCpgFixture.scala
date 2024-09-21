@@ -1,13 +1,11 @@
 package io.joern.javasrc2cpg.testfixtures
 
-import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
 import io.joern.dataflowengineoss.testfixtures.{SemanticCpgTestFixture, SemanticTestCpg}
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
-import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.frontendspecific.javasrc2cpg
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
-import io.joern.x2cpg.testfixtures.{Code2CpgFixture, DefaultTestCpg, LanguageFrontend, TestCpg}
+import io.joern.x2cpg.testfixtures.{Code2CpgFixture, DefaultTestCpg, LanguageFrontend}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Expression, Literal}
 import io.shiftleft.semanticcpg.language.*
