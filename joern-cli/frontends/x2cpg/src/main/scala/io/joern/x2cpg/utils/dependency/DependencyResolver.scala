@@ -18,10 +18,8 @@ case class DependencyResolverParams(
 )
 
 object DependencyResolver {
-  private val logger                         = LoggerFactory.getLogger(getClass)
-  private val defaultGradleProjectName       = "app"
-  private val defaultGradleConfigurationName = "compileClasspath"
-  private val MaxSearchDepth: Int            = 4
+  private val logger              = LoggerFactory.getLogger(getClass)
+  private val MaxSearchDepth: Int = 4
 
   def getCoordinates(
     projectDir: Path,
@@ -31,9 +29,10 @@ object DependencyResolver {
       if (isMavenBuildFile(buildFile))
         // TODO: implement
         None
-      else if (isGradleBuildFile(buildFile))
-        getCoordinatesForGradleProject(buildFile.getParent, defaultGradleConfigurationName)
-      else {
+      else if (isGradleBuildFile(buildFile)) {
+        // TODO: Don't limit this to the default configuration name
+        getCoordinatesForGradleProject(buildFile.getParent, "compileClasspath")
+      } else {
         logger.warn(s"Found unsupported build file $buildFile")
         Nil
       }
@@ -84,12 +83,14 @@ object DependencyResolver {
     projectDir: Path
   ): Option[collection.Seq[String]] = {
     logger.info("resolving Gradle dependencies at {}", projectDir)
-    val gradleProjectName = params.forGradle.getOrElse(GradleConfigKeys.ProjectName, defaultGradleProjectName)
-    val gradleConfiguration =
-      params.forGradle.getOrElse(GradleConfigKeys.ConfigurationName, defaultGradleConfigurationName)
-    GradleDependencies.get(projectDir, gradleProjectName, gradleConfiguration) match {
-      case Some(deps) => Some(deps)
-      case None =>
+    val maybeProjectNameOverride   = params.forGradle.get(GradleConfigKeys.ProjectName)
+    val maybeConfigurationOverride = params.forGradle.get(GradleConfigKeys.ConfigurationName)
+
+    GradleDependencies.get(projectDir, maybeProjectNameOverride, maybeConfigurationOverride) match {
+      case dependenciesMap if dependenciesMap.values.exists(_.nonEmpty) =>
+        Option(dependenciesMap.values.flatten.toSet.toSeq)
+
+      case _ =>
         logger.warn(s"Could not download Gradle dependencies for project at path `$projectDir`")
         None
     }
