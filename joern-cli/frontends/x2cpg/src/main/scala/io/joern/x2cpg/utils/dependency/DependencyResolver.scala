@@ -83,10 +83,10 @@ object DependencyResolver {
     projectDir: Path
   ): Option[collection.Seq[String]] = {
     logger.info("resolving Gradle dependencies at {}", projectDir)
-    val gradleProjectName   = params.forGradle.get(GradleConfigKeys.ProjectName)
-    val gradleConfiguration = params.forGradle.get(GradleConfigKeys.ConfigurationName)
+    val maybeProjectNameOverride   = params.forGradle.get(GradleConfigKeys.ProjectName)
+    val maybeConfigurationOverride = params.forGradle.get(GradleConfigKeys.ConfigurationName)
 
-    GradleDependencies.get(projectDir, gradleProjectName, gradleConfiguration) match {
+    GradleDependencies.get(projectDir, maybeProjectNameOverride, maybeConfigurationOverride) match {
       case dependenciesMap if dependenciesMap.values.exists(_.nonEmpty) =>
         Option(dependenciesMap.values.flatten.toSet.toSeq)
 

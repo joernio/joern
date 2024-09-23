@@ -69,7 +69,7 @@ object GradleDependencies {
     val projectConfigurationString = projectInfo.subprojects
       .map { case (projectNameInfo, configurationNames) =>
         val quotedConfigurationNames = configurationNames.map(name => s"\"$name\"").mkString(", ")
-        s"${projectNameInfo.projectName}: [$quotedConfigurationNames]"
+        s"\"${projectNameInfo.projectName}\": [$quotedConfigurationNames]"
       }
       .mkString(", ")
 
@@ -375,6 +375,12 @@ object GradleDependencies {
               "A missing Android SDK configuration caused gradle dependency fetching failures. Please define a valid SDK location with an ANDROID_HOME environment variable or by setting the sdk.dir path in your project's local properties file"
             )
           }
+          if (stderrStream.toString.contains("Could not compile initialization script")) {
+            val scriptContents = File(initScriptPath).contentAsString
+            logger.debug(
+              s"########## INITIALIZATION_SCRIPT ##########\n$scriptContents\n###########################################"
+            )
+          }
           logger.debug(s"Gradle task execution stdout: \n$stdoutStream")
           logger.debug(s"Gradle task execution stderr: \n$stderrStream")
           None
@@ -433,7 +439,6 @@ object GradleDependencies {
                       projectInfo.subprojects.keys.flatMap { projectNameInfo =>
                         val taskName = projectNameInfo.makeGradleTaskName(initScript.taskName)
 
-                        val x = 2
                         runGradleTask(c, taskName, initScript.destinationDir, initScriptFile.pathAsString) map { deps =>
                           val depsOutput = deps.map { d =>
                             if (!d.endsWith(aarFileExtension)) d
