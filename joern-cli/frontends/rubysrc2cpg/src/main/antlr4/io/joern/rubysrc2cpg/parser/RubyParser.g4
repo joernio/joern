@@ -229,7 +229,7 @@ argumentWithParentheses
 argumentList
     :   blockArgument
         # blockArgumentArgumentList
-    |   splattingArgument (COMMA NL* blockArgument)? (COMMA NL* operatorExpressionList)?
+    |   splattingArgument (COMMA NL* splatArgList)? (COMMA NL* blockArgument)? (COMMA NL* operatorExpressionList)?
         # splattingArgumentArgumentList
     |   operatorExpressionList (COMMA NL* associationList)? (COMMA NL* splattingArgument)? (COMMA NL* blockArgument)?
         # operatorsArgumentList
@@ -239,6 +239,10 @@ argumentList
         # arrayArgumentList
     |   command
         # singleCommandArgumentList
+    ;
+
+splatArgList
+    :   splattingArgument (COMMA NL* splattingArgument)*
     ;
 
 commandArgumentList

@@ -466,4 +466,34 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
       .code
       .head shouldBe "(<tmp-1> = cookies[:auth_token]).to_s"
   }
+
+  "Calls with multiple splat args" in {
+    val cpg = code("""
+        |    doorkeeper_application&.includes_scope?(
+        |      *::Gitlab::Auth::API_SCOPE, *::Gitlab::Auth::READ_API_SCOPE,
+        |      *::Gitlab::Auth::ADMIN_SCOPES, *::Gitlab::Auth::REPOSITORY_SCOPES,
+        |      *::Gitlab::Auth::REGISTRY_SCOPES
+        |    )
+        |""".stripMargin)
+
+    inside(cpg.call.name("includes_scope\\?").argument.l) {
+      case _ :: (apiScopeSplat: Call) :: (readScopeSplat: Call) :: (adminScopeSplat: Call) :: (repoScopeSplat: Call) :: (registryScopeSplat: Call) :: Nil =>
+        apiScopeSplat.code shouldBe "*::Gitlab::Auth::API_SCOPE"
+        apiScopeSplat.methodFullName shouldBe RubyOperators.splat
+
+        readScopeSplat.code shouldBe "*::Gitlab::Auth::READ_API_SCOPE"
+        readScopeSplat.methodFullName shouldBe RubyOperators.splat
+
+        adminScopeSplat.code shouldBe "*::Gitlab::Auth::ADMIN_SCOPES"
+        adminScopeSplat.methodFullName shouldBe RubyOperators.splat
+
+        repoScopeSplat.code shouldBe "*::Gitlab::Auth::REPOSITORY_SCOPES"
+        repoScopeSplat.methodFullName shouldBe RubyOperators.splat
+
+        registryScopeSplat.code shouldBe "*::Gitlab::Auth::REGISTRY_SCOPES"
+        registryScopeSplat.methodFullName shouldBe RubyOperators.splat
+
+      case xs => fail(s"Expected 5 arguments for call, got [${xs.code.mkString(",")}]")
+    }
+  }
 }

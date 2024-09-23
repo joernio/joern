@@ -319,7 +319,8 @@ object AntlrContextHelpers {
       case ctx: AssociationsArgumentListContext =>
         Option(ctx.associationList()).map(_.associations).getOrElse(List.empty)
       case ctx: SplattingArgumentArgumentListContext =>
-        Option(ctx.splattingArgument()).toList ++ Option(ctx.blockArgument()).toList ++ Option(
+        val splattingArgList = Option(ctx.splatArgList).map(_.splattingArgument().asScala.toList).toList.flatten
+        Option(ctx.splattingArgument()).toList ++ splattingArgList ++ Option(ctx.blockArgument()).toList ++ Option(
           ctx.operatorExpressionList()
         ).toList
       case ctx: BlockArgumentArgumentListContext =>
