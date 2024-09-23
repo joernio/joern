@@ -62,4 +62,8 @@ class FullNameSemantics private (methodToSemantic: mutable.Map[String, FlowSeman
       .mkString("\n")
   }
 
+  /** Immutably extends the current `FullNameSemantics` with `extraFlows`.
+    */
+  def plus(extraFlows: List[FlowSemantic]): FullNameSemantics = FullNameSemantics.fromList(elements ++ extraFlows)
+
 }

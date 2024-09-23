@@ -17,9 +17,8 @@ class OssDataFlowOptions(
   var extraFlows: List[FlowSemantic] = List.empty[FlowSemantic]
 ) extends LayerCreatorOptions {}
 
-class OssDataFlow(opts: OssDataFlowOptions)(implicit
-  s: Semantics = FullNameSemantics.fromList(DefaultSemantics().elements ++ opts.extraFlows)
-) extends LayerCreator {
+class OssDataFlow(opts: OssDataFlowOptions)(implicit s: Semantics = DefaultSemantics().plus(opts.extraFlows))
+    extends LayerCreator {
 
   override val overlayName: String = OssDataFlow.overlayName
   override val description: String = OssDataFlow.description
