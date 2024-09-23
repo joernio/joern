@@ -87,7 +87,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     Option(cdtAst.flattenLocationsToFile(node.getNodeLocations.lastOption.toArray)).map(_.asFileLocation())
 
   protected def fileName(node: IASTNode): String = {
-    val path = nullSafeFileLocation(node).map(_.getFileName).getOrElse(filename)
+    val path = Try(node.getContainingFilename).getOrElse(filename)
     SourceFiles.toRelativePath(path, config.inputPath)
   }
 
