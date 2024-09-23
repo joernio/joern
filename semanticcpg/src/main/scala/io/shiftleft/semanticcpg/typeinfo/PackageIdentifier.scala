@@ -1,5 +1,7 @@
 package io.shiftleft.semanticcpg.typeinfo
 
+import io.shiftleft.semanticcpg.typeinfo.LanguageFrontend.Java
+
 enum LanguageFrontend:
   case Java
 
@@ -15,3 +17,8 @@ enum LanguageFrontend:
 abstract class PackageIdentifier(name: String):
   val lang: LanguageFrontend 
   def toFetcherStr: String
+
+object PackageIdentifier:
+  def langToString(lang: LanguageFrontend): String =
+    lang match
+      case Java => "java"
