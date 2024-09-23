@@ -29,14 +29,14 @@ class GitSparseFetcher(repoUrl: String = "git@github.com:flandini/typeinfo.git",
       .toList
   }
 
-//  def getDependencyInfo(pid: PackageIdentifier, version: Version): Try[List[Dependency]] = {
-//    val depsDir = buildPackageDepsDirPath(pid)
-//    val depFile = String.join(File.pathSeparator, depsDir, getDepsCsvFileName(version))
-//    for {
-//      _ <- downloadPath(depsDir)
-//    } yield
-//      File(buildFileSystemPath(depFile))
-//  }
+  def getDependencyInfo(pid: PackageIdentifier, version: Version): Try[List[Dependency]] = {
+    val depsDir = buildPackageDepsDirPath(pid)
+    val depFile = String.join(File.pathSeparator, depsDir, getDepsCsvFileName(version))
+    for {
+      _ <- downloadPath(depsDir)
+      loadedDeps <- Dependency.fromFile(File(buildFileSystemPath(depFile)))
+    } yield loadedDeps
+  }
 
   def close(): Unit = {
     if (!tmpDir.delete())
