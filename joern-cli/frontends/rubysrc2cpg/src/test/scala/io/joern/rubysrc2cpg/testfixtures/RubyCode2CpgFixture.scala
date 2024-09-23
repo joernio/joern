@@ -1,7 +1,8 @@
 package io.joern.rubysrc2cpg.testfixtures
 
+import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.language.Path
-import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
+import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
 import io.joern.dataflowengineoss.testfixtures.{SemanticCpgTestFixture, SemanticTestCpg}
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
 import io.joern.x2cpg.ValidationMode
@@ -82,17 +83,17 @@ class RubyCode2CpgFixture(
   withDataFlow: Boolean = false,
   downloadDependencies: Boolean = false,
   disableFileContent: Boolean = true,
-  extraFlows: List[FlowSemantic] = List.empty,
+  semantics: Semantics = DefaultSemantics(),
   antlrDebugging: Boolean = false,
   antlrProfiling: Boolean = false
 ) extends Code2CpgFixture(() =>
       new DefaultTestCpgWithRuby(downloadDependencies, disableFileContent, antlrDebugging, antlrProfiling)
         .withOssDataflow(withDataFlow)
-        .withExtraFlows(extraFlows)
+        .withSemantics(semantics)
         .withPostProcessingPasses(withPostProcessing)
     )
     with Inside
-    with SemanticCpgTestFixture(extraFlows) {
+    with SemanticCpgTestFixture(semantics) {
 
   implicit val resolver: ICallResolver = NoResolve
 

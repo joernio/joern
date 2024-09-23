@@ -1,15 +1,16 @@
 package io.joern.jimple2cpg.testfixtures
 
+import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
-import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
+import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
 import io.joern.x2cpg.testfixtures.Code2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
-class JimpleDataflowTestCpg(val extraFlows: List[FlowSemantic] = List.empty) extends JimpleTestCpg {
+class JimpleDataflowTestCpg(val semantics: Semantics = DefaultSemantics()) extends JimpleTestCpg {
 
   implicit val resolver: ICallResolver           = NoResolve
   implicit lazy val engineContext: EngineContext = EngineContext()
@@ -17,14 +18,14 @@ class JimpleDataflowTestCpg(val extraFlows: List[FlowSemantic] = List.empty) ext
   override def applyPasses(): Unit = {
     super.applyPasses()
     val context = new LayerCreatorContext(this)
-    val options = new OssDataFlowOptions(extraFlows = extraFlows)
+    val options = new OssDataFlowOptions(semantics = semantics)
     new OssDataFlow(options).run(context)
   }
 
 }
 
-class JimpleDataFlowCodeToCpgSuite(val extraFlows: List[FlowSemantic] = List.empty)
-    extends Code2CpgFixture(() => new JimpleDataflowTestCpg(extraFlows)) {
+class JimpleDataFlowCodeToCpgSuite(val semantics: Semantics = DefaultSemantics())
+    extends Code2CpgFixture(() => new JimpleDataflowTestCpg(semantics)) {
 
   implicit var context: EngineContext = EngineContext()
 

@@ -1,21 +1,22 @@
 package io.joern.javasrc2cpg.testfixtures
 
+import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.queryengine.EngineContext
-import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
+import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Expression, Literal}
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class JavaDataflowFixture(extraFlows: List[FlowSemantic] = List.empty) extends AnyFlatSpec with Matchers {
+class JavaDataflowFixture(semantics: Semantics = DefaultSemantics()) extends AnyFlatSpec with Matchers {
 
   implicit val resolver: ICallResolver           = NoResolve
   implicit lazy val engineContext: EngineContext = EngineContext()
 
   val code: String  = ""
-  lazy val cpg: Cpg = JavaSrcTestCpg().withOssDataflow().withExtraFlows(extraFlows).moreCode(code)
+  lazy val cpg: Cpg = JavaSrcTestCpg().withOssDataflow().withSemantics(semantics).moreCode(code)
 
   def getConstSourceSink(
     methodName: String,
