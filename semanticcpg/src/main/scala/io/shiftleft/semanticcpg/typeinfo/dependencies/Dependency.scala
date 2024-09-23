@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.typeinfo.dependencies
 
-import io.shiftleft.semanticcpg.typeinfo.{PackageIdentifier, Version}
+import io.shiftleft.semanticcpg.typeinfo.{JavaPackageIdentifier, PackageIdentifier, Version}
 
 import scala.jdk.CollectionConverters._
 import org.apache.commons.csv.{CSVFormat, CSVParser, CSVRecord}
@@ -24,6 +24,6 @@ object Dependency {
   private def csvRecordToDependency(rec: CSVRecord): Dependency = {
     val packageName = rec.get(0)
     val constraint = rec.get(1)
-    Dependency(PackageIdentifier(packageName), Constraint.parse(constraint))
+    Dependency(JavaPackageIdentifier(packageName), Constraint.parse(constraint))
   }
 }

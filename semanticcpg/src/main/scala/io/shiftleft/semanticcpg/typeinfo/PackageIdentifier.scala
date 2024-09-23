@@ -17,6 +17,12 @@ enum LanguageFrontend:
 abstract class PackageIdentifier(name: String):
   val lang: LanguageFrontend 
   def toFetcherStr: String
+  
+class JavaPackageIdentifier(name: String) extends PackageIdentifier(name) {
+  override val lang: LanguageFrontend = Java
+  override def toFetcherStr: String = name.replace('.', '/')
+  override def toString: String = toFetcherStr
+}
 
 object PackageIdentifier:
   def langToString(lang: LanguageFrontend): String =
