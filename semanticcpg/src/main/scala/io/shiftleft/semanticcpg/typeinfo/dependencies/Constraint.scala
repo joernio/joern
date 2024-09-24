@@ -29,6 +29,7 @@ object Constraint {
     case GT, GTE, LT, LTE, NOT, AND, OR, LPAREN, RPAREN
   }
   
+  /** Shunting yard algorithm */
   @tailrec
   private def parseLoop(ctr: String,
                         operatorStack: List[ConstraintSymbol] = List(),

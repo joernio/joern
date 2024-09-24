@@ -100,9 +100,8 @@ class GitSparseFetcher(repoUrl: String = "git@github.com:flandini/typeinfo.git",
   private def doInitCheckout(): Try[Int] =
     Try(makeProcess(tmpDirPath, "git", "checkout", gitRef).start().waitFor())
 
-  private def addPathFilterAndDownload(pathStr: String): Try[Int] = {
+  private def addPathFilterAndDownload(pathStr: String): Try[Int] =
     Try(makeProcess(tmpDirPath, "git", "sparse-checkout", "add", pathStr).start().waitFor())
-  }
   
   private def stripCsvSuffix(fileName: String): String = 
     if (fileName.endsWith(".csv")) 
@@ -114,7 +113,6 @@ class GitSparseFetcher(repoUrl: String = "git@github.com:flandini/typeinfo.git",
     then Failure(new RuntimeException(potentialErrMsg))
     else Success(())
 
-  private def makeProcess(path: Path, command: String*): ProcessBuilder = {
+  private def makeProcess(path: Path, command: String*): ProcessBuilder =
     new ProcessBuilder().directory(path.toFile).command(command*).inheritIO()
-  }
 }

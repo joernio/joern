@@ -8,7 +8,7 @@ import java.io.{File, FileReader}
 import scala.util.{Failure, Success, Try}
 
 final case class Dependency(name: PackageIdentifier, version: Constraint)
-final case class SolvedDependency(name: PackageIdentifier, version: Version)
+final case class ResolvedDependency(name: PackageIdentifier, version: Version)
 
 object Dependency {
   def fromFile(f: File): Try[List[Dependency]] = {
