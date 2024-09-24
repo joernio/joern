@@ -7,11 +7,11 @@ import org.json4s.native.JsonMethods.*
 import org.json4s.native.{Serialization, prettyJson, renderJValue}
 
 import java.util.zip.{ZipEntry, ZipOutputStream}
-import java.io.ByteArrayOutputStream
+import java.io.{ByteArrayOutputStream, OutputStream}
 import java.nio.charset.Charset
 import scala.util.{Try, Using}
 
-object JsonWriter extends Writer {
+object JsonWriter extends Writer[TypeDecl] {
   private val defaultZipEntry = ZipEntry("file")
   implicit val format: Formats = JsonLoader.format // TODO
 
@@ -26,4 +26,10 @@ object JsonWriter extends Writer {
       zip.closeEntry()
       bytes.toByteArray
     }
+
+  override def writeToStream(ty: TypeDecl, os: OutputStream): Try[Unit] =
+    for {
+      prettyString <- Try(Serialization.writePretty(ty))
+      _ <- Try(os.write(prettyString.getBytes("UTF-8")))
+    } yield ()
 }

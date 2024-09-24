@@ -6,11 +6,11 @@ import org.json4s.FieldSerializer.*
 import org.json4s.native.JsonMethods.*
 import org.json4s.native.Serialization
 
-import java.io.ByteArrayInputStream
+import java.io.{ByteArrayInputStream, InputStream}
 import java.util.zip.ZipInputStream
 import scala.util.{Try, Using};
 
-object JsonLoader extends Loader {
+object JsonLoader extends Loader[TypeDecl] {
   private val memberSerializer = FieldSerializer[Member](
     renameTo("typeFullName", "TYPE_FULL_NAME") orElse renameTo("name", "NAME"),
     renameFrom("TYPE_FULL_NAME", "typeFullName") orElse renameFrom("NAME", "name")
@@ -50,4 +50,6 @@ object JsonLoader extends Loader {
       zip.closeEntry()
       Serialization.read(jsonStr)
     }
+
+  override def parseString(data: InputStream): Try[TypeDecl] = Try(Serialization.read(data))
 }

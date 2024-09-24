@@ -3,14 +3,14 @@ package io.shiftleft.semanticcpg.typeinfo
 import com.amazon.ion.{IonType, IonWriter}
 import com.amazon.ion.system.{IonBinaryWriterBuilder, IonTextWriterBuilder}
 
-import java.io.ByteArrayOutputStream
+import java.io.{ByteArrayOutputStream, OutputStream}
 import scala.util.{Try, Using}
 
-object IonWriter extends Writer  {
+object IonWriter extends Writer[TypeDecl] {
   override def writeToString(ty: TypeDecl): Try[String] = 
     Using.Manager { use =>
       val out = use(ByteArrayOutputStream())
-      val w: IonWriter = use(IonTextWriterBuilder.pretty().build(out))
+      val w = use(IonTextWriterBuilder.pretty().build(out))
       writeType(ty, w)
       w.finish()
       out.toString
@@ -19,11 +19,19 @@ object IonWriter extends Writer  {
   def writeToBinaryFormat(ty: TypeDecl): Try[Array[Byte]] =
     Using.Manager { use => 
       val out = use(ByteArrayOutputStream())
-      val w: IonWriter = use(IonBinaryWriterBuilder.standard().build(out))
+      val w = use(IonBinaryWriterBuilder.standard().build(out))
       writeType(ty, w)
       w.finish()
       out.toByteArray
     }
+
+  override def writeToStream(ty: TypeDecl, os: OutputStream): Try[Unit] = {
+    Using.Manager { use =>
+      val w = use(IonTextWriterBuilder.pretty().build(os))
+      writeType(ty, w)
+      w.finish()
+    }
+  }
   
   private def writeType(ty: TypeDecl, w: IonWriter): Unit = {
     w.stepIn(IonType.STRUCT)

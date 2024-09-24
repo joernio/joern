@@ -1,8 +1,9 @@
 package io.shiftleft.semanticcpg.typeinfo
 
-import java.io.ByteArrayOutputStream
+import java.io.OutputStream
 import scala.util.Try
 
-trait Writer:
-  def writeToBinaryFormat(ty: TypeDecl): Try[Array[Byte]]
-  def writeToString(ty: TypeDecl): Try[String]
+trait Writer[InputTy]:
+  def writeToBinaryFormat(ty: InputTy): Try[Array[Byte]]
+  def writeToString(ty: InputTy): Try[String]
+  def writeToStream(ty: InputTy, os: OutputStream): Try[Unit]
