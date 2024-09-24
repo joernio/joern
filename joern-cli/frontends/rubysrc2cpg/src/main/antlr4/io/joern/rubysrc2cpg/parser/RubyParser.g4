@@ -229,16 +229,19 @@ argumentWithParentheses
 argumentList
     :   blockArgument
         # blockArgumentArgumentList
-    |   splattingArgument (COMMA NL* splatArgList)? (COMMA NL* blockArgument)? (COMMA NL* operatorExpressionList)?
-        # splattingArgumentArgumentList
-    |   operatorExpressionList (COMMA NL* associationList)? (COMMA NL* splattingArgument)? (COMMA NL* blockArgument)?
-        # operatorsArgumentList
-    |   associationList (COMMA NL* splattingArgument)? (COMMA NL* blockArgument)?
-        # associationsArgumentList
+    |   argumentListItem (COMMA NL* argumentListItem)*
+        # argumentListItemArgumentList
     |   LBRACK indexingArgumentList? RBRACK
         # arrayArgumentList
     |   command
         # singleCommandArgumentList
+    ;
+
+argumentListItem
+    :   splattingArgument
+    |   operatorExpressionList
+    |   associationList
+    |   blockArgument
     ;
 
 splatArgList

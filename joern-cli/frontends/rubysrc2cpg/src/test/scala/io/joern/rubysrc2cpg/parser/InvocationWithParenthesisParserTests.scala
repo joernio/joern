@@ -27,11 +27,11 @@ class InvocationWithParenthesisParserTests extends RubyParserFixture with Matche
     test("foo(:region)")
     test("foo(:region,)", "foo(:region)")
     test("foo(if: true)")
-    test("foo(1, 2=>3)", "foo(1,2=> 3)")
-    test("foo(1, 2=>3,)", "foo(1,2=> 3)")
+    test("foo(1, 2=>3)", "foo(2=> 3,1)")
+    test("foo(1, 2=>3,)", "foo(2=> 3,1)")
     test("foo(1=> 2,)", "foo(1=> 2)")
-    test("foo(1, kw: 2, **3)", "foo(1,kw: 2,**3)")
-    test("foo(b, **1)", "foo(b,**1)")
+    test("foo(1, kw: 2, **3)", "foo(**3,kw: 2,1)")
+    test("foo(b, **1)", "foo(**1,b)")
     test("""foo(b: if :c
         |1
         |else
@@ -52,7 +52,7 @@ class InvocationWithParenthesisParserTests extends RubyParserFixture with Matche
       "foo.bar"
     )
 
-    test("f(1, kw:2, **3)", "f(1,kw: 2,**3)")
+    test("f(1, kw:2, **3)", "f(**3,kw: 2,1)")
   }
 
   "Method with comments" in {
