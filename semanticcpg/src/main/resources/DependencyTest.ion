@@ -1,0 +1,11 @@
+[
+  {
+    NAME: "ion-java",
+    CONSTRAINT: "1.11.9"
+  },
+  {
+    NAME: "java.lang",
+    CONSTRAINT: "*",
+    LANG: "java",
+  }
+]
