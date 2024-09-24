@@ -37,7 +37,7 @@ trait SemanticTestCpg { this: TestCpg =>
       val context = new LayerCreatorContext(this)
       val options = new OssDataFlowOptions(extraFlows = _extraFlows)
       new OssDataFlow(options).run(context)
-      this.context = EngineContext(FullNameSemantics.fromList(DefaultSemantics().elements ++ _extraFlows))
+      this.context = EngineContext(DefaultSemantics().plus(_extraFlows))
     }
   }
 
@@ -47,8 +47,6 @@ trait SemanticTestCpg { this: TestCpg =>
   */
 trait SemanticCpgTestFixture(extraFlows: List[FlowSemantic] = List.empty) {
 
-  implicit val context: EngineContext = EngineContext(
-    FullNameSemantics.fromList(DefaultSemantics().elements ++ extraFlows)
-  )
+  implicit val context: EngineContext = EngineContext(DefaultSemantics().plus(extraFlows))
 
 }
