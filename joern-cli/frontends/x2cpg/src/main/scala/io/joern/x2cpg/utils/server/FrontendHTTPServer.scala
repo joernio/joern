@@ -10,11 +10,12 @@ import org.slf4j.LoggerFactory
 
 import java.util.concurrent.Executors
 import java.util.concurrent.ExecutorService
+import scala.annotation.tailrec
+import scala.jdk.CollectionConverters.ListHasAsScala
 import scala.util.Failure
+import scala.util.Random
 import scala.util.Success
 import scala.util.Try
-
-import scala.jdk.CollectionConverters.ListHasAsScala
 
 /** Companion object for `FrontendHTTPServer` providing default executor configurations. */
 object FrontendHTTPServer {
@@ -127,29 +128,57 @@ trait FrontendHTTPServer[T <: X2CpgConfig[T], X <: X2CpgFrontend[T]] { this: X2C
     }
   }
 
-  /** Starts the HTTP server with the provided configuration.
-    *
-    * This method initializes the `underlyingServer` with the specified configuration, sets the executor, and adds the
-    * appropriate contexts using the `FrontendHTTPHandler`. It then starts the server and logs a debug message
-    * indicating the server's host and port. Additionally, a shutdown hook is added to ensure that the server is
-    * properly stopped when the application is terminated.
-    *
-    * @param config
-    *   The frontend configuration object of type `T` that contains the server settings, such as the server port.
-    */
-  def startup(config: T): Unit = {
-    underlyingServer = Some(new HTTPServer(config.serverPort))
-    val host = underlyingServer.get.getVirtualHost(null)
-    underlyingServer.get.setExecutor(executor)
-    host.addContexts(new FrontendHTTPHandler(underlyingServer.get))
+  private def randomPort(): Int = {
+    val random = new Random()
+    1000 + random.nextInt(9000)
+  }
+
+  private def internalServerStart(): Try[Int] = {
+    val port = randomPort()
     try {
-      underlyingServer.get.start()
-      logger.debug(s"Server started on ${Option(host.getName).getOrElse("localhost")}:${config.serverPort}.")
+      val server = new HTTPServer(port)
+      val host   = server.getVirtualHost(null)
+      host.addContexts(new FrontendHTTPHandler(server))
+      server.setExecutor(executor)
+      server.start()
+      underlyingServer = Some(server)
+      Success(port)
+    } catch {
+      case exception: Throwable => Failure(exception)
     } finally {
       Runtime.getRuntime.addShutdownHook(new Thread(() => {
         stop()
       }))
     }
+  }
+
+  private def retryUntilSuccess[F](f: () => Try[F], maxAttempts: Int = 10): F = {
+    @tailrec
+    def attempt(remainingAttempts: Int): F = {
+      f() match {
+        case Success(port) =>
+          println(s"FrontendHTTPServer started on port $port")
+          port
+        case Failure(_) if remainingAttempts > 1 =>
+          attempt(remainingAttempts - 1)
+        case Failure(exception) =>
+          throw exception
+      }
+    }
+    attempt(maxAttempts)
+  }
+
+  /** Starts the HTTP server.
+    *
+    * This method initializes the `underlyingServer`, sets the executor, and adds the appropriate contexts using the
+    * `FrontendHTTPHandler`. It then starts the server and prints the server's port to stdout. Additionally, a shutdown
+    * hook is added to ensure that the server is properly stopped when the application is terminated.
+    *
+    * @return
+    *   The port this server is bound to which is chosen randomly until success
+    */
+  def startup(): Int = {
+    retryUntilSuccess(internalServerStart)
   }
 
 }

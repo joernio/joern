@@ -23,7 +23,6 @@ trait X2CpgConfig[R <: X2CpgConfig[R]] {
   var inputPath: String   = X2CpgConfig.defaultInputPath
   var outputPath: String  = X2CpgConfig.defaultOutputPath
   var serverMode: Boolean = false
-  var serverPort: Int     = 9000
 
   def withInputPath(inputPath: String): R = {
     this.inputPath = Paths.get(inputPath).toAbsolutePath.normalize().toString
@@ -37,11 +36,6 @@ trait X2CpgConfig[R <: X2CpgConfig[R]] {
 
   def withServerMode(x: Boolean): R = {
     this.serverMode = x
-    this.asInstanceOf[R]
-  }
-
-  def withServerPort(x: Int): R = {
-    this.serverPort = x
     this.asInstanceOf[R]
   }
 
@@ -88,7 +82,6 @@ trait X2CpgConfig[R <: X2CpgConfig[R]] {
     this.inputPath = config.inputPath
     this.outputPath = config.outputPath
     this.serverMode = config.serverMode
-    this.serverPort = config.serverPort
     this.defaultIgnoredFilesRegex = config.defaultIgnoredFilesRegex
     this.ignoredFilesRegex = config.ignoredFilesRegex
     this.ignoredFiles = config.ignoredFiles
@@ -233,12 +226,12 @@ trait X2CpgFrontend[T <: X2CpgConfig[T]] {
     * exists, it is the file name of the resulting CPG. Otherwise, the CPG is held in memory.
     */
   def createCpg(inputName: String, outputName: Option[String])(implicit defaultConfig: T): Try[Cpg] = {
-    val defaultWithInputPath = defaultConfig.withInputPath(inputName).asInstanceOf[T]
+    val defaultWithInputPath = defaultConfig.withInputPath(inputName)
     val config = if (!outputName.contains(X2CpgConfig.defaultOutputPath)) {
       if (outputName.isEmpty) {
-        defaultWithInputPath.withOutputPath("").asInstanceOf[T]
+        defaultWithInputPath.withOutputPath("")
       } else {
-        defaultWithInputPath.withOutputPath(outputName.get).asInstanceOf[T]
+        defaultWithInputPath.withOutputPath(outputName.get)
       }
     } else {
       defaultWithInputPath
@@ -309,10 +302,6 @@ object X2Cpg {
         .action((_, c) => c.withServerMode(true))
         .hidden()
         .text("runs this frontend in server mode (disabled by default)"),
-      opt[Int]("server-port")
-        .action((x, c) => c.withServerPort(x))
-        .hidden()
-        .text(s"Port on which to expose the frontend server (default: $X2CpgConfig.defaultServerPort"),
       opt[Unit]("disable-file-content")
         .action((_, c) => c.withDisableFileContent(true))
         .hidden()
@@ -397,7 +386,7 @@ object X2Cpg {
   }
 
   /** Strips surrounding quotation characters from a string.
-    * @param s
+    * @param str
     *   the target string.
     * @return
     *   the stripped string.
