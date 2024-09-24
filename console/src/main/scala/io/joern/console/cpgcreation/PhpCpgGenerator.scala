@@ -35,6 +35,15 @@ case class PhpCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGe
   override def isJvmBased = true
 
   override def applyPostProcessingPasses(cpg: Cpg): Cpg = {
+    val cmdLineArgs = config.cmdLineParams.toSeq
+    typeRecoveryConfig = XTypeRecoveryConfig.parse(cmdLineArgs)
+    setKnownTypesConfig = OParser
+      .parse(XTypeStubsParser.parserOptions2, cmdLineArgs, XTypeStubsParserConfig())
+      .getOrElse(
+        throw new RuntimeException(
+          s"unable to parse XTypeStubsParserConfig from commandline arguments ${cmdLineArgs.mkString(" ")}"
+        )
+      )
     php2cpg.postProcessingPasses(cpg, typeRecoveryConfig, setKnownTypesConfig).foreach(_.createAndApply())
     cpg
   }
