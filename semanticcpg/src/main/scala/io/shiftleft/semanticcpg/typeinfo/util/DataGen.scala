@@ -5,6 +5,17 @@ import io.shiftleft.semanticcpg.typeinfo.{Member, Method, TypeDecl}
 import scala.util.Random
 
 object DataGen {
+  def genTypeDecl(): TypeDecl =
+    TypeDecl(
+      fullName = genFqName(),
+      name = genName(),
+      typeParams = genList(Random.nextInt(2), genTypeParam),
+      methods = genList(Random.nextInt(100), genMethod),
+      members = genList(Random.nextInt(100), genMember),
+      inherits = genList(Random.nextInt(6), genFqName)
+    )
+  def genTypeDecls(n: Int): Array[TypeDecl] = Array.fill(n){genTypeDecl()}
+    
   private def shouldGenVersion(): Boolean = Random.nextInt(10) <= 6
   private def genLength(bnd: Int): Int = Random.nextInt(bnd)
   private def genName(): String = Random.nextString(8 + genLength(18))
@@ -18,14 +29,4 @@ object DataGen {
     Member(name = genName(), typeFullName = genFqName())
   private def genMethod(): Method =
     Method(name = genName(), fullName = genFqName(), signature = genSignature())
-  def genTypeDecl(): TypeDecl =
-    TypeDecl(
-      fullName = genFqName(),
-      name = genName(),
-      typeParams = genList(Random.nextInt(2), genTypeParam),
-      methods = genList(Random.nextInt(100), genMethod),
-      members = genList(Random.nextInt(100), genMember),
-      inherits = genList(Random.nextInt(6), genFqName)
-    )
-  def genTypeDecls(n: Int): Array[TypeDecl] = Array.fill(n){genTypeDecl()}
 }

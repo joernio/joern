@@ -9,15 +9,33 @@ import scala.annotation.tailrec
 // Or
 // And and Or are left assoc
 sealed trait Constraint
-case class Eq(str: Version) extends Constraint
-case class Any() extends Constraint
-case class Gt(constraint: Eq) extends Constraint
-case class Gte(constraint: Eq) extends Constraint
-case class Lt(constraint: Eq) extends Constraint
-case class Lte(constraint: Eq) extends Constraint
-case class Not(constraint: Constraint) extends Constraint
-case class And(left: Constraint, right: Constraint) extends Constraint
-case class Or(left: Constraint, right: Constraint) extends Constraint
+case class Eq(str: Version) extends Constraint {
+  override def toString: String = str.toString
+}
+case class Any() extends Constraint {
+  override def toString: String = "*"
+}
+case class Gt(constraint: Eq) extends Constraint {
+  override def toString: String = s">$constraint"
+}
+case class Gte(constraint: Eq) extends Constraint {
+  override def toString: String = s">=$constraint"
+}
+case class Lt(constraint: Eq) extends Constraint {
+  override def toString: String = s"<$constraint"
+}
+case class Lte(constraint: Eq) extends Constraint {
+  override def toString: String = s"<=$constraint"
+}
+case class Not(constraint: Constraint) extends Constraint {
+  override def toString: String = s"!$constraint"
+}
+case class And(left: Constraint, right: Constraint) extends Constraint {
+  override def toString: String = s"$left && $right"
+}
+case class Or(left: Constraint, right: Constraint) extends Constraint {
+  override def toString: String = s"$left || $right"
+}
 
 object Constraint {
   def parse(ctr: String): Constraint = 

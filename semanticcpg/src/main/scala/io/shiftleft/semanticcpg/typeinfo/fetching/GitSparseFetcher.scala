@@ -5,17 +5,13 @@ import io.shiftleft.semanticcpg.typeinfo.dependencies.Dependency
 import io.shiftleft.semanticcpg.typeinfo.{LanguageFrontend, PackageIdentifier, Version}
 
 import java.io.File
+import java.nio.file.{Files, Path}
 import java.lang.ProcessBuilder
-import java.nio.file.Path
 import scala.util.{Failure, Success, Try}
 
 class GitSparseFetcher(repoUrl: String = "git@github.com:flandini/typeinfo.git", gitRef: String = "main") extends AutoCloseable {
-  // TODO: constructor?
-  private var firstDownload = true
-  private val tmpDir = File.createTempFile("typeinfo-", "")
-  if (!tmpDir.mkdir())
-    throw new RuntimeException(s"Couldn't create temp dir: $tmpDir")
-  private val tmpDirPath = tmpDir.toPath
+  private var firstDownload: Boolean = true
+  private lazy val tmpDir: Path = Files.createTempDirectory("typeinfo-")
 
   def getVersions(pid: PackageIdentifier): Try[List[String]] = {
     val depsDir = buildPackageDepsDirPath(pid)
@@ -39,41 +35,38 @@ class GitSparseFetcher(repoUrl: String = "git@github.com:flandini/typeinfo.git",
   }
 
   def close(): Unit = {
-    if (!tmpDir.delete())
+    if (!Files.deleteIfExists(tmpDir))
       throw new RuntimeException("Couldn't delete temp dir")
   }
   
   // "data/" + "java/" + "java/io/File" -> "/tmp/typeinfo-1237asd/data/java/java/io/File"
   private def buildFileSystemPath(serverPath: String): String =
-    tmpDirPath.resolve(serverPath).toString
+    tmpDir.resolve(serverPath).toString
     
   private def getDepsCsvFileName(version: Version): String = version.toFetcherStr + ".csv"
 
   // "java.io.File" -> "data/" + "java/" + "java/io/File" + "/deps"
   private def buildPackageDepsDirPath(pid: PackageIdentifier): String =
-    String.join(File.pathSeparator, buildPackageDirPath(pid), "deps")
+    String.join(File.pathSeparator, buildPackagePath(pid), "deps")
 
-  // "java.io.File" -> "data/" + "java/" + "java/io/File"
-  private def buildPackageDirPath(pid: PackageIdentifier): String =
-    String.join(File.pathSeparator, "data", PackageIdentifier.langToString(pid.lang), pid.toFetcherStr)
+  /** e.g., "java.io.File" -> "data/" + "java/" + "java/io/File" */
+  private def buildPackagePath(pid: PackageIdentifier): String =
+    String.join(File.pathSeparator, "data", pid.lang.toString, pid.name)
     
   private def buildPackagePath(pid: PackageIdentifier, version: Version): String =
-    String.join(File.pathSeparator, buildPackageDirPath(pid), version.toFetcherStr)
-
-  private def initGitRepo(): Try[Unit] =
-    for {
-      exitCode <- sparseClone()
-      _ <- checkExitCode(exitCode, "git sparse clone returned non-zero")
-      exitCode <- setCone()
-      _ <- checkExitCode(exitCode, "git sparse-checkout set --cone returned non-zero")
-    } yield ()
-    
+    String.join(File.pathSeparator, buildPackagePath(pid), version.toFetcherStr)
+  
   // First time download needs to `git sparse-checkout set /path/to/dir && git checkout $gitRef`; this checkout does
   // the download on 1st time.
   // Afterwards, `git sparse-checkout add /path/to/dir` adds to the sparse-checkout filter *and* downloads.
   private def downloadPath(pathStr: String): Try[Unit] =
     if (firstDownload) {
+      firstDownload = false
       for {
+        exitCode <- sparseClone()
+        _ <- checkExitCode(exitCode, "git sparse clone returned non-zero")
+        exitCode <- setCone()
+        _ <- checkExitCode(exitCode, "git sparse-checkout set --cone returned non-zero")
         exitCode <- setFirstPathFilter(pathStr)
         _ <- checkExitCode(exitCode, s"git sparse-checkout set $pathStr returned non-zero")
         exitCode <- doInitCheckout()
@@ -87,21 +80,19 @@ class GitSparseFetcher(repoUrl: String = "git@github.com:flandini/typeinfo.git",
     }
   
   private def sparseClone(): Try[Int] =
-    Try(makeProcess(tmpDirPath, "git", "clone", "--filter=blob:none", "--depth=1", "--no-checkout", repoUrl, tmpDirPath.toString).start().waitFor())
+    Try(makeProcess(tmpDir, "git", "clone", "--filter=blob:none", "--depth=1", "--no-checkout", repoUrl, tmpDir.toString).start().waitFor())
     
   private def setCone(): Try[Int] =
-    Try(makeProcess(tmpDirPath, "git", "sparse-checkout", "set", "--cone").start().waitFor())
+    Try(makeProcess(tmpDir, "git", "sparse-checkout", "set", "--cone").start().waitFor())
     
-  private def setFirstPathFilter(pathStr: String): Try[Int] = {
-    firstDownload = false
-    Try(makeProcess(tmpDirPath, "git", "sparse-checkout", "set", pathStr).start().waitFor())
-  }
+  private def setFirstPathFilter(pathStr: String): Try[Int] =
+    Try(makeProcess(tmpDir, "git", "sparse-checkout", "set", pathStr).start().waitFor())
 
   private def doInitCheckout(): Try[Int] =
-    Try(makeProcess(tmpDirPath, "git", "checkout", gitRef).start().waitFor())
+    Try(makeProcess(tmpDir, "git", "checkout", gitRef).start().waitFor())
 
   private def addPathFilterAndDownload(pathStr: String): Try[Int] =
-    Try(makeProcess(tmpDirPath, "git", "sparse-checkout", "add", pathStr).start().waitFor())
+    Try(makeProcess(tmpDir, "git", "sparse-checkout", "add", pathStr).start().waitFor())
   
   private def stripCsvSuffix(fileName: String): String = 
     if (fileName.endsWith(".csv")) 
