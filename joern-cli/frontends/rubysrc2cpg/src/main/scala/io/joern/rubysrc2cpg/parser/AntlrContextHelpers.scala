@@ -146,7 +146,7 @@ object AntlrContextHelpers {
     def parameters: List[ParserRuleContext] = Option(ctx.blockParameterList()).map(_.parameters).getOrElse(List())
   }
 
-  sealed implicit class CommandArgumentContextHelper(ctx: CommandArgumentContext) {
+  sealed implicit class CommandArgumentContextelper(ctx: CommandArgumentContext) {
     def arguments: List[ParserRuleContext] = ctx match {
       case ctx: CommandCommandArgumentListContext         => ctx.command() :: Nil
       case ctx: CommandArgumentCommandArgumentListContext => ctx.commandArgumentList().elements
@@ -159,6 +159,15 @@ object AntlrContextHelpers {
       val primaryValues = Option(ctx.primaryValueList()).map(_.primaryValue().asScala.toList).getOrElse(List())
       val associations  = Option(ctx.associationList()).map(_.association().asScala.toList).getOrElse(List())
       primaryValues ++ associations
+    }
+  }
+
+  sealed implicit class SimpleCommandArgumentListContextHelper(ctx: SimpleCommandArgumentListContext) {
+    def arguments: List[ParserRuleContext] = {
+      val primaryValues = Option(ctx.primaryValueList()).map(_.primaryValue().asScala.toList).getOrElse(List())
+      val associations  = Option(ctx.associationList()).map(_.association().asScala.toList).getOrElse(List())
+      val argumentLists = Option(ctx.argumentList()).map(_.elements).getOrElse(List())
+      primaryValues ++ associations ++ argumentLists
     }
   }
 
@@ -332,6 +341,8 @@ object AntlrContextHelpers {
         Option(ctx.blockArgument()).toList
       case ctx: ArrayArgumentListContext =>
         Option(ctx.indexingArgumentList()).toList
+      case ctx: SingleCommandArgumentListContext =>
+        Option(ctx.command()).toList
       case ctx =>
         logger.warn(s"ArgumentListContextHelper - Unsupported element type ${ctx.getClass.getSimpleName}")
         List()

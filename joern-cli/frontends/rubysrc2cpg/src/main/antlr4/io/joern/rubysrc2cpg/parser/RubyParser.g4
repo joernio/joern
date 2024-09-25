@@ -143,8 +143,14 @@ command
         # commandTernaryOperatorExpression
     |   primary NL? (AMPDOT | DOT | COLON2) methodName commandArgument
         # memberAccessCommand
-    |   methodIdentifier commandArgument
+    |   methodIdentifier simpleCommandArgumentList
         # simpleCommand
+    ;
+
+simpleCommandArgumentList
+    :   associationList
+    |   primaryValueList (COMMA NL* associationList)?
+    |   argumentList
     ;
 
 commandArgument
@@ -243,7 +249,7 @@ argumentListItem
 commandArgumentList
     :   associationList
     |   primaryValueList (COMMA NL* associationList)?
-    ;    
+    ;
 
 primaryValueList
     :   primaryValue (COMMA NL* primaryValue)*
