@@ -46,6 +46,22 @@ class SingleAssignmentTests extends RubyCode2CpgFixture(withPostProcessing = tru
     val sink = cpg.call.name("puts").l
     sink.reachableByFlows(src).l.size shouldBe 2
   }
+  
+  "flow through **=" in {
+    val cpg = code(
+      """
+        |x = 5
+        |call1(x**=2)
+        |call2(x) 
+        |""".stripMargin)
+    
+    val source = cpg.literal("2").l
+    val call1 = cpg.call("call1")
+    val call2 = cpg.call("call2")
+    
+    call1.reachableBy(source).l shouldBe source
+    call2.reachableBy(source).l shouldBe source
+  }
 
   "Data flow through grouping expression" in {
     val cpg = code("""
