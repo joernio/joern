@@ -725,8 +725,9 @@ class RubyNodeCreator(
   }
 
   override def visitSuperWithParentheses(ctx: RubyParser.SuperWithParenthesesContext): RubyExpression = {
-    val block     = Option(ctx.block()).map(visit)
-    val arguments = Option(ctx.argumentWithParentheses()).map(_.arguments.map(visit)).getOrElse(Nil)
+    val block = Option(ctx.block()).map(visit)
+    val arguments =
+      Option(ctx.argumentWithParentheses()).map(_.arguments.map(visit).sortBy(x => (x.line, x.column))).getOrElse(Nil)
     visitSuperCall(ctx, arguments, block)
   }
 
@@ -796,12 +797,16 @@ class RubyNodeCreator(
   override def visitMethodCallWithParenthesesExpression(
     ctx: RubyParser.MethodCallWithParenthesesExpressionContext
   ): RubyExpression = {
-    val callArgs = ctx.argumentWithParentheses().arguments.map {
-      case x: BlockArgumentContext =>
-        if Option(x.operatorExpression()).isDefined then visit(x)
-        else SimpleIdentifier()(ctx.toTextSpan.spanStart(procParamGen.current.value))
-      case x => visit(x)
-    }
+    val callArgs = ctx
+      .argumentWithParentheses()
+      .arguments
+      .map {
+        case x: BlockArgumentContext =>
+          if Option(x.operatorExpression()).isDefined then visit(x)
+          else SimpleIdentifier()(ctx.toTextSpan.spanStart(procParamGen.current.value))
+        case x => visit(x)
+      }
+      .sortBy(x => (x.line, x.column))
 
     val args =
       if (ctx.argumentWithParentheses().isArrayArgumentList) then
@@ -816,7 +821,11 @@ class RubyNodeCreator(
   }
 
   override def visitYieldExpression(ctx: RubyParser.YieldExpressionContext): RubyExpression = {
-    val arguments = Option(ctx.argumentWithParentheses()).iterator.flatMap(_.arguments).map(visit).toList
+    val arguments = Option(ctx.argumentWithParentheses()).iterator
+      .flatMap(_.arguments)
+      .map(visit)
+      .toList
+      .sortBy(x => (x.line, x.column))
     YieldExpr(arguments)(ctx.toTextSpan)
   }
 
@@ -922,7 +931,10 @@ class RubyNodeCreator(
         if (!hasArguments) {
           return SimpleObjectInstantiation(target, List.empty)(ctx.toTextSpan)
         } else {
-          return SimpleObjectInstantiation(target, ctx.argumentWithParentheses().arguments.map(visit))(ctx.toTextSpan)
+          return SimpleObjectInstantiation(
+            target,
+            ctx.argumentWithParentheses().arguments.map(visit).sortBy(x => (x.line, x.column))
+          )(ctx.toTextSpan)
         }
       } else {
         if (!hasArguments) {
@@ -934,9 +946,8 @@ class RubyNodeCreator(
             return MemberAccess(target, ctx.op.getText, methodName)(ctx.toTextSpan)
           }
         } else {
-          return MemberCall(target, ctx.op.getText, methodName, ctx.argumentWithParentheses().arguments.map(visit))(
-            ctx.toTextSpan
-          )
+          val args = ctx.argumentWithParentheses().arguments.map(visit).sortBy(x => (x.line, x.column))
+          return MemberCall(target, ctx.op.getText, methodName, args)(ctx.toTextSpan)
         }
       }
     }
@@ -951,16 +962,19 @@ class RubyNodeCreator(
         if (!hasArguments) {
           return ObjectInstantiationWithBlock(target, List.empty, block)(ctx.toTextSpan)
         } else {
-          return ObjectInstantiationWithBlock(target, ctx.argumentWithParentheses().arguments.map(visit), block)(
-            ctx.toTextSpan
-          )
+          val args = ctx.argumentWithParentheses().arguments.map(visit).sortBy(x => (x.line, x.column))
+          return ObjectInstantiationWithBlock(target, args, block)(ctx.toTextSpan)
         }
       } else {
         return MemberCallWithBlock(
           target,
           ctx.op.getText,
           methodName,
-          Option(ctx.argumentWithParentheses()).map(_.arguments).getOrElse(List()).map(visit),
+          Option(ctx.argumentWithParentheses())
+            .map(_.arguments)
+            .getOrElse(List())
+            .map(visit)
+            .sortBy(x => (x.line, x.column)),
           visit(ctx.block()).asInstanceOf[Block]
         )(ctx.toTextSpan)
       }

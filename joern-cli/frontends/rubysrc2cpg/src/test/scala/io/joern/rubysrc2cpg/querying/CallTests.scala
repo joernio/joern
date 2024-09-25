@@ -496,4 +496,36 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
       case xs => fail(s"Expected 5 arguments for call, got [${xs.code.mkString(",")}]")
     }
   }
+
+  "Multiple different arg types in a call" in {
+    val cpg = code("""
+        |params.require(:issue).permit(
+        |      *issue_params_attributes,
+        |      sentry_issue_attributes: [:sentry_issue_identifier],
+        |      *some_other_splat,
+        |      "1234",
+        |      10
+        |    )
+        |
+        |""".stripMargin)
+
+    inside(cpg.call.name("permit").argument.l) {
+      case _ :: (issueSplat: Call) :: (sentryAssoc: Call) :: (someOtherSplat: Call) :: (strLiteral: Literal) :: (numericLiteral: Literal) :: Nil =>
+        issueSplat.code shouldBe "*issue_params_attributes"
+        issueSplat.methodFullName shouldBe RubyOperators.splat
+
+        sentryAssoc.code shouldBe "[:sentry_issue_identifier]"
+        sentryAssoc.methodFullName shouldBe Operators.arrayInitializer
+
+        someOtherSplat.code shouldBe "*some_other_splat"
+        someOtherSplat.methodFullName shouldBe RubyOperators.splat
+
+        strLiteral.code shouldBe "\"1234\""
+        strLiteral.typeFullName shouldBe RubyDefines.getBuiltInType(RubyDefines.String)
+
+        numericLiteral.code shouldBe "10"
+        numericLiteral.typeFullName shouldBe RubyDefines.getBuiltInType(RubyDefines.Integer)
+      case xs => fail(s"Expected 6 parameters for call, got [${xs.code.mkString(", ")}]")
+    }
+  }
 }

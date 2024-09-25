@@ -310,19 +310,24 @@ object AntlrContextHelpers {
 
   sealed implicit class ArgumentListContextHelper(ctx: ArgumentListContext) {
     def elements: List[ParserRuleContext] = ctx match
-      case ctx: OperatorsArgumentListContext =>
-        val operatorExpressions = ctx.operatorExpressionList().operatorExpression().asScala.toList
-        val associations        = Option(ctx.associationList()).fold(List())(_.association().asScala)
-        val splatting           = Option(ctx.splattingArgument()).toList
-        val block               = Option(ctx.blockArgument()).toList
-        operatorExpressions ++ associations ++ splatting ++ block
-      case ctx: AssociationsArgumentListContext =>
-        Option(ctx.associationList()).map(_.associations).getOrElse(List.empty)
-      case ctx: SplattingArgumentArgumentListContext =>
-        val splattingArgList = Option(ctx.splatArgList).map(_.splattingArgument().asScala.toList).toList.flatten
-        Option(ctx.splattingArgument()).toList ++ splattingArgList ++ Option(ctx.blockArgument()).toList ++ Option(
-          ctx.operatorExpressionList()
-        ).toList
+      case ctx: ArgumentListItemArgumentListContext =>
+        val splattingArgs = Option(
+          ctx.argumentListItem().asScala.flatMap(x => Option(x.splattingArgument()).toList)
+        ).toList.flatten
+        val assocList = Option(
+          ctx.argumentListItem().asScala.flatMap(x => Option(x.associationList()).toList)
+        ).toList.flatten
+        val blockArgList = Option(
+          ctx.argumentListItem().asScala.flatMap(x => Option(x.blockArgument()).toList)
+        ).toList.flatten
+
+        val operatorExpressionArgList = Option(
+          ctx.argumentListItem.asScala
+            .flatMap(x => Option(x.operatorExpressionList()).map(_.operatorExpression.asScala))
+            .flatten
+        ).toList.flatten
+
+        splattingArgs ++ assocList ++ blockArgList ++ operatorExpressionArgList
       case ctx: BlockArgumentArgumentListContext =>
         Option(ctx.blockArgument()).toList
       case ctx: ArrayArgumentListContext =>
