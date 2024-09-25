@@ -249,9 +249,10 @@ splatArgList
     ;
 
 commandArgumentList
-    :   associationList
+    :   argumentList
+    |   associationList
     |   primaryValueList (COMMA NL* associationList)?
-    ;    
+    ;
 
 primaryValueList
     :   primaryValue (COMMA NL* primaryValue)*

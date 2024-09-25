@@ -158,7 +158,8 @@ object AntlrContextHelpers {
     def elements: List[ParserRuleContext] = {
       val primaryValues = Option(ctx.primaryValueList()).map(_.primaryValue().asScala.toList).getOrElse(List())
       val associations  = Option(ctx.associationList()).map(_.association().asScala.toList).getOrElse(List())
-      primaryValues ++ associations
+      val argumentLists = Option(ctx.argumentList()).map(_.elements).getOrElse(List())
+      primaryValues ++ associations ++ argumentLists
     }
   }
 
