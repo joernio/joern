@@ -64,7 +64,6 @@ object DefaultSemantics {
     //  - see https://github.com/ShiftLeftSecurity/codepropertygraph/pull/1630
 
     F("<operators>.assignmentExponentiation", List((2, 1), (1, 1))),
-    F("<operators>.assignmentModulo", List((2, 1), (1, 1))),
     F("<operators>.assignmentShiftLeft", List((2, 1), (1, 1))),
     F("<operators>.assignmentLogicalShiftRight", List((2, 1), (1, 1))),
     F("<operators>.assignmentArithmeticShiftRight", List((2, 1), (1, 1))),
