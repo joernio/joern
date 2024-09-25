@@ -681,8 +681,8 @@ class RubyNodeCreator(
   }
 
   override def visitSimpleCommand(ctx: RubyParser.SimpleCommandContext): RubyExpression = {
-    if (Option(ctx.commandArgument()).map(_.getText).exists(_.startsWith("::"))) {
-      val memberName = ctx.commandArgument().getText.stripPrefix("::")
+    if (Option(ctx.simpleCommandArgumentList()).map(_.getText).exists(_.startsWith("::"))) {
+      val memberName = ctx.simpleCommandArgumentList().getText.stripPrefix("::")
       if (memberName.headOption.exists(_.isUpper)) { // Constant accesses are upper-case 1st letter
         MemberAccess(visit(ctx.methodIdentifier()), "::", memberName)(ctx.toTextSpan)
       } else {
@@ -690,7 +690,7 @@ class RubyNodeCreator(
       }
     } else if (!ctx.methodIdentifier().isAttrDeclaration) {
       val identifierCtx = ctx.methodIdentifier()
-      val arguments     = ctx.commandArgument().arguments.map(visit)
+      val arguments     = ctx.simpleCommandArgumentList().arguments.map(visit)
       (identifierCtx.getText, arguments) match {
         case (requireLike, List(argument)) if ImportsPass.ImportCallNames.contains(requireLike) =>
           val isRelative = requireLike == "require_relative" || requireLike == "require_all"
@@ -713,14 +713,14 @@ class RubyNodeCreator(
           val lhsIdentifier = SimpleIdentifier(None)(identifierCtx.toTextSpan.spanStart(idAssign.stripSuffix("=")))
           val argNode = arguments match {
             case arg :: Nil => arg
-            case xs         => ArrayLiteral(xs)(ctx.commandArgument().toTextSpan)
+            case xs         => ArrayLiteral(xs)(ctx.simpleCommandArgumentList().toTextSpan)
           }
           SingleAssignment(lhsIdentifier, "=", argNode)(ctx.toTextSpan)
         case _ =>
           SimpleCall(visit(identifierCtx), arguments)(ctx.toTextSpan)
       }
     } else {
-      FieldsDeclaration(ctx.commandArgument().arguments.map(visit))(ctx.toTextSpan)
+      FieldsDeclaration(ctx.simpleCommandArgumentList().arguments.map(visit))(ctx.toTextSpan)
     }
   }
 
