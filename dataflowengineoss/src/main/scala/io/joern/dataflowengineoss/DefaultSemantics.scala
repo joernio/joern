@@ -68,7 +68,6 @@ object DefaultSemantics {
     F("<operators>.assignmentLogicalShiftRight", List((2, 1), (1, 1))),
     F("<operators>.assignmentArithmeticShiftRight", List((2, 1), (1, 1))),
     F("<operators>.assignmentAnd", List((2, 1), (1, 1))),
-    F("<operators>.assignmentOr", List((2, 1), (1, 1))),
 
     // Language specific operators
     PTF("<operator>.tupleLiteral"),
