@@ -839,6 +839,27 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     )
   }
 
+  "flow from literal to an external method's named argument using two same-methodFullNamed semantics" in {
+    val cpg = code("""
+        |import bar
+        |x = 'foobar'
+        |bar.foo(Baz=x)
+        |""".stripMargin)
+      .withExtraFlows(
+        List(
+          // Equivalent to a single `FlowSemantic` entry with both FlowMappings
+          FlowSemantic("bar.py:<module>.foo", List(PassThroughMapping)),
+          FlowSemantic("bar.py:<module>.foo", List(FlowMapping(0, 0)))
+        )
+      )
+
+    val source = cpg.literal("'foobar'")
+    val sink   = cpg.call("foo").argument.argumentName("Baz")
+    sink.reachableByFlows(source).map(flowToResultPairs).l shouldBe List(
+      List(("x = 'foobar'", 3), ("bar.foo(Baz = x)", 4))
+    )
+  }
+
 }
 
 class RegexDefinedFlowsDataFlowTests
