@@ -280,25 +280,29 @@ class ParserProfiler {
           }
         )
 
-        Files.writeString(
-          summaryPath,
-          f"""Summary for project at '${root.getFileName}'
-            |Total Parsed Files: ${fileCost.size}
-            |Total Parse Time (CPU): ${totalParseTime * conversionFactor}%.2f ($timeUnit)
-            |Avg. Parse Time Per File: ${avgParseTime * conversionFactor}%.2f ($timeUnit)
-            |${mostExpensiveFileStr.getOrElse("")}
-            |
-            |Most Expensive Rules By Time in Prediction
-            |==========================================
-            |${rulesByTimeTable.render}
-            |
-            |Most Expensive Rules By Total SLL & LL Lookaheads
-            |=================================================
-            |${rulesByLookaheadTable.render}
-            |""".stripMargin,
-          StandardOpenOption.TRUNCATE_EXISTING,
-          StandardOpenOption.CREATE
-        )
+        if (Files.exists(summaryPath.getParent)) {
+          Files.writeString(
+            summaryPath,
+            f"""Summary for project at '${root.getFileName}'
+               |Total Parsed Files: ${fileCost.size}
+               |Total Parse Time (CPU): ${totalParseTime * conversionFactor}%.2f ($timeUnit)
+               |Avg. Parse Time Per File: ${avgParseTime * conversionFactor}%.2f ($timeUnit)
+               |${mostExpensiveFileStr.getOrElse("")}
+               |
+               |Most Expensive Rules By Time in Prediction
+               |==========================================
+               |${rulesByTimeTable.render}
+               |
+               |Most Expensive Rules By Total SLL & LL Lookaheads
+               |=================================================
+               |${rulesByLookaheadTable.render}
+               |""".stripMargin,
+            StandardOpenOption.TRUNCATE_EXISTING,
+            StandardOpenOption.CREATE
+          )
+        } else {
+          logger.warn(s"${summaryPath.getParent} does not exist. Skipping profile summary dump.")
+        }
       case None => logger.warn("At least one file must be parsed for profiling information to be dumped")
     }
   }
