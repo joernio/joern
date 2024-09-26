@@ -4,6 +4,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{AllowedTypeDeclarat
 import io.joern.rubysrc2cpg.passes.{Defines, GlobalTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 
+import java.util.Objects.hash
 import scala.annotation.tailrec
 
 object RubyIntermediateAst {
@@ -333,6 +334,16 @@ object RubyIntermediateAst {
       extends RubyExpression(span)
       with RubyIdentifier
       with SingletonMethodIdentifier {
+
+    override def hashCode(): Int = hash(typeFullName, span)
+
+    override def equals(obj: Any): Boolean = {
+      obj match {
+        case x: SimpleIdentifier => x.typeFullName == typeFullName && x.span == span
+        case _                   => false
+      }
+    }
+
     override def toString: String = s"SimpleIdentifier(${span.text}, $typeFullName)"
   }
 

@@ -644,7 +644,8 @@ class RubyNodeCreator(
 
   override def visitPackingLeftHandSide(ctx: RubyParser.PackingLeftHandSideContext): RubyExpression = {
     val splatNode = Option(ctx.leftHandSide()) match {
-      case Some(lhs) => SplattingRubyNode(visit(lhs))(ctx.toTextSpan)
+      case Some(lhs) =>
+        SplattingRubyNode(visit(lhs))(ctx.toTextSpan)
       case None =>
         SplattingRubyNode(MandatoryParameter("_")(ctx.toTextSpan.spanStart("_")))(ctx.toTextSpan.spanStart("*_"))
     }
@@ -669,10 +670,14 @@ class RubyNodeCreator(
     SplattingRubyNode(visit(ctx.operatorExpression()))(ctx.toTextSpan)
   }
 
+//  override def visitQualifiedLeftHandSideBaseExpression(ctx: RubyParser.QualifiedLeftHandSideBaseExpressionContext): RubyExpression = {
+//    MemberCall(visit(ctx.definedMethodNameOrSymbol), "::", ctx.CONSTANT_IDENTIFIER.getText, Nil)(ctx.toTextSpan)
+//  }
+
   override def visitAttributeAssignmentExpression(
     ctx: RubyParser.AttributeAssignmentExpressionContext
   ): RubyExpression = {
-    val lhs                = visit(ctx.primaryValue())
+    val lhs                = visit(ctx.leftHandSide())
     val op                 = ctx.op.getText
     val assignmentOperator = ctx.assignmentOperator().getText
     val memberName         = ctx.methodName.getText
@@ -993,7 +998,7 @@ class RubyNodeCreator(
   }
 
   override def visitBracketAssignmentExpression(ctx: RubyParser.BracketAssignmentExpressionContext): RubyExpression = {
-    val lhsBase = visit(ctx.primaryValue())
+    val lhsBase = visit(ctx.leftHandSide())
     val lhsArgs = Option(ctx.indexingArgumentList()).map(_.arguments).getOrElse(List()).map(visit)
 
     val lhs = IndexAccess(lhsBase, lhsArgs)(
@@ -1584,7 +1589,7 @@ class RubyNodeCreator(
 
   override def visitVariableLeftHandSide(ctx: RubyParser.VariableLeftHandSideContext): RubyExpression = {
     if (Option(ctx.primary()).isEmpty) {
-      MandatoryParameter(ctx.toTextSpan.text)(ctx.toTextSpan)
+      SimpleIdentifier()(ctx.toTextSpan)
     } else {
       logger.warn(s"Variable LHS without primary expression is not handled: '${ctx.toTextSpan}'")
       Unknown()(ctx.toTextSpan)

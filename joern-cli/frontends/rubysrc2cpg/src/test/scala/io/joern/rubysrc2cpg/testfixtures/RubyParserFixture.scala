@@ -13,11 +13,11 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path}
 import scala.util.{Failure, Success, Using}
 
-class RubyParserFixture
+class RubyParserFixture(antlrDebugging: Boolean = false)
     extends RubyFrontend(
       withDownloadDependencies = false,
       disableFileContent = true,
-      antlrDebugging = false,
+      antlrDebugging = antlrDebugging,
       antlrProfiling = false
     )
     with TestCodeWriter

@@ -10,7 +10,16 @@ import io.joern.rubysrc2cpg.passes.Defines.{Initialize, Main, TypeDeclBody}
 import io.joern.rubysrc2cpg.passes.GlobalTypes
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 
-class ClassTests extends RubyCode2CpgFixture {
+class ClassTests extends RubyCode2CpgFixture(antlrProfiling = true) {
+
+  "test perf" in {
+    val cpg = code("""
+        |class Message < ApplicationRecord
+        |  NUMBER_OF_PERMITTED_ATTACHMENTS = 15
+        |end
+        |""".stripMargin)
+    cpg.method.size
+  }
 
   "`class C ; end` is represented by an empty TYPE_DECL node" in {
     val cpg = code("""

@@ -591,7 +591,7 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   }
 
   override def visitAttributeAssignmentExpression(ctx: RubyParser.AttributeAssignmentExpressionContext): String = {
-    val lhs          = visit(ctx.primaryValue())
+    val lhs          = visit(ctx.leftHandSide())
     val op           = ctx.op.getText
     val assignmentOp = ctx.assignmentOperator.getText
     val memberName   = ctx.methodName().getText
@@ -874,7 +874,7 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
       defaultResult()
     }
 
-    val lhsBase = visit(ctx.primaryValue())
+    val lhsBase = visit(ctx.leftHandSide())
     val lhsArgs = Option(ctx.indexingArgumentList()).map(_.arguments).getOrElse(List()).map(visit)
     val rhs     = visit(ctx.operatorExpression())
 

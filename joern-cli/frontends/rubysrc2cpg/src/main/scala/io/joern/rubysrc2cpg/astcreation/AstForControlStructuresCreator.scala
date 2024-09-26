@@ -25,7 +25,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   WhenClause,
   WhileExpression
 }
-import io.joern.x2cpg.{Ast, ValidationMode}
+import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
 
@@ -106,9 +106,15 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
   }
 
   private def astForForExpression(node: ForExpression): Ast = {
-    val forEachNode  = controlStructureNode(node, ControlStructureTypes.FOR, code(node))
-    val doBodyAst    = astsForStatement(node.doBlock)
-    val iteratorNode = astForExpression(node.forVariable)
+    // fixme: Use x2cpg ForFor AST creator
+    val forEachNode = controlStructureNode(node, ControlStructureTypes.FOR, code(node))
+    val doBodyAst   = astsForStatement(node.doBlock)
+    val iteratorNode = node.forVariable match {
+      case variable: SimpleIdentifier =>
+        val forVarName = variable.text
+        Ast(identifierNode(variable, forVarName, code(variable), Defines.Any))
+      case _ => astForExpression(node.forVariable)
+    }
     val iterableNode = astForExpression(node.iterableVariable)
     Ast(forEachNode).withChild(iteratorNode).withChild(iterableNode).withChildren(doBodyAst)
   }

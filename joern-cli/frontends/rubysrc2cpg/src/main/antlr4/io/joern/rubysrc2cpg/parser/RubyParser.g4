@@ -58,12 +58,18 @@ multipleAssignmentStatement
     |   multipleLeftHandSideExceptPacking EQ NL* (methodInvocationWithoutParentheses | operatorExpression)
     ;
 
+leftHandSideBaseExpression
+    : variable
+    | literal
+    | methodCallsWithParentheses
+    ;
+
 leftHandSide
     :   variable (EQ primary)?
         # variableLeftHandSide
-    |   primary LBRACK indexingArgumentList? RBRACK
+    |   leftHandSideBaseExpression LBRACK indexingArgumentList? RBRACK
         # indexingLeftHandSide
-    |   primary (DOT | COLON2) (LOCAL_VARIABLE_IDENTIFIER | CONSTANT_IDENTIFIER)
+    |   leftHandSideBaseExpression (DOT | COLON2) (LOCAL_VARIABLE_IDENTIFIER | CONSTANT_IDENTIFIER)
         # memberAccessLeftHandSide
     |   COLON2 CONSTANT_IDENTIFIER
         # qualifiedLeftHandSide
@@ -301,93 +307,22 @@ primary
         # primaryValuePrimary
     ;
 
-hashLiteral
-    : LCURLY NL* (associationList COMMA?)? NL* RCURLY
-    ;
-
 primaryValue
     :   // Assignment expressions
-        lhs=variable assignmentOperator NL* rhs=operatorExpression
-        # localVariableAssignmentExpression
-    |   primaryValue op=(DOT | COLON2) methodName assignmentOperator NL* operatorExpression
-        # attributeAssignmentExpression
-    |   COLON2 CONSTANT_IDENTIFIER assignmentOperator NL* operatorExpression
-        # constantAssignmentExpression
-    |   primaryValue LBRACK indexingArgumentList? RBRACK assignmentOperator NL* operatorExpression
-        # bracketAssignmentExpression
-    |   primaryValue assignmentOperator NL* operatorExpression RESCUE operatorExpression
-        # assignmentWithRescue
+        assignmentExpression
+        # primaryAssignmentExpression
         
-        // Definitions
-    |   CLASS classPath (LT commandOrPrimaryValueClass)? (SEMI | NL)? bodyStatement END
-        # classDefinition
-    |   CLASS LT2 commandOrPrimaryValueClass (SEMI | NL) bodyStatement END
-        # singletonClassDefinition
-    |   MODULE classPath bodyStatement END
-        # moduleDefinition
-    |   DEF definedMethodName methodParameterPart bodyStatement END
-        # methodDefinition
-    |   DEF singletonObject op=(DOT | COLON2) definedMethodName methodParameterPart bodyStatement END
-        # singletonMethodDefinition
-    |   DEF definedMethodName (LPAREN parameterList? RPAREN)? EQ NL* statement
-        # endlessMethodDefinition
-    |   MINUSGT lambdaExpressionParameterList? block
-        # lambdaExpression
+    |   typeOrProcedureDefinition
+        # primaryDefinition
 
-        // Control structures
-    |   IF NL* expressionOrCommand thenClause elsifClause* elseClause? END
-        # ifExpression
-    |   UNLESS NL* expressionOrCommand thenClause elseClause? END
-        # unlessExpression
-    |   UNTIL NL* expressionOrCommand doClause END
-        # untilExpression
-    |   YIELD argumentWithParentheses?
-        # yieldExpression
-    |   BEGIN bodyStatement END
-        # beginEndExpression
-    |   CASE NL* expressionOrCommand (SEMI | NL)* whenClause+ elseClause? END
-        # caseWithExpression
-    |   CASE (SEMI | NL)* whenClause+ elseClause? END
-        # caseWithoutExpression
-    |   WHILE NL* expressionOrCommand doClause END
-        # whileExpression
-    |   FOR NL* forVariable IN NL* commandOrPrimaryValue doClause END
-        # forExpression
+    |   controlStructure
+        # primaryControlStructure
 
     |   methodCallsWithParentheses
         # methodCallWithParentheses
 
-        // Literals
-    |   LBRACK NL* bracketedArrayElementList? NL* RBRACK
-        # bracketedArrayLiteral
-    |   QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_START quotedNonExpandedArrayElementList? QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END
-        # quotedNonExpandedStringArrayLiteral
-    |   QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_START quotedNonExpandedArrayElementList? QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_END
-        # quotedNonExpandedSymbolArrayLiteral
-    |   QUOTED_EXPANDED_STRING_ARRAY_LITERAL_START quotedExpandedArrayElementList? QUOTED_EXPANDED_STRING_ARRAY_LITERAL_END
-        # quotedExpandedStringArrayLiteral
-    |   QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_START quotedExpandedArrayElementList? QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_END
-        # quotedExpandedSymbolArrayLiteral
-    |   hashLiteral
-        # primaryValueHashLiteral
-    |   sign=(PLUS | MINUS)? unsignedNumericLiteral
-        # numericLiteral
-    |   singleQuotedString singleOrDoubleQuotedString*
-        # singleQuotedStringExpression
-    |   doubleQuotedString singleOrDoubleQuotedString*
-        # doubleQuotedStringExpression
-    |   QUOTED_NON_EXPANDED_STRING_LITERAL_START NON_EXPANDED_LITERAL_CHARACTER_SEQUENCE? QUOTED_NON_EXPANDED_STRING_LITERAL_END
-        # quotedNonExpandedStringLiteral
-    |   QUOTED_EXPANDED_STRING_LITERAL_START quotedExpandedLiteralStringContent* QUOTED_EXPANDED_STRING_LITERAL_END
-        # quotedExpandedStringLiteral
-    |   QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_START quotedExpandedLiteralStringContent* QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_END
-        # quotedExpandedExternalCommandLiteral
-    |   symbol
-        # symbolExpression
-    |   REGULAR_EXPRESSION_START regexpLiteralContent* REGULAR_EXPRESSION_END
-        # regularExpressionLiteral
-    |   QUOTED_EXPANDED_REGULAR_EXPRESSION_START quotedExpandedLiteralStringContent* QUOTED_EXPANDED_REGULAR_EXPRESSION_END
-        # quotedExpandedRegularExpressionLiteral
+    |   literal
+        # primaryLiteral
     
     |   LPAREN compoundStatement RPAREN
         # groupingStatement
@@ -431,6 +366,106 @@ primaryValue
         # beginlessRangeExpression
     |   hereDoc
         # hereDocs
+    ;
+
+assignmentExpression
+    :   // Assignment expressions
+        lhs=variable assignmentOperator NL* rhs=operatorExpression
+        # localVariableAssignmentExpression
+    |   leftHandSide op=(DOT | COLON2) methodName assignmentOperator NL* operatorExpression
+        # attributeAssignmentExpression
+    |   COLON2 CONSTANT_IDENTIFIER assignmentOperator NL* operatorExpression
+        # constantAssignmentExpression
+    |   leftHandSide LBRACK indexingArgumentList? RBRACK assignmentOperator NL* operatorExpression
+        # bracketAssignmentExpression
+    |   leftHandSide assignmentOperator NL* operatorExpression RESCUE operatorExpression
+        # assignmentWithRescue
+    ;
+
+
+controlStructure
+    :   IF NL* expressionOrCommand thenClause elsifClause* elseClause? END
+        # ifExpression
+    |   UNLESS NL* expressionOrCommand thenClause elseClause? END
+        # unlessExpression
+    |   UNTIL NL* expressionOrCommand doClause END
+        # untilExpression
+    |   YIELD argumentWithParentheses?
+        # yieldExpression
+    |   BEGIN bodyStatement END
+        # beginEndExpression
+    |   CASE NL* expressionOrCommand (SEMI | NL)* whenClause+ elseClause? END
+        # caseWithExpression
+    |   CASE (SEMI | NL)* whenClause+ elseClause? END
+        # caseWithoutExpression
+    |   WHILE NL* expressionOrCommand doClause END
+        # whileExpression
+    |   FOR NL* forVariable IN NL* commandOrPrimaryValue doClause END
+        # forExpression
+    ;
+
+typeOrProcedureDefinition
+    :   typeDefinition
+        # classOrModuleDefinition
+    |   procedureDefinition
+        # methodOrFunctionDefinition
+    ;
+
+typeDefinition
+    :   CLASS classPath (LT commandOrPrimaryValueClass)? (SEMI | NL)? bodyStatement END
+        # classDefinition
+    |   CLASS LT2 commandOrPrimaryValueClass (SEMI | NL) bodyStatement END
+        # singletonClassDefinition
+    |   MODULE classPath bodyStatement END
+        # moduleDefinition
+    ;
+
+procedureDefinition
+    :   DEF definedMethodName methodParameterPart bodyStatement END
+        # methodDefinition
+    |   DEF singletonObject op=(DOT | COLON2) definedMethodName methodParameterPart bodyStatement END
+        # singletonMethodDefinition
+    |   DEF definedMethodName (LPAREN parameterList? RPAREN)? EQ NL* statement
+        # endlessMethodDefinition
+    |   MINUSGT lambdaExpressionParameterList? block
+        # lambdaExpression
+    ;
+
+literal
+    :   LBRACK NL* bracketedArrayElementList? NL* RBRACK
+        # bracketedArrayLiteral
+    |   QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_START quotedNonExpandedArrayElementList? QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END
+        # quotedNonExpandedStringArrayLiteral
+    |   QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_START quotedNonExpandedArrayElementList? QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_END
+        # quotedNonExpandedSymbolArrayLiteral
+    |   QUOTED_EXPANDED_STRING_ARRAY_LITERAL_START quotedExpandedArrayElementList? QUOTED_EXPANDED_STRING_ARRAY_LITERAL_END
+        # quotedExpandedStringArrayLiteral
+    |   QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_START quotedExpandedArrayElementList? QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_END
+        # quotedExpandedSymbolArrayLiteral
+    |   hashLiteral
+        # primaryValueHashLiteral
+    |   sign=(PLUS | MINUS)? unsignedNumericLiteral
+        # numericLiteral
+    |   singleQuotedString singleOrDoubleQuotedString*
+        # singleQuotedStringExpression
+    |   doubleQuotedString singleOrDoubleQuotedString*
+        # doubleQuotedStringExpression
+    |   QUOTED_NON_EXPANDED_STRING_LITERAL_START NON_EXPANDED_LITERAL_CHARACTER_SEQUENCE? QUOTED_NON_EXPANDED_STRING_LITERAL_END
+        # quotedNonExpandedStringLiteral
+    |   QUOTED_EXPANDED_STRING_LITERAL_START quotedExpandedLiteralStringContent* QUOTED_EXPANDED_STRING_LITERAL_END
+        # quotedExpandedStringLiteral
+    |   QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_START quotedExpandedLiteralStringContent* QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_END
+        # quotedExpandedExternalCommandLiteral
+    |   symbol
+        # symbolExpression
+    |   REGULAR_EXPRESSION_START regexpLiteralContent* REGULAR_EXPRESSION_END
+        # regularExpressionLiteral
+    |   QUOTED_EXPANDED_REGULAR_EXPRESSION_START quotedExpandedLiteralStringContent* QUOTED_EXPANDED_REGULAR_EXPRESSION_END
+        # quotedExpandedRegularExpressionLiteral
+    ;
+
+hashLiteral
+    : LCURLY NL* (associationList COMMA?)? NL* RCURLY
     ;
 
 lambdaExpressionParameterList
