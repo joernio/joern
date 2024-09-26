@@ -2,12 +2,7 @@ name := "console"
 
 enablePlugins(JavaAppPackaging)
 
-dependsOn(
-  Projects.semanticcpg,
-  Projects.macros,
-  Projects.rubysrc2cpg,
-  Projects.x2cpg % "compile->compile;test->test"
-)
+dependsOn(Projects.semanticcpg, Projects.macros, Projects.rubysrc2cpg, Projects.x2cpg % "compile->compile;test->test")
 
 libraryDependencies ++= Seq(
   "io.shiftleft"         %% "codepropertygraph"    % Versions.cpg,

@@ -6,10 +6,10 @@ object DownloadHelper {
   val LocalStorageDir = Paths.get(".local/source-urls")
 
   /** Downloads the remote file from the given url if either
-    * - the localFile is not available, 
-    * - or the url is different from the previously downloaded file
-    * - or we don't have the original url from the previously downloaded file
-    * We store the information about the previously downloaded urls and the localFile in `.local`
+    *   - the localFile is not available,
+    *   - or the url is different from the previously downloaded file
+    *   - or we don't have the original url from the previously downloaded file We store the information about the
+    *     previously downloaded urls and the localFile in `.local`
     */
   def ensureIsAvailable(url: String, localFile: File): Unit = {
     if (!localFile.exists() || Option(url) != previousUrlForLocalFile(localFile)) {

@@ -131,14 +131,17 @@ generateScaladocs := {
 
 Universal / packageBin / mappings ++= sbt.Path.directory(new File("joern-cli/src/main/resources/scripts"))
 
-lazy val removeModuleInfoFromJars = taskKey[Unit]("remove module-info.class from dependency jars - a hacky workaround for a scala3 compiler bug https://github.com/scala/scala3/issues/20421")
+lazy val removeModuleInfoFromJars = taskKey[Unit](
+  "remove module-info.class from dependency jars - a hacky workaround for a scala3 compiler bug https://github.com/scala/scala3/issues/20421"
+)
 removeModuleInfoFromJars := {
   import java.nio.file.{Files, FileSystems}
   val logger = streams.value.log
-  val libDir = (Universal/stagingDirectory).value / "lib"
+  val libDir = (Universal / stagingDirectory).value / "lib"
 
   // remove all `/module-info.class` from all jars
-  Files.walk(libDir.toPath)
+  Files
+    .walk(libDir.toPath)
     .filter(_.toString.endsWith(".jar"))
     .forEach { jar =>
       val zipFs = FileSystems.newFileSystem(jar)
@@ -151,6 +154,6 @@ removeModuleInfoFromJars := {
       zipFs.close()
     }
 }
-removeModuleInfoFromJars := removeModuleInfoFromJars.triggeredBy(Universal/stage).value
+removeModuleInfoFromJars := removeModuleInfoFromJars.triggeredBy(Universal / stage).value
 
 maintainer := "fabs@shiftleft.io"
