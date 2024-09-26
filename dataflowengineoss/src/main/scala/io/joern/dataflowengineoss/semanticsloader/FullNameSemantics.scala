@@ -3,26 +3,36 @@ package io.joern.dataflowengineoss.semanticsloader
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Method
 import io.shiftleft.semanticcpg.language.*
+import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
 object FullNameSemantics {
 
-  def fromList(elements: List[FlowSemantic]): FullNameSemantics = {
-    new FullNameSemantics(
-      mutable.Map.newBuilder
-        .addAll(elements.map { e =>
-          e.methodFullName -> e
-        })
-        .result()
-    )
-  }
+  private val logger = LoggerFactory.getLogger(getClass)
+
+  /** Builds FullNameSemantics given their constituent FlowSemantics. Same methodFullNamed FlowSemantic elements are
+    * combined into a single one with both of their FlowMappings.
+    */
+  def fromList(elements: List[FlowSemantic]): FullNameSemantics = FullNameSemantics(
+    elements.groupBy(_.methodFullName).map { (fullName, semantics) =>
+      val howMany = semantics.length
+      if (howMany > 1) {
+        logger.warn(s"$howMany competing FlowSemantics found for $fullName, merging them")
+      }
+      fullName -> FlowSemantic(
+        methodFullName = fullName,
+        mappings = semantics.flatMap(_.mappings),
+        regex = semantics.exists(_.regex)
+      )
+    }
+  )
 
   def empty: FullNameSemantics = fromList(List())
 
 }
 
-class FullNameSemantics private (methodToSemantic: mutable.Map[String, FlowSemantic]) extends Semantics {
+class FullNameSemantics private (methodToSemantic: Map[String, FlowSemantic]) extends Semantics {
 
   /** The map below keeps a mapping between results of a regex and the regex string it matches. e.g.
     *
