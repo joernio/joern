@@ -140,9 +140,10 @@ object PhpParser {
   }
 
   private def defaultPhpParserBin: String = {
-    val dir      = Paths.get(this.getClass.getProtectionDomain.getCodeSource.getLocation.toURI).toAbsolutePath.toString
-    val fixedDir = new java.io.File(dir.substring(0, dir.indexOf("php2cpg"))).toString
-    Paths.get(fixedDir, "php2cpg", "bin", "php-parser", "php-parser.php").toAbsolutePath.toString
+    val packagePath = Paths.get(this.getClass.getProtectionDomain.getCodeSource.getLocation.toURI).toAbsolutePath.toString
+    ExternalCommand
+      .executableDir(packagePath)
+      .resolve("php-parser/php-parser.php")
   }
 
   private def configOverrideOrDefaultPath(
