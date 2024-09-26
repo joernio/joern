@@ -56,11 +56,11 @@ trait ExternalCommand {
 
 object ExternalCommand extends ExternalCommand {
 
-  /** Finds the absolute path to the executable directory (e.g. `/path/to/javasrc2cpg/bin`).
-   * Based on the package path of a loaded classfile based on some (potentially flakey?) filename heuristics.
-   * Context: we want to be able to invoke the x2cpg frontends from any directory, not just their install directory,
-   * and then invoke other executables, like astgen, php-parser et al. 
-   * */
+  /** Finds the absolute path to the executable directory (e.g. `/path/to/javasrc2cpg/bin`). Based on the package path
+    * of a loaded classfile based on some (potentially flakey?) filename heuristics. Context: we want to be able to
+    * invoke the x2cpg frontends from any directory, not just their install directory, and then invoke other
+    * executables, like astgen, php-parser et al.
+    */
   def executableDir(packagePath: String): Path = {
     val dir        = packagePath
     val indexOfLib = dir.lastIndexOf("lib")
