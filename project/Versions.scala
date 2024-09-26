@@ -4,7 +4,7 @@ object Versions {
   // Dont upgrade antlr to 4.10 or above since those versions require java 11 or higher which
   // causes problems upstreams.
   val antlr                  = "4.7.2"
-  val cask                   = "0.9.2"
+  val cask                   = "0.9.4"
   val catsCore               = "2.12.0"
   val catsEffect             = "3.5.4"
   val cfr                    = "0.152"
