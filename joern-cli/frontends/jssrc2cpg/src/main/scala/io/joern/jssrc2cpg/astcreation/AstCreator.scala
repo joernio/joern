@@ -1,24 +1,31 @@
 package io.joern.jssrc2cpg.astcreation
 
 import io.joern.jssrc2cpg.Config
-import io.joern.jssrc2cpg.datastructures.{MethodScope, Scope}
+import io.joern.jssrc2cpg.datastructures.MethodScope
+import io.joern.jssrc2cpg.datastructures.Scope
 import io.joern.jssrc2cpg.parser.BabelAst.*
 import io.joern.jssrc2cpg.parser.BabelJsonParser.ParseResult
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
+import io.joern.x2cpg.Ast
+import io.joern.x2cpg.AstCreatorBase
+import io.joern.x2cpg.ValidationMode
+import io.joern.x2cpg.AstNodeBuilder as X2CpgAstNodeBuilder
+import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
-import io.joern.x2cpg.utils.NodeBuilders.{newMethodReturnNode, newModifierNode}
-import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode, AstNodeBuilder as X2CpgAstNodeBuilder}
-import io.joern.x2cpg.datastructures.Global
-import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, ModifierTypes, NodeTypes}
+import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
+import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
+import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
+import io.shiftleft.codepropertygraph.generated.ModifierTypes
+import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
 import io.shiftleft.codepropertygraph.generated.nodes.NewFile
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeRef
-import org.slf4j.{Logger, LoggerFactory}
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import ujson.Value
 
 import scala.collection.mutable
@@ -73,28 +80,13 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
   }
 
   private def createProgramMethod(): Ast = {
-    val path            = parserResult.filename
-    val astNodeInfo     = createBabelNodeInfo(parserResult.json("ast"))
-    val lineNumber      = astNodeInfo.lineNumber
-    val columnNumber    = astNodeInfo.columnNumber
-    val lineNumberEnd   = astNodeInfo.lineNumberEnd
-    val columnNumberEnd = astNodeInfo.columnNumberEnd
-    val name            = Defines.Program
-    val fullName        = s"$path:$name"
+    val path        = parserResult.filename
+    val astNodeInfo = createBabelNodeInfo(parserResult.json("ast"))
+    val name        = Defines.Program
+    val fullName    = s"$path:$name"
 
     val programMethod =
-      NewMethod()
-        .order(1)
-        .name(name)
-        .code(name)
-        .fullName(fullName)
-        .filename(path)
-        .lineNumber(lineNumber)
-        .lineNumberEnd(lineNumberEnd)
-        .columnNumber(columnNumber)
-        .columnNumberEnd(columnNumberEnd)
-        .astParentType(NodeTypes.TYPE_DECL)
-        .astParentFullName(fullName)
+      methodNode(astNodeInfo, name, name, fullName, None, path, Some(NodeTypes.TYPE_DECL), Some(fullName)).order(1)
 
     val functionTypeAndTypeDeclAst =
       createFunctionTypeAndTypeDeclAst(astNodeInfo, programMethod, methodAstParentStack.head, name, fullName, path)
