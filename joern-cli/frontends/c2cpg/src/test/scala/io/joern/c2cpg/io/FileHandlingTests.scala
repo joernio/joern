@@ -3,6 +3,8 @@ package io.joern.c2cpg.io
 import better.files.File
 import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.testfixtures.CDefaultTestCpg
+import io.joern.dataflowengineoss.DefaultSemantics
+import io.joern.dataflowengineoss.semanticsloader.NoSemantics
 import io.joern.x2cpg.testfixtures.Code2CpgFixture
 import io.shiftleft.semanticcpg.language.*
 
@@ -36,7 +38,7 @@ class FileHandlingTests
         }
       }
         .withOssDataflow(false)
-        .withExtraFlows(List.empty)
+        .withSemantics(DefaultSemantics())
         .withPostProcessingPasses(false)
     ) {
 

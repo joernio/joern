@@ -3,7 +3,7 @@ package io.joern.dataflowengineoss.testfixtures
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
-import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, FullNameSemantics}
+import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, FullNameSemantics, Semantics}
 import io.joern.x2cpg.testfixtures.TestCpg
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
@@ -12,7 +12,7 @@ import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 trait SemanticTestCpg { this: TestCpg =>
 
   protected var _withOssDataflow                = false
-  protected var _extraFlows                     = List.empty[FlowSemantic]
+  protected var _semantics: Semantics           = DefaultSemantics()
   protected implicit var context: EngineContext = EngineContext()
 
   /** Allows one to enable data-flow analysis capabilities to the TestCpg.
@@ -22,10 +22,9 @@ trait SemanticTestCpg { this: TestCpg =>
     this
   }
 
-  /** Allows one to add additional semantics to the engine context during PDG creation.
-    */
-  def withExtraFlows(value: List[FlowSemantic] = List.empty): this.type = {
-    _extraFlows = value
+  /** Allows one to provide custom semantics to the TestCpg. */
+  def withSemantics(value: Semantics): this.type = {
+    _semantics = value
     this
   }
 
@@ -35,7 +34,7 @@ trait SemanticTestCpg { this: TestCpg =>
   def applyOssDataFlow(): Unit = {
     if (_withOssDataflow) {
       val context  = new LayerCreatorContext(this)
-      val options  = new OssDataFlowOptions(extraFlows = _extraFlows)
+      val options  = new OssDataFlowOptions(semantics = _semantics)
       val dataflow = new OssDataFlow(options)
       dataflow.run(context)
       this.context = EngineContext(dataflow.semantics)
@@ -46,8 +45,8 @@ trait SemanticTestCpg { this: TestCpg =>
 
 /** Allows the tests to make use of the data-flow engine and any additional semantics.
   */
-trait SemanticCpgTestFixture(extraFlows: List[FlowSemantic] = List.empty) {
+trait SemanticCpgTestFixture(semantics: Semantics = DefaultSemantics()) {
 
-  implicit val context: EngineContext = EngineContext(DefaultSemantics().plus(extraFlows))
+  implicit val context: EngineContext = EngineContext(semantics)
 
 }

@@ -1,7 +1,8 @@
 package io.joern.go2cpg.testfixtures
 
 import better.files.File
-import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
+import io.joern.dataflowengineoss.DefaultSemantics
+import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
 import io.joern.dataflowengineoss.testfixtures.{SemanticCpgTestFixture, SemanticTestCpg}
 import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.model.GoModHelper
@@ -49,11 +50,11 @@ class DefaultTestCpgWithGo(val fileSuffix: String) extends DefaultTestCpg with S
 class GoCodeToCpgSuite(
   fileSuffix: String = ".go",
   withOssDataflow: Boolean = false,
-  extraFlows: List[FlowSemantic] = List.empty
+  semantics: Semantics = DefaultSemantics()
 ) extends Code2CpgFixture(() =>
-      new DefaultTestCpgWithGo(fileSuffix).withOssDataflow(withOssDataflow).withExtraFlows(extraFlows)
+      new DefaultTestCpgWithGo(fileSuffix).withOssDataflow(withOssDataflow).withSemantics(semantics)
     )
-    with SemanticCpgTestFixture(extraFlows)
+    with SemanticCpgTestFixture(semantics)
     with Inside {
   implicit val resolver: ICallResolver = NoResolve
 

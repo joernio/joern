@@ -1,15 +1,18 @@
 package io.joern.jimple2cpg.querying.dataflow
 
+import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.language.*
 import io.joern.jimple2cpg.testfixtures.{JimpleDataFlowCodeToCpgSuite, JimpleDataflowTestCpg}
 import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
 import io.joern.x2cpg.Defines
 
 class SemanticTests
-    extends JimpleDataFlowCodeToCpgSuite(extraFlows =
-      List(
-        FlowSemantic.from("Test.sanitize:java.lang.String(java.lang.String)", List((0, 0), (1, 1))),
-        FlowSemantic.from("java.nio.file.Paths.get:.*\\(java.lang.String,.*\\)", List.empty, regex = true)
+    extends JimpleDataFlowCodeToCpgSuite(semantics =
+      DefaultSemantics().plus(
+        List(
+          FlowSemantic.from("Test.sanitize:java.lang.String(java.lang.String)", List((0, 0), (1, 1))),
+          FlowSemantic.from("java.nio.file.Paths.get:.*\\(java.lang.String,.*\\)", List.empty, regex = true)
+        )
       )
     ) {
 

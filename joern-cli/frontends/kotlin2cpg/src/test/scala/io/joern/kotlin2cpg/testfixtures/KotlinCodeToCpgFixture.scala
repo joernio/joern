@@ -1,8 +1,9 @@
 package io.joern.kotlin2cpg.testfixtures
 
 import better.files.File as BFile
+import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.language.*
-import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
+import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
 import io.joern.dataflowengineoss.testfixtures.SemanticCpgTestFixture
 import io.joern.dataflowengineoss.testfixtures.SemanticTestCpg
 import io.joern.kotlin2cpg.Config
@@ -57,14 +58,14 @@ class KotlinCode2CpgFixture(
   withOssDataflow: Boolean = false,
   withDefaultJars: Boolean = false,
   withPostProcessing: Boolean = false,
-  extraFlows: List[FlowSemantic] = List.empty
+  semantics: Semantics = DefaultSemantics()
 ) extends Code2CpgFixture(() =>
       new KotlinTestCpg(withDefaultJars)
         .withOssDataflow(withOssDataflow)
-        .withExtraFlows(extraFlows)
+        .withSemantics(semantics)
         .withPostProcessingPasses(withPostProcessing)
     )
-    with SemanticCpgTestFixture(extraFlows) {
+    with SemanticCpgTestFixture(semantics) {
 
   protected def flowToResultPairs(path: Path): List[(String, Option[Int])] = path.resultPairs()
 }

@@ -1,8 +1,9 @@
 package io.joern.csharpsrc2cpg.testfixtures
 
 import io.joern.csharpsrc2cpg.{CSharpSrc2Cpg, Config}
+import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.language.Path
-import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
+import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
 import io.joern.dataflowengineoss.testfixtures.{SemanticCpgTestFixture, SemanticTestCpg}
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, DefaultTestCpg, LanguageFrontend}
 import io.joern.x2cpg.{ValidationMode, X2Cpg}
@@ -16,14 +17,14 @@ import java.io.File
 class CSharpCode2CpgFixture(
   withPostProcessing: Boolean = false,
   withDataFlow: Boolean = false,
-  extraFlows: List[FlowSemantic] = List.empty
+  semantics: Semantics = DefaultSemantics()
 ) extends Code2CpgFixture(() =>
       new DefaultTestCpgWithCSharp()
         .withOssDataflow(withDataFlow)
-        .withExtraFlows(extraFlows)
+        .withSemantics(semantics)
         .withPostProcessingPasses(withPostProcessing)
     )
-    with SemanticCpgTestFixture(extraFlows)
+    with SemanticCpgTestFixture(semantics)
     with Inside {
 
   implicit val resolver: ICallResolver = NoResolve
