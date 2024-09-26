@@ -34,7 +34,7 @@ object Versions {
   val semverParser           = "0.0.6"
   val soot                   = "4.5.0"
   val slf4j                  = "2.0.7"
-  val log4j                  = "2.20.0"
+  val log4j                  = "2.24.0"
   val upickle                = "3.3.1"
   val zeroTurnaround         = "1.17"
 
