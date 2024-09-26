@@ -10,7 +10,7 @@ object Versions {
   val cfr                    = "0.152"
   val commonsCompress        = "1.26.2"
   val commonsIo              = "2.16.0"
-  val commonsLang            = "3.14.0"
+  val commonsLang            = "3.17.0"
   val commonsText            = "1.12.0"
   val eclipseCdt             = "8.4.0.202401242025"
   val eclipseCore            = "3.20.100"
