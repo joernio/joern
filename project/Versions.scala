@@ -8,7 +8,7 @@ object Versions {
   val catsCore               = "2.12.0"
   val catsEffect             = "3.5.4"
   val cfr                    = "0.152"
-  val commonsCompress        = "1.26.2"
+  val commonsCompress        = "1.27.1"
   val commonsIo              = "2.16.0"
   val commonsLang            = "3.14.0"
   val commonsText            = "1.12.0"
