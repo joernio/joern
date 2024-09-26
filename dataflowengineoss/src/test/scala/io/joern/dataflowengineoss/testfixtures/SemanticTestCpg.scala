@@ -34,10 +34,11 @@ trait SemanticTestCpg { this: TestCpg =>
     */
   def applyOssDataFlow(): Unit = {
     if (_withOssDataflow) {
-      val context = new LayerCreatorContext(this)
-      val options = new OssDataFlowOptions(extraFlows = _extraFlows)
-      new OssDataFlow(options).run(context)
-      this.context = EngineContext(DefaultSemantics().plus(_extraFlows))
+      val context  = new LayerCreatorContext(this)
+      val options  = new OssDataFlowOptions(extraFlows = _extraFlows)
+      val dataflow = new OssDataFlow(options)
+      dataflow.run(context)
+      this.context = EngineContext(dataflow.semantics)
     }
   }
 
