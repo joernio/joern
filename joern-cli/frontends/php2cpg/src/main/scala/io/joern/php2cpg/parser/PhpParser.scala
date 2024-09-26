@@ -145,6 +145,7 @@ object PhpParser {
     ExternalCommand
       .executableDir(packagePath)
       .resolve("php-parser/php-parser.php")
+      .toString
   }
 
   private def configOverrideOrDefaultPath(
