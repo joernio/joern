@@ -1,15 +1,24 @@
 package io.joern.rubysrc2cpg.parser
 
 import better.files.File
+import better.files.File.OpenOptions
 import org.antlr.v4.runtime.*
 import org.antlr.v4.runtime.atn.{ATN, ATNConfigSet, ProfilingATNSimulator}
 import org.antlr.v4.runtime.dfa.DFA
 import org.slf4j.LoggerFactory
+
 import java.io.FileWriter
 import java.io.File.separator
+import java.nio.file.{Files, Path, StandardOpenOption}
 import java.util
+import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
+import scala.collection.concurrent.TrieMap
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.util.{Try, Using}
+import flatgraph.help.Table
+import flatgraph.help.Table.AvailableWidthProvider
+import io.shiftleft.semanticcpg
 
 /** Summarizes the result of parsing a file.
   */
@@ -22,20 +31,26 @@ case class ParserResult(program: Try[RubyParser.ProgramContext], errors: List[St
   *   the file path to the file to be parsed.
   * @param withDebugging
   *   if set, will enable the ANTLR debugger, i.e, printing of the parse tree.
-  * @param withProfiler
-  *   if set, will enable a profiler and dump logs for each parsed file alongside it.
+  * @param maybeParserProfiler
+  *   the parser profiler used to capture profiling information.
   */
-class AntlrParser(inputDir: File, filename: String, withDebugging: Boolean = false, withProfiler: Boolean = false) {
+class AntlrParser(
+  inputDir: File,
+  filename: String,
+  withDebugging: Boolean = false,
+  maybeParserProfiler: Option[ParserProfiler] = None
+) {
 
-  private val charStream = CharStreams.fromFileName(filename)
-  private val lexer      = new RubyLexer(charStream)
-
-  private val tokenStream                                = new CommonTokenStream(RubyLexerPostProcessor(lexer))
-  val parser: RubyParser                                 = new RubyParser(tokenStream)
+  val parser: RubyParser = {
+    val charStream  = CharStreams.fromFileName(filename)
+    val lexer       = new RubyLexer(charStream)
+    val tokenStream = new CommonTokenStream(RubyLexerPostProcessor(lexer))
+    new RubyParser(tokenStream)
+  }
   private var profilerOpt: Option[ProfilingATNSimulator] = None
 
   parser.setTrace(withDebugging)
-  if (withProfiler) {
+  if (maybeParserProfiler.isDefined) {
     val profiler = new ProfilingATNSimulator(parser)
     parser.setInterpreter(profiler)
     parser.setProfile(true)
@@ -102,41 +117,20 @@ class AntlrParser(inputDir: File, filename: String, withDebugging: Boolean = fal
     })
 
     val program = Try {
-      val program = parser.program()
-
+      val parseStart = System.nanoTime()
+      val program    = parser.program()
+      val parseTime  = System.nanoTime() - parseStart
+      maybeParserProfiler.foreach(_.captureParseTime(filename, parseTime))
       // If profiling is enabled, read metrics and write accompanying file
-      profilerOpt.foreach { profiler =>
-        val logFilename = filename.replaceAll("\\.[^.]+$", "") + ".log"
-        val atn         = parser.getATN
-        Using.resource(FileWriter(logFilename)) { logFile =>
-          logFile.write("Profiling information for file: " + filename + "\n\n")
-
-          var totalTimeInPrediction = 0L
-          var totalLookaheadOps     = 0L
-
-          profiler.getDecisionInfo.foreach { decision =>
-            val decisionNumber = decision.decision
-            val ruleIndex      = atn.decisionToState.get(decisionNumber).ruleIndex
-            val ruleName       = parser.getRuleNames()(ruleIndex)
-
-            logFile.write(s"Decision $decisionNumber ($ruleName):\n")
-            logFile.write(s"  Invocations: ${decision.invocations}\n")
-            logFile.write(s"  Time (ns): ${decision.timeInPrediction}\n")
-            logFile.write(s"  SLL lookahead operations: ${decision.SLL_TotalLook}\n")
-            logFile.write(s"  LL lookahead operations: ${decision.LL_TotalLook}\n")
-
-            totalTimeInPrediction += decision.timeInPrediction
-            totalLookaheadOps += decision.SLL_TotalLook + decision.LL_TotalLook
-          }
-          logFile.write(s"Total time in prediction: $totalTimeInPrediction ns\n")
-          logFile.write(s"Total lookahead operations: $totalLookaheadOps\n")
-        }
-      }
+      profilerOpt.foreach(profiler =>
+        maybeParserProfiler.foreach(_.captureProfilerLogs(parser, inputDir.pathAsString, filename, profiler))
+      )
 
       program
     }
     ParserResult(program, errors.toList, warnings.toList)
   }
+
 }
 
 /** A re-usable parser object that clears the ANTLR DFA-cache if it determines that the memory usage is becoming large.
@@ -156,10 +150,11 @@ class ResourceManagedParser(clearLimit: Double, debug: Boolean = false, profilin
   private val runtime                                = Runtime.getRuntime
   private var maybeDecisionToDFA: Option[Array[DFA]] = None
   private var maybeAtn: Option[ATN]                  = None
+  private val profiler: Option[ParserProfiler]       = if profiling then Option(ParserProfiler()) else None
 
   def parse(inputFile: File, filename: String): Try[RubyParser.ProgramContext] = {
     val inputDir    = if inputFile.isDirectory then inputFile else inputFile.parent
-    val antlrParser = AntlrParser(inputDir, filename, debug, profiling)
+    val antlrParser = AntlrParser(inputDir, filename, debug, profiler)
     val interp      = antlrParser.parser.getInterpreter
     // We need to grab a live instance in order to get the static variables as they are protected from static access
     maybeDecisionToDFA = Option(interp.decisionToDFA)
@@ -187,4 +182,131 @@ class ResourceManagedParser(clearLimit: Double, debug: Boolean = false, profilin
   }
 
   override def close(): Unit = clearDFA()
+}
+
+class ParserProfiler {
+
+  private val logger                    = LoggerFactory.getLogger(getClass)
+  private val ruleCost                  = TrieMap.empty[String, RuleTimeCost]
+  private val fileCost                  = TrieMap.empty[String, Long]
+  private var projectRoot: Option[Path] = None
+
+  // Note: This is in a shutdown hook to guarantee output is dumped, however it is optional and can readily be
+  // replaced or dumped at the end of successful parse runs only.
+  sys.addShutdownHook {
+    dumpSummary()
+  }
+
+  /** An object to aggregate the performance cost of a rule.
+    * @param predictionTime
+    *   the total time in prediction (ns).
+    * @param lookaheads
+    *   total lookahead operations.
+    */
+  private case class RuleTimeCost(predictionTime: Long, lookaheads: Long) {
+    def +(o: RuleTimeCost): RuleTimeCost =
+      this.copy(this.predictionTime + o.predictionTime, this.lookaheads + o.lookaheads)
+  }
+
+  def captureParseTime(filename: String, nanoTime: Long): Unit =
+    fileCost.put(filename, nanoTime)
+
+  def captureProfilerLogs(
+    parser: RubyParser,
+    inputDir: String,
+    filename: String,
+    profiler: ProfilingATNSimulator
+  ): Unit = {
+    // Set project root
+    if projectRoot.isEmpty then projectRoot = Option(Path.of(inputDir))
+
+    val logFilename = filename.replaceAll("\\.[^.]+$", "") + ".log"
+    val atn         = parser.getATN
+    Using.resource(FileWriter(logFilename)) { logFile =>
+      logFile.write("Profiling information for file: " + filename + "\n\n")
+
+      var totalTimeInPrediction = 0L
+      var totalLookaheadOps     = 0L
+
+      profiler.getDecisionInfo.foreach { decision =>
+        val decisionNumber = decision.decision
+        val ruleIndex      = atn.decisionToState.get(decisionNumber).ruleIndex
+        val ruleName       = parser.getRuleNames()(ruleIndex)
+
+        logFile.write(s"Decision $decisionNumber ($ruleName):\n")
+        logFile.write(s"  Invocations: ${decision.invocations}\n")
+        logFile.write(s"  Time (ns): ${decision.timeInPrediction}\n")
+        logFile.write(s"  SLL lookahead operations: ${decision.SLL_TotalLook}\n")
+        logFile.write(s"  LL lookahead operations: ${decision.LL_TotalLook}\n")
+
+        val ruleTimeCost = RuleTimeCost(decision.timeInPrediction, decision.SLL_TotalLook + decision.LL_TotalLook)
+        totalTimeInPrediction += ruleTimeCost.predictionTime
+        totalLookaheadOps += ruleTimeCost.lookaheads
+
+        ruleCost.updateWith(ruleName) {
+          case Some(x) => Option(x + ruleTimeCost)
+          case None    => Option(ruleTimeCost)
+        }
+      }
+      logFile.write(s"Total time in prediction: $totalTimeInPrediction ns\n")
+      logFile.write(s"Total lookahead operations: $totalLookaheadOps\n")
+    }
+  }
+
+  private def dumpSummary(): Unit = {
+    projectRoot match {
+      case Some(root) =>
+        val conversionFactor                               = 1 / 1e6
+        val timeUnit                                       = "ms"
+        val summaryPath                                    = root.resolve("antlr_summary.log")
+        implicit val widthProvider: AvailableWidthProvider = semanticcpg.defaultAvailableWidthProvider
+        val totalParseTime                                 = fileCost.values.sum
+        val avgParseTime                                   = totalParseTime / fileCost.size.toDouble
+        val mostExpensiveFileStr = fileCost.toList.sortBy(_._2).reverse.headOption.map { case (name, time) =>
+          f"Most Expensive File: ${root.relativize(Path.of(name))} (${time * conversionFactor}%.2f $timeUnit)"
+        }
+
+        val columnNames = Seq("Rule Name", s"Prediction Time ($timeUnit)", "Total Lookaheads")
+        val rulesByTimeTable = Table(
+          columnNames = columnNames,
+          rows = ruleCost.toList.sortBy { case (_, timeCost) => timeCost.predictionTime }.reverse.take(10).map {
+            case (ruleName, timeCost) =>
+              Seq(ruleName, f"${timeCost.predictionTime * conversionFactor}%.2f", timeCost.lookaheads.toString)
+          }
+        )
+        val rulesByLookaheadTable = Table(
+          columnNames = columnNames,
+          rows = ruleCost.toList.sortBy { case (_, timeCost) => timeCost.lookaheads }.reverse.take(10).map {
+            case (ruleName, timeCost) =>
+              Seq(ruleName, f"${timeCost.predictionTime * conversionFactor}%.2f", timeCost.lookaheads.toString)
+          }
+        )
+
+        if (Files.exists(summaryPath.getParent)) {
+          Files.writeString(
+            summaryPath,
+            f"""Summary for project at '${root.getFileName}'
+               |Total Parsed Files: ${fileCost.size}
+               |Total Parse Time (CPU): ${totalParseTime * conversionFactor}%.2f ($timeUnit)
+               |Avg. Parse Time Per File: ${avgParseTime * conversionFactor}%.2f ($timeUnit)
+               |${mostExpensiveFileStr.getOrElse("")}
+               |
+               |Most Expensive Rules By Time in Prediction
+               |==========================================
+               |${rulesByTimeTable.render}
+               |
+               |Most Expensive Rules By Total SLL & LL Lookaheads
+               |=================================================
+               |${rulesByLookaheadTable.render}
+               |""".stripMargin,
+            StandardOpenOption.TRUNCATE_EXISTING,
+            StandardOpenOption.CREATE
+          )
+        } else {
+          logger.warn(s"${summaryPath.getParent} does not exist. Skipping profile summary dump.")
+        }
+      case None => logger.warn("At least one file must be parsed for profiling information to be dumped")
+    }
+  }
+
 }
