@@ -191,6 +191,8 @@ class ParserProfiler {
   private val fileCost                  = TrieMap.empty[String, Long]
   private var projectRoot: Option[Path] = None
 
+  // Note: This is in a shutdown hook to guarantee output is dumped, however it is optional and can readily be
+  // replaced or dumped at the end of successful parse runs only.
   sys.addShutdownHook {
     dumpSummary()
   }
