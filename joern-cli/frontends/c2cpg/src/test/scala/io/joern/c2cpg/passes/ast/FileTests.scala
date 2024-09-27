@@ -65,6 +65,51 @@ class FileTests extends C2CpgSuite {
     }
   }
 
+  "File test for single file with a header include" should {
+
+    val cpg = code(
+      """
+        |#include "fetch.h"
+        |#include "cache.h"
+        |const char *write_ref = NULL;
+        |void pull_say(const char *fmt, const char *hex {
+        |  if (get_verbosely) { fprintf(stderr, fmt, hex); }
+        |}
+        |""".stripMargin,
+      "fetch.c"
+    )
+
+    "contain the correct file nodes" in {
+      cpg.file.name.sorted.l shouldBe List("<includes>", "<unknown>", "fetch.c")
+    }
+
+  }
+
+  "File test for single file with a header include that actually exists" should {
+
+    val cpg = code(
+      """
+        |#include "fetch.h"
+        |#include "cache.h"
+        |const char *write_ref = NULL;
+        |void pull_say(const char *fmt, const char *hex {
+        |  if (get_verbosely) { fprintf(stderr, fmt, hex); }
+        |}
+        |""".stripMargin,
+      "fetch.c"
+    ).moreCode(
+      """
+        |extern const char *write_ref;
+        |""".stripMargin,
+      "fetch.h"
+    )
+
+    "contain the correct file nodes" in {
+      cpg.file.name.sorted.l shouldBe List("<includes>", "<unknown>", "fetch.c", "fetch.h")
+    }
+
+  }
+
   "File test for multiple source files and preprocessed files" should {
 
     val cpg = code("int foo() {}", "main.c")
