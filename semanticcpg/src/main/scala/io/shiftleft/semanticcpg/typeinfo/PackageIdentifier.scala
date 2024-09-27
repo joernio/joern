@@ -1,7 +1,5 @@
 package io.shiftleft.semanticcpg.typeinfo
 
-import io.shiftleft.semanticcpg.typeinfo.LanguageFrontend.Java
-
 enum LanguageFrontend {
   case Java
   override def toString: String = this match
