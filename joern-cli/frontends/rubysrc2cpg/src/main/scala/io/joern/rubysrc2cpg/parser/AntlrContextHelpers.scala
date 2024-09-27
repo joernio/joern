@@ -320,23 +320,20 @@ object AntlrContextHelpers {
   sealed implicit class ArgumentListContextHelper(ctx: ArgumentListContext) {
     def elements: List[ParserRuleContext] = ctx match
       case ctx: ArgumentListItemArgumentListContext =>
-        val splattingArgs = Option(
-          ctx.argumentListItem().asScala.flatMap(x => Option(x.splattingArgument()).toList)
-        ).toList.flatten
-        val assocList = Option(
-          ctx.argumentListItem().asScala.flatMap(x => Option(x.associationList()).toList)
-        ).toList.flatten
-        val blockArgList = Option(
-          ctx.argumentListItem().asScala.flatMap(x => Option(x.blockArgument()).toList)
-        ).toList.flatten
-
-        val operatorExpressionArgList = Option(
-          ctx.argumentListItem.asScala
-            .flatMap(x => Option(x.operatorExpressionList()).map(_.operatorExpression.asScala))
-            .flatten
-        ).toList.flatten
-
-        splattingArgs ++ assocList ++ blockArgList ++ operatorExpressionArgList
+        ctx
+          .argumentListItem()
+          .asScala
+          .flatMap { x =>
+            Option(x.splattingArgument()).toList ++
+              Option(x.associationList()).map(_.associations).getOrElse(Nil) ++
+              Option(x.blockArgument()).toList ++
+              Option(x.operatorExpressionList()).map(_.operatorExpression().asScala.toList).getOrElse(Nil)
+          }
+          .sortBy { x =>
+            val span = x.toTextSpan
+            span.line -> span.column
+          }
+          .toList
       case ctx: BlockArgumentArgumentListContext =>
         Option(ctx.blockArgument()).toList
       case ctx: ArrayArgumentListContext =>

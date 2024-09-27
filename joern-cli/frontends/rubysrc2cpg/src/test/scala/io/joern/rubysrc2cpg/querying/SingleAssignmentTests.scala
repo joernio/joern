@@ -498,9 +498,9 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     inside(cpg.call.name("render").argument.l) {
-      case _ :: (blockArg: Identifier) :: (symbolArg: Literal) :: Nil =>
-        blockArg.code shouldBe "block"
+      case _ :: (symbolArg: Literal) :: (blockArg: Identifier) :: Nil =>
         symbolArg.code shouldBe ":some_symbol"
+        blockArg.code shouldBe "block"
 
       case xs => fail(s"Expected two args, found [${xs.code.mkString(",")}]")
     }
