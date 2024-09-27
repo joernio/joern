@@ -8,7 +8,7 @@ import io.shiftleft.semanticcpg.language.*
 
 class PythonTypeHintCallLinker(cpg: Cpg) extends XTypeHintCallLinker(cpg) {
 
-  override def calls: Iterator[Call] = super.calls.nameNot("^(import).*")
+  override def calls: Iterator[Call] = super.calls.whereNot(_.isImport)
 
   override def calleeNames(c: Call): Seq[String] = super.calleeNames(c).map {
     // Python call from  a type
