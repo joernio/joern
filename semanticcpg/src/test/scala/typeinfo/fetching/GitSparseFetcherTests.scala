@@ -6,6 +6,7 @@ import org.scalatest.wordspec.AnyWordSpec
 
 import scala.util.Using
 
+/** TODO: static test repo for testing */
 class GitSparseFetcherTests extends AnyWordSpec with Matchers {
   "getVersions" should {
     "return all versions for a package" in {
