@@ -12,15 +12,15 @@ import java.nio.charset.Charset
 import scala.util.{Try, Using}
 
 object JsonWriter extends Writer[TypeDecl] {
-  private val defaultZipEntry = ZipEntry("file")
+  private val defaultZipEntry  = ZipEntry("file")
   implicit val format: Formats = JsonLoader.format // TODO
 
   def writeToString(ty: TypeDecl): Try[String] = Try(Serialization.writePretty(ty))
-  
-  def writeToBinaryFormat(ty: TypeDecl): Try[Array[Byte]] = 
+
+  def writeToBinaryFormat(ty: TypeDecl): Try[Array[Byte]] =
     Using.Manager { use =>
       val bytes = use(ByteArrayOutputStream())
-      val zip = use(ZipOutputStream(bytes))
+      val zip   = use(ZipOutputStream(bytes))
       zip.putNextEntry(defaultZipEntry)
       zip.write(Serialization.writePretty(ty).getBytes("UTF-8"))
       zip.closeEntry()
@@ -30,6 +30,6 @@ object JsonWriter extends Writer[TypeDecl] {
   override def writeToStream(ty: TypeDecl, os: OutputStream): Try[Unit] =
     for {
       prettyString <- Try(Serialization.writePretty(ty))
-      _ <- Try(os.write(prettyString.getBytes("UTF-8")))
+      _            <- Try(os.write(prettyString.getBytes("UTF-8")))
     } yield ()
 }

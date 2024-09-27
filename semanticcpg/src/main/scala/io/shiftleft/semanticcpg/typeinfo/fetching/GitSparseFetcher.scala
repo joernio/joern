@@ -11,16 +11,16 @@ import java.nio.file.{Files, Path, Paths}
 import java.lang.ProcessBuilder
 import scala.util.{Failure, Success, Try}
 
-class GitSparseFetcher(repoUrl: String = "git@github.com:flandini/typeinfo.git", gitRef: String = "main") extends AutoCloseable {
+class GitSparseFetcher(repoUrl: String = "git@github.com:flandini/typeinfo.git", gitRef: String = "main")
+    extends AutoCloseable {
   private var firstDownload: Boolean = true
-  private lazy val tmpDir: Path = Files.createTempDirectory("typeinfo-")
+  private lazy val tmpDir: Path      = Files.createTempDirectory("typeinfo-")
 
   def getVersions(pid: PackageIdentifier): Try[List[String]] = {
     val depsDir = buildPackageDepsDirPath(pid)
     for {
       _ <- downloadPath(depsDir)
-    } yield
-      Files
+    } yield Files
       .list(buildFileSystemPath(depsDir))
       .map(_.getFileName().toString)
       .map(stripIonSuffix)
@@ -30,12 +30,12 @@ class GitSparseFetcher(repoUrl: String = "git@github.com:flandini/typeinfo.git",
   }
 
   def getDependencyInfo(pid: PackageIdentifier, version: Version): Try[List[Dependency]] = {
-    val depsDir = buildPackageDepsDirPath(pid)
+    val depsDir  = buildPackageDepsDirPath(pid)
     val depsFile = buildFileSystemPath(depsDir.resolve(getDepsIonFileName(version)))
     for {
-      _ <- downloadPath(depsDir)
+      _           <- downloadPath(depsDir)
       inputStream <- Try(Files.newInputStream(depsFile))
-      loadedDeps <- DependencyIonLoader.parse(pid.lang, inputStream)
+      loadedDeps  <- DependencyIonLoader.parse(pid.lang, inputStream)
     } yield loadedDeps
   }
 
@@ -43,10 +43,10 @@ class GitSparseFetcher(repoUrl: String = "git@github.com:flandini/typeinfo.git",
     if (!Files.deleteIfExists(tmpDir))
       throw new RuntimeException("Couldn't delete temp dir")
   }
-  
+
   /** "data/java/ion-java/" -> "/tmp/typeinfo-1237asd/data/java/ion-java/" */
   private def buildFileSystemPath(serverPath: Path): Path = tmpDir.resolve(serverPath)
-    
+
   /** "v1.0.0" -> "v1.0.0.ion" */
   private def getDepsIonFileName(version: Version): String = version.toFetcherStr + ".ion"
 
@@ -55,13 +55,13 @@ class GitSparseFetcher(repoUrl: String = "git@github.com:flandini/typeinfo.git",
     buildPackageDirPath(pid).resolve("deps")
 
   /** e.g., "ion-java" -> "data/" + "java/" + "ion-java/" */
-  private def buildPackageDirPath(pid: PackageIdentifier): Path = 
+  private def buildPackageDirPath(pid: PackageIdentifier): Path =
     Paths.get("data", pid.lang.toString, pid.name)
-    
+
   /** e.g., "java.io.File", v1.0.0 -> "data/" + "java/" + "java */
   private def buildPackagePath(pid: PackageIdentifier, version: Version): Path =
     buildPackageDirPath(pid).resolve(version.toFetcherStr)
-  
+
   // First time download needs to `git sparse-checkout set /path/to/dir && git checkout $gitRef`; this checkout does
   // the download on 1st time.
   // Afterwards, `git sparse-checkout add /path/to/dir` adds to the sparse-checkout filter *and* downloads.
@@ -70,27 +70,31 @@ class GitSparseFetcher(repoUrl: String = "git@github.com:flandini/typeinfo.git",
       firstDownload = false
       for {
         exitCode <- sparseClone()
-        _ <- checkExitCode(exitCode, "git sparse clone returned non-zero")
+        _        <- checkExitCode(exitCode, "git sparse clone returned non-zero")
         exitCode <- setCone()
-        _ <- checkExitCode(exitCode, "git sparse-checkout set --cone returned non-zero")
+        _        <- checkExitCode(exitCode, "git sparse-checkout set --cone returned non-zero")
         exitCode <- setFirstPathFilter(path)
-        _ <- checkExitCode(exitCode, s"git sparse-checkout set $path returned non-zero")
+        _        <- checkExitCode(exitCode, s"git sparse-checkout set $path returned non-zero")
         exitCode <- doInitCheckout()
-        _ <- checkExitCode(exitCode, s"git checkout main after sparse set of $path returned non-zero")
+        _        <- checkExitCode(exitCode, s"git checkout main after sparse set of $path returned non-zero")
       } yield ()
     } else {
       for {
         exitCode <- addPathFilterAndDownload(path)
-        _ <- checkExitCode(exitCode, s"git sparse-checkout add $path returned non-zero")
+        _        <- checkExitCode(exitCode, s"git sparse-checkout add $path returned non-zero")
       } yield ()
     }
-  
+
   private def sparseClone(): Try[Int] =
-    Try(makeProcess(tmpDir, "git", "clone", "--filter=blob:none", "--depth=1", "--no-checkout", repoUrl, tmpDir.toString).start().waitFor())
-    
+    Try(
+      makeProcess(tmpDir, "git", "clone", "--filter=blob:none", "--depth=1", "--no-checkout", repoUrl, tmpDir.toString)
+        .start()
+        .waitFor()
+    )
+
   private def setCone(): Try[Int] =
     Try(makeProcess(tmpDir, "git", "sparse-checkout", "set", "--cone").start().waitFor())
-    
+
   private def setFirstPathFilter(path: Path): Try[Int] =
     Try(makeProcess(tmpDir, "git", "sparse-checkout", "set", path.toString).start().waitFor())
 
@@ -99,14 +103,14 @@ class GitSparseFetcher(repoUrl: String = "git@github.com:flandini/typeinfo.git",
 
   private def addPathFilterAndDownload(path: Path): Try[Int] =
     Try(makeProcess(tmpDir, "git", "sparse-checkout", "add", path.toString).start().waitFor())
-  
-  private def stripIonSuffix(fileName: String): String = 
-    if (fileName.endsWith(".ion")) 
-    then fileName.substring(0, fileName.length - ".ion".length) 
+
+  private def stripIonSuffix(fileName: String): String =
+    if (fileName.endsWith(".ion"))
+    then fileName.substring(0, fileName.length - ".ion".length)
     else fileName
-  
+
   private def checkExitCode(exitCode: Int, potentialErrMsg: => String): Try[Unit] =
-    if (exitCode != 0) 
+    if (exitCode != 0)
     then Failure(new RuntimeException(potentialErrMsg))
     else Success(())
 

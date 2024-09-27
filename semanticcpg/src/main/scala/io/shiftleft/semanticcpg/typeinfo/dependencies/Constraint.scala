@@ -38,7 +38,7 @@ case class Or(left: Constraint, right: Constraint) extends Constraint {
 }
 
 object Constraint {
-  def parse(ctr: String): Constraint = 
+  def parse(ctr: String): Constraint =
     if (isAny(ctr))
     then Any()
     else parseLoop(ctr)
@@ -46,12 +46,14 @@ object Constraint {
   private enum ConstraintSymbol {
     case GT, GTE, LT, LTE, NOT, AND, OR, LPAREN, RPAREN
   }
-  
+
   /** Shunting yard algorithm */
   @tailrec
-  private def parseLoop(ctr: String,
-                        operatorStack: List[ConstraintSymbol] = List(),
-                        versionStack: List[Constraint] = List()): Constraint = {
+  private def parseLoop(
+    ctr: String,
+    operatorStack: List[ConstraintSymbol] = List(),
+    versionStack: List[Constraint] = List()
+  ): Constraint = {
     if (ctr.isEmpty) {
       if (operatorStack.isEmpty) {
         versionStack.head
@@ -93,23 +95,25 @@ object Constraint {
       throw new RuntimeException(s"unrecognized dependency constraint expression of string starting at $ctr")
     }
   }
-  
+
   private def reduceOne(op: ConstraintSymbol, versions: List[Constraint]): List[Constraint] =
     op match
-      case ConstraintSymbol.GT => Gt(versions.head.asInstanceOf[Eq]) :: versions.tail
+      case ConstraintSymbol.GT  => Gt(versions.head.asInstanceOf[Eq]) :: versions.tail
       case ConstraintSymbol.GTE => Gte(versions.head.asInstanceOf[Eq]) :: versions.tail
-      case ConstraintSymbol.LT => Lt(versions.head.asInstanceOf[Eq]) :: versions.tail
+      case ConstraintSymbol.LT  => Lt(versions.head.asInstanceOf[Eq]) :: versions.tail
       case ConstraintSymbol.LTE => Lte(versions.head.asInstanceOf[Eq]) :: versions.tail
       case ConstraintSymbol.NOT => Not(versions.head.asInstanceOf[Eq]) :: versions.tail
       case ConstraintSymbol.AND => And(versions(1), versions(0)) :: versions.tail.tail
-      case ConstraintSymbol.OR => Or(versions(1), versions(0)) :: versions.tail.tail
-      case _ => throw new RuntimeException(s"Unexpected op $op")
-      
-  private def pushOrReduce(op: ConstraintSymbol, 
-                           operatorStack: List[ConstraintSymbol],
-                           versionStack: List[Constraint]): (List[ConstraintSymbol], List[Constraint]) =
+      case ConstraintSymbol.OR  => Or(versions(1), versions(0)) :: versions.tail.tail
+      case _                    => throw new RuntimeException(s"Unexpected op $op")
+
+  private def pushOrReduce(
+    op: ConstraintSymbol,
+    operatorStack: List[ConstraintSymbol],
+    versionStack: List[Constraint]
+  ): (List[ConstraintSymbol], List[Constraint]) =
     (op, operatorStack.headOption) match
-      case (_, Some(ConstraintSymbol.LPAREN)) => 
+      case (_, Some(ConstraintSymbol.LPAREN)) =>
         (op :: operatorStack, versionStack)
       case (_, Some(other)) if other != ConstraintSymbol.AND && other != ConstraintSymbol.OR =>
         pushOrReduce(op, operatorStack.tail, reduceOne(other, versionStack))
@@ -117,36 +121,38 @@ object Constraint {
         (other :: operatorStack, versionStack)
       case (_, Some(ConstraintSymbol.AND)) =>
         pushOrReduce(op, operatorStack.tail, reduceOne(ConstraintSymbol.AND, versionStack))
-      case (ConstraintSymbol.AND, _) => 
+      case (ConstraintSymbol.AND, _) =>
         (ConstraintSymbol.AND :: operatorStack, versionStack)
       case (_, Some(ConstraintSymbol.OR)) =>
         pushOrReduce(op, operatorStack.tail, reduceOne(ConstraintSymbol.OR, versionStack))
-      case (ConstraintSymbol.OR, _) => 
+      case (ConstraintSymbol.OR, _) =>
         (ConstraintSymbol.OR :: operatorStack, versionStack)
 
   @tailrec
-  private def reduceParenthesizedExpr(operatorStack: List[ConstraintSymbol],
-                                      versionStack: List[Constraint]): (List[ConstraintSymbol], List[Constraint]) =
+  private def reduceParenthesizedExpr(
+    operatorStack: List[ConstraintSymbol],
+    versionStack: List[Constraint]
+  ): (List[ConstraintSymbol], List[Constraint]) =
     operatorStack.headOption match
       case Some(ConstraintSymbol.LPAREN) => (operatorStack.tail, versionStack)
       case Some(other) =>
         reduceParenthesizedExpr(operatorStack.tail, reduceOne(other, versionStack))
       case None => throw new RuntimeException("Unbalanced parens in dependency constraints")
 
-  private def isLt(ctr: String): Boolean = ctr.startsWith("<")
+  private def isLt(ctr: String): Boolean  = ctr.startsWith("<")
   private def isLte(ctr: String): Boolean = ctr.startsWith("<=")
-  private def isGt(ctr: String): Boolean = ctr.startsWith(">")
+  private def isGt(ctr: String): Boolean  = ctr.startsWith(">")
   private def isGte(ctr: String): Boolean = ctr.startsWith(">=")
   // https://www.compart.com/en/unicode/category no open or close punctuators like open or close paren
-  private def isIdent(ctr: String): Boolean = ctr.matches("^[\\p{Alpha}\\p{Digit}\\p{Pd}\\p{Pc}\\p{Po}].*?")
-  private def isIdent(ctr: Char): Boolean = isIdent("" + ctr)
+  private def isIdent(ctr: String): Boolean      = ctr.matches("^[\\p{Alpha}\\p{Digit}\\p{Pd}\\p{Pc}\\p{Po}].*?")
+  private def isIdent(ctr: Char): Boolean        = isIdent("" + ctr)
   private def isWhitespace(ctr: String): Boolean = ctr.matches("^\\p{Space}.*?")
-  private def isWhitespace(ctr: Char): Boolean = isWhitespace("" + ctr)
-  private def isEq(ctr: String): Boolean = ctr.startsWith("=") || ctr.startsWith("==") || isIdent(ctr)
-  private def isNot(ctr: String): Boolean = ctr.startsWith("!")
-  private def isAnd(ctr: String): Boolean = ctr.startsWith("&&")
-  private def isOr(ctr: String): Boolean = ctr.startsWith("||")
-  private def isAny(ctr: String): Boolean = ctr.startsWith("*")
-  private def isLParen(ctr: String): Boolean = ctr.startsWith("(")
-  private def isRParen(ctr: String): Boolean = ctr.startsWith(")")
+  private def isWhitespace(ctr: Char): Boolean   = isWhitespace("" + ctr)
+  private def isEq(ctr: String): Boolean         = ctr.startsWith("=") || ctr.startsWith("==") || isIdent(ctr)
+  private def isNot(ctr: String): Boolean        = ctr.startsWith("!")
+  private def isAnd(ctr: String): Boolean        = ctr.startsWith("&&")
+  private def isOr(ctr: String): Boolean         = ctr.startsWith("||")
+  private def isAny(ctr: String): Boolean        = ctr.startsWith("*")
+  private def isLParen(ctr: String): Boolean     = ctr.startsWith("(")
+  private def isRParen(ctr: String): Boolean     = ctr.startsWith(")")
 }

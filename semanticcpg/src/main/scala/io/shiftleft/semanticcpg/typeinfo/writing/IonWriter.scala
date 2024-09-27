@@ -7,19 +7,19 @@ import java.io.{ByteArrayOutputStream, OutputStream}
 import scala.util.{Try, Using}
 
 object IonWriter extends Writer[TypeDecl] {
-  override def writeToString(ty: TypeDecl): Try[String] = 
+  override def writeToString(ty: TypeDecl): Try[String] =
     Using.Manager { use =>
       val out = use(ByteArrayOutputStream())
-      val w = use(IonTextWriterBuilder.pretty().build(out))
+      val w   = use(IonTextWriterBuilder.pretty().build(out))
       writeType(ty, w)
       w.finish()
       out.toString
     }
 
   def writeToBinaryFormat(ty: TypeDecl): Try[Array[Byte]] =
-    Using.Manager { use => 
+    Using.Manager { use =>
       val out = use(ByteArrayOutputStream())
-      val w = use(IonBinaryWriterBuilder.standard().build(out))
+      val w   = use(IonBinaryWriterBuilder.standard().build(out))
       writeType(ty, w)
       w.finish()
       out.toByteArray
@@ -32,7 +32,7 @@ object IonWriter extends Writer[TypeDecl] {
       w.finish()
     }
   }
-  
+
   private def writeType(ty: TypeDecl, w: IonWriter): Unit = {
     w.stepIn(IonType.STRUCT)
 
@@ -64,7 +64,7 @@ object IonWriter extends Writer[TypeDecl] {
 
     w.stepOut() // main struct
   }
-  
+
   private def writeMethod(w: IonWriter)(m: Method): Unit = {
     w.stepIn(IonType.STRUCT)
     w.setFieldName("NAME")
@@ -75,7 +75,7 @@ object IonWriter extends Writer[TypeDecl] {
     w.writeString(m.signature)
     w.stepOut()
   }
-  
+
   private def writeMember(w: IonWriter)(m: Member): Unit = {
     w.stepIn(IonType.STRUCT)
     w.setFieldName("NAME")
