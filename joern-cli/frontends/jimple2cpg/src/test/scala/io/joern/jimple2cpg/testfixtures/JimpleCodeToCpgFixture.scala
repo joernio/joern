@@ -1,6 +1,7 @@
 package io.joern.jimple2cpg.testfixtures
 
-import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
+import io.joern.dataflowengineoss.DefaultSemantics
+import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
 import io.joern.dataflowengineoss.testfixtures.{SemanticCpgTestFixture, SemanticTestCpg}
 import io.joern.jimple2cpg.{Config, Jimple2Cpg}
 import io.joern.x2cpg.X2Cpg
@@ -23,9 +24,9 @@ trait Jimple2CpgFrontend extends LanguageFrontend {
   }
 }
 
-class JimpleCode2CpgFixture(withOssDataflow: Boolean = false, extraFlows: List[FlowSemantic] = List.empty)
-    extends Code2CpgFixture(() => new JimpleTestCpg().withOssDataflow(withOssDataflow).withExtraFlows(extraFlows))
-    with SemanticCpgTestFixture(extraFlows) {}
+class JimpleCode2CpgFixture(withOssDataflow: Boolean = false, semantics: Semantics = DefaultSemantics())
+    extends Code2CpgFixture(() => new JimpleTestCpg().withOssDataflow(withOssDataflow).withSemantics(semantics))
+    with SemanticCpgTestFixture(semantics) {}
 
 class JimpleTestCpg extends DefaultTestCpg with Jimple2CpgFrontend with SemanticTestCpg {
 

@@ -4,7 +4,7 @@ import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.language.Path
 import io.joern.dataflowengineoss.layers.dataflows.*
 import io.joern.dataflowengineoss.queryengine.EngineContext
-import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic}
+import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
 import io.joern.dataflowengineoss.testfixtures.{SemanticCpgTestFixture, SemanticTestCpg}
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.frontendspecific.pysrc2cpg.{
@@ -48,7 +48,7 @@ class PySrcTestCpg extends DefaultTestCpg with PythonFrontend with SemanticTestC
     new PythonTypeHintCallLinker(this).createAndApply()
     new NaiveCallLinker(this).createAndApply()
 
-    // Some of passes above create new methods, so, we
+    // Some of the passes above create new methods, so, we
     // need to run the ASTLinkerPass one more time
     new AstLinkerPass(this).createAndApply()
     applyOssDataFlow()
@@ -58,15 +58,15 @@ class PySrcTestCpg extends DefaultTestCpg with PythonFrontend with SemanticTestC
 
 class PySrc2CpgFixture(
   withOssDataflow: Boolean = false,
-  extraFlows: List[FlowSemantic] = List.empty,
+  semantics: Semantics = DefaultSemantics(),
   withPostProcessing: Boolean = true
 ) extends Code2CpgFixture(() =>
       new PySrcTestCpg()
         .withOssDataflow(withOssDataflow)
-        .withExtraFlows(extraFlows)
+        .withSemantics(semantics)
         .withPostProcessingPasses(withPostProcessing)
     )
-    with SemanticCpgTestFixture(extraFlows) {
+    with SemanticCpgTestFixture(semantics) {
 
   implicit val resolver: ICallResolver = NoResolve
 

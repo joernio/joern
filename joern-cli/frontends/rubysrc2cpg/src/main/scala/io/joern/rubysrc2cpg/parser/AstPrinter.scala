@@ -601,13 +601,13 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
   }
 
   override def visitSimpleCommand(ctx: RubyParser.SimpleCommandContext): String = {
-    if (Option(ctx.commandArgument()).map(_.getText).exists(_.startsWith("::"))) {
-      val memberName       = ctx.commandArgument().getText.stripPrefix("::")
+    if (Option(ctx.simpleCommandArgumentList()).map(_.getText).exists(_.startsWith("::"))) {
+      val memberName       = ctx.simpleCommandArgumentList().getText.stripPrefix("::")
       val methodIdentifier = visit(ctx.methodIdentifier())
       s"$methodIdentifier::$memberName"
     } else if (!ctx.methodIdentifier().isAttrDeclaration) {
       val identifierCtx = ctx.methodIdentifier()
-      val arguments     = ctx.commandArgument().arguments.map(visit)
+      val arguments     = ctx.simpleCommandArgumentList().arguments.map(visit)
       (identifierCtx.getText, arguments) match {
         case ("require", List(argument)) =>
           s"require ${arguments.mkString(",")}"
@@ -627,7 +627,7 @@ class AstPrinter extends RubyParserBaseVisitor[String] {
           s"${visit(identifierCtx)} ${arguments.mkString(",")}"
       }
     } else {
-      s"${ctx.commandArgument.arguments.map(visit).mkString(",")}"
+      s"${ctx.simpleCommandArgumentList.arguments.map(visit).mkString(",")}"
     }
   }
 

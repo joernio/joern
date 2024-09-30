@@ -60,18 +60,6 @@ object DefaultSemantics {
     F(Operators.preIncrement, List((1, 1), (1, -1))),
     F(Operators.sizeOf, List.empty[(Int, Int)]),
 
-    //  some of those operators have duplicate mappings due to a typo
-    //  - see https://github.com/ShiftLeftSecurity/codepropertygraph/pull/1630
-
-    F("<operators>.assignmentExponentiation", List((2, 1), (1, 1))),
-    F("<operators>.assignmentModulo", List((2, 1), (1, 1))),
-    F("<operators>.assignmentShiftLeft", List((2, 1), (1, 1))),
-    F("<operators>.assignmentLogicalShiftRight", List((2, 1), (1, 1))),
-    F("<operators>.assignmentArithmeticShiftRight", List((2, 1), (1, 1))),
-    F("<operators>.assignmentAnd", List((2, 1), (1, 1))),
-    F("<operators>.assignmentOr", List((2, 1), (1, 1))),
-    F("<operators>.assignmentXor", List((2, 1), (1, 1))),
-
     // Language specific operators
     PTF("<operator>.tupleLiteral"),
     PTF("<operator>.dictLiteral"),

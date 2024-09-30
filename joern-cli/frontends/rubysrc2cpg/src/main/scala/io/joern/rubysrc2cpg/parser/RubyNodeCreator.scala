@@ -681,8 +681,8 @@ class RubyNodeCreator(
   }
 
   override def visitSimpleCommand(ctx: RubyParser.SimpleCommandContext): RubyExpression = {
-    if (Option(ctx.commandArgument()).map(_.getText).exists(_.startsWith("::"))) {
-      val memberName = ctx.commandArgument().getText.stripPrefix("::")
+    if (Option(ctx.simpleCommandArgumentList()).map(_.getText).exists(_.startsWith("::"))) {
+      val memberName = ctx.simpleCommandArgumentList().getText.stripPrefix("::")
       if (memberName.headOption.exists(_.isUpper)) { // Constant accesses are upper-case 1st letter
         MemberAccess(visit(ctx.methodIdentifier()), "::", memberName)(ctx.toTextSpan)
       } else {
@@ -690,7 +690,7 @@ class RubyNodeCreator(
       }
     } else if (!ctx.methodIdentifier().isAttrDeclaration) {
       val identifierCtx = ctx.methodIdentifier()
-      val arguments     = ctx.commandArgument().arguments.map(visit)
+      val arguments     = ctx.simpleCommandArgumentList().arguments.map(visit)
       (identifierCtx.getText, arguments) match {
         case (requireLike, List(argument)) if ImportsPass.ImportCallNames.contains(requireLike) =>
           val isRelative = requireLike == "require_relative" || requireLike == "require_all"
@@ -713,20 +713,21 @@ class RubyNodeCreator(
           val lhsIdentifier = SimpleIdentifier(None)(identifierCtx.toTextSpan.spanStart(idAssign.stripSuffix("=")))
           val argNode = arguments match {
             case arg :: Nil => arg
-            case xs         => ArrayLiteral(xs)(ctx.commandArgument().toTextSpan)
+            case xs         => ArrayLiteral(xs)(ctx.simpleCommandArgumentList().toTextSpan)
           }
           SingleAssignment(lhsIdentifier, "=", argNode)(ctx.toTextSpan)
         case _ =>
           SimpleCall(visit(identifierCtx), arguments)(ctx.toTextSpan)
       }
     } else {
-      FieldsDeclaration(ctx.commandArgument().arguments.map(visit))(ctx.toTextSpan)
+      FieldsDeclaration(ctx.simpleCommandArgumentList().arguments.map(visit))(ctx.toTextSpan)
     }
   }
 
   override def visitSuperWithParentheses(ctx: RubyParser.SuperWithParenthesesContext): RubyExpression = {
-    val block     = Option(ctx.block()).map(visit)
-    val arguments = Option(ctx.argumentWithParentheses()).map(_.arguments.map(visit)).getOrElse(Nil)
+    val block = Option(ctx.block()).map(visit)
+    val arguments =
+      Option(ctx.argumentWithParentheses()).map(_.arguments.map(visit)).getOrElse(Nil)
     visitSuperCall(ctx, arguments, block)
   }
 
@@ -796,12 +797,16 @@ class RubyNodeCreator(
   override def visitMethodCallWithParenthesesExpression(
     ctx: RubyParser.MethodCallWithParenthesesExpressionContext
   ): RubyExpression = {
-    val callArgs = ctx.argumentWithParentheses().arguments.map {
-      case x: BlockArgumentContext =>
-        if Option(x.operatorExpression()).isDefined then visit(x)
-        else SimpleIdentifier()(ctx.toTextSpan.spanStart(procParamGen.current.value))
-      case x => visit(x)
-    }
+    val callArgs = ctx
+      .argumentWithParentheses()
+      .arguments
+      .map {
+        case x: BlockArgumentContext =>
+          if Option(x.operatorExpression()).isDefined then visit(x)
+          else SimpleIdentifier()(ctx.toTextSpan.spanStart(procParamGen.current.value))
+        case x => visit(x)
+      }
+      .sortBy(x => (x.line, x.column))
 
     val args =
       if (ctx.argumentWithParentheses().isArrayArgumentList) then
@@ -816,7 +821,10 @@ class RubyNodeCreator(
   }
 
   override def visitYieldExpression(ctx: RubyParser.YieldExpressionContext): RubyExpression = {
-    val arguments = Option(ctx.argumentWithParentheses()).iterator.flatMap(_.arguments).map(visit).toList
+    val arguments = Option(ctx.argumentWithParentheses()).iterator
+      .flatMap(_.arguments)
+      .map(visit)
+      .toList
     YieldExpr(arguments)(ctx.toTextSpan)
   }
 
@@ -934,9 +942,8 @@ class RubyNodeCreator(
             return MemberAccess(target, ctx.op.getText, methodName)(ctx.toTextSpan)
           }
         } else {
-          return MemberCall(target, ctx.op.getText, methodName, ctx.argumentWithParentheses().arguments.map(visit))(
-            ctx.toTextSpan
-          )
+          val args = ctx.argumentWithParentheses().arguments.map(visit)
+          return MemberCall(target, ctx.op.getText, methodName, args)(ctx.toTextSpan)
         }
       }
     }
@@ -951,16 +958,18 @@ class RubyNodeCreator(
         if (!hasArguments) {
           return ObjectInstantiationWithBlock(target, List.empty, block)(ctx.toTextSpan)
         } else {
-          return ObjectInstantiationWithBlock(target, ctx.argumentWithParentheses().arguments.map(visit), block)(
-            ctx.toTextSpan
-          )
+          val args = ctx.argumentWithParentheses().arguments.map(visit)
+          return ObjectInstantiationWithBlock(target, args, block)(ctx.toTextSpan)
         }
       } else {
         return MemberCallWithBlock(
           target,
           ctx.op.getText,
           methodName,
-          Option(ctx.argumentWithParentheses()).map(_.arguments).getOrElse(List()).map(visit),
+          Option(ctx.argumentWithParentheses())
+            .map(_.arguments)
+            .getOrElse(List())
+            .map(visit),
           visit(ctx.block()).asInstanceOf[Block]
         )(ctx.toTextSpan)
       }

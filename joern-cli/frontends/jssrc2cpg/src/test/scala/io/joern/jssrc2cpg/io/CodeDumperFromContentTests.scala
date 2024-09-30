@@ -40,17 +40,21 @@ class CodeDumperFromContentTests extends JsSrc2CpgSuite {
         |  var x = foo(param1);
         |}""".stripMargin
 
-    val cpg = code(
-      s"""
+    val fullCode = s"""
         |// A comment
         |$myFuncContent
-        |""".stripMargin,
-      "index.js"
-    ).withConfig(Config().withDisableFileContent(false))
+        |""".stripMargin
+
+    val cpg = code(fullCode, "index.js").withConfig(Config().withDisableFileContent(false))
 
     "allow one to dump a method node's source code from `Method.content`" in {
       val List(content) = cpg.method.nameExact("my_func").content.l
       content shouldBe myFuncContent
+    }
+
+    "allow one to dump the :program method node's source code from `Method.content`" in {
+      val List(content) = cpg.method.nameExact(":program").content.l
+      content shouldBe fullCode
     }
   }
 
@@ -71,6 +75,11 @@ class CodeDumperFromContentTests extends JsSrc2CpgSuite {
 
     "allow one to dump a typedecl node's source code from `TypeDecl.content`" in {
       val List(content) = cpg.typeDecl.nameExact("Foo").content.l
+      content shouldBe myClassContent
+    }
+
+    "allow one to dump the <init> method node's source code from `Method.content`" in {
+      val List(content) = cpg.method.nameExact("<init>").content.l
       content shouldBe myClassContent
     }
   }

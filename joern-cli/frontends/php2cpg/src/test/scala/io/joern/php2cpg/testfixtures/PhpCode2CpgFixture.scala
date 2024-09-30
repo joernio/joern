@@ -1,10 +1,11 @@
 package io.joern.php2cpg.testfixtures
 
-import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
+import io.joern.dataflowengineoss.DefaultSemantics
+import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
 import io.joern.dataflowengineoss.testfixtures.{SemanticCpgTestFixture, SemanticTestCpg}
 import io.joern.php2cpg.{Config, Php2Cpg}
 import io.joern.x2cpg.frontendspecific.php2cpg
-import io.joern.x2cpg.testfixtures.{Code2CpgFixture, LanguageFrontend, DefaultTestCpg}
+import io.joern.x2cpg.testfixtures.{Code2CpgFixture, DefaultTestCpg, LanguageFrontend}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
 
@@ -33,14 +34,14 @@ class PhpTestCpg extends DefaultTestCpg with PhpFrontend with SemanticTestCpg {
 
 class PhpCode2CpgFixture(
   runOssDataflow: Boolean = false,
-  extraFlows: List[FlowSemantic] = List.empty,
+  semantics: Semantics = DefaultSemantics(),
   withPostProcessing: Boolean = true
 ) extends Code2CpgFixture(() =>
       new PhpTestCpg()
         .withOssDataflow(runOssDataflow)
-        .withExtraFlows(extraFlows)
+        .withSemantics(semantics)
         .withPostProcessingPasses(withPostProcessing)
     )
-    with SemanticCpgTestFixture(extraFlows) {
+    with SemanticCpgTestFixture(semantics) {
   implicit val resolver: ICallResolver = NoResolve
 }

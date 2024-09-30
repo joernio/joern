@@ -146,7 +146,7 @@ object AntlrContextHelpers {
     def parameters: List[ParserRuleContext] = Option(ctx.blockParameterList()).map(_.parameters).getOrElse(List())
   }
 
-  sealed implicit class CommandArgumentContextHelper(ctx: CommandArgumentContext) {
+  sealed implicit class CommandArgumentContextelper(ctx: CommandArgumentContext) {
     def arguments: List[ParserRuleContext] = ctx match {
       case ctx: CommandCommandArgumentListContext         => ctx.command() :: Nil
       case ctx: CommandArgumentCommandArgumentListContext => ctx.commandArgumentList().elements
@@ -159,6 +159,15 @@ object AntlrContextHelpers {
       val primaryValues = Option(ctx.primaryValueList()).map(_.primaryValue().asScala.toList).getOrElse(List())
       val associations  = Option(ctx.associationList()).map(_.association().asScala.toList).getOrElse(List())
       primaryValues ++ associations
+    }
+  }
+
+  sealed implicit class SimpleCommandArgumentListContextHelper(ctx: SimpleCommandArgumentListContext) {
+    def arguments: List[ParserRuleContext] = {
+      val primaryValues = Option(ctx.primaryValueList()).map(_.primaryValue().asScala.toList).getOrElse(List())
+      val associations  = Option(ctx.associationList()).map(_.association().asScala.toList).getOrElse(List())
+      val argumentLists = Option(ctx.argumentList()).map(_.elements).getOrElse(List())
+      primaryValues ++ associations ++ argumentLists
     }
   }
 
@@ -310,23 +319,27 @@ object AntlrContextHelpers {
 
   sealed implicit class ArgumentListContextHelper(ctx: ArgumentListContext) {
     def elements: List[ParserRuleContext] = ctx match
-      case ctx: OperatorsArgumentListContext =>
-        val operatorExpressions = ctx.operatorExpressionList().operatorExpression().asScala.toList
-        val associations        = Option(ctx.associationList()).fold(List())(_.association().asScala)
-        val splatting           = Option(ctx.splattingArgument()).toList
-        val block               = Option(ctx.blockArgument()).toList
-        operatorExpressions ++ associations ++ splatting ++ block
-      case ctx: AssociationsArgumentListContext =>
-        Option(ctx.associationList()).map(_.associations).getOrElse(List.empty)
-      case ctx: SplattingArgumentArgumentListContext =>
-        val splattingArgList = Option(ctx.splatArgList).map(_.splattingArgument().asScala.toList).toList.flatten
-        Option(ctx.splattingArgument()).toList ++ splattingArgList ++ Option(ctx.blockArgument()).toList ++ Option(
-          ctx.operatorExpressionList()
-        ).toList
+      case ctx: ArgumentListItemArgumentListContext =>
+        ctx
+          .argumentListItem()
+          .asScala
+          .flatMap { x =>
+            Option(x.splattingArgument()).toList ++
+              Option(x.associationList()).map(_.associations).getOrElse(Nil) ++
+              Option(x.blockArgument()).toList ++
+              Option(x.operatorExpressionList()).map(_.operatorExpression().asScala.toList).getOrElse(Nil)
+          }
+          .sortBy { x =>
+            val span = x.toTextSpan
+            span.line -> span.column
+          }
+          .toList
       case ctx: BlockArgumentArgumentListContext =>
         Option(ctx.blockArgument()).toList
       case ctx: ArrayArgumentListContext =>
         Option(ctx.indexingArgumentList()).toList
+      case ctx: SingleCommandArgumentListContext =>
+        Option(ctx.command()).toList
       case ctx =>
         logger.warn(s"ArgumentListContextHelper - Unsupported element type ${ctx.getClass.getSimpleName}")
         List()

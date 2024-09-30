@@ -143,8 +143,14 @@ command
         # commandTernaryOperatorExpression
     |   primary NL? (AMPDOT | DOT | COLON2) methodName commandArgument
         # memberAccessCommand
-    |   methodIdentifier commandArgument
+    |   methodIdentifier simpleCommandArgumentList
         # simpleCommand
+    ;
+
+simpleCommandArgumentList
+    :   associationList
+    |   primaryValueList (COMMA NL* associationList)?
+    |   argumentList
     ;
 
 commandArgument
@@ -210,10 +216,6 @@ splattingArgument
 operatorExpressionList
     :   operatorExpression (COMMA NL* operatorExpression)*
     ;
-    
-operatorExpressionList2
-    :   operatorExpression (COMMA NL* operatorExpression)+
-    ;
 
 argumentWithParentheses
     :   LPAREN NL* COMMA? NL* RPAREN
@@ -229,26 +231,25 @@ argumentWithParentheses
 argumentList
     :   blockArgument
         # blockArgumentArgumentList
-    |   splattingArgument (COMMA NL* splatArgList)? (COMMA NL* blockArgument)? (COMMA NL* operatorExpressionList)?
-        # splattingArgumentArgumentList
-    |   operatorExpressionList (COMMA NL* associationList)? (COMMA NL* splattingArgument)? (COMMA NL* blockArgument)?
-        # operatorsArgumentList
-    |   associationList (COMMA NL* splattingArgument)? (COMMA NL* blockArgument)?
-        # associationsArgumentList
+    |   argumentListItem (COMMA NL* argumentListItem)*
+        # argumentListItemArgumentList
     |   LBRACK indexingArgumentList? RBRACK
         # arrayArgumentList
     |   command
         # singleCommandArgumentList
     ;
 
-splatArgList
-    :   splattingArgument (COMMA NL* splattingArgument)*
+argumentListItem
+    :   splattingArgument
+    |   operatorExpressionList
+    |   associationList
+    |   blockArgument
     ;
 
 commandArgumentList
     :   associationList
     |   primaryValueList (COMMA NL* associationList)?
-    ;    
+    ;
 
 primaryValueList
     :   primaryValue (COMMA NL* primaryValue)*
@@ -708,23 +709,9 @@ doubleQuotedString
     :   DOUBLE_QUOTED_STRING_START doubleQuotedStringContent* DOUBLE_QUOTED_STRING_END
     ;
 
-quotedExpandedExternalCommandString
-    :   QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_START 
-        quotedExpandedLiteralStringContent*
-        QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_END
-    ;
-
 doubleQuotedStringContent
     :   DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE
     |   STRING_INTERPOLATION_BEGIN compoundStatement STRING_INTERPOLATION_END
-    ;
-
-quotedNonExpandedLiteralString
-    :   QUOTED_NON_EXPANDED_STRING_LITERAL_START NON_EXPANDED_LITERAL_CHARACTER_SEQUENCE? QUOTED_NON_EXPANDED_STRING_LITERAL_END
-    ;
-
-quotedExpandedLiteralString
-    :   QUOTED_EXPANDED_STRING_LITERAL_START quotedExpandedLiteralStringContent* QUOTED_EXPANDED_STRING_LITERAL_END
     ;
 
 quotedExpandedLiteralStringContent

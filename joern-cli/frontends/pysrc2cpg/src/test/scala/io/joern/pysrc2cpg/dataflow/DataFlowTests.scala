@@ -1,7 +1,15 @@
 package io.joern.pysrc2cpg.dataflow
 
+import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.language.toExtendedCfgNode
-import io.joern.dataflowengineoss.semanticsloader.{FlowMapping, FlowSemantic, PassThroughMapping}
+import io.joern.dataflowengineoss.semanticsloader.{
+  FlowMapping,
+  FlowSemantic,
+  NilSemantics,
+  NoCrossTaintSemantics,
+  NoSemantics,
+  PassThroughMapping
+}
 import io.joern.pysrc2cpg.PySrc2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Literal, Member, Method}
@@ -63,7 +71,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         |a = 20
         |print(foo(a))
         |""".stripMargin)
-      .withExtraFlows(List(FlowSemantic("helpers.py:<module>.foo", List())))
+      .withSemantics(DefaultSemantics().after(NilSemantics.where(List("helpers.py:<module>.foo"))))
     val source = cpg.literal("20").l
     val sink   = cpg.call("print").argument(1).l
     val flows  = sink.reachableByFlows(source).l
@@ -76,7 +84,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         |a = 20
         |print(foo(a))
         |""".stripMargin)
-      .withExtraFlows(List(FlowSemantic("helpers.py:<module>.foo", List(FlowMapping(0, 0)))))
+      .withSemantics(DefaultSemantics().plus(List(FlowSemantic("helpers.py:<module>.foo", List(FlowMapping(0, 0))))))
     val source = cpg.literal("20").l
     val sink   = cpg.call("print").argument(1).l
     val flows  = sink.reachableByFlows(source).l
@@ -89,7 +97,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         |a = 20
         |print(foo(a))
         |""".stripMargin)
-      .withExtraFlows(List(FlowSemantic("helpers.py:<module>.foo", List(FlowMapping(1, 1)))))
+      .withSemantics(DefaultSemantics().plus(List(FlowSemantic("helpers.py:<module>.foo", List(FlowMapping(1, 1))))))
     val source = cpg.literal("20").l
     val sink   = cpg.call("print").argument(1).l
     val flows  = sink.reachableByFlows(source).l
@@ -101,7 +109,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         |from helpers import foo
         |print(foo(20))
         |""".stripMargin)
-      .withExtraFlows(List(FlowSemantic("helpers.py:<module>.foo", List())))
+      .withSemantics(DefaultSemantics().after(NilSemantics.where(List("helpers.py:<module>.foo"))))
     val source = cpg.literal("20").l
     val sink   = cpg.call("print").argument(1).l
     val flows  = sink.reachableByFlows(source).l
@@ -113,7 +121,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         |from helpers import foo
         |print(foo(20))
         |""".stripMargin)
-      .withExtraFlows(List(FlowSemantic("helpers.py:<module>.foo", List(FlowMapping(0, 0)))))
+      .withSemantics(DefaultSemantics().plus(List(FlowSemantic("helpers.py:<module>.foo", List(FlowMapping(0, 0))))))
     val source = cpg.literal("20").l
     val sink   = cpg.call("print").argument(1).l
     val flows  = sink.reachableByFlows(source).l
@@ -125,7 +133,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         |from helpers import foo
         |print(foo(20))
         |""".stripMargin)
-      .withExtraFlows(List(FlowSemantic("helpers.py:<module>.foo", List(FlowMapping(1, 1)))))
+      .withSemantics(DefaultSemantics().plus(List(FlowSemantic("helpers.py:<module>.foo", List(FlowMapping(1, 1))))))
     val source = cpg.literal("20").l
     val sink   = cpg.call("print").argument(1).l
     val flows  = sink.reachableByFlows(source).l
@@ -140,7 +148,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         |a = 20
         |print(foo(a))
         |""".stripMargin)
-      .withExtraFlows(List(FlowSemantic("Test0.py:<module>.foo", List())))
+      .withSemantics(DefaultSemantics().after(NilSemantics.where(List("Test0.py:<module>.foo"))))
     val source = cpg.literal("20").l
     val sink   = cpg.call("print").argument(1).l
     val flows  = sink.reachableByFlows(source).l
@@ -155,7 +163,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         |a = 20
         |print(foo(a))
         |""".stripMargin)
-      .withExtraFlows(List(FlowSemantic("Test0.py:<module>.foo", List(FlowMapping(0, 0)))))
+      .withSemantics(DefaultSemantics().plus(List(FlowSemantic("Test0.py:<module>.foo", List(FlowMapping(0, 0))))))
     val source = cpg.literal("20").l
     val sink   = cpg.call("print").argument(1).l
     val flows  = sink.reachableByFlows(source).l
@@ -170,7 +178,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         |a = 20
         |print(foo(a))
         |""".stripMargin)
-      .withExtraFlows(List(FlowSemantic("Test0.py:<module>.foo", List(FlowMapping(1, 1)))))
+      .withSemantics(DefaultSemantics().plus(List(FlowSemantic("Test0.py:<module>.foo", List(FlowMapping(1, 1))))))
     val source = cpg.literal("20").l
     val sink   = cpg.call("print").argument(1).l
     val flows  = sink.reachableByFlows(source).l
@@ -184,7 +192,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         |
         |print(foo(20))
         |""".stripMargin)
-      .withExtraFlows(List(FlowSemantic("Test0.py:<module>.foo", List())))
+      .withSemantics(DefaultSemantics().plus(List(FlowSemantic("Test0.py:<module>.foo", List()))))
     val source = cpg.literal("20").l
     val sink   = cpg.call("print").argument(1).l
     val flows  = sink.reachableByFlows(source).l
@@ -198,7 +206,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         |
         |print(foo(20))
         |""".stripMargin)
-      .withExtraFlows(List(FlowSemantic("Test0.py:<module>.foo", List(FlowMapping(0, 0)))))
+      .withSemantics(DefaultSemantics().plus(List(FlowSemantic("Test0.py:<module>.foo", List(FlowMapping(0, 0))))))
     val source = cpg.literal("20").l
     val sink   = cpg.call("print").argument(1).l
     val flows  = sink.reachableByFlows(source).l
@@ -212,7 +220,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         |
         |print(foo(20))
         |""".stripMargin)
-      .withExtraFlows(List(FlowSemantic("Test0.py:<module>.foo", List(FlowMapping(1, 1)))))
+      .withSemantics(DefaultSemantics().plus(List(FlowSemantic("Test0.py:<module>.foo", List(FlowMapping(1, 1))))))
     val source = cpg.literal("20").l
     val sink   = cpg.call("print").argument(1).l
     val flows  = sink.reachableByFlows(source).l
@@ -660,7 +668,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         |x = {'x': 10}
         |print(1, x)
         |""".stripMargin)
-      .withExtraFlows(List(FlowSemantic(".*print", List(PassThroughMapping), true)))
+      .withSemantics(DefaultSemantics().plus(List(FlowSemantic(".*print", List(PassThroughMapping), true))))
 
     def source       = cpg.literal
     def sink         = cpg.call("print").argument.argumentIndex(2)
@@ -839,21 +847,183 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     )
   }
 
+  "flow from literal to an external method's named argument using two same-methodFullNamed semantics" in {
+    val cpg = code("""
+        |import bar
+        |x = 'foobar'
+        |bar.foo(Baz=x)
+        |""".stripMargin)
+      .withSemantics(
+        DefaultSemantics().plus(
+          List(
+            // Equivalent to a single `FlowSemantic` entry with both FlowMappings
+            FlowSemantic("bar.py:<module>.foo", List(PassThroughMapping)),
+            FlowSemantic("bar.py:<module>.foo", List(FlowMapping(0, 0)))
+          )
+        )
+      )
+
+    val source = cpg.literal("'foobar'")
+    val sink   = cpg.call("foo").argument.argumentName("Baz")
+    sink.reachableByFlows(source).map(flowToResultPairs).l shouldBe List(
+      List(("x = 'foobar'", 3), ("bar.foo(Baz = x)", 4))
+    )
+  }
+
+}
+
+class DefaultSemanticsDataFlowTest1 extends PySrc2CpgFixture(withOssDataflow = true, semantics = DefaultSemantics()) {
+
+  "DefaultSemantics cross-taints arguments to external method calls" in {
+    val cpg = code("""
+        |import bar
+        |a = 1
+        |bar.foo(b, Z=a)
+        |bar.baz(b)
+        |""".stripMargin)
+    val source = cpg.literal("1")
+    val sink   = cpg.call("baz")
+    sink.reachableByFlows(source).map(flowToResultPairs).l shouldBe List(
+      List(("a = 1", 3), ("bar.foo(b, Z = a)", 4), ("bar.baz(b)", 5))
+    )
+  }
+
+  "DefaultSemantics taints external method call return values" in {
+    val cpg = code("""
+        |import bar
+        |y = 1
+        |x = bar.foo(y)
+        |bar.baz(x)
+        |""".stripMargin)
+    val source = cpg.literal("1")
+    val sink   = cpg.call("baz")
+    sink.reachableByFlows(source).map(flowToResultPairs).l shouldBe List(
+      List(("y = 1", 3), ("bar.foo(y)", 4), ("x = bar.foo(y)", 4), ("bar.baz(x)", 5))
+    )
+  }
+
+}
+
+class NoSemanticsDataFlowTest1 extends PySrc2CpgFixture(withOssDataflow = true, semantics = NoSemantics) {
+
+  "NoSemantics cross-taints arguments to external method calls" in {
+    val cpg = code("""
+        |import bar
+        |a = 1
+        |bar.foo(b, Z=a)
+        |bar.baz(b)
+        |""".stripMargin)
+    val source = cpg.literal("1")
+    val sink   = cpg.call("baz")
+    sink.reachableByFlows(source).map(flowToResultPairs).l shouldBe List(
+      List(("a = 1", 3), ("bar.foo(b, Z = a)", 4), ("bar.baz(b)", 5))
+    )
+  }
+
+  "NoSemantics taints external method call return values" in {
+    val cpg = code("""
+        |import bar
+        |y = 1
+        |x = bar.foo(y)
+        |bar.baz(x)
+        |""".stripMargin)
+    val source = cpg.literal("1")
+    val sink   = cpg.call("baz")
+    sink.reachableByFlows(source).map(flowToResultPairs).l shouldBe List(
+      List(("y = 1", 3), ("bar.foo(y)", 4), ("x = bar.foo(y)", 4), ("bar.baz(x)", 5))
+    )
+  }
+}
+
+class NilSemanticsDataFlowTest1
+    extends PySrc2CpgFixture(withOssDataflow = true, semantics = NilSemantics().after(DefaultSemantics())) {
+
+  "NilSemantics does not cross-taint arguments to external method calls" in {
+    val cpg = code("""
+        |import bar
+        |a = 1
+        |bar.foo(b, Z=a)
+        |bar.baz(b)
+        |""".stripMargin)
+    val source = cpg.literal("1")
+    val sink   = cpg.call("baz")
+    sink.reachableByFlows(source).map(flowToResultPairs) shouldBe empty
+  }
+
+  "NilSemantics does not taint external method call return values" in {
+    val cpg = code("""
+        |import bar
+        |y = 1
+        |x = bar.foo(y)
+        |bar.baz(x)
+        |""".stripMargin)
+    val source = cpg.literal("1")
+    val sink   = cpg.call("baz")
+    sink.reachableByFlows(source).map(flowToResultPairs).l shouldBe List()
+  }
+}
+
+class NoCrossTaintDataFlowTest1
+    extends PySrc2CpgFixture(
+      withOssDataflow = true,
+      semantics = NoCrossTaintSemantics.where(_.fullName.contains("bar.py")).after(DefaultSemantics())
+    ) {
+
+  "NoCrossTaintSemantics prevents cross-tainting arguments to external method calls" in {
+    val cpg = code("""
+        |import bar
+        |a = 1
+        |bar.foo(b, Z=a)
+        |bar.baz(b)
+        |""".stripMargin)
+    val source = cpg.literal("1")
+    val sink   = cpg.call("baz").argument.argumentIndex(1)
+    sink.reachableByFlows(source).map(flowToResultPairs) shouldBe empty
+  }
+}
+
+class NoCrossTaintDataFlowTest2
+    extends PySrc2CpgFixture(
+      withOssDataflow = true,
+      semantics = NoCrossTaintSemantics.where(_.fullName.contains("foo")).after(DefaultSemantics())
+    ) {
+
+  "NoCrossTaintSemantics works for specific external method call" in {
+    val cpg = code("""
+        |import bar
+        |a = 1
+        |bar.foo(a,b) # foo has no-cross-taint semantics, so b is not tainted by a
+        |bar.baz(a,c) # however, baz has default semantics, so c is tainted by a
+        |print(b)
+        |print(c)
+        |""".stripMargin)
+    val source = cpg.literal("1")
+    val sink   = cpg.call.name("print").argument.argumentIndex(1)
+    // Note: it's unfortunate that `(bar.foo(a, b), 4)` still shows up in this flow.
+    // However, we can check that NoCrossTaintSemantics is doing its job, as otherwise
+    // we'd also have a `print(b)` sink.
+    sink.reachableByFlows(source).map(flowToResultPairs).l shouldBe List(
+      List(("a = 1", 3), ("bar.foo(a, b)", 4), ("bar.baz(a, c)", 5), ("print(c)", 7))
+    )
+  }
+
 }
 
 class RegexDefinedFlowsDataFlowTests
     extends PySrc2CpgFixture(
       withOssDataflow = true,
-      extraFlows = List(
-        FlowSemantic.from("^path.*<module>\\.sanitizer$", List((0, 0), (1, 1)), regex = true),
-        FlowSemantic.from("^foo.*<module>\\.sanitizer.*", List((0, 0), (1, 1)), regex = true),
-        FlowSemantic.from("^foo.*\\.create_sanitizer\\.<returnValue>\\.sanitize", List((0, 0), (1, 1)), regex = true),
-        FlowSemantic
-          .from(
-            "requests.py:<module>.post",
-            List((0, 0), (1, "url", -1), (2, "body", -1), (1, "url", 1, "url"), (2, "body", 2, "body"))
-          ),
-        FlowSemantic.from("cross_taint.py:<module>.go", List((0, 0), (1, 1), (1, "a", 2, "b")))
+      semantics = DefaultSemantics().plus(
+        List(
+          FlowSemantic.from("^path.*<module>\\.sanitizer$", List((0, 0), (1, 1)), regex = true),
+          FlowSemantic.from("^foo.*<module>\\.sanitizer.*", List((0, 0), (1, 1)), regex = true),
+          FlowSemantic.from("^foo.*\\.create_sanitizer\\.<returnValue>\\.sanitize", List((0, 0), (1, 1)), regex = true),
+          FlowSemantic
+            .from(
+              "requests.py:<module>.post",
+              List((0, 0), (1, "url", -1), (2, "body", -1), (1, "url", 1, "url"), (2, "body", 2, "body"))
+            ),
+          FlowSemantic.from("cross_taint.py:<module>.go", List((0, 0), (1, 1), (1, "a", 2, "b")))
+        )
       )
     ) {
 

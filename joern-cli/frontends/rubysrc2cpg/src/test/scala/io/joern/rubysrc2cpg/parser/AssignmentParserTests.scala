@@ -50,7 +50,7 @@ class AssignmentParserTests extends RubyParserFixture with Matchers {
     test("*a, b, c = 1, 2, 3, 4")
     test("a, b, c = 1, 2, *list")
     test("a, b, c = 1, *list")
-    test("a = b, *c, d")
+    test("a = *c, b, d")
   }
 
   "Class Constant Assign" in {

@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal}
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 import io.joern.rubysrc2cpg.passes.Defines as RubyDefines
@@ -487,6 +487,22 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
 
         rhs.code shouldBe "1"
       case xs => fail(s"Expected one call for assignment, got ${xs.code.mkString(",")}")
+    }
+  }
+
+  "MethodInvocationWithoutParentheses multiple call args" in {
+    val cpg = code("""
+        |def gl_badge_tag(*args, &block)
+        |   render :some_symbol, &block
+        |end
+        |""".stripMargin)
+
+    inside(cpg.call.name("render").argument.l) {
+      case _ :: (symbolArg: Literal) :: (blockArg: Identifier) :: Nil =>
+        symbolArg.code shouldBe ":some_symbol"
+        blockArg.code shouldBe "block"
+
+      case xs => fail(s"Expected two args, found [${xs.code.mkString(",")}]")
     }
   }
 }

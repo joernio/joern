@@ -93,17 +93,19 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     forElem: BabelNodeInfo,
     methodBlockContent: List[Ast] = List.empty
   ): MethodAst = {
+    val fakeStartEnd =
+      s"""
+         | "start": ${start(forElem.json).getOrElse(-1)},
+         | "end": ${end(forElem.json).getOrElse(-1)}
+         |""".stripMargin
+
     val fakeConstructorCode = s"""{
       | "type": "ClassMethod",
+      | $fakeStartEnd,
       | "key": {
       |   "type": "Identifier",
       |   "name": "constructor",
-      |   "loc": {
-      |     "start": {
-      |       "line": ${forElem.lineNumber.getOrElse(-1)},
-      |       "column": ${forElem.columnNumber.getOrElse(-1)}
-      |     }
-      |   }
+      |   $fakeStartEnd
       | },
       | "kind": "constructor",
       | "id": null,
