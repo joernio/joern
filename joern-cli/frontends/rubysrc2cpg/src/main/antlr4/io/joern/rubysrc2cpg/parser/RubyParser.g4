@@ -117,6 +117,7 @@ methodName
     :   methodIdentifier
     |   keyword
     |   pseudoVariable
+    |   LBRACK RBRACK
     ;
 
 methodOnlyIdentifier

@@ -47,4 +47,27 @@ class IndexAccessTests extends RubyCode2CpgFixture {
     two.code shouldBe "2"
   }
 
+  "Index Access with `.[](index)`" in {
+    val cpg = code("""
+        |class Foo
+        |  def extract_url
+        |    @params.dig(:event, :links)&.first&.[](:url)
+        |  end
+        |end
+        |""".stripMargin)
+
+    inside(cpg.call.name(Operators.indexAccess).l) {
+      case indexCall :: Nil =>
+        indexCall.code shouldBe "@params.dig(:event, :links)&.first&.[](:url)"
+
+        inside(indexCall.argument.l) {
+          case target :: index :: Nil =>
+            target.code shouldBe "(<tmp-1> = @params.dig(:event, :links))&.first"
+            index.code shouldBe ":url"
+          case xs => fail(s"Expected target and index, got [${xs.code.mkString(",")}]")
+        }
+
+      case xs => fail(s"Expected one index access, got [${xs.code.mkString(",")}]")
+    }
+  }
 }
