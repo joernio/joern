@@ -810,6 +810,14 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
         val fullName  = composeMethodFullName(StaticInitMethodName, isStatic = true)
         val ast =
           staticInitMethodAst(inits, fullName, Option(signature), TypeConstants.Void, fileName = Some(relativeFileName))
+
+        for {
+          method  <- ast.root.collect { case method: NewMethod => method }
+          content <- fileContent
+        } {
+          method.offset(0)
+          method.offsetEnd(content.length)
+        }
         Option(ast)
     }
 
