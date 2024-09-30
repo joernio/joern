@@ -152,17 +152,13 @@ trait FrontendHTTPServer[T <: X2CpgConfig[T], X <: X2CpgFrontend[T]] { this: X2C
     }
   }
 
-  private def retryUntilSuccess[F](f: () => Try[F], maxAttempts: Int = 10): F = {
+  private def retryUntilSuccess[F](f: () => Try[F], maxAttempts: Int): F = {
     @tailrec
     def attempt(remainingAttempts: Int): F = {
       f() match {
-        case Success(port) =>
-          println(s"FrontendHTTPServer started on port $port")
-          port
-        case Failure(_) if remainingAttempts > 1 =>
-          attempt(remainingAttempts - 1)
-        case Failure(exception) =>
-          throw exception
+        case Success(port)                       => port
+        case Failure(_) if remainingAttempts > 1 => attempt(remainingAttempts - 1)
+        case Failure(exception)                  => throw exception
       }
     }
     attempt(maxAttempts)
@@ -175,10 +171,12 @@ trait FrontendHTTPServer[T <: X2CpgConfig[T], X <: X2CpgFrontend[T]] { this: X2C
     * hook is added to ensure that the server is properly stopped when the application is terminated.
     *
     * @return
-    *   The port this server is bound to which is chosen randomly until success
+    *   The port this server is bound to which is chosen randomly until success (default number of attempts: 10)
     */
   def startup(): Int = {
-    retryUntilSuccess(internalServerStart)
+    val port = retryUntilSuccess(internalServerStart, maxAttempts = 10)
+    println(s"FrontendHTTPServer started on port $port")
+    port
   }
 
 }
