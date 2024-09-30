@@ -78,7 +78,17 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val (fullName, signature) =
       if (operatorOption.isDefined) (operatorOption.get, TypeConstants.any)
       // TODO: fix the fallback METHOD_FULL_NAME and SIGNATURE here (should be a correct number of ANYs)
-      else typeInfoProvider.fullNameWithSignature(expr, (TypeConstants.any, TypeConstants.any))
+      else {
+        val funcDesc = nameRenderer.astToDesc(expr.getOperationReference)
+        val descFullName = funcDesc
+          .flatMap(nameRenderer.descFullName)
+          .getOrElse(TypeConstants.any)
+        val signature = funcDesc
+          .flatMap(nameRenderer.funcDescSignature)
+          .getOrElse(TypeConstants.any)
+        val fullName = nameRenderer.combineFunctionFullName(descFullName, signature)
+        (fullName, signature)
+      }
 
     val finalSignature =
       // TODO: add test case for this situation
@@ -134,13 +144,15 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     argIdx: Option[Int],
     argNameMaybe: Option[String]
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val receiverAst = astsForExpression(expr.getReceiverExpression, Some(0)).headOption
-      .getOrElse(Ast(unknownNode(expr.getReceiverExpression, Constants.empty)))
     val argAsts = selectorExpressionArgAsts(expr)
 
-    val (astDerivedMethodFullName, astDerivedSignature) = astDerivedFullNameWithSignature(expr, argAsts)
-    val (fullName, signature) =
-      typeInfoProvider.fullNameWithSignature(expr, (astDerivedMethodFullName, astDerivedSignature))
+    // TODO fix the cast to KtCallExpression
+    val (fullName, signature) = calleeFullnameAndSignature(
+      getCalleeExpr(expr),
+      astDerivedFullNameWithSignature(expr, argAsts)._1,
+      astDerivedFullNameWithSignature(expr, argAsts)._2
+    )
+
     registerType(typeInfoProvider.containingDeclType(expr, TypeConstants.any))
     val retType    = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val methodName = expr.getSelectorExpression.getFirstChild.getText
@@ -157,6 +169,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         ),
         argIdx
       ).argumentName(argNameMaybe)
+
+    val receiverAst = astsForExpression(expr.getReceiverExpression, Some(0)).headOption
+      .getOrElse(Ast(unknownNode(expr.getReceiverExpression, Constants.empty)))
     callAst(node, argAsts, Option(receiverAst))
   }
 
@@ -169,9 +184,12 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       .getOrElse(Ast(unknownNode(expr.getReceiverExpression, Constants.empty)))
     val argAsts = selectorExpressionArgAsts(expr)
 
-    val (astDerivedMethodFullName, astDerivedSignature) = astDerivedFullNameWithSignature(expr, argAsts)
-    val (fullName, signature) =
-      typeInfoProvider.fullNameWithSignature(expr, (astDerivedMethodFullName, astDerivedSignature))
+    val (fullName, signature) = calleeFullnameAndSignature(
+      getCalleeExpr(expr),
+      astDerivedFullNameWithSignature(expr, argAsts)._1,
+      astDerivedFullNameWithSignature(expr, argAsts)._2
+    )
+
     registerType(typeInfoProvider.containingDeclType(expr, TypeConstants.any))
     val retType    = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val methodName = expr.getSelectorExpression.getFirstChild.getText
@@ -220,7 +238,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         val assignmentCallAst = callAst(assignmentNode, List(identifierAst) ++ List(rhsAst))
 
         val (fullName, signature) =
-          typeInfoProvider.fullNameWithSignature(callExpr, (TypeConstants.any, TypeConstants.any))
+          calleeFullnameAndSignature(
+            getCalleeExpr(expr),
+            Defines.UnresolvedNamespace,
+            s"${Defines.UnresolvedSignature}(${callExpr.getValueArguments.size()})"
+          )
         val initCallNode = callNode(
           callExpr,
           callExpr.getText,
@@ -267,9 +289,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       .getOrElse(Ast(unknownNode(expr.getReceiverExpression, Constants.empty)))
     val argAsts = selectorExpressionArgAsts(expr)
 
-    val (astDerivedMethodFullName, astDerivedSignature) = astDerivedFullNameWithSignature(expr, argAsts)
-    val (fullName, signature) =
-      typeInfoProvider.fullNameWithSignature(expr, (astDerivedMethodFullName, astDerivedSignature))
+    val (fullName, signature) = calleeFullnameAndSignature(
+      getCalleeExpr(expr),
+      astDerivedFullNameWithSignature(expr, argAsts)._1,
+      astDerivedFullNameWithSignature(expr, argAsts)._2
+    )
     registerType(typeInfoProvider.containingDeclType(expr, TypeConstants.any))
     val retType      = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val methodName   = expr.getSelectorExpression.getFirstChild.getText
@@ -305,9 +329,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       .getOrElse(Ast(unknownNode(expr.getReceiverExpression, Constants.empty)))
     val argAsts = selectorExpressionArgAsts(expr)
 
-    val (astDerivedMethodFullName, astDerivedSignature) = astDerivedFullNameWithSignature(expr, argAsts)
-    val (fullName, signature) =
-      typeInfoProvider.fullNameWithSignature(expr, (astDerivedMethodFullName, astDerivedSignature))
+    val (fullName, signature) = calleeFullnameAndSignature(
+      getCalleeExpr(expr),
+      astDerivedFullNameWithSignature(expr, argAsts)._1,
+      astDerivedFullNameWithSignature(expr, argAsts)._2
+    )
     registerType(typeInfoProvider.containingDeclType(expr, TypeConstants.any))
     val retType    = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val methodName = expr.getSelectorExpression.getFirstChild.getText
@@ -454,9 +480,22 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val explicitSignature = s"${TypeConstants.any}(${argAsts.map { _ => TypeConstants.any }.mkString(",")})"
     val explicitFullName =
       if (typeInfoProvider.typeRenderer.keepTypeArguments && typeArgs.nonEmpty)
-        s"$methodFqName<${typeArgs.mkString(",")}>:$explicitSignature"
-      else s"$methodFqName:$explicitSignature"
-    val (fullName, signature) = typeInfoProvider.fullNameWithSignature(expr, (explicitFullName, explicitSignature))
+        s"$methodFqName<${typeArgs.mkString(",")}>"
+      else methodFqName
+
+    val funcDesc = nameRenderer.astToDesc(expr.getCalleeExpression).orElse {
+      nameRenderer
+        .astToAmbiguousReferenceTargetDescs(expr.getCalleeExpression)
+        .find(_.getValueParameters.size == expr.getValueArguments.size)
+    }
+
+    val descFullName = funcDesc
+      .flatMap(nameRenderer.descFullName)
+      .getOrElse(explicitFullName)
+    val signature = funcDesc
+      .flatMap(nameRenderer.funcDescSignature)
+      .getOrElse(explicitSignature)
+    val fullName = nameRenderer.combineFunctionFullName(descFullName, signature)
 
     val bindingContext = typeInfoProvider.bindingContext
     val call           = bindingContext.get(BindingContext.CALL, expr.getCalleeExpression)
@@ -558,7 +597,12 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val astsForTrails    = argAstsWithTrail.map(_._2)
     val astsForNonTrails = argAstsWithTrail.flatMap(_._1)
 
-    val (fullName, signature) = typeInfoProvider.fullNameWithSignature(expr, (TypeConstants.any, TypeConstants.any))
+    val (fullName, signature) =
+      calleeFullnameAndSignature(
+        getCalleeExpr(expr),
+        Defines.UnresolvedNamespace,
+        s"${Defines.UnresolvedSignature}(${expr.getValueArguments.size()})"
+      )
     registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
 
     val initCallNode = callNode(

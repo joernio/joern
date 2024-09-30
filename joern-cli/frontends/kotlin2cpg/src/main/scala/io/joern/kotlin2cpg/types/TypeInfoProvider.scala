@@ -30,7 +30,6 @@ case class AnonymousObjectContext(declaration: KtElement)
 
 trait TypeInfoProvider(val typeRenderer: TypeRenderer = new TypeRenderer()) {
   val bindingContext: BindingContext
-  def isExtensionFn(fn: KtNamedFunction): Boolean
 
   def usedAsExpression(expr: KtExpression): Option[Boolean]
 
@@ -60,11 +59,7 @@ trait TypeInfoProvider(val typeRenderer: TypeRenderer = new TypeRenderer()) {
 
   def propertyType(expr: KtProperty, defaultValue: String): String
 
-  def fullName(expr: KtClassOrObject, defaultValue: String, ctx: Option[AnonymousObjectContext] = None): String
-
   def fullName(expr: KtTypeAlias, defaultValue: String): String
-
-  def fullNameWithSignature(expr: KtDestructuringDeclarationEntry, defaultValue: (String, String)): (String, String)
 
   def aliasTypeFullName(expr: KtTypeAlias, defaultValue: String): String
 
@@ -80,39 +75,15 @@ trait TypeInfoProvider(val typeRenderer: TypeRenderer = new TypeRenderer()) {
 
   def bindingKind(expr: KtQualifiedExpression): CallKind
 
-  def fullNameWithSignature(expr: KtQualifiedExpression, or: (String, String)): (String, String)
-
-  def fullNameWithSignature(call: KtCallExpression, or: (String, String)): (String, String)
-
-  def fullNameWithSignature(expr: KtPrimaryConstructor, or: (String, String)): (String, String)
-
-  def fullNameWithSignature(expr: KtSecondaryConstructor, or: (String, String)): (String, String)
-
-  def fullNameWithSignature(call: KtBinaryExpression, or: (String, String)): (String, String)
-
-  def fullNameWithSignature(expr: KtNamedFunction, or: (String, String)): (String, String)
-
-  def fullNameWithSignatureAsLambda(expr: KtNamedFunction, lambdaName: String): (String, String)
-
-  def fullNameWithSignature(expr: KtClassLiteralExpression, or: (String, String)): (String, String)
-
-  def fullNameWithSignature(expr: KtLambdaExpression, lambdaName: String): (String, String)
-
   def anySignature(args: Seq[Any]): String
 
   def returnTypeFullName(expr: KtLambdaExpression): String
 
   def hasApplyOrAlsoScopeFunctionParent(expr: KtLambdaExpression): Boolean
 
-  def nameReferenceKind(expr: KtNameReferenceExpression): NameReferenceKind
-
   def isConstructorCall(expr: KtExpression): Option[Boolean]
 
   def typeFullName(expr: KtTypeReference, defaultValue: String): String
-
-  def typeFullName(expr: KtPrimaryConstructor | KtSecondaryConstructor, defaultValue: String): String
-
-  def typeFullName(expr: KtCallExpression, defaultValue: String): String
 
   def typeFullName(expr: KtParameter, defaultValue: String): String
 

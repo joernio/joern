@@ -141,7 +141,8 @@ class TypeRenderer(val keepTypeArguments: Boolean = false) {
           }
     val renderedType =
       if (shouldMapPrimitiveArrayTypes && primitiveArrayMappings.contains(rendered)) primitiveArrayMappings(rendered)
-      else if (rendered == TypeConstants.kotlinUnit) TypeConstants.void
+      else if (rendered == TypeConstants.kotlinUnit)
+        TypeConstants.void
       else rendered
 
     if (keepTypeArguments && !t.getArguments.isEmpty) {

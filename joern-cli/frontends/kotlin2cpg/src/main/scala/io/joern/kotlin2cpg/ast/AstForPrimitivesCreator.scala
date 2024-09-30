@@ -204,12 +204,13 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     argName: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val (fullName, signature) = typeInfoProvider.fullNameWithSignature(expr, ("", "")) // TODO: fix the fallback names
-    val typeFullName          = registerType(typeInfoProvider.expressionType(expr, TypeConstants.javaLangObject))
+    val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.javaLangObject))
+    val fullName     = "<operator>.class"
+    val signature    = s"$typeFullName()"
     val node = callNode(
       expr,
       expr.getText,
-      TypeConstants.classLiteralReplacementMethodName,
+      fullName,
       fullName,
       DispatchTypes.STATIC_DISPATCH,
       Some(signature),

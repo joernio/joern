@@ -3,8 +3,7 @@ package io.joern.kotlin2cpg.ast
 import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.types.TypeConstants
 import io.joern.kotlin2cpg.types.TypeInfoProvider
-import io.joern.x2cpg.Ast
-import io.joern.x2cpg.ValidationMode
+import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.joern.x2cpg.datastructures.Stack.StackWrapper
 import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.utils.NodeBuilders.newBindingNode
@@ -19,6 +18,7 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.resolve.DescriptorUtils
 
 import java.util.UUID.nameUUIDFromBytes
 import scala.jdk.CollectionConverters.*
@@ -62,14 +62,24 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  def astsForMethod(ktFn: KtNamedFunction, needsThisParameter: Boolean = false, withVirtualModifier: Boolean = false)(
+  def astsForMethod(ktFn: KtNamedFunction, withVirtualModifier: Boolean = false)(
     implicit typeInfoProvider: TypeInfoProvider
   ): Seq[Ast] = {
-    val (fullName, signature) = typeInfoProvider.fullNameWithSignature(ktFn, ("", ""))
-    val _methodNode           = methodNode(ktFn, ktFn.getName, fullName, signature, relativizedPath)
+    val funcDesc = nameRenderer.astToDesc(ktFn)
+    val descFullName = funcDesc
+      .flatMap(nameRenderer.descFullName)
+      .getOrElse(s"${Defines.UnresolvedNamespace}.${ktFn.getName}")
+    val signature = funcDesc
+      .flatMap(nameRenderer.funcDescSignature)
+      .getOrElse(s"${Defines.UnresolvedSignature}(${ktFn.getValueParameters.size()})")
+    val fullName = nameRenderer.combineFunctionFullName(descFullName, signature)
+
+    val _methodNode = methodNode(ktFn, ktFn.getName, fullName, signature, relativizedPath)
     scope.pushNewScope(_methodNode)
     methodAstParentStack.push(_methodNode)
 
+    val needsThisParameter = funcDesc.get.getDispatchReceiverParameter != null ||
+      DescriptorUtils.isExtension(funcDesc.get)
     val thisParameterMaybe = if (needsThisParameter) {
       val typeDeclFullName = registerType(typeInfoProvider.containingTypeDeclFullName(ktFn, TypeConstants.any))
       val node = NodeBuilders.newThisParameterNode(
@@ -171,9 +181,17 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     argNameMaybe: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val name                  = nextClosureName()
-    val (fullName, signature) = typeInfoProvider.fullNameWithSignatureAsLambda(fn, name)
-    val lambdaMethodNode      = methodNode(fn, name, fullName, signature, relativizedPath)
+    val funcDesc = nameRenderer.astToDesc(fn)
+    val name     = nameRenderer.descName(funcDesc.get)
+    val descFullName = funcDesc
+      .flatMap(nameRenderer.descFullName)
+      .getOrElse(s"${Defines.UnresolvedNamespace}.$name")
+    val signature = funcDesc
+      .flatMap(nameRenderer.funcDescSignature)
+      .getOrElse(s"${Defines.UnresolvedSignature}(${fn.getValueParameters.size()})")
+    val fullName = nameRenderer.combineFunctionFullName(descFullName, signature)
+
+    val lambdaMethodNode = methodNode(fn, name, fullName, signature, relativizedPath)
 
     val closureBindingEntriesForCaptured = scope
       .pushClosureScope(lambdaMethodNode)
@@ -268,9 +286,17 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     argNameMaybe: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val name                  = nextClosureName()
-    val (fullName, signature) = typeInfoProvider.fullNameWithSignature(expr, name)
-    val lambdaMethodNode      = methodNode(expr, name, fullName, signature, relativizedPath)
+    val funcDesc = nameRenderer.astToDesc(expr.getFunctionLiteral)
+    val name     = nameRenderer.descName(funcDesc.get)
+    val descFullName = funcDesc
+      .flatMap(nameRenderer.descFullName)
+      .getOrElse(s"${Defines.UnresolvedNamespace}.$name")
+    val signature = funcDesc
+      .flatMap(nameRenderer.funcDescSignature)
+      .getOrElse(s"${Defines.UnresolvedSignature}(${expr.getFunctionLiteral.getValueParameters.size()})")
+    val fullName = nameRenderer.combineFunctionFullName(descFullName, signature)
+
+    val lambdaMethodNode = methodNode(expr, name, fullName, signature, relativizedPath)
 
     val closureBindingEntriesForCaptured = scope
       .pushClosureScope(lambdaMethodNode)

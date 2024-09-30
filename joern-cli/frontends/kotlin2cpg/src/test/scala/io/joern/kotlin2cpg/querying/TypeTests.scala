@@ -109,5 +109,4 @@ class TypeTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     }
 
   }
-
 }

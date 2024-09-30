@@ -229,7 +229,7 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
     "should contain a CALL node `writeText` with the correct props set" in {
       val List(c) = cpg.call.code("f.writeText.*").l
-      c.methodFullName shouldBe "java.io.File.writeText:void(java.lang.String,java.nio.charset.Charset)"
+      c.methodFullName shouldBe "kotlin.io.writeText:void(java.io.File,java.lang.String,java.nio.charset.Charset)"
     }
   }
 
@@ -357,7 +357,7 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
     "should contain a METHOD node with correct METHOD_FULL_NAME set" in {
       val List(c) = cpg.method.nameExact("mapIndexedNotNullTo").callIn.l
-      c.methodFullName shouldBe "kotlin.sequences.Sequence.mapIndexedNotNullTo:java.lang.Object(java.util.Collection,kotlin.Function2)"
+      c.methodFullName shouldBe "kotlin.sequences.mapIndexedNotNullTo:java.util.Collection(kotlin.sequences.Sequence,java.util.Collection,kotlin.Function2)"
     }
   }
 
@@ -681,6 +681,23 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         argument.name shouldBe "this"
         argument.argumentIndex shouldBe 0
       }
+    }
+  }
+
+  "have correct call for nested qualified expressions" in {
+    val cpg = code("""
+                     |package somePackage
+                     |class A {
+                     |  private val sub: A?;
+                     |  fun func() {
+                     |    sub?.sub?.func();
+                     |  }
+                     |}
+                     |""".stripMargin)
+
+    inside(cpg.call.nameExact("func").l) { case List(call) =>
+      call.methodFullName shouldBe "somePackage.A.func:void()"
+      call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
     }
   }
 }

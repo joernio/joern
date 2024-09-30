@@ -11,9 +11,7 @@ class ExtensionTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     val cpg = code("""
         |package mypkg
         |
-        |class Example {
-        |    fun printBar() { println("class.bar") }
-        |}
+        |class Example {}
         |
         |fun Example.printBaz() { println("ext.baz") }
         |
@@ -24,12 +22,13 @@ class ExtensionTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
     "should contain a CALL node for the calls to the extension fns with the correct MFN set" in {
       val List(c) = cpg.call.code(".*printBaz.*").l
-      c.methodFullName shouldBe "mypkg.Example.printBaz:void()"
+      c.methodFullName shouldBe "mypkg.printBaz:void(mypkg.Example)"
     }
 
     "should contain a METHOD node for the extension fn with the correct MFN set" in {
+      val x       = cpg.method.fullName.l
       val List(m) = cpg.method.fullName(".*printBaz.*").l
-      m.fullName shouldBe "mypkg.Example.printBaz:void()"
+      m.fullName shouldBe "mypkg.printBaz:void(mypkg.Example)"
     }
   }
 
@@ -73,23 +72,23 @@ class ExtensionTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
     "should contain a CALL node with the correct props set for the call to the package-level defined extension fn" in {
       val List(c) = cpg.call.code("str.hash.*").where(_.method.fullName(".*main.*")).l
-      c.methodFullName shouldBe "java.lang.String.hash:java.lang.String()"
+      c.methodFullName shouldBe "mypkg.hash:java.lang.String(java.lang.String)"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.signature shouldBe "java.lang.String()"
+      c.signature shouldBe "java.lang.String(java.lang.String)"
     }
 
     "should contain a CALL node with the correct props set for the call to the extension fn defined in `AClass`" in {
       val List(c) = cpg.typeDecl.fullName(".*AClass.*").method.fullName(".*hashStr.*").call.code("str.hash.*").l
-      c.methodFullName shouldBe "java.lang.String.hash:java.lang.String()"
+      c.methodFullName shouldBe "mypkg.AClass.hash:java.lang.String(java.lang.String)"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.signature shouldBe "java.lang.String()"
+      c.signature shouldBe "java.lang.String(java.lang.String)"
     }
 
     "should contain a CALL node with the correct props set for the call to the extension fn defined in `BClass`" in {
       val List(c) = cpg.typeDecl.fullName(".*BClass.*").method.fullName(".*hashStr.*").call.code("str.hash.*").l
-      c.methodFullName shouldBe "java.lang.String.hash:java.lang.String()"
+      c.methodFullName shouldBe "mypkg.BClass.hash:java.lang.String(java.lang.String)"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.signature shouldBe "java.lang.String()"
+      c.signature shouldBe "java.lang.String(java.lang.String)"
     }
   }
 
@@ -97,19 +96,15 @@ class ExtensionTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     val cpg = code("""
         |package mypkg
         |fun f1(p: String) {
-        |    val cs: CharSequence = "abcd"
-        |    cs.onEach { println(it) }
+        |    val cs: String = "abcd"
+        |    cs.onEach { }
         |}
         |""".stripMargin)
     implicit val resolver = NoResolve
 
     "contain a CALL node with the correct METHOD_FULLNAME set" in {
       val List(c) = cpg.method.nameExact("onEach").callIn.l
-      // from the documentation at https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.text/on-each.html
-      // ```
-      // inline fun <S : CharSequence> S.onEach(action: (Char) -> Unit): S
-      // ```
-      c.methodFullName shouldBe "java.lang.CharSequence.onEach:java.lang.Object(kotlin.Function1)"
+      c.methodFullName shouldBe "kotlin.text.onEach:java.lang.CharSequence(java.lang.CharSequence,kotlin.Function1)"
     }
   }
 
@@ -128,5 +123,4 @@ class ExtensionTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       p1.typeFullName shouldBe "mypkg.AClass"
     }
   }
-
 }

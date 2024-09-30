@@ -182,4 +182,16 @@ class MethodTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       }
     }
   }
+
+  "test correct translation of parameter kotlin type to java type" in {
+    val cpg = code(
+      """
+        |fun method(x: kotlin.CharArray) {
+        |}
+        |""".stripMargin)
+
+    inside(cpg.method.name("method").l) { case List(method) =>
+      method.fullName shouldBe "method:void(char[])"
+    }
+  }
 }

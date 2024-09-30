@@ -108,7 +108,7 @@ class ResolutionErrorsTests extends KotlinCode2CpgFixture(withOssDataflow = fals
 
     "should contain a CALL node with the correct MFN set when type info is available" in {
       val List(c) = cpg.call.methodFullName(Operators.assignment).where(_.argument(1).code("foo")).argument(2).isCall.l
-      c.methodFullName shouldBe "java.lang.Iterable.filter:java.util.List(kotlin.Function1)"
+      c.methodFullName shouldBe "kotlin.collections.filter:java.util.List(java.lang.Iterable,kotlin.Function1)"
     }
 
     "should contain a CALL node with the correct MFN set when type info is not available" in {
@@ -134,7 +134,7 @@ class ResolutionErrorsTests extends KotlinCode2CpgFixture(withOssDataflow = fals
 
     "should contain a METHOD node with a MFN property starting with `kotlin.Any`" in {
       val List(m) = cpg.method.fullName(".*getFileSize.*").l
-      m.fullName shouldBe s"${Defines.UnresolvedNamespace}.getFileSize:int(boolean)"
+      m.fullName shouldBe s"mypkg.getFileSize:${Defines.UnresolvedSignature}(1)"
     }
   }
 
@@ -156,7 +156,7 @@ class ResolutionErrorsTests extends KotlinCode2CpgFixture(withOssDataflow = fals
 
     "should contain a METHOD node with a MFN property that replaced the unresolvable types with `kotlin.Any`" in {
       val List(m) = cpg.method.fullName(".*clone.*").take(1).l
-      m.fullName shouldBe "java.util.Map.clone:java.util.Map()"
+      m.fullName shouldBe "mypkg.clone:java.util.Map(java.util.Map)"
     }
   }
 
