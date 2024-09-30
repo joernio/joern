@@ -1,5 +1,6 @@
 package io.joern.php2cpg.querying
 
+import io.joern.php2cpg.Config
 import io.joern.php2cpg.parser.Domain
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.joern.x2cpg.Defines
@@ -10,12 +11,14 @@ import io.shiftleft.semanticcpg.language.*
 class MemberTests extends PhpCode2CpgFixture {
 
   "class constants" should {
-    val cpg = code("""<?php
+    val source = """<?php
       |class Foo {
       |  const A = 'A', B = 'B';
       |  public const C = 'C';
       |}
-      |""".stripMargin)
+      |""".stripMargin
+
+    val cpg = code(source, "foo.php").withConfig(Config().withDisableFileContent(false))
 
     "have member nodes representing them" in {
       inside(cpg.typeDecl.name("Foo").member.sortBy(_.name).toList) { case List(aMember, bMember, cMember) =>
@@ -46,6 +49,14 @@ class MemberTests extends PhpCode2CpgFixture {
           checkConstAssign(bAssign, "B")
           checkConstAssign(cAssign, "C")
         }
+        clinitMethod.isExternal shouldBe false
+        clinitMethod.offset shouldBe Some(0)
+        clinitMethod.offsetEnd shouldBe Some(source.length)
+        cpg.file
+          .name("foo.php")
+          .content
+          .map(_.substring(clinitMethod.offset.get, clinitMethod.offsetEnd.get))
+          .l shouldBe List(source)
       }
     }
   }
