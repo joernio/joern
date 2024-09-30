@@ -82,14 +82,19 @@ class Steps[A](val traversal: Iterator[A]) extends AnyVal {
 object Steps {
   private lazy val nodeSerializer = new CustomSerializer[AbstractNode](implicit format =>
     (
-      { case _ => ??? },
+      { case _ => ??? }, // deserializer not required for now
       { case node: AbstractNode =>
-        val elementMap = (0 until node.productArity).map { i =>
+        val elementMap = Map.newBuilder[String, Any]
+        (0 until node.productArity).foreach { i =>
           val label   = node.productElementName(i)
           val element = node.productElement(i)
-          label -> element
-        }.toMap + ("_label" -> node.label)
-        Extraction.decompose(elementMap)
+          elementMap.addOne(label -> element)
+        }
+        elementMap.addOne("_label" -> node.label)
+        if (node.isInstanceOf[StoredNode]) {
+          elementMap.addOne("_id" -> node.asInstanceOf[StoredNode].id())
+        }
+        Extraction.decompose(elementMap.result())
       }
     )
   )

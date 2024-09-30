@@ -120,6 +120,9 @@ class StepsTest extends AnyWordSpec with Matchers {
       val parsed = parse(json).children.head // exactly one result for the above query
       (parsed \ "_label") shouldBe JString("METHOD")
       (parsed \ "name") shouldBe JString("foo")
+
+      // id should be defined, but we don't care what number it is
+      (parsed \ "_id") shouldBe a[JInt]
     }
 
     "operating on NewNode" in {
