@@ -922,6 +922,7 @@ class RubyNodeCreator(
       Option(ctx.primaryValue()).map(_.getText).contains("Class") && Option(ctx.methodName())
         .map(_.getText)
         .contains("new")
+
     val methodName = ctx.methodName().getText
 
     if (!hasBlock) {
@@ -943,7 +944,8 @@ class RubyNodeCreator(
           }
         } else {
           val args = ctx.argumentWithParentheses().arguments.map(visit)
-          return MemberCall(target, ctx.op.getText, methodName, args)(ctx.toTextSpan)
+          if methodName == "[]" then return IndexAccess(target, args)(ctx.toTextSpan)
+          else return MemberCall(target, ctx.op.getText, methodName, args)(ctx.toTextSpan)
         }
       }
     }
