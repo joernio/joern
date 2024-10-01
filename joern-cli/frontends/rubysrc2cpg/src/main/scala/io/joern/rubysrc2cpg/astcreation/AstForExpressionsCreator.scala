@@ -157,18 +157,18 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   /** Attempts to extract a type from the base of a member call.
     */
   protected def typeFromCallTarget(baseNode: RubyExpression): Option[String] = {
-    baseNode match {
-      case literal: LiteralExpr => Option(literal.typeFullName)
+    scope.lookupVariable(baseNode.text) match {
+      // fixme: This should be under type recovery logic
+      case Some(decl: NewLocal) if decl.typeFullName != Defines.Any             => Option(decl.typeFullName)
+      case Some(decl: NewMethodParameterIn) if decl.typeFullName != Defines.Any => Option(decl.typeFullName)
+      case Some(decl: NewLocal) if decl.dynamicTypeHintFullName.nonEmpty => decl.dynamicTypeHintFullName.headOption
+      case Some(decl: NewMethodParameterIn) if decl.dynamicTypeHintFullName.nonEmpty =>
+        decl.dynamicTypeHintFullName.headOption
       case _ =>
-        scope.lookupVariable(baseNode.text) match {
-          // fixme: This should be under type recovery logic
-          case Some(decl: NewLocal) if decl.typeFullName != Defines.Any             => Option(decl.typeFullName)
-          case Some(decl: NewMethodParameterIn) if decl.typeFullName != Defines.Any => Option(decl.typeFullName)
-          case Some(decl: NewLocal) if decl.dynamicTypeHintFullName.nonEmpty => decl.dynamicTypeHintFullName.headOption
-          case Some(decl: NewMethodParameterIn) if decl.dynamicTypeHintFullName.nonEmpty =>
-            decl.dynamicTypeHintFullName.headOption
-          case _ => None
-        }
+        astForExpression(baseNode).nodes
+          .flatMap(_.properties.get(PropertyNames.TYPE_FULL_NAME).map(_.toString))
+          .filterNot(_ == XDefines.Any)
+          .headOption
     }
   }
 
@@ -296,10 +296,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val createAssignmentToTmp = !baseAstCache.contains(target)
     val tmpName = baseAstCache
       .updateWith(target) {
-        case Some(tmpName) =>
-          // TODO: Type ref nodes are automatically committed on creation, so if we have found a suitable cached AST,
-          //  we want to clean this creation up.
-          Option(tmpName)
+        case Some(tmpName) => Option(tmpName)
         case None =>
           val tmpName     = this.tmpGen.fresh
           val tmpGenLocal = NewLocal().name(tmpName).code(tmpName).typeFullName(Defines.Any)
@@ -875,11 +872,16 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForMemberCallWithoutBlock(node: SimpleCall, memberAccess: MemberAccess): Ast = {
-    val receiverAst    = astForFieldAccess(memberAccess)
-    val methodName     = memberAccess.memberName
-    val methodFullName = XDefines.DynamicCallUnknownFullName
-    val argumentAsts   = node.arguments.map(astForMethodCallArgument)
-    val call           = callNode(node, code(node), methodName, methodFullName, DispatchTypes.DYNAMIC_DISPATCH)
+    val receiverAst = astForFieldAccess(memberAccess)
+    val methodName  = memberAccess.memberName
+    // TODO: Type recovery should potentially resolve this
+    val methodFullName = typeFromCallTarget(memberAccess.target)
+      .map(x => s"$x.$methodName")
+      .getOrElse(XDefines.DynamicCallUnknownFullName)
+    val argumentAsts = node.arguments.map(astForMethodCallArgument)
+    val call =
+      callNode(node, code(node), methodName, XDefines.DynamicCallUnknownFullName, DispatchTypes.DYNAMIC_DISPATCH)
+        .possibleTypes(IndexedSeq(methodFullName))
 
     callAst(call, argumentAsts, Some(receiverAst))
   }

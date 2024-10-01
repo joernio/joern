@@ -401,7 +401,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
                      |""".stripMargin)
 
     inside(cpg.local.l) {
-      case jfsOutsideLocal :: hashInsideLocal :: tmp0 :: jfsCapturedLocal :: tmp1 :: Nil =>
+      case jfsOutsideLocal :: hashInsideLocal :: jfsCapturedLocal :: tmp0 :: tmp1 :: Nil =>
         jfsOutsideLocal.closureBindingId shouldBe None
         hashInsideLocal.closureBindingId shouldBe None
         jfsCapturedLocal.closureBindingId shouldBe Some("Test0.rb:<main>.get_pto_schedule.jfs")
@@ -412,7 +412,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
     }
 
     inside(cpg.method.isLambda.local.l) {
-      case hashLocal :: _ :: jfsLocal :: Nil =>
+      case hashLocal :: jfsLocal :: _ :: Nil =>
         hashLocal.closureBindingId shouldBe None
         jfsLocal.closureBindingId shouldBe Some("Test0.rb:<main>.get_pto_schedule.jfs")
       case xs => fail(s"Expected 3 locals in lambda, got ${xs.code.mkString(",")}")
