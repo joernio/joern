@@ -1,10 +1,10 @@
 package io.shiftleft.semanticcpg.typeinfo
 
 enum LanguagePlatform {
-  case Java
+  case JVM
   override def toString: String = {
     this match
-      case Java => "java"
+      case JVM => "jvm"
       case _ => throw new RuntimeException(s"no toString override for LanguageFrontend enum constant value")
   }
 }
@@ -12,7 +12,7 @@ enum LanguagePlatform {
 object LanguagePlatform {
   def ofString(str: String): LanguagePlatform = {
     str match
-      case "java" => LanguagePlatform.Java
+      case "jvm" => LanguagePlatform.JVM
       case _ => throw new RuntimeException(s"couldn't convert string to LanguageFrontend: $str")
   }
 }

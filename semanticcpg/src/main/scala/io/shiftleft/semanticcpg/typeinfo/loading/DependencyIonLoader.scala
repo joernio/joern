@@ -4,7 +4,7 @@ import io.shiftleft.semanticcpg.typeinfo.*
 import io.shiftleft.semanticcpg.typeinfo.dependencies.*
 import com.amazon.ion.{IonReader, IonType}
 import com.amazon.ion.system.IonReaderBuilder
-import io.shiftleft.semanticcpg.typeinfo.LanguagePlatform.Java
+import io.shiftleft.semanticcpg.typeinfo.LanguagePlatform.JVM
 
 import java.io.{IOException, InputStream}
 import scala.annotation.tailrec

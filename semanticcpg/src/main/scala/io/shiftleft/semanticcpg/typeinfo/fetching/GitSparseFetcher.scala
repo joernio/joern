@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.typeinfo.fetching
 
-import io.shiftleft.semanticcpg.typeinfo.LanguagePlatform.Java
+import io.shiftleft.semanticcpg.typeinfo.LanguagePlatform.JVM
 import io.shiftleft.semanticcpg.typeinfo.dependencies.DirectDependency
 import io.shiftleft.semanticcpg.typeinfo.loading.DependencyIonLoader
 import io.shiftleft.semanticcpg.typeinfo.{LanguagePlatform, PackageIdentifier, Version}
