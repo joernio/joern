@@ -33,55 +33,55 @@ object IonWriter extends Writer[TypeDecl] {
     }
   }
 
-  private def writeType(ty: TypeDecl, w: IonWriter): Unit = {
-    w.stepIn(IonType.STRUCT)
+  private def writeType(ty: TypeDecl, writer: IonWriter): Unit = {
+    writer.stepIn(IonType.STRUCT)
 
-    w.setFieldName("FULL_NAME")
-    w.writeString(ty.fullName)
+    writer.setFieldName("FULL_NAME")
+    writer.writeString(ty.fullName)
 
-    w.setFieldName("NAME")
-    w.writeString(ty.name)
+    writer.setFieldName("NAME")
+    writer.writeString(ty.name)
 
-    w.setFieldName("TYPE_PARAMETERS")
-    w.stepIn(IonType.LIST)
-    ty.typeParams.foreach(w.writeString)
-    w.stepOut()
+    writer.setFieldName("TYPE_PARAMETERS")
+    writer.stepIn(IonType.LIST)
+    ty.typeParams.foreach(writer.writeString)
+    writer.stepOut()
 
-    w.setFieldName("INHERITS")
-    w.stepIn(IonType.LIST)
-    ty.inherits.foreach(w.writeString)
-    w.stepOut()
+    writer.setFieldName("INHERITS")
+    writer.stepIn(IonType.LIST)
+    ty.inherits.foreach(writer.writeString)
+    writer.stepOut()
 
-    w.setFieldName("METHODS")
-    w.stepIn(IonType.LIST)
-    ty.methods.foreach(writeMethod(w))
-    w.stepOut()
+    writer.setFieldName("METHODS")
+    writer.stepIn(IonType.LIST)
+    ty.methods.foreach(writeMethod(writer))
+    writer.stepOut()
 
-    w.setFieldName("MEMBERS")
-    w.stepIn(IonType.LIST)
-    ty.members.foreach(writeMember(w))
-    w.stepOut()
+    writer.setFieldName("MEMBERS")
+    writer.stepIn(IonType.LIST)
+    ty.members.foreach(writeMember(writer))
+    writer.stepOut()
 
-    w.stepOut() // main struct
+    writer.stepOut() // main struct
   }
 
-  private def writeMethod(w: IonWriter)(m: Method): Unit = {
-    w.stepIn(IonType.STRUCT)
-    w.setFieldName("NAME")
-    w.writeString(m.name)
-    w.setFieldName("FULL_NAME")
-    w.writeString(m.fullName)
-    w.setFieldName("SIGNATURE")
-    w.writeString(m.signature)
-    w.stepOut()
+  private def writeMethod(writer: IonWriter)(method: Method): Unit = {
+    writer.stepIn(IonType.STRUCT)
+    writer.setFieldName("NAME")
+    writer.writeString(method.name)
+    writer.setFieldName("FULL_NAME")
+    writer.writeString(method.fullName)
+    writer.setFieldName("SIGNATURE")
+    writer.writeString(method.signature)
+    writer.stepOut()
   }
 
-  private def writeMember(w: IonWriter)(m: Member): Unit = {
-    w.stepIn(IonType.STRUCT)
-    w.setFieldName("NAME")
-    w.writeString(m.name)
-    w.setFieldName("TYPE_FULL_NAME")
-    w.writeString(m.typeFullName)
-    w.stepOut()
+  private def writeMember(writer: IonWriter)(member: Member): Unit = {
+    writer.stepIn(IonType.STRUCT)
+    writer.setFieldName("NAME")
+    writer.writeString(member.name)
+    writer.setFieldName("TYPE_FULL_NAME")
+    writer.writeString(member.typeFullName)
+    writer.stepOut()
   }
 }

@@ -13,38 +13,38 @@ import scala.util.{Failure, Try, Using};
 object DependencyIonLoader {
 
   /** TODO: load resolved transitive dependencies vs load direct dependencies */
-  def parse(lang: LanguagePlatform, data: String): Try[List[DirectDependency]] = {
+  def parse(platform: LanguagePlatform, data: String): Try[List[DirectDependency]] = {
     Using.Manager { use =>
       val reader = use(IonReaderBuilder.standard().build(data))
-      parseLoop(reader, lang)
+      parseLoop(reader, platform)
     }
   }
 
-  def parse(lang: LanguagePlatform, data: InputStream): Try[List[DirectDependency]] = {
+  def parse(platform: LanguagePlatform, data: InputStream): Try[List[DirectDependency]] = {
     Using.Manager { use =>
       val reader = use(IonReaderBuilder.standard().build(data))
-      parseLoop(reader, lang)
+      parseLoop(reader, platform)
     }
   }
 
-  private def parseLoop(r: IonReader, lang: LanguagePlatform, deps: List[DirectDependency] = Nil): List[DirectDependency] = {
-    val ty = Option(r.next())
+  private def parseLoop(reader: IonReader, platform: LanguagePlatform, deps: List[DirectDependency] = Nil): List[DirectDependency] = {
+    val ty = Option(reader.next())
     ty match
       case None => deps
       case Some(IonType.STRUCT) => {
-        r.stepIn()
-        val dependency = parseDependencyStruct(r, defaultDependency(lang))
-        r.stepOut()
-        parseLoop(r, lang, dependency :: deps)
+        reader.stepIn()
+        val dependency = parseDependencyStruct(reader, defaultDependency(platform))
+        reader.stepOut()
+        parseLoop(reader, platform, dependency :: deps)
       }
       case Some(IonType.LIST) => {
-        r.stepIn()
-        parseLoop(r, lang, deps)
+        reader.stepIn()
+        parseLoop(reader, platform, deps)
       }
   }
 
-  private def defaultDependency(lang: LanguagePlatform): DirectDependency = {
-    DirectDependency(PackageIdentifier(lang, ""), Any())
+  private def defaultDependency(platform: LanguagePlatform): DirectDependency = {
+    DirectDependency(PackageIdentifier(platform, ""), Any())
   }
 
   private def parseDependencyStruct(r: IonReader, dep: DirectDependency): DirectDependency = {
