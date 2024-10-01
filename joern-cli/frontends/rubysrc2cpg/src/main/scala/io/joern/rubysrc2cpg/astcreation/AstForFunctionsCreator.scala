@@ -26,6 +26,11 @@ import scala.collection.mutable
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
+  /** As expressions may be discarded, we cannot store closure ASTs in the diffgraph at the point of creation. We need
+    * to only write these at the end.
+    */
+  protected val closureToRefs = mutable.Map.empty[RubyExpression, Seq[Ast]]
+
   /** Creates method declaration related structures.
     * @param node
     *   the node to create the AST structure from.
@@ -194,8 +199,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       case _                                              => false
     })
 
-    val methodRefOption = refs.flatMap(_.nodes).collectFirst { case x: NewTypeRef => x }
+    val typeRefOption = refs.flatMap(_.nodes).collectFirst { case x: NewTypeRef => x }
 
+    val astChildren  = mutable.Buffer.empty[NewNode]
+    val refEdges     = mutable.Buffer.empty[(NewNode, NewNode)]
+    val captureEdges = mutable.Buffer.empty[(NewNode, NewNode)]
     capturedLocalNodes
       .collect {
         case local: NewLocal =>
@@ -216,14 +224,17 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         )
 
         // Create new local node for lambda, with corresponding REF edges to identifiers and closure binding
-        capturedBlockAst.root.foreach(rootBlock => diffGraph.addEdge(rootBlock, capturingLocal, EdgeTypes.AST))
-        capturedIdentifiers.filter(_.name == name).foreach(i => diffGraph.addEdge(i, capturingLocal, EdgeTypes.REF))
-        diffGraph.addEdge(closureBinding, capturedLocal, EdgeTypes.REF)
+        val _refEdges =
+          capturedIdentifiers.filter(_.name == name).map(i => i -> capturingLocal) :+ (closureBinding, capturedLocal)
 
-        methodRefOption.foreach(methodRef => diffGraph.addEdge(methodRef, closureBinding, EdgeTypes.CAPTURE))
+        astChildren.addOne(capturingLocal)
+        refEdges.addAll(_refEdges.toList)
+        captureEdges.addAll(typeRefOption.map(typeRef => typeRef -> closureBinding).toList)
       }
 
-    capturedBlockAst
+    val astWithAstChildren = astChildren.foldLeft(capturedBlockAst) { case (ast, child) => ast.withChild(Ast(child)) }
+    val astWithRefEdges = refEdges.foldLeft(astWithAstChildren) { case (ast, (src, dst)) => ast.withRefEdge(src, dst) }
+    captureEdges.foldLeft(astWithRefEdges) { case (ast, (src, dst)) => ast.withCaptureEdge(src, dst) }
   }
 
   /** Creates the bindings between the method and its types. This is useful for resolving function pointers and imports.
