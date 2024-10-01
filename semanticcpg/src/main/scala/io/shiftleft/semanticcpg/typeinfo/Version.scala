@@ -29,10 +29,7 @@ class SemVer(str: String) extends Version(str) {
 
   override def equals(other: Any): Boolean = {
     other match
-      case o: SemVer =>
-          major == o.major &&
-          minor == o.minor &&
-          patch == o.patch
+      case o: SemVer => major == o.major && minor == o.minor && patch == o.patch
       case _ => false
   }
 
