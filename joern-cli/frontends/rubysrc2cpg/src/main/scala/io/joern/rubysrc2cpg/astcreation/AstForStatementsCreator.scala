@@ -92,20 +92,16 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   protected def astForDoBlock(block: Block & RubyExpression): Seq[Ast] = {
     // Create closure structures: [MethodDecl, TypeRef, MethodRef]
-    if (closureToRefs.contains(block)) {
-      closureToRefs(block)
-    } else {
-      val methodName = nextClosureName()
+    val methodName = nextClosureName()
 
-      val methodAstsWithRefs = block.body match {
-        case x: Block =>
-          astForMethodDeclaration(x.toMethodDeclaration(methodName, Option(block.parameters)), isClosure = true)
-        case _ =>
-          astForMethodDeclaration(block.toMethodDeclaration(methodName, Option(block.parameters)), isClosure = true)
-      }
-      closureToRefs.put(block, methodAstsWithRefs)
-      methodAstsWithRefs
+    val methodAstsWithRefs = block.body match {
+      case x: Block =>
+        astForMethodDeclaration(x.toMethodDeclaration(methodName, Option(block.parameters)), isClosure = true)
+      case _ =>
+        astForMethodDeclaration(block.toMethodDeclaration(methodName, Option(block.parameters)), isClosure = true)
     }
+
+    methodAstsWithRefs
   }
 
   protected def astForReturnExpression(node: ReturnExpression): Ast = {
