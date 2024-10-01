@@ -7,7 +7,8 @@ libraryDependencies ++= Seq(
   "org.scala-lang.modules" %% "scala-xml"         % "2.2.0",
   "org.apache.commons"      % "commons-text"      % Versions.commonsText,
   "org.scalatest"          %% "scalatest"         % Versions.scalatest % Test,
-  "com.amazon.ion"         % "ion-java"          % "1.11.9"
+  "com.amazon.ion"          % "ion-java"          % "1.11.9",
+  "com.amazon.ion"          % "ion-schema-kotlin" % "1.8.0"
 )
 
 Compile / doc / scalacOptions ++= Seq("-doc-title", "semanticcpg apidocs", "-doc-version", version.value)
