@@ -17,7 +17,7 @@ final case class Config(
     with TypeRecoveryParserConfig[Config]
     with TypeStubConfig[Config] {
 
-  this.defaultIgnoredFilesRegex = List("spec", "test", "tests").flatMap { directory =>
+  this.defaultIgnoredFilesRegex = List("spec", "test", "tests", "vendor").flatMap { directory =>
     List(s"(^|\\\\)$directory($$|\\\\)".r.unanchored, s"(^|/)$directory($$|/)".r.unanchored)
   }
 
