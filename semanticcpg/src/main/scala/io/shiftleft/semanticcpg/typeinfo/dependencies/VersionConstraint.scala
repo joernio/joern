@@ -8,37 +8,37 @@ import scala.annotation.tailrec
 // And
 // Or
 // And and Or are left assoc
-sealed trait ConstrainedVersion
-case class Eq(str: Version) extends ConstrainedVersion {
+sealed trait VersionConstraint
+case class Eq(str: Version) extends VersionConstraint {
   override def toString: String = str.toString
 }
-case class Any() extends ConstrainedVersion {
+case class Any() extends VersionConstraint {
   override def toString: String = "*"
 }
-case class Gt(constraint: Eq) extends ConstrainedVersion {
+case class Gt(constraint: Eq) extends VersionConstraint {
   override def toString: String = s">$constraint"
 }
-case class Gte(constraint: Eq) extends ConstrainedVersion {
+case class Gte(constraint: Eq) extends VersionConstraint {
   override def toString: String = s">=$constraint"
 }
-case class Lt(constraint: Eq) extends ConstrainedVersion {
+case class Lt(constraint: Eq) extends VersionConstraint {
   override def toString: String = s"<$constraint"
 }
-case class Lte(constraint: Eq) extends ConstrainedVersion {
+case class Lte(constraint: Eq) extends VersionConstraint {
   override def toString: String = s"<=$constraint"
 }
-case class Not(constraint: ConstrainedVersion) extends ConstrainedVersion {
+case class Not(constraint: VersionConstraint) extends VersionConstraint {
   override def toString: String = s"!$constraint"
 }
-case class And(left: ConstrainedVersion, right: ConstrainedVersion) extends ConstrainedVersion {
+case class And(left: VersionConstraint, right: VersionConstraint) extends VersionConstraint {
   override def toString: String = s"$left && $right"
 }
-case class Or(left: ConstrainedVersion, right: ConstrainedVersion) extends ConstrainedVersion {
+case class Or(left: VersionConstraint, right: VersionConstraint) extends VersionConstraint {
   override def toString: String = s"$left || $right"
 }
 
-object ConstrainedVersion {
-  def parse(ctr: String): ConstrainedVersion =
+object VersionConstraint {
+  def parse(ctr: String): VersionConstraint =
     if (isAny(ctr))
     then Any()
     else parseLoop(ctr)
@@ -52,8 +52,8 @@ object ConstrainedVersion {
   private def parseLoop(
     ctr: String,
     operatorStack: List[ConstraintSymbol] = List(),
-    versionStack: List[ConstrainedVersion] = List()
-  ): ConstrainedVersion = {
+    versionStack: List[VersionConstraint] = List()
+  ): VersionConstraint = {
     if (ctr.isEmpty) {
       if (operatorStack.isEmpty) {
         versionStack.head
@@ -96,7 +96,7 @@ object ConstrainedVersion {
     }
   }
 
-  private def reduceOne(op: ConstraintSymbol, versions: List[ConstrainedVersion]): List[ConstrainedVersion] =
+  private def reduceOne(op: ConstraintSymbol, versions: List[VersionConstraint]): List[VersionConstraint] =
     op match
       case ConstraintSymbol.GT  => Gt(versions.head.asInstanceOf[Eq]) :: versions.tail
       case ConstraintSymbol.GTE => Gte(versions.head.asInstanceOf[Eq]) :: versions.tail
@@ -110,8 +110,8 @@ object ConstrainedVersion {
   private def pushOrReduce(
     op: ConstraintSymbol,
     operatorStack: List[ConstraintSymbol],
-    versionStack: List[ConstrainedVersion]
-  ): (List[ConstraintSymbol], List[ConstrainedVersion]) =
+    versionStack: List[VersionConstraint]
+  ): (List[ConstraintSymbol], List[VersionConstraint]) =
     (op, operatorStack.headOption) match
       case (_, Some(ConstraintSymbol.LPAREN)) =>
         (op :: operatorStack, versionStack)
@@ -131,8 +131,8 @@ object ConstrainedVersion {
   @tailrec
   private def reduceParenthesizedExpr(
     operatorStack: List[ConstraintSymbol],
-    versionStack: List[ConstrainedVersion]
-  ): (List[ConstraintSymbol], List[ConstrainedVersion]) =
+    versionStack: List[VersionConstraint]
+  ): (List[ConstraintSymbol], List[VersionConstraint]) =
     operatorStack.headOption match
       case Some(ConstraintSymbol.LPAREN) => (operatorStack.tail, versionStack)
       case Some(other) =>
