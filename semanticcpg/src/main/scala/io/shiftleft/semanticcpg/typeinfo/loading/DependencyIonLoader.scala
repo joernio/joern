@@ -53,7 +53,7 @@ object DependencyIonLoader {
       case Some(_) =>
         r.getFieldName() match
           case "NAME"       => parseDependencyStruct(r, dep.copy(name = dep.name.copy(name = r.stringValue())))
-          case "CONSTRAINT" => parseDependencyStruct(r, dep.copy(version = Constraint.parse(r.stringValue())))
+          case "CONSTRAINT" => parseDependencyStruct(r, dep.copy(version = ConstrainedVersion.parse(r.stringValue())))
           case "LANG" =>
             parseDependencyStruct(r, dep.copy(name = dep.name.copy(lang = LanguageFrontend.ofString(r.stringValue()))))
   }
