@@ -4,7 +4,7 @@ import io.shiftleft.semanticcpg.typeinfo.*
 import io.shiftleft.semanticcpg.typeinfo.dependencies.*
 import com.amazon.ion.{IonReader, IonType}
 import com.amazon.ion.system.IonReaderBuilder
-import io.shiftleft.semanticcpg.typeinfo.LanguageFrontend.Java
+import io.shiftleft.semanticcpg.typeinfo.LanguagePlatform.Java
 
 import java.io.{IOException, InputStream}
 import scala.annotation.tailrec
@@ -13,21 +13,21 @@ import scala.util.{Failure, Try, Using};
 object DependencyIonLoader {
 
   /** TODO: load resolved transitive dependencies vs load direct dependencies */
-  def parse(lang: LanguageFrontend, data: String): Try[List[DirectDependency]] = {
+  def parse(lang: LanguagePlatform, data: String): Try[List[DirectDependency]] = {
     Using.Manager { use =>
       val reader = use(IonReaderBuilder.standard().build(data))
       parseLoop(reader, lang)
     }
   }
 
-  def parse(lang: LanguageFrontend, data: InputStream): Try[List[DirectDependency]] = {
+  def parse(lang: LanguagePlatform, data: InputStream): Try[List[DirectDependency]] = {
     Using.Manager { use =>
       val reader = use(IonReaderBuilder.standard().build(data))
       parseLoop(reader, lang)
     }
   }
 
-  private def parseLoop(r: IonReader, lang: LanguageFrontend, deps: List[DirectDependency] = Nil): List[DirectDependency] = {
+  private def parseLoop(r: IonReader, lang: LanguagePlatform, deps: List[DirectDependency] = Nil): List[DirectDependency] = {
     val ty = Option(r.next())
     ty match
       case None => deps
@@ -43,7 +43,7 @@ object DependencyIonLoader {
       }
   }
 
-  private def defaultDependency(lang: LanguageFrontend): DirectDependency = {
+  private def defaultDependency(lang: LanguagePlatform): DirectDependency = {
     DirectDependency(PackageIdentifier(lang, ""), Any())
   }
 
@@ -55,6 +55,6 @@ object DependencyIonLoader {
           case "NAME"       => parseDependencyStruct(r, dep.copy(name = dep.name.copy(name = r.stringValue())))
           case "CONSTRAINT" => parseDependencyStruct(r, dep.copy(version = VersionConstraint.parse(r.stringValue())))
           case "LANG" =>
-            parseDependencyStruct(r, dep.copy(name = dep.name.copy(lang = LanguageFrontend.ofString(r.stringValue()))))
+            parseDependencyStruct(r, dep.copy(name = dep.name.copy(platform = LanguagePlatform.ofString(r.stringValue()))))
   }
 }

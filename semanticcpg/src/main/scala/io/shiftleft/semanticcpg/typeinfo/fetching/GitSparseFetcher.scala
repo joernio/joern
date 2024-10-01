@@ -1,9 +1,9 @@
 package io.shiftleft.semanticcpg.typeinfo.fetching
 
-import io.shiftleft.semanticcpg.typeinfo.LanguageFrontend.Java
+import io.shiftleft.semanticcpg.typeinfo.LanguagePlatform.Java
 import io.shiftleft.semanticcpg.typeinfo.dependencies.DirectDependency
 import io.shiftleft.semanticcpg.typeinfo.loading.DependencyIonLoader
-import io.shiftleft.semanticcpg.typeinfo.{LanguageFrontend, PackageIdentifier, Version}
+import io.shiftleft.semanticcpg.typeinfo.{LanguagePlatform, PackageIdentifier, Version}
 
 import scala.jdk.CollectionConverters._
 import java.io.File
@@ -35,7 +35,7 @@ class GitSparseFetcher(repoUrl: String = "git@github.com:flandini/typeinfo.git",
     for {
       _           <- downloadPath(depsDir)
       inputStream <- Try(Files.newInputStream(depsFile))
-      loadedDeps  <- DependencyIonLoader.parse(pid.lang, inputStream)
+      loadedDeps  <- DependencyIonLoader.parse(pid.platform, inputStream)
     } yield loadedDeps
   }
 
@@ -57,7 +57,7 @@ class GitSparseFetcher(repoUrl: String = "git@github.com:flandini/typeinfo.git",
 
   /** e.g., "ion-java" -> "data/" + "java/" + "ion-java/" */
   private def buildPackageDirPath(pid: PackageIdentifier): Path = {
-    Paths.get("data", pid.lang.toString, pid.name)
+    Paths.get("data", pid.platform.toString, pid.name)
   }
 
   /** e.g., "java.io.File", v1.0.0 -> "data/" + "java/" + "java */

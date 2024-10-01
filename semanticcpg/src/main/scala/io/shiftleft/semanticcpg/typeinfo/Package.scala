@@ -5,7 +5,7 @@ import io.shiftleft.semanticcpg.typeinfo.dependencies.{DirectDependency, Transit
 final case class Package(
                           id: PackageIdentifier,
                           version: Version,
-                          lang: LanguageFrontend,
+                          lang: LanguagePlatform,
                           types: Map[String, TypeDecl],
                           directDependencies: List[DirectDependency],
                           transitiveDependencies: List[TransitiveDependency]
