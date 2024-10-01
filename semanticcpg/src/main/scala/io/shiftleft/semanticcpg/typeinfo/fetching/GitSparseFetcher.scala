@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg.typeinfo.fetching
 
 import io.shiftleft.semanticcpg.typeinfo.LanguageFrontend.Java
-import io.shiftleft.semanticcpg.typeinfo.dependencies.Dependency
+import io.shiftleft.semanticcpg.typeinfo.dependencies.DirectDependency
 import io.shiftleft.semanticcpg.typeinfo.loading.DependencyIonLoader
 import io.shiftleft.semanticcpg.typeinfo.{LanguageFrontend, PackageIdentifier, Version}
 
@@ -29,7 +29,7 @@ class GitSparseFetcher(repoUrl: String = "git@github.com:flandini/typeinfo.git",
       .toList
   }
 
-  def getDependencyInfo(pid: PackageIdentifier, version: Version): Try[List[Dependency]] = {
+  def getDependencyInfo(pid: PackageIdentifier, version: Version): Try[List[DirectDependency]] = {
     val depsDir  = buildPackageDepsDirPath(pid)
     val depsFile = buildFileSystemPath(depsDir.resolve(getDepsIonFileName(version)))
     for {

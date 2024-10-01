@@ -13,21 +13,21 @@ import scala.util.{Failure, Try, Using};
 object DependencyIonLoader {
 
   /** TODO: load resolved transitive dependencies vs load direct dependencies */
-  def parse(lang: LanguageFrontend, data: String): Try[List[Dependency]] = {
+  def parse(lang: LanguageFrontend, data: String): Try[List[DirectDependency]] = {
     Using.Manager { use =>
       val reader = use(IonReaderBuilder.standard().build(data))
       parseLoop(reader, lang)
     }
   }
 
-  def parse(lang: LanguageFrontend, data: InputStream): Try[List[Dependency]] = {
+  def parse(lang: LanguageFrontend, data: InputStream): Try[List[DirectDependency]] = {
     Using.Manager { use =>
       val reader = use(IonReaderBuilder.standard().build(data))
       parseLoop(reader, lang)
     }
   }
 
-  private def parseLoop(r: IonReader, lang: LanguageFrontend, deps: List[Dependency] = Nil): List[Dependency] = {
+  private def parseLoop(r: IonReader, lang: LanguageFrontend, deps: List[DirectDependency] = Nil): List[DirectDependency] = {
     val ty = Option(r.next())
     ty match
       case None => deps
@@ -43,11 +43,11 @@ object DependencyIonLoader {
       }
   }
 
-  private def defaultDependency(lang: LanguageFrontend): Dependency = {
-    Dependency(PackageIdentifier(lang, ""), Any())
+  private def defaultDependency(lang: LanguageFrontend): DirectDependency = {
+    DirectDependency(PackageIdentifier(lang, ""), Any())
   }
 
-  private def parseDependencyStruct(r: IonReader, dep: Dependency): Dependency = {
+  private def parseDependencyStruct(r: IonReader, dep: DirectDependency): DirectDependency = {
     Option(r.next()) match
       case None => dep
       case Some(_) =>

@@ -1,12 +1,12 @@
 package io.shiftleft.semanticcpg.typeinfo
 
-import io.shiftleft.semanticcpg.typeinfo.dependencies.{Dependency, ResolvedDependency}
+import io.shiftleft.semanticcpg.typeinfo.dependencies.{DirectDependency, TransitiveDependency}
 
 final case class Package(
-  id: PackageIdentifier,
-  version: Version,
-  lang: LanguageFrontend,
-  types: Map[String, TypeDecl],
-  rawDependencies: List[Dependency],
-  resolvedDependencies: List[ResolvedDependency]
+                          id: PackageIdentifier,
+                          version: Version,
+                          lang: LanguageFrontend,
+                          types: Map[String, TypeDecl],
+                          directDependencies: List[DirectDependency],
+                          transitiveDependencies: List[TransitiveDependency]
 )
