@@ -984,4 +984,21 @@ class MethodTests extends RubyCode2CpgFixture {
       }
     }
   }
+
+  "lambdas as arguments to a long chained call" should {
+    val cpg = code("""
+        |def foo(xs, total_ys, hex_values)
+        |  xs.map.with_index { |f, i| [f / total_ys, hex_values[i]] }                       # 1
+        |    .sort_by { |r| -r[0] }                                                         # 2
+        |    .reject { |r| r[1].size == 8 && r[1].end_with?('00') }                         # 3
+        |    .map { |r| Foo::Bar::Baz.new(*r[1][0..5].scan(/../).map { |c| c.to_i(16) }) }  # 4 & 5
+        |    .slice(0, quantity)
+        |  end
+        |""".stripMargin)
+
+    "not write lambda nodes that are already assigned to some temp variable" in {
+      cpg.typeRef.typeFullName(".*Proc").size shouldBe 5
+      cpg.typeRef.whereNot(_.astParent).size shouldBe 0
+    }
+  }
 }
