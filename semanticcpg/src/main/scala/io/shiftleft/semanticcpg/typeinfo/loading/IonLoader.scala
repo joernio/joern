@@ -83,33 +83,37 @@ object IonLoader extends Loader[TypeDecl] {
       result
     }
 
-  private def parseTextField(r: IonReader, typ: TypeDecl): TypeDecl =
+  private def parseTextField(r: IonReader, typ: TypeDecl): TypeDecl = {
     r.getFieldName() match
       case "FULL_NAME" => typ.copy(fullName = r.stringValue())
-      case "NAME"      => typ.copy(name = r.stringValue())
+      case "NAME" => typ.copy(name = r.stringValue())
+  }
 
   @tailrec
-  private def parseMethod(r: IonReader, m: Method = Method()): Method =
+  private def parseMethod(r: IonReader, m: Method = Method()): Method = {
     Option(r.next()) match
       case None => m
       case Some(_) =>
         r.getFieldName() match
-          case "NAME"      => parseMethod(r, m.copy(name = r.stringValue()))
+          case "NAME" => parseMethod(r, m.copy(name = r.stringValue()))
           case "FULL_NAME" => parseMethod(r, m.copy(fullName = r.stringValue()))
           case "SIGNATURE" => parseMethod(r, m.copy(signature = r.stringValue()))
+  }
 
   @tailrec
-  private def parseMember(r: IonReader, m: Member = Member()): Member =
+  private def parseMember(r: IonReader, m: Member = Member()): Member = {
     Option(r.next()) match
       case None => m
       case Some(_) =>
         r.getFieldName() match
-          case "NAME"           => parseMember(r, m.copy(name = r.stringValue()))
+          case "NAME" => parseMember(r, m.copy(name = r.stringValue()))
           case "TYPE_FULL_NAME" => parseMember(r, m.copy(typeFullName = r.stringValue()))
+  }
 
   @tailrec
-  private def parseStringListContainer(r: IonReader, strs: List[String] = List()): List[String] =
+  private def parseStringListContainer(r: IonReader, strs: List[String] = List()): List[String] = {
     Option(r.next()) match
-      case None                 => strs
+      case None => strs
       case Some(IonType.STRING) => parseStringListContainer(r, r.stringValue() :: strs)
+  }
 }

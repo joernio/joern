@@ -26,14 +26,15 @@ class SemVer(str: String) extends Version(str) {
       case (0, 0, 0)                            => 0
   }
 
-  override def equals(other: Any): Boolean =
+  override def equals(other: Any): Boolean = {
     other match
       case o: SemVer =>
         this.isInstanceOf[SemVer] &&
-        major == o.major &&
-        minor == o.minor &&
-        patch == o.patch
+          major == o.major &&
+          minor == o.minor &&
+          patch == o.patch
       case _ => false
+  }
 
   override def toFetcherStr: String = str
 

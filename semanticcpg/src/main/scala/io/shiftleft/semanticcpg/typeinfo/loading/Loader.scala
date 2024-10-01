@@ -7,7 +7,8 @@ import scala.util.Try;
 
 /** ResultTy is probably one of: TypeDecl, Dependency. Maybe add def parseBinary(data: InputStream): Try[ResultTy]
   */
-trait Loader[ResultTy]:
+trait Loader[ResultTy] {
   def parse(data: String): Try[ResultTy]
   def parse(data: Array[Byte]): Try[ResultTy]
   def parseString(data: InputStream): Try[ResultTy]
+}

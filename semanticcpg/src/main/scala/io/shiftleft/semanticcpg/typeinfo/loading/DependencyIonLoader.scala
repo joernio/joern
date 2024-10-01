@@ -43,8 +43,9 @@ object DependencyIonLoader {
       }
   }
 
-  private def defaultDependency(lang: LanguageFrontend): Dependency =
+  private def defaultDependency(lang: LanguageFrontend): Dependency = {
     Dependency(PackageIdentifier(lang, ""), Any())
+  }
 
   private def parseDependencyStruct(r: IonReader, dep: Dependency): Dependency = {
     Option(r.next()) match

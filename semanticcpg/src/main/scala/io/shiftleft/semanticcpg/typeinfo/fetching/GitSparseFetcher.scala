@@ -51,16 +51,19 @@ class GitSparseFetcher(repoUrl: String = "git@github.com:flandini/typeinfo.git",
   private def getDepsIonFileName(version: Version): String = version.toFetcherStr + ".ion"
 
   /** "ion-java" -> "data/" + "java/" + "ion-java/" + "deps/" */
-  private def buildPackageDepsDirPath(pid: PackageIdentifier): Path =
+  private def buildPackageDepsDirPath(pid: PackageIdentifier): Path = {
     buildPackageDirPath(pid).resolve("deps")
+  }
 
   /** e.g., "ion-java" -> "data/" + "java/" + "ion-java/" */
-  private def buildPackageDirPath(pid: PackageIdentifier): Path =
+  private def buildPackageDirPath(pid: PackageIdentifier): Path = {
     Paths.get("data", pid.lang.toString, pid.name)
+  }
 
   /** e.g., "java.io.File", v1.0.0 -> "data/" + "java/" + "java */
-  private def buildPackagePath(pid: PackageIdentifier, version: Version): Path =
+  private def buildPackagePath(pid: PackageIdentifier, version: Version): Path = {
     buildPackageDirPath(pid).resolve(version.toFetcherStr)
+  }
 
   // First time download needs to `git sparse-checkout set /path/to/dir && git checkout $gitRef`; this checkout does
   // the download on 1st time.
@@ -85,35 +88,43 @@ class GitSparseFetcher(repoUrl: String = "git@github.com:flandini/typeinfo.git",
       } yield ()
     }
 
-  private def sparseClone(): Try[Int] =
+  private def sparseClone(): Try[Int] = {
     Try(
       makeProcess(tmpDir, "git", "clone", "--filter=blob:none", "--depth=1", "--no-checkout", repoUrl, tmpDir.toString)
         .start()
         .waitFor()
     )
+  }
 
-  private def setCone(): Try[Int] =
+  private def setCone(): Try[Int] = {
     Try(makeProcess(tmpDir, "git", "sparse-checkout", "set", "--cone").start().waitFor())
+  }
 
-  private def setFirstPathFilter(path: Path): Try[Int] =
+  private def setFirstPathFilter(path: Path): Try[Int] = {
     Try(makeProcess(tmpDir, "git", "sparse-checkout", "set", path.toString).start().waitFor())
+  }
 
-  private def doInitCheckout(): Try[Int] =
+  private def doInitCheckout(): Try[Int] = {
     Try(makeProcess(tmpDir, "git", "checkout", gitRef).start().waitFor())
+  }
 
-  private def addPathFilterAndDownload(path: Path): Try[Int] =
+  private def addPathFilterAndDownload(path: Path): Try[Int] = {
     Try(makeProcess(tmpDir, "git", "sparse-checkout", "add", path.toString).start().waitFor())
+  }
 
-  private def stripIonSuffix(fileName: String): String =
+  private def stripIonSuffix(fileName: String): String = {
     if (fileName.endsWith(".ion"))
     then fileName.substring(0, fileName.length - ".ion".length)
     else fileName
+  }
 
-  private def checkExitCode(exitCode: Int, potentialErrMsg: => String): Try[Unit] =
+  private def checkExitCode(exitCode: Int, potentialErrMsg: => String): Try[Unit] = {
     if (exitCode != 0)
     then Failure(new RuntimeException(potentialErrMsg))
     else Success(())
+  }
 
-  private def makeProcess(path: Path, command: String*): ProcessBuilder =
-    new ProcessBuilder().directory(path.toFile).command(command*).inheritIO()
+  private def makeProcess(path: Path, command: String*): ProcessBuilder = {
+    new ProcessBuilder().directory(path.toFile).command(command *).inheritIO()
+  }
 }
