@@ -130,7 +130,7 @@ trait FrontendHTTPServer[T <: X2CpgConfig[T], X <: X2CpgFrontend[T]] { this: X2C
 
   private def randomPort(): Int = {
     val random = new Random()
-    1000 + random.nextInt(9000)
+    10000 + random.nextInt(65000)
   }
 
   private def internalServerStart(): Try[Int] = {
