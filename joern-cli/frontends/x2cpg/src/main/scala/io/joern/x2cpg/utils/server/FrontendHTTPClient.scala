@@ -13,14 +13,12 @@ import scala.util.Try
 /** Represents an HTTP client for interacting with a frontend server.
   *
   * This class provides functionality to create and send HTTP requests to a specified frontend server. The server's host
-  * and port can be configured using the default values provided by `FrontendHTTPDefaults`.
+  * needs to be configured.
   *
-  * @param host
-  *   The hostname of the frontend server. Defaults to `FrontendHTTPDefaults.host`.
   * @param port
-  *   The port of the frontend server. Defaults to `FrontendHTTPDefaults.port`.
+  *   The port of the frontend server.
   */
-case class FrontendHTTPClient(host: String = FrontendHTTPDefaults.host, port: Int = FrontendHTTPDefaults.port) {
+case class FrontendHTTPClient(port: Int) {
 
   /** The underlying HTTP client used to send requests. */
   private val underlyingClient: HttpClient = HttpClient.newBuilder().build()
@@ -39,7 +37,7 @@ case class FrontendHTTPClient(host: String = FrontendHTTPDefaults.host, port: In
   def buildRequest(args: Array[String]): HttpRequest = {
     HttpRequest
       .newBuilder()
-      .uri(URI.create(s"http://$host:$port/${FrontendHTTPDefaults.route}"))
+      .uri(URI.create(s"http://localhost:$port/run"))
       .header("Content-Type", "application/x-www-form-urlencoded")
       .POST(BodyPublishers.ofString(args.mkString("&")))
       .build()

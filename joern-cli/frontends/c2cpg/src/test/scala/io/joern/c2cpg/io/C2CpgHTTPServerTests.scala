@@ -14,7 +14,7 @@ import scala.collection.parallel.CollectionConverters.RangeIsParallelizable
 
 class C2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
-  private val testPort: Int = 9001
+  private var port: Int = -1
 
   private def newProjectUnderTest(index: Option[Int] = None): File = {
     val dir  = File.newTemporaryDirectory("c2cpgTestsHttpTest")
@@ -32,7 +32,7 @@ class C2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndAfter
 
   override def beforeAll(): Unit = {
     // Start server
-    io.joern.c2cpg.Main.main(Array("", "--server", s"--server-port=$testPort"))
+    port = io.joern.c2cpg.Main.startup()
   }
 
   override def afterAll(): Unit = {
@@ -47,7 +47,7 @@ class C2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndAfter
       val projectUnderTest = newProjectUnderTest()
       val input            = projectUnderTest.path.toAbsolutePath.toString
       val output           = cpgOutFile.toString
-      val client           = FrontendHTTPClient(port = testPort)
+      val client           = FrontendHTTPClient(port)
       val req              = client.buildRequest(Array(s"input=$input", s"output=$output"))
       client.sendRequest(req) match {
         case Failure(exception) => fail(exception.getMessage)
@@ -66,7 +66,7 @@ class C2CpgHTTPServerTests extends AnyWordSpec with Matchers with BeforeAndAfter
         val projectUnderTest = newProjectUnderTest(Some(index))
         val input            = projectUnderTest.path.toAbsolutePath.toString
         val output           = cpgOutFile.toString
-        val client           = FrontendHTTPClient(port = testPort)
+        val client           = FrontendHTTPClient(port)
         val req              = client.buildRequest(Array(s"input=$input", s"output=$output"))
         client.sendRequest(req) match {
           case Failure(exception) => fail(exception.getMessage)
