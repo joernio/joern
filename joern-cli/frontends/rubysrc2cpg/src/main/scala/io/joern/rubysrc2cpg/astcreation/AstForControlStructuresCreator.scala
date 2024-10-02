@@ -25,9 +25,16 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   WhenClause,
   WhileExpression
 }
+import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  NewBlock,
+  NewFieldIdentifier,
+  NewIdentifier,
+  NewLiteral,
+  NewLocal
+}
 
 trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -106,11 +113,101 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
   }
 
   private def astForForExpression(node: ForExpression): Ast = {
-    val forEachNode  = controlStructureNode(node, ControlStructureTypes.FOR, code(node))
-    val doBodyAst    = astsForStatement(node.doBlock)
-    val iteratorNode = astForExpression(node.forVariable)
-    val iterableNode = astForExpression(node.iterableVariable)
-    Ast(forEachNode).withChild(iteratorNode).withChild(iterableNode).withChildren(doBodyAst)
+    val forEachNode = controlStructureNode(node, ControlStructureTypes.FOR, code(node))
+
+    def collectionAst  = astForExpression(node.iterableVariable)
+    val collectionNode = node.iterableVariable
+
+    val iterIdentifier =
+      identifierNode(
+        node = node.forVariable,
+        name = node.forVariable.span.text,
+        code = node.forVariable.span.text,
+        typeFullName = Defines.Any
+      )
+    val iterVarLocal = NewLocal().name(node.forVariable.span.text).code(node.forVariable.span.text)
+    scope.addToScope(node.forVariable.span.text, iterVarLocal)
+
+    val idxName  = "_idx_"
+    val idxLocal = NewLocal().name(idxName).code(idxName).typeFullName(Defines.getBuiltInType(Defines.Integer))
+    val idxIdenAtAssign = identifierNode(
+      node = collectionNode,
+      name = idxName,
+      code = idxName,
+      typeFullName = Defines.getBuiltInType(Defines.Integer)
+    )
+
+    val idxAssignment =
+      callNode(node, s"$idxName = 0", Operators.assignment, Operators.assignment, DispatchTypes.STATIC_DISPATCH)
+    val idxAssignmentArgs =
+      List(Ast(idxIdenAtAssign), Ast(NewLiteral().code("0").typeFullName(Defines.getBuiltInType(Defines.Integer))))
+    val idxAssignmentAst = callAst(idxAssignment, idxAssignmentArgs)
+
+    val idxIdAtCond = idxIdenAtAssign.copy
+    val collectionCountAccess = callNode(
+      node,
+      s"${node.iterableVariable.span.text}.length",
+      Operators.fieldAccess,
+      Operators.fieldAccess,
+      DispatchTypes.STATIC_DISPATCH
+    )
+    val fieldAccessAst = callAst(
+      collectionCountAccess,
+      collectionAst :: Ast(NewFieldIdentifier().canonicalName("length").code("length")) :: Nil
+    )
+
+    val idxLt = callNode(
+      node,
+      s"$idxName < ${node.iterableVariable.span.text}.length",
+      Operators.lessThan,
+      Operators.lessThan,
+      DispatchTypes.STATIC_DISPATCH
+    )
+    val idxLtArgs  = List(Ast(idxIdAtCond), fieldAccessAst)
+    val ltCallCond = callAst(idxLt, idxLtArgs)
+
+    val idxIdAtCollAccess = idxIdenAtAssign.copy
+    val collectionIdxAccess = callNode(
+      node,
+      s"${node.iterableVariable.span.text}[$idxName++]",
+      Operators.indexAccess,
+      Operators.indexAccess,
+      DispatchTypes.STATIC_DISPATCH
+    )
+    val postIncrAst = callAst(
+      callNode(node, s"$idxName++", Operators.postIncrement, Operators.postIncrement, DispatchTypes.STATIC_DISPATCH),
+      Ast(idxIdAtCollAccess) :: Nil
+    )
+
+    val indexAccessAst = callAst(collectionIdxAccess, collectionAst :: postIncrAst :: Nil)
+    val iteratorAssignmentNode = callNode(
+      node,
+      s"${node.forVariable.span.text} = ${node.iterableVariable.span.text}[$idxName++]",
+      Operators.assignment,
+      Operators.assignment,
+      DispatchTypes.STATIC_DISPATCH
+    )
+    val iteratorAssignmentArgs = List(Ast(iterIdentifier), indexAccessAst)
+    val iteratorAssignmentAst  = callAst(iteratorAssignmentNode, iteratorAssignmentArgs)
+    val doBodyAst              = astsForStatement(node.doBlock)
+
+    val locals = Ast(idxLocal)
+      .withRefEdge(idxIdenAtAssign, idxLocal)
+      .withRefEdge(idxIdAtCond, idxLocal)
+      .withRefEdge(idxIdAtCollAccess, idxLocal) :: Ast(iterVarLocal).withRefEdge(iterIdentifier, iterVarLocal) :: Nil
+
+    val conditionAsts = ltCallCond :: Nil
+    val initAsts      = idxAssignmentAst :: Nil
+    val updateAsts    = iteratorAssignmentAst :: Nil
+
+    forAst(
+      forNode = forEachNode,
+      locals = locals,
+      initAsts = initAsts,
+      conditionAsts = conditionAsts,
+      updateAsts = updateAsts,
+      bodyAsts = doBodyAst
+    )
   }
 
   protected def astsForCaseExpression(node: CaseExpression): Seq[Ast] = {

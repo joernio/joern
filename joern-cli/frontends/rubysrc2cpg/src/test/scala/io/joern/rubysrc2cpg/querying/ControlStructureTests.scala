@@ -413,12 +413,25 @@ class ControlStructureTests extends RubyCode2CpgFixture {
           forEachNode.controlStructureType shouldBe ControlStructureTypes.FOR
 
           inside(forEachNode.astChildren.l) {
-            case (iteratorNode: Identifier) :: (iterableNode: Identifier) :: (doBody: Block) :: Nil =>
-              iteratorNode.code shouldBe "i"
-              iterableNode.code shouldBe "x"
-              // We use .ast as there will be an implicit return node here
-              doBody.ast.isCall.code.headOption shouldBe Option("puts x - i")
-            case _ => fail("No node for iterable found in `for-in` statement")
+            case (idxLocal: Local) :: (iVarLocal: Local) :: (initAssign: Call) :: (cond: Call) :: (update: Call) :: (forBlock: Block) :: Nil =>
+              idxLocal.name shouldBe "_idx_"
+              idxLocal.typeFullName shouldBe Defines.getBuiltInType(Defines.Integer)
+
+              iVarLocal.name shouldBe "i"
+
+              initAssign.code shouldBe "_idx_ = 0"
+              initAssign.name shouldBe Operators.assignment
+              initAssign.methodFullName shouldBe Operators.assignment
+
+              cond.code shouldBe "_idx_ < x.length"
+              cond.name shouldBe Operators.lessThan
+              cond.methodFullName shouldBe Operators.lessThan
+
+              update.code shouldBe "i = x[_idx_++]"
+              update.name shouldBe Operators.assignment
+              update.methodFullName shouldBe Operators.assignment
+
+            case xs => fail(s"Expected 6 children for `forEachNode`, got [${xs.code.mkString(",")}]")
           }
 
           inside(forEachNode.astChildren.isBlock.l) {
@@ -438,13 +451,25 @@ class ControlStructureTests extends RubyCode2CpgFixture {
           forEachNode.controlStructureType shouldBe ControlStructureTypes.FOR
 
           inside(forEachNode.astChildren.l) {
-            case (iteratorNode: Identifier) :: (iterableNode: Call) :: (doBody: Block) :: Nil =>
-              iteratorNode.code shouldBe "i"
-              iterableNode.code shouldBe "1..x"
-              iterableNode.name shouldBe Operators.range
-              // We use .ast as there will be an implicit return node here
-              doBody.ast.isCall.code.headOption shouldBe Option("puts x + i")
-            case _ => fail("Invalid `for-in` children nodes")
+            case (idxLocal: Local) :: (iVarLocal: Local) :: (initAssign: Call) :: (cond: Call) :: (update: Call) :: (forBlock: Block) :: Nil =>
+              idxLocal.name shouldBe "_idx_"
+              idxLocal.typeFullName shouldBe Defines.getBuiltInType(Defines.Integer)
+
+              iVarLocal.name shouldBe "i"
+
+              initAssign.code shouldBe "_idx_ = 0"
+              initAssign.name shouldBe Operators.assignment
+              initAssign.methodFullName shouldBe Operators.assignment
+
+              cond.code shouldBe "_idx_ < 1..x.length"
+              cond.name shouldBe Operators.lessThan
+              cond.methodFullName shouldBe Operators.lessThan
+
+              update.code shouldBe "i = 1..x[_idx_++]"
+              update.name shouldBe Operators.assignment
+              update.methodFullName shouldBe Operators.assignment
+
+            case xs => fail(s"Expected 6 children for `forEachNode`, got [${xs.code.mkString(",")}]")
           }
 
         case _ => fail("No control structure node found for `for-in`.")
@@ -648,6 +673,46 @@ class ControlStructureTests extends RubyCode2CpgFixture {
         val List(_: Call, returnCall: Return) = orIfStruct.condition.isCall.argument.l: @unchecked
         returnCall.code shouldBe "return"
       case xs => fail(s"Expected one IF structure, got [${xs.code.mkString(",")}]")
+    }
+  }
+
+  "ForEach loops" in {
+    val cpg = code("""
+        |fibNumbers = [0, 1, 1, 2, 3, 5, 8, 13]
+        |for num in fibNumbers
+        | puts num
+        |end
+        |""".stripMargin)
+
+    inside(cpg.method.isModule.controlStructure.l) {
+      case forEachNode :: Nil =>
+        forEachNode.controlStructureType shouldBe ControlStructureTypes.FOR
+
+        inside(forEachNode.astChildren.l) {
+          case (idxLocal: Local) :: (numLocal: Local) :: (initAssign: Call) :: (cond: Call) :: (update: Call) :: (forBlock: Block) :: Nil =>
+            idxLocal.name shouldBe "_idx_"
+            idxLocal.typeFullName shouldBe Defines.getBuiltInType(Defines.Integer)
+
+            numLocal.name shouldBe "num"
+
+            initAssign.code shouldBe "_idx_ = 0"
+            initAssign.name shouldBe Operators.assignment
+            initAssign.methodFullName shouldBe Operators.assignment
+
+            cond.code shouldBe "_idx_ < fibNumbers.length"
+            cond.name shouldBe Operators.lessThan
+            cond.methodFullName shouldBe Operators.lessThan
+
+            update.code shouldBe "num = fibNumbers[_idx_++]"
+            update.name shouldBe Operators.assignment
+            update.methodFullName shouldBe Operators.assignment
+
+            val List(putsCall) = cpg.call.nameExact("puts").l
+            putsCall.astParent shouldBe forBlock
+
+          case xs => fail(s"Expected 6 children for `forEachNode`, got [${xs.code.mkString(",")}]")
+        }
+      case xs => fail(s"Expected one node for `forEach` loop, got [${xs.code.mkString(",")}]")
     }
   }
 }
