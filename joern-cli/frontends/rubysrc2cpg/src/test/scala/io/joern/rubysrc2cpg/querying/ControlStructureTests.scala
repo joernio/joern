@@ -650,4 +650,15 @@ class ControlStructureTests extends RubyCode2CpgFixture {
       case xs => fail(s"Expected one IF structure, got [${xs.code.mkString(",")}]")
     }
   }
+
+  "Something" in {
+    val cpg = code("""
+        |fibNumbers = [0, 1, 1, 2, 3, 5, 8, 13]
+        |for num in fibNumbers
+        | puts num
+        |end
+        |""".stripMargin)
+
+    cpg.method.isModule.dotAst.l.foreach(println)
+  }
 }
