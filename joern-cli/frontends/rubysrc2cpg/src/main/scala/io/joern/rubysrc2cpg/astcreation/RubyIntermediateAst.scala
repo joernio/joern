@@ -1,10 +1,9 @@
 package io.joern.rubysrc2cpg.astcreation
 
-import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{AllowedTypeDeclarationChild, RubyStatement}
 import io.joern.rubysrc2cpg.passes.{Defines, GlobalTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 
-import scala.annotation.tailrec
+import java.util.Objects
 
 object RubyIntermediateAst {
 
@@ -33,6 +32,15 @@ object RubyIntermediateAst {
     def offset: Option[(Int, Int)] = span.offset
 
     def text: String = span.text
+
+    override def hashCode(): Int = Objects.hash(span)
+
+    override def equals(obj: Any): Boolean = {
+      obj match {
+        case o: RubyExpression => o.span == span
+        case _                 => false
+      }
+    }
   }
 
   /** Ruby statements evaluate to some value (and thus are expressions), but also perform some operation, e.g.,

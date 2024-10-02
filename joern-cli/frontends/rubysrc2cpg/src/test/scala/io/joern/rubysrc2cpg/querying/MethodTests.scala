@@ -1000,5 +1000,15 @@ class MethodTests extends RubyCode2CpgFixture {
       cpg.typeRef.typeFullName(".*Proc").size shouldBe 5
       cpg.typeRef.whereNot(_.astParent).size shouldBe 0
     }
+
+    "resolve cached lambdas correctly" in {
+      def getLineNumberOfLambdaForCall(callName: String) =
+        cpg.call.nameExact(callName).argument.isTypeRef.typ.referencedTypeDecl.lineNumber.head
+
+      getLineNumberOfLambdaForCall("with_index") shouldBe 3
+      getLineNumberOfLambdaForCall("sort_by") shouldBe 4
+      getLineNumberOfLambdaForCall("reject") shouldBe 5
+      getLineNumberOfLambdaForCall("map") shouldBe 6
+    }
   }
 }
