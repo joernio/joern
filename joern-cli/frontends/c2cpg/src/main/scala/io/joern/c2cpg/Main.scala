@@ -114,6 +114,8 @@ object Main extends X2CpgMain(cmdLineParser, new C2Cpg()) with FrontendHTTPServe
   override protected def newDefaultConfig(): Config = Config()
 
   override def run(config: Config, c2cpg: C2Cpg): Unit = {
+    throw new RuntimeException("oh noes!1!!")
+
     config match {
       case c if c.serverMode      => startup(config)
       case c if c.printIfDefsOnly => c2cpg.printIfDefsOnly(config)
