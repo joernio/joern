@@ -11,17 +11,11 @@ type::{
 }
 
 type::{
-  name: lang,
-  type: string
-}
-
-type::{
   name: dependency,
   type: struct,
   fields: closed::{
     NAME: { type: name, occurs: required },
-    CONSTRAINT: { type: constraint, occurs: required },
-    LANG: { type: lang }
+    VERSION_CONSTRAINT: { type: constraint, occurs: required },
   }
 }
 
