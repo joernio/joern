@@ -1,11 +1,11 @@
 package io.shiftleft.semanticcpg.typeinfo
 
-import io.shiftleft.semanticcpg.typeinfo.loading.Loader
+import io.shiftleft.semanticcpg.typeinfo.loading.BytesLoader
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import scala.util.Try
 
-class IonLoaderTests extends AnyWordSpec with Matchers {
+class IonTextTypeInfoLoaderTests extends AnyWordSpec with Matchers {
   private val test1: String = """
       |{
       | FULL_NAME:"com.amazon.ion.IonFloat",
@@ -32,24 +32,22 @@ class IonLoaderTests extends AnyWordSpec with Matchers {
     
   "simple struct reader" should {
     "read into object without errors" in {
-      val result: Try[TypeDecl] = IonLoader.parse(test1)
-      result.isSuccess shouldEqual true
+      val result = IonTextTypeInfoLoader.loadFromString(test1)
       
-      val t = result.get
-      t.fullName shouldEqual "com.amazon.ion.IonFloat"
-      t.name shouldEqual "IonFloat"
-      t.typeParams shouldBe empty
-      t.inherits should have length 1
-      t.inherits should contain ("java.lang.Cloneable")
+      result.fullName shouldEqual "com.amazon.ion.IonFloat"
+      result.name shouldEqual "IonFloat"
+      result.typeParams shouldBe empty
+      result.inherits should have length 1
+      result.inherits should contain ("java.lang.Cloneable")
       
-      t.methods should have length 1
-      val method = t.methods.head
+      result.methods should have length 1
+      val method = result.methods.head
       method.name shouldBe "bigIntegerValue"
       method.fullName shouldBe "com.amazon.ion.IonFloat.bigIntegerValue:java.math.BigInteger()"
       method.signature shouldBe "java.math.BigInteger()"
       
-      t.members should have length 1
-      val member = t.members.head
+      result.members should have length 1
+      val member = result.members.head
       member.name shouldBe "EMPTY_ARRAY"
       member.typeFullName shouldBe "com.amazon.ion.IonValue"
     }

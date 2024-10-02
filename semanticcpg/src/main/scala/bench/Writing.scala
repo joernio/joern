@@ -11,13 +11,13 @@ import scala.util.Random
 @BenchmarkMode(Array(Mode.AverageTime))
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 class Writing {
-  Random.setSeed(1401204)
-  val n = 40
-  val types = DataGen.genTypeDecls(n)
-
-  @Benchmark
-  def ionWriteToString = types.foreach(IonWriter.writeToString)
-  
-  @Benchmark
-  def ionWriteToBinaryFormat = types.foreach(IonWriter.writeToBinaryFormat)
+//  Random.setSeed(1401204)
+//  val n = 40
+//  val types = DataGen.genTypeDecls(n)
+//
+//  @Benchmark
+//  def ionWriteToString = types.foreach(IonWriter.writeToString)
+//  
+//  @Benchmark
+//  def ionWriteToBinaryFormat = types.foreach(IonWriter.writeToBinaryFormat)
 }

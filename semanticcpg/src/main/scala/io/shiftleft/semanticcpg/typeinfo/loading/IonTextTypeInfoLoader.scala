@@ -2,31 +2,19 @@ package io.shiftleft.semanticcpg.typeinfo
 
 import com.amazon.ion.{IonReader, IonType}
 import com.amazon.ion.system.IonReaderBuilder
-import io.shiftleft.semanticcpg.typeinfo.loading.Loader
+import io.shiftleft.semanticcpg.typeinfo.loading.BytesLoader
 
 import java.io.{IOException, InputStream}
 import scala.annotation.tailrec
 import scala.util.{Failure, Try, Using};
 
-object IonLoader extends Loader[TypeDecl] {
-  override def parse(data: String): Try[TypeDecl] =
-    Using.Manager { use =>
-      val reader = use(IonReaderBuilder.standard().build(data))
-      loop(reader)
-    }
+object IonTextTypeInfoLoader extends BytesLoader[TypeDecl] {
+  def loadFromString(data: String): TypeDecl =
+    Using.resource(IonReaderBuilder.standard().build(data))(loop(_))
 
-  override def parse(data: Array[Byte]): Try[TypeDecl] =
-    Using.Manager { use =>
-      val reader = use(IonReaderBuilder.standard().build(data))
-      loop(reader)
-    }
-
-  override def parseString(data: InputStream): Try[TypeDecl] =
-    Using.Manager { use =>
-      val reader = use(IonReaderBuilder.standard().build(data))
-      loop(reader)
-    }
-
+  override def loadFromBytes(data: Array[Byte]): TypeDecl =
+    Using.resource(IonReaderBuilder.standard().build(data))(loop(_))
+  
   private def loop(reader: IonReader, typ: TypeDecl = TypeDecl()): TypeDecl = {
     val ty = Option(reader.next())
     ty match
