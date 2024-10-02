@@ -115,7 +115,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
   private def astForForExpression(node: ForExpression): Ast = {
     val forEachNode = controlStructureNode(node, ControlStructureTypes.FOR, code(node))
 
-    val collectionAst  = astForExpression(node.iterableVariable) // iterableAst
+    def collectionAst  = astForExpression(node.iterableVariable)
     val collectionNode = node.iterableVariable
 
     val iterIdentifier =

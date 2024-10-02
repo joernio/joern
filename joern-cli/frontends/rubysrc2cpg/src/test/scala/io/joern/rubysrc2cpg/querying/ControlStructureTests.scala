@@ -651,7 +651,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     }
   }
 
-  "Something" in {
+  "ForEach loops" in {
     val cpg = code("""
         |fibNumbers = [0, 1, 1, 2, 3, 5, 8, 13]
         |for num in fibNumbers
@@ -659,6 +659,35 @@ class ControlStructureTests extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
-    cpg.method.isModule.dotAst.l.foreach(println)
+    inside(cpg.method.isModule.controlStructure.l) {
+      case forEachNode :: Nil =>
+        forEachNode.controlStructureType shouldBe ControlStructureTypes.FOR
+
+        inside(forEachNode.astChildren.l) {
+          case (idxLocal: Local) :: (numLocal: Local) :: (initAssign: Call) :: (cond: Call) :: (update: Call) :: (forBlock: Block) :: Nil =>
+            idxLocal.name shouldBe "_idx_"
+            idxLocal.typeFullName shouldBe Defines.getBuiltInType(Defines.Integer)
+
+            numLocal.name shouldBe "num"
+
+            initAssign.code shouldBe "_idx_ = 0"
+            initAssign.name shouldBe Operators.assignment
+            initAssign.methodFullName shouldBe Operators.assignment
+
+            cond.code shouldBe "_idx_ < fibNumbers.length"
+            cond.name shouldBe Operators.lessThan
+            cond.methodFullName shouldBe Operators.lessThan
+
+            update.code shouldBe "num = fibNumbers[_idx_++]"
+            update.name shouldBe Operators.assignment
+            update.methodFullName shouldBe Operators.assignment
+
+            val List(putsCall) = cpg.call.nameExact("puts").l
+            putsCall.astParent shouldBe forBlock
+
+          case xs => fail(s"Expected 6 children for `forEachNode`, got [${xs.code.mkString(",")}]")
+        }
+      case xs => fail(s"Expected one node for `forEach` loop, got [${xs.code.mkString(",")}]")
+    }
   }
 }
