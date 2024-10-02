@@ -10,10 +10,10 @@ import scala.util.Using
 class GitSparseFetcherTests extends AnyWordSpec with Matchers {
   "getVersions" should {
     "return all versions for a package" in {
-      Using(GitSparseFetcher()) { fetcher =>
-        val versions = fetcher.getVersions(PackageIdentifier(LanguagePlatform.JVM, "ion-java"))
-        versions.isSuccess shouldEqual true
-        versions.get.sorted shouldEqual List("v1.0.0", "v1.11.9").sorted
+      Using.resource(GitSparseFetcher()) { fetcher =>
+        val versionsInfo = fetcher.fetchVersionsInfo(PackageIdentifier(LanguagePlatform.JVM, "ion-java"))
+        val expectedBytes = "[\"v1.0.0\", \"v1.11.9\"]".getBytes("UTF-8")
+        versionsInfo.readAllBytes() shouldEqual expectedBytes
       }
     }
   }
