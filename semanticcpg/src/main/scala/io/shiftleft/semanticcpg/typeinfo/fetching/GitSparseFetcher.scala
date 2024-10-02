@@ -10,7 +10,6 @@ import java.io.File
 import java.nio.file.{Files, Path, Paths}
 import java.lang.ProcessBuilder
 import java.util.Comparator
-import java.io.InputStream
 import scala.util.{Failure, Success, Try, Using}
 
 final class GitSparseFetcher(repoUrl: String = "git@github.com:flandini/typeinfo.git", gitRef: String = "main") extends Fetcher {
@@ -35,8 +34,8 @@ final class GitSparseFetcher(repoUrl: String = "git@github.com:flandini/typeinfo
   
   private class FileSystemPath(gitPath: GitPath) {
     val path: Path = tmpDir.resolve(gitPath.path)
-    
-    def getInputStream(): InputStream = Files.newInputStream(path)
+
+    def readBytes(): Array[Byte] = Files.newInputStream(path).readAllBytes()
 
     override def toString: String = path.toString
   }
@@ -84,9 +83,9 @@ final class GitSparseFetcher(repoUrl: String = "git@github.com:flandini/typeinfo
     downloadDirs(gitDirPaths)
     
     val fsPaths = gitPaths.map(FileSystemPath(_))
-    val inputStreams = fsPaths.map(_.getInputStream())
+    val downloads = fsPaths.map(_.readBytes())
     
-    paths.zip(inputStreams).map((path, inputStream) => FetcherResult(path, inputStream))
+    paths.zip(downloads).map((path, downloadedBytes) => FetcherResult(path, downloadedBytes))
   }
 
   private def downloadDirs(dirPaths: List[GitPath]): Unit = {
