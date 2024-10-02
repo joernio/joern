@@ -49,6 +49,10 @@ object Ast {
     ast.bindsEdges.foreach { edge =>
       diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.BINDS)
     }
+
+    ast.captureEdges.foreach { edge =>
+      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.CAPTURE)
+    }
   }
 
   def neighbourValidation(src: NewNode, dst: NewNode, edge: String)(implicit
@@ -92,7 +96,8 @@ case class Ast(
   refEdges: collection.Seq[AstEdge] = Vector.empty,
   bindsEdges: collection.Seq[AstEdge] = Vector.empty,
   receiverEdges: collection.Seq[AstEdge] = Vector.empty,
-  argEdges: collection.Seq[AstEdge] = Vector.empty
+  argEdges: collection.Seq[AstEdge] = Vector.empty,
+  captureEdges: collection.Seq[AstEdge] = Vector.empty
 )(implicit withSchemaValidation: ValidationMode = ValidationMode.Disabled) {
 
   def root: Option[NewNode] = nodes.headOption
@@ -114,7 +119,8 @@ case class Ast(
       argEdges = argEdges ++ other.argEdges,
       receiverEdges = receiverEdges ++ other.receiverEdges,
       refEdges = refEdges ++ other.refEdges,
-      bindsEdges = bindsEdges ++ other.bindsEdges
+      bindsEdges = bindsEdges ++ other.bindsEdges,
+      captureEdges = captureEdges ++ other.captureEdges
     )
   }
 
@@ -126,7 +132,8 @@ case class Ast(
       argEdges = argEdges ++ other.argEdges,
       receiverEdges = receiverEdges ++ other.receiverEdges,
       refEdges = refEdges ++ other.refEdges,
-      bindsEdges = bindsEdges ++ other.bindsEdges
+      bindsEdges = bindsEdges ++ other.bindsEdges,
+      captureEdges = captureEdges ++ other.captureEdges
     )
   }
 
@@ -217,6 +224,16 @@ case class Ast(
     this.copy(receiverEdges = receiverEdges ++ dsts.map(AstEdge(src, _)))
   }
 
+  def withCaptureEdge(src: NewNode, dst: NewNode): Ast = {
+    Ast.neighbourValidation(src, dst, EdgeTypes.CAPTURE)
+    this.copy(captureEdges = captureEdges ++ List(AstEdge(src, dst)))
+  }
+
+  def withCaptureEdges(src: NewNode, dsts: Seq[NewNode]): Ast = {
+    dsts.foreach(dst => Ast.neighbourValidation(src, dst, EdgeTypes.CAPTURE))
+    this.copy(captureEdges = captureEdges ++ dsts.map(AstEdge(src, _)))
+  }
+
   /** Returns a deep copy of the sub tree rooted in `node`. If `order` is set, then the `order` and `argumentIndex`
     * fields of the new root node are set to `order`. If `replacementNode` is set, then this replaces `node` in the new
     * copy.
@@ -250,6 +267,7 @@ case class Ast(
     val newRefEdges       = refEdges.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))
     val newBindsEdges     = bindsEdges.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))
     val newReceiverEdges  = receiverEdges.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))
+    val newCaptureEdges   = captureEdges.filter(_.src == node).map(x => AstEdge(newNode, newIfExists(x.dst)))
 
     Ast(newNode)
       .copy(
@@ -257,7 +275,8 @@ case class Ast(
         conditionEdges = newConditionEdges,
         refEdges = newRefEdges,
         bindsEdges = newBindsEdges,
-        receiverEdges = newReceiverEdges
+        receiverEdges = newReceiverEdges,
+        captureEdges = newCaptureEdges
       )
       .withChildren(newChildren)
   }
