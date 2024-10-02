@@ -34,6 +34,13 @@ object RubyIntermediateAst {
     def text: String = span.text
 
     override def hashCode(): Int = Objects.hash(span)
+
+    override def equals(obj: Any): Boolean = {
+      obj match {
+        case o: RubyExpression => o.span == span
+        case _                 => false
+      }
+    }
   }
 
   /** Ruby statements evaluate to some value (and thus are expressions), but also perform some operation, e.g.,
