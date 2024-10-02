@@ -91,12 +91,11 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   protected def astForDoBlock(block: Block & RubyExpression): Seq[Ast] = {
-    // Create closure structures: [MethodDecl, TypeRef, MethodRef]
     if (closureToRefs.contains(block)) {
       closureToRefs(block).map(x => Ast(x.copy))
     } else {
       val methodName = nextClosureName()
-
+      // Create closure structures: [TypeRef, MethodRef]
       val methodRefAsts = block.body match {
         case x: Block =>
           astForMethodDeclaration(x.toMethodDeclaration(methodName, Option(block.parameters)), isClosure = true)
