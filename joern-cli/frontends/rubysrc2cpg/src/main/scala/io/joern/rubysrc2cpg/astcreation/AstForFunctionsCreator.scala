@@ -26,10 +26,10 @@ import scala.collection.mutable
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  /** As expressions may be discarded, we cannot store closure ASTs in the diffgraph at the point of creation. We need
-    * to only write these at the end.
+  /** As expressions may be discarded, we cannot store closure ASTs in the diffgraph at the point of creation. So we
+    * assume every reference to this map means that the closure AST was successfully propagated.
     */
-  protected val closureToRefs = mutable.Map.empty[RubyExpression, Seq[Ast]]
+  protected val closureToRefs = mutable.Map.empty[RubyExpression, Seq[NewNode]]
 
   /** Creates method declaration related structures.
     * @param node
