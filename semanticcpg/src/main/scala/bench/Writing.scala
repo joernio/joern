@@ -17,13 +17,7 @@ class Writing {
 
   @Benchmark
   def ionWriteToString = types.foreach(IonWriter.writeToString)
-
-  @Benchmark
-  def jsonWriteToString = types.foreach(JsonWriter.writeToString)
   
   @Benchmark
   def ionWriteToBinaryFormat = types.foreach(IonWriter.writeToBinaryFormat)
-
-  @Benchmark
-  def jsonWriteToBinaryFormat = types.foreach(JsonWriter.writeToBinaryFormat)
 }
