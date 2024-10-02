@@ -39,10 +39,6 @@ abstract class Fetcher extends AutoCloseable {
             ServerPath(path.resolve(typeName + ".ion"))
         }
         
-        def getFileNameWithoutExt: String = {
-            path.getFileName.toString.
-        }
-        
         def resolve(other: String): ServerPath = {
             ServerPath(path.resolve(other))
         }
@@ -69,12 +65,9 @@ abstract class Fetcher extends AutoCloseable {
     def fetchTypeData(pid: PackageIdentifier, version: Version, typeNames: List[String]): Map[String, Array[Byte]] = {
         val versionedPackageDir = ServerPath.build(pid).getVersionPath(version)
         val typePaths = typeNames.map(versionedPackageDir.getTypeFilePath)
-        val downloadResults = downloadFiles(typePaths)
-        
+        val downloadResults = downloadFiles(typePaths).map(_.data)
+        Map.from(typeNames.zip(downloadResults))
     }
-    
-    def fetchAllTypeData(versionedPids: List[(PackageIdentifier, Version)]): Map[(PackageIdentifier, Version), Array[Byte]] =
-        throw new NotImplementedError()
     
     def fetchDirectDependencies(pid: PackageIdentifier, version: Version): Array[Byte] = {
         val directDepPath = ServerPath.build(pid).getDirectDepsPath(version)
@@ -94,6 +87,7 @@ abstract class Fetcher extends AutoCloseable {
         downloadResults.head.data
     }
     
-    /** This method should be overridden by deriving fetchers. */
-    protected def downloadFiles(path: List[ServerPath]): List[FetcherResult]
+    /** This method should be overridden by deriving fetchers. This method should guarantee that 
+     * return(i) is the download result for paths(i) */
+    protected def downloadFiles(paths: List[ServerPath]): List[FetcherResult]
 }

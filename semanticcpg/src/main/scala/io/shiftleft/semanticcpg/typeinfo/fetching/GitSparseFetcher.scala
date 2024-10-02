@@ -39,29 +39,6 @@ final class GitSparseFetcher(repoUrl: String = "git@github.com:flandini/typeinfo
 
     override def toString: String = path.toString
   }
-//
-//  def getVersions(pid: PackageIdentifier): Try[List[String]] = {
-//    val depsDir = buildPackageDepsDirPath(pid)
-//    for {
-//      _ <- downloadPath(depsDir)
-//    } yield Files
-//      .list(buildFileSystemPath(depsDir))
-//      .map(_.getFileName().toString)
-//      .map(stripIonSuffix)
-//      .iterator()
-//      .asScala
-//      .toList
-//  }
-//
-//  def getDependencyInfo(pid: PackageIdentifier, version: Version): Try[List[DirectDependency]] = {
-//    val depsDir  = buildPackageDepsDirPath(pid)
-//    val depsFile = buildFileSystemPath(depsDir.resolve(getDepsIonFileName(version)))
-//    for {
-//      _           <- downloadPath(depsDir)
-//      inputStream <- Try(Files.newInputStream(depsFile))
-//      loadedDeps  <- DependencyIonLoader.parse(pid.platform, inputStream)
-//    } yield loadedDeps
-//  }
 
   override def close(): Unit = {
     Using.resource(Files.walk(tmpDir)) { fileStream =>
