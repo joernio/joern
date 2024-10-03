@@ -4,10 +4,8 @@ package io.shiftleft.semanticcpg.typeinfo
  * between literal version strings to strings usable by the fetcher. Should also provide a compare function that 
  * returns -1 for this < other, 0 this == other, 1 otherwise. The compare method is used to resolve dependencies 
  * with <,=,>,etc constraints.
- * 
- * This class implements raw version strings, a thing wrapper around String otherwise.
  */
-class Version(val str: String) {
+abstract class Version(val str: String) {
   def compare(other: Version): Int = {
     str.compare(other.str)
   }
@@ -15,6 +13,17 @@ class Version(val str: String) {
   def toFetcherStr: String = str
   
   override def toString: String = str
+
+  override def equals(obj: Any): Boolean = {
+    obj match
+      case obj: Version => str == obj.str
+      case _ => false
+  }
+}
+
+/** This class implements raw version strings, a thing wrapper around String otherwise. */
+final class RawVersion(str: String) extends Version(str) {
+  
 }
 
 class SemVer(val major: Int, val minor: Int, val patch: Int) 

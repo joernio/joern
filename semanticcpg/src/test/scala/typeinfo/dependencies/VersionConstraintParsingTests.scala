@@ -7,7 +7,7 @@ import org.scalatest.wordspec.AnyWordSpec
 class VersionConstraintParsingTests extends AnyWordSpec with Matchers {
   "basic semver" should {
     "parse" in {
-      VersionConstraint.parse("1.0.0") shouldEqual Eq(Version("1.0.0"))
+      VersionConstraint.parse("1.0.0") shouldEqual Eq(RawVersion("1.0.0"))
     }
   }
   
@@ -16,9 +16,9 @@ class VersionConstraintParsingTests extends AnyWordSpec with Matchers {
       VersionConstraint.parse("!0.0.0 && <= 2.0.0 && >= 1.0.0") shouldEqual 
         And(
           And(
-            Not(Eq(Version("0.0.0"))), 
-            Lte(Eq(Version("2.0.0")))),
-          Gte(Eq(Version("1.0.0"))))
+            Not(Eq(RawVersion("0.0.0"))), 
+            Lte(Eq(RawVersion("2.0.0")))),
+          Gte(Eq(RawVersion("1.0.0"))))
     }
   }
   
@@ -26,8 +26,8 @@ class VersionConstraintParsingTests extends AnyWordSpec with Matchers {
     "parse" in {
       VersionConstraint.parse("(0.0.0 || 2.0.0) && >= 1.0.0") shouldEqual
         And(
-          Or(Eq(Version("0.0.0")), Eq(Version("2.0.0"))),
-          Gte(Eq(Version("1.0.0")))
+          Or(Eq(RawVersion("0.0.0")), Eq(RawVersion("2.0.0"))),
+          Gte(Eq(RawVersion("1.0.0")))
         )
     }
   }

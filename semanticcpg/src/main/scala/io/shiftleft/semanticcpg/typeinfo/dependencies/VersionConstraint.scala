@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.typeinfo.dependencies
 
-import io.shiftleft.semanticcpg.typeinfo.{SemVer, Version}
+import io.shiftleft.semanticcpg.typeinfo.{RawVersion, Version}
 import scala.annotation.tailrec
 
 // Precedence in descending order:
@@ -90,7 +90,7 @@ object VersionConstraint {
       parseLoop(ctr.drop("||".length), os, vs)
     } else if (isIdent(ctr)) {
       val id = ctr.takeWhile(isIdent) // todo-punctuators
-      parseLoop(ctr.drop(id.length), operatorStack, Eq(Version(id)) :: versionStack)
+      parseLoop(ctr.drop(id.length), operatorStack, Eq(RawVersion(id)) :: versionStack)
     } else {
       throw new RuntimeException(s"unrecognized dependency constraint expression of string starting at $ctr")
     }
