@@ -1,6 +1,7 @@
 package io.shiftleft.semanticcpg.typeinfo.fetching
 
 import io.shiftleft.semanticcpg.typeinfo.*
+import io.shiftleft.semanticcpg.typeinfo.version.SemVer2
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -75,7 +76,7 @@ class GitSparseFetcherTests extends AnyWordSpec with Matchers {
           |  ]
           |}""".stripMargin.getBytes("UTF-8")
       val pid = PackageIdentifier(LanguagePlatform.JVM, "ion-java")
-      val version = SemVer(1, 0, 0)
+      val version = SemVer2("1.0.0")
       val typeNames = List("IonFloat")
       Using.resource(GitSparseFetcher()) { fetcher =>
         val typeMap = Await.result(fetcher.fetchTypeData(pid, version, typeNames), testDefaultTimeout)
@@ -97,7 +98,7 @@ class GitSparseFetcherTests extends AnyWordSpec with Matchers {
           |]
           |""".stripMargin.getBytes("UTF-8")
       val pid = PackageIdentifier(LanguagePlatform.JVM, "ion-java")
-      val version = SemVer(1, 0, 0)
+      val version = SemVer2("1.0.0")
       Using.resource(GitSparseFetcher()) { fetcher =>
         val directDepBytes = Await.result(fetcher.fetchDirectDependencies(pid, version), testDefaultTimeout)
         directDepBytes shouldEqual expectedBytes

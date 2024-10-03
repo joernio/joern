@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.typeinfo
 
-import io.shiftleft.semanticcpg.typeinfo.loading.IonSchemaValidator
+import io.shiftleft.semanticcpg.typeinfo.validation.IonSchemaValidator
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

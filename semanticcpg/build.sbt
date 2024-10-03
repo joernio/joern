@@ -8,7 +8,8 @@ libraryDependencies ++= Seq(
   "org.apache.commons"      % "commons-text"      % Versions.commonsText,
   "org.scalatest"          %% "scalatest"         % Versions.scalatest % Test,
   "com.amazon.ion"          % "ion-java"          % "1.11.9",
-  "com.amazon.ion"          % "ion-schema-kotlin" % "1.8.0"
+  "com.amazon.ion"          % "ion-schema-kotlin" % "1.8.0",
+  "com.github.zafarkhaja"   % "java-semver"       % "0.10.2"
 )
 
 Compile / doc / scalacOptions ++= Seq("-doc-title", "semanticcpg apidocs", "-doc-version", version.value)

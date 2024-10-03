@@ -5,7 +5,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import scala.util.Try
 
-class IonTextTypeInfoLoaderTests extends AnyWordSpec with Matchers {
+class TypeInfoIonTextLoaderTests extends AnyWordSpec with Matchers {
   private val test1: String = """
       |{
       | FULL_NAME:"com.amazon.ion.IonFloat",
@@ -32,7 +32,7 @@ class IonTextTypeInfoLoaderTests extends AnyWordSpec with Matchers {
     
   "simple struct reader" should {
     "read into object without errors" in {
-      val result = IonTextTypeInfoLoader.loadFromString(test1)
+      val result = TypeInfoIonTextLoader.loadFromString(test1)
       
       result.fullName shouldEqual "com.amazon.ion.IonFloat"
       result.name shouldEqual "IonFloat"

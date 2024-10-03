@@ -4,11 +4,11 @@ import com.amazon.ion.{IonReader, IonType}
 import com.amazon.ion.system.IonReaderBuilder
 import io.shiftleft.semanticcpg.typeinfo.loading.BytesLoader
 
-import java.io.{IOException, InputStream}
 import scala.annotation.tailrec
-import scala.util.{Failure, Try, Using};
+import scala.util.Using
 
-object IonTextTypeInfoLoader extends BytesLoader[TypeDecl] {
+/** Loads text-formatted Ion from bytes or a string */
+object TypeInfoIonTextLoader extends BytesLoader[TypeDecl] {
   def loadFromString(data: String): TypeDecl =
     Using.resource(IonReaderBuilder.standard().build(data))(loop(_))
 

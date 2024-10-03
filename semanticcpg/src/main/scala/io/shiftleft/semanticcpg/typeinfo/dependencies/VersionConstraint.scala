@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.typeinfo.dependencies
 
-import io.shiftleft.semanticcpg.typeinfo.{RawVersion, Version}
+import io.shiftleft.semanticcpg.typeinfo.version.Version
 import scala.annotation.tailrec
 
 // Precedence in descending order:
@@ -38,10 +38,10 @@ case class Or(left: VersionConstraint, right: VersionConstraint) extends Version
 }
 
 object VersionConstraint {
-  def parse(ctr: String): VersionConstraint =
+  def parse(ctr: String, versionParser: String => Version): VersionConstraint =
     if (isAny(ctr))
     then Any()
-    else parseLoop(ctr)
+    else parseLoop(ctr, versionParser)
 
   private enum ConstraintSymbol {
     case GT, GTE, LT, LTE, NOT, AND, OR, LPAREN, RPAREN
@@ -51,6 +51,7 @@ object VersionConstraint {
   @tailrec
   private def parseLoop(
     ctr: String,
+    versionParser: String => Version,
     operatorStack: List[ConstraintSymbol] = List(),
     versionStack: List[VersionConstraint] = List()
   ): VersionConstraint = {
@@ -58,39 +59,39 @@ object VersionConstraint {
       if (operatorStack.isEmpty) {
         versionStack.head
       } else {
-        parseLoop(ctr, operatorStack.tail, reduceOne(operatorStack.head, versionStack))
+        parseLoop(ctr, versionParser, operatorStack.tail, reduceOne(operatorStack.head, versionStack))
       }
     } else if (isWhitespace(ctr)) {
-      parseLoop(ctr.dropWhile(isWhitespace), operatorStack, versionStack)
+      parseLoop(ctr.dropWhile(isWhitespace), versionParser, operatorStack, versionStack)
     } else if (isLParen(ctr)) {
-      parseLoop(ctr.drop("(".length), ConstraintSymbol.LPAREN :: operatorStack, versionStack)
+      parseLoop(ctr.drop("(".length), versionParser, ConstraintSymbol.LPAREN :: operatorStack, versionStack)
     } else if (isRParen(ctr)) {
       val (os, vs) = reduceParenthesizedExpr(operatorStack, versionStack)
-      parseLoop(ctr.drop(")".length), os, vs)
+      parseLoop(ctr.drop(")".length), versionParser, os, vs)
     } else if (isNot(ctr)) {
       val (os, vs) = pushOrReduce(ConstraintSymbol.NOT, operatorStack, versionStack)
-      parseLoop(ctr.drop("!".length), os, vs)
+      parseLoop(ctr.drop("!".length), versionParser, os, vs)
     } else if (isLte(ctr)) {
       val (os, vs) = pushOrReduce(ConstraintSymbol.LTE, operatorStack, versionStack)
-      parseLoop(ctr.drop("<=".length), os, vs)
+      parseLoop(ctr.drop("<=".length), versionParser, os, vs)
     } else if (isGte(ctr)) {
       val (os, vs) = pushOrReduce(ConstraintSymbol.GTE, operatorStack, versionStack)
-      parseLoop(ctr.drop(">=".length), os, vs)
+      parseLoop(ctr.drop(">=".length), versionParser, os, vs)
     } else if (isLt(ctr)) {
       val (os, vs) = pushOrReduce(ConstraintSymbol.LT, operatorStack, versionStack)
-      parseLoop(ctr.drop("<".length), os, vs)
+      parseLoop(ctr.drop("<".length), versionParser, os, vs)
     } else if (isGt(ctr)) {
       val (os, vs) = pushOrReduce(ConstraintSymbol.GT, operatorStack, versionStack)
-      parseLoop(ctr.drop(">".length), os, vs)
+      parseLoop(ctr.drop(">".length), versionParser, os, vs)
     } else if (isAnd(ctr)) {
       val (os, vs) = pushOrReduce(ConstraintSymbol.AND, operatorStack, versionStack)
-      parseLoop(ctr.drop("&&".length), os, vs)
+      parseLoop(ctr.drop("&&".length), versionParser, os, vs)
     } else if (isOr(ctr)) {
       val (os, vs) = pushOrReduce(ConstraintSymbol.OR, operatorStack, versionStack)
-      parseLoop(ctr.drop("||".length), os, vs)
+      parseLoop(ctr.drop("||".length), versionParser, os, vs)
     } else if (isIdent(ctr)) {
       val id = ctr.takeWhile(isIdent) // todo-punctuators
-      parseLoop(ctr.drop(id.length), operatorStack, Eq(RawVersion(id)) :: versionStack)
+      parseLoop(ctr.drop(id.length), versionParser, operatorStack, Eq(versionParser(id)) :: versionStack)
     } else {
       throw new RuntimeException(s"unrecognized dependency constraint expression of string starting at $ctr")
     }

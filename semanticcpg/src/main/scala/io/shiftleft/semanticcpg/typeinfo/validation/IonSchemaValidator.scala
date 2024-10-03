@@ -1,13 +1,8 @@
-package io.shiftleft.semanticcpg.typeinfo.loading
+package io.shiftleft.semanticcpg.typeinfo.validation
 
-import com.amazon.ion.IonSystem
-import com.amazon.ion.IonValue
+import com.amazon.ion.{IonSystem, IonValue}
 import com.amazon.ion.system.IonSystemBuilder
-import com.amazon.ionschema.IonSchemaSystemBuilder
-import com.amazon.ionschema.IonSchemaSystem
-import com.amazon.ionschema.Schema
-import com.amazon.ionschema.Type
-import com.amazon.ionschema.Violations
+import com.amazon.ionschema.*
 
 class IonSchemaValidator(rawSchema: String, topLevelType: String) {
   val iss = IonSchemaSystemBuilder.standard().build()

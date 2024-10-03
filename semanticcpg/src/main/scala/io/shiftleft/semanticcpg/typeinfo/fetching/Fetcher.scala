@@ -1,7 +1,8 @@
 package io.shiftleft.semanticcpg.typeinfo.fetching
 
 import io.shiftleft.semanticcpg.typeinfo.dependencies.DirectDependency
-import io.shiftleft.semanticcpg.typeinfo.{PackageIdentifier, PackageMetadata, Version}
+import io.shiftleft.semanticcpg.typeinfo.{PackageIdentifier, PackageMetadata}
+import io.shiftleft.semanticcpg.typeinfo.version.Version
 
 import java.nio.file.{Path, Paths}
 import scala.concurrent.ExecutionContext.Implicits.global

@@ -6,6 +6,5 @@
   {
     NAME: "java.lang",
     CONSTRAINT: "*",
-    LANG: "java",
   }
 ]
