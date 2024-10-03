@@ -90,7 +90,7 @@ object VersionConstraint {
       parseLoop(ctr.drop("||".length), os, vs)
     } else if (isIdent(ctr)) {
       val id = ctr.takeWhile(isIdent) // todo-punctuators
-      parseLoop(ctr.drop(id.length), operatorStack, Eq(SemVer(id)) :: versionStack)
+      parseLoop(ctr.drop(id.length), operatorStack, Eq(Version(id)) :: versionStack)
     } else {
       throw new RuntimeException(s"unrecognized dependency constraint expression of string starting at $ctr")
     }

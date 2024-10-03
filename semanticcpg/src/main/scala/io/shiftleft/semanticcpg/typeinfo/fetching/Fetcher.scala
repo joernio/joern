@@ -1,9 +1,12 @@
 package io.shiftleft.semanticcpg.typeinfo.fetching
 
-import io.shiftleft.semanticcpg.typeinfo.{PackageIdentifier, PackageMetadata, Version}
 import io.shiftleft.semanticcpg.typeinfo.dependencies.DirectDependency
+import io.shiftleft.semanticcpg.typeinfo.{PackageIdentifier, PackageMetadata, Version}
 
 import java.nio.file.{Path, Paths}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 import scala.util.Try
 
 /** ...
@@ -54,37 +57,47 @@ abstract class Fetcher extends AutoCloseable {
     
     /** The metadata file contains a list of all versions stored stored for this package identifier and
      * a list of all types stored for this versioned package identifier. */
-    def fetchMetaData(pid: PackageIdentifier): Array[Byte] = {
+    def fetchMetaData(pid: PackageIdentifier): Future[Array[Byte]] = {
         val infoFilePath = ServerPath.build(pid).getMetaDataPath
-        val downloadResults = downloadFiles(List(infoFilePath))
-        downloadResults.head.data
+        Future {
+            val downloadResults = downloadFiles(List(infoFilePath))
+            downloadResults.head.data
+        }
     }
     
     /** Returns a map from type name -> an input stream to read data about this type. The type name keys are type
      * short names, the NAME property of a TYPE_DECL in a CPG. */
-    def fetchTypeData(pid: PackageIdentifier, version: Version, typeNames: List[String]): Map[String, Array[Byte]] = {
+    def fetchTypeData(pid: PackageIdentifier, version: Version, typeNames: List[String]): Future[Map[String, Array[Byte]]] = {
         val versionedPackageDir = ServerPath.build(pid).getVersionPath(version)
         val typePaths = typeNames.map(versionedPackageDir.getTypeFilePath)
-        val downloadResults = downloadFiles(typePaths).map(_.data)
-        Map.from(typeNames.zip(downloadResults))
+        Future {
+            val downloadResults = downloadFiles(typePaths).map(_.data)
+            Map.from(typeNames.zip(downloadResults))
+        }
     }
     
-    def fetchDirectDependencies(pid: PackageIdentifier, version: Version): Array[Byte] = {
+    def fetchDirectDependencies(pid: PackageIdentifier, version: Version): Future[Array[Byte]] = {
         val directDepPath = ServerPath.build(pid).getDirectDepsPath(version)
-        val downloadResults = downloadFiles(List(directDepPath))
-        downloadResults.head.data
+        Future {
+            val downloadResults = downloadFiles(List(directDepPath))
+            downloadResults.head.data
+        }
     }
 
-    def fetchDirectDependencies(versionedPids: List[(PackageIdentifier, Version)]): Map[(PackageIdentifier, Version), Array[Byte]] = {
+    def fetchDirectDependencies(versionedPids: List[(PackageIdentifier, Version)]): Future[Map[(PackageIdentifier, Version), Array[Byte]]] = {
         val directDepPaths = versionedPids.map((pid, version) => ServerPath.build(pid).getDirectDepsPath(version))
-        val downloadResults = downloadFiles(directDepPaths).map(_.data)
-        Map.from(versionedPids.zip(downloadResults))
+        Future {
+            val downloadResults = downloadFiles(directDepPaths).map(_.data)
+            Map.from(versionedPids.zip(downloadResults))
+        }
     }
     
-    def fetchTransitiveDependencies(pid: PackageIdentifier, version: Version): Array[Byte] = {
+    def fetchTransitiveDependencies(pid: PackageIdentifier, version: Version): Future[Array[Byte]] = {
         val transitiveDepPath = ServerPath.build(pid).getTransitiveDepsPath(version)
-        val downloadResults = downloadFiles(List(transitiveDepPath))
-        downloadResults.head.data
+        Future {
+            val downloadResults = downloadFiles(List(transitiveDepPath))
+            downloadResults.head.data
+        }
     }
     
     /** This method should be overridden by deriving fetchers. This method should guarantee that 
