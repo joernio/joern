@@ -23,7 +23,17 @@ object AstGenRunner {
 
   private val LineLengthThreshold: Int = 10000
 
-  private val NODE_OPTIONS: Map[String, String] = Map("NODE_OPTIONS" -> "--max-old-space-size=8192")
+  private def getMaxHeapSizeInMB: Long = {
+    val maxHeapSizeInBytes = Runtime.getRuntime.maxMemory()
+    val maxHeapSizeInMB    = maxHeapSizeInBytes / (1024 * 1024)
+    maxHeapSizeInMB // nodejs expects MB
+  }
+
+  private def nodejsSpaceSize: Int = {
+    Math.max(getMaxHeapSizeInMB.toInt, 8192) // as default we set 8G minimum
+  }
+
+  private val NODE_OPTIONS: Map[String, String] = Map("NODE_OPTIONS" -> s"--max-old-space-size=$nodejsSpaceSize")
 
   private val TypeDefinitionFileExtensions = List(".t.ts", ".d.ts")
 
