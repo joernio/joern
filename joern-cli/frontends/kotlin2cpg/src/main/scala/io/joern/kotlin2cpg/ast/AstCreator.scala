@@ -481,18 +481,13 @@ class AstCreator(
   }
 
   protected def selectorExpressionArgAsts(
-    expr: KtQualifiedExpression
+    expr: KtQualifiedExpression,
+    startIndex: Int = 1
   )(implicit typeInfoProvider: TypeInfoProvider): List[Ast] = {
-    expr.getSelectorExpression match {
-      case typedExpr: KtCallExpression =>
-        withIndex(typedExpr.getValueArguments.asScala.toSeq) { case (arg, idx) =>
-          astsForExpression(arg.getArgumentExpression, Some(idx))
-        }.flatten.toList
-      case typedExpr: KtNameReferenceExpression =>
-        val node = fieldIdentifierNode(typedExpr, typedExpr.getText, typedExpr.getText).argumentIndex(2)
-        List(Ast(node))
-      case _ => List()
-    }
+    val callExpr = expr.getSelectorExpression.asInstanceOf[KtCallExpression]
+    withIndex(callExpr.getValueArguments.asScala.toSeq) { case (arg, idx) =>
+      astsForExpression(arg.getArgumentExpression, Some(startIndex + idx - 1))
+    }.flatten.toList
   }
 
   protected def modifierTypeForVisibility(visibility: DescriptorVisibility): String = {

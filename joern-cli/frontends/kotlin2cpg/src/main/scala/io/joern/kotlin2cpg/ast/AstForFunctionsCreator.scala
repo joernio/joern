@@ -80,19 +80,32 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val needsThisParameter = funcDesc.get.getDispatchReceiverParameter != null ||
       DescriptorUtils.isExtension(funcDesc.get)
-    val thisParameterMaybe = if (needsThisParameter) {
+    
+    val thisParameterAsts = if (needsThisParameter) {
       val typeDeclFullName = registerType(typeInfoProvider.containingTypeDeclFullName(ktFn, TypeConstants.any))
-      val node = NodeBuilders.newThisParameterNode(
+      val thisParam = NodeBuilders.newThisParameterNode(
         typeFullName = typeDeclFullName,
         dynamicTypeHintFullName = Seq(typeDeclFullName)
       )
-      scope.addToScope(Constants.this_, node)
-      Option(node)
-    } else None
+      if (DescriptorUtils.isExtension(funcDesc.get)) {
+        thisParam.order(1)
+        thisParam.index(1)
+      }
+      scope.addToScope(Constants.this_, thisParam)
+      List(Ast(thisParam))
+    } else {
+      List.empty
+    }
+    
+    val valueParamStartIndex =
+      if (DescriptorUtils.isExtension(funcDesc.get)) {
+        2
+      } else {
+        1
+      }
 
-    val thisParameterAsts = thisParameterMaybe.map(List(_)).getOrElse(List()).map(Ast(_))
     val methodParametersAsts =
-      withIndex(ktFn.getValueParameters.asScala.toSeq) { (p, idx) => astForParameter(p, idx) }
+      withIndex(ktFn.getValueParameters.asScala.toSeq) { (p, idx) => astForParameter(p, valueParamStartIndex + idx - 1) }
     val bodyAsts = Option(ktFn.getBodyBlockExpression) match {
       case Some(bodyBlockExpression) => astsForBlock(bodyBlockExpression, None, None)
       case None =>

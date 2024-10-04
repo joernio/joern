@@ -177,7 +177,7 @@ class StdLibTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
       "should contain a CALL node for `trim` a receiver arg with the correct props set" in {
         val List(receiverArg) = cpg.call.code("p.trim.*").argument.isIdentifier.l
-        receiverArg.argumentIndex shouldBe 0
+        receiverArg.argumentIndex shouldBe 1
         receiverArg.name shouldBe "p"
         receiverArg.code shouldBe "p"
         receiverArg.typeFullName shouldBe "java.lang.String"

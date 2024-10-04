@@ -127,16 +127,20 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     argIdx: Option[Int],
     argNameMaybe: Option[String]
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val receiverAst = astsForExpression(expr.getReceiverExpression, Some(1)).headOption
+    val exprNode = astsForExpression(expr.getReceiverExpression, Some(1)).headOption
       .getOrElse(Ast(unknownNode(expr.getReceiverExpression, Constants.empty)))
-    val argAsts = selectorExpressionArgAsts(expr)
+
+    val nameReferenceExpr = expr.getSelectorExpression.asInstanceOf[KtNameReferenceExpression]
+    val fieldIdentifier = Ast(fieldIdentifierNode(nameReferenceExpr, nameReferenceExpr.getText,
+      nameReferenceExpr.getText).argumentIndex(2))
+
     registerType(typeInfoProvider.containingDeclType(expr, TypeConstants.any))
     val retType = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val node = withArgumentIndex(
       NodeBuilders.newOperatorCallNode(Operators.fieldAccess, expr.getText, Option(retType), line(expr), column(expr)),
       argIdx
     ).argumentName(argNameMaybe)
-    callAst(node, List(receiverAst) ++ argAsts)
+    callAst(node, List(exprNode, fieldIdentifier))
   }
 
   private def astForQualifiedExpressionExtensionCall(
@@ -144,7 +148,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     argIdx: Option[Int],
     argNameMaybe: Option[String]
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val argAsts = selectorExpressionArgAsts(expr)
+    val argAsts = selectorExpressionArgAsts(expr, 2)
 
     // TODO fix the cast to KtCallExpression
     val (fullName, signature) = calleeFullnameAndSignature(
@@ -170,9 +174,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         argIdx
       ).argumentName(argNameMaybe)
 
-    val receiverAst = astsForExpression(expr.getReceiverExpression, Some(0)).headOption
+    val instanceArg = astsForExpression(expr.getReceiverExpression, Some(1)).headOption
       .getOrElse(Ast(unknownNode(expr.getReceiverExpression, Constants.empty)))
-    callAst(node, argAsts, Option(receiverAst))
+    callAst(node, instanceArg +: argAsts)
   }
 
   private def astForQualifiedExpressionCallToSuper(

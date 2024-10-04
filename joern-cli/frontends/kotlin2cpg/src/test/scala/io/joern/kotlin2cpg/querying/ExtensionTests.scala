@@ -13,22 +13,32 @@ class ExtensionTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         |
         |class Example {}
         |
-        |fun Example.printBaz() { println("ext.baz") }
+        |fun Example.printBaz(text: String) { println(text) }
         |
         |fun main(args : Array<String>) {
-        |  Example().printBaz()
+        |  Example().printBaz("ext.baz")
         |}
         |""".stripMargin)
 
     "should contain a CALL node for the calls to the extension fns with the correct MFN set" in {
       val List(c) = cpg.call.code(".*printBaz.*").l
-      c.methodFullName shouldBe "mypkg.printBaz:void(mypkg.Example)"
+      c.methodFullName shouldBe "mypkg.printBaz:void(mypkg.Example,java.lang.String)"
     }
 
     "should contain a METHOD node for the extension fn with the correct MFN set" in {
       val x       = cpg.method.fullName.l
       val List(m) = cpg.method.fullName(".*printBaz.*").l
-      m.fullName shouldBe "mypkg.printBaz:void(mypkg.Example)"
+      m.fullName shouldBe "mypkg.printBaz:void(mypkg.Example,java.lang.String)"
+    }
+
+    "should contain a METHOD node for the extension fn with the correct parameter indicies" in {
+      val x       = cpg.method.fullName.l
+      inside(cpg.method.fullName(".*printBaz.*").parameter.l) { case List(thisParam, textParam) =>
+        thisParam.index shouldBe 1
+        thisParam.order shouldBe 1
+        textParam.index shouldBe 2
+        textParam.order shouldBe 2
+      }
     }
   }
 

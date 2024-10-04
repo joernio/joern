@@ -156,8 +156,8 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       c.columnNumber shouldBe Some(4)
 
       val List(firstArg, secondArg) = cpg.call.methodFullName(".*forEach.*").argument.l
-      firstArg.argumentIndex shouldBe 0
-      secondArg.argumentIndex shouldBe 1
+      firstArg.argumentIndex shouldBe 1
+      secondArg.argumentIndex shouldBe 2
     }
 
     "should contain a TYPE_DECL node for the lambda with the correct props set" in {
