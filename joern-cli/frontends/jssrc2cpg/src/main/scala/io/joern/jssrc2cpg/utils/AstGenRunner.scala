@@ -30,7 +30,7 @@ object AstGenRunner {
   }
 
   private def nodejsSpaceSize: Int = {
-    Math.max(getMaxHeapSizeInMB.toInt, 8192) // as default we set 8G minimum
+    Math.max((0.75 * getMaxHeapSizeInMB).toInt, 8192) // as default we set 8G minimum
   }
 
   private val NODE_OPTIONS: Map[String, String] = Map("NODE_OPTIONS" -> s"--max-old-space-size=$nodejsSpaceSize")
