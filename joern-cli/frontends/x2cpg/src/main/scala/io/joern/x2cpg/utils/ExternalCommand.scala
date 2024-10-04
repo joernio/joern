@@ -1,6 +1,7 @@
 package io.joern.x2cpg.utils
 
 import java.io.File
+import java.net.URL
 import java.nio.file.{Path, Paths}
 import java.util.concurrent.ConcurrentLinkedQueue
 import scala.sys.process.{Process, ProcessLogger}
@@ -61,19 +62,22 @@ object ExternalCommand extends ExternalCommand {
     * invoke the x2cpg frontends from any directory, not just their install directory, and then invoke other
     * executables, like astgen, php-parser et al.
     */
-  def executableDir(packagePath: String): Path = {
-    val dir        = packagePath
-    val indexOfLib = dir.lastIndexOf("lib")
-    val fixedDir = if (indexOfLib != -1) {
-      new java.io.File(dir.substring(0, indexOfLib)).toString
-    } else {
-      val indexOfTarget = dir.lastIndexOf("target")
-      if (indexOfTarget != -1) {
-        new java.io.File(dir.substring(0, indexOfTarget)).toString
+  def executableDir(packagePath: Path): Path = {
+    val fixedDir = 
+      if (packagePath.toString.contains("lib")) {
+        var dir = packagePath
+        while (dir.toString.contains("lib")) 
+          dir = dir.getParent
+        dir
+      } else if (packagePath.toString.contains("target")) {
+        var dir = packagePath
+        while (dir.toString.contains("target")) 
+          dir = dir.getParent
+        dir
       } else {
-        "."
+        Paths.get(".")
       }
-    }
-    Paths.get(fixedDir, "/bin/").toAbsolutePath
+
+    fixedDir.resolve("/bin/").toAbsolutePath
   }
 }

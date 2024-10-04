@@ -48,7 +48,7 @@ object AstGenRunner {
 
   def executableDir(implicit metaData: AstGenProgramMetaData): String =
     ExternalCommand
-      .executableDir(metaData.packagePath.toString)
+      .executableDir(Paths.get(metaData.packagePath.toURI))
       .resolve("astgen")
       .toString
 

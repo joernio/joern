@@ -140,8 +140,7 @@ object PhpParser {
   }
 
   private def defaultPhpParserBin: String = {
-    val packagePath =
-      Paths.get(this.getClass.getProtectionDomain.getCodeSource.getLocation.toURI).toAbsolutePath.toString
+    val packagePath = Paths.get(this.getClass.getProtectionDomain.getCodeSource.getLocation.toURI)
     ExternalCommand
       .executableDir(packagePath)
       .resolve("php-parser/php-parser.php")
