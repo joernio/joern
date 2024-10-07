@@ -58,7 +58,6 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
     File.usingTemporaryDirectory("rubysrc2cpgOut") { tmpDir =>
       val astGenResult = RubyAstGenRunner(config).execute(tmpDir)
       val astCreators  = RubySrc2Cpg.processAstGenRunnerResults(astGenResult.parsedFiles, config)
-      println(astCreators)
     }
     Using.resource(
       new parser.ResourceManagedParser(config.antlrCacheMemLimit, config.antlrDebug, config.antlrProfiling)
