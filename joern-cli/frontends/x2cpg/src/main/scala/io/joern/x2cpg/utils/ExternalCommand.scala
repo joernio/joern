@@ -79,6 +79,6 @@ object ExternalCommand extends ExternalCommand {
         Paths.get(".")
       }
 
-    fixedDir.resolve("/bin/").toAbsolutePath
+    fixedDir.resolve("bin/").toAbsolutePath
   }
 }
