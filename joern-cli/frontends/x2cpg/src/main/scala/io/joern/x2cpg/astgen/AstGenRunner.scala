@@ -46,21 +46,11 @@ object AstGenRunner {
     packagePath: URL
   )
 
-  def executableDir(implicit metaData: AstGenProgramMetaData): String = {
-    val dir        = metaData.packagePath.toString
-    val indexOfLib = dir.lastIndexOf("lib")
-    val fixedDir = if (indexOfLib != -1) {
-      new java.io.File(dir.substring("file:".length, indexOfLib)).toString
-    } else {
-      val indexOfTarget = dir.lastIndexOf("target")
-      if (indexOfTarget != -1) {
-        new java.io.File(dir.substring("file:".length, indexOfTarget)).toString
-      } else {
-        "."
-      }
-    }
-    Paths.get(fixedDir, "/bin/astgen").toAbsolutePath.toString
-  }
+  def executableDir(implicit metaData: AstGenProgramMetaData): String =
+    ExternalCommand
+      .executableDir(Paths.get(metaData.packagePath.toURI))
+      .resolve("astgen")
+      .toString
 
   def hasCompatibleAstGenVersion(compatibleVersion: String)(implicit metaData: AstGenProgramMetaData): Boolean = {
     ExternalCommand.run(s"$metaData.name -version", ".").toOption.map(_.mkString.strip()) match {
