@@ -1,4 +1,9 @@
+import better.files
 import com.typesafe.config.{Config, ConfigFactory}
+import versionsort.VersionHelper
+
+import scala.sys.process.stringToProcess
+import scala.util.Try
 
 name := "rubysrc2cpg"
 
@@ -18,14 +23,69 @@ libraryDependencies ++= Seq(
   "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
   "org.apache.commons" % "commons-compress" % Versions.commonsCompress, // For unpacking Gems with `--download-dependencies`
   "org.scalatest" %% "scalatest"         % Versions.scalatest % Test,
-  "org.antlr"      % "antlr4-runtime"    % Versions.antlr
+  "org.antlr"      % "antlr4-runtime"    % Versions.antlr // TODO: Remove
 )
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin, Antlr4Plugin)
-
+// TODO Remove antlr stuff
 Antlr4 / antlr4Version    := Versions.antlr
 Antlr4 / antlr4GenVisitor := true
 Antlr4 / javaSource       := (Compile / sourceManaged).value
+
+lazy val astGenVersion = settingKey[String]("rubyastgen version")
+astGenVersion := appProperties.value.getString("rubysrc2cpg.ruby_ast_gen_version")
+
+libraryDependencies ++= Seq(
+  "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
+  "org.scalatest" %% "scalatest"         % Versions.scalatest % Test
+)
+
+lazy val astGenDlUrl = settingKey[String]("astgen download url")
+astGenDlUrl := s"https://github.com/joernio/ruby_ast_gen/releases/download/v${astGenVersion.value}/"
+
+def hasCompatibleAstGenVersion(astGenVersion: String): Boolean = {
+  Try("exec/ruby_ast_gen --version".!!).toOption.map(_.strip()) match {
+    case Some(installedVersion) if installedVersion != "unknown" =>
+      VersionHelper.compare(installedVersion, astGenVersion) >= 0
+    case _ => false
+  }
+}
+
+lazy val astGenDlTask = taskKey[Unit](s"Download astgen binaries")
+astGenDlTask := {
+  if (hasCompatibleAstGenVersion(astGenVersion.value)) {
+    Seq.empty
+  } else {
+    val astGenDir = baseDirectory.value / "bin" / "astgen"
+    astGenDir.mkdirs()
+    val gemName = s"ruby_ast_gen-${astGenVersion.value}.gem"
+    val gemFullPath  = astGenDir / gemName
+    val unpackedGem = gemName.stripSuffix(".gem")
+    val unpackedGemFullPath =  astGenDir / unpackedGem
+    //  We set this up so that the unpacked version is what the download helper aims to keep available
+    DownloadHelper.ensureIsAvailable(s"${astGenDlUrl.value}$gemName", unpackedGemFullPath)
+    // We need to rename the file, unpack, then clean up again
+    unpackedGemFullPath.renameTo(gemFullPath)
+    val code = s"gem unpack $gemFullPath --target $astGenDir" !
+
+    if (code != 0) {
+      println("Unable to unpack AST generator Gem. Please make sure Ruby is installed.")
+    } else {
+      unpackedGemFullPath.renameTo(astGenDir / "ruby_ast_gen")
+      gemFullPath.delete()
+
+      val distDir = (Universal / stagingDirectory).value / "bin" / "astgen"
+      distDir.mkdirs()
+      IO.copyDirectory(astGenDir, distDir)
+
+      // permissions are lost during the download; need to set them manually
+      astGenDir.listFiles().foreach(_.setExecutable(true, false))
+      distDir.listFiles().foreach(_.setExecutable(true, false))
+    }
+  }
+}
+
+Compile / compile := ((Compile / compile) dependsOn astGenDlTask).value
 
 lazy val joernTypeStubsDlUrl = settingKey[String]("joern_type_stubs download url")
 joernTypeStubsDlUrl := s"https://github.com/joernio/joern-type-stubs/releases/download/v${joernTypeStubsVersion.value}/"
