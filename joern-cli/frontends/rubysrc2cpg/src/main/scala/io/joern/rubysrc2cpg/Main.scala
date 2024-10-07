@@ -1,10 +1,13 @@
 package io.joern.rubysrc2cpg
 
 import io.joern.rubysrc2cpg.Frontend.*
+import io.joern.x2cpg.astgen.AstGenConfig
 import io.joern.x2cpg.passes.frontend.{TypeRecoveryParserConfig, XTypeRecovery, XTypeRecoveryConfig}
 import io.joern.x2cpg.typestub.TypeStubConfig
 import io.joern.x2cpg.{DependencyDownloadConfig, X2CpgConfig, X2CpgMain}
 import scopt.OParser
+
+import java.nio.file.Paths
 
 final case class Config(
   antlrCacheMemLimit: Double = 0.6d,
@@ -15,7 +18,12 @@ final case class Config(
 ) extends X2CpgConfig[Config]
     with DependencyDownloadConfig[Config]
     with TypeRecoveryParserConfig[Config]
-    with TypeStubConfig[Config] {
+    with TypeStubConfig[Config]
+    with AstGenConfig[Config] {
+
+  override val astGenProgramName: String        = "ruby_ast_gen"
+  override val astGenConfigPrefix: String       = "rubysrc2cpg"
+  override val multiArchitectureBuilds: Boolean = true
 
   this.defaultIgnoredFilesRegex = List("spec", "test", "tests", "vendor").flatMap { directory =>
     List(s"(^|\\\\)$directory($$|\\\\)".r.unanchored, s"(^|/)$directory($$|/)".r.unanchored)

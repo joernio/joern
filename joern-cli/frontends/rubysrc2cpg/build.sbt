@@ -60,20 +60,24 @@ astGenDlTask := {
     astGenDir.mkdirs()
     val gemName = s"ruby_ast_gen-${astGenVersion.value}.gem"
     val gemFullPath  = astGenDir / gemName
-    val unpackedGem = gemName.stripSuffix(".gem")
-    val unpackedGemFullPath =  astGenDir / unpackedGem
+    val gemNoVersionFullPath  = astGenDir / s"${gemName.stripSuffix(s"-${astGenVersion.value}.gem")}.gem"
+    val unpackedGemNoVersion = gemName.stripSuffix(s"-${astGenVersion.value}.gem")
+    val unpackedGemNoVersionFullPath =  astGenDir / unpackedGemNoVersion
+    println("Something: " + unpackedGemNoVersionFullPath)
     //  We set this up so that the unpacked version is what the download helper aims to keep available
-    DownloadHelper.ensureIsAvailable(s"${astGenDlUrl.value}$gemName", unpackedGemFullPath)
+    DownloadHelper.ensureIsAvailable(s"${astGenDlUrl.value}$gemName", unpackedGemNoVersionFullPath)
     // We need to rename the file, unpack, then clean up again
-    unpackedGemFullPath.renameTo(gemFullPath)
-    val code = s"gem unpack $gemFullPath --target $astGenDir" !
+    println(s"$unpackedGemNoVersionFullPath ${unpackedGemNoVersionFullPath.exists()}")
+    unpackedGemNoVersionFullPath.renameTo(gemNoVersionFullPath)
+    println(s"Renamed to ${gemNoVersionFullPath}")
+    val code = s"gem unpack $gemNoVersionFullPath --target $astGenDir" !
 
+    gemNoVersionFullPath.renameTo(unpackedGemNoVersionFullPath)
+    gemFullPath.delete()
+    gemNoVersionFullPath.delete()
     if (code != 0) {
       println("Unable to unpack AST generator Gem. Please make sure Ruby is installed.")
     } else {
-      unpackedGemFullPath.renameTo(astGenDir / "ruby_ast_gen")
-      gemFullPath.delete()
-
       val distDir = (Universal / stagingDirectory).value / "bin" / "astgen"
       distDir.mkdirs()
       IO.copyDirectory(astGenDir, distDir)
