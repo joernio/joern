@@ -63,15 +63,16 @@ object ExternalCommand extends ExternalCommand {
     * executables, like astgen, php-parser et al.
     */
   def executableDir(packagePath: Path): Path = {
-    val fixedDir = 
-      if (packagePath.toString.contains("lib")) {
-        var dir = packagePath
-        while (dir.toString.contains("lib")) 
+    val packagePathAbsolute = packagePath.toAbsolutePath
+    val fixedDir =
+      if (packagePathAbsolute.toString.contains("lib")) {
+        var dir = packagePathAbsolute
+        while (dir.toString.contains("lib"))
           dir = dir.getParent
         dir
-      } else if (packagePath.toString.contains("target")) {
-        var dir = packagePath
-        while (dir.toString.contains("target")) 
+      } else if (packagePathAbsolute.toString.contains("target")) {
+        var dir = packagePathAbsolute
+        while (dir.toString.contains("target"))
           dir = dir.getParent
         dir
       } else {
