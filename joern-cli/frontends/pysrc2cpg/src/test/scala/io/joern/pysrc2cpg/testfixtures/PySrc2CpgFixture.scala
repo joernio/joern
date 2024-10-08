@@ -1,26 +1,26 @@
-package io.joern.pysrc2cpg
+package io.joern.pysrc2cpg.testfixtures
 
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.language.Path
-import io.joern.dataflowengineoss.layers.dataflows.*
-import io.joern.dataflowengineoss.queryengine.EngineContext
-import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
-import io.joern.dataflowengineoss.testfixtures.{SemanticCpgTestFixture, SemanticTestCpg}
-import io.joern.x2cpg.X2Cpg
-import io.joern.x2cpg.frontendspecific.pysrc2cpg.{
-  DynamicTypeHintFullNamePass,
-  ImportsPass,
-  PythonImportResolverPass,
-  PythonInheritanceNamePass,
-  PythonTypeHintCallLinker,
-  PythonTypeRecoveryPassGenerator
-}
+import io.joern.dataflowengineoss.semanticsloader.Semantics
+import io.joern.dataflowengineoss.testfixtures.SemanticCpgTestFixture
+import io.joern.dataflowengineoss.testfixtures.SemanticTestCpg
+import io.joern.pysrc2cpg.Py2CpgOnFileSystem
+import io.joern.pysrc2cpg.Py2CpgOnFileSystemConfig
+import io.joern.x2cpg.frontendspecific.pysrc2cpg.DynamicTypeHintFullNamePass
+import io.joern.x2cpg.frontendspecific.pysrc2cpg.ImportsPass
+import io.joern.x2cpg.frontendspecific.pysrc2cpg.PythonImportResolverPass
+import io.joern.x2cpg.frontendspecific.pysrc2cpg.PythonInheritanceNamePass
+import io.joern.x2cpg.frontendspecific.pysrc2cpg.PythonTypeHintCallLinker
+import io.joern.x2cpg.frontendspecific.pysrc2cpg.PythonTypeRecoveryPassGenerator
 import io.joern.x2cpg.passes.base.AstLinkerPass
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
-import io.joern.x2cpg.testfixtures.{Code2CpgFixture, DefaultTestCpg, LanguageFrontend, TestCpg}
+import io.joern.x2cpg.testfixtures.Code2CpgFixture
+import io.joern.x2cpg.testfixtures.DefaultTestCpg
+import io.joern.x2cpg.testfixtures.LanguageFrontend
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
-import io.shiftleft.semanticcpg.layers.LayerCreatorContext
+import io.shiftleft.semanticcpg.language.ICallResolver
+import io.shiftleft.semanticcpg.language.NoResolve
 
 trait PythonFrontend extends LanguageFrontend {
   override val fileSuffix: String = ".py"

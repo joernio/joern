@@ -4,6 +4,7 @@ import io.joern.swiftsrc2cpg.Frontend.*
 import io.joern.x2cpg.passes.frontend.{TypeRecoveryParserConfig, XTypeRecovery, XTypeRecoveryConfig}
 import io.joern.x2cpg.utils.Environment
 import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
+import io.joern.x2cpg.utils.server.FrontendHTTPServer
 import scopt.OParser
 
 import java.nio.file.Paths
@@ -34,14 +35,19 @@ object Frontend {
 
 }
 
-object Main extends X2CpgMain(cmdLineParser, new SwiftSrc2Cpg()) {
+object Main extends X2CpgMain(cmdLineParser, new SwiftSrc2Cpg()) with FrontendHTTPServer[Config, SwiftSrc2Cpg] {
+
+  override protected def newDefaultConfig(): Config = Config()
 
   def run(config: Config, swiftsrc2cpg: SwiftSrc2Cpg): Unit = {
-    val absPath = Paths.get(config.inputPath).toAbsolutePath.toString
-    if (Environment.pathExists(absPath)) {
-      swiftsrc2cpg.run(config.withInputPath(absPath))
-    } else {
-      System.exit(1)
+    if (config.serverMode) { startup() }
+    else {
+      val absPath = Paths.get(config.inputPath).toAbsolutePath.toString
+      if (Environment.pathExists(absPath)) {
+        swiftsrc2cpg.run(config.withInputPath(absPath))
+      } else {
+        System.exit(1)
+      }
     }
   }
 
