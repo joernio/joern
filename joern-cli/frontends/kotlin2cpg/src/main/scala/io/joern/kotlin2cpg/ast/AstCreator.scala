@@ -501,4 +501,12 @@ class AstCreator(
       ModifierTypes.INTERNAL
     else "UNKNOWN"
   }
+  
+  protected def addToLambdaBindingInfoQueue(bindingNode: NewBinding, typeDecl: NewTypeDecl, methodNode: NewMethod): Unit = {
+    lambdaBindingInfoQueue.prepend(
+      BindingInfo(bindingNode,
+        Seq((typeDecl, bindingNode, EdgeTypes.BINDS), (bindingNode, methodNode, EdgeTypes.REF))
+      ))
+  }
+
 }

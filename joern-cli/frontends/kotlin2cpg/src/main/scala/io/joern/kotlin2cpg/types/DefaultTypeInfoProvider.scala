@@ -54,6 +54,7 @@ import org.jetbrains.kotlin.resolve.`lazy`.descriptors.LazyClassDescriptor
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedClassDescriptor
 import org.jetbrains.kotlin.types.{KotlinType, TypeUtils}
 import org.jetbrains.kotlin.types.error.ErrorType
+import org.jetbrains.kotlin.util.slicedMap.ReadOnlySlice
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -536,7 +537,32 @@ class DefaultTypeInfoProvider(val bindingContext: BindingContext, typeRenderer: 
 object DefaultTypeInfoProvider {
   private val logger = LoggerFactory.getLogger(getClass)
 
-  private def bindingsForEntity(bindings: BindingContext, entity: KtElement): KeyFMap = {
+  def allBindingsOfKind[K, V](bindings: BindingContext, kind: ReadOnlySlice[K, V]): collection.Seq[(K, V)] = {
+    val thisField = bindings.getClass.getDeclaredField("this$0")
+    thisField.setAccessible(true)
+    val bindingTrace = thisField.get(bindings).asInstanceOf[NoScopeRecordCliBindingTrace]
+
+    val mapField = bindingTrace.getClass.getSuperclass.getSuperclass.getDeclaredField("map")
+    mapField.setAccessible(true)
+    val map = mapField.get(bindingTrace)
+
+    val mapMapField = map.getClass.getDeclaredField("map")
+    mapMapField.setAccessible(true)
+    val mapMap = mapMapField.get(map).asInstanceOf[java.util.Map[Object, KeyFMap]]
+
+    val result = scala.collection.mutable.ArrayBuffer.empty[(K,V)]
+
+    mapMap.forEach{ (keyObject: Object, fMap: KeyFMap) =>
+      val kindValue = fMap.get(kind.getKey)
+      if (kindValue != null) {
+        result.append((keyObject.asInstanceOf[K], kindValue))
+      }
+    }
+
+    result
+  }
+
+  def bindingsForEntity(bindings: BindingContext, entity: KtElement): KeyFMap = {
     try {
       val thisField = bindings.getClass.getDeclaredField("this$0")
       thisField.setAccessible(true)
@@ -564,7 +590,7 @@ object DefaultTypeInfoProvider {
     }
   }
 
-  private def bindingsForEntityAsString(bindings: BindingContext, entity: KtElement): String = {
+  def bindingsForEntityAsString(bindings: BindingContext, entity: KtElement): String = {
     val mapForEntity = bindingsForEntity(bindings, entity)
     if (mapForEntity != null) {
       val keys = mapForEntity.getKeys

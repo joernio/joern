@@ -1,8 +1,7 @@
 package io.joern.kotlin2cpg.ast
 
 import io.joern.kotlin2cpg.Constants
-import io.joern.kotlin2cpg.types.TypeConstants
-import io.joern.kotlin2cpg.types.TypeInfoProvider
+import io.joern.kotlin2cpg.types.{TypeConstants, TypeInfoProvider}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.joern.x2cpg.datastructures.Stack.StackWrapper
 import io.joern.x2cpg.utils.NodeBuilders
@@ -10,14 +9,16 @@ import io.joern.x2cpg.utils.NodeBuilders.newBindingNode
 import io.joern.x2cpg.utils.NodeBuilders.newClosureBindingNode
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
-import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
-import org.jetbrains.kotlin.descriptors.Modality
+import org.jetbrains.kotlin.com.intellij.psi.PsiElement
+import org.jetbrains.kotlin.descriptors.{ClassDescriptor, DescriptorVisibilities, FunctionDescriptor, Modality}
 import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.resolve.calls.model.ResolvedCallArgument
+import org.jetbrains.kotlin.resolve.calls.tower.{NewAbstractResolvedCall, PSIFunctionKotlinCallArgument}
+import org.jetbrains.kotlin.resolve.sam.{SamConstructorDescriptor, SamConversionResolverImplKt}
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 
 import java.util.UUID.nameUUIDFromBytes
@@ -268,26 +269,26 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       withArgumentIndex(methodRefNode(fn, fn.getText, fullName, lambdaTypeDeclFullName), argIdxMaybe)
         .argumentName(argNameMaybe)
 
+    val samInterface = getSamInterface(fn)
+
+    val baseClassFullName = samInterface.flatMap(nameRenderer.descFullName).getOrElse(Constants.unknownLambdaBaseClass)
+
     val lambdaTypeDecl = typeDeclNode(
       fn,
       Constants.lambdaTypeDeclName,
       lambdaTypeDeclFullName,
       relativizedPath,
-      Seq(registerType(s"${TypeConstants.kotlinFunctionXPrefix}${fn.getValueParameters.size}")),
+      Seq(registerType(baseClassFullName)),
       None
     )
 
-    val lambdaBinding = newBindingNode(Constants.lambdaBindingName, signature, lambdaMethodNode.fullName)
-    val bindingInfo = BindingInfo(
-      lambdaBinding,
-      Seq((lambdaTypeDecl, lambdaBinding, EdgeTypes.BINDS), (lambdaBinding, lambdaMethodNode, EdgeTypes.REF))
-    )
+    createLambdaBindings(lambdaMethodNode, lambdaTypeDecl, samInterface)
+
     scope.popScope()
     val closureBindingDefs = closureBindingEntriesForCaptured.collect { case (closureBinding, node) =>
       ClosureBindingDef(closureBinding, _methodRefNode, node.node)
     }
     closureBindingDefs.foreach(closureBindingDefQueue.prepend)
-    lambdaBindingInfoQueue.prepend(bindingInfo)
     lambdaAstQueue.prepend(lambdaMethodAst)
     Ast(_methodRefNode)
       .withChildren(annotations.map(astForAnnotationEntry))
@@ -409,30 +410,100 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       withArgumentIndex(methodRefNode(expr, expr.getText, fullName, lambdaTypeDeclFullName), argIdxMaybe)
         .argumentName(argNameMaybe)
 
+    val samInterface = getSamInterface(expr)
+
+    val baseClassFullName = samInterface.flatMap(nameRenderer.descFullName).getOrElse(Constants.unknownLambdaBaseClass)
+
     val lambdaTypeDecl = typeDeclNode(
       expr,
       Constants.lambdaTypeDeclName,
       lambdaTypeDeclFullName,
       relativizedPath,
-      Seq(registerType(s"${TypeConstants.kotlinFunctionXPrefix}${expr.getValueParameters.size}")),
+      Seq(registerType(baseClassFullName)),
       None
     )
 
-    val lambdaBinding = newBindingNode(Constants.lambdaBindingName, signature, lambdaMethodNode.fullName)
-    val bindingInfo = BindingInfo(
-      lambdaBinding,
-      Seq((lambdaTypeDecl, lambdaBinding, EdgeTypes.BINDS), (lambdaBinding, lambdaMethodNode, EdgeTypes.REF))
-    )
+    createLambdaBindings(lambdaMethodNode, lambdaTypeDecl, samInterface)
+
     scope.popScope()
     val closureBindingDefs = closureBindingEntriesForCaptured.collect { case (closureBinding, node) =>
       ClosureBindingDef(closureBinding, _methodRefNode, node.node)
     }
     closureBindingDefs.foreach(closureBindingDefQueue.prepend)
-    lambdaBindingInfoQueue.prepend(bindingInfo)
     lambdaAstQueue.prepend(lambdaMethodAst)
     nestedLambdaDecls.foreach(lambdaAstQueue.prepend)
     Ast(_methodRefNode)
       .withChildren(annotations.map(astForAnnotationEntry))
+  }
+
+  // SAM stands for: single abstraction method
+  private def getSamInterface(expr: KtLambdaExpression | KtNamedFunction): Option[ClassDescriptor] = {
+    getSurroundingCallTarget(expr) match {
+      case Some(callTarget) =>
+        val resolvedCallAtom = nameRenderer.astToResolvedCallDesc(callTarget)
+          .collect { case call: NewAbstractResolvedCall[?] =>
+            call.getResolvedCallAtom
+          }
+
+        resolvedCallAtom.map { callAtom =>
+          callAtom.getCandidateDescriptor match {
+            case samConstructorDesc: SamConstructorDescriptor =>
+              // Lambda is wrapped e.g. `SomeInterface { obj -> obj }`
+              samConstructorDesc.getBaseDescriptorForSynthetic
+            case _ =>
+              // Lambda/anan function is directly used as call argument e.g. `someCall(obj -> obj)`
+              callAtom.getArgumentMappingByOriginal.asScala.collectFirst {
+                case (paramDesc, resolvedArgument) if isExprIncluded(resolvedArgument, expr) =>
+                  paramDesc.getType.getConstructor.getDeclarationDescriptor.asInstanceOf[ClassDescriptor]
+              }.get
+          }
+        }
+      case None =>
+        // Lambda/anon function is directly assigned to a variable.
+        // E.g. `val l = { i: Int -> i }`
+        val lambdaExprType = nameRenderer.ktExprToKotlinType(expr)
+        lambdaExprType.map(_.getConstructor.getDeclarationDescriptor.asInstanceOf[ClassDescriptor])
+    }
+  }
+
+  private def getSurroundingCallTarget(element: KtElement): Option[KtExpression] = {
+    var context: PsiElement = element.getContext
+    while (context != null &&
+      !context.isInstanceOf[KtCallExpression] &&
+      !context.isInstanceOf[KtBinaryExpression]) {
+      context = context.getContext
+    }
+    context match {
+      case callExpr: KtCallExpression =>
+        Some(callExpr.getCalleeExpression)
+      case binaryExpr: KtBinaryExpression =>
+        Some(binaryExpr.getOperationReference)
+      case null =>
+        None
+    }
+  }
+
+  private def isExprIncluded(resolvedArgument: ResolvedCallArgument, expr: KtExpression): Boolean = {
+    resolvedArgument.getArguments.asScala.exists {
+      case psi: PSIFunctionKotlinCallArgument =>
+        psi.getExpression == expr
+      case _ =>
+        false
+    }
+  }
+
+  private def createLambdaBindings(lambdaMethodNode: NewMethod, lambdaTypeDecl: NewTypeDecl, samInterface: Option[ClassDescriptor]): Unit = {
+    val samMethod = samInterface.map(SamConversionResolverImplKt.getSingleAbstractMethodOrNull)
+    val samMethodName = samMethod.map(_.getName.toString).getOrElse(Constants.unknownLambdaBindingName)
+    val samMethodSignature = samMethod.flatMap(nameRenderer.funcDescSignature)
+
+    if (samMethodSignature.isDefined) {
+      val interfaceLambdaBinding = newBindingNode(samMethodName, samMethodSignature.get, lambdaMethodNode.fullName)
+      addToLambdaBindingInfoQueue(interfaceLambdaBinding, lambdaTypeDecl, lambdaMethodNode)
+    }
+
+    val nativeLambdaBinding = newBindingNode(samMethodName, lambdaMethodNode.signature, lambdaMethodNode.fullName)
+    addToLambdaBindingInfoQueue(nativeLambdaBinding, lambdaTypeDecl, lambdaMethodNode)
   }
 
   def astForReturnExpression(expr: KtReturnExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {

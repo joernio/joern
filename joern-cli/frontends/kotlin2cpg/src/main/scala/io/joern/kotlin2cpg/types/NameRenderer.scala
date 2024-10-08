@@ -8,6 +8,7 @@ import org.jetbrains.kotlin.descriptors.{ClassDescriptor, ConstructorDescriptor,
 import org.jetbrains.kotlin.name.{FqName, FqNameUnsafe}
 import org.jetbrains.kotlin.psi.{KtClassOrObject, KtConstructor, KtDestructuringDeclarationEntry, KtExpression, KtFunctionLiteral, KtNamedFunction}
 import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.jvm.JvmPrimitiveType
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.error.ErrorClassDescriptor
@@ -249,6 +250,18 @@ class NameRenderer(bindingContext: BindingContext) {
       functionDescriptor
     }
 
+  }
+  
+  def astToResolvedCallDesc(expr: KtExpression): Option[ResolvedCall[?]] = {
+    val call         = Option(bindingContext.get(BindingContext.CALL, expr))
+    val resolvedCall = call.flatMap(call => Option(bindingContext.get(BindingContext.RESOLVED_CALL, call)))
+    
+    resolvedCall
+  }
+  
+  def ktExprToKotlinType(expr: KtExpression): Option[KotlinType] = {
+    Option(bindingContext.get(BindingContext.EXPRESSION_TYPE_INFO, expr))
+      .map(_.getType)
   }
 
 }
