@@ -46,7 +46,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     }
 
     val classFullName =
-      nameRenderer.astToDesc(ktClass).flatMap(nameRenderer.descFullName).getOrElse {
+      bindingUtils.getClassDesc(ktClass).flatMap(nameRenderer.descFullName).getOrElse {
         val fqName = ktClass.getContainingKtFile.getPackageFqName.toString
         s"$fqName.$className"
       }
@@ -69,7 +69,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val (fullName, signature) =
       if (primaryCtor != null) {
-        val constructorDesc = nameRenderer.astToDesc(primaryCtor)
+        val constructorDesc = bindingUtils.getConstructorDesc(primaryCtor)
         val descFullName = constructorDesc
           .flatMap(nameRenderer.descFullName)
           .getOrElse(s"$classFullName.${Defines.ConstructorMethodName}")
@@ -445,7 +445,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       val primaryCtorCallAst = List(Ast(primaryCtorCall.copy))
       val constructorParams  = ctor.getValueParameters.asScala.toList
 
-      val constructorDesc = nameRenderer.astToDesc(ctor)
+      val constructorDesc = bindingUtils.getConstructorDesc(ctor)
       val descFullName = constructorDesc
         .flatMap(nameRenderer.descFullName)
         .getOrElse(s"$classFullName.${Defines.ConstructorMethodName}")

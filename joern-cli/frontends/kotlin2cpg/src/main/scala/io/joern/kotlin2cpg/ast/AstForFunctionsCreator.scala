@@ -66,7 +66,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
   def astsForMethod(ktFn: KtNamedFunction, withVirtualModifier: Boolean = false)(
     implicit typeInfoProvider: TypeInfoProvider
   ): Seq[Ast] = {
-    val funcDesc = nameRenderer.astToDesc(ktFn)
+    val funcDesc = bindingUtils.getFunctionDesc(ktFn)
     val descFullName = funcDesc
       .flatMap(nameRenderer.descFullName)
       .getOrElse(s"${Defines.UnresolvedNamespace}.${ktFn.getName}")
@@ -195,7 +195,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     argNameMaybe: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val funcDesc = nameRenderer.astToDesc(fn)
+    val funcDesc = bindingUtils.getFunctionDesc(fn)
     val name     = nameRenderer.descName(funcDesc.get)
     val descFullName = funcDesc
       .flatMap(nameRenderer.descFullName)
@@ -300,7 +300,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     argNameMaybe: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val funcDesc = nameRenderer.astToDesc(expr.getFunctionLiteral)
+    val funcDesc = bindingUtils.getFunctionDesc(expr.getFunctionLiteral)
     val name     = nameRenderer.descName(funcDesc.get)
     val descFullName = funcDesc
       .flatMap(nameRenderer.descFullName)
@@ -440,7 +440,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
   private def getSamInterface(expr: KtLambdaExpression | KtNamedFunction): Option[ClassDescriptor] = {
     getSurroundingCallTarget(expr) match {
       case Some(callTarget) =>
-        val resolvedCallAtom = nameRenderer.astToResolvedCallDesc(callTarget)
+        val resolvedCallAtom = bindingUtils.getResolvedCallDesc(callTarget)
           .collect { case call: NewAbstractResolvedCall[?] =>
             call.getResolvedCallAtom
           }
@@ -461,7 +461,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       case None =>
         // Lambda/anon function is directly assigned to a variable.
         // E.g. `val l = { i: Int -> i }`
-        val lambdaExprType = nameRenderer.ktExprToKotlinType(expr)
+        val lambdaExprType = bindingUtils.getExprType(expr)
         lambdaExprType.map(_.getConstructor.getDeclarationDescriptor.asInstanceOf[ClassDescriptor])
     }
   }

@@ -79,7 +79,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       if (operatorOption.isDefined) (operatorOption.get, TypeConstants.any)
       // TODO: fix the fallback METHOD_FULL_NAME and SIGNATURE here (should be a correct number of ANYs)
       else {
-        val funcDesc = nameRenderer.astToDesc(expr.getOperationReference)
+        val funcDesc = bindingUtils.getCalledFunctionDesc(expr.getOperationReference)
         val descFullName = funcDesc
           .flatMap(nameRenderer.descFullName)
           .getOrElse(TypeConstants.any)
@@ -487,9 +487,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         s"$methodFqName<${typeArgs.mkString(",")}>"
       else methodFqName
 
-    val funcDesc = nameRenderer.astToDesc(expr.getCalleeExpression).orElse {
-      nameRenderer
-        .astToAmbiguousReferenceTargetDescs(expr.getCalleeExpression)
+    val funcDesc = bindingUtils.getCalledFunctionDesc(expr.getCalleeExpression).orElse {
+      bindingUtils
+        .getAmbiguousCalledFunctionDescs(expr.getCalleeExpression)
         .find(_.getValueParameters.size == expr.getValueArguments.size)
     }
 

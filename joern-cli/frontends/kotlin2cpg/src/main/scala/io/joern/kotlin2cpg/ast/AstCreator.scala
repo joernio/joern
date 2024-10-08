@@ -66,7 +66,8 @@ class AstCreator(
   protected val scope: Scope[String, DeclarationNew, NewNode] = new Scope()
   protected val debugScope: mutable.Stack[KtDeclaration]      = mutable.Stack.empty[KtDeclaration]
 
-  protected val nameRenderer = new NameRenderer(bindingContext)
+  protected val nameRenderer = new NameRenderer()
+  protected val bindingUtils = new BindingContextUtils(bindingContext)
 
   def createAst(): DiffGraphBuilder = {
     implicit val typeInfoProvider: TypeInfoProvider = xTypeInfoProvider
@@ -94,7 +95,7 @@ class AstCreator(
     fullNameFallback: => String,
     signatureFallback: => String
   ): (String, String) = {
-    val funcDesc = nameRenderer.astToDesc(calleeExpr)
+    val funcDesc = bindingUtils.getCalledFunctionDesc(calleeExpr)
     val descFullName = funcDesc
       .flatMap(nameRenderer.descFullName)
       .getOrElse(fullNameFallback)
@@ -426,7 +427,7 @@ class AstCreator(
       identifierNode(entry, componentNReceiverName, componentNReceiverName, componentNTypeFullName)
         .argumentIndex(0)
 
-    val desc = nameRenderer.astToDesc(entry)
+    val desc = bindingUtils.getFunctionDesc(entry)
     val descFullName = desc
       .flatMap(nameRenderer.descFullName)
       .getOrElse(s"${Defines.UnresolvedNamespace}${Constants.componentNPrefix}$componentIdx")

@@ -38,19 +38,9 @@ object NameRenderer {
   )
 }
 
-class NameRenderer(bindingContext: BindingContext) {
+class NameRenderer() {
   private val anonDescriptorToIndex = mutable.HashMap.empty[DeclarationDescriptor, Int]
   private var anonObjectCounter     = 0
-
-  private def getAnonDescIndex(desc: DeclarationDescriptor): Int = {
-    anonDescriptorToIndex.getOrElseUpdate(
-      desc, {
-        val index = anonObjectCounter
-        anonObjectCounter += 1
-        index
-      }
-    )
-  }
 
   def descName(desc: DeclarationDescriptor): String = {
     if (desc.getName.isSpecial) {
@@ -77,58 +67,6 @@ class NameRenderer(bindingContext: BindingContext) {
       }
     val fullName = descFullNameInternal(dealiasedDesc).map(_.reverse.mkString(""))
     fullName
-  }
-
-  private def descFullNameInternal(desc: DeclarationDescriptor): Option[List[String]] = {
-    if (desc.isInstanceOf[ErrorClassDescriptor]) {
-      return None
-    }
-    val parentDesc = desc.getContainingDeclaration
-
-    val parentFnParts =
-      Option(parentDesc) match {
-        case None =>
-          Some(Nil)
-        case Some(parentDesc) =>
-          descFullNameInternal(parentDesc)
-      }
-
-    if (parentFnParts.isEmpty) {
-      return None
-    }
-
-    var extendedFnParts = parentFnParts.get
-    desc match {
-      case packageFragmentDesc: PackageFragmentDescriptor =>
-        if (!packageFragmentDesc.getName.isSpecial) {
-          extendedFnParts = packageFragmentDesc.getFqName.toString :: extendedFnParts
-        }
-      case moduleDesc: ModuleDescriptor =>
-      // Nothing todo since this is just the root element which has no namespace representation.
-      case _ =>
-        if (extendedFnParts.nonEmpty) {
-          val separator =
-            if (parentDesc.isInstanceOf[ClassDescriptor] && desc.isInstanceOf[ClassDescriptor]) {
-              // Nested class.
-              "$"
-            } else {
-              "."
-            }
-          extendedFnParts = separator :: extendedFnParts
-        }
-
-        val name = descName(desc)
-
-        extendedFnParts = name :: extendedFnParts
-    }
-    Some(extendedFnParts)
-  }
-
-  private def isConstructorDesc(functionDesc: FunctionDescriptor): Boolean = {
-    functionDesc match {
-      case _: ConstructorDescriptor => true
-      case _                        => false
-    }
   }
 
   def funcDescSignature(functionDesc: FunctionDescriptor): Option[String] = {
@@ -206,62 +144,67 @@ class NameRenderer(bindingContext: BindingContext) {
       }
     }
   }
-
-  def astToDesc(classAst: KtClassOrObject): Option[ClassDescriptor] = {
-    Option(bindingContext.get(BindingContext.CLASS, classAst))
-  }
-
-  def astToDesc(functionAst: KtNamedFunction): Option[FunctionDescriptor] = {
-    Option(bindingContext.get(BindingContext.FUNCTION, functionAst))
-  }
-
-  def astToDesc(destructuringAst: KtDestructuringDeclarationEntry): Option[FunctionDescriptor] = {
-    val resolvedCall = Option(bindingContext.get(BindingContext.COMPONENT_RESOLVED_CALL, destructuringAst))
-
-    resolvedCall.map(_.getResultingDescriptor).collect { case functionDesc: FunctionDescriptor =>
-      functionDesc
-    }
-  }
-
-  def astToDesc(constructorAst: KtConstructor[?]): Option[ConstructorDescriptor] = {
-    Option(bindingContext.get(BindingContext.CONSTRUCTOR, constructorAst))
-  }
-
-  def astToDesc(expressionAst: KtExpression): Option[FunctionDescriptor] = {
-    val call         = Option(bindingContext.get(BindingContext.CALL, expressionAst))
-    val resolvedCall = call.flatMap(call => Option(bindingContext.get(BindingContext.RESOLVED_CALL, call)))
-
-    resolvedCall.map(_.getResultingDescriptor).collect { case functionDesc: FunctionDescriptor =>
-      functionDesc
-    }
-  }
-
-  def astToDesc(functionLiteralAst: KtFunctionLiteral): Option[FunctionDescriptor] = {
-    Option(bindingContext.get(BindingContext.FUNCTION, functionLiteralAst))
-  }
-
-  def astToAmbiguousReferenceTargetDescs(expression: KtExpression): collection.Seq[FunctionDescriptor] = {
-    val descriptors = bindingContext.get(BindingContext.AMBIGUOUS_REFERENCE_TARGET, expression)
-    if (descriptors == null) {
-      return Seq.empty
-    }
-
-    descriptors.asScala.toSeq.collect { case functionDescriptor: FunctionDescriptor =>
-      functionDescriptor
-    }
-
-  }
   
-  def astToResolvedCallDesc(expr: KtExpression): Option[ResolvedCall[?]] = {
-    val call         = Option(bindingContext.get(BindingContext.CALL, expr))
-    val resolvedCall = call.flatMap(call => Option(bindingContext.get(BindingContext.RESOLVED_CALL, call)))
-    
-    resolvedCall
+  private def getAnonDescIndex(desc: DeclarationDescriptor): Int = {
+    anonDescriptorToIndex.getOrElseUpdate(
+      desc, {
+        val index = anonObjectCounter
+        anonObjectCounter += 1
+        index
+      }
+    )
   }
-  
-  def ktExprToKotlinType(expr: KtExpression): Option[KotlinType] = {
-    Option(bindingContext.get(BindingContext.EXPRESSION_TYPE_INFO, expr))
-      .map(_.getType)
+
+  private def descFullNameInternal(desc: DeclarationDescriptor): Option[List[String]] = {
+    if (desc.isInstanceOf[ErrorClassDescriptor]) {
+      return None
+    }
+    val parentDesc = desc.getContainingDeclaration
+
+    val parentFnParts =
+      Option(parentDesc) match {
+        case None =>
+          Some(Nil)
+        case Some(parentDesc) =>
+          descFullNameInternal(parentDesc)
+      }
+
+    if (parentFnParts.isEmpty) {
+      return None
+    }
+
+    var extendedFnParts = parentFnParts.get
+    desc match {
+      case packageFragmentDesc: PackageFragmentDescriptor =>
+        if (!packageFragmentDesc.getName.isSpecial) {
+          extendedFnParts = packageFragmentDesc.getFqName.toString :: extendedFnParts
+        }
+      case moduleDesc: ModuleDescriptor =>
+      // Nothing todo since this is just the root element which has no namespace representation.
+      case _ =>
+        if (extendedFnParts.nonEmpty) {
+          val separator =
+            if (parentDesc.isInstanceOf[ClassDescriptor] && desc.isInstanceOf[ClassDescriptor]) {
+              // Nested class.
+              "$"
+            } else {
+              "."
+            }
+          extendedFnParts = separator :: extendedFnParts
+        }
+
+        val name = descName(desc)
+
+        extendedFnParts = name :: extendedFnParts
+    }
+    Some(extendedFnParts)
+  }
+
+  private def isConstructorDesc(functionDesc: FunctionDescriptor): Boolean = {
+    functionDesc match {
+      case _: ConstructorDescriptor => true
+      case _                        => false
+    }
   }
 
 }
