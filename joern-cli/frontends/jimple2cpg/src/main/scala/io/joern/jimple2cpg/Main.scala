@@ -2,7 +2,10 @@ package io.joern.jimple2cpg
 
 import io.joern.jimple2cpg.Frontend.*
 import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
+import io.joern.x2cpg.utils.server.FrontendHTTPServer
 import scopt.OParser
+
+import java.util.concurrent.ExecutorService
 
 /** Command line configuration parameters
   */
@@ -74,8 +77,14 @@ private object Frontend {
 
 /** Entry point for command line CPG creator
   */
-object Main extends X2CpgMain(cmdLineParser, new Jimple2Cpg()) {
+object Main extends X2CpgMain(cmdLineParser, new Jimple2Cpg()) with FrontendHTTPServer[Config, Jimple2Cpg] {
+
+  override protected def newDefaultConfig(): Config = Config()
+
+  override protected val executor: ExecutorService = FrontendHTTPServer.singleThreadExecutor()
+
   def run(config: Config, jimple2Cpg: Jimple2Cpg): Unit = {
-    jimple2Cpg.run(config)
+    if (config.serverMode) { startup() }
+    else { jimple2Cpg.run(config) }
   }
 }
