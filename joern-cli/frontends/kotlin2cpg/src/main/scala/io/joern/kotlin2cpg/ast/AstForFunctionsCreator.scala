@@ -63,8 +63,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  def astsForMethod(ktFn: KtNamedFunction, withVirtualModifier: Boolean = false)(
-    implicit typeInfoProvider: TypeInfoProvider
+  def astsForMethod(ktFn: KtNamedFunction, withVirtualModifier: Boolean = false)(implicit
+    typeInfoProvider: TypeInfoProvider
   ): Seq[Ast] = {
     val funcDesc = bindingUtils.getFunctionDesc(ktFn)
     val descFullName = funcDesc
@@ -81,7 +81,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val needsThisParameter = funcDesc.get.getDispatchReceiverParameter != null ||
       DescriptorUtils.isExtension(funcDesc.get)
-    
+
     val thisParameterAsts = if (needsThisParameter) {
       val typeDeclFullName = registerType(typeInfoProvider.containingTypeDeclFullName(ktFn, TypeConstants.any))
       val thisParam = NodeBuilders.newThisParameterNode(
@@ -97,7 +97,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     } else {
       List.empty
     }
-    
+
     val valueParamStartIndex =
       if (DescriptorUtils.isExtension(funcDesc.get)) {
         2
@@ -106,7 +106,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       }
 
     val methodParametersAsts =
-      withIndex(ktFn.getValueParameters.asScala.toSeq) { (p, idx) => astForParameter(p, valueParamStartIndex + idx - 1) }
+      withIndex(ktFn.getValueParameters.asScala.toSeq) { (p, idx) =>
+        astForParameter(p, valueParamStartIndex + idx - 1)
+      }
     val bodyAsts = Option(ktFn.getBodyBlockExpression) match {
       case Some(bodyBlockExpression) => astsForBlock(bodyBlockExpression, None, None)
       case None =>
@@ -440,7 +442,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
   private def getSamInterface(expr: KtLambdaExpression | KtNamedFunction): Option[ClassDescriptor] = {
     getSurroundingCallTarget(expr) match {
       case Some(callTarget) =>
-        val resolvedCallAtom = bindingUtils.getResolvedCallDesc(callTarget)
+        val resolvedCallAtom = bindingUtils
+          .getResolvedCallDesc(callTarget)
           .collect { case call: NewAbstractResolvedCall[?] =>
             call.getResolvedCallAtom
           }
@@ -468,9 +471,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
 
   private def getSurroundingCallTarget(element: KtElement): Option[KtExpression] = {
     var context: PsiElement = element.getContext
-    while (context != null &&
+    while (
+      context != null &&
       !context.isInstanceOf[KtCallExpression] &&
-      !context.isInstanceOf[KtBinaryExpression]) {
+      !context.isInstanceOf[KtBinaryExpression]
+    ) {
       context = context.getContext
     }
     context match {
@@ -492,9 +497,13 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  private def createLambdaBindings(lambdaMethodNode: NewMethod, lambdaTypeDecl: NewTypeDecl, samInterface: Option[ClassDescriptor]): Unit = {
-    val samMethod = samInterface.map(SamConversionResolverImplKt.getSingleAbstractMethodOrNull)
-    val samMethodName = samMethod.map(_.getName.toString).getOrElse(Constants.unknownLambdaBindingName)
+  private def createLambdaBindings(
+    lambdaMethodNode: NewMethod,
+    lambdaTypeDecl: NewTypeDecl,
+    samInterface: Option[ClassDescriptor]
+  ): Unit = {
+    val samMethod          = samInterface.map(SamConversionResolverImplKt.getSingleAbstractMethodOrNull)
+    val samMethodName      = samMethod.map(_.getName.toString).getOrElse(Constants.unknownLambdaBindingName)
     val samMethodSignature = samMethod.flatMap(nameRenderer.funcDescSignature)
 
     if (samMethodSignature.isDefined) {

@@ -529,7 +529,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     }
 
     "contain a BINDING node for the lambda with the correct signature" in {
-      val List(m) = cpg.method.fullName(".*lambda.*").l
+      val List(m)      = cpg.method.fullName(".*lambda.*").l
       val List(b1, b2) = m.referencingBinding.l
       b1.signature shouldBe "java.lang.String()"
       b1.name shouldBe "invoke"
@@ -590,7 +590,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
 
       val List(lambdaTypeDecl) = lambdaMethod.bindingTypeDecl.dedup.l
       lambdaTypeDecl.fullName shouldBe s"mypkg.invoke.${Defines.ClosurePrefix}0"
-      lambdaTypeDecl.inheritsFromTypeFullName should contain theSameElementsAs(List("mypkg.SomeInterface"))
+      lambdaTypeDecl.inheritsFromTypeFullName should contain theSameElementsAs (List("mypkg.SomeInterface"))
 
       val List(binding1, binding2) = lambdaMethod.referencingBinding.l
       binding1.name shouldBe "method"
@@ -625,7 +625,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
 
       val List(lambdaTypeDecl) = lambdaMethod.bindingTypeDecl.dedup.l
       lambdaTypeDecl.fullName shouldBe s"mypkg.invoke.${Defines.ClosurePrefix}0"
-      lambdaTypeDecl.inheritsFromTypeFullName should contain theSameElementsAs(List("mypkg.SomeInterface"))
+      lambdaTypeDecl.inheritsFromTypeFullName should contain theSameElementsAs (List("mypkg.SomeInterface"))
 
       val List(binding1, binding2) = lambdaMethod.referencingBinding.l
       binding1.name shouldBe "method"
@@ -659,7 +659,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
 
       val List(lambdaTypeDecl) = lambdaMethod.bindingTypeDecl.dedup.l
       lambdaTypeDecl.fullName shouldBe s"mypkg.invoke.${Defines.ClosurePrefix}0"
-      lambdaTypeDecl.inheritsFromTypeFullName should contain theSameElementsAs(List("mypkg.SomeInterface"))
+      lambdaTypeDecl.inheritsFromTypeFullName should contain theSameElementsAs (List("mypkg.SomeInterface"))
 
       val List(binding1, binding2) = lambdaMethod.referencingBinding.l
       binding1.name shouldBe "method"

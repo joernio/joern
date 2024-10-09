@@ -550,9 +550,9 @@ object DefaultTypeInfoProvider {
     mapMapField.setAccessible(true)
     val mapMap = mapMapField.get(map).asInstanceOf[java.util.Map[Object, KeyFMap]]
 
-    val result = scala.collection.mutable.ArrayBuffer.empty[(K,V)]
+    val result = scala.collection.mutable.ArrayBuffer.empty[(K, V)]
 
-    mapMap.forEach{ (keyObject: Object, fMap: KeyFMap) =>
+    mapMap.forEach { (keyObject: Object, fMap: KeyFMap) =>
       val kindValue = fMap.get(kind.getKey)
       if (kindValue != null) {
         result.append((keyObject.asInstanceOf[K], kindValue))

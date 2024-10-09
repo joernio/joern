@@ -4,9 +4,24 @@ import io.joern.kotlin2cpg.types.NameRenderer.builtinTypeTranslationTable
 import io.joern.x2cpg.Defines
 import org.jetbrains.kotlin.builtins.jvm.JavaToKotlinClassMap
 import org.jetbrains.kotlin.descriptors.impl.TypeAliasConstructorDescriptor
-import org.jetbrains.kotlin.descriptors.{ClassDescriptor, ConstructorDescriptor, DeclarationDescriptor, FunctionDescriptor, ModuleDescriptor, PackageFragmentDescriptor, TypeParameterDescriptor}
+import org.jetbrains.kotlin.descriptors.{
+  ClassDescriptor,
+  ConstructorDescriptor,
+  DeclarationDescriptor,
+  FunctionDescriptor,
+  ModuleDescriptor,
+  PackageFragmentDescriptor,
+  TypeParameterDescriptor
+}
 import org.jetbrains.kotlin.name.{FqName, FqNameUnsafe}
-import org.jetbrains.kotlin.psi.{KtClassOrObject, KtConstructor, KtDestructuringDeclarationEntry, KtExpression, KtFunctionLiteral, KtNamedFunction}
+import org.jetbrains.kotlin.psi.{
+  KtClassOrObject,
+  KtConstructor,
+  KtDestructuringDeclarationEntry,
+  KtExpression,
+  KtFunctionLiteral,
+  KtNamedFunction
+}
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.jvm.JvmPrimitiveType
@@ -18,23 +33,23 @@ import scala.jdk.CollectionConverters.*
 
 object NameRenderer {
   private val builtinTypeTranslationTable = mutable.HashMap(
-    "kotlin.Unit"                          -> "void",
-    "kotlin.Boolean"                       -> "boolean",
-    "kotlin.Char"                          -> "char",
-    "kotlin.Byte"                          -> "byte",
-    "kotlin.Short"                         -> "short",
-    "kotlin.Int"                           -> "int",
-    "kotlin.Float"                         -> "float",
-    "kotlin.Long"                          -> "long",
-    "kotlin.Double"                        -> "double",
-    "kotlin.BooleanArray"                  -> "boolean[]",
-    "kotlin.CharArray"                     -> "char[]",
-    "kotlin.ByteArray"                     -> "byte[]",
-    "kotlin.ShortArray"                    -> "short[]",
-    "kotlin.IntArray"                      -> "int[]",
-    "kotlin.FloatArray"                    -> "float[]",
-    "kotlin.LongArray"                     -> "long[]",
-    "kotlin.DoubleArray"                   -> "double[]",
+    "kotlin.Unit"         -> "void",
+    "kotlin.Boolean"      -> "boolean",
+    "kotlin.Char"         -> "char",
+    "kotlin.Byte"         -> "byte",
+    "kotlin.Short"        -> "short",
+    "kotlin.Int"          -> "int",
+    "kotlin.Float"        -> "float",
+    "kotlin.Long"         -> "long",
+    "kotlin.Double"       -> "double",
+    "kotlin.BooleanArray" -> "boolean[]",
+    "kotlin.CharArray"    -> "char[]",
+    "kotlin.ByteArray"    -> "byte[]",
+    "kotlin.ShortArray"   -> "short[]",
+    "kotlin.IntArray"     -> "int[]",
+    "kotlin.FloatArray"   -> "float[]",
+    "kotlin.LongArray"    -> "long[]",
+    "kotlin.DoubleArray"  -> "double[]"
   )
 }
 
@@ -129,8 +144,8 @@ class NameRenderer() {
       } else {
         // Nested class fullnames contain '$' in our representation which need to be mapped to '.'
         // in order to make use of JavaToKotlinClassMap.
-        val kotlinFullNameDotOnly = kotlinFullName.replace('$','.')
-        val javaFullName = JavaToKotlinClassMap.INSTANCE.mapKotlinToJava(FqNameUnsafe(kotlinFullNameDotOnly))
+        val kotlinFullNameDotOnly = kotlinFullName.replace('$', '.')
+        val javaFullName          = JavaToKotlinClassMap.INSTANCE.mapKotlinToJava(FqNameUnsafe(kotlinFullNameDotOnly))
 
         val result =
           if (javaFullName != null) {
@@ -144,7 +159,7 @@ class NameRenderer() {
       }
     }
   }
-  
+
   private def getAnonDescIndex(desc: DeclarationDescriptor): Int = {
     anonDescriptorToIndex.getOrElseUpdate(
       desc, {

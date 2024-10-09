@@ -184,8 +184,7 @@ class MethodTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   }
 
   "test correct translation of parameter kotlin type to java type" in {
-    val cpg = code(
-      """
+    val cpg = code("""
         |fun method(x: kotlin.CharArray) {
         |}
         |""".stripMargin)

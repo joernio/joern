@@ -131,8 +131,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       .getOrElse(Ast(unknownNode(expr.getReceiverExpression, Constants.empty)))
 
     val nameReferenceExpr = expr.getSelectorExpression.asInstanceOf[KtNameReferenceExpression]
-    val fieldIdentifier = Ast(fieldIdentifierNode(nameReferenceExpr, nameReferenceExpr.getText,
-      nameReferenceExpr.getText).argumentIndex(2))
+    val fieldIdentifier = Ast(
+      fieldIdentifierNode(nameReferenceExpr, nameReferenceExpr.getText, nameReferenceExpr.getText).argumentIndex(2)
+    )
 
     registerType(typeInfoProvider.containingDeclType(expr, TypeConstants.any))
     val retType = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))

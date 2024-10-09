@@ -32,7 +32,7 @@ class ExtensionTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     }
 
     "should contain a METHOD node for the extension fn with the correct parameter indicies" in {
-      val x       = cpg.method.fullName.l
+      val x = cpg.method.fullName.l
       inside(cpg.method.fullName(".*printBaz.*").parameter.l) { case List(thisParam, textParam) =>
         thisParam.index shouldBe 1
         thisParam.order shouldBe 1

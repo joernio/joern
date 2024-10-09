@@ -1,7 +1,14 @@
 package io.joern.kotlin2cpg.ast
 
 import org.jetbrains.kotlin.descriptors.{ClassDescriptor, ConstructorDescriptor, FunctionDescriptor}
-import org.jetbrains.kotlin.psi.{KtClassOrObject, KtConstructor, KtDestructuringDeclarationEntry, KtExpression, KtFunctionLiteral, KtNamedFunction}
+import org.jetbrains.kotlin.psi.{
+  KtClassOrObject,
+  KtConstructor,
+  KtDestructuringDeclarationEntry,
+  KtExpression,
+  KtFunctionLiteral,
+  KtNamedFunction
+}
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.types.KotlinType

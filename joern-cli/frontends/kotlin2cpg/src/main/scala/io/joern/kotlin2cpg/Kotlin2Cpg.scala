@@ -230,9 +230,12 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
       val typeRenderer   = new TypeRenderer(config.keepTypeArguments)
       val bindingContext = createBindingContext(environment)
       val astCreator =
-        new AstCreationPass(sourceFiles, new DefaultTypeInfoProvider(bindingContext, typeRenderer), bindingContext, cpg)(
-          config.schemaValidation
-        )
+        new AstCreationPass(
+          sourceFiles,
+          new DefaultTypeInfoProvider(bindingContext, typeRenderer),
+          bindingContext,
+          cpg
+        )(config.schemaValidation)
       astCreator.createAndApply()
 
       val kotlinAstCreatorTypes = astCreator.usedTypes()

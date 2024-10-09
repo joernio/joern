@@ -375,9 +375,9 @@ class AstCreator(
     val result =
       try {
         decl match {
-          case c: KtClass             => astsForClassOrObject(c)
-          case o: KtObjectDeclaration => astsForClassOrObject(o)
-          case n: KtNamedFunction => astsForMethod(n)
+          case c: KtClass                => astsForClassOrObject(c)
+          case o: KtObjectDeclaration    => astsForClassOrObject(o)
+          case n: KtNamedFunction        => astsForMethod(n)
           case t: KtTypeAlias            => Seq(astForTypeAlias(t))
           case s: KtSecondaryConstructor => Seq(astForUnknown(s, None, None))
           case p: KtProperty             => astsForProperty(p)
@@ -481,10 +481,9 @@ class AstCreator(
     (astDerivedMethodFullName, astDerivedSignature)
   }
 
-  protected def selectorExpressionArgAsts(
-    expr: KtQualifiedExpression,
-    startIndex: Int = 1
-  )(implicit typeInfoProvider: TypeInfoProvider): List[Ast] = {
+  protected def selectorExpressionArgAsts(expr: KtQualifiedExpression, startIndex: Int = 1)(implicit
+    typeInfoProvider: TypeInfoProvider
+  ): List[Ast] = {
     val callExpr = expr.getSelectorExpression.asInstanceOf[KtCallExpression]
     withIndex(callExpr.getValueArguments.asScala.toSeq) { case (arg, idx) =>
       astsForExpression(arg.getArgumentExpression, Some(startIndex + idx - 1))
@@ -502,12 +501,15 @@ class AstCreator(
       ModifierTypes.INTERNAL
     else "UNKNOWN"
   }
-  
-  protected def addToLambdaBindingInfoQueue(bindingNode: NewBinding, typeDecl: NewTypeDecl, methodNode: NewMethod): Unit = {
+
+  protected def addToLambdaBindingInfoQueue(
+    bindingNode: NewBinding,
+    typeDecl: NewTypeDecl,
+    methodNode: NewMethod
+  ): Unit = {
     lambdaBindingInfoQueue.prepend(
-      BindingInfo(bindingNode,
-        Seq((typeDecl, bindingNode, EdgeTypes.BINDS), (bindingNode, methodNode, EdgeTypes.REF))
-      ))
+      BindingInfo(bindingNode, Seq((typeDecl, bindingNode, EdgeTypes.BINDS), (bindingNode, methodNode, EdgeTypes.REF)))
+    )
   }
 
 }
