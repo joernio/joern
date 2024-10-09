@@ -2,6 +2,7 @@ package io.joern.kotlin2cpg
 
 import io.joern.kotlin2cpg.Frontend.*
 import io.joern.x2cpg.{DependencyDownloadConfig, X2CpgConfig, X2CpgMain}
+import io.joern.x2cpg.utils.server.FrontendHTTPServer
 import scopt.OParser
 
 case class DefaultContentRootJarPath(path: String, isResource: Boolean)
@@ -96,8 +97,12 @@ private object Frontend {
   }
 }
 
-object Main extends X2CpgMain(cmdLineParser, new Kotlin2Cpg()) {
+object Main extends X2CpgMain(cmdLineParser, new Kotlin2Cpg()) with FrontendHTTPServer[Config, Kotlin2Cpg] {
+
+  override protected def newDefaultConfig(): Config = Config()
+
   def run(config: Config, kotlin2cpg: Kotlin2Cpg): Unit = {
-    kotlin2cpg.run(config)
+    if (config.serverMode) { startup() }
+    else { kotlin2cpg.run(config) }
   }
 }

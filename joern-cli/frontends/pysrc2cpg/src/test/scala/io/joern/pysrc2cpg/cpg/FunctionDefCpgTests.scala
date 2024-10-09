@@ -1,6 +1,6 @@
 package io.joern.pysrc2cpg.cpg
 
-import io.joern.pysrc2cpg.Py2CpgTestContext
+import io.joern.pysrc2cpg.testfixtures.Py2CpgTestContext
 import io.joern.x2cpg.frontendspecific.pysrc2cpg.Constants
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.nodes.Call

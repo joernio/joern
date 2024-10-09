@@ -1,6 +1,6 @@
 package io.joern.pysrc2cpg.cpg
 
-import io.joern.pysrc2cpg.Py2CpgTestContext
+import io.joern.pysrc2cpg.testfixtures.Py2CpgTestContext
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.matchers.should.Matchers

@@ -10,7 +10,7 @@ import io.joern.dataflowengineoss.semanticsloader.{
   NoSemantics,
   PassThroughMapping
 }
-import io.joern.pysrc2cpg.PySrc2CpgFixture
+import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Literal, Member, Method}
 import io.shiftleft.semanticcpg.language.*

@@ -1,10 +1,8 @@
 package io.joern.pysrc2cpg.cpg
 
-import io.joern.pysrc2cpg.{Py2CpgTestContext, PySrc2CpgFixture}
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.joern.pysrc2cpg.testfixtures.Py2CpgTestContext
+import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
 import io.shiftleft.semanticcpg.language.*
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
 class DictCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
