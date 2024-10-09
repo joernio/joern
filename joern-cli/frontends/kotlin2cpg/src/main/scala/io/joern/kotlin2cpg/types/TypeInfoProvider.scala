@@ -49,8 +49,6 @@ trait TypeInfoProvider(val typeRenderer: TypeRenderer = new TypeRenderer()) {
 
   def containingDeclType(expr: KtQualifiedExpression, defaultValue: String): String
 
-  def expressionType(expr: KtExpression, defaultValue: String): String
-
   def inheritanceTypes(expr: KtClassOrObject, or: Seq[String]): Seq[String]
 
   def parameterType(expr: KtParameter, defaultValue: String): String

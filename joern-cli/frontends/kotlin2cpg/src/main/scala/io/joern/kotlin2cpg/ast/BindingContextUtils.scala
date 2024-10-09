@@ -70,6 +70,6 @@ class BindingContextUtils(bindingContext: BindingContext) {
 
   def getExprType(expr: KtExpression): Option[KotlinType] = {
     Option(bindingContext.get(BindingContext.EXPRESSION_TYPE_INFO, expr))
-      .map(_.getType)
+      .flatMap(typeInfo => Option(typeInfo.getType))
   }
 }

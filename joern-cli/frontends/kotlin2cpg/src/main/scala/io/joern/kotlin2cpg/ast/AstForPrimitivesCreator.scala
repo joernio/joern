@@ -41,7 +41,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     argName: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val typeFullName   = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+    val typeFullName   = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
     val node           = literalNode(expr, expr.getText, typeFullName)
     val annotationAsts = annotations.map(astForAnnotationEntry)
     Ast(withArgumentName(withArgumentIndex(node, argIdx), argName)).withChildren(annotationAsts)
@@ -53,11 +53,11 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     argName: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+    val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
     val outAst =
       if (expr.hasInterpolation) {
         val args = expr.getEntries.filter(_.getExpression != null).zipWithIndex.map { case (entry, idx) =>
-          val entryTypeFullName = registerType(typeInfoProvider.expressionType(entry.getExpression, TypeConstants.any))
+          val entryTypeFullName = registerType(exprTypeFullName(entry.getExpression).getOrElse(TypeConstants.any))
           val valueCallNode = NodeBuilders.newOperatorCallNode(
             Operators.formattedValue,
             entry.getExpression.getText,
@@ -174,7 +174,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     argName: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+    val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
     val node = withArgumentName(
       withArgumentIndex(identifierNode(expr, expr.getText, expr.getText, typeFullName), argIdx),
       argName
@@ -189,7 +189,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     argName: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+    val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
     val node = withArgumentName(
       withArgumentIndex(identifierNode(expr, expr.getText, expr.getText, typeFullName), argIdx),
       argName
@@ -204,7 +204,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     argName: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.javaLangObject))
+    val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.javaLangObject))
     val fullName     = "<operator>.class"
     val signature    = s"$typeFullName()"
     val node = callNode(

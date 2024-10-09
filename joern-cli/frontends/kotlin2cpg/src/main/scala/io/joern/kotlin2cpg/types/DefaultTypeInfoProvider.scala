@@ -225,14 +225,6 @@ class DefaultTypeInfoProvider(val bindingContext: BindingContext, typeRenderer: 
     typeRenderer.render(typ)
   }
 
-  def expressionType(expr: KtExpression, defaultValue: String): String = {
-    Option(bindingContext.get(BindingContext.EXPRESSION_TYPE_INFO, expr))
-      .flatMap(tpeInfo => Option(tpeInfo.getType))
-      .map(typeRenderer.render(_))
-      .filter(isValidRender)
-      .getOrElse(defaultValue)
-  }
-
   private def subexpressionForResolvedCallInfo(expr: KtExpression): KtExpression = {
     expr match {
       case typedExpr: KtCallExpression =>

@@ -68,7 +68,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     val iteratorLocalAst      = Ast(localForIterator).withRefEdge(iteratorAssignmentLhs, localForIterator)
 
     // TODO: maybe use a different method here, one which does not translate `kotlin.collections.List` to `java.util.List`
-    val loopRangeExprTypeFullName = registerType(typeInfoProvider.expressionType(expr.getLoopRange, TypeConstants.any))
+    val loopRangeExprTypeFullName = registerType(exprTypeFullName(expr.getLoopRange).getOrElse(TypeConstants.any))
     val iteratorAssignmentRhsIdentifier = newIdentifierNode(loopRangeText, loopRangeExprTypeFullName)
       .argumentIndex(0)
     val iteratorAssignmentRhs = callNode(
@@ -187,7 +187,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     val iteratorAssignmentLhs = newIdentifierNode(iteratorName, TypeConstants.any)
     val iteratorLocalAst      = Ast(iteratorLocal).withRefEdge(iteratorAssignmentLhs, iteratorLocal)
 
-    val loopRangeExprTypeFullName = registerType(typeInfoProvider.expressionType(expr.getLoopRange, TypeConstants.any))
+    val loopRangeExprTypeFullName = registerType(exprTypeFullName(expr.getLoopRange).getOrElse(TypeConstants.any))
 
     val iteratorAssignmentRhsIdentifier = newIdentifierNode(loopRangeText, loopRangeExprTypeFullName)
       .argumentIndex(0)
@@ -302,7 +302,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val allAsts = (conditionAsts ++ thenAsts ++ elseAsts).toList
     if (allAsts.nonEmpty) {
-      val returnTypeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+      val returnTypeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
       val node =
         NodeBuilders.newOperatorCallNode(
           Operators.conditional,
@@ -419,7 +419,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForNoArgWhen(expr: KtWhenExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     assert(expr.getSubjectExpression == null)
 
-    val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+    val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
     var elseAst: Ast = Ast() // Initialize this as `Ast()` instead of `null`, as there is no guarantee of else block
 
     // In reverse order than expr.getEntries since that is the order
@@ -516,7 +516,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val typeFullName = registerType(
       // TODO: remove the `last`
-      typeInfoProvider.expressionType(expr.getTryBlock.getStatements.asScala.last, TypeConstants.any)
+      exprTypeFullName(expr.getTryBlock.getStatements.asScala.last).getOrElse(TypeConstants.any)
     )
     val tryBlockAst = astsForExpression(expr.getTryBlock, None).headOption.getOrElse(Ast())
     val clauseAsts = expr.getCatchClauses.asScala.toSeq.flatMap { entry =>
@@ -561,7 +561,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     implicitReturnAroundLastStatement: Boolean = false,
     preStatements: Option[Seq[Ast]] = None
   )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
-    val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+    val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
     val node =
       withArgumentIndex(
         blockNode(expr, expr.getStatements.asScala.map(_.getText).mkString("\n"), typeFullName),

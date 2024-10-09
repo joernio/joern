@@ -136,7 +136,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     )
 
     registerType(typeInfoProvider.containingDeclType(expr, TypeConstants.any))
-    val retType = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+    val retType = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
     val node = withArgumentIndex(
       NodeBuilders.newOperatorCallNode(Operators.fieldAccess, expr.getText, Option(retType), line(expr), column(expr)),
       argIdx
@@ -159,7 +159,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     )
 
     registerType(typeInfoProvider.containingDeclType(expr, TypeConstants.any))
-    val retType    = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+    val retType    = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
     val methodName = expr.getSelectorExpression.getFirstChild.getText
     val node =
       withArgumentIndex(
@@ -196,7 +196,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     )
 
     registerType(typeInfoProvider.containingDeclType(expr, TypeConstants.any))
-    val retType    = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+    val retType    = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
     val methodName = expr.getSelectorExpression.getFirstChild.getText
     val node =
       withArgumentIndex(
@@ -222,12 +222,12 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     expr.getSelectorExpression match {
       case callExpr: KtCallExpression =>
         val localName         = "tmp"
-        val localTypeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+        val localTypeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
         val local             = localNode(expr, localName, localName, localTypeFullName)
         scope.addToScope(localName, local)
         val localAst = Ast(local)
 
-        val typeFullName = registerType(typeInfoProvider.expressionType(expr, Defines.UnresolvedNamespace))
+        val typeFullName = registerType(exprTypeFullName(expr).getOrElse(Defines.UnresolvedNamespace))
         val rhsAst       = Ast(NodeBuilders.newOperatorCallNode(Operators.alloc, Operators.alloc, Option(typeFullName)))
 
         val identifier    = identifierNode(expr, localName, localName, local.typeFullName)
@@ -300,7 +300,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       astDerivedFullNameWithSignature(expr, argAsts)._2
     )
     registerType(typeInfoProvider.containingDeclType(expr, TypeConstants.any))
-    val retType      = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+    val retType      = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
     val methodName   = expr.getSelectorExpression.getFirstChild.getText
     val dispatchType = DispatchTypes.STATIC_DISPATCH
 
@@ -340,7 +340,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       astDerivedFullNameWithSignature(expr, argAsts)._2
     )
     registerType(typeInfoProvider.containingDeclType(expr, TypeConstants.any))
-    val retType    = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+    val retType    = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
     val methodName = expr.getSelectorExpression.getFirstChild.getText
 
     val node =
@@ -412,7 +412,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     argName: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+    registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
     val args = astsForExpression(expr.getLeftHandSide, None) ++
       Seq(astForTypeReference(expr.getTypeReference, None, argName))
     val node = NodeBuilders.newOperatorCallNode(Operators.is, expr.getText, None, line(expr), column(expr))
@@ -426,7 +426,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     argName: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+    registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
     val args = astsForExpression(expr.getLeft, None) ++ Seq(astForTypeReference(expr.getRight, None, None))
     val node = NodeBuilders.newOperatorCallNode(Operators.cast, expr.getText, None, line(expr), column(expr))
     callAst(withArgumentName(withArgumentIndex(node, argIdx), argName), args.toList)
@@ -524,7 +524,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       }
 
     // TODO: add test case to confirm whether the ANY fallback makes sense (could be void)
-    val returnType = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+    val returnType = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
     val node = callNode(expr, expr.getText, referencedName, fullName, dispatchType, Some(signature), Some(returnType))
 
     val annotationsAsts = annotations.map(astForAnnotationEntry)
@@ -575,7 +575,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     argNameMaybe: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
   )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
-    val typeFullName = registerType(typeInfoProvider.expressionType(expr, Defines.UnresolvedNamespace))
+    val typeFullName = registerType(exprTypeFullName(expr).getOrElse(Defines.UnresolvedNamespace))
     val tmpBlockNode = blockNode(expr, "", typeFullName)
     val tmpName      = s"${Constants.tmpLocalPrefix}${tmpKeyPool.next}"
     val tmpLocalNode = localNode(expr, tmpName, tmpName, typeFullName)
@@ -608,7 +608,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         Defines.UnresolvedNamespace,
         s"${Defines.UnresolvedSignature}(${expr.getValueArguments.size()})"
       )
-    registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+    registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
 
     val initCallNode = callNode(
       expr,
@@ -645,7 +645,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         Constants.unknownOperator
       }
     )
-    val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+    val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
     val args = List(astsForExpression(expr.getBaseExpression, None).headOption.getOrElse(Ast()))
       .filterNot(_.root == null)
     val node =
@@ -667,7 +667,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         Constants.unknownOperator
       }
     )
-    val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+    val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
     val args = List(astsForExpression(expr.getBaseExpression, None).headOption.getOrElse(Ast()))
       .filterNot(_.root == null)
     val node =
@@ -683,7 +683,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     annotations: Seq[KtAnnotationEntry] = Seq()
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val arrayExpr     = expression.getArrayExpression
-    val typeFullName  = registerType(typeInfoProvider.expressionType(expression, TypeConstants.any))
+    val typeFullName  = registerType(exprTypeFullName(expression).getOrElse(TypeConstants.any))
     val identifier    = identifierNode(arrayExpr, arrayExpr.getText, arrayExpr.getText, typeFullName)
     val identifierAst = astWithRefEdgeMaybe(arrayExpr.getText, identifier)
     val astsForIndexExpr = expression.getIndexExpressions.asScala.zipWithIndex.flatMap { case (expr, idx) =>

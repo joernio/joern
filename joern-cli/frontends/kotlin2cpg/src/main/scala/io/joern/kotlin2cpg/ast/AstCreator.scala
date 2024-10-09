@@ -512,4 +512,8 @@ class AstCreator(
     )
   }
 
+  protected def exprTypeFullName(expr: KtExpression): Option[String] = {
+    bindingUtils.getExprType(expr).flatMap(nameRenderer.typeFullName)
+  }
+
 }

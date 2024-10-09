@@ -267,7 +267,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       return Seq()
     }
     val rhsCall             = typedInit.get
-    val callRhsTypeFullName = registerType(typeInfoProvider.expressionType(rhsCall, TypeConstants.any))
+    val callRhsTypeFullName = registerType(exprTypeFullName(rhsCall).getOrElse(TypeConstants.any))
 
     val destructuringEntries = nonUnderscoreDestructuringEntries(expr)
     val localsForEntries = destructuringEntries.map { entry =>
@@ -334,7 +334,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
             Defines.UnresolvedNamespace,
             s"${Defines.UnresolvedSignature}(${call.getValueArguments.size()})"
           )
-        registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+        registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
         val initCallNode = callNode(
           expr,
           Constants.init,
@@ -586,7 +586,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       val localAst = Ast(local)
 
       val typeFullName = registerType(
-        typeInfoProvider.expressionType(expr.getDelegateExpressionOrInitializer, Defines.UnresolvedNamespace)
+        exprTypeFullName(expr.getDelegateExpressionOrInitializer).getOrElse(Defines.UnresolvedNamespace)
       )
       val rhsAst = Ast(NodeBuilders.newOperatorCallNode(Operators.alloc, Operators.alloc, Option(typeFullName)))
 
@@ -643,7 +643,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       val localAst = Ast(node)
 
       val typeFullName = registerType(
-        typeInfoProvider.expressionType(expr.getDelegateExpressionOrInitializer, Defines.UnresolvedNamespace)
+        exprTypeFullName(expr.getDelegateExpressionOrInitializer).getOrElse(Defines.UnresolvedNamespace)
       )
       val rhsAst = Ast(NodeBuilders.newOperatorCallNode(Operators.alloc, Operators.alloc, None))
 
