@@ -26,7 +26,6 @@ class ExtensionTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     }
 
     "should contain a METHOD node for the extension fn with the correct MFN set" in {
-      val x       = cpg.method.fullName.l
       val List(m) = cpg.method.fullName(".*printBaz.*").l
       m.fullName shouldBe "mypkg.printBaz:void(mypkg.Example,java.lang.String)"
     }
@@ -114,7 +113,7 @@ class ExtensionTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
     "contain a CALL node with the correct METHOD_FULLNAME set" in {
       val List(c) = cpg.method.nameExact("onEach").callIn.l
-      c.methodFullName shouldBe "kotlin.text.onEach:java.lang.CharSequence(java.lang.CharSequence,kotlin.Function1)"
+      c.methodFullName shouldBe "kotlin.text.onEach:java.lang.CharSequence(java.lang.CharSequence,kotlin.jvm.functions.Function1)"
     }
   }
 

@@ -27,9 +27,9 @@ class StdLibTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
     "should contain a CALL node with the correct METHOD_FULL_NAME for `takeIf`" in {
       val List(c) = cpg.call.code("x.takeIf.*").l
-      c.methodFullName shouldBe "kotlin.takeIf:java.lang.Object(java.lang.Object,kotlin.Function1)"
+      c.methodFullName shouldBe "kotlin.takeIf:java.lang.Object(java.lang.Object,kotlin.jvm.functions.Function1)"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.signature shouldBe "java.lang.Object(java.lang.Object,kotlin.Function1)"
+      c.signature shouldBe "java.lang.Object(java.lang.Object,kotlin.jvm.functions.Function1)"
       c.typeFullName shouldBe "java.util.UUID"
     }
   }

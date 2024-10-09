@@ -108,7 +108,7 @@ class ResolutionErrorsTests extends KotlinCode2CpgFixture(withOssDataflow = fals
 
     "should contain a CALL node with the correct MFN set when type info is available" in {
       val List(c) = cpg.call.methodFullName(Operators.assignment).where(_.argument(1).code("foo")).argument(2).isCall.l
-      c.methodFullName shouldBe "kotlin.collections.filter:java.util.List(java.lang.Iterable,kotlin.Function1)"
+      c.methodFullName shouldBe "kotlin.collections.filter:java.util.List(java.lang.Iterable,kotlin.jvm.functions.Function1)"
     }
 
     "should contain a CALL node with the correct MFN set when type info is not available" in {

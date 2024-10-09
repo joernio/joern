@@ -43,8 +43,8 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     "should contain a CALL node for the `let` invocation" in {
       val List(c) = cpg.call.code("1.let.*").l
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.methodFullName shouldBe "kotlin.let:java.lang.Object(java.lang.Object,kotlin.Function1)"
-      c.signature shouldBe "java.lang.Object(java.lang.Object,kotlin.Function1)"
+      c.methodFullName shouldBe "kotlin.let:java.lang.Object(java.lang.Object,kotlin.jvm.functions.Function1)"
+      c.signature shouldBe "java.lang.Object(java.lang.Object,kotlin.jvm.functions.Function1)"
     }
   }
 
@@ -148,8 +148,8 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
 
     "should contain a CALL node for `forEach` with the correct properties set" in {
       val List(c) = cpg.call.methodFullName(".*forEach.*").l
-      c.methodFullName shouldBe "kotlin.collections.forEach:void(java.lang.Iterable,kotlin.Function1)"
-      c.signature shouldBe "void(java.lang.Iterable,kotlin.Function1)"
+      c.methodFullName shouldBe "kotlin.collections.forEach:void(java.lang.Iterable,kotlin.jvm.functions.Function1)"
+      c.signature shouldBe "void(java.lang.Iterable,kotlin.jvm.functions.Function1)"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.lineNumber shouldBe Some(6)
       c.columnNumber shouldBe Some(4)
@@ -289,10 +289,10 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
 
     "should contain a CALL node for `takeIf` with the correct properties set" in {
       val List(c) = cpg.call.code("x.takeIf.*").l
-      c.methodFullName shouldBe "kotlin.takeIf:java.lang.Object(java.lang.Object,kotlin.Function1)"
+      c.methodFullName shouldBe "kotlin.takeIf:java.lang.Object(java.lang.Object,kotlin.jvm.functions.Function1)"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.typeFullName shouldBe "java.lang.String"
-      c.signature shouldBe "java.lang.Object(java.lang.Object,kotlin.Function1)"
+      c.signature shouldBe "java.lang.Object(java.lang.Object,kotlin.jvm.functions.Function1)"
     }
 
     "should contain a RETURN node around as the last child of the lambda's BLOCK" in {
@@ -369,7 +369,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
 
     "should contain a CALL node for `map` with the correct properties set" in {
       val List(c) = cpg.call.methodFullName(".*map.*").take(1).l
-      c.methodFullName shouldBe "kotlin.collections.map:java.util.List(java.lang.Iterable,kotlin.Function1)"
+      c.methodFullName shouldBe "kotlin.collections.map:java.util.List(java.lang.Iterable,kotlin.jvm.functions.Function1)"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.lineNumber shouldBe Some(6)
       c.columnNumber shouldBe Some(20)

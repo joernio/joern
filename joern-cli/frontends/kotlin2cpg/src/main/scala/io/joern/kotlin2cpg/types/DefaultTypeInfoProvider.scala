@@ -38,11 +38,8 @@ import org.jetbrains.kotlin.psi.KtLambdaExpression
 import org.jetbrains.kotlin.psi.KtNameReferenceExpression
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtParameter
-import org.jetbrains.kotlin.psi.KtPrimaryConstructor
 import org.jetbrains.kotlin.psi.KtProperty
-import org.jetbrains.kotlin.psi.KtPsiUtil
 import org.jetbrains.kotlin.psi.KtQualifiedExpression
-import org.jetbrains.kotlin.psi.KtSecondaryConstructor
 import org.jetbrains.kotlin.psi.KtSuperExpression
 import org.jetbrains.kotlin.psi.KtThisExpression
 import org.jetbrains.kotlin.psi.KtTypeAlias
@@ -58,9 +55,6 @@ import org.jetbrains.kotlin.util.slicedMap.ReadOnlySlice
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
-import scala.util.Failure
-import scala.util.Success
-import scala.util.Try
 import scala.util.control.NonFatal
 
 class DefaultTypeInfoProvider(val bindingContext: BindingContext, typeRenderer: TypeRenderer = new TypeRenderer())
@@ -213,12 +207,6 @@ class DefaultTypeInfoProvider(val bindingContext: BindingContext, typeRenderer: 
       .getOrElse(defaultValue)
   }
 
-  private def anonymousObjectIdx(obj: KtElement): Option[Int] = {
-    val parentFn      = KtPsiUtil.getTopmostParentOfTypes(obj, classOf[KtNamedFunction])
-    val containingObj = Option(parentFn).getOrElse(obj.getContainingKtFile)
-    PsiUtils.objectIdxMaybe(obj, containingObj)
-  }
-
   def isCompanionObject(expr: KtClassOrObject): Boolean = {
     val mapForEntity = bindingsForEntity(bindingContext, expr)
     Option(mapForEntity.get(BindingContext.CLASS.getKey)).exists(DescriptorUtils.isCompanionObject(_))
@@ -346,31 +334,6 @@ class DefaultTypeInfoProvider(val bindingContext: BindingContext, typeRenderer: 
         else CallKind.DynamicCall
       }
       .getOrElse(CallKind.Unknown)
-  }
-
-  private def renderTypeForParameterDesc(p: ValueParameterDescriptor): String = {
-    val typeUpperBounds =
-      Option(TypeUtils.getTypeParameterDescriptorOrNull(p.getType))
-        .map(_.getUpperBounds)
-        .map(_.asScala)
-        .map(_.toList)
-        .getOrElse(List())
-    if (typeUpperBounds.nonEmpty)
-      typeRenderer.render(typeUpperBounds.head)
-    else
-      typeRenderer.render(p.getOriginal.getType)
-  }
-
-  private def lambdaInvocationSignature(expr: KtLambdaExpression, returnType: String): String = {
-    val hasImplicitParameter = implicitParameterName(expr)
-    val params               = expr.getValueParameters
-    val paramsString =
-      if (hasImplicitParameter.nonEmpty) TypeConstants.javaLangObject
-      else if (params.isEmpty) ""
-      else if (params.size() == 1) TypeConstants.javaLangObject
-      else
-        s"${TypeConstants.javaLangObject}${("," + TypeConstants.javaLangObject) * (expr.getValueParameters.size() - 1)}"
-    s"$returnType($paramsString)"
   }
 
   def parameterType(parameter: KtParameter, defaultValue: String): String = {

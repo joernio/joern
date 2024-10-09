@@ -137,10 +137,6 @@ class NameRenderer() {
       val javaFullName = builtinTypeTranslationTable.get(kotlinFullName)
       if (javaFullName.isDefined) {
         javaFullName.get
-      } else if (kotlinFullName.startsWith("kotlin.Function")) {
-        // For historical reasons kotlin.Function types are not mapped via JavaToKotlinClassMap.
-        // In order to not touch the policies, we mimic that for now.
-        kotlinFullName
       } else {
         // Nested class fullnames contain '$' in our representation which need to be mapped to '.'
         // in order to make use of JavaToKotlinClassMap.

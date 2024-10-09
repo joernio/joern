@@ -357,7 +357,7 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
     "should contain a METHOD node with correct METHOD_FULL_NAME set" in {
       val List(c) = cpg.method.nameExact("mapIndexedNotNullTo").callIn.l
-      c.methodFullName shouldBe "kotlin.sequences.mapIndexedNotNullTo:java.util.Collection(kotlin.sequences.Sequence,java.util.Collection,kotlin.Function2)"
+      c.methodFullName shouldBe "kotlin.sequences.mapIndexedNotNullTo:java.util.Collection(kotlin.sequences.Sequence,java.util.Collection,kotlin.jvm.functions.Function2)"
     }
   }
 
