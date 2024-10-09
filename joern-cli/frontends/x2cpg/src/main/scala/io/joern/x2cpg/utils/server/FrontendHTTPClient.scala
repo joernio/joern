@@ -6,8 +6,8 @@ import java.net.http.HttpRequest
 import java.net.URI
 import java.net.http.HttpRequest.BodyPublishers
 import java.net.http.HttpResponse.BodyHandlers
-import scala.util.Success
 import scala.util.Failure
+import scala.util.Success
 import scala.util.Try
 
 /** Represents an HTTP client for interacting with a frontend server.
@@ -61,5 +61,4 @@ case class FrontendHTTPClient(port: Int) {
       case r => Failure(new IOException(s"Sending request failed with code ${r.statusCode()}: ${r.body()}"))
     }
   }
-
 }

@@ -91,6 +91,7 @@ trait FrontendHTTPServer[T <: X2CpgConfig[T], X <: X2CpgFrontend[T]] { this: X2C
     @Context(value = "/run", methods = Array("POST"))
     def run(req: server.Request, resp: server.Response): Int = {
       resp.getHeaders.add("Content-Type", "text/plain")
+      resp.getHeaders.add("Connection", "close")
 
       val params = req.getParamsList.asScala
       val outputDir = params
