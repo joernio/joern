@@ -290,15 +290,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   private def parameterNodeInfo(parameter: IASTNode, paramIndex: Int): CGlobal.ParameterInfo = {
     val (name, codeString, tpe, variadic) = parameter match {
       case p: CASTParameterDeclaration =>
-        (
-          ASTStringUtil.getSimpleName(p.getDeclarator.getName),
-          code(p),
-          cleanType(typeForDeclSpecifier(p.getDeclSpecifier)),
-          false
-        )
+        (shortName(p.getDeclarator), code(p), cleanType(typeForDeclSpecifier(p.getDeclSpecifier)), false)
       case p: CPPASTParameterDeclaration =>
         (
-          ASTStringUtil.getSimpleName(p.getDeclarator.getName),
+          shortName(p.getDeclarator),
           code(p),
           cleanType(typeForDeclSpecifier(p.getDeclSpecifier)),
           p.getDeclarator.declaresParameterPack()
