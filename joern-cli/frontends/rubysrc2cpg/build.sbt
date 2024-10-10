@@ -32,8 +32,10 @@ Antlr4 / antlr4Version    := Versions.antlr
 Antlr4 / antlr4GenVisitor := true
 Antlr4 / javaSource       := (Compile / sourceManaged).value
 
-lazy val astGenVersion = settingKey[String]("rubyastgen version")
+lazy val astGenVersion = settingKey[String]("ruby_ast_gen version")
 astGenVersion := appProperties.value.getString("rubysrc2cpg.ruby_ast_gen_version")
+lazy val jrubyVersion = settingKey[String]("jruby version")
+jrubyVersion := appProperties.value.getString("rubysrc2cpg.jruby_version")
 
 libraryDependencies ++= Seq(
   "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
@@ -42,6 +44,8 @@ libraryDependencies ++= Seq(
 
 lazy val astGenDlUrl = settingKey[String]("astgen download url")
 astGenDlUrl := s"https://github.com/joernio/ruby_ast_gen/releases/download/v${astGenVersion.value}/"
+lazy val jrubyDlUrl = settingKey[String]("astgen download url")
+jrubyDlUrl := s"https://repo1.maven.org/maven2/org/jruby/jruby-complete/${jrubyVersion.value}/jruby-complete-${jrubyVersion.value}.jar"
 
 def hasCompatibleAstGenVersion(astGenVersion: String): Boolean = {
   Try("exec/ruby_ast_gen --version".!!).toOption.map(_.strip()) match {
@@ -60,21 +64,17 @@ astGenDlTask := {
     astGenDir.mkdirs()
     val gemName = s"ruby_ast_gen-${astGenVersion.value}.gem"
     val gemFullPath  = astGenDir / gemName
+    val jrubyFullPath  = astGenDir / "jruby.jar"
     val gemNoVersionFullPath  = astGenDir / s"${gemName.stripSuffix(s"-${astGenVersion.value}.gem")}.gem"
     val unpackedGemNoVersion = gemName.stripSuffix(s"-${astGenVersion.value}.gem")
     val unpackedGemNoVersionFullPath =  astGenDir / unpackedGemNoVersion
-    println("Something: " + unpackedGemNoVersionFullPath)
     //  We set this up so that the unpacked version is what the download helper aims to keep available
-    DownloadHelper.ensureIsAvailable(s"${astGenDlUrl.value}$gemName", unpackedGemNoVersionFullPath)
+    DownloadHelper.ensureIsAvailable(s"${astGenDlUrl.value}$gemName", gemNoVersionFullPath)
+    DownloadHelper.ensureIsAvailable(jrubyDlUrl.value, jrubyFullPath)
     // We need to rename the file, unpack, then clean up again
-    println(s"$unpackedGemNoVersionFullPath ${unpackedGemNoVersionFullPath.exists()}")
-    unpackedGemNoVersionFullPath.renameTo(gemNoVersionFullPath)
-    println(s"Renamed to ${gemNoVersionFullPath}")
+    if (unpackedGemNoVersionFullPath.exists()) IO.delete(unpackedGemNoVersionFullPath)
     val code = s"gem unpack $gemNoVersionFullPath --target $astGenDir" !
 
-    gemNoVersionFullPath.renameTo(unpackedGemNoVersionFullPath)
-    gemFullPath.delete()
-    gemNoVersionFullPath.delete()
     if (code != 0) {
       println("Unable to unpack AST generator Gem. Please make sure Ruby is installed.")
     } else {
