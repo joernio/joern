@@ -357,11 +357,13 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     * Thus, this is lowered as a try-finally, with finally making a call to `Dispose` on the declared variable.
     */
   private def astForUsingStatement(usingStmt: DotNetNodeInfo): Seq[Ast] = {
-    val tryNode     = controlStructureNode(usingStmt, ControlStructureTypes.TRY, code(usingStmt))
+    val tryNode = controlStructureNode(usingStmt, ControlStructureTypes.TRY, code(usingStmt))
+    val declAst = Try(createDotNetNodeInfo(usingStmt.json(ParserKeys.Declaration))) match {
+      case Success(declNodevalue) => astForNode(declNodevalue)
+      case _                      => Seq.empty[Ast]
+    }
     val tryNodeInfo = createDotNetNodeInfo(usingStmt.json(ParserKeys.Statement))
     val tryAst      = astForBlock(tryNodeInfo, Option("try"))
-    val declNode    = createDotNetNodeInfo(usingStmt.json(ParserKeys.Declaration))
-    val declAst     = astForNode(declNode)
 
     val finallyAst = declAst.flatMap(_.nodes).collectFirst { case x: NewIdentifier => x.copy }.map { id =>
       val callCode = s"${id.name}.Dispose()"

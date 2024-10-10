@@ -173,4 +173,37 @@ class ControlStructureTests extends CSharpCode2CpgFixture {
 
   }
 
+  "having using statement" should {
+    val cpg = code("""
+        |namespace other
+        |{
+        |    public class General
+        |    {
+        |        public static void Call(string name)
+        |        {
+        |            using (SqlConnection connection = new SqlConnection(name))
+        |            {
+        |                try
+        |                {
+        |                    connection.Open();
+        |                }
+        |                catch (Exception ex)
+        |                {
+        |                    Console.WriteLine(ex.Message);
+        |                    connection.Close();
+        |                }
+        |            }
+        |        }
+        |    }
+        |}
+        |""".stripMargin)
+
+    "resolve methodFullName" in {
+      inside(cpg.call.name("Open").methodFullName.l) {
+        case x :: Nil => x shouldBe "SqlConnection.Open:<unresolvedSignature>"
+        case _        => fail("Unexpected call node structure")
+      }
+    }
+  }
+
 }
