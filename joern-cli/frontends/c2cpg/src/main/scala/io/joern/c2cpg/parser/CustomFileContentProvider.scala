@@ -1,5 +1,6 @@
 package io.joern.c2cpg.parser
 
+import io.joern.c2cpg.parser.CustomFileContentProvider.missingHeaderFiles
 import io.shiftleft.utils.IOUtils
 import org.eclipse.cdt.core.index.IIndexFileLocation
 import org.eclipse.cdt.internal.core.parser.IMacroDictionary
@@ -11,6 +12,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 object CustomFileContentProvider {
   private val headerFileToLines: ConcurrentHashMap[String, Array[Char]] = new ConcurrentHashMap()
+  private val missingHeaderFiles: ConcurrentHashMap[String, Boolean]    = new ConcurrentHashMap()
 }
 
 class CustomFileContentProvider(headerFileFinder: HeaderFileFinder) extends InternalFileContentProvider {
@@ -38,7 +40,13 @@ class CustomFileContentProvider(headerFileFinder: HeaderFileFinder) extends Inte
         CdtParser.loadLinesAsFileContent(p, content)
       }
       .getOrElse {
-        logger.debug(s"Cannot find header file for '$path'")
+        missingHeaderFiles.computeIfAbsent(
+          path,
+          _ => {
+            logger.debug(s"Cannot find header file for '$path'")
+            true
+          }
+        )
         null
       }
 
