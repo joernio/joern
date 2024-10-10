@@ -207,10 +207,12 @@ trait FullNameProvider { this: AstCreator =>
   }
 
   private def shortNameForIASTDeclarator(declarator: IASTDeclarator): String = {
-    if (ASTStringUtil.getSimpleName(declarator.getName).isEmpty && declarator.getNestedDeclarator != null) {
-      shortName(declarator.getNestedDeclarator)
-    } else {
-      ASTStringUtil.getSimpleName(declarator.getName)
+    Try(declarator.getName.resolveBinding().getName).getOrElse {
+      if (ASTStringUtil.getSimpleName(declarator.getName).isEmpty && declarator.getNestedDeclarator != null) {
+        shortName(declarator.getNestedDeclarator)
+      } else {
+        ASTStringUtil.getSimpleName(declarator.getName)
+      }
     }
   }
 
