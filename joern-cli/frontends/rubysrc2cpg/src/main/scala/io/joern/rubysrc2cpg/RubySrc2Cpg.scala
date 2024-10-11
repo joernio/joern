@@ -4,8 +4,19 @@ import better.files.File
 import io.joern.rubysrc2cpg.astcreation.AstCreator
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.StatementList
 import io.joern.rubysrc2cpg.datastructures.RubyProgramSummary
-import io.joern.rubysrc2cpg.parser.{RubyAstGenRunner, RubyJsonParser, RubyJsonToNodeCreator, RubyNodeCreator, RubyParser}
-import io.joern.rubysrc2cpg.passes.{AstCreationPass, ConfigFileCreationPass, DependencyPass, DependencySummarySolverPass}
+import io.joern.rubysrc2cpg.parser.{
+  RubyAstGenRunner,
+  RubyJsonParser,
+  RubyJsonToNodeCreator,
+  RubyNodeCreator,
+  RubyParser
+}
+import io.joern.rubysrc2cpg.passes.{
+  AstCreationPass,
+  ConfigFileCreationPass,
+  DependencyPass,
+  DependencySummarySolverPass
+}
 import io.joern.rubysrc2cpg.utils.DependencyDownloader
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.frontendspecific.rubysrc2cpg.*

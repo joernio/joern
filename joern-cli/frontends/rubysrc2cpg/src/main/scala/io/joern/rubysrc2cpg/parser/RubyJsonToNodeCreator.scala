@@ -13,8 +13,8 @@ class RubyJsonToNodeCreator(
   procParamGen: FreshNameGenerator[Left[String, Nothing]] = FreshNameGenerator(id => Left(s"<proc-param-$id>"))
 ) {
 
-  private val logger                                            = LoggerFactory.getLogger(getClass)
-  private val classNameGen                                      = FreshNameGenerator(id => s"<anon-class-$id>")
+  private val logger       = LoggerFactory.getLogger(getClass)
+  private val classNameGen = FreshNameGenerator(id => s"<anon-class-$id>")
 
   private implicit val implVisit: ujson.Value => RubyExpression = (x: ujson.Value) => visit(x)
 
@@ -49,23 +49,23 @@ class RubyJsonToNodeCreator(
   private def visit(obj: ujson.Obj): RubyExpression = {
     val astTypeStr = obj(ParserKeys.Type).str
     AstType.fromString(astTypeStr) match {
-      case Some(AstType.Array)  => visitArray(obj)
-      case Some(AstType.Begin)  => visitBegin(obj)
-      case Some(AstType.CBase)  => visitCBase(obj)
-      case Some(AstType.Class)  => visitClass(obj)
-      case Some(AstType.Const)  => visitConst(obj)
-      case Some(AstType.Def)    => visitDef(obj)
-      case Some(AstType.DStr)   => visitDStr(obj)
-      case Some(AstType.DSym)   => visitDSym(obj)
-      case Some(AstType.Hash)   => visitHash(obj)
-      case Some(AstType.Int)    => visitInt(obj)
-      case Some(AstType.IVar)   => visitIVar(obj)
-      case Some(AstType.LVAsgn) => visitLVAsgn(obj)
-      case Some(AstType.Pair)   => visitPair(obj)
-      case Some(AstType.Send)   => visitSend(obj)
-      case Some(AstType.Splat)  => visitSplat(obj)
-      case Some(AstType.Str)    => visitStr(obj)
-      case Some(AstType.Sym)    => visitSym(obj)
+      case Some(AstType.Array)               => visitArray(obj)
+      case Some(AstType.Begin)               => visitBegin(obj)
+      case Some(AstType.TopLevelConstant)    => visitTopLevelConstant(obj)
+      case Some(AstType.ClassDefinition)     => visitClassDefinition(obj)
+      case Some(AstType.ScopedConstant)      => visitScopedConstant(obj)
+      case Some(AstType.MethodDefinition)    => visitMethodDefinition(obj)
+      case Some(AstType.DynamicString)       => visitDynamicString(obj)
+      case Some(AstType.DynamicSymbol)       => visitDynamicSymbol(obj)
+      case Some(AstType.Hash)                => visitHash(obj)
+      case Some(AstType.Int)                 => visitInt(obj)
+      case Some(AstType.InstanceVariable)    => visitInstanceVariable(obj)
+      case Some(AstType.LocalVariableAssign) => visitLocalVariableAssign(obj)
+      case Some(AstType.Pair)                => visitPair(obj)
+      case Some(AstType.Send)                => visitSend(obj)
+      case Some(AstType.Splat)               => visitSplat(obj)
+      case Some(AstType.StaticString)        => visitStaticString(obj)
+      case Some(AstType.StaticSymbol)        => visitStaticSymbol(obj)
       case _ =>
         logger.warn(s"Unhandled `parser` type '$astTypeStr'")
         defaultResult
@@ -76,7 +76,20 @@ class RubyJsonToNodeCreator(
 
   private def visitBegin(obj: Obj): RubyExpression = StatementList(obj.visitArray(ParserKeys.Body))(obj.toTextSpan)
 
-  private def visitCBase(obj: Obj): RubyExpression = {
+  private def visitTopLevelConstant(obj: Obj): RubyExpression = {
+    val identifier = obj(ParserKeys.Name).str
+    SimpleIdentifier()(obj.toTextSpan.spanStart(identifier))
+  }
+
+  private def visitClassDefinition(obj: Obj): RubyExpression = {
+    val name      = visit(obj(ParserKeys.Name))
+    val baseClass = if obj.contains(ParserKeys.SuperClass) then Option(visit(obj(ParserKeys.SuperClass))) else None
+    val body      = visit(obj(ParserKeys.Body))
+    // TODO: Handle rest of the fields
+    ClassDeclaration(name, baseClass, body, fields = Nil, bodyMemberCall = None, namespaceParts = None)(obj.toTextSpan)
+  }
+
+  private def visitScopedConstant(obj: Obj): RubyExpression = {
     val identifier = obj(ParserKeys.Name).str
     if (obj.contains(ParserKeys.Base)) {
       val target = visit(obj(ParserKeys.Base))
@@ -86,32 +99,20 @@ class RubyJsonToNodeCreator(
     }
   }
 
-  private def visitClass(obj: Obj): RubyExpression = {
-    val name      = visit(obj(ParserKeys.Name))
-    val baseClass = if obj.contains(ParserKeys.SuperClass) then Option(visit(obj(ParserKeys.SuperClass))) else None
-    val body      = visit(obj(ParserKeys.Body))
-    // TODO: Handle rest of the fields
-    ClassDeclaration(name, baseClass, body, fields = Nil, bodyMemberCall = None, namespaceParts = None)(obj.toTextSpan)
-  }
-
-  private def visitConst(obj: Obj): RubyExpression = {
-    visitCBase(obj)
-  }
-
-  private def visitDef(obj: Obj): RubyExpression = {
+  private def visitMethodDefinition(obj: Obj): RubyExpression = {
     val name       = obj(ParserKeys.Name).str
     val parameters = obj(ParserKeys.Arguments).asInstanceOf[ujson.Obj].visitArray(ParserKeys.Children)
     val body = if (obj.contains(ParserKeys.Body)) visit(obj(ParserKeys.Body)) else StatementList(Nil)(obj.toTextSpan)
     MethodDeclaration(name, parameters, body)(obj.toTextSpan)
   }
 
-  private def visitDStr(obj: Obj): RubyExpression = {
+  private def visitDynamicString(obj: Obj): RubyExpression = {
     val typeFullName = getBuiltInType(Defines.String)
     val expressions  = obj.visitArray(ParserKeys.Children)
     DynamicLiteral(typeFullName, expressions)(obj.toTextSpan)
   }
 
-  private def visitDSym(obj: Obj): RubyExpression = {
+  private def visitDynamicSymbol(obj: Obj): RubyExpression = {
     val typeFullName = getBuiltInType(Defines.Symbol)
     val expressions  = obj.visitArray(ParserKeys.Children)
     DynamicLiteral(typeFullName, expressions)(obj.toTextSpan)
@@ -124,9 +125,9 @@ class RubyJsonToNodeCreator(
     StaticLiteral(typeFullName)(obj.toTextSpan)
   }
 
-  private def visitIVar(obj: Obj): RubyExpression = SimpleIdentifier()(obj.toTextSpan)
+  private def visitInstanceVariable(obj: Obj): RubyExpression = SimpleIdentifier()(obj.toTextSpan)
 
-  private def visitLVAsgn(obj: Obj): RubyExpression = {
+  private def visitLocalVariableAssign(obj: Obj): RubyExpression = {
     val lhs = visit(obj(ParserKeys.Lhs))
     val rhs = visit(obj(ParserKeys.Rhs))
     SingleAssignment(lhs, "=", rhs)(obj.toTextSpan)
@@ -148,12 +149,12 @@ class RubyJsonToNodeCreator(
 
   private def visitSplat(obj: Obj): RubyExpression = SplattingRubyNode(visit(obj(ParserKeys.Value)))(obj.toTextSpan)
 
-  private def visitStr(obj: Obj): RubyExpression = {
+  private def visitStaticString(obj: Obj): RubyExpression = {
     val typeFullName = getBuiltInType(Defines.String)
     StaticLiteral(typeFullName)(obj.toTextSpan)
   }
 
-  private def visitSym(obj: Obj): RubyExpression = {
+  private def visitStaticSymbol(obj: Obj): RubyExpression = {
     val typeFullName = getBuiltInType(Defines.Symbol)
     StaticLiteral(typeFullName)(obj.toTextSpan)
   }
