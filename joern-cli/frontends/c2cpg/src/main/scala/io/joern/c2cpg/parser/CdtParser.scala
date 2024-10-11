@@ -30,9 +30,13 @@ object CdtParser {
     failure: Option[Throwable] = None
   )
 
-  def readFileAsFileContent(path: Path): FileContent = {
+  def loadLinesAsFileContent(path: Path, lines: Array[Char]): InternalFileContent = {
+    FileContent.create(path.toString, true, lines).asInstanceOf[InternalFileContent]
+  }
+
+  def readFileAsFileContent(path: Path): InternalFileContent = {
     val lines = IOUtils.readLinesInFile(path).mkString("\n").toArray
-    FileContent.create(path.toString, true, lines)
+    loadLinesAsFileContent(path, lines)
   }
 
 }
@@ -97,8 +101,8 @@ class CdtParser(config: Config) extends ParseProblemsLogger with PreprocessorSta
       try {
         val fileContent         = readFileAsFileContent(realPath.path)
         val fileContentProvider = new CustomFileContentProvider(headerFileFinder)
-        val lang            = createParseLanguage(realPath.path, fileContent.asInstanceOf[InternalFileContent].toString)
-        val scannerInfo     = createScannerInfo(realPath.path)
+        val lang                = createParseLanguage(realPath.path, fileContent.toString)
+        val scannerInfo         = createScannerInfo(realPath.path)
         val translationUnit = lang.getASTTranslationUnit(fileContent, scannerInfo, fileContentProvider, null, opts, log)
         val problems        = CPPVisitor.getProblems(translationUnit)
         if (parserConfig.logProblems) logProblems(problems.toList)
