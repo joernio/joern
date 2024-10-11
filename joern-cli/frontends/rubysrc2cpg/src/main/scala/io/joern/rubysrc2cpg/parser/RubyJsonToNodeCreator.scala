@@ -47,25 +47,84 @@ class RubyJsonToNodeCreator(
   }
 
   private def visit(obj: ujson.Obj): RubyExpression = {
+
+    def visitAstType(typ: AstType): RubyExpression = {
+      typ match {
+        case AstType.And                          => ???
+        case AstType.AndAssign                    => ???
+        case AstType.Args                         => ???
+        case AstType.Array                        => visitArray(obj)
+        case AstType.ArrayPattern                 => ???
+        case AstType.ArrayPatternWithTail         => ???
+        case AstType.BackRef                      => ???
+        case AstType.Begin                        => visitBegin(obj)
+        case AstType.BlockPass                    => ???
+        case AstType.ClassDefinition              => visitClassDefinition(obj)
+        case AstType.ClassVariable                => ???
+        case AstType.ClassVariableAssign          => ???
+        case AstType.ConstVariableAssign          => ???
+        case AstType.ConditionalSend              => ???
+        case AstType.Defined                      => ???
+        case AstType.DynamicString                => visitDynamicString(obj)
+        case AstType.DynamicSymbol                => visitDynamicSymbol(obj)
+        case AstType.ExclusiveFlipFlop            => ???
+        case AstType.ExclusiveRange               => ???
+        case AstType.ExecutableString             => ???
+        case AstType.False                        => ???
+        case AstType.FindPattern                  => ???
+        case AstType.Float                        => ???
+        case AstType.ForwardArg                   => ???
+        case AstType.ForwardArgs                  => ???
+        case AstType.ForwardedArgs                => ???
+        case AstType.GlobalVariable               => ???
+        case AstType.GlobalVariableAssign         => ???
+        case AstType.Hash                         => visitHash(obj)
+        case AstType.HashPattern                  => ???
+        case AstType.Identifier                   => ???
+        case AstType.InclusiveFlipFlop            => ???
+        case AstType.InclusiveRange               => ???
+        case AstType.Int                          => visitInt(obj)
+        case AstType.InstanceVariable             => visitInstanceVariable(obj)
+        case AstType.InstanceVariableAssign       => ???
+        case AstType.KwArg                        => ???
+        case AstType.KwNilArg                     => ???
+        case AstType.KwOptArg                     => ???
+        case AstType.KwRestArg                    => ???
+        case AstType.KwSplat                      => ???
+        case AstType.LocalVariable                => ???
+        case AstType.LocalVariableAssign          => visitSingleAssignment(obj)
+        case AstType.MatchPattern                 => ???
+        case AstType.MatchPatternP                => ???
+        case AstType.MatchVariable                => ???
+        case AstType.MatchWithLocalVariableAssign => ???
+        case AstType.MethodDefinition             => visitMethodDefinition(obj)
+        case AstType.MultipleLeftHandSide         => ???
+        case AstType.Nil                          => ???
+        case AstType.NthRef                       => ???
+        case AstType.Or                           => ???
+        case AstType.OrAssign                     => ???
+        case AstType.Pair                         => visitPair(obj)
+        case AstType.ProcArgument                 => ???
+        case AstType.Rational                     => ???
+        case AstType.RestArg                      => ???
+        case AstType.ScopedConstant               => visitScopedConstant(obj)
+        case AstType.Self                         => ???
+        case AstType.Send                         => visitSend(obj)
+        case AstType.ShadowArg                    => ???
+        case AstType.Splat                        => visitSplat(obj)
+        case AstType.StaticString                 => visitStaticString(obj)
+        case AstType.StaticSymbol                 => visitStaticSymbol(obj)
+        case AstType.Super                        => ???
+        case AstType.TopLevelConstant             => visitTopLevelConstant(obj)
+        case AstType.True                         => ???
+        case AstType.UnDefine                     => ???
+        case AstType.Yield                        => ???
+      }
+    }
+
     val astTypeStr = obj(ParserKeys.Type).str
     AstType.fromString(astTypeStr) match {
-      case Some(AstType.Array)               => visitArray(obj)
-      case Some(AstType.Begin)               => visitBegin(obj)
-      case Some(AstType.TopLevelConstant)    => visitTopLevelConstant(obj)
-      case Some(AstType.ClassDefinition)     => visitClassDefinition(obj)
-      case Some(AstType.ScopedConstant)      => visitScopedConstant(obj)
-      case Some(AstType.MethodDefinition)    => visitMethodDefinition(obj)
-      case Some(AstType.DynamicString)       => visitDynamicString(obj)
-      case Some(AstType.DynamicSymbol)       => visitDynamicSymbol(obj)
-      case Some(AstType.Hash)                => visitHash(obj)
-      case Some(AstType.Int)                 => visitInt(obj)
-      case Some(AstType.InstanceVariable)    => visitInstanceVariable(obj)
-      case Some(AstType.LocalVariableAssign) => visitLocalVariableAssign(obj)
-      case Some(AstType.Pair)                => visitPair(obj)
-      case Some(AstType.Send)                => visitSend(obj)
-      case Some(AstType.Splat)               => visitSplat(obj)
-      case Some(AstType.StaticString)        => visitStaticString(obj)
-      case Some(AstType.StaticSymbol)        => visitStaticSymbol(obj)
+      case Some(typ) => visitAstType(typ)
       case _ =>
         logger.warn(s"Unhandled `parser` type '$astTypeStr'")
         defaultResult
@@ -127,7 +186,7 @@ class RubyJsonToNodeCreator(
 
   private def visitInstanceVariable(obj: Obj): RubyExpression = SimpleIdentifier()(obj.toTextSpan)
 
-  private def visitLocalVariableAssign(obj: Obj): RubyExpression = {
+  private def visitSingleAssignment(obj: Obj): RubyExpression = {
     val lhs = visit(obj(ParserKeys.Lhs))
     val rhs = visit(obj(ParserKeys.Rhs))
     SingleAssignment(lhs, "=", rhs)(obj.toTextSpan)
