@@ -3,6 +3,7 @@ package io.joern.pysrc2cpg
 import io.joern.pysrc2cpg.Frontend.cmdLineParser
 import io.joern.x2cpg.X2CpgMain
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
+import io.joern.x2cpg.utils.server.FrontendHTTPServer
 import scopt.OParser
 
 import java.nio.file.Paths
@@ -38,9 +39,15 @@ private object Frontend {
   }
 }
 
-object NewMain extends X2CpgMain(cmdLineParser, new Py2CpgOnFileSystem())(new Py2CpgOnFileSystemConfig()) {
+object NewMain
+    extends X2CpgMain(cmdLineParser, new Py2CpgOnFileSystem())(Py2CpgOnFileSystemConfig())
+    with FrontendHTTPServer[Py2CpgOnFileSystemConfig, Py2CpgOnFileSystem] {
+
+  override protected def newDefaultConfig(): Py2CpgOnFileSystemConfig = Py2CpgOnFileSystemConfig()
+
   def run(config: Py2CpgOnFileSystemConfig, frontend: Py2CpgOnFileSystem): Unit = {
-    frontend.run(config)
+    if (config.serverMode) { startup() }
+    else { frontend.run(config) }
   }
 
   def getCmdLineParser = cmdLineParser

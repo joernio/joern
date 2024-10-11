@@ -1,6 +1,6 @@
 package io.joern.pysrc2cpg.cpg
 
-import io.joern.pysrc2cpg.PySrc2CpgFixture
+import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
 import io.shiftleft.semanticcpg.language.*
 
 class ContentCpgTests extends PySrc2CpgFixture() {

@@ -5,6 +5,7 @@ import io.joern.x2cpg.astgen.AstGenConfig
 import io.joern.x2cpg.passes.frontend.{TypeRecoveryParserConfig, XTypeRecovery, XTypeRecoveryConfig}
 import io.joern.x2cpg.utils.Environment
 import io.joern.x2cpg.{DependencyDownloadConfig, X2CpgConfig, X2CpgMain}
+import io.joern.x2cpg.utils.server.FrontendHTTPServer
 import org.slf4j.LoggerFactory
 import scopt.OParser
 
@@ -40,16 +41,21 @@ object Frontend {
 
 }
 
-object Main extends X2CpgMain(cmdLineParser, new CSharpSrc2Cpg()) {
+object Main extends X2CpgMain(cmdLineParser, new CSharpSrc2Cpg()) with FrontendHTTPServer[Config, CSharpSrc2Cpg] {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
+  override protected def newDefaultConfig(): Config = Config()
+
   def run(config: Config, csharpsrc2cpg: CSharpSrc2Cpg): Unit = {
-    val absPath = Paths.get(config.inputPath).toAbsolutePath.toString
-    if (Environment.pathExists(absPath)) {
-      csharpsrc2cpg.run(config.withInputPath(absPath))
-    } else {
-      logger.warn(s"Given path '$absPath' does not exist, skipping")
+    if (config.serverMode) { startup() }
+    else {
+      val absPath = Paths.get(config.inputPath).toAbsolutePath.toString
+      if (Environment.pathExists(absPath)) {
+        csharpsrc2cpg.run(config.withInputPath(absPath))
+      } else {
+        logger.warn(s"Given path '$absPath' does not exist, skipping")
+      }
     }
   }
 

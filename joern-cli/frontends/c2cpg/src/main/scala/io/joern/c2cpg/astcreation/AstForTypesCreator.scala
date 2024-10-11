@@ -64,7 +64,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   }
 
   protected def astForDeclarator(declaration: IASTSimpleDeclaration, declarator: IASTDeclarator, index: Int): Ast = {
-    val name = ASTStringUtil.getSimpleName(declarator.getName)
+    val name = shortName(declarator)
     declaration match {
       case d if isTypeDef(d) && shortName(d.getDeclSpecifier).nonEmpty =>
         val filename = fileName(declaration)

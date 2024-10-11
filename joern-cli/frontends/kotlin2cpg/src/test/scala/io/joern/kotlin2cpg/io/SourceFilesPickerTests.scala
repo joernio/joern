@@ -1,7 +1,6 @@
-package io.joern.kotlin2cpg
+package io.joern.kotlin2cpg.io
 
 import io.joern.kotlin2cpg.files.SourceFilesPicker
-
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.BeforeAndAfterAll

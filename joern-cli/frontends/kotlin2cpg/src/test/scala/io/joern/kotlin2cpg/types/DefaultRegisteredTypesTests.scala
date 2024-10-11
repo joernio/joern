@@ -1,4 +1,4 @@
-package io.joern.kotlin2cpg
+package io.joern.kotlin2cpg.types
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.semanticcpg.language.*

@@ -1,5 +1,6 @@
-package io.joern.pysrc2cpg
+package io.joern.pysrc2cpg.testfixtures
 
+import io.joern.pysrc2cpg.Py2Cpg
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.X2Cpg.defaultOverlayCreators
 import io.shiftleft.codepropertygraph.generated.Cpg

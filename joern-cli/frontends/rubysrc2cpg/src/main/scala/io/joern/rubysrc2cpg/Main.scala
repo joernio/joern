@@ -2,9 +2,10 @@ package io.joern.rubysrc2cpg
 
 import io.joern.rubysrc2cpg.Frontend.*
 import io.joern.x2cpg.astgen.AstGenConfig
+import io.joern.x2cpg.{DependencyDownloadConfig, X2CpgConfig, X2CpgMain}
 import io.joern.x2cpg.passes.frontend.{TypeRecoveryParserConfig, XTypeRecovery, XTypeRecoveryConfig}
 import io.joern.x2cpg.typestub.TypeStubConfig
-import io.joern.x2cpg.{DependencyDownloadConfig, X2CpgConfig, X2CpgMain}
+import io.joern.x2cpg.utils.server.FrontendHTTPServer
 import scopt.OParser
 
 import java.nio.file.Paths
@@ -87,8 +88,12 @@ private object Frontend {
   }
 }
 
-object Main extends X2CpgMain(cmdLineParser, new RubySrc2Cpg()) {
+object Main extends X2CpgMain(cmdLineParser, new RubySrc2Cpg()) with FrontendHTTPServer[Config, RubySrc2Cpg] {
+
+  override protected def newDefaultConfig(): Config = Config()
+
   def run(config: Config, rubySrc2Cpg: RubySrc2Cpg): Unit = {
-    rubySrc2Cpg.run(config)
+    if (config.serverMode) { startup() }
+    else { rubySrc2Cpg.run(config) }
   }
 }

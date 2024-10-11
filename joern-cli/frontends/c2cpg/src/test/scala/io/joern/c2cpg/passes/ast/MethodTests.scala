@@ -300,6 +300,23 @@ class MethodTests extends C2CpgSuite {
     }
   }
 
+  "Name for method parameter in parentheses" should {
+    "be correct" in {
+      val cpg = code("""
+          |int foo(int * (a)) {
+          |  int (x) = a;
+          |  return 2 * *a;
+          |}
+          |""".stripMargin)
+      val List(paramA) = cpg.method("foo").parameter.l
+      paramA.code shouldBe "int * (a)"
+      paramA.typeFullName shouldBe "int*"
+      paramA.name shouldBe "a"
+      cpg.identifier.nameExact("x").size shouldBe 1
+      cpg.method("foo").local.nameExact("x").size shouldBe 1
+    }
+  }
+
   "Method name, signature and full name tests" should {
     "be correct for plain C method" in {
       val cpg = code(

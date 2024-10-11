@@ -95,9 +95,11 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
   private def nameForIdentifier(ident: IASTNode): String = {
     ident match {
       case id: IASTIdExpression => ASTStringUtil.getSimpleName(id.getName)
-      case id: IASTName if ASTStringUtil.getSimpleName(id).isEmpty && id.getBinding != null => id.getBinding.getName
-      case id: IASTName if ASTStringUtil.getSimpleName(id).isEmpty => uniqueName("name", "", "")._1
-      case _                                                       => code(ident)
+      case id: IASTName =>
+        val name = ASTStringUtil.getSimpleName(id)
+        if (name.isEmpty) Try(id.resolveBinding().getName).getOrElse(uniqueName("name", "", "")._1)
+        else name
+      case _ => code(ident)
     }
   }
 

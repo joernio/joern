@@ -3,6 +3,7 @@ package io.joern.php2cpg
 import io.joern.php2cpg.Frontend.*
 import io.joern.x2cpg.passes.frontend.*
 import io.joern.x2cpg.{DependencyDownloadConfig, X2CpgConfig, X2CpgMain}
+import io.joern.x2cpg.utils.server.FrontendHTTPServer
 import scopt.OParser
 
 /** Command line configuration parameters
@@ -51,8 +52,12 @@ object Frontend {
   }
 }
 
-object Main extends X2CpgMain(cmdLineParser, new Php2Cpg()) {
+object Main extends X2CpgMain(cmdLineParser, new Php2Cpg()) with FrontendHTTPServer[Config, Php2Cpg] {
+
+  override protected def newDefaultConfig(): Config = Config()
+
   def run(config: Config, php2Cpg: Php2Cpg): Unit = {
-    php2Cpg.run(config)
+    if (config.serverMode) { startup() }
+    else { php2Cpg.run(config) }
   }
 }

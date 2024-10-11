@@ -21,13 +21,13 @@ import scala.util.Try
 object FrontendHTTPServer {
 
   /** ExecutorService for single-threaded execution. */
-  private lazy val SingleThreadExecutor: ExecutorService = Executors.newSingleThreadExecutor()
+  def singleThreadExecutor(): ExecutorService = Executors.newSingleThreadExecutor()
 
   /** ExecutorService for cached thread pool execution. */
-  private lazy val CachedThreadPoolExecutor: ExecutorService = Executors.newCachedThreadPool()
+  def cachedThreadPoolExecutor(): ExecutorService = Executors.newCachedThreadPool()
 
   /** Default ExecutorService used by `FrontendHTTPServer`. */
-  private val DefaultExecutor: ExecutorService = CachedThreadPoolExecutor
+  def defaultExecutor(): ExecutorService = cachedThreadPoolExecutor()
 
 }
 
@@ -64,7 +64,7 @@ trait FrontendHTTPServer[T <: X2CpgConfig[T], X <: X2CpgFrontend[T]] { this: X2C
     * This can be overridden to switch between single-threaded and multi-threaded execution. By default, it uses the
     * cached thread pool executor from `FrontendHTTPServer`.
     */
-  protected val executor: ExecutorService = FrontendHTTPServer.DefaultExecutor
+  protected val executor: ExecutorService = FrontendHTTPServer.defaultExecutor()
 
   /** Handler for HTTP requests, providing functionality to handle specific routes.
     *
@@ -91,6 +91,7 @@ trait FrontendHTTPServer[T <: X2CpgConfig[T], X <: X2CpgFrontend[T]] { this: X2C
     @Context(value = "/run", methods = Array("POST"))
     def run(req: server.Request, resp: server.Response): Int = {
       resp.getHeaders.add("Content-Type", "text/plain")
+      resp.getHeaders.add("Connection", "close")
 
       val params = req.getParamsList.asScala
       val outputDir = params
@@ -123,6 +124,7 @@ trait FrontendHTTPServer[T <: X2CpgConfig[T], X <: X2CpgFrontend[T]] { this: X2C
     */
   def stop(): Unit = {
     underlyingServer.foreach { server =>
+      executor.shutdown()
       server.stop()
       logger.debug("Server stopped.")
     }
