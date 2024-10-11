@@ -421,9 +421,10 @@ object RubyIntermediateAst {
 
   /** Represents a call.
     */
-  sealed trait RubyCall {
+  sealed trait RubyCall extends RubyExpression {
     def target: RubyExpression
     def arguments: List[RubyExpression]
+    def withBlock(block: Block): RubyCallWithBlock[?] = SimpleCallWithBlock(target, arguments, block)(span)
   }
 
   /** Represents traditional calls, e.g. `foo`, `foo x, y`, `foo(x,y)` */
@@ -496,7 +497,10 @@ object RubyIntermediateAst {
   final case class MemberCall(target: RubyExpression, op: String, methodName: String, arguments: List[RubyExpression])(
     span: TextSpan
   ) extends RubyExpression(span)
-      with RubyCall
+      with RubyCall {
+    override def withBlock(block: Block): RubyCallWithBlock[?] =
+      MemberCallWithBlock(target, op, methodName, arguments, block)(span)
+  }
 
   /** Special class for `<body>` calls of type decls.
     */

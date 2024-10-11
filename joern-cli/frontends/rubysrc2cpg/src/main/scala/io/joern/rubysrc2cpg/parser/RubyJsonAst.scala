@@ -8,6 +8,7 @@ object ParserKeys {
   val Arguments   = "arguments"
   val Base        = "base"
   val Body        = "body"
+  val CallName    = "call_name"
   val Children    = "children"
   val FilePath    = "file_path"
   val Key         = "key"
@@ -25,12 +26,14 @@ object ParserKeys {
 enum AstType(val name: String) {
   case And                          extends AstType("and")
   case AndAssign                    extends AstType("and_asgn")
+  case Arg                          extends AstType("arg")
   case Args                         extends AstType("args")
   case Array                        extends AstType("array")
   case ArrayPattern                 extends AstType("array_pattern")
   case ArrayPatternWithTail         extends AstType("array_pattern_with_tail")
   case BackRef                      extends AstType("back_ref")
   case Begin                        extends AstType("begin")
+  case Block                        extends AstType("block")
   case BlockPass                    extends AstType("block_pass")
   case ClassDefinition              extends AstType("class")
   case ClassVariable                extends AstType("cvar")
@@ -74,6 +77,7 @@ enum AstType(val name: String) {
   case MultipleLeftHandSide         extends AstType("mlhs")
   case Nil                          extends AstType("nil")
   case NthRef                       extends AstType("nth_ref")
+  case OperatorAssign               extends AstType("op_asgn")
   case Or                           extends AstType("or")
   case OrAssign                     extends AstType("or_asgn")
   case Pair                         extends AstType("pair")
