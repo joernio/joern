@@ -1,41 +1,27 @@
 package io.joern.rubysrc2cpg
 
 import better.files.File
-import io.joern.rubysrc2cpg.astcreation.{AstCreator, AstGenCreator}
+import io.joern.rubysrc2cpg.astcreation.AstCreator
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.StatementList
 import io.joern.rubysrc2cpg.datastructures.RubyProgramSummary
-import io.joern.rubysrc2cpg.parser.{RubyAstGenRunner, RubyJsonParser, RubyNodeCreator, RubyParser}
-import io.joern.rubysrc2cpg.passes.{
-  AstCreationPass,
-  ConfigFileCreationPass,
-  DependencyPass,
-  DependencySummarySolverPass
-}
+import io.joern.rubysrc2cpg.parser.{RubyAstGenRunner, RubyJsonParser, RubyJsonToNodeCreator, RubyNodeCreator, RubyParser}
+import io.joern.rubysrc2cpg.passes.{AstCreationPass, ConfigFileCreationPass, DependencyPass, DependencySummarySolverPass}
 import io.joern.rubysrc2cpg.utils.DependencyDownloader
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
-import io.joern.x2cpg.frontendspecific.rubysrc2cpg.{
-  ImplicitRequirePass,
-  ImportsPass,
-  RubyImportResolverPass,
-  RubyTypeHintCallLinker,
-  RubyTypeRecoveryPassGenerator
-}
+import io.joern.x2cpg.frontendspecific.rubysrc2cpg.*
 import io.joern.x2cpg.passes.base.AstLinkerPass
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass, XTypeRecoveryConfig}
 import io.joern.x2cpg.utils.{ConcurrentTaskUtil, ExternalCommand}
 import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
-import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.Languages
-import io.joern.rubysrc2cpg.parser.RubyJsonAst.*
+import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
 import io.shiftleft.passes.CpgPassBase
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
-import scala.concurrent.ExecutionContext.Implicits.global
-import upickle.core.*
 import upickle.default.*
 
 import java.nio.file.{Files, Paths}
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import scala.util.matching.Regex
@@ -57,7 +43,8 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
   private def createCpgAction(cpg: Cpg, config: Config): Unit = {
     File.usingTemporaryDirectory("rubysrc2cpgOut") { tmpDir =>
       val astGenResult = RubyAstGenRunner(config).execute(tmpDir)
-      val astCreators  = RubySrc2Cpg.processAstGenRunnerResults(astGenResult.parsedFiles, config)
+      /*val astCreators  = */
+      RubySrc2Cpg.processAstGenRunnerResults(astGenResult.parsedFiles, config)
     }
     Using.resource(
       new parser.ResourceManagedParser(config.antlrCacheMemLimit, config.antlrDebug, config.antlrProfiling)
@@ -131,16 +118,24 @@ object RubySrc2Cpg {
 
   /** Parses the generated AST Gen files in parallel and produces AstCreators from each.
     */
-  def processAstGenRunnerResults(astFiles: List[String], config: Config): Seq[AstGenCreator] = {
+  def processAstGenRunnerResults(astFiles: List[String], config: Config): Unit /*Seq[AstCreator]*/ = {
     Await.result(
       Future.sequence(
         astFiles
-          .map(file =>
+          .map(fileName =>
             Future {
-              val parserResult     = RubyJsonParser.readFile(Paths.get(file))
+              val parserResult     = RubyJsonParser.readFile(Paths.get(fileName))
               val relativeFileName = SourceFiles.toRelativePath(parserResult.fullPath, config.inputPath)
-              val rubyProgram      = read[RubyProgram](parserResult.json)
-              new AstGenCreator(relativeFileName, parserResult)(config.schemaValidation)
+              val rubyProgram      = new RubyJsonToNodeCreator().visitProgram(parserResult.json)
+              val fileContent      = (File(config.inputPath) / fileName).contentAsString
+//              new AstCreator(
+//                fileName,
+//                ctx,
+//                projectRoot,
+//                enableFileContents = !config.disableFileContent,
+//                fileContent = fileContent,
+//                rootNode = Option(new RubyNodeCreator().visit(ctx).asInstanceOf[StatementList])
+//              )(config.schemaValidation)
             }
           )
       ),

@@ -2,13 +2,12 @@ package io.joern.rubysrc2cpg.parser
 
 import better.files.File
 import io.joern.rubysrc2cpg.Config
-import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, executableDir}
 import io.joern.x2cpg.astgen.AstGenRunnerBase
-import io.joern.x2cpg.utils.{Environment, ExternalCommand}
+import io.joern.x2cpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
-import java.io.File.separator
 
+import java.io.File.separator
 import scala.collection.mutable
 import scala.util.Try
 
@@ -56,7 +55,6 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
   }
 
   override protected def astGenCommand(implicit metaData: AstGenProgramMetaData): String = {
-    // TODO: Not OS independent
     s"java -jar ..${separator}jruby.jar -S bundle exec exe${separator}ruby_ast_gen"
   }
 
