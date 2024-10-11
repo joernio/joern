@@ -44,6 +44,7 @@ class TypeRenderer(val keepTypeArguments: Boolean = false) {
       case _: ErrorType => cpgUnresolvedType
       case t            => t
     }
+    opts.lock()
     new DescriptorRendererImpl(opts)
   }
 
