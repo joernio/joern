@@ -54,6 +54,7 @@ class RubyJsonToNodeCreator(
 
     def visitAstType(typ: AstType): RubyExpression = {
       typ match {
+        case AstType.Alias                        => visitAlias(obj)
         case AstType.And                          => visitAnd(obj)
         case AstType.AndAssign                    => visitAndAssign(obj)
         case AstType.Arg                          => visitArg(obj)
@@ -65,6 +66,9 @@ class RubyJsonToNodeCreator(
         case AstType.Begin                        => visitBegin(obj)
         case AstType.Block                        => visitBlock(obj)
         case AstType.BlockPass                    => visitBlockPass(obj)
+        case AstType.BlockWithNumberedParams      => visitBlockWithNumberedParams(obj)
+        case AstType.CaseExpression               => visitCaseExpression(obj)
+        case AstType.CaseMatchStatement           => visitCaseMatchStatement(obj)
         case AstType.ClassDefinition              => visitClassDefinition(obj)
         case AstType.ClassVariable                => visitClassVariable(obj)
         case AstType.ClassVariableAssign          => visitSingleAssignment(obj)
@@ -73,6 +77,7 @@ class RubyJsonToNodeCreator(
         case AstType.Defined                      => visitDefined(obj)
         case AstType.DynamicString                => visitDynamicString(obj)
         case AstType.DynamicSymbol                => visitDynamicSymbol(obj)
+        case AstType.Ensure                       => visitEnsure(obj)
         case AstType.ExclusiveFlipFlop            => visitExclusiveFlipFlop(obj)
         case AstType.ExclusiveRange               => visitExclusiveRange(obj)
         case AstType.ExecutableString             => visitExecutableString(obj)
@@ -87,44 +92,73 @@ class RubyJsonToNodeCreator(
         case AstType.Hash                         => visitHash(obj)
         case AstType.HashPattern                  => visitHashPattern(obj)
         case AstType.Identifier                   => visitIdentifier(obj)
+        case AstType.IfGuard                      => visitIfGuard(obj)
+        case AstType.IfStatement                  => visitIfStatement(obj)
         case AstType.InclusiveFlipFlop            => visitInclusiveFlipFlop(obj)
         case AstType.InclusiveRange               => visitInclusiveRange(obj)
+        case AstType.InPattern                    => visitInPattern(obj)
         case AstType.Int                          => visitInt(obj)
         case AstType.InstanceVariable             => visitInstanceVariable(obj)
         case AstType.InstanceVariableAssign       => visitSingleAssignment(obj)
         case AstType.KwArg                        => visitKwArg(obj)
+        case AstType.KwBegin                      => visitKwBegin(obj)
         case AstType.KwNilArg                     => visitKwNilArg(obj)
         case AstType.KwOptArg                     => visitKwOptArg(obj)
         case AstType.KwRestArg                    => visitKwRestArg(obj)
         case AstType.KwSplat                      => visitKwSplat(obj)
         case AstType.LocalVariable                => visitLocalVariable(obj)
         case AstType.LocalVariableAssign          => visitSingleAssignment(obj)
+        case AstType.MatchAlt                     => visitMatchAlt(obj)
+        case AstType.MatchAs                      => visitMatchAs(obj)
+        case AstType.MatchNilPattern              => visitMatchNilPattern(obj)
         case AstType.MatchPattern                 => visitMatchPattern(obj)
         case AstType.MatchPatternP                => visitMatchPatternP(obj)
         case AstType.MatchVariable                => visitMatchVariable(obj)
         case AstType.MatchWithLocalVariableAssign => visitMatchWithLocalVariableAssign(obj)
         case AstType.MethodDefinition             => visitMethodDefinition(obj)
+        case AstType.ModuleDefinition             => visitModuleDefinition(obj)
+        case AstType.MultipleAssignment           => visitMultipleAssignment(obj)
         case AstType.MultipleLeftHandSide         => visitMultipleLeftHandSide(obj)
         case AstType.Nil                          => visitNil(obj)
         case AstType.NthRef                       => visitNthRef(obj)
         case AstType.OperatorAssign               => visitOperatorAssign(obj)
+        case AstType.OptionalArgument             => visitOptionalArgument(obj)
         case AstType.Or                           => visitOr(obj)
         case AstType.OrAssign                     => visitOrAssign(obj)
         case AstType.Pair                         => visitPair(obj)
+        case AstType.PostExpression               => visitPostExpression(obj)
+        case AstType.PreExpression                => visitPreExpression(obj)
         case AstType.ProcArgument                 => visitProcArgument(obj)
         case AstType.Rational                     => visitRational(obj)
+        case AstType.Redo                         => visitRedo(obj)
+        case AstType.Retry                        => visitRetry(obj)
+        case AstType.Return                       => visitReturn(obj)
+        case AstType.RegexExpression              => visitRegexExpression(obj)
+        case AstType.RegexOption                  => visitRegexOption(obj)
+        case AstType.ResBody                      => visitResBody(obj)
         case AstType.RestArg                      => visitRestArg(obj)
+        case AstType.RescueStatement              => visitRescueStatement(obj)
         case AstType.ScopedConstant               => visitScopedConstant(obj)
         case AstType.Self                         => visitSelf(obj)
         case AstType.Send                         => visitSend(obj)
         case AstType.ShadowArg                    => visitShadowArg(obj)
+        case AstType.SingletonMethodDefinition    => visitSingletonMethodDefinition(obj)
+        case AstType.SingletonClassDefinition     => visitSingletonClassDefinition(obj)
         case AstType.Splat                        => visitSplat(obj)
         case AstType.StaticString                 => visitStaticString(obj)
         case AstType.StaticSymbol                 => visitStaticSymbol(obj)
         case AstType.Super                        => visitSuper(obj)
+        case AstType.SuperNoArgs                  => visitSuperNoArgs(obj)
         case AstType.TopLevelConstant             => visitTopLevelConstant(obj)
         case AstType.True                         => visitTrue(obj)
         case AstType.UnDefine                     => visitUnDefine(obj)
+        case AstType.UnlessExpression             => visitUnlessExpression(obj)
+        case AstType.UnlessGuard                  => visitUnlessGuard(obj)
+        case AstType.UntilExpression              => visitUntilExpression(obj)
+        case AstType.UntilPostExpression          => visitUntilExpression(obj)
+        case AstType.WhenStatement                => visitWhenStatement(obj)
+        case AstType.WhileStatement               => visitWhileStatement(obj)
+        case AstType.WhilePostStatement           => visitWhileStatement(obj)
         case AstType.Yield                        => visitYield(obj)
       }
     }
@@ -137,6 +171,8 @@ class RubyJsonToNodeCreator(
         defaultResult()
     }
   }
+
+  private def visitAlias(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
   private def visitAnd(obj: Obj): RubyExpression = {
     val op  = "&&"
@@ -175,6 +211,12 @@ class RubyJsonToNodeCreator(
 
   private def visitBlockPass(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
+  private def visitBlockWithNumberedParams(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+
+  private def visitCaseExpression(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+
+  private def visitCaseMatchStatement(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+
   private def visitClassDefinition(obj: Obj): RubyExpression = {
     val name      = visit(obj(ParserKeys.Name))
     val baseClass = if obj.contains(ParserKeys.SuperClass) then Option(visit(obj(ParserKeys.SuperClass))) else None
@@ -204,6 +246,8 @@ class RubyJsonToNodeCreator(
     val expressions  = obj.visitArray(ParserKeys.Children)
     DynamicLiteral(typeFullName, expressions)(obj.toTextSpan)
   }
+
+  private def visitEnsure(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
   private def visitExclusiveFlipFlop(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
@@ -238,6 +282,10 @@ class RubyJsonToNodeCreator(
 
   private def visitIdentifier(obj: Obj): RubyExpression = SimpleIdentifier()(obj.toTextSpan)
 
+  private def visitIfGuard(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+
+  private def visitIfStatement(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+
   private def visitInclude(obj: Obj): RubyExpression = {
     val callName = obj(ParserKeys.Name).str
     val target   = SimpleIdentifier()(obj.toTextSpan.spanStart(callName))
@@ -250,6 +298,8 @@ class RubyJsonToNodeCreator(
 
   private def visitInclusiveRange(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
+  private def visitInPattern(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+
   private def visitInt(obj: Obj): RubyExpression = {
     val typeFullName = getBuiltInType(Defines.Integer)
     StaticLiteral(typeFullName)(obj.toTextSpan)
@@ -258,6 +308,8 @@ class RubyJsonToNodeCreator(
   private def visitInstanceVariable(obj: Obj): RubyExpression = InstanceFieldIdentifier()(obj.toTextSpan)
 
   private def visitKwArg(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+
+  private def visitKwBegin(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
   private def visitKwNilArg(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
@@ -268,6 +320,12 @@ class RubyJsonToNodeCreator(
   private def visitKwSplat(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
   private def visitLocalVariable(obj: Obj): RubyExpression = SimpleIdentifier()(obj.toTextSpan)
+
+  private def visitMatchAlt(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+
+  private def visitMatchAs(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+
+  private def visitMatchNilPattern(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
   private def visitMatchPattern(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
@@ -283,6 +341,10 @@ class RubyJsonToNodeCreator(
     val body = if (obj.contains(ParserKeys.Body)) visit(obj(ParserKeys.Body)) else StatementList(Nil)(obj.toTextSpan)
     MethodDeclaration(name, parameters, body)(obj.toTextSpan)
   }
+
+  private def visitModuleDefinition(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+
+  private def visitMultipleAssignment(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
   private def visitMultipleLeftHandSide(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
@@ -309,6 +371,8 @@ class RubyJsonToNodeCreator(
     defaultResult(Option(obj.toTextSpan))
   }
 
+  private def visitOptionalArgument(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+
   private def visitOr(obj: Obj): RubyExpression = {
     val op  = "||"
     val lhs = visit(obj(ParserKeys.Lhs))
@@ -319,6 +383,10 @@ class RubyJsonToNodeCreator(
   private def visitOrAssign(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
   private def visitPair(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+
+  private def visitPostExpression(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+
+  private def visitPreExpression(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
   private def visitProcArgument(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
@@ -337,7 +405,21 @@ class RubyJsonToNodeCreator(
 
   private def visitRational(obj: Obj): RubyExpression = StaticLiteral(getBuiltInType(Defines.Rational))(obj.toTextSpan)
 
+  private def visitRedo(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+
+  private def visitRetry(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+
+  private def visitReturn(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+
+  private def visitRegexExpression(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+
+  private def visitRegexOption(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+
+  private def visitResBody(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+
   private def visitRestArg(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+
+  private def visitRescueStatement(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
   private def visitRequireLike(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
@@ -374,6 +456,10 @@ class RubyJsonToNodeCreator(
 
   private def visitShadowArg(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
+  private def visitSingletonMethodDefinition(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+
+  private def visitSingletonClassDefinition(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+
   private def visitSingleAssignment(obj: Obj): RubyExpression = {
     val lhs = visit(obj(ParserKeys.Lhs))
     val rhs = visit(obj(ParserKeys.Rhs))
@@ -398,6 +484,11 @@ class RubyJsonToNodeCreator(
     SimpleCall(name, arguments)(obj.toTextSpan)
   }
 
+  private def visitSuperNoArgs(obj: Obj): RubyExpression = {
+    val name = SimpleIdentifier(Option(getBuiltInType(Defines.Super)))(obj.toTextSpan.spanStart(Defines.Super))
+    SimpleCall(name, Nil)(obj.toTextSpan)
+  }
+
   private def visitTopLevelConstant(obj: Obj): RubyExpression = {
     val identifier = obj(ParserKeys.Name).str
     SimpleIdentifier()(obj.toTextSpan.spanStart(identifier))
@@ -406,6 +497,16 @@ class RubyJsonToNodeCreator(
   private def visitTrue(obj: Obj): RubyExpression = StaticLiteral(getBuiltInType(Defines.TrueClass))(obj.toTextSpan)
 
   private def visitUnDefine(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+
+  private def visitUnlessExpression(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+
+  private def visitUnlessGuard(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+
+  private def visitUntilExpression(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+
+  private def visitWhenStatement(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+
+  private def visitWhileStatement(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
   private def visitYield(obj: Obj): RubyExpression = {
     val arguments = obj.visitArray(ParserKeys.Arguments)
