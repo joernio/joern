@@ -5,11 +5,16 @@ import io.joern.rubysrc2cpg.Config
 import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, executableDir}
 import io.joern.x2cpg.astgen.AstGenRunnerBase
 import io.joern.x2cpg.utils.ExternalCommand
+import org.jruby.{Ruby, RubyHash, RubyInstanceConfig, RubyRuntimeAdapter}
+import org.jruby.javasupport.JavaEmbedUtils
 import org.slf4j.LoggerFactory
 
+import java.io.{ByteArrayOutputStream, PrintStream}
 import java.io.File.separator
+import java.nio.file.{Files, Paths}
 import scala.collection.mutable
-import scala.util.Try
+import scala.jdk.CollectionConverters.*
+import scala.util.{Failure, Success, Try}
 
 class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
 
@@ -54,24 +59,33 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
     }.toList
   }
 
-  override protected def astGenCommand(implicit metaData: AstGenProgramMetaData): String = {
-    s"java -jar ..${separator}jruby.jar -S bundle exec exe${separator}ruby_ast_gen"
-  }
-
   override def runAstGenNative(in: String, out: File, exclude: String, include: String)(implicit
     metaData: AstGenProgramMetaData
   ): Try[Seq[String]] = {
     val excludeCommand = if (exclude.isEmpty) "" else s"-e \"$exclude\""
-    val baseCmd        = s"$astGenCommand --log info -o ${out.toString()} -i \"$in\" $excludeCommand"
-    val cwd            = s"$executableDir${separator}ruby_ast_gen"
-    ExternalCommand.run(
-      baseCmd,
-      cwd = cwd,
-      extraEnv = Map(
-        "GEM_HOME" -> Seq(cwd, "vendor", "bundle", "jruby", "3.1.0").mkString(separator),
-        "GEM_PATH" -> Seq(cwd, "vendor", "bundle", "jruby", "3.1.0").mkString(separator)
-      )
-    )
+    val cwd            = Seq(executableDir, "ruby_ast_gen").mkString(separator)
+    val gemPath        = Seq(cwd, "vendor", "bundle", "jruby", "3.1.0").mkString(separator)
+    val rubyArgs       = Array("--log", "info", "-o", out.toString(), "-i", in, excludeCommand)
+    val mainScript     = Seq("exe", "ruby_ast_gen").mkString(separator)
+    val outStream      = new ByteArrayOutputStream()
+    val errStream      = new ByteArrayOutputStream()
+    val config         = RubyInstanceConfig()
+    config.setCurrentDirectory(cwd)
+    config.setOutput(new PrintStream(outStream))
+    config.setError(new PrintStream(errStream))
+    config.setLoadGemfile(true)
+    config.setArgv(rubyArgs)
+    config.setEnvironment(Map("GEM_PATH" -> gemPath, "GEM_FILE" -> gemPath).asJava)
+    config.setHasShebangLine(true)
+    config.setScriptFileName(mainScript)
+
+    try {
+      org.jruby.Main(config).run(Array.empty)
+      val consoleOut = outStream.toString.split("\n").toIndexedSeq ++ errStream.toString.split("\n")
+      Success(consoleOut)
+    } catch {
+      case e: Exception => Failure(e)
+    }
   }
 
 }
