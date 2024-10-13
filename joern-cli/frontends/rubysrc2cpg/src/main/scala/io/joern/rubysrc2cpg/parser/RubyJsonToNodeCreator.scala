@@ -84,6 +84,8 @@ class RubyJsonToNodeCreator(
         case AstType.False                        => visitFalse(obj)
         case AstType.FindPattern                  => visitFindPattern(obj)
         case AstType.Float                        => visitFloat(obj)
+        case AstType.ForStatement                 => visitForStatement(obj)
+        case AstType.ForPostStatement             => visitForStatement(obj)
         case AstType.ForwardArg                   => visitForwardArg(obj)
         case AstType.ForwardArgs                  => visitForwardArgs(obj)
         case AstType.ForwardedArgs                => visitForwardedArgs(obj)
@@ -113,6 +115,7 @@ class RubyJsonToNodeCreator(
         case AstType.MatchNilPattern              => visitMatchNilPattern(obj)
         case AstType.MatchPattern                 => visitMatchPattern(obj)
         case AstType.MatchPatternP                => visitMatchPatternP(obj)
+        case AstType.MatchRest                    => visitMatchRest(obj)
         case AstType.MatchVariable                => visitMatchVariable(obj)
         case AstType.MatchWithLocalVariableAssign => visitMatchWithLocalVariableAssign(obj)
         case AstType.MethodDefinition             => visitMethodDefinition(obj)
@@ -266,6 +269,8 @@ class RubyJsonToNodeCreator(
 
   private def visitFloat(obj: Obj): RubyExpression = StaticLiteral(getBuiltInType(Defines.Float))(obj.toTextSpan)
 
+  private def visitForStatement(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+
   private def visitForwardArg(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
   private def visitForwardArgs(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
@@ -330,6 +335,8 @@ class RubyJsonToNodeCreator(
   private def visitMatchPattern(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
   private def visitMatchPatternP(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+
+  private def visitMatchRest(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
   private def visitMatchVariable(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
