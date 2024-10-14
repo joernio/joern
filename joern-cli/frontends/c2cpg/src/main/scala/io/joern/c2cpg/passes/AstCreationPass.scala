@@ -5,6 +5,8 @@ import io.joern.c2cpg.Config
 import io.joern.c2cpg.astcreation.AstCreator
 import io.joern.c2cpg.astcreation.CGlobal
 import io.joern.c2cpg.parser.{CdtParser, FileDefaults}
+import io.joern.c2cpg.parser.JSONCompilationDatabaseParser
+import io.joern.c2cpg.parser.JSONCompilationDatabaseParser.CommandObject
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.joern.x2cpg.SourceFiles
@@ -24,10 +26,13 @@ class AstCreationPass(cpg: Cpg, config: Config, report: Report = new Report())
 
   private val logger: Logger = LoggerFactory.getLogger(classOf[AstCreationPass])
 
+  private val global                                                  = new CGlobal()
   private val file2OffsetTable: ConcurrentHashMap[String, Array[Int]] = new ConcurrentHashMap()
-  private val parser: CdtParser                                       = new CdtParser(config)
 
-  private val global = new CGlobal()
+  private val compilationDatabase: List[CommandObject] =
+    config.compilationDatabase.map(JSONCompilationDatabaseParser.parse).getOrElse(List.empty)
+
+  private val parser: CdtParser = new CdtParser(config, compilationDatabase)
 
   def typesSeen(): List[String] = global.usedTypes.keys().asScala.toList
 
@@ -35,7 +40,7 @@ class AstCreationPass(cpg: Cpg, config: Config, report: Report = new Report())
     global.methodDeclarations.asScala.toMap -- global.methodDefinitions.asScala.keys
   }
 
-  override def generateParts(): Array[String] = {
+  private def sourceFilesFromDirectory(): Array[String] = {
     val sourceFileExtensions = FileDefaults.SOURCE_FILE_EXTENSIONS
       ++ FileDefaults.HEADER_FILE_EXTENSIONS
       ++ Option.when(config.withPreprocessedFiles)(FileDefaults.PREPROCESSED_EXT).toList
@@ -57,6 +62,29 @@ class AstCreationPass(cpg: Cpg, config: Config, report: Report = new Report())
       }
     } else {
       allSourceFiles
+    }
+  }
+
+  private def sourceFilesFromCompilationDatabase(compilationDatabaseFile: String): Array[String] = {
+    if (compilationDatabase.isEmpty) {
+      logger.warn(s"'$compilationDatabaseFile' contains no source files. CPG will be empty.")
+    }
+    SourceFiles
+      .filterFiles(
+        compilationDatabase.map(_.compiledFile()),
+        config.inputPath,
+        ignoredDefaultRegex = Option(DefaultIgnoredFolders),
+        ignoredFilesRegex = Option(config.ignoredFilesRegex),
+        ignoredFilesPath = Option(config.ignoredFiles)
+      )
+      .toArray
+  }
+
+  override def generateParts(): Array[String] = {
+    if (config.compilationDatabase.isEmpty) {
+      sourceFilesFromDirectory()
+    } else {
+      sourceFilesFromCompilationDatabase(config.compilationDatabase.get)
     }
   }
 

@@ -106,7 +106,7 @@ object SourceFiles {
     && !ignoredFilesRegex.exists(isIgnoredByRegex(file, inputPath, _))
     && !ignoredFilesPath.exists(isIgnoredByFileList(file, _))
 
-  private def filterFiles(
+  def filterFiles(
     files: List[String],
     inputPath: String,
     ignoredDefaultRegex: Option[Seq[Regex]] = None,
