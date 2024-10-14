@@ -227,6 +227,19 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     flows shouldBe empty
   }
 
+  "don't taint the return value when specifying a named argument" in {
+    val cpg = code("""
+        |import foo
+        |foo.bar(foo.baz(A=1))
+        |""".stripMargin)
+      // The taint spec for `baz` here says that its argument "A" only taints itself. This is to make sure
+      // its return value is not tainted even when we are using `-1` in the spec.
+      .withSemantics(DefaultSemantics().plus(List(FlowSemantic(".*baz", List(FlowMapping(-1, "A", -1, "A")), true))))
+    val one = cpg.literal("1")
+    val bar = cpg.call("bar").argument
+    bar.reachableByFlows(one).map(flowToResultPairs) shouldBe empty
+  }
+
   "chained call" in {
     val cpg: Cpg = code("""
       |a = 42

@@ -58,8 +58,10 @@ object EdgeValidator {
     flowSemantic.mappings.exists(explicitlyFlowsToReturnValue)
 
   private def explicitlyFlowsToReturnValue(flowPath: FlowPath): Boolean = flowPath match {
-    case FlowMapping(_, ParameterNode(dst, _)) => dst == -1
-    case PassThroughMapping                    => true
-    case _                                     => false
+    // Some frontends (e.g. python) denote named arguments using `-1` as the argument index. As such
+    // `-1` denotes the return value only if there's no argument name.
+    case FlowMapping(_, ParameterNode(-1, None)) => true
+    case PassThroughMapping                      => true
+    case _                                       => false
   }
 }
