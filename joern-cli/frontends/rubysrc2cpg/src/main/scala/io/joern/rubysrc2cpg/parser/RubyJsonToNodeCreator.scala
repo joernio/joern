@@ -269,7 +269,12 @@ class RubyJsonToNodeCreator(
 
   private def visitFloat(obj: Obj): RubyExpression = StaticLiteral(getBuiltInType(Defines.Float))(obj.toTextSpan)
 
-  private def visitForStatement(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitForStatement(obj: Obj): RubyExpression = {
+    val forVariable      = visit(obj(ParserKeys.Variable))
+    val iterableVariable = visit(obj(ParserKeys.Collection))
+    val doBlock          = visit(obj(ParserKeys.Body))
+    ForExpression(forVariable, iterableVariable, doBlock)(obj.toTextSpan)
+  }
 
   private def visitForwardArg(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
@@ -289,7 +294,15 @@ class RubyJsonToNodeCreator(
 
   private def visitIfGuard(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
-  private def visitIfStatement(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitIfStatement(obj: Obj): RubyExpression = {
+    val condition  = visit(obj(ParserKeys.Condition))
+    val thenClause = visit(obj(ParserKeys.ThenBranch))
+    val elseClause = obj.visitOption(ParserKeys.ElseClause)
+    // TODO: The elsifClauses are already de-sugared here. Confirm this is what the AST does (think it is) as it may be
+    //  already saving us effort
+    IfExpression(condition, thenClause, elsifClauses = List.empty, elseClause)
+    defaultResult(Option(obj.toTextSpan))
+  }
 
   private def visitInclude(obj: Obj): RubyExpression = {
     val callName = obj(ParserKeys.Name).str
@@ -349,7 +362,12 @@ class RubyJsonToNodeCreator(
     MethodDeclaration(name, parameters, body)(obj.toTextSpan)
   }
 
-  private def visitModuleDefinition(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitModuleDefinition(obj: Obj): RubyExpression = {
+    val name = visit(obj(ParserKeys.Name))
+    val body = visit(obj(ParserKeys.Body))
+    // TODO: Fill out rest
+    ModuleDeclaration(name, body, Nil, None, None)(obj.toTextSpan)
+  }
 
   private def visitMultipleAssignment(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 

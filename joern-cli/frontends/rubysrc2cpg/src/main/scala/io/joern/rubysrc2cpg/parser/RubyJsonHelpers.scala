@@ -23,6 +23,9 @@ object RubyJsonHelpers {
       )
     }
 
+    def visitOption(key: String)(implicit visit: ujson.Value => RubyExpression): Option[RubyExpression] =
+      if contains(key) then Option(visit(key)) else None
+
     def visitArray(key: String)(implicit visit: ujson.Value => RubyExpression): List[RubyExpression] = {
       o(key).arr.map(visit).toList
     }
