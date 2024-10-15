@@ -1,5 +1,6 @@
 package io.joern.rubysrc2cpg.parser
 
+import io.shiftleft.codepropertygraph.generated.Operators
 import upickle.default.*
 
 /** The JSON key values, in alphabetical order.
@@ -18,6 +19,7 @@ object ParserKeys {
   val Collection     = "collection"
   val Condition      = "condition"
   val ElseClause     = "else_clause"
+  val ElseBranch     = "else_branch"
   val ExecList       = "exec_list"
   val ExecVar        = "exec_var"
   val FilePath       = "file_path"
@@ -157,4 +159,35 @@ enum AstType(val name: String) {
 
 object AstType {
   def fromString(input: String): Option[AstType] = AstType.values.find(_.name == input)
+}
+
+object BinaryOperators {
+  private val BinaryOperatorNames: Map[String, String] =
+    Map(
+      "+"   -> Operators.addition,
+      "-"   -> Operators.subtraction,
+      "*"   -> Operators.multiplication,
+      "/"   -> Operators.division,
+      "%"   -> Operators.modulo,
+      "**"  -> Operators.exponentiation,
+      "=="  -> Operators.equals,
+      "===" -> Operators.equals,
+      "!="  -> Operators.notEquals,
+      "<"   -> Operators.lessThan,
+      "<="  -> Operators.lessEqualsThan,
+      ">"   -> Operators.greaterThan,
+      ">="  -> Operators.greaterEqualsThan,
+      "<=>" -> Operators.compare,
+      "&&"  -> Operators.logicalAnd,
+      "and" -> Operators.logicalAnd,
+      "or"  -> Operators.logicalOr,
+      "||"  -> Operators.logicalOr,
+      "&"   -> Operators.and,
+      "|"   -> Operators.or,
+      "^"   -> Operators.xor,
+      //      "<<"  -> Operators.shiftLeft,  Note: Generally Ruby abstracts this as an append operator based on the LHS
+      ">>" -> Operators.logicalShiftRight
+    )
+
+  def isBinaryOperatorName(op: String): Boolean = BinaryOperatorNames.contains(op)
 }

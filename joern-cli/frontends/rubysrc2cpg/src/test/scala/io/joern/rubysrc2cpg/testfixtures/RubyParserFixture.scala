@@ -18,7 +18,8 @@ class RubyParserFixture
       withDownloadDependencies = false,
       disableFileContent = true,
       antlrDebugging = false,
-      antlrProfiling = false
+      antlrProfiling = false,
+      useJsonAst = false
     )
     with TestCodeWriter
     with AnyWordSpecLike

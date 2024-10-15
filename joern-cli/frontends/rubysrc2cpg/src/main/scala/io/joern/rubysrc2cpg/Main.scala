@@ -15,7 +15,8 @@ final case class Config(
   downloadDependencies: Boolean = false,
   useTypeStubs: Boolean = true,
   antlrDebug: Boolean = false,
-  antlrProfiling: Boolean = false
+  antlrProfiling: Boolean = false,
+  useJsonAst: Boolean = false
 ) extends X2CpgConfig[Config]
     with DependencyDownloadConfig[Config]
     with TypeRecoveryParserConfig[Config]
@@ -49,6 +50,10 @@ final case class Config(
   override def withTypeStubs(value: Boolean): Config = {
     copy(useTypeStubs = value).withInheritedFields(this)
   }
+
+  def withUseJsonAst(value: Boolean): Config = {
+    copy(useJsonAst = value).withInheritedFields(this)
+  }
 }
 
 private object Frontend {
@@ -81,6 +86,9 @@ private object Frontend {
       opt[Unit]("enable-file-content")
         .action((_, c) => c.withDisableFileContent(false))
         .text("Enable file content"),
+      opt[Unit]("json-ast")
+        .action((_, c) => c.withUseJsonAst(true))
+        .text("Use JSON Ast builder"),
       DependencyDownloadConfig.parserOptions,
       XTypeRecoveryConfig.parserOptionsForParserConfig,
       TypeStubConfig.parserOptions

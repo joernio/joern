@@ -52,48 +52,69 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
   }
 
   private def createCpgAction(cpg: Cpg, config: Config): Unit = {
-    File.usingTemporaryDirectory("rubysrc2cpgOut") { tmpDir =>
-      val astGenResult = RubyAstGenRunner(config).execute(tmpDir)
-      /*val astCreators  = */
-      RubySrc2Cpg.processAstGenRunnerResults(astGenResult.parsedFiles, config)
-    }
-    Using.resource(
-      new parser.ResourceManagedParser(config.antlrCacheMemLimit, config.antlrDebug, config.antlrProfiling)
-    ) { parser =>
-      val astCreators = ConcurrentTaskUtil
-        .runUsingThreadPool(RubySrc2Cpg.generateParserTasks(parser, config, cpg.metaData.root.headOption))
-        .flatMap {
-          case Failure(exception)  => logger.warn(s"Could not parse file, skipping - ", exception); None
-          case Success(astCreator) => Option(astCreator)
-        }
-        .filter(x => {
-          if x.fileContent.isBlank then logger.info(s"File content empty, skipping - ${x.fileName}")
+    if (config.useJsonAst) {
+      File.usingTemporaryDirectory("rubysrc2cpgOut") { tmpDir =>
+        val astGenResult = RubyAstGenRunner(config).execute(tmpDir)
 
-          !x.fileContent.isBlank
-        })
+        val astCreators = ConcurrentTaskUtil
+          .runUsingThreadPool(
+            RubySrc2Cpg.processAstGenRunnerResults(astGenResult.parsedFiles, config, cpg.metaData.root.headOption)
+          )
+          .flatMap {
+            case Failure(exception)  => logger.warn(s"Unable to parse Ruby file, skipping -", exception); None
+            case Success(astCreator) => Option(astCreator)
+          }
+          .filter(x => {
+            if x.fileContent.isBlank then logger.info(s"File content empty, skipping - ${x.fileName}")
+            !x.fileContent.isBlank
+          })
 
-      // Pre-parse the AST creators for high level structures
-      val internalProgramSummary = ConcurrentTaskUtil
-        .runUsingThreadPool(astCreators.map(x => () => x.summarize()).iterator)
-        .flatMap {
-          case Failure(exception) => logger.warn(s"Unable to pre-parse Ruby file, skipping - ", exception); None
-          case Success(summary)   => Option(summary)
-        }
-        .foldLeft(RubyProgramSummary(RubyProgramSummary.BuiltinTypes(config.typeStubMetaData)))(_ ++= _)
+        val internalProgramSummary = RubyProgramSummary(RubyProgramSummary.BuiltinTypes(config.typeStubMetaData))
+        val dependencySummary      = RubyProgramSummary()
 
-      val dependencySummary = if (config.downloadDependencies) {
-        DependencyDownloader(cpg).download()
-      } else {
-        RubyProgramSummary()
+        val programSummary = internalProgramSummary ++= dependencySummary
+
+        AstCreationPass(cpg, astCreators.map(_.withSummary(programSummary))).createAndApply()
       }
+    } else {
+      Using.resource(
+        new parser.ResourceManagedParser(config.antlrCacheMemLimit, config.antlrDebug, config.antlrProfiling)
+      ) { parser =>
+        val astCreators = ConcurrentTaskUtil
+          .runUsingThreadPool(RubySrc2Cpg.generateParserTasks(parser, config, cpg.metaData.root.headOption))
+          .flatMap {
+            case Failure(exception)  => logger.warn(s"Could not parse file, skipping - ", exception); None
+            case Success(astCreator) => Option(astCreator)
+          }
+          .filter(x => {
+            if x.fileContent.isBlank then logger.info(s"File content empty, skipping - ${x.fileName}")
 
-      val programSummary = internalProgramSummary ++= dependencySummary
+            !x.fileContent.isBlank
+          })
 
-      AstCreationPass(cpg, astCreators.map(_.withSummary(programSummary))).createAndApply()
-      if config.downloadDependencies then {
-        DependencySummarySolverPass(cpg, dependencySummary).createAndApply()
+        // Pre-parse the AST creators for high level structures
+        val internalProgramSummary = ConcurrentTaskUtil
+          .runUsingThreadPool(astCreators.map(x => () => x.summarize()).iterator)
+          .flatMap {
+            case Failure(exception) => logger.warn(s"Unable to pre-parse Ruby file, skipping - ", exception); None
+            case Success(summary)   => Option(summary)
+          }
+          .foldLeft(RubyProgramSummary(RubyProgramSummary.BuiltinTypes(config.typeStubMetaData)))(_ ++= _)
+
+        val dependencySummary = if (config.downloadDependencies) {
+          DependencyDownloader(cpg).download()
+        } else {
+          RubyProgramSummary()
+        }
+
+        val programSummary = internalProgramSummary ++= dependencySummary
+
+        AstCreationPass(cpg, astCreators.map(_.withSummary(programSummary))).createAndApply()
+        if config.downloadDependencies then {
+          DependencySummarySolverPass(cpg, dependencySummary).createAndApply()
+        }
+        TypeNodePass.withTypesFromCpg(cpg).createAndApply()
       }
-      TypeNodePass.withTypesFromCpg(cpg).createAndApply()
     }
   }
 
@@ -129,29 +150,27 @@ object RubySrc2Cpg {
 
   /** Parses the generated AST Gen files in parallel and produces AstCreators from each.
     */
-  def processAstGenRunnerResults(astFiles: List[String], config: Config): Unit /*Seq[AstCreator]*/ = {
-    Await.result(
-      Future.sequence(
-        astFiles
-          .map(fileName =>
-            Future {
-              val parserResult     = RubyJsonParser.readFile(Paths.get(fileName))
-              val relativeFileName = SourceFiles.toRelativePath(parserResult.fullPath, config.inputPath)
-              val rubyProgram      = new RubyJsonToNodeCreator().visitProgram(parserResult.json)
-              val fileContent      = (File(config.inputPath) / fileName).contentAsString
-//              new AstCreator(
-//                fileName,
-//                ctx,
-//                projectRoot,
-//                enableFileContents = !config.disableFileContent,
-//                fileContent = fileContent,
-//                rootNode = Option(new RubyNodeCreator().visit(ctx).asInstanceOf[StatementList])
-//              )(config.schemaValidation)
-            }
-          )
-      ),
-      Duration.Inf
-    )
+  def processAstGenRunnerResults(
+    astFiles: List[String],
+    config: Config,
+    projectRoot: Option[String]
+  ): Iterator[() => AstCreator] = {
+    astFiles.map { fileName => () =>
+      val parserResult     = RubyJsonParser.readFile(Paths.get(fileName))
+      val relativeFileName = SourceFiles.toRelativePath(parserResult.fullPath, config.inputPath)
+      val rubyProgram      = new RubyJsonToNodeCreator().visitProgram(parserResult.json)
+      val fileContent      = (File(config.inputPath) / fileName).contentAsString
+      new AstCreator(
+        fileName,
+        None,
+        Some(parserResult.json),
+        config.useJsonAst,
+        projectRoot,
+        enableFileContents = !config.disableFileContent,
+        fileContent = fileContent,
+        rootNode = Option(rubyProgram)
+      )(config.schemaValidation)
+    }.iterator
   }
 
   def generateParserTasks(
@@ -174,7 +193,9 @@ object RubySrc2Cpg {
             val fileContent = (File(config.inputPath) / fileName).contentAsString
             new AstCreator(
               fileName,
-              ctx,
+              Option(ctx),
+              None,
+              false,
               projectRoot,
               enableFileContents = !config.disableFileContent,
               fileContent = fileContent,

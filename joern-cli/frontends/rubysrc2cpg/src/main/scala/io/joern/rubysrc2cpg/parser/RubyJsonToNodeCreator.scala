@@ -198,7 +198,9 @@ class RubyJsonToNodeCreator(
 
   private def visitBackRef(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
-  private def visitBegin(obj: Obj): RubyExpression = StatementList(obj.visitArray(ParserKeys.Body))(obj.toTextSpan)
+  private def visitBegin(obj: Obj): RubyExpression = {
+    StatementList(obj.visitArray(ParserKeys.Body))(obj.toTextSpan)
+  }
 
   private def visitBlock(obj: Obj): RubyExpression = {
     val parameters = obj(ParserKeys.Arguments).asInstanceOf[ujson.Obj].visitArray(ParserKeys.Children)
@@ -297,11 +299,14 @@ class RubyJsonToNodeCreator(
   private def visitIfStatement(obj: Obj): RubyExpression = {
     val condition  = visit(obj(ParserKeys.Condition))
     val thenClause = visit(obj(ParserKeys.ThenBranch))
-    val elseClause = obj.visitOption(ParserKeys.ElseClause)
-    // TODO: The elsifClauses are already de-sugared here. Confirm this is what the AST does (think it is) as it may be
-    //  already saving us effort
-    IfExpression(condition, thenClause, elsifClauses = List.empty, elseClause)
-    defaultResult(Option(obj.toTextSpan))
+
+    // If the `elseClause` is an `ifExpression`, we have `elsifs`, otherwise it is just a normal else clause
+    val elseClause = obj.visitOption(ParserKeys.ElseBranch).map {
+      case x: IfExpression => x
+      case x               => ElseClause(StatementList(List(x))(x.span))(x.span)
+    }
+
+    IfExpression(condition, thenClause, elsifClauses = List.empty, elseClause)(obj.toTextSpan)
   }
 
   private def visitInclude(obj: Obj): RubyExpression = {
@@ -327,7 +332,7 @@ class RubyJsonToNodeCreator(
 
   private def visitKwArg(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
-  private def visitKwBegin(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitKwBegin(obj: Obj): RubyExpression = StatementList(obj.visitArray(ParserKeys.Body))(obj.toTextSpan)
 
   private def visitKwNilArg(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
@@ -467,6 +472,10 @@ class RubyJsonToNodeCreator(
       case "raise"                                              => visitRaise(obj)
       case "include"                                            => visitInclude(obj)
       case requireLike if ImportCallNames.contains(requireLike) => visitRequireLike(obj)
+      case _ if BinaryOperators.isBinaryOperatorName(callName) =>
+        val lhs = visit(obj(ParserKeys.Receiver))
+        val rhs = obj.visitArray(ParserKeys.Arguments).head
+        BinaryExpression(lhs, callName, rhs)(obj.toTextSpan)
       case _ =>
         val target    = SimpleIdentifier()(obj.toTextSpan.spanStart(callName))
         val arguments = obj.visitArray(ParserKeys.Arguments)
@@ -527,11 +536,25 @@ class RubyJsonToNodeCreator(
 
   private def visitUnlessGuard(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
-  private def visitUntilExpression(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitUntilExpression(obj: Obj): RubyExpression = {
+    val condition = visit(obj(ParserKeys.Condition))
+    val body      = visit(obj(ParserKeys.Body))
+
+    DoWhileExpression(condition, body)(obj.toTextSpan)
+  }
 
   private def visitWhenStatement(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
-  private def visitWhileStatement(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitWhileStatement(obj: Obj): RubyExpression = {
+    val condition = visit(obj(ParserKeys.Condition)) match {
+      case x: StatementList => x.statements.head
+      case x                => x
+    }
+
+    val body = visit(obj(ParserKeys.Body))
+
+    WhileExpression(condition, body)(obj.toTextSpan)
+  }
 
   private def visitYield(obj: Obj): RubyExpression = {
     val arguments = obj.visitArray(ParserKeys.Arguments)

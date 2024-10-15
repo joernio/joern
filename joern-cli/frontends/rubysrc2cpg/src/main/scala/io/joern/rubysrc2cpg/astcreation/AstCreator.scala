@@ -2,7 +2,7 @@ package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.{BlockScope, NamespaceScope, RubyProgramSummary, RubyScope}
-import io.joern.rubysrc2cpg.parser.{RubyNodeCreator, RubyParser}
+import io.joern.rubysrc2cpg.parser.{RubyJsonToNodeCreator, RubyNodeCreator, RubyParser}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
 import io.joern.x2cpg.utils.NodeBuilders.{newModifierNode, newThisParameterNode}
@@ -16,7 +16,9 @@ import java.util.regex.Matcher
 
 class AstCreator(
   val fileName: String,
-  protected val programCtx: RubyParser.ProgramContext,
+  protected val programCtx: Option[RubyParser.ProgramContext] = None,
+  protected val programCtxJson: Option[ujson.Value] = None,
+  protected val useJsonCtx: Boolean = false,
   protected val projectRoot: Option[String] = None,
   protected val programSummary: RubyProgramSummary = RubyProgramSummary(),
   val enableFileContents: Boolean = false,
@@ -62,10 +64,18 @@ class AstCreator(
     relativeFileName.replaceAll(Matcher.quoteReplacement(java.io.File.separator), "/")
 
   override def createAst(): DiffGraphBuilder = {
-    val astRootNode = rootNode.match {
-      case Some(node) => node.asInstanceOf[StatementList]
-      case None       => new RubyNodeCreator(tmpGen, procParamGen).visit(programCtx).asInstanceOf[StatementList]
-    }
+    val astRootNode =
+      if useJsonCtx then
+        rootNode match {
+          case Some(node) => node.asInstanceOf[StatementList]
+          case None =>
+            new RubyJsonToNodeCreator(tmpGen, procParamGen).visitProgram(programCtxJson.get).asInstanceOf[StatementList]
+        }
+      else
+        rootNode.match {
+          case Some(node) => node.asInstanceOf[StatementList]
+          case None       => new RubyNodeCreator(tmpGen, procParamGen).visit(programCtx.get).asInstanceOf[StatementList]
+        }
 
     val ast = astForRubyFile(astRootNode)
     Ast.storeInDiffGraph(ast, diffGraph)

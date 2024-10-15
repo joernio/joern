@@ -7,7 +7,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
-class ControlStructureTests extends RubyCode2CpgFixture {
+class ControlStructureTests extends RubyCode2CpgFixture(useJsonAst = true) {
 
   "`while-end` statement is represented by a `WHILE` CONTROL_STRUCTURE node" in {
     val cpg = code("""
@@ -151,6 +151,8 @@ class ControlStructureTests extends RubyCode2CpgFixture {
         | '> 0'
         |end
         |""".stripMargin)
+
+//    cpg.method.isModule.dotAst.l.foreach(println)
 
     val List(ifNode)  = cpg.ifBlock.where(_.lineNumber(2)).l
     val List(ifCond)  = ifNode.condition.isCall.l
@@ -714,5 +716,47 @@ class ControlStructureTests extends RubyCode2CpgFixture {
         }
       case xs => fail(s"Expected one node for `forEach` loop, got [${xs.code.mkString(",")}]")
     }
+  }
+
+  "yalahabibi" in {
+    val cpg = code("""
+        |if __LINE__ > 1
+        | "> 1"
+        |elsif __LINE__ > 3
+        | "> 3"
+        |elsif __LINE__ > 5
+        | "> 5"
+        |else
+        | "not"
+        |end
+        |""".stripMargin)
+
+    cpg.method.isModule.dotAst.l.foreach(println)
+  }
+
+  "yala2024" in {
+    val cpg = code("""
+        |if __LINE__ > 1
+        |  "> 1"
+        |else
+        |  "not"
+        |end
+        |""".stripMargin)
+
+    cpg.method.isModule.dotAst.l.foreach(println)
+  }
+
+  "yala2025" in {
+    val cpg = code("""
+        |if __LINE__ > 1
+        |  " > 1"
+        |elsif __LINE__ < 1
+        |  "< 1"
+        |elsif __LINE__ == 0
+        |  "== 0"
+        |end
+        |""".stripMargin)
+
+    cpg.method.isModule.dotAst.l.foreach(println)
   }
 }
