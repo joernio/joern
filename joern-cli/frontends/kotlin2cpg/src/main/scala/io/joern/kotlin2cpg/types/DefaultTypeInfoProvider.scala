@@ -134,14 +134,6 @@ class DefaultTypeInfoProvider(val bindingContext: BindingContext, typeRenderer: 
       .exists(_.contains(BindingContext.SHORT_REFERENCE_TO_COMPANION_OBJECT.getKey))
   }
 
-  def typeFullName(expr: KtDestructuringDeclarationEntry, defaultValue: String): String = {
-    val mapForEntity = bindingsForEntity(bindingContext, expr)
-    Option(mapForEntity.get(BindingContext.VARIABLE.getKey))
-      .map { desc => typeRenderer.render(desc.getType) }
-      .filter(isValidRender)
-      .getOrElse(defaultValue)
-  }
-
   def typeFullName(expr: KtTypeReference, defaultValue: String): String = {
     val mapForEntity = bindingsForEntity(bindingContext, expr)
     Option(mapForEntity.get(BindingContext.TYPE.getKey))

@@ -73,6 +73,10 @@ class BindingContextUtils(bindingContext: BindingContext) {
     Option(bindingContext.get(BindingContext.VALUE_PARAMETER, param))
   }
 
+  def getVariableDesc(entry: KtDestructuringDeclarationEntry): Option[VariableDescriptor] = {
+    Option(bindingContext.get(BindingContext.VARIABLE, entry))
+  }
+
   def getExprType(expr: KtExpression): Option[KotlinType] = {
     Option(bindingContext.get(BindingContext.EXPRESSION_TYPE_INFO, expr))
       .flatMap(typeInfo => Option(typeInfo.getType))

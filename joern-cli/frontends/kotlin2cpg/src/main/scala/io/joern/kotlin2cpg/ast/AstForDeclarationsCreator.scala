@@ -276,13 +276,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val rhsCall             = typedInit.get
     val callRhsTypeFullName = registerType(exprTypeFullName(rhsCall).getOrElse(TypeConstants.any))
 
-    val destructuringEntries = nonUnderscoreDestructuringEntries(expr)
-    val localsForEntries = destructuringEntries.map { entry =>
-      val typeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
-      val node         = localNode(entry, entry.getName, entry.getName, typeFullName)
-      scope.addToScope(node.name, node)
-      Ast(node)
-    }
+    val localsForEntries = localsForDestructuringEntries(expr)
 
     val isCtor = expr.getInitializer match {
       case _: KtCallExpression => typeInfoProvider.isConstructorCall(rhsCall).getOrElse(false)
@@ -355,7 +349,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       case _ => Seq()
     }
 
-    val assignmentsForEntries = destructuringEntries.zipWithIndex.map { case (entry, idx) =>
+    val assignmentsForEntries = nonUnderscoreDestructuringEntries(expr).zipWithIndex.map { case (entry, idx) =>
       assignmentAstForDestructuringEntry(entry, localForTmpNode.name, localForTmpNode.typeFullName, idx + 1)
     }
     localsForEntries ++ Seq(localForTmpAst) ++
@@ -388,13 +382,26 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       nonUnderscoreDestructuringEntries(expr).zipWithIndex.map { case (entry, idx) =>
         assignmentAstForDestructuringEntry(entry, destructuringRHS.getText, initTypeFullName, idx + 1)
       }
-    val localsForEntries = nonUnderscoreDestructuringEntries(expr).map { entry =>
-      val typeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
-      val node         = localNode(entry, entry.getName, entry.getName, typeFullName)
-      scope.addToScope(node.name, node)
-      Ast(node)
-    }
+    val localsForEntries = localsForDestructuringEntries(expr)
     localsForEntries ++ assignmentsForEntries
+  }
+
+  def localsForDestructuringEntries(destructuring: KtDestructuringDeclaration): Seq[Ast] = {
+    destructuring.getEntries.asScala
+      .filterNot(_.getText == Constants.unusedDestructuringEntryText)
+      .map { entry =>
+        val entryTypeFullName = registerType(
+          bindingUtils
+            .getVariableDesc(entry)
+            .flatMap(desc => nameRenderer.typeFullName(desc.getType))
+            .getOrElse(TypeConstants.any)
+        )
+        val entryName = entry.getText
+        val node      = localNode(entry, entryName, entryName, entryTypeFullName)
+        scope.addToScope(entryName, node)
+        Ast(node)
+      }
+      .toSeq
   }
 
   def astsForDestructuringDeclaration(

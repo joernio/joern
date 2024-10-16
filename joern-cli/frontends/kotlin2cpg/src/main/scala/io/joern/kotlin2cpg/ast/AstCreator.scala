@@ -419,7 +419,12 @@ class AstCreator(
     componentNTypeFullName: String,
     componentIdx: Integer
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val entryTypeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
+    val entryTypeFullName = registerType(
+      bindingUtils
+        .getVariableDesc(entry)
+        .flatMap(desc => nameRenderer.typeFullName(desc.getType))
+        .getOrElse(TypeConstants.any)
+    )
     val assignmentLHSNode = identifierNode(entry, entry.getText, entry.getText, entryTypeFullName)
     val assignmentLHSAst  = astWithRefEdgeMaybe(assignmentLHSNode.name, assignmentLHSNode)
 

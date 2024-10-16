@@ -77,8 +77,6 @@ trait TypeInfoProvider(val typeRenderer: TypeRenderer = new TypeRenderer()) {
 
   def typeFullName(expr: KtTypeReference, defaultValue: String): String
 
-  def typeFullName(expr: KtDestructuringDeclarationEntry, defaultValue: String): String
-
   def hasStaticDesc(expr: KtQualifiedExpression): Boolean
 
   def implicitParameterName(expr: KtLambdaExpression): Option[String]

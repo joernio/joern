@@ -105,18 +105,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     val controlStructureConditionAst =
       callAst(controlStructureCondition, List(), Option(Ast(conditionIdentifier)))
 
-    val destructuringDeclEntries = expr.getDestructuringDeclaration.getEntries
-    val localsForDestructuringVars =
-      destructuringDeclEntries.asScala
-        .filterNot(_.getText == Constants.unusedDestructuringEntryText)
-        .map { entry =>
-          val entryTypeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
-          val entryName         = entry.getText
-          val node              = localNode(entry, entryName, entryName, entryTypeFullName)
-          scope.addToScope(entryName, node)
-          Ast(node)
-        }
-        .toList
+    val destructuringDeclEntries   = expr.getDestructuringDeclaration.getEntries
+    val localsForDestructuringVars = localsForDestructuringEntries(expr.getDestructuringDeclaration)
 
     val tmpName     = s"${Constants.tmpLocalPrefix}${tmpKeyPool.next}"
     val localForTmp = localNode(expr, tmpName, tmpName, TypeConstants.any)
@@ -154,7 +144,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     val controlStructureBody = blockNode(expr.getBody, "", "")
     val controlStructureBodyAst = blockAst(
       controlStructureBody,
-      localsForDestructuringVars ++
+      localsForDestructuringVars.toList ++
         List(localForTmpAst, tmpParameterNextAssignmentAst) ++
         assignmentsForEntries ++
         stmtAsts
