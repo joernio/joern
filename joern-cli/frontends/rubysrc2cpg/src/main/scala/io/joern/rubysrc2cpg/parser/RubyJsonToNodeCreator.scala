@@ -223,11 +223,18 @@ class RubyJsonToNodeCreator(
   private def visitCaseMatchStatement(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
   private def visitClassDefinition(obj: Obj): RubyExpression = {
-    val name      = visit(obj(ParserKeys.Name))
-    val baseClass = if obj.contains(ParserKeys.SuperClass) then Option(visit(obj(ParserKeys.SuperClass))) else None
-    val body      = visit(obj(ParserKeys.Body))
-    // TODO: Handle rest of the fields
-    ClassDeclaration(name, baseClass, body, fields = Nil, bodyMemberCall = None, namespaceParts = None)(obj.toTextSpan)
+    val name           = visit(obj(ParserKeys.Name))
+    val baseClass      = obj.visitOption(ParserKeys.SuperClass)
+    val (body, fields) = createClassBodyAndFields(obj)
+    val bodyMemberCall = createBodyMemberCall(name.text, obj.toTextSpan)
+    ClassDeclaration(
+      name = name,
+      baseClass = baseClass,
+      body = body,
+      fields = fields,
+      bodyMemberCall = Option(bodyMemberCall),
+      namespaceParts = None
+    )(obj.toTextSpan)
   }
 
   private def visitClassVariable(obj: Obj): RubyExpression = ClassFieldIdentifier()(obj.toTextSpan)
@@ -363,15 +370,21 @@ class RubyJsonToNodeCreator(
   private def visitMethodDefinition(obj: Obj): RubyExpression = {
     val name       = obj(ParserKeys.Name).str
     val parameters = obj(ParserKeys.Arguments).asInstanceOf[ujson.Obj].visitArray(ParserKeys.Children)
-    val body = if (obj.contains(ParserKeys.Body)) visit(obj(ParserKeys.Body)) else StatementList(Nil)(obj.toTextSpan)
+    val body       = obj.visitOption(ParserKeys.Body).getOrElse(StatementList(Nil)(obj.toTextSpan.spanStart("<empty>")))
     MethodDeclaration(name, parameters, body)(obj.toTextSpan)
   }
 
   private def visitModuleDefinition(obj: Obj): RubyExpression = {
-    val name = visit(obj(ParserKeys.Name))
-    val body = visit(obj(ParserKeys.Body))
-    // TODO: Fill out rest
-    ModuleDeclaration(name, body, Nil, None, None)(obj.toTextSpan)
+    val name           = visit(obj(ParserKeys.Name))
+    val (body, fields) = createClassBodyAndFields(obj)
+    val bodyMemberCall = createBodyMemberCall(name.text, obj.toTextSpan)
+    ModuleDeclaration(
+      name = name,
+      body = body,
+      fields = fields,
+      bodyMemberCall = Option(bodyMemberCall),
+      namespaceParts = None
+    )(obj.toTextSpan)
   }
 
   private def visitMultipleAssignment(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
