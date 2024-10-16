@@ -232,7 +232,7 @@ class ObjectExpressionTests extends KotlinCode2CpgFixture(withOssDataflow = fals
         | """.stripMargin)
 
     "contain a correctly lowered representation" in {
-      cpg.typeDecl.fullNameExact("mypkg.AN_OBJ$object$1").l should not be List()
+      cpg.typeDecl.fullNameExact("mypkg.AN_OBJ.object$0").l should not be List()
     }
   }
 }

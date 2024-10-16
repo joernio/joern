@@ -88,18 +88,6 @@ class DefaultTypeInfoProvider(val bindingContext: BindingContext, typeRenderer: 
       .getOrElse(defaultValue)
   }
 
-  def containingTypeDeclFullName(ktFn: KtNamedFunction, defaultValue: String): String = {
-    val mapForEntity = bindingsForEntity(bindingContext, ktFn)
-    Option(mapForEntity.get(BindingContext.FUNCTION.getKey))
-      .map { fnDesc =>
-        if (DescriptorUtils.isExtension(fnDesc))
-          typeRenderer.render(fnDesc.getExtensionReceiverParameter.getType)
-        else
-          typeRenderer.renderFqNameForDesc(fnDesc.getContainingDeclaration)
-      }
-      .getOrElse(defaultValue)
-  }
-
   def isStaticMethodCall(expr: KtQualifiedExpression): Boolean = {
     resolvedCallDescriptor(expr)
       .map(_.getSource)

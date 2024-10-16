@@ -33,8 +33,6 @@ trait TypeInfoProvider(val typeRenderer: TypeRenderer = new TypeRenderer()) {
 
   def usedAsExpression(expr: KtExpression): Option[Boolean]
 
-  def containingTypeDeclFullName(ktFn: KtNamedFunction, defaultValue: String): String
-
   def isStaticMethodCall(expr: KtQualifiedExpression): Boolean
 
   def containingDeclFullName(expr: KtCallExpression): Option[String]

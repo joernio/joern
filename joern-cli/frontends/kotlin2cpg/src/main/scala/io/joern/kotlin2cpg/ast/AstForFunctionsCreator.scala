@@ -75,16 +75,26 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     scope.pushNewScope(_methodNode)
     methodAstParentStack.push(_methodNode)
 
+    val isExtensionMethod = funcDesc.get.getExtensionReceiverParameter != null
+
     val needsThisParameter = funcDesc.get.getDispatchReceiverParameter != null ||
-      DescriptorUtils.isExtension(funcDesc.get)
+      isExtensionMethod
 
     val thisParameterAsts = if (needsThisParameter) {
-      val typeDeclFullName = registerType(typeInfoProvider.containingTypeDeclFullName(ktFn, TypeConstants.any))
+      val typeDeclFullName =
+        if (funcDesc.get.getDispatchReceiverParameter != null) {
+          nameRenderer.typeFullName(funcDesc.get.getDispatchReceiverParameter.getType).getOrElse(TypeConstants.any)
+        } else {
+          nameRenderer.typeFullName(funcDesc.get.getExtensionReceiverParameter.getType).getOrElse(TypeConstants.any)
+        }
+
+      registerType(typeDeclFullName)
+
       val thisParam = NodeBuilders.newThisParameterNode(
         typeFullName = typeDeclFullName,
         dynamicTypeHintFullName = Seq(typeDeclFullName)
       )
-      if (DescriptorUtils.isExtension(funcDesc.get)) {
+      if (isExtensionMethod) {
         thisParam.order(1)
         thisParam.index(1)
       }
@@ -95,7 +105,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     }
 
     val valueParamStartIndex =
-      if (DescriptorUtils.isExtension(funcDesc.get)) {
+      if (isExtensionMethod) {
         2
       } else {
         1
