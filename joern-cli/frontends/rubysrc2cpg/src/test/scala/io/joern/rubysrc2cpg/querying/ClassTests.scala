@@ -10,7 +10,7 @@ import io.joern.rubysrc2cpg.passes.Defines.{Initialize, Main, TypeDeclBody}
 import io.joern.rubysrc2cpg.passes.GlobalTypes
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 
-class ClassTests extends RubyCode2CpgFixture {
+class ClassTests extends RubyCode2CpgFixture(useJsonAst = false) {
 
   "`class C ; end` is represented by an empty TYPE_DECL node" in {
     val cpg = code("""

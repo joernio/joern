@@ -69,12 +69,27 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
             !x.fileContent.isBlank
           })
 
-        val internalProgramSummary = RubyProgramSummary(RubyProgramSummary.BuiltinTypes(config.typeStubMetaData))
-        val dependencySummary      = RubyProgramSummary()
+        val internalProgramSummary = ConcurrentTaskUtil
+          .runUsingThreadPool(astCreators.map(x => () => x.summarize()).iterator)
+          .flatMap {
+            case Failure(exception) => logger.warn(s"Unable to pre-parse Ruby file, skipping - ", exception); None
+            case Success(summary)   => Option(summary)
+          }
+          .foldLeft(RubyProgramSummary(RubyProgramSummary.BuiltinTypes(config.typeStubMetaData)))(_ ++= _)
+
+        val dependencySummary = if (config.downloadDependencies) {
+          DependencyDownloader(cpg).download()
+        } else {
+          RubyProgramSummary()
+        }
 
         val programSummary = internalProgramSummary ++= dependencySummary
 
         AstCreationPass(cpg, astCreators.map(_.withSummary(programSummary))).createAndApply()
+        if config.downloadDependencies then {
+          DependencySummarySolverPass(cpg, dependencySummary).createAndApply()
+        }
+        TypeNodePass.withTypesFromCpg(cpg).createAndApply()
       }
     } else {
       Using.resource(
@@ -161,7 +176,7 @@ object RubySrc2Cpg {
       val rubyProgram      = new RubyJsonToNodeCreator().visitProgram(parserResult.json)
       val fileContent      = (File(config.inputPath) / fileName).contentAsString
       new AstCreator(
-        fileName,
+        relativeFileName,
         None,
         Some(parserResult.json),
         config.useJsonAst,
