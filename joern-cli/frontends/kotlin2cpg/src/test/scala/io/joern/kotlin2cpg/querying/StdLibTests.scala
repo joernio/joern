@@ -143,7 +143,7 @@ class StdLibTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
       "should contain CALL nodes for `split` with the correct MFNs set" in {
         inside(cpg.call.methodFullName(".*split.*").l) { case List(call1, call2) =>
-          call1.methodFullName shouldBe "kotlin.text.split:java.util.List(java.lang.CharSequence,kotlin.Array,boolean,int)"
+          call1.methodFullName shouldBe "kotlin.text.split:java.util.List(java.lang.CharSequence,java.lang.String[],boolean,int)"
           call2.methodFullName shouldBe call1.methodFullName
         }
       }

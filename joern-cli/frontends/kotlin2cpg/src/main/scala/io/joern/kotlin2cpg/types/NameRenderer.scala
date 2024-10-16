@@ -13,18 +13,7 @@ import org.jetbrains.kotlin.descriptors.{
   PackageFragmentDescriptor,
   TypeParameterDescriptor
 }
-import org.jetbrains.kotlin.name.{FqName, FqNameUnsafe}
-import org.jetbrains.kotlin.psi.{
-  KtClassOrObject,
-  KtConstructor,
-  KtDestructuringDeclarationEntry,
-  KtExpression,
-  KtFunctionLiteral,
-  KtNamedFunction
-}
-import org.jetbrains.kotlin.resolve.BindingContext
-import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
-import org.jetbrains.kotlin.resolve.jvm.JvmPrimitiveType
+import org.jetbrains.kotlin.name.{FqNameUnsafe}
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.error.ErrorClassDescriptor
 
@@ -120,10 +109,16 @@ class NameRenderer() {
   }
 
   def typeFullName(typ: KotlinType): Option[String] = {
-    val kotlinFullName =
+    val javaFullName =
       typ.getConstructor.getDeclarationDescriptor match {
         case classDesc: ClassDescriptor =>
-          descFullName(classDesc)
+          val kotlinFullName = descFullName(classDesc)
+          if (kotlinFullName.contains("kotlin.Array")) {
+            val elementTypeFullName = typeFullName(typ.getArguments.get(0).getType)
+            elementTypeFullName.map(_ + "[]")
+          } else {
+            kotlinFullName.map(typeFullNameKotlinToJava)
+          }
         case typeParamDesc: TypeParameterDescriptor =>
           val upperBoundTypeFns = typeParamDesc.getUpperBounds.asScala.map(typeFullName)
           if (upperBoundTypeFns.exists(_.isEmpty)) {
@@ -133,26 +128,28 @@ class NameRenderer() {
           }
       }
 
-    kotlinFullName.map { kotlinFullName =>
-      val javaFullName = builtinTypeTranslationTable.get(kotlinFullName)
-      if (javaFullName.isDefined) {
-        javaFullName.get
-      } else {
-        // Nested class fullnames contain '$' in our representation which need to be mapped to '.'
-        // in order to make use of JavaToKotlinClassMap.
-        val kotlinFullNameDotOnly = kotlinFullName.replace('$', '.')
-        val javaFullName          = JavaToKotlinClassMap.INSTANCE.mapKotlinToJava(FqNameUnsafe(kotlinFullNameDotOnly))
+    javaFullName
+  }
 
-        val result =
-          if (javaFullName != null) {
-            // In front of nested class sub names we find '.' which needs to be mapped to '$' in our representation.
-            // After that we can map the normal name separator '/' to '.'.
-            javaFullName.toString.replace('.', '$').replace('/', '.')
-          } else {
-            kotlinFullName
-          }
-        result
-      }
+  private def typeFullNameKotlinToJava(kotlinFullName: String): String = {
+    val javaFullName = builtinTypeTranslationTable.get(kotlinFullName)
+    if (javaFullName.isDefined) {
+      javaFullName.get
+    } else {
+      // Nested class fullnames contain '$' in our representation which need to be mapped to '.'
+      // in order to make use of JavaToKotlinClassMap.
+      val kotlinFullNameDotOnly = kotlinFullName.replace('$', '.')
+      val javaFullName          = JavaToKotlinClassMap.INSTANCE.mapKotlinToJava(FqNameUnsafe(kotlinFullNameDotOnly))
+
+      val result =
+        if (javaFullName != null) {
+          // In front of nested class sub names we find '.' which needs to be mapped to '$' in our representation.
+          // After that we can map the normal name separator '/' to '.'.
+          javaFullName.toString.replace('.', '$').replace('/', '.')
+        } else {
+          kotlinFullName
+        }
+      result
     }
   }
 
