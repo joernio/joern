@@ -48,7 +48,6 @@ class ClassLoaderTypeTests extends JavaSrcCode2CpgFixture {
     }
 
     "be resolved by the system classloader (java 17)" in {
-      println(System.getProperty("java.version"))
       val cpg = code(testCode)
 
       cpg.call.name("getIconHeight").methodFullName.head.startsWith("<unresolved") shouldBe false
