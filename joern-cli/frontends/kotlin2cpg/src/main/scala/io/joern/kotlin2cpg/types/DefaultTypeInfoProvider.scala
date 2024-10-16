@@ -88,24 +88,6 @@ class DefaultTypeInfoProvider(val bindingContext: BindingContext, typeRenderer: 
       .getOrElse(defaultValue)
   }
 
-  def visibility(fn: KtNamedFunction): Option[DescriptorVisibility] = {
-    val mapForEntity = bindingsForEntity(bindingContext, fn)
-    Option(mapForEntity.get(BindingContext.FUNCTION.getKey))
-      .map(_.getVisibility)
-  }
-
-  def modality(fn: KtNamedFunction): Option[Modality] = {
-    val mapForEntity = bindingsForEntity(bindingContext, fn)
-    Option(mapForEntity.get(BindingContext.FUNCTION.getKey))
-      .map(_.getModality)
-  }
-
-  def modality(ktClass: KtClassOrObject): Option[Modality] = {
-    val mapForEntity = bindingsForEntity(bindingContext, ktClass)
-    Option(mapForEntity.get(BindingContext.CLASS.getKey))
-      .map(_.getModality)
-  }
-
   def containingTypeDeclFullName(ktFn: KtNamedFunction, defaultValue: String): String = {
     val mapForEntity = bindingsForEntity(bindingContext, ktFn)
     Option(mapForEntity.get(BindingContext.FUNCTION.getKey))

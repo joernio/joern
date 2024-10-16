@@ -31,10 +31,6 @@ import scala.util.Random
 trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
 
-  private def isAbstract(ktClass: KtClassOrObject)(implicit typeInfoProvider: TypeInfoProvider): Boolean = {
-    typeInfoProvider.modality(ktClass).contains(Modality.ABSTRACT)
-  }
-
   def astsForClassOrObject(
     ktClass: KtClassOrObject,
     ctx: Option[AnonymousObjectContext] = None,
@@ -45,8 +41,10 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       case None    => ktClass.getName
     }
 
+    val classDesc = bindingUtils.getClassDesc(ktClass)
+
     val classFullName =
-      bindingUtils.getClassDesc(ktClass).flatMap(nameRenderer.descFullName).getOrElse {
+      classDesc.flatMap(nameRenderer.descFullName).getOrElse {
         val fqName = ktClass.getContainingKtFile.getPackageFqName.toString
         s"$fqName.$className"
       }
@@ -199,7 +197,11 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val annotationAsts = ktClass.getAnnotationEntries.asScala.map(astForAnnotationEntry).toSeq
 
-    val modifiers = if (isAbstract(ktClass)) List(Ast(NodeBuilders.newModifierNode(ModifierTypes.ABSTRACT))) else Nil
+    val modifiers = if (classDesc.get.getModality == Modality.ABSTRACT) {
+      List(Ast(NodeBuilders.newModifierNode(ModifierTypes.ABSTRACT)))
+    } else {
+      Nil
+    }
 
     val children = methodAsts ++ List(constructorAst) ++ membersFromPrimaryCtorAsts ++ secondaryConstructorAsts ++
       _componentNMethodAsts.toList ++ memberAsts ++ annotationAsts ++ modifiers

@@ -37,12 +37,6 @@ trait TypeInfoProvider(val typeRenderer: TypeRenderer = new TypeRenderer()) {
 
   def isStaticMethodCall(expr: KtQualifiedExpression): Boolean
 
-  def visibility(fn: KtNamedFunction): Option[DescriptorVisibility]
-
-  def modality(fn: KtNamedFunction): Option[Modality]
-
-  def modality(ktClass: KtClassOrObject): Option[Modality]
-
   def containingDeclFullName(expr: KtCallExpression): Option[String]
 
   def containingDeclType(expr: KtQualifiedExpression, defaultValue: String): String

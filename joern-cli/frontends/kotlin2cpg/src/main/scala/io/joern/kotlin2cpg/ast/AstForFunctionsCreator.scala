@@ -27,10 +27,6 @@ import scala.jdk.CollectionConverters.*
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
 
-  private def isAbstract(ktFn: KtNamedFunction)(implicit typeInfoProvider: TypeInfoProvider): Boolean = {
-    typeInfoProvider.modality(ktFn).contains(Modality.ABSTRACT)
-  }
-
   private def createFunctionTypeAndTypeDeclAst(
     node: KtNamedFunction,
     methodNode: NewMethod,
@@ -139,16 +135,15 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     val typeFullName = registerType(nameRenderer.typeFullName(funcDesc.get.getReturnType).getOrElse(explicitTypeName))
     val _methodReturnNode = newMethodReturnNode(typeFullName, None, line(ktFn), column(ktFn))
 
-    val visibility = typeInfoProvider.visibility(ktFn)
     val visibilityModifierType =
-      modifierTypeForVisibility(visibility.getOrElse(DescriptorVisibilities.UNKNOWN))
+      modifierTypeForVisibility(funcDesc.get.getVisibility)
     val visibilityModifier = NodeBuilders.newModifierNode(visibilityModifierType)
 
     val modifierNodes =
       if (withVirtualModifier) Seq(NodeBuilders.newModifierNode(ModifierTypes.VIRTUAL))
       else Seq()
 
-    val modifiers = if (isAbstract(ktFn)) {
+    val modifiers = if (funcDesc.get.getModality == Modality.ABSTRACT) {
       List(visibilityModifier) ++ modifierNodes :+ NodeBuilders.newModifierNode(ModifierTypes.ABSTRACT)
     } else {
       List(visibilityModifier) ++ modifierNodes
