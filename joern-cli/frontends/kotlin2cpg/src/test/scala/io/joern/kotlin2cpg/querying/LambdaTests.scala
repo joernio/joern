@@ -127,7 +127,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     "should contain a METHOD node for the lambda with a corresponding METHOD_RETURN which has the correct props set" in {
       val List(mr) = cpg.method.fullName(".*lambda.*").methodReturn.l
       mr.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
-      mr.typeFullName shouldBe "java.lang.Object"
+      mr.typeFullName shouldBe "void"
       mr.lineNumber shouldBe Some(6)
       mr.columnNumber shouldBe Some(14)
     }
@@ -271,7 +271,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     "should contain a METHOD node for the lambda with a corresponding METHOD_RETURN which has the correct props set" in {
       val List(mr) = cpg.method.fullName(".*lambda.*").methodReturn.l
       mr.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
-      mr.typeFullName shouldBe "java.lang.Object"
+      mr.typeFullName shouldBe "boolean"
     }
 
     "should contain a METHOD node for the lambda with a corresponding MODIFIER which has the correct props set" in {
@@ -350,7 +350,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     "should contain a METHOD node for the lambda with a corresponding METHOD_RETURN which has the correct props set" in {
       val List(mr) = cpg.method.fullName(".*lambda.*").methodReturn.l
       mr.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
-      mr.typeFullName shouldBe "java.lang.Object"
+      mr.typeFullName shouldBe "java.lang.String"
       mr.lineNumber shouldBe Some(6)
       mr.columnNumber shouldBe Some(28)
     }

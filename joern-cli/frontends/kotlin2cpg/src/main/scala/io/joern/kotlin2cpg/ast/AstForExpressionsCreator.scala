@@ -536,7 +536,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
               expr,
               Constants.this_,
               Constants.this_,
-              typeInfoProvider.typeFullName(resolvedCall.getDispatchReceiver.getType)
+              nameRenderer.typeFullName(resolvedCall.getDispatchReceiver.getType).getOrElse(TypeConstants.any)
             )
             val args = argAsts.prepended(Ast(instanceArgument))
             setArgumentIndices(args, 0)
@@ -555,7 +555,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
           expr,
           Constants.this_,
           Constants.this_,
-          typeInfoProvider.typeFullName(resolvedCall.getDispatchReceiver.getType)
+          nameRenderer.typeFullName(resolvedCall.getDispatchReceiver.getType).getOrElse(TypeConstants.any)
         )
 
         callAst(

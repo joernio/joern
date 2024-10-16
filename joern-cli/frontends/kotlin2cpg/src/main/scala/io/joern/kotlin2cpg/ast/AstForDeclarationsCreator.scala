@@ -148,8 +148,10 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val membersFromPrimaryCtorAsts = ktClass.getPrimaryConstructorParameters.asScala.toList.collect {
       case param if param.hasValOrVar =>
-        val typeFullName = registerType(typeInfoProvider.parameterType(param, TypeConstants.any))
-        val memberNode_  = memberNode(param, param.getName, param.getName, typeFullName)
+        val typeFullName = registerType(
+          nameRenderer.typeFullName(bindingUtils.getVariableDesc(param).get.getType).getOrElse(TypeConstants.any)
+        )
+        val memberNode_ = memberNode(param, param.getName, param.getName, typeFullName)
         scope.addToScope(param.getName, memberNode_)
         Ast(memberNode_)
     }
@@ -232,7 +234,12 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   private def memberSetCallAst(param: KtParameter, classFullName: String)(implicit
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
-    val typeFullName       = registerType(typeInfoProvider.typeFullName(param, TypeConstants.any))
+    val typeFullName = registerType(
+      bindingUtils
+        .getVariableDesc(param)
+        .flatMap(desc => nameRenderer.typeFullName(desc.getType))
+        .getOrElse(TypeConstants.any)
+    )
     val paramName          = param.getName
     val paramIdentifier    = identifierNode(param, paramName, paramName, typeFullName)
     val paramIdentifierAst = astWithRefEdgeMaybe(paramName, paramIdentifier)
@@ -406,7 +413,12 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     typeInfoProvider: TypeInfoProvider
   ): Seq[Ast] = {
     parameters.zipWithIndex.map { case (valueParam, idx) =>
-      val typeFullName = registerType(typeInfoProvider.typeFullName(valueParam, TypeConstants.any))
+      val typeFullName = registerType(
+        bindingUtils
+          .getVariableDesc(valueParam)
+          .flatMap(desc => nameRenderer.typeFullName(desc.getType))
+          .getOrElse(TypeConstants.any)
+      )
 
       val thisParam =
         NodeBuilders.newThisParameterNode(typeFullName = typeDecl.fullName, dynamicTypeHintFullName = Seq())

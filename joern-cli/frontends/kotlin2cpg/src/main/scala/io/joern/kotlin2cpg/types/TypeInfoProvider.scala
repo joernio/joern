@@ -43,15 +43,11 @@ trait TypeInfoProvider(val typeRenderer: TypeRenderer = new TypeRenderer()) {
 
   def modality(ktClass: KtClassOrObject): Option[Modality]
 
-  def returnType(elem: KtNamedFunction, defaultValue: String): String
-
   def containingDeclFullName(expr: KtCallExpression): Option[String]
 
   def containingDeclType(expr: KtQualifiedExpression, defaultValue: String): String
 
   def inheritanceTypes(expr: KtClassOrObject, or: Seq[String]): Seq[String]
-
-  def parameterType(expr: KtParameter, defaultValue: String): String
 
   def destructuringEntryType(expr: KtDestructuringDeclarationEntry, defaultValue: String): String
 
@@ -75,17 +71,11 @@ trait TypeInfoProvider(val typeRenderer: TypeRenderer = new TypeRenderer()) {
 
   def anySignature(args: Seq[Any]): String
 
-  def returnTypeFullName(expr: KtLambdaExpression): String
-
   def hasApplyOrAlsoScopeFunctionParent(expr: KtLambdaExpression): Boolean
 
   def isConstructorCall(expr: KtExpression): Option[Boolean]
 
   def typeFullName(expr: KtTypeReference, defaultValue: String): String
-
-  def typeFullName(expr: KtParameter, defaultValue: String): String
-
-  def typeFullName(typ: KotlinType): String
 
   def typeFullName(expr: KtDestructuringDeclarationEntry, defaultValue: String): String
 

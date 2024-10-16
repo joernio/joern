@@ -1,13 +1,14 @@
 package io.joern.kotlin2cpg.ast
 
-import org.jetbrains.kotlin.descriptors.{ClassDescriptor, ConstructorDescriptor, FunctionDescriptor}
+import org.jetbrains.kotlin.descriptors.{ClassDescriptor, ConstructorDescriptor, FunctionDescriptor, VariableDescriptor}
 import org.jetbrains.kotlin.psi.{
   KtClassOrObject,
   KtConstructor,
   KtDestructuringDeclarationEntry,
   KtExpression,
   KtFunctionLiteral,
-  KtNamedFunction
+  KtNamedFunction,
+  KtParameter
 }
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
@@ -66,6 +67,10 @@ class BindingContextUtils(bindingContext: BindingContext) {
     val resolvedCall = call.flatMap(call => Option(bindingContext.get(BindingContext.RESOLVED_CALL, call)))
 
     resolvedCall
+  }
+
+  def getVariableDesc(param: KtParameter): Option[VariableDescriptor] = {
+    Option(bindingContext.get(BindingContext.VALUE_PARAMETER, param))
   }
 
   def getExprType(expr: KtExpression): Option[KotlinType] = {

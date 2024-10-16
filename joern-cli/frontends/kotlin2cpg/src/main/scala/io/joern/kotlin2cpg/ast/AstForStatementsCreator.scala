@@ -226,7 +226,10 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
       callAst(controlStructureCondition, List(), Option(Ast(conditionIdentifier)))
 
     val loopParameterTypeFullName = registerType(
-      typeInfoProvider.typeFullName(expr.getLoopParameter, TypeConstants.any)
+      bindingUtils
+        .getVariableDesc(expr.getLoopParameter)
+        .flatMap(desc => nameRenderer.typeFullName(desc.getType))
+        .getOrElse(TypeConstants.any)
     )
     val loopParameterName  = expr.getLoopParameter.getText
     val loopParameterLocal = localNode(expr, loopParameterName, loopParameterName, loopParameterTypeFullName)

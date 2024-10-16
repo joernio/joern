@@ -133,10 +133,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     methodAstParentStack.pop()
     scope.popScope()
 
-    val bodyAst           = bodyAsts.headOption.getOrElse(Ast(unknownNode(ktFn, Constants.empty)))
-    val otherBodyAsts     = bodyAsts.drop(1)
-    val explicitTypeName  = Option(ktFn.getTypeReference).map(_.getText).getOrElse(TypeConstants.any)
-    val typeFullName      = registerType(typeInfoProvider.returnType(ktFn, explicitTypeName))
+    val bodyAst          = bodyAsts.headOption.getOrElse(Ast(unknownNode(ktFn, Constants.empty)))
+    val otherBodyAsts    = bodyAsts.drop(1)
+    val explicitTypeName = Option(ktFn.getTypeReference).map(_.getText).getOrElse(TypeConstants.any)
+    val typeFullName = registerType(nameRenderer.typeFullName(funcDesc.get.getReturnType).getOrElse(explicitTypeName))
     val _methodReturnNode = newMethodReturnNode(typeFullName, None, line(ktFn), column(ktFn))
 
     val visibility = typeInfoProvider.visibility(ktFn)
@@ -180,9 +180,17 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       param.getName
     }
 
-    val explicitTypeName = Option(param.getTypeReference).map(_.getText).getOrElse(TypeConstants.any)
-    val typeFullName     = registerType(typeInfoProvider.parameterType(param, explicitTypeName))
-    val node             = parameterInNode(param, name, name, order, false, EvaluationStrategies.BY_VALUE, typeFullName)
+    val explicitTypeName = Option(param.getTypeReference)
+      .map(typeRef =>
+        typeInfoProvider
+          .typeFromImports(typeRef.getText, param.getContainingKtFile)
+          .getOrElse(typeRef.getText)
+      )
+      .getOrElse(TypeConstants.any)
+    val typeFullName = registerType(
+      nameRenderer.typeFullName(bindingUtils.getVariableDesc(param).get.getType).getOrElse(explicitTypeName)
+    )
+    val node = parameterInNode(param, name, name, order, false, EvaluationStrategies.BY_VALUE, typeFullName)
     scope.addToScope(name, node)
 
     val annotations = param.getAnnotationEntries.asScala.map(astForAnnotationEntry).toSeq
@@ -390,7 +398,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       )
       .getOrElse(Seq(Ast(NewBlock())))
 
-    val returnTypeFullName     = registerType(typeInfoProvider.returnTypeFullName(expr))
+    val returnTypeFullName = registerType(
+      nameRenderer.typeFullName(funcDesc.get.getReturnType).getOrElse(TypeConstants.javaLangObject)
+    )
     val lambdaTypeDeclFullName = fullName.split(":").head
 
     val (bodyAst, nestedLambdaDecls) = bodyAsts.toList match {

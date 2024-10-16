@@ -160,14 +160,6 @@ class DefaultTypeInfoProvider(val bindingContext: BindingContext, typeRenderer: 
       .getOrElse(defaultValue)
   }
 
-  def returnType(expr: KtNamedFunction, defaultValue: String): String = {
-    Option(bindingContext.get(BindingContext.FUNCTION, expr))
-      .map(_.getReturnType)
-      .map(typeRenderer.render(_))
-      .filter(isValidRender)
-      .getOrElse(defaultValue)
-  }
-
   def propertyType(expr: KtProperty, defaultValue: String): String = {
     val mapForEntity = bindingsForEntity(bindingContext, expr)
     Option(mapForEntity.get(BindingContext.VARIABLE.getKey))
@@ -210,19 +202,6 @@ class DefaultTypeInfoProvider(val bindingContext: BindingContext, typeRenderer: 
   def isCompanionObject(expr: KtClassOrObject): Boolean = {
     val mapForEntity = bindingsForEntity(bindingContext, expr)
     Option(mapForEntity.get(BindingContext.CLASS.getKey)).exists(DescriptorUtils.isCompanionObject(_))
-  }
-
-  def typeFullName(expr: KtParameter, defaultValue: String): String = {
-    val mapForEntity = bindingsForEntity(bindingContext, expr)
-    Option(mapForEntity.get(BindingContext.VALUE_PARAMETER.getKey))
-      .map(_.getType)
-      .map(typeRenderer.render(_))
-      .filter(isValidRender)
-      .getOrElse(defaultValue)
-  }
-
-  def typeFullName(typ: KotlinType): String = {
-    typeRenderer.render(typ)
   }
 
   private def subexpressionForResolvedCallInfo(expr: KtExpression): KtExpression = {
@@ -328,36 +307,6 @@ class DefaultTypeInfoProvider(val bindingContext: BindingContext, typeRenderer: 
       .getOrElse(CallKind.Unknown)
   }
 
-  def parameterType(parameter: KtParameter, defaultValue: String): String = {
-    // TODO: add specific test for no binding info of parameter
-    // triggered by exception in https://github.com/agrosner/DBFlow
-    // TODO: ...also test cases for non-null binding info for other fns
-    val render = for {
-      mapForEntity <- Option(bindingsForEntity(bindingContext, parameter))
-      variableDesc <- Option(mapForEntity.get(BindingContext.VALUE_PARAMETER.getKey))
-      typeUpperBounds =
-        Option(TypeUtils.getTypeParameterDescriptorOrNull(variableDesc.getType))
-          .map(_.getUpperBounds)
-          .map(_.asScala)
-          .map(_.toList)
-          .getOrElse(List())
-      render =
-        if (typeUpperBounds.nonEmpty)
-          typeRenderer.render(typeUpperBounds.head)
-        else
-          typeRenderer.render(variableDesc.getType)
-      if isValidRender(render) && !variableDesc.getType.isInstanceOf[ErrorType]
-    } yield render
-
-    render.getOrElse(
-      Option(parameter.getTypeReference)
-        .map { typeRef =>
-          typeFromImports(typeRef.getText, parameter.getContainingKtFile).getOrElse(typeRef.getText)
-        }
-        .getOrElse(defaultValue)
-    )
-  }
-
   def destructuringEntryType(expr: KtDestructuringDeclarationEntry, defaultValue: String): String = {
     val render = for {
       mapForEntity <- Option(bindingsForEntity(bindingContext, expr))
@@ -379,10 +328,6 @@ class DefaultTypeInfoProvider(val bindingContext: BindingContext, typeRenderer: 
         }
       case _ => false
     }
-  }
-
-  def returnTypeFullName(expr: KtLambdaExpression): String = {
-    TypeConstants.javaLangObject
   }
 
   private def renderedReturnType(fnDesc: FunctionDescriptor): String = {
