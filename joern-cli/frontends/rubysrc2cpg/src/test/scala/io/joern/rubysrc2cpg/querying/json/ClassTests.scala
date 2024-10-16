@@ -60,7 +60,7 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
     singletonC.method.name.l shouldBe List()
   }
 
-  "`attr_reader :a` is represented by a `@a` MEMBER node" ignore {
+  "`attr_reader :a` is represented by a `@a` MEMBER node" in {
     val cpg = code("""
                      |class C
                      | attr_reader :a
@@ -80,7 +80,7 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
     aGetterMember.dynamicTypeHintFullName should contain("Test0.rb:<main>.C.a")
   }
 
-  "`attr_reader :'abc'` is represented by a `@abc` MEMBER node" ignore {
+  "`attr_reader :'abc'` is represented by a `@abc` MEMBER node" in {
     val cpg = code("""
                      |class C
                      | attr_reader :'abc'
@@ -97,7 +97,7 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
     aMember.dynamicTypeHintFullName should contain("Test0.rb:<main>.C.abc")
   }
 
-  "`attr_reader :'abc' creates an `abc` METHOD node" ignore {
+  "`attr_reader :'abc' creates an `abc` METHOD node" in {
     val cpg = code("""
                      |class C
                      | attr_reader :'abc'
@@ -136,7 +136,7 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
     aMember.lineNumber shouldBe bMember.lineNumber
   }
 
-  "`attr_writer :a` is represented by a `@a` MEMBER node" ignore {
+  "`attr_writer :a` is represented by a `@a` MEMBER node" in {
     val cpg = code("""
                      |class C
                      | attr_writer :a
@@ -150,7 +150,7 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
     aMember.lineNumber shouldBe Some(3)
   }
 
-  "`attr_writer :a` creates an 'a=' METHOD node" ignore {
+  "`attr_writer :a` creates an 'a=' METHOD node" in {
     val cpg = code("""
                      |class C
                      | attr_writer :a
@@ -177,7 +177,7 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
     aMember.dynamicTypeHintFullName should contain("Test0.rb:<main>.C.a=")
   }
 
-  "`attr_accessor :a` is represented by a `@a` MEMBER node" ignore {
+  "`attr_accessor :a` is represented by a `@a` MEMBER node" in {
     val cpg = code("""
                      |class C
                      | attr_accessor :a
@@ -209,7 +209,7 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
     memberF.dynamicTypeHintFullName.toSet should contain(methodF.fullName)
   }
 
-  "`M.method` in a module `M` should have a method bound to a member under the module's singleton type declaration" ignore {
+  "`M.method` in a module `M` should have a method bound to a member under the module's singleton type declaration" in {
     val cpg = code("""
         |module M
         | def M.method(x)
@@ -232,7 +232,7 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
     methodTypeDecl.methodBinding.flatMap(_.boundMethod).head shouldBe method
   }
 
-  "a method in a nested module should have the nested module's member-type and nested types' method" ignore {
+  "a method in a nested module should have the nested module's member-type and nested types' method" in {
     val cpg = code("""
         |module MMM
         | module Nested
@@ -315,7 +315,7 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
     cpg.method.nameExact(RubyDefines.Initialize).where(_.isConstructor).literal.code.l should be(empty)
   }
 
-  "Constants should be defined under the respective singleton" ignore {
+  "Constants should be defined under the respective singleton" in {
     val cpg = code("""
         |module MMM
         | MConst = 2

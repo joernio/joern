@@ -274,6 +274,11 @@ class RubyJsonToNodeCreator(
 
   private def visitFalse(obj: Obj): RubyExpression = StaticLiteral(getBuiltInType(Defines.FalseClass))(obj.toTextSpan)
 
+  private def visitFieldDeclaration(obj: Obj): RubyExpression = {
+    val arguments = obj.visitArray(ParserKeys.Arguments)
+    FieldsDeclaration(arguments)(obj.toTextSpan)
+  }
+
   private def visitFindPattern(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
   private def visitFloat(obj: Obj): RubyExpression = StaticLiteral(getBuiltInType(Defines.Float))(obj.toTextSpan)
@@ -484,6 +489,7 @@ class RubyJsonToNodeCreator(
       case "new"                                                => visitObjectInstantiation(obj)
       case "raise"                                              => visitRaise(obj)
       case "include"                                            => visitInclude(obj)
+      case "attr_reader" | "attr_writer" | "attr_accessor"      => visitFieldDeclaration(obj)
       case requireLike if ImportCallNames.contains(requireLike) => visitRequireLike(obj)
       case _ if BinaryOperators.isBinaryOperatorName(callName) =>
         val lhs = visit(obj(ParserKeys.Receiver))
@@ -503,12 +509,26 @@ class RubyJsonToNodeCreator(
 
   private def visitShadowArg(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
-  private def visitSingletonMethodDefinition(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitSingletonMethodDefinition(obj: Obj): RubyExpression = {
+    val base       = visit(obj(ParserKeys.Base))
+    val name       = obj(ParserKeys.Name).str
+    val parameters = obj(ParserKeys.Arguments).asInstanceOf[ujson.Obj].visitArray(ParserKeys.Children)
+    val body       = obj.visitOption(ParserKeys.Body).getOrElse(StatementList(Nil)(obj.toTextSpan.spanStart("<empty>")))
+    SingletonMethodDeclaration(base, name, parameters, body)(obj.toTextSpan)
+  }
 
-  private def visitSingletonClassDefinition(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitSingletonClassDefinition(obj: Obj): RubyExpression = {
+    val name      = visit(obj(ParserKeys.Name))
+    val baseClass = obj.visitOption(ParserKeys.SuperClass)
+    val body      = obj.visitOption(ParserKeys.Body).getOrElse(StatementList(Nil)(obj.toTextSpan.spanStart("<empty>")))
+    val bodyMemberCall = createBodyMemberCall(name.text, obj.toTextSpan)
+    SingletonClassDeclaration(name = name, baseClass = baseClass, body = body, bodyMemberCall = Option(bodyMemberCall))(
+      obj.toTextSpan
+    )
+  }
 
   private def visitSingleAssignment(obj: Obj): RubyExpression = {
-    val lhs = visit(obj(ParserKeys.Lhs))
+    val lhs = SimpleIdentifier()(obj.toTextSpan.spanStart(obj(ParserKeys.Lhs).str))
     val rhs = visit(obj(ParserKeys.Rhs))
     SingleAssignment(lhs, "=", rhs)(obj.toTextSpan)
   }

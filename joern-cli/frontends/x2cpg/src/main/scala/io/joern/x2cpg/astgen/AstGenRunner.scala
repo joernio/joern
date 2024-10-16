@@ -166,7 +166,7 @@ trait AstGenRunnerBase(config: X2CpgConfig[?] & AstGenConfig[?]) {
     }
   }
 
-  def execute(out: File): AstGenRunnerResult = {
+  def execute(out: File, isRetry: Boolean = false): AstGenRunnerResult = {
     implicit val metaData: AstGenProgramMetaData = config.astGenMetaData
     val in                                       = File(config.inputPath)
     logger.info(s"Running ${metaData.name} on '${config.inputPath}'")
@@ -181,9 +181,13 @@ trait AstGenRunnerBase(config: X2CpgConfig[?] & AstGenConfig[?]) {
         val parsed  = filterFiles(srcFiles, out)
         val skipped = skippedFiles(in, result.toList)
         DefaultAstGenRunnerResult(parsed, skipped)
+      case Failure(f) if !isRetry =>
+        logger.error(s"\t- running ${metaData.name} failed! Retrying...", f)
+        execute(out, true)
       case Failure(f) =>
         logger.error(s"\t- running ${metaData.name} failed!", f)
         DefaultAstGenRunnerResult()
+
     }
   }
 }
