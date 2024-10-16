@@ -993,6 +993,46 @@ class NoCrossTaintDataFlowTest1
     val sink   = cpg.call("baz").argument.argumentIndex(1)
     sink.reachableByFlows(source).map(flowToResultPairs) shouldBe empty
   }
+
+  "NoCrossTaintSemantics prevents cross-tainting same-call named-arguments to external method calls" in {
+    val cpg = code("""
+        |import bar
+        |a = 1
+        |b = 2
+        |bar.foo(X=a, Y=b)
+        |""".stripMargin)
+    val source = cpg.literal("1")
+    val sink   = cpg.call("foo").argument.argumentName("Y")
+    sink.reachableByFlows(source) shouldBe empty
+  }
+
+  "NoCrossTaintSemantics prevents cross-tainting same-call arguments to external method calls" in {
+    val cpg = code("""
+        |import bar
+        |a = 1
+        |b = 2
+        |bar.foo(A=b, a)
+        |""".stripMargin)
+    val source = cpg.literal("1")
+    val sink   = cpg.call("foo").argument.argumentName("A")
+    sink.reachableByFlows(source) shouldBe empty
+  }
+
+  "NoCrossTaintSemantics taints return values" in {
+    val cpg = code("""
+        |import bar
+        |a = 1
+        |b = 2
+        |c = bar.foo(X=a, b)
+        |print(c)
+        |""".stripMargin)
+    val source = cpg.literal.lineNumber(3, 4)
+    val sink   = cpg.call("print").argument
+    sink.reachableByFlows(source).map(flowToResultPairs).l shouldBe List(
+      List(("a = 1", 3), ("bar.foo(b, X = a)", 5), ("c = bar.foo(b, X = a)", 5), ("print(c)", 6)),
+      List(("b = 2", 4), ("bar.foo(b, X = a)", 5), ("c = bar.foo(b, X = a)", 5), ("print(c)", 6))
+    )
+  }
 }
 
 class NoCrossTaintDataFlowTest2

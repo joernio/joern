@@ -64,8 +64,8 @@ class ExpressionMethods[NodeType <: Expression](val node: NodeType) extends AnyV
           srcIndex == node.argumentIndex && dstName == tgt.argumentName.get
         case FlowMapping(ParameterNode(srcIndex, _), ParameterNode(dstIndex, _)) =>
           srcIndex == node.argumentIndex && dstIndex == tgt.argumentIndex
-        case PassThroughMapping if tgt.argumentIndex == node.argumentIndex || tgt.argumentIndex == -1 => true
-        case _                                                                                        => false
+        case PassThroughMapping => node.argumentIndex == tgt.argumentIndex && node.argumentName == tgt.argumentName
+        case _                  => false
       }
     }
   }
