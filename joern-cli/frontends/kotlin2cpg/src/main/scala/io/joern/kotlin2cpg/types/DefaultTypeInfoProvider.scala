@@ -182,13 +182,6 @@ class DefaultTypeInfoProvider(val bindingContext: BindingContext, typeRenderer: 
     }
   }
 
-  def typeFullName(expr: KtBinaryExpression, defaultValue: String): String = {
-    resolvedCallDescriptor(expr)
-      .map(_.getOriginal)
-      .map { desc => typeRenderer.render(desc.getReturnType) }
-      .getOrElse(defaultValue)
-  }
-
   def typeFullName(expr: KtAnnotationEntry, defaultValue: String): String = {
     Option(bindingsForEntity(bindingContext, expr))
       .flatMap(_ => Option(bindingContext.get(BindingContext.ANNOTATION, expr)))

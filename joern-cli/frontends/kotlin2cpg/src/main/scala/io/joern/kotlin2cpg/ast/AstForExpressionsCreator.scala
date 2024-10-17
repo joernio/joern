@@ -94,7 +94,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       // TODO: add test case for this situation
       if (fullName.startsWith(Constants.operatorSuffix)) Constants.empty
       else signature
-    val typeFullName = registerType(typeInfoProvider.typeFullName(expr, TypeConstants.any))
+
+    val typeFullName = registerType(
+      bindingUtils
+        .getCalledFunctionDesc(expr.getOperationReference)
+        .flatMap(funcDesc => nameRenderer.typeFullName(funcDesc.getOriginal.getReturnType))
+        .getOrElse(TypeConstants.any)
+    )
     val name =
       if (operatorOption.isDefined) operatorOption.get
       else if (expr.getChildren.toList.sizeIs >= 2) expr.getChildren.toList(1).getText
