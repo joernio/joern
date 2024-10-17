@@ -9,6 +9,7 @@ import java.io.File
 import java.nio.file.{Files, Path, Paths}
 import java.lang.ProcessBuilder
 import java.util.Comparator
+import java.util.concurrent.TimeUnit
 import scala.util.{Failure, Success, Try, Using}
 
 final class GitSparseFetcher(repoUrl: String = "git@github.com:flandini/typeinfo.git", gitRef: String = "main") extends Fetcher {
@@ -95,30 +96,39 @@ final class GitSparseFetcher(repoUrl: String = "git@github.com:flandini/typeinfo
   }
 
   private def sparseClone(): Int = {
-      makeProcess(tmpDir, "git", "clone", "--filter=blob:none", "--depth=1", "--no-checkout", repoUrl, tmpDir.toString)
-        .start()
-        .waitFor()
+      runProcess(tmpDir, "git", "clone", "--filter=blob:none", "--depth=1", "--no-checkout", repoUrl, tmpDir.toString)
   }
 
   private def setCone(): Int = {
-    makeProcess(tmpDir, "git", "sparse-checkout", "set", "--cone").start().waitFor()
+    runProcess(tmpDir, "git", "sparse-checkout", "set", "--cone")
   }
 
   private def setInitPathFilter(paths: List[GitPath]): Int = {
     val args = Seq("git", "sparse-checkout", "set") ++ paths.toSeq.map(_.toString)
-    makeProcess(tmpDir, args*).start().waitFor()
+    runProcess(tmpDir, args*)
   }
 
   private def doInitCheckout(): Int = {
-    makeProcess(tmpDir, "git", "checkout", gitRef).start().waitFor()
+    runProcess(tmpDir, "git", "checkout", gitRef)
   }
 
   private def addPathFiltersAndDownload(paths: List[GitPath]): Int = {
     val args = Seq("git", "sparse-checkout", "add") ++ paths.toSeq.map(_.toString)
-    makeProcess(tmpDir, args*).start().waitFor()
+    runProcess(tmpDir, args*)
   }
   
-  private def makeProcess(path: Path, command: String*): ProcessBuilder = {
-    new ProcessBuilder().directory(path.toFile).command(command*).inheritIO()
+  private def runProcess(path: Path, command: String*): Int = {
+    val process = new ProcessBuilder()
+      .directory(path.toFile)
+      .command(command*)
+      .inheritIO()
+      .start()
+    
+    val finished = process.waitFor(30, TimeUnit.SECONDS)
+    
+    if (!finished)
+      throw new RuntimeException(s"Running process $command timed out")
+    else
+      process.exitValue()
   }
 }

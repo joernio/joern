@@ -1,0 +1,17 @@
+{
+  VERSIONS: ["1.0.0", "1.11.9", "1.11.9-rc2"],
+  TYPE_NAME_INFO: [
+    {
+      VERSION: "1.0.0",
+      TYPE_NAMES: ["IonFloat"]
+    },
+    {
+      VERSION: "1.11.9",
+      TYPE_NAMES: ["IonFloat"]
+    },
+    {
+      VERSION: "1.11.9-rc2",
+      TYPE_NAMES: ["IonFloat"]
+    }
+  ]
+}

@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.typeinfo.version.Version
 import java.nio.file.{Path, Paths}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Await, Future, blocking}
 import scala.util.Try
 
 /** ...
@@ -59,10 +59,16 @@ abstract class Fetcher extends AutoCloseable {
     /** The metadata file contains a list of all versions stored stored for this package identifier and
      * a list of all types stored for this versioned package identifier. */
     def fetchMetaData(pid: PackageIdentifier): Future[Array[Byte]] = {
-        val infoFilePath = ServerPath.build(pid).getMetaDataPath
+        fetchMetaData(List(pid)).flatMap(map => Future(map.values.head))
+    }
+    
+    def fetchMetaData(pids: List[PackageIdentifier]): Future[Map[PackageIdentifier, Array[Byte]]] = {
+        val infoFilePaths = pids.map(ServerPath.build(_).getMetaDataPath)
         Future {
-            val downloadResults = downloadFiles(List(infoFilePath))
-            downloadResults.head.data
+            blocking {
+                val downloadResults = downloadFiles(infoFilePaths)
+                Map.from(pids.zip(downloadResults.map(_.data)))
+            }
         }
     }
     
@@ -72,32 +78,34 @@ abstract class Fetcher extends AutoCloseable {
         val versionedPackageDir = ServerPath.build(pid).getVersionPath(version)
         val typePaths = typeNames.map(versionedPackageDir.getTypeFilePath)
         Future {
-            val downloadResults = downloadFiles(typePaths).map(_.data)
-            Map.from(typeNames.zip(downloadResults))
+            blocking {
+                val downloadResults = downloadFiles(typePaths).map(_.data)
+                Map.from(typeNames.zip(downloadResults))
+            }
         }
     }
     
     def fetchDirectDependencies(pid: PackageIdentifier, version: Version): Future[Array[Byte]] = {
-        val directDepPath = ServerPath.build(pid).getDirectDepsPath(version)
-        Future {
-            val downloadResults = downloadFiles(List(directDepPath))
-            downloadResults.head.data
-        }
+        fetchDirectDependencies(List((pid, version))).flatMap(map => Future(map.values.head))
     }
 
     def fetchDirectDependencies(versionedPids: List[(PackageIdentifier, Version)]): Future[Map[(PackageIdentifier, Version), Array[Byte]]] = {
         val directDepPaths = versionedPids.map((pid, version) => ServerPath.build(pid).getDirectDepsPath(version))
         Future {
-            val downloadResults = downloadFiles(directDepPaths).map(_.data)
-            Map.from(versionedPids.zip(downloadResults))
+            blocking {
+                val downloadResults = downloadFiles(directDepPaths).map(_.data)
+                Map.from(versionedPids.zip(downloadResults))
+            }
         }
     }
     
     def fetchTransitiveDependencies(pid: PackageIdentifier, version: Version): Future[Array[Byte]] = {
         val transitiveDepPath = ServerPath.build(pid).getTransitiveDepsPath(version)
         Future {
-            val downloadResults = downloadFiles(List(transitiveDepPath))
-            downloadResults.head.data
+            blocking {
+                val downloadResults = downloadFiles(List(transitiveDepPath))
+                downloadResults.head.data
+            }
         }
     }
     
