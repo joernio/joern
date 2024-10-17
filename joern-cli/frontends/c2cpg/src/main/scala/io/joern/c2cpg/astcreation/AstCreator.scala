@@ -42,7 +42,7 @@ class AstCreator(
   protected val usingDeclarationMappings: mutable.Map[String, String] = mutable.HashMap.empty
 
   // TypeDecls with their bindings (with their refs) for lambdas and methods are not put in the AST
-  // where the respective nodes are defined. Instead we put them under the parent TYPE_DECL in which they are defined.
+  // where the respective nodes are defined. Instead, we put them under the parent TYPE_DECL in which they are defined.
   // To achieve this we need this extra stack.
   protected val methodAstParentStack: Stack[NewNode] = new Stack()
 
