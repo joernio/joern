@@ -8,9 +8,9 @@ import scala.io.Source
 import scala.util.Try
 
 class IonSchemaValidatorTests extends AnyWordSpec with Matchers {
-  private val typeSchema: String = Source.fromResource("TypeInfoSchema.isl").mkString
+  private val typeSchema: String            = Source.fromResource("TypeInfoSchema.isl").mkString
   private val validator: IonSchemaValidator = IonSchemaValidator(typeSchema, "type_decl")
-    
+
   "valid ion" should {
     val test1: String =
       """
@@ -36,12 +36,12 @@ class IonSchemaValidatorTests extends AnyWordSpec with Matchers {
         |   }
         | ]
         |}""".stripMargin
-      
+
     "validate" in {
       val violations = validator.validate(test1)
       violations.isValid shouldEqual true
     }
-    
+
     "not validate when fails schema" in {
       val missingRequiredField: String =
         """
@@ -54,7 +54,7 @@ class IonSchemaValidatorTests extends AnyWordSpec with Matchers {
       violations.forEach(v => println(s"${v.getCode} -- ${v.getMessage}"))
     }
   }
-  
+
   "invalid ion" should {
     "missing closing square brace errors" in {
       val missingSquareBrace: String =
@@ -69,8 +69,7 @@ class IonSchemaValidatorTests extends AnyWordSpec with Matchers {
       violations.isValid shouldEqual false
       violations.forEach(v => println(s"${v.getCode} -- ${v.getMessage}"))
     }
-    
-    
+
     "missing closing brace should error" in {
       val missingClosingBrace: String =
         """
@@ -80,7 +79,7 @@ class IonSchemaValidatorTests extends AnyWordSpec with Matchers {
       violations.isValid shouldEqual false
       violations.forEach(v => println(s"${v.getCode} -- ${v.getMessage}"))
     }
-    
+
     "missing comma between fields should error" in {
       val missingCommaBetweenFields: String =
         """

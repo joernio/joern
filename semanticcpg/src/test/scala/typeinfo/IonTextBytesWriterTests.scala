@@ -34,7 +34,7 @@ class IonTextBytesWriterTests extends AnyWordSpec with Matchers {
   // is nondeterministic?
   "text writer" should {
     "roundtrip without error" in {
-      val typ = TypeInfoIonTextLoader.loadFromString(test1)
+      val typ    = TypeInfoIonTextLoader.loadFromString(test1)
       val result = TypeInfoIonTextLoader.loadFromBytes(IonTextBytesWriter.write(typ))
       result shouldEqual typ
     }

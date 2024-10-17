@@ -28,23 +28,23 @@ class TypeInfoIonTextLoaderTests extends AnyWordSpec with Matchers {
       |   }
       | ]
       |}""".stripMargin
-    
+
   "simple struct reader" should {
     "read into object without errors" in {
       val result = TypeInfoIonTextLoader.loadFromString(test1)
-      
+
       result.fullName shouldEqual "com.amazon.ion.IonFloat"
       result.name shouldEqual "IonFloat"
       result.typeParams shouldBe empty
       result.inherits should have length 1
-      result.inherits should contain ("java.lang.Cloneable")
-      
+      result.inherits should contain("java.lang.Cloneable")
+
       result.methods should have length 1
       val method = result.methods.head
       method.name shouldBe "bigIntegerValue"
       method.fullName shouldBe "com.amazon.ion.IonFloat.bigIntegerValue:java.math.BigInteger()"
       method.signature shouldBe "java.math.BigInteger()"
-      
+
       result.members should have length 1
       val member = result.members.head
       member.name shouldBe "EMPTY_ARRAY"

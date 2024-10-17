@@ -10,14 +10,14 @@ object IonTextBytesWriter extends BytesWriter[TypeDecl] {
   def write(ty: TypeDecl): Array[Byte] = {
     val writeResult = Using.Manager { use =>
       val out = use(ByteArrayOutputStream())
-      val w = use(IonBinaryWriterBuilder.standard().build(out))
+      val w   = use(IonBinaryWriterBuilder.standard().build(out))
       writeType(ty, w)
       w.finish()
       out.toByteArray
     }
     writeResult match {
       case Success(bytes: Array[Byte]) => bytes
-      case Failure(exc: Throwable) => throw exc
+      case Failure(exc: Throwable)     => throw exc
     }
   }
 

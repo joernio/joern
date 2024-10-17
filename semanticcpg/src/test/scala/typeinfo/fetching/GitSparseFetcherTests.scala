@@ -12,7 +12,7 @@ import scala.util.Using
 /** TODO: static test repo for testing */
 class GitSparseFetcherTests extends AnyWordSpec with Matchers {
   val testDefaultTimeout = 30.seconds
-  
+
   "fetchMetaData" should {
     "return metadata bytes for a package" in {
       val expectedMetaDataBytes =
@@ -33,17 +33,15 @@ class GitSparseFetcherTests extends AnyWordSpec with Matchers {
           |    }
           |  ]
           |}""".stripMargin.getBytes("UTF-8")
-        
+
       Using.resource(GitSparseFetcher()) { fetcher =>
-        val versionsBytes = Await.result(
-          fetcher.fetchMetaData(PackageIdentifier(LanguagePlatform.JVM, "ion-java")),
-          testDefaultTimeout
-        )
+        val versionsBytes =
+          Await.result(fetcher.fetchMetaData(PackageIdentifier(LanguagePlatform.JVM, "ion-java")), testDefaultTimeout)
         versionsBytes shouldEqual expectedMetaDataBytes
       }
     }
   }
-  
+
   "fetchTypeData" should {
     "return a map of type info bytes for a versioned package" in {
       val expectedBytes =
@@ -75,8 +73,8 @@ class GitSparseFetcherTests extends AnyWordSpec with Matchers {
           |    }
           |  ]
           |}""".stripMargin.getBytes("UTF-8")
-      val pid = PackageIdentifier(LanguagePlatform.JVM, "ion-java")
-      val version = SemVer2("1.0.0")
+      val pid       = PackageIdentifier(LanguagePlatform.JVM, "ion-java")
+      val version   = SemVer2("1.0.0")
       val typeNames = List("IonFloat")
       Using.resource(GitSparseFetcher()) { fetcher =>
         val typeMap = Await.result(fetcher.fetchTypeData(pid, version, typeNames), testDefaultTimeout)
@@ -97,7 +95,7 @@ class GitSparseFetcherTests extends AnyWordSpec with Matchers {
           |  },
           |]
           |""".stripMargin.getBytes("UTF-8")
-      val pid = PackageIdentifier(LanguagePlatform.JVM, "ion-java")
+      val pid     = PackageIdentifier(LanguagePlatform.JVM, "ion-java")
       val version = SemVer2("1.0.0")
       Using.resource(GitSparseFetcher()) { fetcher =>
         val directDepBytes = Await.result(fetcher.fetchDirectDependencies(pid, version), testDefaultTimeout)

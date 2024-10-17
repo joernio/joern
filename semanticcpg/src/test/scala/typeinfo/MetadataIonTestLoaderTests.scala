@@ -25,11 +25,11 @@ class MetadataIonTestLoaderTests extends AnyWordSpec with Matchers {
       |    }
       |  ]
       |}""".stripMargin.getBytes("UTF-8")
-  
+
   "test1" should {
     "read into PackageMetadata case class without errors" in {
       val packageMetadata = MetadataIonTextLoader.loadFromBytes(test1)
-      
+
       val expected = PackageMetadata(
         List("1.0.0", "1.11.9", "1.11.9-rc2"),
         List(
@@ -38,7 +38,7 @@ class MetadataIonTestLoaderTests extends AnyWordSpec with Matchers {
           TypeMetadata("1.11.9-rc2", List("IonFloat"))
         )
       )
-      
+
       packageMetadata shouldEqual expected
     }
   }

@@ -5,7 +5,7 @@ enum LanguagePlatform {
   override def toString: String = {
     this match
       case JVM => "jvm"
-      case _ => throw new RuntimeException(s"no toString override for LanguageFrontend enum constant value")
+      case _   => throw new RuntimeException(s"no toString override for LanguageFrontend enum constant value")
   }
 }
 
@@ -13,7 +13,7 @@ object LanguagePlatform {
   def ofString(str: String): LanguagePlatform = {
     str match
       case "jvm" => LanguagePlatform.JVM
-      case _ => throw new RuntimeException(s"couldn't convert string to LanguageFrontend: $str")
+      case _     => throw new RuntimeException(s"couldn't convert string to LanguageFrontend: $str")
   }
 }
 

@@ -10,13 +10,17 @@ import scala.util.Using
 
 object DirectDependencyIonTextLoader {
   private val defaultDependency = DirectDependency("", Any())
-  
+
   def loadFromBytes(versionParser: String => Version, data: Array[Byte]): List[DirectDependency] = {
     Using.resource(IonReaderBuilder.standard().build(data))(parseLoop(_, versionParser))
   }
-  
+
   @tailrec
-  private def parseLoop(reader: IonReader, versionParser: String => Version, deps: List[DirectDependency] = Nil): List[DirectDependency] = {
+  private def parseLoop(
+    reader: IonReader,
+    versionParser: String => Version,
+    deps: List[DirectDependency] = Nil
+  ): List[DirectDependency] = {
     val ty = Option(reader.next())
     ty match
       case None => deps
@@ -33,12 +37,21 @@ object DirectDependencyIonTextLoader {
   }
 
   @tailrec
-  private def parseDependencyStruct(r: IonReader, versionParser: String => Version, dep: DirectDependency): DirectDependency = {
+  private def parseDependencyStruct(
+    r: IonReader,
+    versionParser: String => Version,
+    dep: DirectDependency
+  ): DirectDependency = {
     Option(r.next()) match
       case None => dep
       case Some(_) =>
         r.getFieldName match
-          case "NAME"       => parseDependencyStruct(r, versionParser, dep.copy(name = r.stringValue()))
-          case "VERSION_CONSTRAINT" => parseDependencyStruct(r, versionParser, dep.copy(version = VersionConstraint.parse(r.stringValue(), versionParser)))
+          case "NAME" => parseDependencyStruct(r, versionParser, dep.copy(name = r.stringValue()))
+          case "VERSION_CONSTRAINT" =>
+            parseDependencyStruct(
+              r,
+              versionParser,
+              dep.copy(version = VersionConstraint.parse(r.stringValue(), versionParser))
+            )
   }
 }

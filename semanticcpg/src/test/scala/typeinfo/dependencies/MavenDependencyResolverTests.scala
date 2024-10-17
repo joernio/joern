@@ -16,14 +16,12 @@ class MavenDependencyResolverTests extends AnyWordSpec with Matchers {
   "resolution" should {
     "get all expected dependencies for test data in test repo" in {
       Using.resource(GitSparseFetcher()) { fetcher =>
-        val amazonIonPid = PackageIdentifier(JVM, "ion-java")
-        val version = SemVer2("1.11.9")
+        val amazonIonPid       = PackageIdentifier(JVM, "ion-java")
+        val version            = SemVer2("1.11.9")
         val dependenciesFuture = MavenDependencyResolver.resolveDependencies(fetcher, amazonIonPid, version)
-        val dependencies = Await.result(dependenciesFuture, 60.seconds)
-        val expectedDependencies = List(
-          TransitiveDependency(amazonIonPid.name, version),
-          TransitiveDependency("java.lang", SemVer2("8.0.0"))
-        )
+        val dependencies       = Await.result(dependenciesFuture, 60.seconds)
+        val expectedDependencies =
+          List(TransitiveDependency(amazonIonPid.name, version), TransitiveDependency("java.lang", SemVer2("8.0.0")))
         dependencies shouldEqual expectedDependencies
       }
     }

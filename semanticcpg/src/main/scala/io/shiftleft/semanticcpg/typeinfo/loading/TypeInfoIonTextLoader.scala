@@ -15,7 +15,7 @@ object TypeInfoIonTextLoader {
   def loadFromBytes(data: Array[Byte]): TypeDecl = {
     Using.resource(IonReaderBuilder.standard().build(data))(loop(_))
   }
-  
+
   private def loop(reader: IonReader, typ: TypeDecl = TypeDecl()): TypeDecl = {
     val ty = Option(reader.next())
     ty match
@@ -75,7 +75,7 @@ object TypeInfoIonTextLoader {
   private def parseTextField(reader: IonReader, typ: TypeDecl): TypeDecl = {
     reader.getFieldName() match
       case "FULL_NAME" => typ.copy(fullName = reader.stringValue())
-      case "NAME" => typ.copy(name = reader.stringValue())
+      case "NAME"      => typ.copy(name = reader.stringValue())
   }
 
   @tailrec
@@ -84,7 +84,7 @@ object TypeInfoIonTextLoader {
       case None => method
       case Some(_) =>
         reader.getFieldName() match
-          case "NAME" => parseMethod(reader, method.copy(name = reader.stringValue()))
+          case "NAME"      => parseMethod(reader, method.copy(name = reader.stringValue()))
           case "FULL_NAME" => parseMethod(reader, method.copy(fullName = reader.stringValue()))
           case "SIGNATURE" => parseMethod(reader, method.copy(signature = reader.stringValue()))
   }
@@ -95,14 +95,14 @@ object TypeInfoIonTextLoader {
       case None => member
       case Some(_) =>
         reader.getFieldName() match
-          case "NAME" => parseMember(reader, member.copy(name = reader.stringValue()))
+          case "NAME"           => parseMember(reader, member.copy(name = reader.stringValue()))
           case "TYPE_FULL_NAME" => parseMember(reader, member.copy(typeFullName = reader.stringValue()))
   }
 
   @tailrec
   private def parseStringListContainer(reader: IonReader, strs: List[String] = Nil): List[String] = {
     Option(reader.next()) match
-      case None => strs
+      case None                 => strs
       case Some(IonType.STRING) => parseStringListContainer(reader, reader.stringValue() :: strs)
   }
 }
