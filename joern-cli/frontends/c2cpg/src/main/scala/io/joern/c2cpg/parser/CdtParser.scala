@@ -83,10 +83,11 @@ class CdtParser(config: Config, compilationDatabase: List[CommandObject])
     val additionalIncludes =
       if (FileDefaults.isCPPFile(file.toString)) parserConfig.systemIncludePathsCPP
       else parserConfig.systemIncludePathsC
-    val fileSpecificDefines = parserConfig.definedSymbolsPerFile.getOrElse(file.toString, Map.empty)
+    val fileSpecificDefines  = parserConfig.definedSymbolsPerFile.getOrElse(file.toString, Map.empty)
+    val fileSpecificIncludes = parserConfig.includesPerFile.getOrElse(file.toString, List.empty)
     new ScannerInfo(
       (definedSymbols ++ fileSpecificDefines).asJava,
-      (includePaths ++ additionalIncludes).map(_.toString).toArray
+      fileSpecificIncludes.toArray ++ (includePaths ++ additionalIncludes).map(_.toString).toArray
     )
   }
 

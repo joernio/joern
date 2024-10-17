@@ -19,10 +19,10 @@ class JSONCompilationDatabaseParserTests extends AnyWordSpec with Matchers {
         """
           |[
           |  { "directory": "/home/user/llvm/build",
-          |    "arguments": ["/usr/bin/clang++", "-Irelative", "-DSOMEDEFA=With spaces, quotes and \\-es.", "-c", "-o", "file.o", "file.cc"],
+          |    "arguments": ["/usr/bin/clang++", "-I/usr/include", "-I./include", "-DSOMEDEFA=With spaces, quotes and \\-es.", "-c", "-o", "file.o", "file.cc"],
           |    "file": "file.cc" },
           |  { "directory": "/home/user/llvm/build",
-          |    "command": "/usr/bin/clang++ -Irelative -DSOMEDEFB=\"With spaces, quotes and \\-es.\" -DSOMEDEFC -c -o file.o file.cc",
+          |    "command": "/usr/bin/clang++ -I/home/user/project/includes -DSOMEDEFB=\"With spaces, quotes and \\-es.\" -DSOMEDEFC -c -o file.o file.cc",
           |    "file": "file2.cc" }
           |]""".stripMargin
 
@@ -39,8 +39,8 @@ class JSONCompilationDatabaseParserTests extends AnyWordSpec with Matchers {
           ("SOMEDEFB", "\"With spaces, quotes and \\-es.\""),
           ("SOMEDEFC", "1")
         )
+        commandObjects.flatMap(_.includes()) shouldBe List("/usr/include", "./include", "/home/user/project/includes")
       }
-
     }
   }
 

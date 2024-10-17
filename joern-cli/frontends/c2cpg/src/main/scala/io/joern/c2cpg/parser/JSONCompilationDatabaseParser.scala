@@ -22,6 +22,13 @@ object JSONCompilationDatabaseParser {
     */
   private val defineInCommandPattern = """-D([A-Za-z_][A-Za-z0-9_]+)(=(\\*".*"))?""".r
 
+  /** {{{
+    * 1) -I: Matches the -I flag, which indicates an include directory.
+    * 2) (\S+): Matches one or more non-whitespace characters, which represent the path of the directory.
+    * }}}
+    */
+  private val includeInCommandPattern = """-I(\S+)""".r
+
   case class CommandObject(directory: String, arguments: List[String], command: List[String], file: String) {
 
     /** @return
@@ -37,6 +44,17 @@ object JSONCompilationDatabaseParser {
       } else {
         (s, "1")
       }
+    }
+
+    private def pathFromInclude(include: String): String = include.stripPrefix("-I")
+
+    def includes(): List[String] = {
+      val includesFromArguments = arguments.filter(a => a.startsWith("-I")).map(pathFromInclude)
+      val includesFromCommand = command.flatMap { c =>
+        val includes = includeInCommandPattern.findAllIn(c).toList
+        includes.map(pathFromInclude)
+      }
+      includesFromArguments ++ includesFromCommand
     }
 
     def defines(): List[(String, String)] = {
