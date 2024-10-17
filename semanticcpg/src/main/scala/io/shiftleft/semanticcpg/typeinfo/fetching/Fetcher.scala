@@ -86,7 +86,7 @@ abstract class Fetcher extends AutoCloseable {
     }
     
     def fetchDirectDependencies(pid: PackageIdentifier, version: Version): Future[Array[Byte]] = {
-        fetchDirectDependencies(List((pid, version))).flatMap(map => Future(map.values.head))
+        fetchDirectDependencies(List((pid, version))).map(_.values.head)
     }
 
     def fetchDirectDependencies(versionedPids: List[(PackageIdentifier, Version)]): Future[Map[(PackageIdentifier, Version), Array[Byte]]] = {
