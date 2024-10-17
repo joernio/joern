@@ -450,9 +450,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     argNameMaybe: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
   )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
-    val declFullNameOption = typeInfoProvider.containingDeclFullName(expr)
-    declFullNameOption.foreach(registerType)
-
     val argAsts = withIndex(expr.getValueArguments.asScala.toSeq) { case (arg, idx) =>
       val argNameOpt = if (arg.isNamed) Option(arg.getArgumentName.getAsName.toString) else None
       astsForExpression(arg.getArgumentExpression, Option(idx), argNameOpt)

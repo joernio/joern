@@ -35,8 +35,6 @@ trait TypeInfoProvider(val typeRenderer: TypeRenderer = new TypeRenderer()) {
 
   def isStaticMethodCall(expr: KtQualifiedExpression): Boolean
 
-  def containingDeclFullName(expr: KtCallExpression): Option[String]
-
   def containingDeclType(expr: KtQualifiedExpression, defaultValue: String): String
 
   def inheritanceTypes(expr: KtClassOrObject, or: Seq[String]): Seq[String]

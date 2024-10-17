@@ -229,12 +229,6 @@ class DefaultTypeInfoProvider(val bindingContext: BindingContext, typeRenderer: 
       .getOrElse(defaultValue)
   }
 
-  def containingDeclFullName(expr: KtCallExpression): Option[String] = {
-    resolvedCallDescriptor(expr)
-      .map(_.getContainingDeclaration)
-      .map(typeRenderer.renderFqNameForDesc)
-  }
-
   def containingDeclType(expr: KtQualifiedExpression, defaultValue: String): String = {
     resolvedCallDescriptor(expr)
       .map(_.getContainingDeclaration)
