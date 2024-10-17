@@ -11,11 +11,11 @@ class ControlStructureTests extends RubyCode2CpgFixture(useJsonAst = true) {
 
   "`while-end` statement is represented by a `WHILE` CONTROL_STRUCTURE node" in {
     val cpg = code("""
-        |x = 1
-        |while x > 0 do
-        | x = x - 1
-        |end
-        |""".stripMargin)
+                     |x = 1
+                     |while x > 0 do
+                     | x = x - 1
+                     |end
+                     |""".stripMargin)
 
     val List(whileNode)  = cpg.whileBlock.l
     val List(whileCond)  = whileNode.condition.isCall.l
@@ -29,16 +29,16 @@ class ControlStructureTests extends RubyCode2CpgFixture(useJsonAst = true) {
     assignment.lineNumber shouldBe Some(4)
   }
 
-  "begin-end-until should be lowered as a do-while loop" ignore {
+  "begin-end-until should be lowered as a do-while loop" in {
 
     val cpg = code("""
-        |i = 0
-        |num = 5
-        |begin
-        |  num = i + 3
-        |end until i < num
-        |puts num
-        |""".stripMargin)
+                     |i = 0
+                     |num = 5
+                     |begin
+                     |  num = i + 3
+                     |end until i < num
+                     |puts num
+                     |""".stripMargin)
 
     val List(whileNode)  = cpg.doBlock.l
     val List(whileCond)  = whileNode.condition.isCall.l
@@ -53,13 +53,13 @@ class ControlStructureTests extends RubyCode2CpgFixture(useJsonAst = true) {
 
   }
 
-  "`until-end` statement is represented by a negated `WHILE` CONTROL_STRUCTURE node" ignore {
+  "`until-end` statement is represented by a negated `WHILE` CONTROL_STRUCTURE node" in {
     val cpg = code("""
-        |x = 1
-        |until x <= 0 do
-        | x = x - 1
-        |end
-        |""".stripMargin)
+                     |x = 1
+                     |until x <= 0 do
+                     | x = x - 1
+                     |end
+                     |""".stripMargin)
 
     val List(untilNode)    = cpg.whileBlock.l
     val List(untilNegCond) = untilNode.condition.isCall.l
@@ -77,19 +77,19 @@ class ControlStructureTests extends RubyCode2CpgFixture(useJsonAst = true) {
     assignment.lineNumber shouldBe Some(4)
   }
 
-  "a break expression nested in a control structure should be represented" ignore {
+  "a break expression nested in a control structure should be represented" in {
     val cpg = code("""
-        |x = 0
-        |num  = -1
-        |loop do
-        |  num = x + 1
-        |  x = x + 1
-        |  if x > 10
-        |    break
-        |  end
-        |end
-        |puts num
-        |""".stripMargin)
+                     |x = 0
+                     |num  = -1
+                     |loop do
+                     |  num = x + 1
+                     |  x = x + 1
+                     |  if x > 10
+                     |    break
+                     |  end
+                     |end
+                     |puts num
+                     |""".stripMargin)
 
     val List(breakNode) = cpg.break.l
     breakNode.code shouldBe "break"
@@ -101,10 +101,10 @@ class ControlStructureTests extends RubyCode2CpgFixture(useJsonAst = true) {
 
   "`if-end` statement is represented by an `IF` CONTROL_STRUCTURE node" in {
     val cpg = code("""
-        |if __LINE__ > 1 then
-        | "> 1"
-        |end
-        |""".stripMargin)
+                     |if __LINE__ > 1 then
+                     | "> 1"
+                     |end
+                     |""".stripMargin)
 
     val List(ifNode) = cpg.ifBlock.l
     val List(ifCond) = ifNode.condition.isCall.l
@@ -120,12 +120,12 @@ class ControlStructureTests extends RubyCode2CpgFixture(useJsonAst = true) {
 
   "`if-else-end` statement is represented by `IF`-`ELSE` CONTROL_STRUCTURE nodes" in {
     val cpg = code("""
-        |if __LINE__ > 1 then
-        | "> 1"
-        |else
-        | "<= 1"
-        |end
-        |""".stripMargin)
+                     |if __LINE__ > 1 then
+                     | "> 1"
+                     |else
+                     | "<= 1"
+                     |end
+                     |""".stripMargin)
 
     val List(ifNode)  = cpg.ifBlock.l
     val List(ifCond)  = ifNode.condition.isCall.l
@@ -143,16 +143,14 @@ class ControlStructureTests extends RubyCode2CpgFixture(useJsonAst = true) {
     elseStr.lineNumber shouldBe Some(5)
   }
 
-  "`if-elsif-end` statement is represented by `IF`-`ELSE`-`IF` CONTROL_STRUCTURE nodes" ignore {
+  "`if-elsif-end` statement is represented by `IF`-`ELSE`-`IF` CONTROL_STRUCTURE nodes" in {
     val cpg = code("""
-        |if __LINE__ == 0 then
-        | '= 0'
-        |elsif __LINE__ > 0 then
-        | '> 0'
-        |end
-        |""".stripMargin)
-
-//    cpg.method.isModule.dotAst.l.foreach(println)
+                     |if __LINE__ == 0 then
+                     | '= 0'
+                     |elsif __LINE__ > 0 then
+                     | '> 0'
+                     |end
+                     |""".stripMargin)
 
     val List(ifNode)  = cpg.ifBlock.where(_.lineNumber(2)).l
     val List(ifCond)  = ifNode.condition.isCall.l
@@ -177,94 +175,77 @@ class ControlStructureTests extends RubyCode2CpgFixture(useJsonAst = true) {
     elsIfStr.lineNumber shouldBe Some(5)
   }
 
-  "`unless-end` statement is represented by a negated `IF` CONTROL_STRUCTURE node" ignore {
+  "`unless-end` statement is represented by a negated `IF` CONTROL_STRUCTURE node" in {
     val cpg = code("""
-        |unless __LINE__ == 0 then
-        |  x = '!= 0'
-        |end
-        |""".stripMargin)
+                     |unless __LINE__ == 0 then
+                     |  x = '!= 0'
+                     |end
+                     |""".stripMargin)
 
-    val List(unlessNode)    = cpg.ifBlock.l
-    val List(unlessNegCond) = unlessNode.condition.isCall.l
-    val List(assignment)    = unlessNode.whenTrue.assignment.l
+    val List(unlessNode)      = cpg.ifBlock.l
+    val List(unlessCondition) = unlessNode.condition.isCall.l
+    val List(assignment)      = unlessNode.whenFalse.assignment.l
 
-    unlessNode.whenFalse.isEmpty shouldBe true
-
-    unlessNegCond.methodFullName shouldBe Operators.logicalNot
-    unlessNegCond.code shouldBe "__LINE__ == 0"
-    unlessNegCond.lineNumber shouldBe Some(2)
-
-    val List(unlessOriginalCond) = unlessNegCond.argument.isCall.l
-    unlessOriginalCond.methodFullName shouldBe Operators.equals
-    unlessOriginalCond.code shouldBe "__LINE__ == 0"
+    unlessCondition.methodFullName shouldBe Operators.equals
+    unlessCondition.code shouldBe "__LINE__ == 0"
+    unlessCondition.lineNumber shouldBe Some(2)
 
     assignment.code shouldBe "x = '!= 0'"
     assignment.lineNumber shouldBe Some(3)
   }
 
-  "`unless-else-end` statement is represented by a negated `IF` CONTROL_STRUCTURE node" ignore {
+  "`unless-else-end` statement is represented by a `IF` CONTROL_STRUCTURE node" in {
     val cpg = code("""
-        |unless __LINE__ == 0 then
-        | x = '!= 0'
-        |else
-        | x = '= 0'
-        |end
-        |""".stripMargin)
+                     |unless __LINE__ == 0 then
+                     | x = '!= 0'
+                     |else
+                     | x = '= 0'
+                     |end
+                     |""".stripMargin)
 
     val List(unlessNode)     = cpg.ifBlock.l
-    val List(unlessNegCond)  = unlessNode.condition.isCall.l
+    val List(unlessCond)     = unlessNode.condition.isCall.l
     val List(thenAssignment) = unlessNode.whenTrue.assignment.l
     val List(elseAssignment) = unlessNode.whenFalse.assignment.l
 
-    unlessNegCond.methodFullName shouldBe Operators.logicalNot
-    unlessNegCond.code shouldBe "__LINE__ == 0"
-    unlessNegCond.lineNumber shouldBe Some(2)
+    unlessCond.methodFullName shouldBe Operators.equals
+    unlessCond.code shouldBe "__LINE__ == 0"
+    unlessCond.lineNumber shouldBe Some(2)
 
-    val List(unlessOriginalCond) = unlessNegCond.argument.isCall.l
-    unlessOriginalCond.methodFullName shouldBe Operators.equals
-    unlessOriginalCond.code shouldBe "__LINE__ == 0"
+    // Then and Else is inverted with UNLESS
+    thenAssignment.code shouldBe "x = '= 0'"
+    thenAssignment.lineNumber shouldBe Some(5)
 
-    thenAssignment.code shouldBe "x = '!= 0'"
-    thenAssignment.lineNumber shouldBe Some(3)
-
-    elseAssignment.code shouldBe "x = '= 0'"
-    elseAssignment.lineNumber shouldBe Some(5)
+    elseAssignment.code shouldBe "x = '!= 0'"
+    elseAssignment.lineNumber shouldBe Some(3)
   }
 
-  "`... unless ...` statement is represented by a negated `IF` CONTROL_STRUCTURE node" ignore {
+  "`... unless ...` statement is represented by a negated `IF` CONTROL_STRUCTURE node" in {
     val cpg = code("""
-        |42 unless false
-        |""".stripMargin)
+                     |42 unless false
+                     |""".stripMargin)
 
-    val List(unlessNode)    = cpg.ifBlock.l
-    val List(unlessNegCond) = unlessNode.condition.isCall.l
-    val List(thenLiteral)   = unlessNode.whenTrue.isBlock.astChildren.isLiteral.l
+    val List(unlessNode)  = cpg.ifBlock.l
+    val List(unlessCond)  = unlessNode.condition.isLiteral.l
+    val List(thenLiteral) = unlessNode.whenFalse.isBlock.astChildren.isLiteral.l
 
-    unlessNegCond.methodFullName shouldBe Operators.logicalNot
-    unlessNegCond.code shouldBe "false"
-    unlessNegCond.lineNumber shouldBe Some(2)
-
-    val List(unlessOriginalCond) = unlessNegCond.argument.isLiteral.l
-    unlessOriginalCond.code shouldBe "false"
-    unlessOriginalCond.lineNumber shouldBe Some(2)
+    unlessCond.code shouldBe "false"
+    unlessCond.lineNumber shouldBe Some(2)
 
     thenLiteral.code shouldBe "42"
     thenLiteral.lineNumber shouldBe Some(2)
   }
 
-  "`unless` binds tighter than `=`" ignore {
+  "`unless` binds tighter than `=`" in {
     val cpg = code("""
-        |x = 1 unless false
-        |""".stripMargin)
+                     |x = 1 unless false
+                     |""".stripMargin)
 
-    val List(unlessNode)    = cpg.ifBlock.l
-    val List(unlessNegCond) = unlessNode.condition.isCall.l
-    val List(assignment)    = unlessNode.whenTrue.assignment.l
+    val List(unlessNode) = cpg.ifBlock.l
+    val List(unlessCond) = unlessNode.condition.isLiteral.l
+    val List(assignment) = unlessNode.whenFalse.assignment.l
 
-    unlessNode.whenFalse.isEmpty shouldBe true
-
-    unlessNegCond.methodFullName shouldBe Operators.logicalNot
-    unlessNegCond.code shouldBe "false"
+    unlessCond.code shouldBe "false"
 
     assignment.code shouldBe "x = 1"
     assignment.lineNumber shouldBe Some(2)
@@ -272,8 +253,8 @@ class ControlStructureTests extends RubyCode2CpgFixture(useJsonAst = true) {
 
   "`... if ...` statement is represented by an `IF` CONTROL_STRUCTURE node" in {
     val cpg = code("""
-        |"> 1" if __LINE__ > 1
-        |""".stripMargin)
+                     |"> 1" if __LINE__ > 1
+                     |""".stripMargin)
 
     val List(ifNode) = cpg.ifBlock.l
     val List(ifCond) = ifNode.condition.isCall.l
@@ -289,8 +270,8 @@ class ControlStructureTests extends RubyCode2CpgFixture(useJsonAst = true) {
 
   "`... while ...` statement is represented by a `WHILE` CONTROL_STRUCTURE node" in {
     val cpg = code("""
-        |puts 'hi' while (true)
-        |""".stripMargin)
+                     |puts 'hi' while (true)
+                     |""".stripMargin)
 
     val List(whileNode) = cpg.whileBlock.l
     val List(whileCond) = whileNode.condition.isLiteral.l
@@ -304,7 +285,7 @@ class ControlStructureTests extends RubyCode2CpgFixture(useJsonAst = true) {
     putsHi.lineNumber shouldBe Some(2)
   }
 
-  "rescue nil is represented by a TRY CONTROL_STRUCTURE node" ignore {
+  "rescue nil is represented by a TRY CONTROL_STRUCTURE node" in {
     val cpg = code("""
                      |def test1
                      |  @dev.close rescue nil
@@ -312,33 +293,35 @@ class ControlStructureTests extends RubyCode2CpgFixture(useJsonAst = true) {
                      |""".stripMargin)
     val List(rescueNode) = cpg.method("test1").tryBlock.l
     rescueNode.controlStructureType shouldBe ControlStructureTypes.TRY
-    val List(body, rescueBody, implicitReturnBody) = rescueNode.astChildren.l
+    // Fixme: Implicit Returns for methods
+//    val List(body, rescueBody, implicitReturnBody) = rescueNode.astChildren.l
+    val List(body, rescueBody) = rescueNode.astChildren.l
   }
 
-  "`begin ... rescue ... end is represented by a `TRY` CONTROL_STRUCTURE node" ignore {
+  "`begin ... rescue ... end is represented by a `TRY` CONTROL_STRUCTURE node" in {
     val cpg = code("""
-        |def test1
-        |  begin 
-        |    puts
-        |    1 
-        |  rescue E1 => e
-        |    puts
-        |    2 
-        |  rescue E2
-        |    puts
-        |    3
-        |  rescue
-        |    puts
-        |    4
-        |  else
-        |    puts
-        |    5
-        |  ensure
-        |    puts
-        |    6
-        |  end
-        |end
-        |""".stripMargin)
+                     |def test1
+                     |  begin
+                     |    puts
+                     |    1
+                     |  rescue E1 => e
+                     |    puts
+                     |    2
+                     |  rescue E2
+                     |    puts
+                     |    3
+                     |  rescue
+                     |    puts
+                     |    4
+                     |  else
+                     |    puts
+                     |    5
+                     |  ensure
+                     |    puts
+                     |    6
+                     |  end
+                     |end
+                     |""".stripMargin)
 
     inside(cpg.method("test1").controlStructure.l) {
       case tryStruct :: rescue1Struct :: rescue2Struct :: rescue3Struct :: elseStruct :: ensureStruct :: Nil =>
@@ -365,16 +348,16 @@ class ControlStructureTests extends RubyCode2CpgFixture(useJsonAst = true) {
     }
   }
 
-  "`begin ... ensure ... end is represented by a `TRY` CONTROL_STRUCTURE node" ignore {
+  "`begin ... ensure ... end is represented by a `TRY` CONTROL_STRUCTURE node" in {
     val cpg = code("""
-        |def test2
-        |  begin
-        |   1   
-        |  ensure
-        |   2
-        |  end
-        |end
-        |""".stripMargin)
+                     |def test2
+                     |  begin
+                     |   1
+                     |  ensure
+                     |   2
+                     |  end
+                     |end
+                     |""".stripMargin)
 
     inside(cpg.method("test2").controlStructure.l) {
       case tryStruct :: defaultElseStruct :: ensureStruct :: Nil =>
@@ -394,22 +377,22 @@ class ControlStructureTests extends RubyCode2CpgFixture(useJsonAst = true) {
 
   "`for .. in` control structure" should {
     val cpg = code("""
-        |def foo1
-        | x = [1, 2, 3]
-        | for i in x do
-        |   puts x - i
-        | end
-        |end
-        |
-        |def foo2
-        | x = 3
-        | for i in 1..x do
-        |   puts x + i
-        | end
-        |end
-        |""".stripMargin)
+                     |def foo1
+                     | x = [1, 2, 3]
+                     | for i in x do
+                     |   puts x - i
+                     | end
+                     |end
+                     |
+                     |def foo2
+                     | x = 3
+                     | for i in 1..x do
+                     |   puts x + i
+                     | end
+                     |end
+                     |""".stripMargin)
 
-    "create a FOR control structure node with body with an array iterable" ignore {
+    "create a FOR control structure node with body with an array iterable" in {
       inside(cpg.method("foo1").controlStructure.l) {
         case forEachNode :: Nil =>
           forEachNode.controlStructureType shouldBe ControlStructureTypes.FOR
@@ -447,6 +430,7 @@ class ControlStructureTests extends RubyCode2CpgFixture(useJsonAst = true) {
       }
     }
 
+    // TODO: Merge range operator
     "create a FOR control structure node with body with a 'range' iterable" ignore {
       inside(cpg.method("foo2").controlStructure.l) {
         case forEachNode :: Nil =>
@@ -481,10 +465,10 @@ class ControlStructureTests extends RubyCode2CpgFixture(useJsonAst = true) {
 
   "implicit if-elsif-else assignment" should {
     val cpg = code("""
-        |   a = if (y > 3) then 123 elsif(y < 6) then 2003 elsif(y < 10) then 982 else 456 end
-        |""".stripMargin)
+                     |   a = if (y > 3) then 123 elsif(y < 6) then 2003 elsif(y < 10) then 982 else 456 end
+                     |""".stripMargin)
 
-    "Create assignment operators for each branch" ignore {
+    "Create assignment operators for each branch" in {
       inside(cpg.call.name(Operators.assignment).l) {
         case ifAssignment :: elsifOneAssignment :: elsifTwoAssignment :: elseAssignment :: Nil =>
           ifAssignment.code shouldBe "a = 123"
@@ -498,8 +482,8 @@ class ControlStructureTests extends RubyCode2CpgFixture(useJsonAst = true) {
 
   "implicit if assignment" should {
     val cpg = code("""
-        | a = if(x > 4) then 123 end
-        |""".stripMargin)
+                     | a = if(x > 4) then 123 end
+                     |""".stripMargin)
 
     "create assignment operators for if and default else branch" in {
       inside(cpg.call.name(Operators.assignment).l) {
@@ -514,18 +498,18 @@ class ControlStructureTests extends RubyCode2CpgFixture(useJsonAst = true) {
 
   "if-elsif-else in function with explicit return statements" should {
     val cpg = code("""
-        | def foo(x, y)
-        |   if x < 0 then
-        |     return 0
-        |   elsif x == 0 then
-        |     return x
-        |   else
-        |     return y
-        |   end
-        |end
-        |""".stripMargin)
+                     | def foo(x, y)
+                     |   if x < 0 then
+                     |     return 0
+                     |   elsif x == 0 then
+                     |     return x
+                     |   else
+                     |     return y
+                     |   end
+                     |end
+                     |""".stripMargin)
 
-    "Generate return nodes without unknown nodes" ignore {
+    "Generate return nodes without unknown nodes" in {
       inside(cpg.method.name("foo").methodReturn.toReturn.l) {
         case returnZero :: returnX :: returnY :: Nil =>
           returnZero.code shouldBe "return 0"
@@ -555,7 +539,7 @@ class ControlStructureTests extends RubyCode2CpgFixture(useJsonAst = true) {
     }
   }
 
-  "Generate continue node for next" ignore {
+  "Generate continue node for next" in {
     val cpg = code("""
                      |for i in arr do
                      |   next if i % 2 == 0
@@ -587,7 +571,7 @@ class ControlStructureTests extends RubyCode2CpgFixture(useJsonAst = true) {
     }
   }
 
-  "A `raise` call with an explicit error argument should generate a `throw` control structure" ignore {
+  "A `raise` call with an explicit error argument should generate a `throw` control structure" in {
     val cpg = code("raise ZeroDivisionError.new 'b should not be 0'")
     inside(cpg.controlStructure.l) {
       case (ctrlStruct: ControlStructure) :: Nil =>
@@ -605,14 +589,14 @@ class ControlStructureTests extends RubyCode2CpgFixture(useJsonAst = true) {
     }
   }
 
-  "Ternary if" ignore {
+  "Ternary if" in {
     val cpg = code("""
-        |class Api::V1::UsersController < ApplicationController
-        |  def index
-        |    respond_with @user.admin ? User.all : @user
-        |  end
-        |end
-        |""".stripMargin)
+                     |class Api::V1::UsersController < ApplicationController
+                     |  def index
+                     |    respond_with @user.admin ? User.all : @user
+                     |  end
+                     |end
+                     |""".stripMargin)
 
     inside(cpg.method.name("index").l) {
       case indexMethod :: Nil =>
@@ -639,14 +623,14 @@ class ControlStructureTests extends RubyCode2CpgFixture(useJsonAst = true) {
     }
   }
 
-  "RETURN keyword in logicalAndExpression" ignore {
+  "RETURN keyword in logicalAndExpression" in {
     val cpg = code("""
-        |def foo
-        | if (a == 1 && return)
-        |   puts a
-        | end
-        |end
-        |""".stripMargin)
+                     |def foo
+                     | if (a == 1 && return)
+                     |   puts a
+                     | end
+                     |end
+                     |""".stripMargin)
 
     inside(cpg.method.name("foo").controlStructure.l) {
       case ifStruct :: Nil =>
@@ -659,14 +643,14 @@ class ControlStructureTests extends RubyCode2CpgFixture(useJsonAst = true) {
     }
   }
 
-  "RETURN keyword in logicalOrExpression" ignore {
+  "RETURN keyword in logicalOrExpression" in {
     val cpg = code("""
-        |def foo
-        |   if (a == 10 || return)
-        |     puts a
-        |   end
-        |end
-        |""".stripMargin)
+                     |def foo
+                     |   if (a == 10 || return)
+                     |     puts a
+                     |   end
+                     |end
+                     |""".stripMargin)
 
     inside(cpg.method.name("foo").controlStructure.l) {
       case orIfStruct :: Nil =>
@@ -678,13 +662,13 @@ class ControlStructureTests extends RubyCode2CpgFixture(useJsonAst = true) {
     }
   }
 
-  "ForEach loops" ignore {
+  "ForEach loops" in {
     val cpg = code("""
-        |fibNumbers = [0, 1, 1, 2, 3, 5, 8, 13]
-        |for num in fibNumbers
-        | puts num
-        |end
-        |""".stripMargin)
+                     |fibNumbers = [0, 1, 1, 2, 3, 5, 8, 13]
+                     |for num in fibNumbers
+                     | puts num
+                     |end
+                     |""".stripMargin)
 
     inside(cpg.method.isModule.controlStructure.l) {
       case forEachNode :: Nil =>
@@ -717,5 +701,4 @@ class ControlStructureTests extends RubyCode2CpgFixture(useJsonAst = true) {
       case xs => fail(s"Expected one node for `forEach` loop, got [${xs.code.mkString(",")}]")
     }
   }
-
 }

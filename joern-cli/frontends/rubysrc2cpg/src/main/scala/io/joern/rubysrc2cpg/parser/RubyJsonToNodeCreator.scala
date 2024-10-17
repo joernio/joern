@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.parser
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{RubyExpression, *}
 import io.joern.rubysrc2cpg.parser.RubyJsonHelpers.*
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
+import io.joern.rubysrc2cpg.passes.Defines.{NilClass, getBuiltInType}
 import io.joern.rubysrc2cpg.passes.GlobalTypes.builtinPrefix
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
 import io.joern.x2cpg.frontendspecific.rubysrc2cpg.ImportsPass
@@ -122,6 +122,7 @@ class RubyJsonToNodeCreator(
         case AstType.ModuleDefinition             => visitModuleDefinition(obj)
         case AstType.MultipleAssignment           => visitMultipleAssignment(obj)
         case AstType.MultipleLeftHandSide         => visitMultipleLeftHandSide(obj)
+        case AstType.Next                         => visitNext(obj)
         case AstType.Nil                          => visitNil(obj)
         case AstType.NthRef                       => visitNthRef(obj)
         case AstType.OperatorAssign               => visitOperatorAssign(obj)
@@ -262,7 +263,20 @@ class RubyJsonToNodeCreator(
     DynamicLiteral(typeFullName, expressions)(obj.toTextSpan)
   }
 
-  private def visitEnsure(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitEnsure(obj: Obj): RubyExpression = {
+    val ensureClause = EnsureClause(visit(obj(ParserKeys.Body)))(obj.toTextSpan)
+    visit(obj(ParserKeys.Statement)) match {
+      case rescueExpression: RescueExpression =>
+        rescueExpression.copy(
+          rescueExpression.body,
+          rescueExpression.rescueClauses,
+          rescueExpression.elseClause,
+          Some(ensureClause)
+        )(obj.toTextSpan)
+      case x =>
+        RescueExpression(x, List.empty, Option.empty, Some(ensureClause))(obj.toTextSpan)
+    }
+  }
 
   private def visitExclusiveFlipFlop(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
@@ -294,7 +308,11 @@ class RubyJsonToNodeCreator(
   private def visitForStatement(obj: Obj): RubyExpression = {
     val forVariable      = visit(obj(ParserKeys.Variable))
     val iterableVariable = visit(obj(ParserKeys.Collection))
-    val doBlock          = visit(obj(ParserKeys.Body))
+    val doBlock = visit(obj(ParserKeys.Body)) match {
+      case stmtList: StatementList => stmtList
+      case other                   => StatementList(List(other))(other.span)
+    }
+
     ForExpression(forVariable, iterableVariable, doBlock)(obj.toTextSpan)
   }
 
@@ -317,16 +335,22 @@ class RubyJsonToNodeCreator(
   private def visitIfGuard(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
   private def visitIfStatement(obj: Obj): RubyExpression = {
-    val condition  = visit(obj(ParserKeys.Condition))
-    val thenClause = visit(obj(ParserKeys.ThenBranch))
+    val condition = visit(obj(ParserKeys.Condition))
 
-    // If the `elseClause` is an `ifExpression`, we have `elsifs`, otherwise it is just a normal else clause
     val elseClause = obj.visitOption(ParserKeys.ElseBranch).map {
       case x: IfExpression => x
       case x               => ElseClause(StatementList(List(x))(x.span))(x.span)
     }
 
-    IfExpression(condition, thenClause, elsifClauses = List.empty, elseClause)(obj.toTextSpan)
+    obj.visitOption(ParserKeys.ThenBranch) match {
+      case Some(thenBranch) =>
+        IfExpression(condition, thenBranch, elsifClauses = List.empty, elseClause)(obj.toTextSpan)
+      case None =>
+        val nilBlock = ReturnExpression(
+          List(StaticLiteral(Defines.getBuiltInType(Defines.NilClass))(obj.toTextSpan.spanStart("nil")))
+        )(obj.toTextSpan.spanStart("return nil"))
+        IfExpression(condition, nilBlock, elsifClauses = List.empty, elseClause)(obj.toTextSpan)
+    }
   }
 
   private def visitInclude(obj: Obj): RubyExpression = {
@@ -409,6 +433,8 @@ class RubyJsonToNodeCreator(
 
   private def visitMultipleLeftHandSide(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
+  private def visitNext(obj: Obj): RubyExpression = NextExpression()(obj.toTextSpan)
+
   private def visitNil(obj: Obj): RubyExpression = StaticLiteral(getBuiltInType(Defines.NilClass))(obj.toTextSpan)
 
   private def visitNthRef(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
@@ -458,14 +484,22 @@ class RubyJsonToNodeCreator(
   private def visitRaise(obj: Obj): RubyExpression = {
     val callName = obj(ParserKeys.Name).str
     val target   = SimpleIdentifier()(obj.toTextSpan.spanStart(callName))
-    val argument = obj.visitArray(ParserKeys.Arguments).head
 
-    val simpleErrorId =
-      SimpleIdentifier(Option(s"$builtinPrefix.StandardError"))(argument.span.spanStart("StandardError"))
-    val implicitSimpleErrInst = SimpleObjectInstantiation(simpleErrorId, argument :: Nil)(
-      argument.span.spanStart(s"StandardError.new(${argument.text})")
-    )
-    RaiseCall(target, implicitSimpleErrInst :: Nil)(obj.toTextSpan)
+    obj.visitArray(ParserKeys.Arguments) match {
+      case Nil => RaiseCall(target, List.empty)(obj.toTextSpan)
+      case (argument: StaticLiteral) :: Nil =>
+        val simpleErrorId =
+          SimpleIdentifier(Option(s"$builtinPrefix.StandardError"))(argument.span.spanStart("StandardError"))
+        val implicitSimpleErrInst = SimpleObjectInstantiation(simpleErrorId, argument :: Nil)(
+          argument.span.spanStart(s"StandardError.new(${argument.text})")
+        )
+        RaiseCall(target, implicitSimpleErrInst :: Nil)(obj.toTextSpan)
+      case argument :: Nil =>
+        RaiseCall(target, List(argument))(obj.toTextSpan)
+      case arguments =>
+        RaiseCall(target, arguments)(obj.toTextSpan)
+    }
+
   }
 
   private def visitRational(obj: Obj): RubyExpression = StaticLiteral(getBuiltInType(Defines.Rational))(obj.toTextSpan)
@@ -480,11 +514,25 @@ class RubyJsonToNodeCreator(
 
   private def visitRegexOption(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
-  private def visitResBody(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitResBody(obj: Obj): RubyExpression = {
+    val exceptionClassList = obj.visitOption(ParserKeys.ExecList)
+    val variables          = obj.visitOption(ParserKeys.ExecVar)
+    val body               = visit(obj(ParserKeys.Body))
+    RescueClause(exceptionClassList, variables, body)(obj.toTextSpan)
+  }
 
   private def visitRestArg(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
-  private def visitRescueStatement(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitRescueStatement(obj: Obj): RubyExpression = {
+    val stmt          = visit(obj(ParserKeys.Statement))
+    val rescueClauses = obj.visitArray(ParserKeys.Bodies).asInstanceOf[List[RescueClause]]
+    val elseClause = obj.visitOption(ParserKeys.ElseClause) match {
+      case Some(body) => Option(ElseClause(body)(body.span))
+      case None       => Option.empty
+    }
+
+    RescueExpression(stmt, rescueClauses, elseClause, Option.empty)(obj.toTextSpan)
+  }
 
   private def visitRequireLike(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
@@ -553,6 +601,13 @@ class RubyJsonToNodeCreator(
     val lhs = SimpleIdentifier()(obj.toTextSpan.spanStart(obj(ParserKeys.Lhs).str))
     val rhs = visit(obj(ParserKeys.Rhs))
     SingleAssignment(lhs, "=", rhs)(obj.toTextSpan)
+    obj.visitOption(ParserKeys.Rhs) match {
+      case Some(rhs) =>
+        SingleAssignment(lhs, "=", rhs)(obj.toTextSpan)
+      case None =>
+        // `lvasgn` is used in exec_var for rescueExpr, which only has LHS
+        MandatoryParameter(lhs.span.text)(lhs.span)
+    }
   }
 
   private def visitSplat(obj: Obj): RubyExpression = SplattingRubyNode(visit(obj(ParserKeys.Value)))(obj.toTextSpan)
@@ -587,7 +642,9 @@ class RubyJsonToNodeCreator(
 
   private def visitUnDefine(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
-  private def visitUnlessExpression(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitUnlessExpression(obj: Obj): RubyExpression = {
+    defaultResult(Option(obj.toTextSpan))
+  }
 
   private def visitUnlessGuard(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 

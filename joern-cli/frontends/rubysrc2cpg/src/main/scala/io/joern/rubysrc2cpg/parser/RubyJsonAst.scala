@@ -116,6 +116,7 @@ enum AstType(val name: String) {
   case ModuleDefinition             extends AstType("module")
   case MultipleAssignment           extends AstType("masgn")
   case MultipleLeftHandSide         extends AstType("mlhs")
+  case Next                         extends AstType("next")
   case Nil                          extends AstType("nil")
   case NthRef                       extends AstType("nth_ref")
   case OperatorAssign               extends AstType("op_asgn")
@@ -164,32 +165,32 @@ object AstType {
 }
 
 object BinaryOperators {
-  private val BinaryOperatorNames: Map[String, String] =
-    Map(
-      "+"   -> Operators.addition,
-      "-"   -> Operators.subtraction,
-      "*"   -> Operators.multiplication,
-      "/"   -> Operators.division,
-      "%"   -> Operators.modulo,
-      "**"  -> Operators.exponentiation,
-      "=="  -> Operators.equals,
-      "===" -> Operators.equals,
-      "!="  -> Operators.notEquals,
-      "<"   -> Operators.lessThan,
-      "<="  -> Operators.lessEqualsThan,
-      ">"   -> Operators.greaterThan,
-      ">="  -> Operators.greaterEqualsThan,
-      "<=>" -> Operators.compare,
-      "&&"  -> Operators.logicalAnd,
-      "and" -> Operators.logicalAnd,
-      "or"  -> Operators.logicalOr,
-      "||"  -> Operators.logicalOr,
-      "&"   -> Operators.and,
-      "|"   -> Operators.or,
-      "^"   -> Operators.xor,
+  private val BinaryOperators: Set[String] =
+    Set(
+      "+",
+      "-",
+      "*",
+      "/",
+      "%",
+      "**",
+      "==",
+      "===",
+      "!=",
+      "<",
+      "<=",
+      ">",
+      ">=",
+      "<=>",
+      "&&",
+      "and",
+      "or",
+      "||",
+      "&",
+      "|",
+      "^",
       //      "<<"  -> Operators.shiftLeft,  Note: Generally Ruby abstracts this as an append operator based on the LHS
-      ">>" -> Operators.logicalShiftRight
+      ">>"
     )
 
-  def isBinaryOperatorName(op: String): Boolean = BinaryOperatorNames.contains(op)
+  def isBinaryOperatorName(op: String): Boolean = BinaryOperators.contains(op)
 }

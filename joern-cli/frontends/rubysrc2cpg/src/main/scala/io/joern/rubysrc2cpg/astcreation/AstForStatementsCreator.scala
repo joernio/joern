@@ -87,7 +87,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     builder(node, conditionAst, thenAst, elseAsts)
   }
 
-  private def astForThenClause(node: RubyExpression): Ast = astForStatementList(node.asStatementList)
+  protected def astForThenClause(node: RubyExpression): Ast = astForStatementList(node.asStatementList)
 
   private def astsForElseClauses(
     elsIfClauses: List[RubyExpression],
