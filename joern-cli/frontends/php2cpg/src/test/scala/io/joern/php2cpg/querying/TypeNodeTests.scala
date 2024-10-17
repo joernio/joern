@@ -29,7 +29,6 @@ class TypeNodeTests extends PhpCode2CpgFixture {
         |""".stripMargin)
 
     "have corresponding type nodes created" in {
-      println(cpg.literal.toList)
       cpg.typ.fullName.toSet shouldEqual Set("ANY", "int")
     }
 

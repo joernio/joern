@@ -71,7 +71,6 @@ class LocalTests extends PhpCode2CpgFixture {
           |  }
           |}
           |""".stripMargin)
-    println(cpg.local.name.l)
     inside(cpg.local.l) { case List(xLocal) =>
       xLocal.name shouldBe "x"
       xLocal.code shouldBe "static $x"
