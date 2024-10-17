@@ -3,7 +3,13 @@ package io.joern.kotlin2cpg.ast
 import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.psi.PsiUtils
 import io.joern.kotlin2cpg.psi.PsiUtils.nonUnderscoreDestructuringEntries
-import io.joern.kotlin2cpg.types.{AnonymousObjectContext, NameRenderer, TypeConstants, TypeInfoProvider}
+import io.joern.kotlin2cpg.types.{
+  AnonymousObjectContext,
+  DefaultTypeInfoProvider,
+  NameRenderer,
+  TypeConstants,
+  TypeInfoProvider
+}
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.Defines
@@ -24,7 +30,9 @@ import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.semanticcpg.language.*
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.resolve.DescriptorUtils
 
+import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 import scala.util.Random
 
@@ -49,16 +57,27 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         s"$fqName.$className"
       }
     registerType(classFullName)
-    val explicitBaseTypeFullNames = ktClass.getSuperTypeListEntries.asScala
-      .map(_.getTypeAsUserType)
-      .collect { case t if t != null => t.getText }
-      .map { typ => typeInfoProvider.typeFromImports(typ, ktClass.getContainingKtFile).getOrElse(typ) }
-      .toList
 
-    val baseTypeFullNames = typeInfoProvider.inheritanceTypes(ktClass, explicitBaseTypeFullNames)
+    val baseTypeFullNames =
+      ktClass.getSuperTypeListEntries.asScala
+        .flatMap { superTypeEntry =>
+          val typeRef = superTypeEntry.getTypeReference
+          val superType = bindingUtils
+            .getTypeRefType(typeRef)
+            .flatMap(nameRenderer.typeFullName)
+
+          superType.orElse {
+            typeInfoProvider.typeFromImports(typeRef.getText, ktClass.getContainingKtFile)
+          }
+        }
+        .to(mutable.ArrayBuffer)
+
+    if (baseTypeFullNames.isEmpty) {
+      baseTypeFullNames.append(TypeConstants.javaLangObject)
+    }
+
     baseTypeFullNames.foreach(registerType)
-    val outBaseTypeFullNames = Option(baseTypeFullNames).filter(_.nonEmpty).getOrElse(Seq(TypeConstants.javaLangObject))
-    val typeDecl = typeDeclNode(ktClass, className, classFullName, relativizedPath, outBaseTypeFullNames, None)
+    val typeDecl = typeDeclNode(ktClass, className, classFullName, relativizedPath, baseTypeFullNames.toSeq, None)
     scope.pushNewScope(typeDecl)
     methodAstParentStack.push(typeDecl)
 

@@ -8,11 +8,13 @@ import org.jetbrains.kotlin.psi.{
   KtExpression,
   KtFunctionLiteral,
   KtNamedFunction,
-  KtParameter
+  KtParameter,
+  KtTypeReference
 }
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.error.ErrorType
 
 import scala.jdk.CollectionConverters.*
 
@@ -80,5 +82,14 @@ class BindingContextUtils(bindingContext: BindingContext) {
   def getExprType(expr: KtExpression): Option[KotlinType] = {
     Option(bindingContext.get(BindingContext.EXPRESSION_TYPE_INFO, expr))
       .flatMap(typeInfo => Option(typeInfo.getType))
+  }
+
+  def getTypeRefType(typeRef: KtTypeReference): Option[KotlinType] = {
+    Option(bindingContext.get(BindingContext.TYPE, typeRef)) match {
+      case Some(error: ErrorType) =>
+        None
+      case other =>
+        other
+    }
   }
 }

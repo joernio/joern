@@ -146,21 +146,6 @@ class DefaultTypeInfoProvider(val bindingContext: BindingContext, typeRenderer: 
       .getOrElse(defaultValue)
   }
 
-  def inheritanceTypes(expr: KtClassOrObject, defaultValue: Seq[String]): Seq[String] = {
-    val mapForEntity = bindingsForEntity(bindingContext, expr)
-    Option(mapForEntity.get(BindingContext.CLASS.getKey))
-      .map(getSuperclassDescriptors)
-      .filter(_.asScala.nonEmpty)
-      .map(
-        _.asScala
-          .map { superClassDesc =>
-            typeRenderer.render(superClassDesc.getDefaultType)
-          }
-          .toList
-      )
-      .getOrElse(defaultValue)
-  }
-
   def isCompanionObject(expr: KtClassOrObject): Boolean = {
     val mapForEntity = bindingsForEntity(bindingContext, expr)
     Option(mapForEntity.get(BindingContext.CLASS.getKey)).exists(DescriptorUtils.isCompanionObject(_))

@@ -37,8 +37,6 @@ trait TypeInfoProvider(val typeRenderer: TypeRenderer = new TypeRenderer()) {
 
   def containingDeclType(expr: KtQualifiedExpression, defaultValue: String): String
 
-  def inheritanceTypes(expr: KtClassOrObject, or: Seq[String]): Seq[String]
-
   def destructuringEntryType(expr: KtDestructuringDeclarationEntry, defaultValue: String): String
 
   def propertyType(expr: KtProperty, defaultValue: String): String
