@@ -89,14 +89,6 @@ final class GitSparseFetcher(repoUrl: String = "git@github.com:flandini/typeinfo
     }
   }
 
-  private def prependDataDir(path: Path): Path = {
-    Paths.get("data").resolve(path)
-  }
-
-  private def convertServerPathToFileSysPath(fetcherPath: Path): Path = {
-    tmpDir.resolve(prependDataDir(fetcherPath))
-  }
-
   private def sparseClone(): Int = {
     runProcess(tmpDir, "git", "clone", "--filter=blob:none", "--depth=1", "--no-checkout", repoUrl, tmpDir.toString)
   }
