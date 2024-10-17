@@ -253,13 +253,12 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   def astForAnnotationEntry(entry: KtAnnotationEntry)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val typeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any) match {
-      case value if value != TypeConstants.any => value
-      case _ =>
-        typeInfoProvider
-          .typeFromImports(entry.getShortName.toString, entry.getContainingKtFile)
-          .getOrElse(s"${Defines.UnresolvedNamespace}.${entry.getShortName.toString}")
-    })
+    val typeFullName = nameRenderer.typeFullName(bindingUtils.getAnnotationDesc(entry).getType).getOrElse {
+      typeInfoProvider
+        .typeFromImports(entry.getShortName.toString, entry.getContainingKtFile)
+        .getOrElse(s"${Defines.UnresolvedNamespace}.${entry.getShortName.toString}")
+    }
+    registerType(typeFullName)
 
     val node =
       NewAnnotation()

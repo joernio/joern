@@ -182,13 +182,6 @@ class DefaultTypeInfoProvider(val bindingContext: BindingContext, typeRenderer: 
     }
   }
 
-  def typeFullName(expr: KtAnnotationEntry, defaultValue: String): String = {
-    Option(bindingsForEntity(bindingContext, expr))
-      .flatMap(_ => Option(bindingContext.get(BindingContext.ANNOTATION, expr)))
-      .map { desc => typeRenderer.render(desc.getType) }
-      .getOrElse(defaultValue)
-  }
-
   def containingDeclType(expr: KtQualifiedExpression, defaultValue: String): String = {
     resolvedCallDescriptor(expr)
       .map(_.getContainingDeclaration)

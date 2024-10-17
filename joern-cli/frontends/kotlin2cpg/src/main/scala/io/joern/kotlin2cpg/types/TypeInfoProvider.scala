@@ -43,8 +43,6 @@ trait TypeInfoProvider(val typeRenderer: TypeRenderer = new TypeRenderer()) {
 
   def referenceTargetTypeFullName(expr: KtNameReferenceExpression, defaultValue: String): String
 
-  def typeFullName(expr: KtAnnotationEntry, defaultValue: String): String
-
   def isReferenceToClass(expr: KtNameReferenceExpression): Boolean
 
   def bindingKind(expr: KtQualifiedExpression): CallKind

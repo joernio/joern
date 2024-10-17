@@ -1,5 +1,6 @@
 package io.joern.kotlin2cpg.ast
 
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.{
   ClassDescriptor,
   ConstructorDescriptor,
@@ -8,6 +9,7 @@ import org.jetbrains.kotlin.descriptors.{
   VariableDescriptor
 }
 import org.jetbrains.kotlin.psi.{
+  KtAnnotationEntry,
   KtClassOrObject,
   KtConstructor,
   KtDestructuringDeclarationEntry,
@@ -88,6 +90,10 @@ class BindingContextUtils(bindingContext: BindingContext) {
 
   def getTypeAliasDesc(typeAlias: KtTypeAlias): TypeAliasDescriptor = {
     bindingContext.get(BindingContext.TYPE_ALIAS, typeAlias)
+  }
+
+  def getAnnotationDesc(entry: KtAnnotationEntry): AnnotationDescriptor = {
+    bindingContext.get(BindingContext.ANNOTATION, entry)
   }
 
   def getExprType(expr: KtExpression): Option[KotlinType] = {
