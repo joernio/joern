@@ -70,8 +70,6 @@ class TypeTests extends AnyWordSpec with Matchers {
           .name(".*Base")
           .toList
 
-      cpg.typeDecl.name(".*Derived").baseTypeDecl.foreach(println)
-
       queryResult.size shouldBe 1
     }
 
