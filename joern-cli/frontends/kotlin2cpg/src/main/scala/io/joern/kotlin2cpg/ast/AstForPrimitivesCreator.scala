@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.psi.KtSuperExpression
 import org.jetbrains.kotlin.psi.KtThisExpression
 import org.jetbrains.kotlin.psi.KtTypeAlias
 import org.jetbrains.kotlin.psi.KtTypeReference
+import org.jetbrains.kotlin.types.error.ErrorType
 
 import scala.annotation.unused
 import scala.jdk.CollectionConverters.*
@@ -284,13 +285,21 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   def astForTypeAlias(typeAlias: KtTypeAlias)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+    val typeAliasDesc = bindingUtils.getTypeAliasDesc(typeAlias)
+    val aliasedType = typeAliasDesc.getExpandedType match {
+      case _: ErrorType =>
+        None
+      case nonErrorType =>
+        Some(nonErrorType)
+    }
+
     val node = typeDeclNode(
       typeAlias,
       typeAlias.getName,
-      registerType(typeInfoProvider.fullName(typeAlias, TypeConstants.any)),
+      registerType(nameRenderer.descFullName(typeAliasDesc).getOrElse(TypeConstants.any)),
       relativizedPath,
       Seq(),
-      Option(registerType(typeInfoProvider.aliasTypeFullName(typeAlias, TypeConstants.any)))
+      Option(registerType(aliasedType.flatMap(nameRenderer.typeFullName).getOrElse(TypeConstants.any)))
     )
     Ast(node)
   }

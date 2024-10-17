@@ -1,6 +1,12 @@
 package io.joern.kotlin2cpg.ast
 
-import org.jetbrains.kotlin.descriptors.{ClassDescriptor, ConstructorDescriptor, FunctionDescriptor, VariableDescriptor}
+import org.jetbrains.kotlin.descriptors.{
+  ClassDescriptor,
+  ConstructorDescriptor,
+  FunctionDescriptor,
+  TypeAliasDescriptor,
+  VariableDescriptor
+}
 import org.jetbrains.kotlin.psi.{
   KtClassOrObject,
   KtConstructor,
@@ -9,6 +15,7 @@ import org.jetbrains.kotlin.psi.{
   KtFunctionLiteral,
   KtNamedFunction,
   KtParameter,
+  KtTypeAlias,
   KtTypeReference
 }
 import org.jetbrains.kotlin.resolve.BindingContext
@@ -77,6 +84,10 @@ class BindingContextUtils(bindingContext: BindingContext) {
 
   def getVariableDesc(entry: KtDestructuringDeclarationEntry): Option[VariableDescriptor] = {
     Option(bindingContext.get(BindingContext.VARIABLE, entry))
+  }
+
+  def getTypeAliasDesc(typeAlias: KtTypeAlias): TypeAliasDescriptor = {
+    bindingContext.get(BindingContext.TYPE_ALIAS, typeAlias)
   }
 
   def getExprType(expr: KtExpression): Option[KotlinType] = {

@@ -80,14 +80,6 @@ class DefaultTypeInfoProvider(val bindingContext: BindingContext, typeRenderer: 
     Option(mapForEntity.get(BindingContext.USED_AS_EXPRESSION.getKey)).map(_.booleanValue())
   }
 
-  def fullName(expr: KtTypeAlias, defaultValue: String): String = {
-    val mapForEntity = bindingsForEntity(bindingContext, expr)
-    Option(mapForEntity.get(BindingContext.TYPE_ALIAS.getKey))
-      .map(typeRenderer.renderFqNameForDesc)
-      .filter(isValidRender)
-      .getOrElse(defaultValue)
-  }
-
   def isStaticMethodCall(expr: KtQualifiedExpression): Boolean = {
     resolvedCallDescriptor(expr)
       .map(_.getSource)
@@ -107,16 +99,6 @@ class DefaultTypeInfoProvider(val bindingContext: BindingContext, typeRenderer: 
   def typeFullName(expr: KtTypeReference, defaultValue: String): String = {
     val mapForEntity = bindingsForEntity(bindingContext, expr)
     Option(mapForEntity.get(BindingContext.TYPE.getKey))
-      .map(typeRenderer.render(_))
-      .filter(isValidRender)
-      .getOrElse(defaultValue)
-  }
-
-  def aliasTypeFullName(expr: KtTypeAlias, defaultValue: String): String = {
-    val mapForEntity = bindingsForEntity(bindingContext, expr)
-    Option(mapForEntity.get(BindingContext.TYPE_ALIAS.getKey))
-      .map(_.getExpandedType)
-      .filterNot(_.isInstanceOf[ErrorType])
       .map(typeRenderer.render(_))
       .filter(isValidRender)
       .getOrElse(defaultValue)
