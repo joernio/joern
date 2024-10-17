@@ -25,6 +25,9 @@ import scala.util.{Failure, Success, Try}
  * If multiple versions are allowed for a dependency, then the 
  * version of the library with the shortest dependency chain is used. */
 object MavenDependencyResolver {
+  private final case class VersionedDependency(name: String, version: SemVer2)
+  private final case class DependencyCandidate(name: String, version: SemVer2, directDeps: List[DirectDependency])
+  
   def resolveDependencies(fetcher: Fetcher, pid: PackageIdentifier, version: Version): Future[List[TransitiveDependency]] = {
     val versionsMap: mutable.LinkedHashMap[String, List[SemVer2]] = mutable.LinkedHashMap()
     val constraintsMap: mutable.LinkedHashMap[String, SemVer2 => Boolean] = mutable.LinkedHashMap()
@@ -58,7 +61,7 @@ object MavenDependencyResolver {
     
     
     nextWorklist
-  } 
+  }
   
   private def buildWorkList(directDeps: Future[List[DirectDependency]]): Future[Set[DirectDependency]] = {
     directDeps.flatMap(deps => Future(deps.toSet))
@@ -66,6 +69,15 @@ object MavenDependencyResolver {
   
   private def buildWorkList(worklist: Set[DirectDependency], newDeps: List[Future[List[DirectDependency]]]): Future[Set[DirectDependency]] = {
     Future.sequence(newDeps).flatMap(newDeps => Future(worklist.union(newDeps.flatten.toSet)))
+  }
+  
+  private def discoverVersions(fetcher: Fetcher, packageNames: List[String]): Future[List[VersionedDependency]] = {
+    val pids = packageNames.map(PackageIdentifier(JVM, _))
+    val metadatas = fetcher.fetchMetaData(pids)
+  }
+  
+  private def loadMetaDatas(metadatas: Future[Map[PackageIdentifier, Array[Byte]]]): Future[List[VersionedDependency]] = {
+    
   }
   
   /** Returns a function that checks for another direct dependency if the version for the other direct dependency is 

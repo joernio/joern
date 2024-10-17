@@ -5,9 +5,9 @@ import io.shiftleft.semanticcpg.typeinfo.version.Version
 
 /** parses as a DirectDependency and then ensures that all constraints are just version equal constraints,
  * and maps to TransitiveDependencies */
-class TransitiveDependencyIonTextLoader(versionParser: String => Version) extends BytesLoader[List[TransitiveDependency]] {
-  def loadFromBytes(data: Array[Byte]): List[TransitiveDependency] = {
-    val directDeps = DirectDependencyIonTextLoader(versionParser).loadFromBytes(data)
+object TransitiveDependencyIonTextLoader {
+  def loadFromBytes(versionParser: String => Version, data: Array[Byte]): List[TransitiveDependency] = {
+    val directDeps = DirectDependencyIonTextLoader.loadFromBytes(versionParser, data)
     validate(directDeps)
     directDeps.map {
       case DirectDependency(name, Eq(version)) => TransitiveDependency(name, version)
