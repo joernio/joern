@@ -375,9 +375,16 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
           if (destructuringEntries.nonEmpty)
             destructuringEntries.filterNot(_.getText == Constants.unusedDestructuringEntryText).zipWithIndex.map {
               case (entry, innerIdx) =>
-                val name             = entry.getName
-                val explicitTypeName = Option(entry.getTypeReference).map(_.getText).getOrElse(TypeConstants.any)
-                val typeFullName     = registerType(typeInfoProvider.destructuringEntryType(entry, explicitTypeName))
+                val name = entry.getName
+                val typeFullName =
+                  bindingUtils
+                    .getVariableDesc(entry)
+                    .flatMap(desc => nameRenderer.typeFullName(desc.getType))
+                    .getOrElse {
+                      val explicitTypeName = Option(entry.getTypeReference).map(_.getText).getOrElse(TypeConstants.any)
+                      explicitTypeName
+                    }
+                registerType(typeFullName)
                 val node =
                   parameterInNode(entry, name, name, innerIdx + idx, false, EvaluationStrategies.BY_VALUE, typeFullName)
                 scope.addToScope(name, node)

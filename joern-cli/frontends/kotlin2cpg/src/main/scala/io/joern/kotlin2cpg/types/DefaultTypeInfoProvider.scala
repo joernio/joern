@@ -248,16 +248,6 @@ class DefaultTypeInfoProvider(val bindingContext: BindingContext, typeRenderer: 
       .getOrElse(CallKind.Unknown)
   }
 
-  def destructuringEntryType(expr: KtDestructuringDeclarationEntry, defaultValue: String): String = {
-    val render = for {
-      mapForEntity <- Option(bindingsForEntity(bindingContext, expr))
-      variableDesc <- Option(mapForEntity.get(BindingContext.VARIABLE.getKey))
-      render = typeRenderer.render(variableDesc.getType)
-      if isValidRender(render) && !variableDesc.getType.isInstanceOf[ErrorType]
-    } yield render
-    render.getOrElse(defaultValue)
-  }
-
   def hasApplyOrAlsoScopeFunctionParent(expr: KtLambdaExpression): Boolean = {
     expr.getParent.getParent match {
       case callExpr: KtCallExpression =>
