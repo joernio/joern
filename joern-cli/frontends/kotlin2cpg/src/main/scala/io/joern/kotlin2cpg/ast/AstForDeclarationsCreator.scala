@@ -3,9 +3,7 @@ package io.joern.kotlin2cpg.ast
 import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.psi.PsiUtils
 import io.joern.kotlin2cpg.psi.PsiUtils.nonUnderscoreDestructuringEntries
-import io.joern.kotlin2cpg.types.AnonymousObjectContext
-import io.joern.kotlin2cpg.types.TypeConstants
-import io.joern.kotlin2cpg.types.TypeInfoProvider
+import io.joern.kotlin2cpg.types.{AnonymousObjectContext, NameRenderer, TypeConstants, TypeInfoProvider}
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.Defines
@@ -47,11 +45,12 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       case None    => ktClass.getName
     }
 
-    val explicitFullName = {
-      val fqName = ktClass.getContainingKtFile.getPackageFqName.toString
-      s"$fqName.$className"
-    }
-    val classFullName = registerType(typeInfoProvider.fullName(ktClass, explicitFullName, ctx))
+    val classFullName =
+      bindingUtils.getClassDesc(ktClass).flatMap(nameRenderer.descFullName).getOrElse {
+        val fqName = ktClass.getContainingKtFile.getPackageFqName.toString
+        s"$fqName.$className"
+      }
+    registerType(classFullName)
     val explicitBaseTypeFullNames = ktClass.getSuperTypeListEntries.asScala
       .map(_.getTypeAsUserType)
       .collect { case t if t != null => t.getText }
@@ -67,11 +66,24 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val primaryCtor       = ktClass.getPrimaryConstructor
     val constructorParams = ktClass.getPrimaryConstructorParameters.asScala.toList
-    val defaultSignature = Option(primaryCtor)
-      .map { _ => typeInfoProvider.anySignature(constructorParams) }
-      .getOrElse(s"${TypeConstants.void}()")
-    val defaultFullName       = s"$classFullName.${TypeConstants.initPrefix}:$defaultSignature"
-    val (fullName, signature) = typeInfoProvider.fullNameWithSignature(primaryCtor, (defaultFullName, defaultSignature))
+
+    val (fullName, signature) =
+      if (primaryCtor != null) {
+        val constructorDesc = bindingUtils.getConstructorDesc(primaryCtor)
+        val descFullName = constructorDesc
+          .flatMap(nameRenderer.descFullName)
+          .getOrElse(s"$classFullName.${Defines.ConstructorMethodName}")
+        val signature = constructorDesc
+          .flatMap(nameRenderer.funcDescSignature)
+          .getOrElse(s"${Defines.UnresolvedSignature}(${primaryCtor.getValueParameters.size()})")
+        val fullName = nameRenderer.combineFunctionFullName(descFullName, signature)
+        (fullName, signature)
+      } else {
+        val descFullName = s"$classFullName.${Defines.ConstructorMethodName}"
+        val signature    = s"${TypeConstants.void}()"
+        val fullName     = nameRenderer.combineFunctionFullName(descFullName, signature)
+        (fullName, signature)
+      }
     val primaryCtorMethodNode = methodNode(primaryCtor, TypeConstants.initPrefix, fullName, signature, relativizedPath)
     val ctorThisParam =
       NodeBuilders.newThisParameterNode(typeFullName = classFullName, dynamicTypeHintFullName = Seq(classFullName))
@@ -176,7 +188,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       .map(_.getFunctions.asScala.collect { case f: KtNamedFunction => f })
       .getOrElse(List())
     val methodAsts = classFunctions.toSeq.flatMap { classFn =>
-      astsForMethod(classFn, needsThisParameter = true, withVirtualModifier = true)
+      astsForMethod(classFn, withVirtualModifier = true)
     }
     val bindingsInfo = methodAsts.flatMap(_.root.collectAll[NewMethod]).map { _methodNode =>
       val node = newBindingNode(_methodNode.name, _methodNode.signature, _methodNode.fullName)
@@ -255,7 +267,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       return Seq()
     }
     val rhsCall             = typedInit.get
-    val callRhsTypeFullName = registerType(typeInfoProvider.expressionType(rhsCall, TypeConstants.any))
+    val callRhsTypeFullName = registerType(exprTypeFullName(rhsCall).getOrElse(TypeConstants.any))
 
     val destructuringEntries = nonUnderscoreDestructuringEntries(expr)
     val localsForEntries = destructuringEntries.map { entry =>
@@ -316,8 +328,13 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
           astsForExpression(arg.getArgumentExpression, Some(idx))
         }.flatten
 
-        val (fullName, signature) = typeInfoProvider.fullNameWithSignature(call, (TypeConstants.any, TypeConstants.any))
-        registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+        val (fullName, signature) =
+          calleeFullnameAndSignature(
+            getCalleeExpr(rhsCall),
+            Defines.UnresolvedNamespace,
+            s"${Defines.UnresolvedSignature}(${call.getValueArguments.size()})"
+          )
+        registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
         val initCallNode = callNode(
           expr,
           Constants.init,
@@ -425,11 +442,17 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     implicit typeInfoProvider: TypeInfoProvider
   ): Seq[Ast] = {
     ctors.map { ctor =>
-      val primaryCtorCallAst    = List(Ast(primaryCtorCall.copy))
-      val constructorParams     = ctor.getValueParameters.asScala.toList
-      val defaultSignature      = typeInfoProvider.anySignature(constructorParams)
-      val defaultFullName       = s"$classFullName.${TypeConstants.initPrefix}:$defaultSignature"
-      val (fullName, signature) = typeInfoProvider.fullNameWithSignature(ctor, (defaultFullName, defaultSignature))
+      val primaryCtorCallAst = List(Ast(primaryCtorCall.copy))
+      val constructorParams  = ctor.getValueParameters.asScala.toList
+
+      val constructorDesc = bindingUtils.getConstructorDesc(ctor)
+      val descFullName = constructorDesc
+        .flatMap(nameRenderer.descFullName)
+        .getOrElse(s"$classFullName.${Defines.ConstructorMethodName}")
+      val signature = constructorDesc
+        .flatMap(nameRenderer.funcDescSignature)
+        .getOrElse(s"${Defines.UnresolvedSignature}(${ctor.getValueParameters.size()})")
+      val fullName = nameRenderer.combineFunctionFullName(descFullName, signature)
       val secondaryCtorMethodNode =
         methodNode(ctor, Constants.init, fullName, signature, relativizedPath)
       scope.pushNewScope(secondaryCtorMethodNode)
@@ -563,7 +586,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       val localAst = Ast(local)
 
       val typeFullName = registerType(
-        typeInfoProvider.expressionType(expr.getDelegateExpressionOrInitializer, Defines.UnresolvedNamespace)
+        exprTypeFullName(expr.getDelegateExpressionOrInitializer).getOrElse(Defines.UnresolvedNamespace)
       )
       val rhsAst = Ast(NodeBuilders.newOperatorCallNode(Operators.alloc, Operators.alloc, Option(typeFullName)))
 
@@ -575,7 +598,11 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       val assignmentCallAst = callAst(assignmentNode, List(identifierAst) ++ List(rhsAst))
 
       val (fullName, signature) =
-        typeInfoProvider.fullNameWithSignature(callExpr, (TypeConstants.any, TypeConstants.any))
+        calleeFullnameAndSignature(
+          getCalleeExpr(callExpr),
+          Defines.UnresolvedNamespace,
+          s"${Defines.UnresolvedSignature}(${callExpr.getValueArguments.size()})"
+        )
       val initCallNode = callNode(
         callExpr,
         callExpr.getText,
@@ -616,7 +643,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       val localAst = Ast(node)
 
       val typeFullName = registerType(
-        typeInfoProvider.expressionType(expr.getDelegateExpressionOrInitializer, Defines.UnresolvedNamespace)
+        exprTypeFullName(expr.getDelegateExpressionOrInitializer).getOrElse(Defines.UnresolvedNamespace)
       )
       val rhsAst = Ast(NodeBuilders.newOperatorCallNode(Operators.alloc, Operators.alloc, None))
 

@@ -29,7 +29,7 @@ class ClassLiteralTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       c.lineNumber shouldBe Some(8)
       c.signature shouldBe "kotlin.reflect.KClass()"
       c.typeFullName shouldBe "kotlin.reflect.KClass"
-      c.methodFullName shouldBe "mypkg.Bar.getClass:kotlin.reflect.KClass()"
+      c.methodFullName shouldBe "<operator>.class"
     }
 
     "should contain a CALL node for the class literal expression inside dot-qualified expression" in {
@@ -41,7 +41,7 @@ class ClassLiteralTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       c.lineNumber shouldBe Some(9)
       c.signature shouldBe "kotlin.reflect.KClass()"
       c.typeFullName shouldBe "kotlin.reflect.KClass"
-      c.methodFullName shouldBe "mypkg.Baz.getClass:kotlin.reflect.KClass()"
+      c.methodFullName shouldBe "<operator>.class"
     }
   }
 }
