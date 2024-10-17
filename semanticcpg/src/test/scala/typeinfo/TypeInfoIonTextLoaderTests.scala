@@ -1,6 +1,5 @@
 package io.shiftleft.semanticcpg.typeinfo
 
-import io.shiftleft.semanticcpg.typeinfo.loading.BytesLoader
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import scala.util.Try

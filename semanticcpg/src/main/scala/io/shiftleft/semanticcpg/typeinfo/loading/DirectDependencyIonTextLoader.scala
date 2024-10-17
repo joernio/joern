@@ -39,6 +39,6 @@ object DirectDependencyIonTextLoader {
       case Some(_) =>
         r.getFieldName match
           case "NAME"       => parseDependencyStruct(r, versionParser, dep.copy(name = r.stringValue()))
-          case "CONSTRAINT" => parseDependencyStruct(r, versionParser, dep.copy(version = VersionConstraint.parse(r.stringValue(), versionParser)))
+          case "VERSION_CONSTRAINT" => parseDependencyStruct(r, versionParser, dep.copy(version = VersionConstraint.parse(r.stringValue(), versionParser)))
   }
 }

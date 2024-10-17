@@ -8,8 +8,6 @@ import scala.annotation.tailrec
 import scala.util.Using
 
 object MetadataIonTextLoader {
-  private val versionsFieldName: String = "VERSIONS"
-  
   def loadFromBytes(data: Array[Byte]): PackageMetadata = {
     Using.resource(IonReaderBuilder.standard().build(data))(parseTopLevelStruct)
   }
@@ -21,14 +19,15 @@ object MetadataIonTextLoader {
   private def parseOnlyVersions(reader: IonReader): List[String] = {
     reader.next()
     reader.stepIn()
-    parseUntil(reader, reader => reader.getFieldName == versionsFieldName)
+    parseUntil(reader, reader => reader.getFieldName == "VERSIONS")
+    reader.stepIn()
     parseStringList(reader)
   }
   
   @tailrec
   private def parseUntil(reader: IonReader, condition: IonReader => Boolean): Unit = {
     Option(reader.next()) match
-      case IonType.LIST if condition(reader) => ()
+      case Some(IonType.LIST) if condition(reader) => ()
       case None => throw new RuntimeException("Invalid type info package metadata format: no versions lists")
       case _ => parseUntil(reader, condition)
   }
