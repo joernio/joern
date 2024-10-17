@@ -19,7 +19,8 @@ trait RubyFrontend(
   withDownloadDependencies: Boolean,
   disableFileContent: Boolean,
   antlrDebugging: Boolean,
-  antlrProfiling: Boolean
+  antlrProfiling: Boolean,
+  useJsonAst: Boolean
 ) extends LanguageFrontend {
   override val fileSuffix: String = ".rb"
 
@@ -31,6 +32,7 @@ trait RubyFrontend(
       .withDisableFileContent(disableFileContent)
       .withAntlrDebugging(antlrDebugging)
       .withAntlrProfiling(antlrProfiling)
+      .withUseJsonAst(useJsonAst)
 
   override def execute(sourceCodeFile: File): Cpg = {
     val cpg = new RubySrc2Cpg().createCpg(sourceCodeFile.getAbsolutePath).get
@@ -63,9 +65,10 @@ class DefaultTestCpgWithRuby(
   downloadDependencies: Boolean = false,
   disableFileContent: Boolean = true,
   antlrDebugging: Boolean = false,
-  antlrProfiling: Boolean
+  antlrProfiling: Boolean,
+  useJsonAst: Boolean = false
 ) extends DefaultTestCpg
-    with RubyFrontend(downloadDependencies, disableFileContent, antlrDebugging, antlrProfiling)
+    with RubyFrontend(downloadDependencies, disableFileContent, antlrDebugging, antlrProfiling, useJsonAst)
     with SemanticTestCpg {
 
   override protected def applyPasses(): Unit = {
@@ -85,9 +88,10 @@ class RubyCode2CpgFixture(
   disableFileContent: Boolean = true,
   semantics: Semantics = DefaultSemantics(),
   antlrDebugging: Boolean = false,
-  antlrProfiling: Boolean = false
+  antlrProfiling: Boolean = false,
+  useJsonAst: Boolean = false
 ) extends Code2CpgFixture(() =>
-      new DefaultTestCpgWithRuby(downloadDependencies, disableFileContent, antlrDebugging, antlrProfiling)
+      new DefaultTestCpgWithRuby(downloadDependencies, disableFileContent, antlrDebugging, antlrProfiling, useJsonAst)
         .withOssDataflow(withDataFlow)
         .withSemantics(semantics)
         .withPostProcessingPasses(withPostProcessing)
@@ -107,9 +111,10 @@ class RubyCfgTestCpg(
   downloadDependencies: Boolean = false,
   disableFileContent: Boolean = true,
   antlrDebugging: Boolean = false,
-  antlrProfiling: Boolean = false
+  antlrProfiling: Boolean = false,
+  useJsonAst: Boolean = false
 ) extends CfgTestCpg
-    with RubyFrontend(downloadDependencies, disableFileContent, antlrDebugging, antlrProfiling) {
+    with RubyFrontend(downloadDependencies, disableFileContent, antlrDebugging, antlrProfiling, useJsonAst) {
   override val fileSuffix: String = ".rb"
 
 }

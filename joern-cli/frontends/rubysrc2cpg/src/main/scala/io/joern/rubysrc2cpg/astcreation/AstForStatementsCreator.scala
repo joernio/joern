@@ -5,7 +5,7 @@ import io.joern.rubysrc2cpg.datastructures.BlockScope
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.NewControlStructure
+import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewControlStructure}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, ModifierTypes}
 
 trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -36,7 +36,33 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       controlStructureAst(ifNode, Some(conditionAst), thenAst :: elseAsts)
     }
 
-    foldIfExpression(builder)(node) :: Nil
+    // TODO: Remove or modify the builder pattern when we are no longer using ANTLR
+    node.elseClause match {
+      case Some(elseClause) =>
+        elseClause match {
+          case _: IfExpression => astForJsonIfStatement(node)
+          case _               => foldIfExpression(builder)(node) :: Nil
+        }
+      case None =>
+        foldIfExpression(builder)(node) :: Nil
+    }
+  }
+
+  private def astForJsonIfStatement(node: IfExpression): Seq[Ast] = {
+    val conditionAst = astForExpression(node.condition)
+    val thenAst      = astForThenClause(node.thenClause)
+    val elseAsts = node.elseClause
+      .map {
+        case x: IfExpression =>
+          val wrappedBlock = blockNode(x)
+          Ast(wrappedBlock).withChildren(astForJsonIfStatement(x)) :: Nil
+        case x =>
+          astForElseClause(x) :: Nil
+      }
+      .getOrElse(Ast() :: Nil)
+
+    val ifNode = controlStructureNode(node, ControlStructureTypes.IF, code(node))
+    controlStructureAst(ifNode, Some(conditionAst), thenAst +: elseAsts) :: Nil
   }
 
   /** Registers the currently set access modifier for the current type (until it is reset later).
@@ -61,7 +87,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     builder(node, conditionAst, thenAst, elseAsts)
   }
 
-  private def astForThenClause(node: RubyExpression): Ast = astForStatementList(node.asStatementList)
+  protected def astForThenClause(node: RubyExpression): Ast = astForStatementList(node.asStatementList)
 
   private def astsForElseClauses(
     elsIfClauses: List[RubyExpression],

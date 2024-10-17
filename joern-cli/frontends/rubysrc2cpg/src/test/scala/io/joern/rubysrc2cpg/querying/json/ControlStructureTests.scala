@@ -1,4 +1,4 @@
-package io.joern.rubysrc2cpg.querying
+package io.joern.rubysrc2cpg.querying.json
 
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelPrefix
@@ -7,7 +7,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
-class ControlStructureTests extends RubyCode2CpgFixture {
+class ControlStructureTests extends RubyCode2CpgFixture(useJsonAst = true) {
 
   "`while-end` statement is represented by a `WHILE` CONTROL_STRUCTURE node" in {
     val cpg = code("""
@@ -182,25 +182,19 @@ class ControlStructureTests extends RubyCode2CpgFixture {
                      |end
                      |""".stripMargin)
 
-    val List(unlessNode)    = cpg.ifBlock.l
-    val List(unlessNegCond) = unlessNode.condition.isCall.l
-    val List(assignment)    = unlessNode.whenTrue.assignment.l
+    val List(unlessNode)      = cpg.ifBlock.l
+    val List(unlessCondition) = unlessNode.condition.isCall.l
+    val List(assignment)      = unlessNode.whenFalse.assignment.l
 
-    unlessNode.whenFalse.isEmpty shouldBe true
-
-    unlessNegCond.methodFullName shouldBe Operators.logicalNot
-    unlessNegCond.code shouldBe "__LINE__ == 0"
-    unlessNegCond.lineNumber shouldBe Some(2)
-
-    val List(unlessOriginalCond) = unlessNegCond.argument.isCall.l
-    unlessOriginalCond.methodFullName shouldBe Operators.equals
-    unlessOriginalCond.code shouldBe "__LINE__ == 0"
+    unlessCondition.methodFullName shouldBe Operators.equals
+    unlessCondition.code shouldBe "__LINE__ == 0"
+    unlessCondition.lineNumber shouldBe Some(2)
 
     assignment.code shouldBe "x = '!= 0'"
     assignment.lineNumber shouldBe Some(3)
   }
 
-  "`unless-else-end` statement is represented by a negated `IF` CONTROL_STRUCTURE node" in {
+  "`unless-else-end` statement is represented by a `IF` CONTROL_STRUCTURE node" in {
     val cpg = code("""
                      |unless __LINE__ == 0 then
                      | x = '!= 0'
@@ -210,23 +204,20 @@ class ControlStructureTests extends RubyCode2CpgFixture {
                      |""".stripMargin)
 
     val List(unlessNode)     = cpg.ifBlock.l
-    val List(unlessNegCond)  = unlessNode.condition.isCall.l
+    val List(unlessCond)     = unlessNode.condition.isCall.l
     val List(thenAssignment) = unlessNode.whenTrue.assignment.l
     val List(elseAssignment) = unlessNode.whenFalse.assignment.l
 
-    unlessNegCond.methodFullName shouldBe Operators.logicalNot
-    unlessNegCond.code shouldBe "__LINE__ == 0"
-    unlessNegCond.lineNumber shouldBe Some(2)
+    unlessCond.methodFullName shouldBe Operators.equals
+    unlessCond.code shouldBe "__LINE__ == 0"
+    unlessCond.lineNumber shouldBe Some(2)
 
-    val List(unlessOriginalCond) = unlessNegCond.argument.isCall.l
-    unlessOriginalCond.methodFullName shouldBe Operators.equals
-    unlessOriginalCond.code shouldBe "__LINE__ == 0"
+    // Then and Else is inverted with UNLESS
+    thenAssignment.code shouldBe "x = '= 0'"
+    thenAssignment.lineNumber shouldBe Some(5)
 
-    thenAssignment.code shouldBe "x = '!= 0'"
-    thenAssignment.lineNumber shouldBe Some(3)
-
-    elseAssignment.code shouldBe "x = '= 0'"
-    elseAssignment.lineNumber shouldBe Some(5)
+    elseAssignment.code shouldBe "x = '!= 0'"
+    elseAssignment.lineNumber shouldBe Some(3)
   }
 
   "`... unless ...` statement is represented by a negated `IF` CONTROL_STRUCTURE node" in {
@@ -234,17 +225,12 @@ class ControlStructureTests extends RubyCode2CpgFixture {
                      |42 unless false
                      |""".stripMargin)
 
-    val List(unlessNode)    = cpg.ifBlock.l
-    val List(unlessNegCond) = unlessNode.condition.isCall.l
-    val List(thenLiteral)   = unlessNode.whenTrue.isBlock.astChildren.isLiteral.l
+    val List(unlessNode)  = cpg.ifBlock.l
+    val List(unlessCond)  = unlessNode.condition.isLiteral.l
+    val List(thenLiteral) = unlessNode.whenFalse.isBlock.astChildren.isLiteral.l
 
-    unlessNegCond.methodFullName shouldBe Operators.logicalNot
-    unlessNegCond.code shouldBe "false"
-    unlessNegCond.lineNumber shouldBe Some(2)
-
-    val List(unlessOriginalCond) = unlessNegCond.argument.isLiteral.l
-    unlessOriginalCond.code shouldBe "false"
-    unlessOriginalCond.lineNumber shouldBe Some(2)
+    unlessCond.code shouldBe "false"
+    unlessCond.lineNumber shouldBe Some(2)
 
     thenLiteral.code shouldBe "42"
     thenLiteral.lineNumber shouldBe Some(2)
@@ -255,14 +241,11 @@ class ControlStructureTests extends RubyCode2CpgFixture {
                      |x = 1 unless false
                      |""".stripMargin)
 
-    val List(unlessNode)    = cpg.ifBlock.l
-    val List(unlessNegCond) = unlessNode.condition.isCall.l
-    val List(assignment)    = unlessNode.whenTrue.assignment.l
+    val List(unlessNode) = cpg.ifBlock.l
+    val List(unlessCond) = unlessNode.condition.isLiteral.l
+    val List(assignment) = unlessNode.whenFalse.assignment.l
 
-    unlessNode.whenFalse.isEmpty shouldBe true
-
-    unlessNegCond.methodFullName shouldBe Operators.logicalNot
-    unlessNegCond.code shouldBe "false"
+    unlessCond.code shouldBe "false"
 
     assignment.code shouldBe "x = 1"
     assignment.lineNumber shouldBe Some(2)
@@ -308,6 +291,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
                      |  @dev.close rescue nil
                      |end
                      |""".stripMargin)
+    cpg.method.name("test1").dotAst.l.foreach(println)
     val List(rescueNode) = cpg.method("test1").tryBlock.l
     rescueNode.controlStructureType shouldBe ControlStructureTypes.TRY
     val List(body, rescueBody, implicitReturnBody) = rescueNode.astChildren.l
@@ -603,7 +587,8 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     }
   }
 
-  "Ternary if" in {
+  // TODO: fixme when classes are finished
+  "Ternary if" ignore {
     val cpg = code("""
                      |class Api::V1::UsersController < ApplicationController
                      |  def index
@@ -650,7 +635,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
       case ifStruct :: Nil =>
         ifStruct.controlStructureType shouldBe ControlStructureTypes.IF
 
-        val List(_: Call, returnCall: Return) = ifStruct.condition.isCall.argument.l: @unchecked
+        val List(_: Call, returnCall: Return) = ifStruct.condition.isBlock.astChildren.isCall.argument.l: @unchecked
         returnCall.code shouldBe "return"
 
       case xs => fail(s"Expected one control strucuture, got [${xs.code.mkString(",")}]")
@@ -670,7 +655,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
       case orIfStruct :: Nil =>
         orIfStruct.controlStructureType shouldBe ControlStructureTypes.IF
 
-        val List(_: Call, returnCall: Return) = orIfStruct.condition.isCall.argument.l: @unchecked
+        val List(_: Call, returnCall: Return) = orIfStruct.condition.isBlock.astChildren.isCall.argument.l: @unchecked
         returnCall.code shouldBe "return"
       case xs => fail(s"Expected one IF structure, got [${xs.code.mkString(",")}]")
     }

@@ -27,7 +27,7 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
       // Build and store compilation unit AST
       val rootNode = this.rootNode match {
         case Some(rootNode) => rootNode.asInstanceOf[StatementList]
-        case None           => new RubyNodeCreator().visit(programCtx).asInstanceOf[StatementList]
+        case None           => new RubyNodeCreator().visit(programCtx.get).asInstanceOf[StatementList]
       }
 
       val ast = astForRubyFile(rootNode)
@@ -42,7 +42,17 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
   }
 
   def withSummary(newSummary: RubyProgramSummary): AstCreator = {
-    AstCreator(fileName, programCtx, projectRoot, newSummary, enableFileContents, fileContent, rootNode)
+    AstCreator(
+      fileName,
+      programCtx,
+      programCtxJson,
+      useJsonCtx,
+      projectRoot,
+      newSummary,
+      enableFileContents,
+      fileContent,
+      rootNode
+    )
   }
 
   private def summarize(cpg: Cpg, asExternal: Boolean): RubyProgramSummary = {

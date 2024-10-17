@@ -53,7 +53,7 @@ object AstGenRunner {
       .toString
 
   def hasCompatibleAstGenVersion(compatibleVersion: String)(implicit metaData: AstGenProgramMetaData): Boolean = {
-    ExternalCommand.run(s"$metaData.name -version", ".").toOption.map(_.mkString.strip()) match {
+    ExternalCommand.run(s"${metaData.name} -version", ".").toOption.map(_.mkString.strip()) match {
       case Some(installedVersion)
           if installedVersion != "unknown" &&
             Try(VersionHelper.compare(installedVersion, compatibleVersion)).toOption.getOrElse(-1) >= 0 =>
@@ -114,7 +114,9 @@ trait AstGenRunnerBase(config: X2CpgConfig[?] & AstGenConfig[?]) {
     }
   }
 
-  private def executableName(x86Suffix: String, armSuffix: String)(implicit metaData: AstGenProgramMetaData): String = {
+  protected def executableName(x86Suffix: String, armSuffix: String)(implicit
+    metaData: AstGenProgramMetaData
+  ): String = {
     if (metaData.multiArchitectureBuilds) {
       s"${metaData.name}-$x86Suffix"
     } else {
