@@ -767,6 +767,14 @@ class RubyNodeCreator(
     ctx.methodIdentifier().getText match {
       case Defines.Proc | Defines.Lambda => ProcOrLambdaExpr(visit(ctx.block()).asInstanceOf[Block])(ctx.toTextSpan)
       case Defines.Loop =>
+        val dl = ctx.block() match {
+          case b: RubyParser.DoBlockBlockContext =>
+            visit(b.doBlock().bodyStatement())
+          case y =>
+            logger.warn(s"Unexpected loop block body ${y.getClass}")
+            visit(ctx.block())
+        }
+
         DoWhileExpression(
           StaticLiteral(Defines.getBuiltInType(Defines.TrueClass))(ctx.methodIdentifier().toTextSpan.spanStart("true")),
           ctx.block() match {

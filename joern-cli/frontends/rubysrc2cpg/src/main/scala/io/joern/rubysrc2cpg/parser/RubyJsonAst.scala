@@ -43,6 +43,7 @@ object ParserKeys {
   val ThenBranch     = "then_branch"
   val Type           = "type"
   val Value          = "value"
+  val Values         = "values"
   val Variable       = "variable"
   val WhenClauses    = "when_clauses"
 }
@@ -61,6 +62,7 @@ enum AstType(val name: String) {
   case Block                        extends AstType("block")
   case BlockPass                    extends AstType("block_pass")
   case BlockWithNumberedParams      extends AstType("numblock")
+  case Break                        extends AstType("break")
   case CaseExpression               extends AstType("case")
   case CaseMatchStatement           extends AstType("case_match")
   case ClassDefinition              extends AstType("class")

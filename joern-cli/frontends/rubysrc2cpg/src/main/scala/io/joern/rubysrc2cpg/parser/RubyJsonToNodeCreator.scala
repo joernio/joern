@@ -67,6 +67,7 @@ class RubyJsonToNodeCreator(
         case AstType.Block                        => visitBlock(obj)
         case AstType.BlockPass                    => visitBlockPass(obj)
         case AstType.BlockWithNumberedParams      => visitBlockWithNumberedParams(obj)
+        case AstType.Break                        => visitBreak(obj)
         case AstType.CaseExpression               => visitCaseExpression(obj)
         case AstType.CaseMatchStatement           => visitCaseMatchStatement(obj)
         case AstType.ClassDefinition              => visitClassDefinition(obj)
@@ -159,7 +160,7 @@ class RubyJsonToNodeCreator(
         case AstType.UnlessExpression             => visitUnlessExpression(obj)
         case AstType.UnlessGuard                  => visitUnlessGuard(obj)
         case AstType.UntilExpression              => visitUntilExpression(obj)
-        case AstType.UntilPostExpression          => visitUntilExpression(obj)
+        case AstType.UntilPostExpression          => visitUntilPostExpression(obj)
         case AstType.WhenStatement                => visitWhenStatement(obj)
         case AstType.WhileStatement               => visitWhileStatement(obj)
         case AstType.WhilePostStatement           => visitWhileStatement(obj)
@@ -210,6 +211,11 @@ class RubyJsonToNodeCreator(
     visit(obj(ParserKeys.CallName)) match {
       case classNew: ObjectInstantiation if classNew.target.text == "Class.new" =>
         AnonymousClassDeclaration(freshClassName(obj.toTextSpan), None, block.toStatementList)(obj.toTextSpan)
+      case simpleCall @ SimpleCall(ident: SimpleIdentifier, _) if ident.span.text == "loop" =>
+        DoWhileExpression(
+          StaticLiteral(Defines.getBuiltInType(Defines.TrueClass))(simpleCall.span.spanStart("true")),
+          body
+        )(simpleCall.span)
       case simpleCall: RubyCall =>
         simpleCall.withBlock(block)
       case x =>
@@ -221,6 +227,8 @@ class RubyJsonToNodeCreator(
   private def visitBlockPass(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
   private def visitBlockWithNumberedParams(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+
+  private def visitBreak(obj: Obj): RubyExpression = BreakExpression()(obj.toTextSpan)
 
   private def visitCaseExpression(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
@@ -412,7 +420,13 @@ class RubyJsonToNodeCreator(
   private def visitMethodDefinition(obj: Obj): RubyExpression = {
     val name       = obj(ParserKeys.Name).str
     val parameters = obj(ParserKeys.Arguments).asInstanceOf[ujson.Obj].visitArray(ParserKeys.Children)
-    val body       = obj.visitOption(ParserKeys.Body).getOrElse(StatementList(Nil)(obj.toTextSpan.spanStart("<empty>")))
+    val body = obj
+      .visitOption(ParserKeys.Body)
+      .map {
+        case x: StatementList => x
+        case x                => StatementList(List(x))(x.span)
+      }
+      .getOrElse(StatementList(Nil)(obj.toTextSpan.spanStart("<empty>")))
     MethodDeclaration(name, parameters, body)(obj.toTextSpan)
   }
 
@@ -508,7 +522,14 @@ class RubyJsonToNodeCreator(
 
   private def visitRetry(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
-  private def visitReturn(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitReturn(obj: Obj): RubyExpression = {
+    if (obj.contains(ParserKeys.Values)) {
+      val returnExpressions = obj.visitArray(ParserKeys.Values)
+      ReturnExpression(returnExpressions)(obj.toTextSpan)
+    } else {
+      ReturnExpression(List.empty)(obj.toTextSpan)
+    }
+  }
 
   private def visitRegexExpression(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
@@ -599,8 +620,6 @@ class RubyJsonToNodeCreator(
 
   private def visitSingleAssignment(obj: Obj): RubyExpression = {
     val lhs = SimpleIdentifier()(obj.toTextSpan.spanStart(obj(ParserKeys.Lhs).str))
-    val rhs = visit(obj(ParserKeys.Rhs))
-    SingleAssignment(lhs, "=", rhs)(obj.toTextSpan)
     obj.visitOption(ParserKeys.Rhs) match {
       case Some(rhs) =>
         SingleAssignment(lhs, "=", rhs)(obj.toTextSpan)
@@ -649,6 +668,13 @@ class RubyJsonToNodeCreator(
   private def visitUnlessGuard(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
   private def visitUntilExpression(obj: Obj): RubyExpression = {
+    val condition = visit(obj(ParserKeys.Condition))
+    val body      = visit(obj(ParserKeys.Body))
+
+    UntilExpression(condition, body)(obj.toTextSpan)
+  }
+
+  private def visitUntilPostExpression(obj: Obj): RubyExpression = {
     val condition = visit(obj(ParserKeys.Condition))
     val body      = visit(obj(ParserKeys.Body))
 
