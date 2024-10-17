@@ -339,7 +339,7 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
         |end
         |""".stripMargin)
 
-    "generate a type decl with the associated members" ignore {
+    "generate a type decl with the associated members" in {
       inside(cpg.typeDecl.nameExact("<anon-class-0>").l) {
         case anonClass :: Nil =>
           anonClass.name shouldBe "<anon-class-0>"
@@ -357,7 +357,7 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
       }
     }
 
-    "generate an assignment to the variable `a` with the source being a constructor invocation of the class" ignore {
+    "generate an assignment to the variable `a` with the source being a constructor invocation of the class" in {
       inside(cpg.method.isModule.assignment.l) {
         case aAssignment :: tmpAssign :: Nil =>
           aAssignment.target.code shouldBe "a"
@@ -425,7 +425,7 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
   }
 
   "if: <val> as function param" should {
-    "Be treated as an SimpleIdentifier" ignore {
+    "Be treated as an SimpleIdentifier" in {
       val cpg = code("""
           | class User < ApplicationRecord
           |   validates :password, presence: true,
@@ -460,12 +460,12 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
       }
     }
 
-    "Be treated as a SimpleIdentifier 2" ignore {
+    "Be treated as a SimpleIdentifier 2" in {
       val cpg = code("""
           | class AdminController < ApplicationController
           |   before_action :administrative, if: :admin_param, except: [:get_user]
-          |    skip_before_action :has_info
-          |    layout false, only: [:get_all_users, :get_user]
+          |     skip_before_action :has_info
+          |     layout false, only: [:get_all_users, :get_user]
           | end
           |""".stripMargin)
 

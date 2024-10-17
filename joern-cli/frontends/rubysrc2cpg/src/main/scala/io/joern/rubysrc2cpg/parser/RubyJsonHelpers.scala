@@ -1,6 +1,7 @@
 package io.joern.rubysrc2cpg.parser
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
+  AllowedTypeDeclarationChild,
   ClassFieldIdentifier,
   MemberAccess,
   MethodDeclaration,
@@ -57,18 +58,17 @@ object RubyJsonHelpers {
 
     def bodyMethod(fieldStatements: List[RubyExpression]): MethodDeclaration = {
 
-      val body = fieldStatements.flatMap {
+      val body = fieldStatements.map {
         case field: SimpleIdentifier =>
           val assignmentSpan = field.span.spanStart(s"${field.span} = nil")
-          Option(SingleAssignment(ClassFieldIdentifier()(field.span), "=", nilLiteral(field.span))(assignmentSpan))
+          SingleAssignment(ClassFieldIdentifier()(field.span), "=", nilLiteral(field.span))(assignmentSpan)
         case field: RubyFieldIdentifier =>
           val assignmentSpan = field.span.spanStart(s"${field.span} = nil")
-          Option(SingleAssignment(field, "=", nilLiteral(field.span))(assignmentSpan))
-        case assignment @ SingleAssignment(_: RubyFieldIdentifier, _, _) => Option(assignment)
+          SingleAssignment(field, "=", nilLiteral(field.span))(assignmentSpan)
+        case assignment @ SingleAssignment(_: RubyFieldIdentifier, _, _) => assignment
         case assignment @ SingleAssignment(lhs: SimpleIdentifier, op, _) =>
-          val fieldAssignment = assignment.copy(lhs = ClassFieldIdentifier()(lhs.span))(assignment.span)
-          Option(fieldAssignment)
-        case _ => None
+          assignment.copy(lhs = ClassFieldIdentifier()(lhs.span))(assignment.span)
+        case otherExpr => otherExpr
       }
 
       MethodDeclaration(Defines.TypeDeclBody, Nil, StatementList(body)(obj.toTextSpan.spanStart(s"(...)")))(
@@ -105,12 +105,17 @@ object RubyJsonHelpers {
     }
 
     obj.visitOption(ParserKeys.Body) match {
+      case Some(stmtList @ StatementList(expression :: Nil)) if expression.isInstanceOf[AllowedTypeDeclarationChild] =>
+        (stmtList, Nil)
+      case Some(stmtList @ StatementList(expression :: Nil)) if isFieldStmt(expression) =>
+        (StatementList(bodyMethod(expression :: Nil) :: Nil)(stmtList.span), getField(expression).toList)
       case Some(stmtList: StatementList) =>
-        val (fieldStmts, otherStmts) = stmtList.statements.partition(isFieldStmt)
-        val body                     = stmtList.copy(statements = bodyMethod(fieldStmts) +: otherStmts)(stmtList.span)
-        val fields                   = fieldStmts.flatMap(getField)
+        val (fieldStmts, otherStmts)   = stmtList.statements.partition(isFieldStmt)
+        val (typeDeclStmts, bodyStmts) = otherStmts.partition(_.isInstanceOf[AllowedTypeDeclarationChild])
+        val body   = stmtList.copy(statements = bodyMethod(fieldStmts ++ bodyStmts) +: typeDeclStmts)(stmtList.span)
+        val fields = fieldStmts.flatMap(getField)
         (body, fields)
-      case Some(expression) if isFieldStmt(expression) =>
+      case Some(expression) if isFieldStmt(expression) || !expression.isInstanceOf[AllowedTypeDeclarationChild] =>
         (StatementList(bodyMethod(expression :: Nil) :: Nil)(obj.toTextSpan), getField(expression).toList)
       case Some(expression) =>
         (StatementList(bodyMethod(Nil) :: expression :: Nil)(obj.toTextSpan), Nil)
