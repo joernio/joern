@@ -184,7 +184,6 @@ trait AstGenRunnerBase(config: X2CpgConfig[?] & AstGenConfig[?]) {
       case Failure(f) =>
         logger.error(s"\t- running ${metaData.name} failed!", f)
         DefaultAstGenRunnerResult()
-
     }
   }
 }
