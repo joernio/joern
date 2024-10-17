@@ -4,14 +4,11 @@ import better.files.File
 import io.joern.rubysrc2cpg.Config
 import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, executableDir}
 import io.joern.x2cpg.astgen.AstGenRunnerBase
-import io.joern.x2cpg.utils.ExternalCommand
-import org.jruby.{Ruby, RubyHash, RubyInstanceConfig, RubyRuntimeAdapter}
-import org.jruby.javasupport.JavaEmbedUtils
+import org.jruby.RubyInstanceConfig
 import org.slf4j.LoggerFactory
 
-import java.io.{ByteArrayOutputStream, PrintStream}
 import java.io.File.separator
-import java.nio.file.{Files, Paths}
+import java.io.{ByteArrayOutputStream, PrintStream}
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
@@ -78,6 +75,7 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
     config.setEnvironment(Map("GEM_PATH" -> gemPath, "GEM_FILE" -> gemPath).asJava)
     config.setHasShebangLine(true)
     config.setScriptFileName(mainScript)
+    config.setHardExit(false)
 
     try {
       org.jruby.Main(config).run(Array.empty)

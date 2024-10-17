@@ -207,7 +207,10 @@ class RubyJsonToNodeCreator(
     val body       = visit(obj(ParserKeys.Body))
     val block      = Block(parameters, body)(obj.toTextSpan)
     visit(obj(ParserKeys.CallName)) match {
-      case simpleCall: RubyCall => simpleCall.withBlock(block)
+      case classNew: ObjectInstantiation if classNew.target.text == "Class.new" =>
+        AnonymousClassDeclaration(freshClassName(obj.toTextSpan), None, block.toStatementList)(obj.toTextSpan)
+      case simpleCall: RubyCall =>
+        simpleCall.withBlock(block)
       case x =>
         logger.warn(s"Unexpected call type used for block ${x.getClass}, ignoring block")
         x
@@ -263,7 +266,12 @@ class RubyJsonToNodeCreator(
 
   private def visitExclusiveFlipFlop(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
-  private def visitExclusiveRange(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitExclusiveRange(obj: Obj): RubyExpression = {
+    val start = visit(obj(ParserKeys.Start))
+    val end   = visit(obj(ParserKeys.End))
+    val op    = RangeOperator(true)(obj.toTextSpan.spanStart("..."))
+    RangeExpression(start, end, op)(obj.toTextSpan)
+  }
 
   private def visitExecutableString(obj: Obj): RubyExpression = {
     val callName =
@@ -273,6 +281,11 @@ class RubyJsonToNodeCreator(
   }
 
   private def visitFalse(obj: Obj): RubyExpression = StaticLiteral(getBuiltInType(Defines.FalseClass))(obj.toTextSpan)
+
+  private def visitFieldDeclaration(obj: Obj): RubyExpression = {
+    val arguments = obj.visitArray(ParserKeys.Arguments)
+    FieldsDeclaration(arguments)(obj.toTextSpan)
+  }
 
   private def visitFindPattern(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
@@ -326,7 +339,12 @@ class RubyJsonToNodeCreator(
 
   private def visitInclusiveFlipFlop(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
-  private def visitInclusiveRange(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitInclusiveRange(obj: Obj): RubyExpression = {
+    val start = visit(obj(ParserKeys.Start))
+    val end   = visit(obj(ParserKeys.End))
+    val op    = RangeOperator(false)(obj.toTextSpan.spanStart(".."))
+    RangeExpression(start, end, op)(obj.toTextSpan)
+  }
 
   private def visitInPattern(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
@@ -425,7 +443,11 @@ class RubyJsonToNodeCreator(
 
   private def visitOrAssign(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
-  private def visitPair(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitPair(obj: Obj): RubyExpression = {
+    val key   = visit(obj(ParserKeys.Key))
+    val value = visit(obj(ParserKeys.Value))
+    Association(key, value)(obj.toTextSpan)
+  }
 
   private def visitPostExpression(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
@@ -484,14 +506,20 @@ class RubyJsonToNodeCreator(
       case "new"                                                => visitObjectInstantiation(obj)
       case "raise"                                              => visitRaise(obj)
       case "include"                                            => visitInclude(obj)
+      case "attr_reader" | "attr_writer" | "attr_accessor"      => visitFieldDeclaration(obj)
       case requireLike if ImportCallNames.contains(requireLike) => visitRequireLike(obj)
       case _ if BinaryOperators.isBinaryOperatorName(callName) =>
         val lhs = visit(obj(ParserKeys.Receiver))
         val rhs = obj.visitArray(ParserKeys.Arguments).head
         BinaryExpression(lhs, callName, rhs)(obj.toTextSpan)
       case _ =>
-        val target    = SimpleIdentifier()(obj.toTextSpan.spanStart(callName))
-        val arguments = obj.visitArray(ParserKeys.Arguments)
+        val target      = SimpleIdentifier()(obj.toTextSpan.spanStart(callName))
+        val argumentArr = obj.visitArray(ParserKeys.Arguments)
+        val arguments = argumentArr.zipWithIndex.flatMap {
+          case (hashLiteral: HashLiteral, idx) =>
+            hashLiteral.elements // a hash is likely named arguments
+          case (x, _) => x :: Nil
+        }
         if (obj.contains(ParserKeys.Receiver)) {
           val base = visit(obj(ParserKeys.Receiver))
           MemberCall(base, ".", callName, arguments)(obj.toTextSpan)
@@ -503,12 +531,26 @@ class RubyJsonToNodeCreator(
 
   private def visitShadowArg(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
-  private def visitSingletonMethodDefinition(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitSingletonMethodDefinition(obj: Obj): RubyExpression = {
+    val base       = visit(obj(ParserKeys.Base))
+    val name       = obj(ParserKeys.Name).str
+    val parameters = obj(ParserKeys.Arguments).asInstanceOf[ujson.Obj].visitArray(ParserKeys.Children)
+    val body       = obj.visitOption(ParserKeys.Body).getOrElse(StatementList(Nil)(obj.toTextSpan.spanStart("<empty>")))
+    SingletonMethodDeclaration(base, name, parameters, body)(obj.toTextSpan)
+  }
 
-  private def visitSingletonClassDefinition(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitSingletonClassDefinition(obj: Obj): RubyExpression = {
+    val name      = visit(obj(ParserKeys.Name))
+    val baseClass = obj.visitOption(ParserKeys.SuperClass)
+    val body      = obj.visitOption(ParserKeys.Body).getOrElse(StatementList(Nil)(obj.toTextSpan.spanStart("<empty>")))
+    val bodyMemberCall = createBodyMemberCall(name.text, obj.toTextSpan)
+    SingletonClassDeclaration(name = name, baseClass = baseClass, body = body, bodyMemberCall = Option(bodyMemberCall))(
+      obj.toTextSpan
+    )
+  }
 
   private def visitSingleAssignment(obj: Obj): RubyExpression = {
-    val lhs = visit(obj(ParserKeys.Lhs))
+    val lhs = SimpleIdentifier()(obj.toTextSpan.spanStart(obj(ParserKeys.Lhs).str))
     val rhs = visit(obj(ParserKeys.Rhs))
     SingleAssignment(lhs, "=", rhs)(obj.toTextSpan)
   }

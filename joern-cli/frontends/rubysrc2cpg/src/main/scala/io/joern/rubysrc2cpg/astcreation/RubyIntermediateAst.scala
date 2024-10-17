@@ -557,6 +557,8 @@ object RubyIntermediateAst {
       extends RubyExpression(span)
       with RubyStatement {
 
+    def toStatementList: StatementList = StatementList(body :: Nil)(span)
+
     def toMethodDeclaration(name: String, parameters: Option[List[RubyExpression]]): MethodDeclaration =
       parameters match {
         case Some(givenParameters) => MethodDeclaration(name, givenParameters, body)(span)

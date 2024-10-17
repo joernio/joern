@@ -60,7 +60,7 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
     singletonC.method.name.l shouldBe List()
   }
 
-  "`attr_reader :a` is represented by a `@a` MEMBER node" ignore {
+  "`attr_reader :a` is represented by a `@a` MEMBER node" in {
     val cpg = code("""
                      |class C
                      | attr_reader :a
@@ -80,7 +80,7 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
     aGetterMember.dynamicTypeHintFullName should contain("Test0.rb:<main>.C.a")
   }
 
-  "`attr_reader :'abc'` is represented by a `@abc` MEMBER node" ignore {
+  "`attr_reader :'abc'` is represented by a `@abc` MEMBER node" in {
     val cpg = code("""
                      |class C
                      | attr_reader :'abc'
@@ -97,7 +97,7 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
     aMember.dynamicTypeHintFullName should contain("Test0.rb:<main>.C.abc")
   }
 
-  "`attr_reader :'abc' creates an `abc` METHOD node" ignore {
+  "`attr_reader :'abc' creates an `abc` METHOD node" in {
     val cpg = code("""
                      |class C
                      | attr_reader :'abc'
@@ -136,7 +136,7 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
     aMember.lineNumber shouldBe bMember.lineNumber
   }
 
-  "`attr_writer :a` is represented by a `@a` MEMBER node" ignore {
+  "`attr_writer :a` is represented by a `@a` MEMBER node" in {
     val cpg = code("""
                      |class C
                      | attr_writer :a
@@ -150,7 +150,7 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
     aMember.lineNumber shouldBe Some(3)
   }
 
-  "`attr_writer :a` creates an 'a=' METHOD node" ignore {
+  "`attr_writer :a` creates an 'a=' METHOD node" in {
     val cpg = code("""
                      |class C
                      | attr_writer :a
@@ -177,7 +177,7 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
     aMember.dynamicTypeHintFullName should contain("Test0.rb:<main>.C.a=")
   }
 
-  "`attr_accessor :a` is represented by a `@a` MEMBER node" ignore {
+  "`attr_accessor :a` is represented by a `@a` MEMBER node" in {
     val cpg = code("""
                      |class C
                      | attr_accessor :a
@@ -209,7 +209,7 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
     memberF.dynamicTypeHintFullName.toSet should contain(methodF.fullName)
   }
 
-  "`M.method` in a module `M` should have a method bound to a member under the module's singleton type declaration" ignore {
+  "`M.method` in a module `M` should have a method bound to a member under the module's singleton type declaration" in {
     val cpg = code("""
         |module M
         | def M.method(x)
@@ -232,7 +232,7 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
     methodTypeDecl.methodBinding.flatMap(_.boundMethod).head shouldBe method
   }
 
-  "a method in a nested module should have the nested module's member-type and nested types' method" ignore {
+  "a method in a nested module should have the nested module's member-type and nested types' method" in {
     val cpg = code("""
         |module MMM
         | module Nested
@@ -315,7 +315,7 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
     cpg.method.nameExact(RubyDefines.Initialize).where(_.isConstructor).literal.code.l should be(empty)
   }
 
-  "Constants should be defined under the respective singleton" ignore {
+  "Constants should be defined under the respective singleton" in {
     val cpg = code("""
         |module MMM
         | MConst = 2
@@ -339,7 +339,7 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
         |end
         |""".stripMargin)
 
-    "generate a type decl with the associated members" ignore {
+    "generate a type decl with the associated members" in {
       inside(cpg.typeDecl.nameExact("<anon-class-0>").l) {
         case anonClass :: Nil =>
           anonClass.name shouldBe "<anon-class-0>"
@@ -357,7 +357,7 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
       }
     }
 
-    "generate an assignment to the variable `a` with the source being a constructor invocation of the class" ignore {
+    "generate an assignment to the variable `a` with the source being a constructor invocation of the class" in {
       inside(cpg.method.isModule.assignment.l) {
         case aAssignment :: tmpAssign :: Nil =>
           aAssignment.target.code shouldBe "a"
@@ -425,7 +425,7 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
   }
 
   "if: <val> as function param" should {
-    "Be treated as an SimpleIdentifier" ignore {
+    "Be treated as an SimpleIdentifier" in {
       val cpg = code("""
           | class User < ApplicationRecord
           |   validates :password, presence: true,
@@ -460,12 +460,12 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
       }
     }
 
-    "Be treated as a SimpleIdentifier 2" ignore {
+    "Be treated as a SimpleIdentifier 2" in {
       val cpg = code("""
           | class AdminController < ApplicationController
           |   before_action :administrative, if: :admin_param, except: [:get_user]
-          |    skip_before_action :has_info
-          |    layout false, only: [:get_all_users, :get_user]
+          |     skip_before_action :has_info
+          |     layout false, only: [:get_all_users, :get_user]
           | end
           |""".stripMargin)
 
