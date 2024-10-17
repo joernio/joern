@@ -15,7 +15,7 @@ trait TypeStorageLoader {
   /** Loads raw version strings, to be parsed by a deriver of Version */
   def loadMetadataVersions(bytes: Array[Byte]): List[String]
 
-  /** TODO: might cut */
+  /** TODO: might cut for now, intended for use later if building an index of (type names -> containing package names) */
   def loadMetadataTypeNames(bytes: Array[Byte]): List[TypeMetadata]
 
   /** TODO: will add when adding code to write data out to the github repo */
