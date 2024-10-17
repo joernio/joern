@@ -2,20 +2,41 @@ package io.shiftleft.semanticcpg.typeinfo.loading
 
 import com.amazon.ion.{IonReader, IonType}
 import com.amazon.ion.system.IonReaderBuilder
-import io.shiftleft.semanticcpg.typeinfo.loading.BytesLoader
 import io.shiftleft.semanticcpg.typeinfo.{PackageMetadata, TypeMetadata}
 
 import scala.annotation.tailrec
 import scala.util.Using
 
-object MetadataIonTextLoader extends BytesLoader[PackageMetadata] {
-  override def loadFromBytes(data: Array[Byte]): PackageMetadata = {
+object MetadataIonTextLoader {
+  private val versionsFieldName: String = "VERSIONS"
+  
+  def loadFromBytes(data: Array[Byte]): PackageMetadata = {
     Using.resource(IonReaderBuilder.standard().build(data))(parseTopLevelStruct)
+  }
+  
+  def loadRawVersionsFromBytes(data: Array[Byte]): List[String] = {
+    Using.resource(IonReaderBuilder.standard().build(data))(parseOnlyVersions)
+  }
+  
+  private def parseOnlyVersions(reader: IonReader): List[String] = {
+    reader.next()
+    reader.stepIn()
+    parseUntil(reader, reader => reader.getFieldName == versionsFieldName)
+    parseStringList(reader)
+  }
+  
+  @tailrec
+  private def parseUntil(reader: IonReader, condition: IonReader => Boolean): Unit = {
+    Option(reader.next()) match
+      case IonType.LIST if condition(reader) => ()
+      case None => throw new RuntimeException("Invalid type info package metadata format: no versions lists")
+      case _ => parseUntil(reader, condition)
   }
   
   /** The metadata ion struct is two named top-level lists:
    * a list of version strings
-   * a list of type info structs containing the version and a list of all type names*/
+   * a list of type info structs containing the version and a list of all type names
+   * Unused at the moment, will be used when writing details to be committed to the repo */
   private def parseTopLevelStruct(reader: IonReader): PackageMetadata = {
     reader.next()
     reader.stepIn()

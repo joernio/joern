@@ -3,7 +3,7 @@ package io.shiftleft.semanticcpg.typeinfo.dependencies
 import io.shiftleft.semanticcpg.typeinfo.LanguagePlatform.JVM
 import io.shiftleft.semanticcpg.typeinfo.dependencies.*
 import io.shiftleft.semanticcpg.typeinfo.fetching.Fetcher
-import io.shiftleft.semanticcpg.typeinfo.loading.{DirectDependencyIonTextLoader, MetadataIonTextLoader}
+import io.shiftleft.semanticcpg.typeinfo.loading.Loader
 import io.shiftleft.semanticcpg.typeinfo.{PackageIdentifier, PackageMetadata}
 import io.shiftleft.semanticcpg.typeinfo.version.{SemVer2, Version}
 
@@ -95,10 +95,13 @@ object MavenDependencyResolver {
       case Or(left, right) => getConstraintEvaluator(left)(otherVersion) || getConstraintEvaluator(right)(otherVersion)
   }
   
+  /** For the return type to be Version compared to SemVer2.apply: String => SemVer2 */
+  private def parseVersion(rawVersion: String): Version = SemVer2(rawVersion)
+  
   private def getDirectDependencies(fetcher: Fetcher, pid: PackageIdentifier, version: Version): Future[List[DirectDependency]] = {
     fetcher.fetchDirectDependencies(pid, version).flatMap { bytes => 
       Future {
-        val deps = DirectDependencyIonTextLoader(SemVer2.apply).loadFromBytes(bytes)
+        val deps = Loader.loadDirectDependencies(parseVersion)(bytes)
       }
     }
   }
@@ -107,7 +110,7 @@ object MavenDependencyResolver {
     val pid = PackageIdentifier(JVM, packageName)
     fetcher.fetchMetaData(pid).flatMap { bytes =>
       Future {
-        MetadataIonTextLoader.loadFromBytes(bytes).versions.map(SemVer2.apply)
+        Loader.loadMetadataVersions(bytes).map(SemVer2.apply)
       }
     }
   }

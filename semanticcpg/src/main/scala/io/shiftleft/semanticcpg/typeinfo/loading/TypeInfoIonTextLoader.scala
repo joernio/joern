@@ -2,18 +2,17 @@ package io.shiftleft.semanticcpg.typeinfo
 
 import com.amazon.ion.{IonReader, IonType}
 import com.amazon.ion.system.IonReaderBuilder
-import io.shiftleft.semanticcpg.typeinfo.loading.BytesLoader
 
-  import scala.annotation.tailrec
-  import scala.util.Using
+import scala.annotation.tailrec
+import scala.util.Using
 
 /** Loads text-formatted Ion from bytes or a string */
-object TypeInfoIonTextLoader extends BytesLoader[TypeDecl] {
+object TypeInfoIonTextLoader {
   def loadFromString(data: String): TypeDecl = {
     Using.resource(IonReaderBuilder.standard().build(data))(loop(_))
   }
 
-  override def loadFromBytes(data: Array[Byte]): TypeDecl = {
+  def loadFromBytes(data: Array[Byte]): TypeDecl = {
     Using.resource(IonReaderBuilder.standard().build(data))(loop(_))
   }
   

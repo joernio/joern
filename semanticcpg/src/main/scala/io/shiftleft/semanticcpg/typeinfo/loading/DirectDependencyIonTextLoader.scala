@@ -2,7 +2,6 @@ package io.shiftleft.semanticcpg.typeinfo.loading
 
 import com.amazon.ion.{IonReader, IonType}
 import com.amazon.ion.system.IonReaderBuilder
-import io.shiftleft.semanticcpg.typeinfo.loading.BytesLoader
 import io.shiftleft.semanticcpg.typeinfo.dependencies._
 import io.shiftleft.semanticcpg.typeinfo.version.Version
 
@@ -12,7 +11,7 @@ import scala.util.Using
 object DirectDependencyIonTextLoader {
   private val defaultDependency = DirectDependency("", Any())
   
-  override def loadFromBytes(versionParser: String => Version, data: Array[Byte]): List[DirectDependency] = {
+  def loadFromBytes(versionParser: String => Version, data: Array[Byte]): List[DirectDependency] = {
     Using.resource(IonReaderBuilder.standard().build(data))(parseLoop(_, versionParser))
   }
   
