@@ -51,8 +51,6 @@ trait TypeInfoProvider(val typeRenderer: TypeRenderer = new TypeRenderer()) {
 
   def isConstructorCall(expr: KtExpression): Option[Boolean]
 
-  def typeFullName(expr: KtTypeReference, defaultValue: String): String
-
   def hasStaticDesc(expr: KtQualifiedExpression): Boolean
 
   def isRefToCompanionObject(expr: KtNameReferenceExpression): Boolean

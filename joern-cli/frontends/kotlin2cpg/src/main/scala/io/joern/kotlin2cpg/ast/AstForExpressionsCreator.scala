@@ -484,7 +484,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       s"${expr.getContainingKtFile.getPackageFqName.toString}.$referencedName"
     }
     lazy val typeArgs =
-      expr.getTypeArguments.asScala.map(x => typeInfoProvider.typeFullName(x.getTypeReference, TypeConstants.any))
+      expr.getTypeArguments.asScala.map(x =>
+        bindingUtils.getTypeRefType(x.getTypeReference).flatMap(nameRenderer.typeFullName).getOrElse(TypeConstants.any)
+      )
     val explicitSignature = s"${TypeConstants.any}(${argAsts.map { _ => TypeConstants.any }.mkString(",")})"
     val explicitFullName =
       if (typeInfoProvider.typeRenderer.keepTypeArguments && typeArgs.nonEmpty)

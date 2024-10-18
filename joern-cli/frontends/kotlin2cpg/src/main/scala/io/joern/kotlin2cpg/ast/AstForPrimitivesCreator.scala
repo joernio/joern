@@ -306,8 +306,10 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
   def astForTypeReference(expr: KtTypeReference, argIdx: Option[Int], argName: Option[String])(implicit
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
-    val typeFullName = registerType(typeInfoProvider.typeFullName(expr, TypeConstants.any))
-    val node         = typeRefNode(expr, expr.getText, typeFullName)
+    val typeFullName = registerType(
+      bindingUtils.getTypeRefType(expr).flatMap(nameRenderer.typeFullName).getOrElse(TypeConstants.any)
+    )
+    val node = typeRefNode(expr, expr.getText, typeFullName)
     Ast(withArgumentName(withArgumentIndex(node, argIdx), argName))
   }
 }
