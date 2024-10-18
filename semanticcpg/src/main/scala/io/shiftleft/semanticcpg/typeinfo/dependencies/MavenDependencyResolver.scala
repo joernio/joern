@@ -29,13 +29,13 @@ object MavenDependencyResolver {
     def this() = this(Nil)
 
     def push(packageName: String, pickedVersion: SemVer2): CurrentChoices = {
-      CurrentChoices(choices :+ (packageName, pickedVersion))
+      CurrentChoices((packageName, pickedVersion) :: choices)
     }
 
     def pop(): CurrentChoices = {
       if (choices.isEmpty)
       then this
-      else CurrentChoices(choices.dropRight(1))
+      else CurrentChoices(choices.tail)
     }
 
     def toList: List[(String, SemVer2)] = choices
@@ -98,11 +98,11 @@ object MavenDependencyResolver {
     def push(packageName: String, versionConstraint: VersionConstraint): CurrentConstraints = {
       if (constraints.isEmpty) {
         val newConstraints = ConstraintMap(packageName, versionConstraint)
-        CurrentConstraints(constraints :+ newConstraints)
+        CurrentConstraints(newConstraints :: constraints)
       } else {
         val prevConstraints = constraints.last
         val newConstraints  = prevConstraints.addConstraint(packageName, versionConstraint)
-        CurrentConstraints(constraints :+ newConstraints)
+        CurrentConstraints(newConstraints :: constraints)
       }
     }
 
@@ -111,13 +111,13 @@ object MavenDependencyResolver {
       val newConstraints = directDeps.foldLeft(prevConstraints)((accMap, directDep) =>
         accMap.addConstraint(directDep.name, directDep.version)
       )
-      CurrentConstraints(constraints :+ newConstraints)
+      CurrentConstraints(newConstraints :: constraints)
     }
 
     def pop(): CurrentConstraints = {
       if (constraints.isEmpty)
       then this
-      else CurrentConstraints(constraints.dropRight(1))
+      else CurrentConstraints(constraints.tail)
     }
 
     override def toString: String = constraints.mkString(";")
