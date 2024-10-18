@@ -65,10 +65,10 @@ object MetadataIonTextLoader {
         val typeInfo = parseTypeInfoStruct(reader, parseTypeInfoStruct(reader))
         reader.stepOut()
         val newPackageMetadata =
-          packageMetadata.copy(perVersionTypeInfo = packageMetadata.perVersionTypeInfo :+ typeInfo)
+          packageMetadata.copy(perVersionTypeInfo = typeInfo :: packageMetadata.perVersionTypeInfo)
         parseTypeNameInfo(reader, newPackageMetadata)
       }
-      case None => packageMetadata
+      case None => packageMetadata.copy(perVersionTypeInfo = packageMetadata.perVersionTypeInfo.reverse)
       case _ =>
         throw new RuntimeException("Invalid type info package metadata format: type info list has invalid format")
   }
@@ -89,8 +89,8 @@ object MetadataIonTextLoader {
   @tailrec
   private def parseStringList(reader: IonReader, elts: List[String] = Nil): List[String] = {
     Option(reader.next()) match
-      case None                 => elts
-      case Some(IonType.STRING) => parseStringList(reader, elts :+ reader.stringValue())
+      case None                 => elts.reverse
+      case Some(IonType.STRING) => parseStringList(reader, reader.stringValue() :: elts)
       case _                    => throw new RuntimeException("Invalid type info package metadata format")
   }
 }

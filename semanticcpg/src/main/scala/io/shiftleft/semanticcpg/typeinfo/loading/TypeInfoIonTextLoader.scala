@@ -66,10 +66,10 @@ object TypeInfoIonTextLoader {
       var result: List[T] = Nil
       while (reader.next() != null) {
         reader.stepIn()
-        result = result :+ structParser(reader)
+        result = structParser(reader) :: result 
         reader.stepOut()
       }
-      result
+      result.reverse
     }
 
   private def parseTextField(reader: IonReader, typ: TypeDecl): TypeDecl = {
