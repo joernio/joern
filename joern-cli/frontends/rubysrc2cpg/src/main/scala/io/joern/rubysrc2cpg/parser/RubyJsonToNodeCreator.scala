@@ -640,10 +640,9 @@ class RubyJsonToNodeCreator(
       case _ =>
         val target      = SimpleIdentifier()(obj.toTextSpan.spanStart(callName))
         val argumentArr = obj.visitArray(ParserKeys.Arguments)
-        val arguments = argumentArr.zipWithIndex.flatMap {
-          case (hashLiteral: HashLiteral, idx) =>
-            hashLiteral.elements // a hash is likely named arguments
-          case (x, _) => x :: Nil
+        val arguments = argumentArr.flatMap {
+          case hashLiteral: HashLiteral => hashLiteral.elements // a hash is likely named arguments
+          case x                        => x :: Nil
         }
         if (obj.contains(ParserKeys.Receiver)) {
           val base = visit(obj(ParserKeys.Receiver))
