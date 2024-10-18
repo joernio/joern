@@ -52,7 +52,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val classDesc = bindingUtils.getClassDesc(ktClass)
 
     val classFullName =
-      classDesc.flatMap(nameRenderer.descFullName).getOrElse {
+      nameRenderer.descFullName(classDesc).getOrElse {
         val fqName = ktClass.getContainingKtFile.getPackageFqName.toString
         s"$fqName.$className"
       }
@@ -87,11 +87,11 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val (fullName, signature) =
       if (primaryCtor != null) {
         val constructorDesc = bindingUtils.getConstructorDesc(primaryCtor)
-        val descFullName = constructorDesc
-          .flatMap(nameRenderer.descFullName)
+        val descFullName = nameRenderer
+          .descFullName(constructorDesc)
           .getOrElse(s"$classFullName.${Defines.ConstructorMethodName}")
-        val signature = constructorDesc
-          .flatMap(nameRenderer.funcDescSignature)
+        val signature = nameRenderer
+          .funcDescSignature(constructorDesc)
           .getOrElse(s"${Defines.UnresolvedSignature}(${primaryCtor.getValueParameters.size()})")
         val fullName = nameRenderer.combineFunctionFullName(descFullName, signature)
         (fullName, signature)
@@ -216,7 +216,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val annotationAsts = ktClass.getAnnotationEntries.asScala.map(astForAnnotationEntry).toSeq
 
-    val modifiers = if (classDesc.get.getModality == Modality.ABSTRACT) {
+    val modifiers = if (classDesc.getModality == Modality.ABSTRACT) {
       List(Ast(NodeBuilders.newModifierNode(ModifierTypes.ABSTRACT)))
     } else {
       Nil
@@ -486,11 +486,11 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       val constructorParams  = ctor.getValueParameters.asScala.toList
 
       val constructorDesc = bindingUtils.getConstructorDesc(ctor)
-      val descFullName = constructorDesc
-        .flatMap(nameRenderer.descFullName)
+      val descFullName = nameRenderer
+        .descFullName(constructorDesc)
         .getOrElse(s"$classFullName.${Defines.ConstructorMethodName}")
-      val signature = constructorDesc
-        .flatMap(nameRenderer.funcDescSignature)
+      val signature = nameRenderer
+        .funcDescSignature(constructorDesc)
         .getOrElse(s"${Defines.UnresolvedSignature}(${ctor.getValueParameters.size()})")
       val fullName = nameRenderer.combineFunctionFullName(descFullName, signature)
       val secondaryCtorMethodNode =

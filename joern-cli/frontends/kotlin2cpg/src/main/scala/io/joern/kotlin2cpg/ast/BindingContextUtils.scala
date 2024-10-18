@@ -28,28 +28,25 @@ import org.jetbrains.kotlin.types.error.ErrorType
 import scala.jdk.CollectionConverters.*
 
 class BindingContextUtils(bindingContext: BindingContext) {
-  def getClassDesc(classAst: KtClassOrObject): Option[ClassDescriptor] = {
-    Option(bindingContext.get(BindingContext.CLASS, classAst))
+  def getClassDesc(classAst: KtClassOrObject): ClassDescriptor = {
+    bindingContext.get(BindingContext.CLASS, classAst)
   }
 
-  def getFunctionDesc(functionAst: KtNamedFunction): Option[FunctionDescriptor] = {
-    Option(bindingContext.get(BindingContext.FUNCTION, functionAst))
+  def getFunctionDesc(functionAst: KtNamedFunction): FunctionDescriptor = {
+    bindingContext.get(BindingContext.FUNCTION, functionAst)
   }
 
-  def getFunctionDesc(functionLiteralAst: KtFunctionLiteral): Option[FunctionDescriptor] = {
-    Option(bindingContext.get(BindingContext.FUNCTION, functionLiteralAst))
+  def getFunctionDesc(functionLiteralAst: KtFunctionLiteral): FunctionDescriptor = {
+    bindingContext.get(BindingContext.FUNCTION, functionLiteralAst)
   }
 
-  def getFunctionDesc(destructuringAst: KtDestructuringDeclarationEntry): Option[FunctionDescriptor] = {
+  def getConstructorDesc(constructorAst: KtConstructor[?]): ConstructorDescriptor = {
+    bindingContext.get(BindingContext.CONSTRUCTOR, constructorAst)
+  }
+
+  def getCalledFunctionDesc(destructuringAst: KtDestructuringDeclarationEntry): Option[FunctionDescriptor] = {
     val resolvedCall = Option(bindingContext.get(BindingContext.COMPONENT_RESOLVED_CALL, destructuringAst))
-
-    resolvedCall.map(_.getResultingDescriptor).collect { case functionDesc: FunctionDescriptor =>
-      functionDesc
-    }
-  }
-
-  def getConstructorDesc(constructorAst: KtConstructor[?]): Option[ConstructorDescriptor] = {
-    Option(bindingContext.get(BindingContext.CONSTRUCTOR, constructorAst))
+    resolvedCall.map(_.getResultingDescriptor)
   }
 
   def getCalledFunctionDesc(expressionAst: KtExpression): Option[FunctionDescriptor] = {

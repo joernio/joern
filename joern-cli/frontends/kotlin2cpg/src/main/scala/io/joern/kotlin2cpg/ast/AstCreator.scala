@@ -432,7 +432,7 @@ class AstCreator(
       identifierNode(entry, componentNReceiverName, componentNReceiverName, componentNTypeFullName)
         .argumentIndex(0)
 
-    val desc = bindingUtils.getFunctionDesc(entry)
+    val desc = bindingUtils.getCalledFunctionDesc(entry)
     val descFullName = desc
       .flatMap(nameRenderer.descFullName)
       .getOrElse(s"${Defines.UnresolvedNamespace}${Constants.componentNPrefix}$componentIdx")

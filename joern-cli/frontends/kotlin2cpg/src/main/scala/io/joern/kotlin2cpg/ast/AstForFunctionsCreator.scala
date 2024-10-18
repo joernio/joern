@@ -63,11 +63,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     typeInfoProvider: TypeInfoProvider
   ): Seq[Ast] = {
     val funcDesc = bindingUtils.getFunctionDesc(ktFn)
-    val descFullName = funcDesc
-      .flatMap(nameRenderer.descFullName)
+    val descFullName = nameRenderer
+      .descFullName(funcDesc)
       .getOrElse(s"${Defines.UnresolvedNamespace}.${ktFn.getName}")
-    val signature = funcDesc
-      .flatMap(nameRenderer.funcDescSignature)
+    val signature = nameRenderer
+      .funcDescSignature(funcDesc)
       .getOrElse(s"${Defines.UnresolvedSignature}(${ktFn.getValueParameters.size()})")
     val fullName = nameRenderer.combineFunctionFullName(descFullName, signature)
 
@@ -75,17 +75,17 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     scope.pushNewScope(_methodNode)
     methodAstParentStack.push(_methodNode)
 
-    val isExtensionMethod = funcDesc.get.getExtensionReceiverParameter != null
+    val isExtensionMethod = funcDesc.getExtensionReceiverParameter != null
 
-    val needsThisParameter = funcDesc.get.getDispatchReceiverParameter != null ||
+    val needsThisParameter = funcDesc.getDispatchReceiverParameter != null ||
       isExtensionMethod
 
     val thisParameterAsts = if (needsThisParameter) {
       val typeDeclFullName =
-        if (funcDesc.get.getDispatchReceiverParameter != null) {
-          nameRenderer.typeFullName(funcDesc.get.getDispatchReceiverParameter.getType).getOrElse(TypeConstants.any)
+        if (funcDesc.getDispatchReceiverParameter != null) {
+          nameRenderer.typeFullName(funcDesc.getDispatchReceiverParameter.getType).getOrElse(TypeConstants.any)
         } else {
-          nameRenderer.typeFullName(funcDesc.get.getExtensionReceiverParameter.getType).getOrElse(TypeConstants.any)
+          nameRenderer.typeFullName(funcDesc.getExtensionReceiverParameter.getType).getOrElse(TypeConstants.any)
         }
 
       registerType(typeDeclFullName)
@@ -139,21 +139,21 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     methodAstParentStack.pop()
     scope.popScope()
 
-    val bodyAst          = bodyAsts.headOption.getOrElse(Ast(unknownNode(ktFn, Constants.empty)))
-    val otherBodyAsts    = bodyAsts.drop(1)
-    val explicitTypeName = Option(ktFn.getTypeReference).map(_.getText).getOrElse(TypeConstants.any)
-    val typeFullName = registerType(nameRenderer.typeFullName(funcDesc.get.getReturnType).getOrElse(explicitTypeName))
+    val bodyAst           = bodyAsts.headOption.getOrElse(Ast(unknownNode(ktFn, Constants.empty)))
+    val otherBodyAsts     = bodyAsts.drop(1)
+    val explicitTypeName  = Option(ktFn.getTypeReference).map(_.getText).getOrElse(TypeConstants.any)
+    val typeFullName      = registerType(nameRenderer.typeFullName(funcDesc.getReturnType).getOrElse(explicitTypeName))
     val _methodReturnNode = newMethodReturnNode(typeFullName, None, line(ktFn), column(ktFn))
 
     val visibilityModifierType =
-      modifierTypeForVisibility(funcDesc.get.getVisibility)
+      modifierTypeForVisibility(funcDesc.getVisibility)
     val visibilityModifier = NodeBuilders.newModifierNode(visibilityModifierType)
 
     val modifierNodes =
       if (withVirtualModifier) Seq(NodeBuilders.newModifierNode(ModifierTypes.VIRTUAL))
       else Seq()
 
-    val modifiers = if (funcDesc.get.getModality == Modality.ABSTRACT) {
+    val modifiers = if (funcDesc.getModality == Modality.ABSTRACT) {
       List(visibilityModifier) ++ modifierNodes :+ NodeBuilders.newModifierNode(ModifierTypes.ABSTRACT)
     } else {
       List(visibilityModifier) ++ modifierNodes
@@ -211,12 +211,12 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     annotations: Seq[KtAnnotationEntry] = Seq()
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val funcDesc = bindingUtils.getFunctionDesc(fn)
-    val name     = nameRenderer.descName(funcDesc.get)
-    val descFullName = funcDesc
-      .flatMap(nameRenderer.descFullName)
+    val name     = nameRenderer.descName(funcDesc)
+    val descFullName = nameRenderer
+      .descFullName(funcDesc)
       .getOrElse(s"${Defines.UnresolvedNamespace}.$name")
-    val signature = funcDesc
-      .flatMap(nameRenderer.funcDescSignature)
+    val signature = nameRenderer
+      .funcDescSignature(funcDesc)
       .getOrElse(s"${Defines.UnresolvedSignature}(${fn.getValueParameters.size()})")
     val fullName = nameRenderer.combineFunctionFullName(descFullName, signature)
 
@@ -316,12 +316,12 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     annotations: Seq[KtAnnotationEntry] = Seq()
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val funcDesc = bindingUtils.getFunctionDesc(expr.getFunctionLiteral)
-    val name     = nameRenderer.descName(funcDesc.get)
-    val descFullName = funcDesc
-      .flatMap(nameRenderer.descFullName)
+    val name     = nameRenderer.descName(funcDesc)
+    val descFullName = nameRenderer
+      .descFullName(funcDesc)
       .getOrElse(s"${Defines.UnresolvedNamespace}.$name")
-    val signature = funcDesc
-      .flatMap(nameRenderer.funcDescSignature)
+    val signature = nameRenderer
+      .funcDescSignature(funcDesc)
       .getOrElse(s"${Defines.UnresolvedSignature}(${expr.getFunctionLiteral.getValueParameters.size()})")
     val fullName = nameRenderer.combineFunctionFullName(descFullName, signature)
 
@@ -411,7 +411,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       .getOrElse(Seq(Ast(NewBlock())))
 
     val returnTypeFullName = registerType(
-      nameRenderer.typeFullName(funcDesc.get.getReturnType).getOrElse(TypeConstants.javaLangObject)
+      nameRenderer.typeFullName(funcDesc.getReturnType).getOrElse(TypeConstants.javaLangObject)
     )
     val lambdaTypeDeclFullName = fullName.split(":").head
 
