@@ -120,19 +120,6 @@ class DefaultTypeInfoProvider(val bindingContext: BindingContext, typeRenderer: 
       )
   }
 
-  def typeFullName(expr: KtClassOrObject, defaultValue: String): String = {
-    val mapForEntity = bindingsForEntity(bindingContext, expr)
-    Option(mapForEntity.get(BindingContext.CLASS.getKey))
-      .map(_.getDefaultType)
-      .map(typeRenderer.render(_))
-      .getOrElse(defaultValue)
-  }
-
-  def isCompanionObject(expr: KtClassOrObject): Boolean = {
-    val mapForEntity = bindingsForEntity(bindingContext, expr)
-    Option(mapForEntity.get(BindingContext.CLASS.getKey)).exists(DescriptorUtils.isCompanionObject(_))
-  }
-
   private def subexpressionForResolvedCallInfo(expr: KtExpression): KtExpression = {
     expr match {
       case typedExpr: KtCallExpression =>

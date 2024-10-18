@@ -200,7 +200,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val innerTypeDeclAsts =
       classDeclarations.toSeq
         .collectAll[KtClassOrObject]
-        .filterNot(typeInfoProvider.isCompanionObject)
+        .filterNot(desc => bindingUtils.getClassDesc(desc).isCompanionObject)
         .flatMap(astsForDeclaration(_))
 
     val classFunctions = Option(ktClass.getBody)
@@ -228,10 +228,11 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
     (List(ctorBindingInfo) ++ bindingsInfo ++ componentNBindingsInfo).foreach(bindingInfoQueue.prepend)
 
-    val finalAst = if (typeInfoProvider.isCompanionObject(ktClass)) {
+    val finalAst = if (classDesc.isCompanionObject) {
       val companionMemberTypeFullName = ktClass.getParent.getParent match {
-        case c: KtClassOrObject => typeInfoProvider.typeFullName(c, TypeConstants.any)
-        case _                  => TypeConstants.any
+        case c: KtClassOrObject =>
+          nameRenderer.descFullName(bindingUtils.getClassDesc(c)).getOrElse(TypeConstants.any)
+        case _ => TypeConstants.any
       }
       registerType(companionMemberTypeFullName)
 

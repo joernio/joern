@@ -55,11 +55,7 @@ trait TypeInfoProvider(val typeRenderer: TypeRenderer = new TypeRenderer()) {
 
   def hasStaticDesc(expr: KtQualifiedExpression): Boolean
 
-  def isCompanionObject(expr: KtClassOrObject): Boolean
-
   def isRefToCompanionObject(expr: KtNameReferenceExpression): Boolean
-
-  def typeFullName(expr: KtClassOrObject, defaultValue: String): String
 
   def typeFromImports(name: String, file: KtFile): Option[String]
 }
