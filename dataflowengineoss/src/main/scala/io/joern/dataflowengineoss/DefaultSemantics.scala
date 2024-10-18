@@ -38,7 +38,7 @@ object DefaultSemantics {
     F(Operators.assignmentXor, List((2, 1), (1, 1), (2, -1))),
     F(Operators.cast, List((1, -1), (2, -1))),
     F(Operators.computedMemberAccess, List((1, -1))),
-    F(Operators.conditional, List((2, -1), (3, -1))),
+    F(Operators.conditional, List((2, -1), (3, -1), (2, 2), (3, 3))),
     F(Operators.elvis, List((1, -1), (2, -1))),
     F(Operators.notNullAssert, List((1, -1))),
     F(Operators.fieldAccess, List((1, -1))),
