@@ -291,7 +291,6 @@ class ControlStructureTests extends RubyCode2CpgFixture(useJsonAst = true) {
                      |  @dev.close rescue nil
                      |end
                      |""".stripMargin)
-    cpg.method.name("test1").dotAst.l.foreach(println)
     val List(rescueNode) = cpg.method("test1").tryBlock.l
     rescueNode.controlStructureType shouldBe ControlStructureTypes.TRY
     val List(body, rescueBody, implicitReturnBody) = rescueNode.astChildren.l

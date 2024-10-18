@@ -237,7 +237,9 @@ object RubyIntermediateAst {
 
   /** Any structure that is an Identifier, except self. e.g. `a`, `@a`, `@@a`
     */
-  sealed trait RubyIdentifier
+  sealed trait RubyIdentifier extends RubyExpression {
+    override def toString: String = span.text
+  }
 
   /** Ruby Instance or Class Variable Identifiers: `@a`, `@@a`
     */
@@ -533,7 +535,7 @@ object RubyIntermediateAst {
 
   final case class MemberAccess(target: RubyExpression, op: String, memberName: String)(span: TextSpan)
       extends RubyExpression(span) {
-    override def toString: String = s"${target.text}.$memberName"
+    override def toString: String = s"${target.text}${op}$memberName"
   }
 
   /** A Ruby node that instantiates objects.

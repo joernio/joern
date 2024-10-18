@@ -9,7 +9,7 @@ import io.joern.rubysrc2cpg.utils.FreshNameGenerator
 import io.joern.x2cpg.frontendspecific.rubysrc2cpg.ImportsPass
 import io.joern.x2cpg.frontendspecific.rubysrc2cpg.ImportsPass.ImportCallNames
 import org.slf4j.LoggerFactory
-import ujson.{Obj, Value}
+import ujson.{Arr, Bool, Null, Num, Obj, Str, Value}
 
 class RubyJsonToNodeCreator(
   variableNameGen: FreshNameGenerator[String] = FreshNameGenerator(id => s"<tmp-$id>"),
@@ -235,7 +235,12 @@ class RubyJsonToNodeCreator(
   private def visitCaseMatchStatement(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
   private def visitClassDefinition(obj: Obj): RubyExpression = {
-    val name           = visit(obj(ParserKeys.Name))
+    val (name, namespaceParts) = visit(obj(ParserKeys.Name)) match {
+      case memberAccess: MemberAccess =>
+        val memberIdentifier = SimpleIdentifier()(memberAccess.span.spanStart(memberAccess.memberName))
+        (memberIdentifier, Option(getParts(memberAccess).dropRight(1)))
+      case identifier => (identifier, None)
+    }
     val baseClass      = obj.visitOption(ParserKeys.SuperClass)
     val (body, fields) = createClassBodyAndFields(obj)
     val bodyMemberCall = createBodyMemberCall(name.text, obj.toTextSpan)
@@ -245,7 +250,7 @@ class RubyJsonToNodeCreator(
       body = body,
       fields = fields,
       bodyMemberCall = Option(bodyMemberCall),
-      namespaceParts = None
+      namespaceParts = namespaceParts
     )(obj.toTextSpan)
   }
 
@@ -389,7 +394,17 @@ class RubyJsonToNodeCreator(
 
   private def visitKwArg(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
-  private def visitKwBegin(obj: Obj): RubyExpression = StatementList(obj.visitArray(ParserKeys.Body))(obj.toTextSpan)
+  private def visitKwBegin(obj: Obj): RubyExpression = {
+    val stmts = obj(ParserKeys.Body) match {
+      case o: Obj => visit(o) :: Nil
+      case _: Arr => obj.visitArray(ParserKeys.Body)
+      case _ =>
+        val span = obj.toTextSpan
+        logger.warn(s"Unhandled JSON body type for `KwBegin`: ${span.text}")
+        defaultResult(Option(span)) :: Nil
+    }
+    StatementList(stmts)(obj.toTextSpan)
+  }
 
   private def visitKwNilArg(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
@@ -431,7 +446,12 @@ class RubyJsonToNodeCreator(
   }
 
   private def visitModuleDefinition(obj: Obj): RubyExpression = {
-    val name           = visit(obj(ParserKeys.Name))
+    val (name, namespaceParts) = visit(obj(ParserKeys.Name)) match {
+      case memberAccess: MemberAccess =>
+        val memberIdentifier = SimpleIdentifier()(memberAccess.span.spanStart(memberAccess.memberName))
+        (memberIdentifier, Option(getParts(memberAccess).dropRight(1)))
+      case identifier => (identifier, None)
+    }
     val (body, fields) = createClassBodyAndFields(obj)
     val bodyMemberCall = createBodyMemberCall(name.text, obj.toTextSpan)
     ModuleDeclaration(
@@ -526,6 +546,8 @@ class RubyJsonToNodeCreator(
     if (obj.contains(ParserKeys.Values)) {
       val returnExpressions = obj.visitArray(ParserKeys.Values)
       ReturnExpression(returnExpressions)(obj.toTextSpan)
+    } else if (obj.contains(ParserKeys.Value)) {
+      ReturnExpression(visit(obj(ParserKeys.Value)) :: Nil)(obj.toTextSpan)
     } else {
       ReturnExpression(List.empty)(obj.toTextSpan)
     }
@@ -561,7 +583,8 @@ class RubyJsonToNodeCreator(
     val identifier = obj(ParserKeys.Name).str
     if (obj.contains(ParserKeys.Base)) {
       val target = visit(obj(ParserKeys.Base))
-      MemberAccess(target, ".", identifier)(obj.toTextSpan)
+      val op     = if obj.toTextSpan.text.contains("::") then "::" else "."
+      MemberAccess(target, op, identifier)(obj.toTextSpan)
     } else {
       SimpleIdentifier()(obj.toTextSpan)
     }

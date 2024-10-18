@@ -5,6 +5,8 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   ClassFieldIdentifier,
   MemberAccess,
   MethodDeclaration,
+  ProcedureDeclaration,
+  RubyCall,
   RubyExpression,
   RubyFieldIdentifier,
   SelfIdentifier,
@@ -15,6 +17,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   TextSpan,
   TypeDeclBodyCall
 }
+import io.joern.rubysrc2cpg.parser.RubyJsonHelpers.nilLiteral
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import upickle.core.*
@@ -50,7 +53,8 @@ object RubyJsonHelpers {
 
   }
 
-  protected def nilLiteral(span: TextSpan): StaticLiteral = StaticLiteral(getBuiltInType(Defines.NilClass))(span)
+  protected def nilLiteral(span: TextSpan): StaticLiteral =
+    StaticLiteral(getBuiltInType(Defines.NilClass))(span.spanStart("nil"))
 
   def createClassBodyAndFields(
     obj: ujson.Obj
@@ -58,18 +62,23 @@ object RubyJsonHelpers {
 
     def bodyMethod(fieldStatements: List[RubyExpression]): MethodDeclaration = {
 
-      val body = fieldStatements.map {
-        case field: SimpleIdentifier =>
-          val assignmentSpan = field.span.spanStart(s"${field.span} = nil")
-          SingleAssignment(ClassFieldIdentifier()(field.span), "=", nilLiteral(field.span))(assignmentSpan)
-        case field: RubyFieldIdentifier =>
-          val assignmentSpan = field.span.spanStart(s"${field.span} = nil")
-          SingleAssignment(field, "=", nilLiteral(field.span))(assignmentSpan)
-        case assignment @ SingleAssignment(_: RubyFieldIdentifier, _, _) => assignment
-        case assignment @ SingleAssignment(lhs: SimpleIdentifier, op, _) =>
-          assignment.copy(lhs = ClassFieldIdentifier()(lhs.span))(assignment.span)
-        case otherExpr => otherExpr
-      }
+      val body = fieldStatements
+        .map {
+          case field: SimpleIdentifier =>
+            val assignmentSpan = field.span.spanStart(s"${field.span.text} = nil")
+            SingleAssignment(ClassFieldIdentifier()(field.span), "=", nilLiteral(field.span))(assignmentSpan)
+          case field: RubyFieldIdentifier =>
+            val assignmentSpan = field.span.spanStart(s"${field.span.text} = nil")
+            SingleAssignment(field, "=", nilLiteral(field.span))(assignmentSpan)
+          case assignment @ SingleAssignment(_: RubyFieldIdentifier, _, _) => assignment
+          case assignment @ SingleAssignment(lhs: SimpleIdentifier, _, _) =>
+            assignment.copy(lhs = ClassFieldIdentifier()(lhs.span))(assignment.span)
+          case otherExpr => otherExpr
+        }
+        .distinctBy {
+          case _ @SingleAssignment(lhs: RubyFieldIdentifier, _, _) => lhs.text
+          case x                                                   => x
+        }
 
       MethodDeclaration(Defines.TypeDeclBody, Nil, StatementList(body)(obj.toTextSpan.spanStart(s"(...)")))(
         obj.toTextSpan.spanStart(s"def <body>; (...); end")
@@ -94,31 +103,37 @@ object RubyJsonHelpers {
       * @param expr
       *   An expression that is a direct child to a class or module.
       */
-    def getField(expr: RubyExpression): Option[RubyExpression & RubyFieldIdentifier] = {
+    def getFields(expr: RubyExpression): List[RubyExpression & RubyFieldIdentifier] = {
       expr match {
-        case field: SimpleIdentifier                             => Option(ClassFieldIdentifier()(field.span))
-        case field: RubyFieldIdentifier                          => Option(field)
-        case _ @SingleAssignment(lhs: RubyFieldIdentifier, _, _) => Option(lhs)
-        case _ @SingleAssignment(lhs: SimpleIdentifier, _, _)    => Option(ClassFieldIdentifier()(lhs.span))
-        case _                                                   => None
+        case field: SimpleIdentifier                             => ClassFieldIdentifier()(field.span) :: Nil
+        case field: RubyFieldIdentifier                          => field :: Nil
+        case _ @SingleAssignment(lhs: RubyFieldIdentifier, _, _) => lhs :: Nil
+        case _ @SingleAssignment(lhs: SimpleIdentifier, _, _)    => ClassFieldIdentifier()(lhs.span) :: Nil
+        case proc: ProcedureDeclaration                          => getFields(proc.body)
+        case _ @StatementList(stmts)                             => stmts.flatMap(getFields).distinctBy(_.text)
+        case x: RubyCall                                         => x.arguments.flatMap(getFields).distinctBy(_.text)
+        case _                                                   => Nil
       }
     }
 
     obj.visitOption(ParserKeys.Body) match {
       case Some(stmtList @ StatementList(expression :: Nil)) if expression.isInstanceOf[AllowedTypeDeclarationChild] =>
-        (stmtList, Nil)
+        (stmtList, getFields(expression))
       case Some(stmtList @ StatementList(expression :: Nil)) if isFieldStmt(expression) =>
-        (StatementList(bodyMethod(expression :: Nil) :: Nil)(stmtList.span), getField(expression).toList)
+        (StatementList(bodyMethod(expression :: Nil) :: Nil)(stmtList.span), getFields(expression))
       case Some(stmtList: StatementList) =>
         val (fieldStmts, otherStmts)   = stmtList.statements.partition(isFieldStmt)
         val (typeDeclStmts, bodyStmts) = otherStmts.partition(_.isInstanceOf[AllowedTypeDeclarationChild])
-        val body   = stmtList.copy(statements = bodyMethod(fieldStmts ++ bodyStmts) +: typeDeclStmts)(stmtList.span)
-        val fields = fieldStmts.flatMap(getField)
+        val fields = (fieldStmts.flatMap(getFields) ++ typeDeclStmts.flatMap(getFields)).distinctBy(_.text)
+        val body = stmtList.copy(statements =
+          bodyMethod(fieldStmts ++ typeDeclStmts.flatMap(getFields) ++ bodyStmts) +: typeDeclStmts
+        )(stmtList.span)
+
         (body, fields)
       case Some(expression) if isFieldStmt(expression) || !expression.isInstanceOf[AllowedTypeDeclarationChild] =>
-        (StatementList(bodyMethod(expression :: Nil) :: Nil)(obj.toTextSpan), getField(expression).toList)
+        (StatementList(bodyMethod(expression +: getFields(expression)) :: Nil)(obj.toTextSpan), getFields(expression))
       case Some(expression) =>
-        (StatementList(bodyMethod(Nil) :: expression :: Nil)(obj.toTextSpan), Nil)
+        (StatementList(bodyMethod(Nil) :: expression :: Nil)(obj.toTextSpan), getFields(expression))
       case None => (StatementList(bodyMethod(Nil) :: Nil)(obj.toTextSpan.spanStart("<empty>")), Nil)
     }
   }
@@ -130,6 +145,13 @@ object RubyJsonHelpers {
       ),
       name
     )(textSpan.spanStart(s"${Defines.Self}::$name::${Defines.TypeDeclBody}"))
+  }
+
+  def getParts(memberAccess: MemberAccess): List[String] = {
+    memberAccess.target match {
+      case targetMemberAccess: MemberAccess => getParts(targetMemberAccess) :+ memberAccess.memberName
+      case expr                             => expr.text :: memberAccess.memberName :: Nil
+    }
   }
 
   private case class MetaData(

@@ -122,7 +122,7 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
     aMember.dynamicTypeHintFullName should contain("Test0.rb:<main>.C.abc")
   }
 
-  "`attr_reader :a, :b` is represented by `@a`, `@b` MEMBER nodes" ignore {
+  "`attr_reader :a, :b` is represented by `@a`, `@b` MEMBER nodes" in {
     val cpg = code("""
                      |class C
                      | attr_reader :a, :b
@@ -644,7 +644,7 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
         |end
         |""".stripMargin)
 
-    "create respective member nodes" ignore {
+    "create respective member nodes" in {
       inside(cpg.typeDecl.nameExact("Foo<class>").l) {
         case fooType :: Nil =>
           inside(fooType.member.name("@.*").l) {
@@ -655,13 +655,13 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
               cMember.code shouldBe "@@c"
               dMember.code shouldBe "@@d"
               oMember.code shouldBe "@@o"
-            case _ => fail("Expected 5 members")
+            case xs => fail(s"Expected 5 members, instead got ${xs.size}: [${xs.code.mkString(",")}]")
           }
         case xs => fail(s"Expected TypeDecl for Foo, instead got ${xs.name.mkString(", ")}")
       }
     }
 
-    "create nil assignments under the class initializer" ignore {
+    "create nil assignments under the class initializer" in {
       inside(cpg.typeDecl.name("Foo").l) {
         case fooType :: Nil =>
           inside(fooType.method.name(RubyDefines.TypeDeclBody).l) {
@@ -669,7 +669,6 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
               inside(clinitMethod.block.astChildren.isCall.name(Operators.assignment).l) {
                 case aAssignment :: bAssignment :: cAssignment :: dAssignment :: oAssignment :: Nil =>
                   aAssignment.code shouldBe "@@a = nil"
-
                   bAssignment.code shouldBe "@@b = nil"
                   cAssignment.code shouldBe "@@c = nil"
                   dAssignment.code shouldBe "@@d = nil"
@@ -690,9 +689,10 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
                       rhs.code shouldBe "nil"
                     case _ => fail("Expected only LHS and RHS for assignment call")
                   }
-                case _ => fail("")
+                case xs =>
+                  fail(s"Expected 5 fields initializers, got ${xs.size} instead ${xs.code.mkString(", ")}")
               }
-            case xs => fail(s"Expected one method for clinit, instead got ${xs.name.mkString(", ")}")
+            case xs => fail(s"Expected one method for <body>, instead got ${xs.name.mkString(", ")}")
           }
         case xs => fail(s"Expected TypeDecl for Foo, instead got ${xs.name.mkString(", ")}")
       }
@@ -917,9 +917,9 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
         |end
         |""".stripMargin)
 
-    "have an explicit init method" ignore {
+    "have an explicit init method" in {
       inside(cpg.typeDecl.nameExact("Foo").method.l) {
-        case initMethod :: bodyMethod :: Nil =>
+        case bodyMethod :: initMethod :: Nil =>
           bodyMethod.name shouldBe TypeDeclBody
 
           initMethod.name shouldBe Initialize
@@ -937,7 +937,9 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
           }
 
           inside(bodyMethod.block.astChildren.l) {
-            case (one: Literal) :: Nil =>
+            case (barInit: Call) :: (one: Literal) :: Nil =>
+              barInit.code shouldBe "bar = nil"
+
               one.code shouldBe "1"
               one.typeFullName shouldBe s"${GlobalTypes.kernelPrefix}.Integer"
             case xs => fail(s"Expected one literal, got [${xs.code.mkString(",")}]")
@@ -948,7 +950,7 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
     }
   }
 
-  "Class defined in Namespace" ignore {
+  "Class defined in Namespace" in {
     val cpg = code("""
         |class Api::V1::MobileController
         |end
