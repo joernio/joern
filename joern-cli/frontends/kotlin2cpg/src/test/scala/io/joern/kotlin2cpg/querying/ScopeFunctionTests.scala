@@ -13,13 +13,13 @@ class ScopeFunctionTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
       p.name shouldBe "it"
     }
 
-    "should NOT contain a RETURN node around as the last child of the lambda's BLOCK" in {
+    "should contain a RETURN node around as the last child of the lambda's BLOCK" in {
       val List(b: Block) = cpg.method.fullName(".*lambda.*").block.l
       val hasReturnAsLastChild = b.astChildren.last match {
         case _: Return => true
         case _         => false
       }
-      hasReturnAsLastChild shouldBe false
+      hasReturnAsLastChild shouldBe true
     }
   }
 
@@ -31,13 +31,13 @@ class ScopeFunctionTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
       p.name shouldBe "this"
     }
 
-    "should NOT contain a RETURN node around as the last child of the lambda's BLOCK" in {
+    "should contain a RETURN node around as the last child of the lambda's BLOCK" in {
       val List(b: Block) = cpg.method.fullName(".*lambda.*").block.l
       val hasReturnAsLastChild = b.astChildren.last match {
         case _: Return => true
         case _         => false
       }
-      hasReturnAsLastChild shouldBe false
+      hasReturnAsLastChild shouldBe true
     }
   }
 
@@ -106,7 +106,7 @@ class ScopeFunctionTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
 
     "should contain a METHOD node with the correct signature" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
-      m.signature shouldBe "java.lang.Object(java.lang.Object)"
+      m.signature shouldBe "void(int)"
     }
   }
 
@@ -140,7 +140,7 @@ class ScopeFunctionTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
 
     "should contain a METHOD node with the correct signature" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
-      m.signature shouldBe "java.lang.Object(java.lang.Object)"
+      m.signature shouldBe "void(int)"
     }
   }
 
@@ -174,7 +174,7 @@ class ScopeFunctionTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
 
     "should contain a METHOD node with the correct signature" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
-      m.signature shouldBe "java.lang.Object(java.lang.Object)"
+      m.signature shouldBe "void(int)"
     }
   }
 
@@ -212,7 +212,7 @@ class ScopeFunctionTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
 
     "should X" in {
       val List(c) = cpg.call.code("x.takeIf.*").l
-      c.methodFullName shouldBe "java.lang.Object.takeIf:java.lang.Object(kotlin.Function1)"
+      c.methodFullName shouldBe "kotlin.takeIf:java.lang.Object(java.lang.Object,kotlin.jvm.functions.Function1)"
     }
   }
 }

@@ -16,7 +16,8 @@ object Constants {
   val init                           = io.joern.x2cpg.Defines.ConstructorMethodName
   val iteratorPrefix                 = "iterator_"
   val javaUtilIterator               = "java.util.Iterator"
-  val lambdaBindingName              = "invoke"    // the underlying _invoke_ fn for Kotlin FunctionX types
+  val unknownLambdaBindingName       = "<unknownBindingName>"
+  val unknownLambdaBaseClass         = "<unknownLambdaBaseClass>"
   val lambdaTypeDeclName             = "LAMBDA_TYPE_DECL"
   val nextIteratorMethodName         = "next"
   val codePropUndefinedValue         = ""

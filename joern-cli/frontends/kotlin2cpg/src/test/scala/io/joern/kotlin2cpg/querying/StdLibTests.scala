@@ -27,9 +27,9 @@ class StdLibTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
     "should contain a CALL node with the correct METHOD_FULL_NAME for `takeIf`" in {
       val List(c) = cpg.call.code("x.takeIf.*").l
-      c.methodFullName shouldBe "java.lang.Object.takeIf:java.lang.Object(kotlin.Function1)"
+      c.methodFullName shouldBe "kotlin.takeIf:java.lang.Object(java.lang.Object,kotlin.jvm.functions.Function1)"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      c.signature shouldBe "java.lang.Object(java.lang.Object)"
+      c.signature shouldBe "java.lang.Object(java.lang.Object,kotlin.jvm.functions.Function1)"
       c.typeFullName shouldBe "java.util.UUID"
     }
   }
@@ -114,23 +114,18 @@ class StdLibTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         |package mypkg
         |
         |fun foo() {
-        |  val numbersMap = mapOf("key1" to 1, "key2" to 2, "key3" to 3, "key4" to 1)
+        |  val numbersMap = mapOf("key1" to 1, "key2" to 2)
         |  println(numbersMap)
         |}
         |""".stripMargin)
 
     "should contain CALL nodes for calls to infix fn `to`" in {
       val List(c1) = cpg.call.code("\"key1.*").l
-      c1.methodFullName shouldBe "kotlin.to:kotlin.Pair(java.lang.Object)"
+      c1.methodFullName shouldBe "kotlin.to:kotlin.Pair(java.lang.Object,java.lang.Object)"
+      c1.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
       val List(c2) = cpg.call.code("\"key2.*").l
-      c2.methodFullName shouldBe "kotlin.to:kotlin.Pair(java.lang.Object)"
-
-      val List(c3) = cpg.call.code("\"key3.*").l
-      c3.methodFullName shouldBe "kotlin.to:kotlin.Pair(java.lang.Object)"
-
-      val List(c4) = cpg.call.code("\"key4.*").l
-      c4.methodFullName shouldBe "kotlin.to:kotlin.Pair(java.lang.Object)"
+      c2.methodFullName shouldBe "kotlin.to:kotlin.Pair(java.lang.Object,java.lang.Object)"
     }
 
     "CPG for code with calls to stdlib's `split`s" should {
@@ -147,8 +142,10 @@ class StdLibTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
           |""".stripMargin)
 
       "should contain CALL nodes for `split` with the correct MFNs set" in {
-        cpg.call.methodFullName(".*split.*").methodFullName.toSet shouldBe
-          Set("java.lang.CharSequence.split:java.util.List(kotlin.Array,boolean,int)")
+        inside(cpg.call.methodFullName(".*split.*").l) { case List(call1, call2) =>
+          call1.methodFullName shouldBe "kotlin.text.split:java.util.List(java.lang.CharSequence,java.lang.String[],boolean,int)"
+          call2.methodFullName shouldBe call1.methodFullName
+        }
       }
     }
 
@@ -170,8 +167,8 @@ class StdLibTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
       "should contain a CALL node for `trim` with the correct props set" in {
         val List(c) = cpg.call.code("p.trim.*").l
-        c.methodFullName shouldBe "java.lang.String.trim:java.lang.String()"
-        c.signature shouldBe "java.lang.String()"
+        c.methodFullName shouldBe "kotlin.text.trim:java.lang.String(java.lang.String)"
+        c.signature shouldBe "java.lang.String(java.lang.String)"
         c.typeFullName shouldBe "java.lang.String"
         c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
         c.lineNumber shouldBe Some(5)
@@ -180,7 +177,7 @@ class StdLibTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
       "should contain a CALL node for `trim` a receiver arg with the correct props set" in {
         val List(receiverArg) = cpg.call.code("p.trim.*").argument.isIdentifier.l
-        receiverArg.argumentIndex shouldBe 0
+        receiverArg.argumentIndex shouldBe 1
         receiverArg.name shouldBe "p"
         receiverArg.code shouldBe "p"
         receiverArg.typeFullName shouldBe "java.lang.String"
