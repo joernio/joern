@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.{
   ClassDescriptor,
   ConstructorDescriptor,
+  DeclarationDescriptor,
   FunctionDescriptor,
   TypeAliasDescriptor,
   VariableDescriptor
@@ -17,6 +18,7 @@ import org.jetbrains.kotlin.psi.{
   KtFunctionLiteral,
   KtNamedFunction,
   KtParameter,
+  KtReferenceExpression,
   KtTypeAlias,
   KtTypeReference
 }
@@ -91,6 +93,10 @@ class BindingContextUtils(bindingContext: BindingContext) {
 
   def getAnnotationDesc(entry: KtAnnotationEntry): AnnotationDescriptor = {
     bindingContext.get(BindingContext.ANNOTATION, entry)
+  }
+
+  def getDeclDesc(nameRefExpr: KtReferenceExpression): Option[DeclarationDescriptor] = {
+    Option(bindingContext.get(BindingContext.REFERENCE_TARGET, nameRefExpr))
   }
 
   def getExprType(expr: KtExpression): Option[KotlinType] = {

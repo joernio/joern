@@ -37,10 +37,6 @@ trait TypeInfoProvider(val typeRenderer: TypeRenderer = new TypeRenderer()) {
 
   def propertyType(expr: KtProperty, defaultValue: String): String
 
-  def typeFullName(expr: KtNameReferenceExpression, defaultValue: String): String
-
-  def referenceTargetTypeFullName(expr: KtNameReferenceExpression, defaultValue: String): String
-
   def isReferenceToClass(expr: KtNameReferenceExpression): Boolean
 
   def bindingKind(expr: KtQualifiedExpression): CallKind

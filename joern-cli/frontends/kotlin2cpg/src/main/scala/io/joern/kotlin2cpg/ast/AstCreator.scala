@@ -415,8 +415,7 @@ class AstCreator(
 
   protected def assignmentAstForDestructuringEntry(
     entry: KtDestructuringDeclarationEntry,
-    componentNReceiverName: String,
-    componentNTypeFullName: String,
+    rhsBaseAst: Ast,
     componentIdx: Integer
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val entryTypeFullName = registerType(
@@ -428,10 +427,6 @@ class AstCreator(
     val assignmentLHSNode = identifierNode(entry, entry.getText, entry.getText, entryTypeFullName)
     val assignmentLHSAst  = astWithRefEdgeMaybe(assignmentLHSNode.name, assignmentLHSNode)
 
-    val componentNIdentifierNode =
-      identifierNode(entry, componentNReceiverName, componentNReceiverName, componentNTypeFullName)
-        .argumentIndex(0)
-
     val desc = bindingUtils.getCalledFunctionDesc(entry)
     val descFullName = desc
       .flatMap(nameRenderer.descFullName)
@@ -441,7 +436,8 @@ class AstCreator(
       .getOrElse(s"${Defines.UnresolvedSignature}()")
     val fullName = nameRenderer.combineFunctionFullName(descFullName, signature)
 
-    val componentNCallCode = s"$componentNReceiverName.${Constants.componentNPrefix}$componentIdx()"
+    val componentNCallCode =
+      s"${rhsBaseAst.root.get.asInstanceOf[ExpressionNew].code}.${Constants.componentNPrefix}$componentIdx()"
     val componentNCallNode = callNode(
       entry,
       componentNCallCode,
@@ -452,9 +448,8 @@ class AstCreator(
       Some(entryTypeFullName)
     )
 
-    val componentNIdentifierAst = astWithRefEdgeMaybe(componentNIdentifierNode.name, componentNIdentifierNode)
     val componentNAst =
-      callAst(componentNCallNode, Seq(), Option(componentNIdentifierAst))
+      callAst(componentNCallNode, Seq(), Option(rhsBaseAst))
 
     val assignmentCallNode = NodeBuilders.newOperatorCallNode(
       Operators.assignment,

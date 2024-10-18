@@ -137,7 +137,13 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     val assignmentsForEntries =
       destructuringDeclEntries.asScala.filterNot(_.getText == Constants.unusedDestructuringEntryText).zipWithIndex.map {
         case (entry, idx) =>
-          assignmentAstForDestructuringEntry(entry, localForTmp.name, localForTmp.typeFullName, idx + 1)
+          val rhsBaseAst =
+            astWithRefEdgeMaybe(
+              localForTmp.name,
+              identifierNode(entry, localForTmp.name, localForTmp.name, localForTmp.typeFullName)
+                .argumentIndex(0)
+            )
+          assignmentAstForDestructuringEntry(entry, rhsBaseAst, idx + 1)
       }
 
     val stmtAsts             = astsForExpression(expr.getBody, None)

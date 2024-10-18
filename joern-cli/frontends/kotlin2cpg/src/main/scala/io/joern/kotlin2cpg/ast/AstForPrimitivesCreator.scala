@@ -17,6 +17,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewMember
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethodParameterIn
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
+import org.jetbrains.kotlin.descriptors.{ClassifierDescriptor, PropertyDescriptor, ValueDescriptor}
+import org.jetbrains.kotlin.descriptors.impl.PropertyDescriptorImpl
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtClassLiteralExpression
 import org.jetbrains.kotlin.psi.KtConstantExpression
@@ -105,7 +107,9 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForNameReferenceToType(expr: KtNameReferenceExpression, argIdx: Option[Int])(implicit
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
-    val typeFullName              = registerType(typeInfoProvider.typeFullName(expr, TypeConstants.any))
+    val declDesc =
+      bindingUtils.getDeclDesc(expr).collect { case classifierDesc: ClassifierDescriptor => classifierDesc }
+    val typeFullName = registerType(declDesc.flatMap(nameRenderer.descFullName).getOrElse(TypeConstants.any))
     val referencesCompanionObject = typeInfoProvider.isRefToCompanionObject(expr)
     if (referencesCompanionObject) {
       val argAsts = List(
@@ -130,11 +134,18 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForNameReferenceToMember(expr: KtNameReferenceExpression, argIdx: Option[Int])(implicit
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
-    val typeFullName = registerType(typeInfoProvider.typeFullName(expr, TypeConstants.any))
-    val referenceTargetTypeFullName = registerType(
-      typeInfoProvider.referenceTargetTypeFullName(expr, TypeConstants.any)
-    )
-    val thisNode             = identifierNode(expr, Constants.this_, Constants.this_, referenceTargetTypeFullName)
+    val declDesc = bindingUtils.getDeclDesc(expr).collect { case propDesc: PropertyDescriptor => propDesc }
+    val typeFullName = declDesc
+      .flatMap(desc => nameRenderer.typeFullName(desc.getType))
+      .getOrElse(TypeConstants.any)
+    registerType(typeFullName)
+
+    val baseTypeFullName = declDesc
+      .flatMap(desc => nameRenderer.typeFullName(desc.getDispatchReceiverParameter.getType))
+      .getOrElse(TypeConstants.any)
+    registerType(baseTypeFullName)
+
+    val thisNode             = identifierNode(expr, Constants.this_, Constants.this_, baseTypeFullName)
     val thisAst              = astWithRefEdgeMaybe(Constants.this_, thisNode)
     val _fieldIdentifierNode = fieldIdentifierNode(expr, expr.getReferencedName, expr.getReferencedName)
     val node = NodeBuilders.newOperatorCallNode(
@@ -152,17 +163,19 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     argIdx: Option[Int],
     argName: Option[String] = None
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val typeFromScopeMaybe = scope.lookupVariable(expr.getIdentifier.getText) match {
-      case Some(n: NewLocal)             => Some(n.typeFullName)
-      case Some(n: NewMethodParameterIn) => Some(n.typeFullName)
-      case _                             => None
-    }
-    val typeFromProvider = typeInfoProvider.typeFullName(expr, Defines.UnresolvedNamespace)
-    val typeFullName =
-      typeFromScopeMaybe match {
-        case Some(fullName) => registerType(fullName)
-        case None           => registerType(typeFromProvider)
+    val declDesc = bindingUtils.getDeclDesc(expr).collect { case valueDesc: ValueDescriptor => valueDesc }
+    val typeFullName = declDesc
+      .flatMap(desc => nameRenderer.typeFullName(desc.getType))
+      .orElse {
+        val typeFromScopeMaybe = scope.lookupVariable(expr.getIdentifier.getText) match {
+          case Some(n: NewLocal)             => Some(n.typeFullName)
+          case Some(n: NewMethodParameterIn) => Some(n.typeFullName)
+          case _                             => None
+        }
+        typeFromScopeMaybe
       }
+      .getOrElse(TypeConstants.any)
+
     val name = expr.getIdentifier.getText
     val node =
       withArgumentName(withArgumentIndex(identifierNode(expr, name, name, typeFullName), argIdx), argName)

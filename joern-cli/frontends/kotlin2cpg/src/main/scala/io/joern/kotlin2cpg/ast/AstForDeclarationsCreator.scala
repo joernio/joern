@@ -372,7 +372,13 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     }
 
     val assignmentsForEntries = nonUnderscoreDestructuringEntries(expr).zipWithIndex.map { case (entry, idx) =>
-      assignmentAstForDestructuringEntry(entry, localForTmpNode.name, localForTmpNode.typeFullName, idx + 1)
+      val rhsBaseAst =
+        astWithRefEdgeMaybe(
+          localForTmpNode.name,
+          identifierNode(entry, localForTmpNode.name, localForTmpNode.name, localForTmpNode.typeFullName)
+            .argumentIndex(0)
+        )
+      assignmentAstForDestructuringEntry(entry, rhsBaseAst, idx + 1)
     }
     localsForEntries ++ Seq(localForTmpAst) ++
       Seq(tmpAssignmentAst) ++ tmpAssignmentPrologue ++ assignmentsForEntries
@@ -397,12 +403,11 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       logger.warn(s"Unhandled case for destructuring declaration: `${expr.getText}` in this file `$relativizedPath`.")
       return Seq()
     }
-    val destructuringRHS = typedInit.get
 
-    val initTypeFullName = registerType(typeInfoProvider.typeFullName(typedInit.get, TypeConstants.any))
     val assignmentsForEntries =
       nonUnderscoreDestructuringEntries(expr).zipWithIndex.map { case (entry, idx) =>
-        assignmentAstForDestructuringEntry(entry, destructuringRHS.getText, initTypeFullName, idx + 1)
+        val rhsBaseAst = astForNameReference(typedInit.get, Some(1), None)
+        assignmentAstForDestructuringEntry(entry, rhsBaseAst, idx + 1)
       }
     val localsForEntries = localsForDestructuringEntries(expr)
     localsForEntries ++ assignmentsForEntries

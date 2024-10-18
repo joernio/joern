@@ -201,29 +201,6 @@ class DefaultTypeInfoProvider(val bindingContext: BindingContext, typeRenderer: 
       .map(_ => bindingContext.get(BindingContext.REFERENCE_TARGET, expr))
   }
 
-  def referenceTargetTypeFullName(expr: KtNameReferenceExpression, defaultValue: String): String = {
-    descriptorForNameReference(expr)
-      .collect { case desc: PropertyDescriptorImpl => typeRenderer.renderFqNameForDesc(desc.getContainingDeclaration) }
-      .getOrElse(defaultValue)
-  }
-
-  def typeFullName(expr: KtNameReferenceExpression, defaultValue: String): String = {
-    descriptorForNameReference(expr)
-      .flatMap {
-        case typedDesc: ValueDescriptor => Some(typeRenderer.render(typedDesc.getType))
-        // TODO: add test cases for the LazyClassDescriptors (`okio` codebase serves as good example)
-        case typedDesc: LazyClassDescriptor               => Some(typeRenderer.render(typedDesc.getDefaultType))
-        case typedDesc: LazyJavaClassDescriptor           => Some(typeRenderer.render(typedDesc.getDefaultType))
-        case typedDesc: DeserializedClassDescriptor       => Some(typeRenderer.render(typedDesc.getDefaultType))
-        case typedDesc: EnumEntrySyntheticClassDescriptor => Some(typeRenderer.render(typedDesc.getDefaultType))
-        case typedDesc: LazyPackageViewDescriptorImpl     => Some(typeRenderer.renderFqNameForDesc(typedDesc))
-        case unhandled: Any =>
-          logger.debug(s"Unhandled class type info fetch in for `${expr.getText}` with class `${unhandled.getClass}`.")
-          None
-        case null => None
-      }
-      .getOrElse(defaultValue)
-  }
   def typeFromImports(name: String, file: KtFile): Option[String] = {
     file.getImportList.getImports.asScala.flatMap { directive =>
       if (directive.getImportedName != null && directive.getImportedName.toString == name.stripSuffix("?"))
