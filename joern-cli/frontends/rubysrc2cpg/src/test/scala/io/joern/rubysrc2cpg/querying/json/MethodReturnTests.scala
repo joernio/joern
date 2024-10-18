@@ -7,7 +7,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
-class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
+class MethodReturnTests extends RubyCode2CpgFixture(useJsonAst = true) {
 
   "implicit RETURN node for `x * x` exists" in {
     val cpg = code("""

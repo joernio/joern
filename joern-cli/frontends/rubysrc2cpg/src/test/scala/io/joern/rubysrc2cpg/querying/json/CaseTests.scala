@@ -4,7 +4,7 @@ import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
-class CaseTests extends RubyCode2CpgFixture {
+class CaseTests extends RubyCode2CpgFixture(useJsonAst = true) {
 
   "`case x ... end` should be represented with if-else chain and multiple match expressions should be or-ed together" in {
     val caseCode = """

@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.parser
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{RubyExpression, *}
 import io.joern.rubysrc2cpg.parser.RubyJsonHelpers.*
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.rubysrc2cpg.passes.Defines.{NilClass, getBuiltInType}
+import io.joern.rubysrc2cpg.passes.Defines.{NilClass, getBuiltInType, RubyOperators}
 import io.joern.rubysrc2cpg.passes.GlobalTypes.builtinPrefix
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
 import io.joern.x2cpg.frontendspecific.rubysrc2cpg.ImportsPass
@@ -177,6 +177,17 @@ class RubyJsonToNodeCreator(
     }
   }
 
+  private def visitAccessModifier(obj: Obj): RubyExpression = {
+    obj(ParserKeys.Name).str match {
+      case "public"    => PublicModifier()(obj.toTextSpan)
+      case "private"   => PrivateModifier()(obj.toTextSpan)
+      case "protected" => ProtectedModifier()(obj.toTextSpan)
+      case modifierName =>
+        logger.warn(s"Unknown modifier type $modifierName")
+        defaultResult(Option(obj.toTextSpan))
+    }
+  }
+
   private def visitAlias(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
   private def visitAnd(obj: Obj): RubyExpression = {
@@ -256,6 +267,21 @@ class RubyJsonToNodeCreator(
 
   private def visitClassVariable(obj: Obj): RubyExpression = ClassFieldIdentifier()(obj.toTextSpan)
 
+  private def visitCollectionAliasSend(obj: Obj): RubyExpression = {
+    // Modify this `obj` to conform to what the AstCreator would expect i.e, Array [1,2,3] would be an Array::[] call
+    val collectionName = obj(ParserKeys.Name).str
+    val metaData       = obj(ParserKeys.MetaData)
+    metaData.obj.put(ParserKeys.Code, collectionName)
+    val receiver = ujson.Obj(
+      ParserKeys.Type     -> ujson.Str(AstType.ScopedConstant.name),
+      ParserKeys.MetaData -> metaData,
+      ParserKeys.Base     -> ujson.Null,
+      ParserKeys.Name     -> ujson.Str(collectionName)
+    )
+    val arguments = obj(ParserKeys.Arguments).arr.head.asInstanceOf[ujson.Obj].visitArray(ParserKeys.Children)
+    IndexAccess(visit(receiver), arguments)(obj.toTextSpan)
+  }
+
   private def visitConditionalSend(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
   private def visitDefined(obj: Obj): RubyExpression = {
@@ -301,9 +327,9 @@ class RubyJsonToNodeCreator(
   }
 
   private def visitExecutableString(obj: Obj): RubyExpression = {
-    val callName =
-      SimpleIdentifier(Option(getBuiltInType(Defines.Backticks)))(obj.toTextSpan.spanStart(Defines.Backticks))
-    val arguments = obj.visitArray(ParserKeys.Arguments)
+    val operatorName = RubyOperators.backticks
+    val callName     = SimpleIdentifier(Option(getBuiltInType(operatorName)))(obj.toTextSpan.spanStart(operatorName))
+    val arguments    = obj.visitArray(ParserKeys.Arguments)
     SimpleCall(callName, arguments)(obj.toTextSpan)
   }
 
@@ -339,7 +365,12 @@ class RubyJsonToNodeCreator(
 
   private def visitGlobalVariableAssign(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
-  private def visitHash(obj: Obj): RubyExpression = HashLiteral(obj.visitArray(ParserKeys.Children))(obj.toTextSpan)
+  private def visitHash(obj: Obj): RubyExpression = {
+    obj.visitArray(ParserKeys.Children) match {
+      case (assoc: Association) :: Nil => assoc // 2 => 1 is interpreted as {2: 1}, so we lower this for now
+      case children                    => HashLiteral(children)(obj.toTextSpan)
+    }
+  }
 
   private def visitHashPattern(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
@@ -459,7 +490,7 @@ class RubyJsonToNodeCreator(
       body = body,
       fields = fields,
       bodyMemberCall = Option(bodyMemberCall),
-      namespaceParts = None
+      namespaceParts = namespaceParts
     )(obj.toTextSpan)
   }
 
@@ -596,9 +627,11 @@ class RubyJsonToNodeCreator(
     val callName = obj(ParserKeys.Name).str
     callName match {
       case "new"                                                => visitObjectInstantiation(obj)
+      case "Array" | "Hash"                                     => visitCollectionAliasSend(obj)
       case "raise"                                              => visitRaise(obj)
       case "include"                                            => visitInclude(obj)
       case "attr_reader" | "attr_writer" | "attr_accessor"      => visitFieldDeclaration(obj)
+      case "private" | "public" | "protected"                   => visitAccessModifier(obj)
       case requireLike if ImportCallNames.contains(requireLike) => visitRequireLike(obj)
       case _ if BinaryOperators.isBinaryOperatorName(callName) =>
         val lhs = visit(obj(ParserKeys.Receiver))

@@ -7,7 +7,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Id
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
-class FieldAccessTests extends RubyCode2CpgFixture {
+class FieldAccessTests extends RubyCode2CpgFixture(useJsonAst = true) {
 
   "`x.y` is represented by a `x.y` field access" in {
     val cpg = code("""

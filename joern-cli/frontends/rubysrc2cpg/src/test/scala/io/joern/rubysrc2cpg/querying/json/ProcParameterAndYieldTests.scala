@@ -6,7 +6,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.Inspectors
 
-class ProcParameterAndYieldTests extends RubyCode2CpgFixture with Inspectors {
+class ProcParameterAndYieldTests extends RubyCode2CpgFixture(useJsonAst = true) with Inspectors {
 
   "a method with an explicit proc parameter should create an invocation of it's `call` member" in {
     val cpg = code("def foo(&b) yield end")

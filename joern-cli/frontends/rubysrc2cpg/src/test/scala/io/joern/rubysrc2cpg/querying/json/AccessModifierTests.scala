@@ -97,11 +97,11 @@ class AccessModifierTests extends RubyCode2CpgFixture(useJsonAst = true) {
         |  end
         |""".stripMargin)
 
-    val privateKey  = cpg.literal(":private").head
+    val privateKey  = cpg.literal("private").head
     val indexAccess = privateKey.astParent.asInstanceOf[Call]
     indexAccess.name shouldBe Operators.indexAccess
     indexAccess.methodFullName shouldBe Operators.indexAccess
-    indexAccess.code shouldBe "<tmp-0>[:private]"
+    indexAccess.code shouldBe "<tmp-0>[private]"
   }
 
 }

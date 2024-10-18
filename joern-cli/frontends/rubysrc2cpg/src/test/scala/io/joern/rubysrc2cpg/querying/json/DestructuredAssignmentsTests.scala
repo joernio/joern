@@ -6,7 +6,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, 
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
-class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
+class DestructuredAssignmentsTests extends RubyCode2CpgFixture(useJsonAst = true) {
 
   "destructuring of a paired multi-assignment" should {
 

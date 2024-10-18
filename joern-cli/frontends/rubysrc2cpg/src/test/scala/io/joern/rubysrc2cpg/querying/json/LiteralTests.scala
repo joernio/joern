@@ -5,7 +5,7 @@ import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.*
 
-class LiteralTests extends RubyCode2CpgFixture {
+class LiteralTests extends RubyCode2CpgFixture(useJsonAst = true) {
 
   "`123` is represented by a LITERAL node" in {
     val cpg = code("""

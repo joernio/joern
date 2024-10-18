@@ -213,6 +213,7 @@ class ArrayTests extends RubyCode2CpgFixture(useJsonAst = true) {
     }
   }
 
+  // TODO: This gives a cbase with null base and null name. Investigate
   "Array with mixed elements" in {
     val cpg = code("""
                      |[

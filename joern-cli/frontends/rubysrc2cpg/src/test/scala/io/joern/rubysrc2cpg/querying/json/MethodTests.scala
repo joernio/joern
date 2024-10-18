@@ -9,7 +9,7 @@ import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, NodeType
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, FieldAccess}
 
-class MethodTests extends RubyCode2CpgFixture {
+class MethodTests extends RubyCode2CpgFixture(useJsonAst = true) {
 
   "`def f(x) = 1`" should {
     val cpg = code("""

@@ -5,7 +5,7 @@ import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
-class HereDocTests extends RubyCode2CpgFixture {
+class HereDocTests extends RubyCode2CpgFixture(useJsonAst = true) {
 
   "HereDoc simple" should {
     val cpg = code("""

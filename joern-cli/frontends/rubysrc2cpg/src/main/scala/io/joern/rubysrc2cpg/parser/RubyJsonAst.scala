@@ -16,6 +16,7 @@ object ParserKeys {
   val CallName       = "call_name"
   val CaseExpression = "case_expression"
   val Children       = "children"
+  val Code           = "code"
   val Collection     = "collection"
   val Condition      = "condition"
   val ElseClause     = "else_clause"
