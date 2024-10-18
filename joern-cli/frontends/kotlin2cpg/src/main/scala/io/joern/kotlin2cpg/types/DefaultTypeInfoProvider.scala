@@ -216,39 +216,6 @@ class DefaultTypeInfoProvider(val bindingContext: BindingContext, typeRenderer: 
       .getOrElse(CallKind.Unknown)
   }
 
-  def hasApplyOrAlsoScopeFunctionParent(expr: KtLambdaExpression): Boolean = {
-    expr.getParent.getParent match {
-      case callExpr: KtCallExpression =>
-        resolvedCallDescriptor(callExpr) match {
-          case Some(desc) =>
-            val rendered = typeRenderer.renderFqNameForDesc(desc.getOriginal)
-            rendered.startsWith(TypeConstants.kotlinApplyPrefix) || rendered.startsWith(TypeConstants.kotlinAlsoPrefix)
-          case _ => false
-        }
-      case _ => false
-    }
-  }
-
-  private def renderedReturnType(fnDesc: FunctionDescriptor): String = {
-    val returnT    = fnDesc.getReturnType.getConstructor.getDeclarationDescriptor.getDefaultType
-    val typeParams = fnDesc.getTypeParameters.asScala.toList
-
-    val typesInTypeParams = typeParams.map(_.getDefaultType.getConstructor.getDeclarationDescriptor.getDefaultType)
-    val hasReturnTypeFromTypeParams = typesInTypeParams.contains(returnT)
-    if (hasReturnTypeFromTypeParams) {
-      if (returnT.getConstructor.getSupertypes.asScala.nonEmpty) {
-        val firstSuperType = returnT.getConstructor.getSupertypes.asScala.toList.head
-        typeRenderer.render(firstSuperType)
-      } else {
-        val renderedReturnT = typeRenderer.render(returnT)
-        if (renderedReturnT == TypeConstants.tType) TypeConstants.javaLangObject
-        else renderedReturnT
-      }
-    } else {
-      typeRenderer.render(fnDesc.getReturnType)
-    }
-  }
-
   def isReferenceToClass(expr: KtNameReferenceExpression): Boolean = {
     descriptorForNameReference(expr).exists {
       case _: LazyJavaClassDescriptor => true
@@ -291,45 +258,6 @@ class DefaultTypeInfoProvider(val bindingContext: BindingContext, typeRenderer: 
         Some(directive.getImportPath.getPathStr)
       else None
     }.headOption
-  }
-
-  def implicitParameterName(expr: KtLambdaExpression): Option[String] = {
-    if (!expr.getValueParameters.isEmpty) {
-      None
-    } else {
-      val hasSingleImplicitParameter =
-        Option(bindingContext.get(BindingContext.EXPECTED_EXPRESSION_TYPE, expr)).exists { desc =>
-          // 1 for the parameter + 1 for the return type == 2
-          desc.getConstructor.getParameters.size() == 2
-        }
-      val containingQualifiedExpression = Option(expr.getParent)
-        .map(_.getParent)
-        .flatMap(_.getParent match {
-          case q: KtQualifiedExpression => Some(q)
-          case _                        => None
-        })
-      containingQualifiedExpression match {
-        case Some(qualifiedExpression) =>
-          resolvedCallDescriptor(qualifiedExpression) match {
-            case Some(fnDescriptor) =>
-              val originalDesc   = fnDescriptor.getOriginal
-              val vps            = originalDesc.getValueParameters
-              val renderedFqName = typeRenderer.renderFqNameForDesc(originalDesc)
-              if (
-                hasSingleImplicitParameter &&
-                (renderedFqName.startsWith(TypeConstants.kotlinRunPrefix) ||
-                  renderedFqName.startsWith(TypeConstants.kotlinApplyPrefix))
-              ) {
-                Some(TypeConstants.scopeFunctionThisParameterName)
-                // https://kotlinlang.org/docs/lambdas.html#it-implicit-name-of-a-single-parameter
-              } else if (hasSingleImplicitParameter) {
-                Some(TypeConstants.lambdaImplicitParameterName)
-              } else None
-            case None => None
-          }
-        case None => None
-      }
-    }
   }
 }
 

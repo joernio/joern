@@ -49,15 +49,11 @@ trait TypeInfoProvider(val typeRenderer: TypeRenderer = new TypeRenderer()) {
 
   def anySignature(args: Seq[Any]): String
 
-  def hasApplyOrAlsoScopeFunctionParent(expr: KtLambdaExpression): Boolean
-
   def isConstructorCall(expr: KtExpression): Option[Boolean]
 
   def typeFullName(expr: KtTypeReference, defaultValue: String): String
 
   def hasStaticDesc(expr: KtQualifiedExpression): Boolean
-
-  def implicitParameterName(expr: KtLambdaExpression): Option[String]
 
   def isCompanionObject(expr: KtClassOrObject): Boolean
 

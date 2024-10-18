@@ -14,14 +14,23 @@ import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
-import org.jetbrains.kotlin.descriptors.{ClassDescriptor, DescriptorVisibilities, FunctionDescriptor, Modality}
+import org.jetbrains.kotlin.descriptors.{
+  ClassDescriptor,
+  DescriptorVisibilities,
+  FunctionDescriptor,
+  Modality,
+  ParameterDescriptor,
+  ReceiverParameterDescriptor
+}
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCallArgument
 import org.jetbrains.kotlin.resolve.calls.tower.{NewAbstractResolvedCall, PSIFunctionKotlinCallArgument}
 import org.jetbrains.kotlin.resolve.sam.{SamConstructorDescriptor, SamConversionResolverImplKt}
 import org.jetbrains.kotlin.resolve.DescriptorUtils
+import org.jetbrains.kotlin.resolve.source.KotlinSourceElement
 
 import java.util.UUID.nameUUIDFromBytes
+import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
@@ -309,6 +318,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       .withChildren(annotations.map(astForAnnotationEntry))
   }
 
+  // TODO Handling for destructuring of lambda parameters is missing.
+  // More specifically the creation and initialisation of the thereby introduced variables.
   def astForLambda(
     expr: KtLambdaExpression,
     argIdxMaybe: Option[Int],
@@ -353,50 +364,33 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       scope.addToScope(capturedNodeContext.name, node)
       node
     }
-    val parametersAsts = typeInfoProvider.implicitParameterName(expr) match {
-      case Some(implicitParamName) =>
-        val node = parameterInNode(
-          expr,
-          implicitParamName,
-          implicitParamName,
-          1,
-          false,
-          EvaluationStrategies.BY_REFERENCE,
-          TypeConstants.any
-        )
-        scope.addToScope(implicitParamName, node)
-        Seq(Ast(node))
-      case None =>
-        withIndex(expr.getValueParameters.asScala.toSeq) { (p, idx) =>
-          val destructuringEntries =
-            Option(p.getDestructuringDeclaration)
-              .map(_.getEntries.asScala)
-              .getOrElse(Seq())
-          if (destructuringEntries.nonEmpty)
-            destructuringEntries.filterNot(_.getText == Constants.unusedDestructuringEntryText).zipWithIndex.map {
-              case (entry, innerIdx) =>
-                val name = entry.getName
-                val typeFullName =
-                  bindingUtils
-                    .getVariableDesc(entry)
-                    .flatMap(desc => nameRenderer.typeFullName(desc.getType))
-                    .getOrElse {
-                      val explicitTypeName = Option(entry.getTypeReference).map(_.getText).getOrElse(TypeConstants.any)
-                      explicitTypeName
-                    }
-                registerType(typeFullName)
-                val node =
-                  parameterInNode(entry, name, name, innerIdx + idx, false, EvaluationStrategies.BY_VALUE, typeFullName)
-                scope.addToScope(name, node)
-                Ast(node)
-            }
-          else Seq(astForParameter(p, idx))
-        }.flatten
+
+    val paramAsts = mutable.ArrayBuffer.empty[Ast]
+    val valueParamStartIndex =
+      if (funcDesc.getExtensionReceiverParameter != null) {
+        // Lambdas which are arguments to function parameters defined
+        // like `func: extendedType.(argTypes) -> returnType` have an implicit extension receiver parameter
+        // which can be accessed as `this`
+        paramAsts.append(createImplicitParamNode(expr, funcDesc.getExtensionReceiverParameter, "this", 1))
+        2
+      } else {
+        1
+      }
+
+    funcDesc.getValueParameters.asScala match {
+      case parameters if parameters.size == 1 && !parameters.head.getSource.isInstanceOf[KotlinSourceElement] =>
+        // Here we handle the implicit `it` parameter.
+        paramAsts.append(createImplicitParamNode(expr, parameters.head, "it", valueParamStartIndex))
+      case parameters =>
+        parameters.zipWithIndex.foreach { (paramDesc, idx) =>
+          val param = paramDesc.getSource.asInstanceOf[KotlinSourceElement].getPsi.asInstanceOf[KtParameter]
+          paramAsts.append(astForParameter(param, valueParamStartIndex + idx))
+        }
     }
 
     val lastChildNotReturnExpression = !expr.getBodyExpression.getLastChild.isInstanceOf[KtReturnExpression]
     val needsReturnExpression =
-      lastChildNotReturnExpression && !typeInfoProvider.hasApplyOrAlsoScopeFunctionParent(expr)
+      lastChildNotReturnExpression
     val bodyAsts = Option(expr.getBodyExpression)
       .map(
         astsForBlock(
@@ -424,7 +418,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     }
     val lambdaMethodAst = methodAst(
       lambdaMethodNode,
-      parametersAsts,
+      paramAsts.toSeq,
       bodyAst,
       newMethodReturnNode(returnTypeFullName, None, line(expr), column(expr)),
       newModifierNode(ModifierTypes.VIRTUAL) :: newModifierNode(ModifierTypes.LAMBDA) :: Nil
@@ -458,6 +452,25 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     nestedLambdaDecls.foreach(lambdaAstQueue.prepend)
     Ast(_methodRefNode)
       .withChildren(annotations.map(astForAnnotationEntry))
+  }
+
+  private def createImplicitParamNode(
+    expr: KtLambdaExpression,
+    paramDesc: ParameterDescriptor,
+    paramName: String,
+    index: Int
+  ): Ast = {
+    val node = parameterInNode(
+      expr,
+      paramName,
+      paramName,
+      index,
+      false,
+      EvaluationStrategies.BY_REFERENCE,
+      nameRenderer.typeFullName(paramDesc.getType).getOrElse(TypeConstants.any)
+    )
+    scope.addToScope(paramName, node)
+    Ast(node)
   }
 
   // SAM stands for: single abstraction method

@@ -1,5 +1,6 @@
 package io.joern.kotlin2cpg.querying
 
+import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
@@ -194,9 +195,27 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     "should contain a METHOD_PARAMETER_IN for the lambda with the correct properties set" in {
       val List(p) = cpg.method.fullName(".*lambda.*").parameter.l
       p.code shouldBe "this"
-      p.typeFullName shouldBe "ANY"
+      p.typeFullName shouldBe "java.lang.String"
       p.index shouldBe 1
     }
+  }
+
+  "lambda should contain METHOD_PARAMETER_IN for both implicit lambda parameters" in {
+    val cpg = code("""
+                     |package mypkg
+                     |public fun myFunc(block: String.(Int) -> Unit): Unit {}
+                     |fun outer(param: String): Unit {
+                     |  myFunc { println(it); println(this)}
+                     |}
+                     ||""".stripMargin)
+
+    val List(thisParam, itParam) = cpg.method.fullName(".*lambda.*").parameter.l
+    thisParam.code shouldBe "this"
+    thisParam.typeFullName shouldBe "java.lang.String"
+    thisParam.index shouldBe 1
+    itParam.code shouldBe "it"
+    itParam.typeFullName shouldBe "int"
+    itParam.index shouldBe 2
   }
 
   "CPG for code containing a lambda with parameter destructuring" should {
@@ -217,14 +236,13 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     }
 
     "should contain METHOD_PARAMETER_IN nodes for the lambda with the correct properties set" in {
-      val List(p1, p2) = cpg.method.fullName(".*lambda.*").parameter.l
-      p1.code shouldBe "k"
+      val List(p1) = cpg.method.fullName(".*lambda.*").parameter.l
+      p1.code shouldBe Constants.paramNameLambdaDestructureDecl
       p1.index shouldBe 1
-      p1.typeFullName shouldBe "java.lang.String"
-      p2.code shouldBe "v"
-      p2.index shouldBe 2
-      p2.typeFullName shouldBe "int"
+      p1.typeFullName shouldBe "java.util.Map$Entry"
     }
+
+    // TODO add tests for initialisation of destructured parameter
   }
 
   "CPG for code containing a lambda with parameter destructuring and an `_` entry" should {
@@ -247,9 +265,9 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
 
     "should contain one METHOD_PARAMETER_IN node for the lambda with the correct properties set" in {
       val List(p1) = cpg.method.fullName(".*lambda.*").parameter.l
-      p1.code shouldBe "k"
+      p1.code shouldBe Constants.paramNameLambdaDestructureDecl
       p1.index shouldBe 1
-      p1.typeFullName shouldBe "java.lang.String"
+      p1.typeFullName shouldBe "java.util.Map$Entry"
     }
   }
 
@@ -552,6 +570,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       m.signature shouldBe "void(java.lang.String)"
       val List(p) = m.parameter.l
       p.name shouldBe "it"
+      p.index shouldBe 1
     }
   }
 
