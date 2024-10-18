@@ -141,7 +141,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       fieldIdentifierNode(nameReferenceExpr, nameReferenceExpr.getText, nameReferenceExpr.getText).argumentIndex(2)
     )
 
-    registerType(typeInfoProvider.containingDeclType(expr, TypeConstants.any))
     val retType = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
     val node = withArgumentIndex(
       NodeBuilders.newOperatorCallNode(Operators.fieldAccess, expr.getText, Option(retType), line(expr), column(expr)),
@@ -164,7 +163,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       astDerivedFullNameWithSignature(expr, argAsts)._2
     )
 
-    registerType(typeInfoProvider.containingDeclType(expr, TypeConstants.any))
     val retType    = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
     val methodName = expr.getSelectorExpression.getFirstChild.getText
     val node =
@@ -201,7 +199,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       astDerivedFullNameWithSignature(expr, argAsts)._2
     )
 
-    registerType(typeInfoProvider.containingDeclType(expr, TypeConstants.any))
     val retType    = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
     val methodName = expr.getSelectorExpression.getFirstChild.getText
     val node =
@@ -305,7 +302,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       astDerivedFullNameWithSignature(expr, argAsts)._1,
       astDerivedFullNameWithSignature(expr, argAsts)._2
     )
-    registerType(typeInfoProvider.containingDeclType(expr, TypeConstants.any))
     val retType      = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
     val methodName   = expr.getSelectorExpression.getFirstChild.getText
     val dispatchType = DispatchTypes.STATIC_DISPATCH
@@ -345,7 +341,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       astDerivedFullNameWithSignature(expr, argAsts)._1,
       astDerivedFullNameWithSignature(expr, argAsts)._2
     )
-    registerType(typeInfoProvider.containingDeclType(expr, TypeConstants.any))
     val retType    = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
     val methodName = expr.getSelectorExpression.getFirstChild.getText
 

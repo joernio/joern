@@ -161,13 +161,6 @@ class DefaultTypeInfoProvider(val bindingContext: BindingContext, typeRenderer: 
     }
   }
 
-  def containingDeclType(expr: KtQualifiedExpression, defaultValue: String): String = {
-    resolvedCallDescriptor(expr)
-      .map(_.getContainingDeclaration)
-      .map(typeRenderer.renderFqNameForDesc)
-      .getOrElse(defaultValue)
-  }
-
   def hasStaticDesc(expr: KtQualifiedExpression): Boolean = {
     resolvedCallDescriptor(expr).forall(_.getDispatchReceiverParameter == null)
   }
