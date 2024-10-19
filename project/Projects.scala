@@ -1,4 +1,4 @@
-import sbt.*
+import sbt._
 
 object Projects {
   val frontendsRoot = file("joern-cli/frontends")
@@ -24,4 +24,10 @@ object Projects {
   lazy val gosrc2cpg     = project.in(frontendsRoot / "gosrc2cpg")
   lazy val csharpsrc2cpg = project.in(frontendsRoot / "csharpsrc2cpg")
 
+  // Optionally define root project
+  lazy val root = (project in file("."))
+    .aggregate(joerncli, querydb, console, dataflowengineoss, macros, semanticcpg, 
+               c2cpg, ghidra2cpg, x2cpg, pysrc2cpg, php2cpg, jssrc2cpg, 
+               swiftsrc2cpg, javasrc2cpg, jimple2cpg, kotlin2cpg, 
+               rubysrc2cpg, gosrc2cpg, csharpsrc2cpg)
 }
