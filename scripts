@@ -1,1 +1,54 @@
-joern-cli/src/main/resources/scripts
+import io.joern.console._
+import io.joern.dataflowengineoss.language._
+import io.joern.dataflowengineoss.queryengine.EngineContext
+import io.joern.dataflowengineoss.semanticsloader.NoSemantics
+import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.android._
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier}
+
+implicit val engineContext: EngineContext = EngineContext(NoSemantics)
+
+def insecureLoadUrlToExec(): List[Call] = {
+  // Find WebViews where JavaScript is enabled and insecure `loadUrl` with "http://"
+  def webViewsWithInsecureLoadUrlCalls =
+    cpg.webView
+      .callsEnableJS
+      .where(_.loadUrlCalls.filter { callNode =>
+        callNode.argument.reachableByLiteral("http://").nonEmpty
+      })
+
+  // Check if the app allows cleartext traffic by inspecting the app's AndroidManifest.xml
+  val appUsesCleartextTraffic = cpg.appManifest.usesCleartextTraffic.nonEmpty
+
+  // If cleartext traffic is allowed, find JavaScript interface objects
+  def exposedJavaScriptInterfaceObjects =
+    if (appUsesCleartextTraffic)
+      webViewsWithInsecureLoadUrlCalls.addJavascriptInterfaceCalls.argument(1)
+    else Iterator.empty
+
+  // Get names of the exposed JavaScript interface objects
+  val exposedJavaScriptInterfaceObjectNames = exposedJavaScriptInterfaceObjects.collect {
+    case ident: Identifier => ident.typeFullName
+    case call: Call        => call.typeFullName
+  }.toList
+
+  // Find methods exposed to JavaScript that belong to the identified objects
+  def exposedJavaScriptInterfaceMethods =
+    cpg.method.exposedToJS.where(_.typeDecl.filter { node =>
+      exposedJavaScriptInterfaceObjectNames.exists(_ == node.fullName)
+    })
+
+  // Find calls to Runtime.getRuntime.exec()
+  def runtimeExecCalls =
+    cpg.call.name("exec").typeFullName("java.lang.Process")
+
+  // Check if the JavaScript-exposed methods can reach exec() calls
+  runtimeExecCalls
+    .where(_.argument.reachableBy(exposedJavaScriptInterfaceMethods.parameter))
+    .toList
+}
+
+// Run the query and print results
+val result = insecureLoadUrlToExec()
+println(s"Found ${result.size} instances of insecure loadUrl to exec flows.")
+result.foreach(println)
