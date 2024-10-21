@@ -24,8 +24,8 @@ trait ExternalCommand {
     if (stdErr.nonEmpty) logger.warn(s"subprocess stderr: ${stdErr.mkString(lineSeparator)}")
 
     result match {
-      case Success(0)                    => Success(stdOut)
-      case failure: Failure[Seq[String]] => failure
+      case Success(0)     => Success(stdOut)
+      case Failure(error) => Failure(error)
       case Success(nonZeroExitCode) =>
         val allOutput = stdOut ++ stdErr
         val message =
