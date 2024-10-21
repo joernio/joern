@@ -18,6 +18,7 @@ import org.jetbrains.kotlin.psi.{
   KtFunctionLiteral,
   KtNamedFunction,
   KtParameter,
+  KtProperty,
   KtReferenceExpression,
   KtTypeAlias,
   KtTypeReference
@@ -85,6 +86,10 @@ class BindingContextUtils(bindingContext: BindingContext) {
 
   def getVariableDesc(entry: KtDestructuringDeclarationEntry): Option[VariableDescriptor] = {
     Option(bindingContext.get(BindingContext.VARIABLE, entry))
+  }
+
+  def getVariableDesc(property: KtProperty): Option[VariableDescriptor] = {
+    Option(bindingContext.get(BindingContext.VARIABLE, property))
   }
 
   def getTypeAliasDesc(typeAlias: KtTypeAlias): TypeAliasDescriptor = {

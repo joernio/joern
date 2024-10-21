@@ -96,22 +96,6 @@ class DefaultTypeInfoProvider(val bindingContext: BindingContext, typeRenderer: 
       .exists(_.contains(BindingContext.SHORT_REFERENCE_TO_COMPANION_OBJECT.getKey))
   }
 
-  def propertyType(expr: KtProperty, defaultValue: String): String = {
-    val mapForEntity = bindingsForEntity(bindingContext, expr)
-    Option(mapForEntity.get(BindingContext.VARIABLE.getKey))
-      .map(_.getType)
-      .filterNot(_.isInstanceOf[ErrorType])
-      .map(typeRenderer.render(_))
-      .filter(isValidRender)
-      .getOrElse(
-        Option(expr.getTypeReference)
-          .map { typeRef =>
-            typeFromImports(typeRef.getText, expr.getContainingKtFile).getOrElse(typeRef.getText)
-          }
-          .getOrElse(defaultValue)
-      )
-  }
-
   private def subexpressionForResolvedCallInfo(expr: KtExpression): KtExpression = {
     expr match {
       case typedExpr: KtCallExpression =>
@@ -199,14 +183,6 @@ class DefaultTypeInfoProvider(val bindingContext: BindingContext, typeRenderer: 
   private def descriptorForNameReference(expr: KtNameReferenceExpression): Option[DeclarationDescriptor] = {
     Option(bindingsForEntity(bindingContext, expr))
       .map(_ => bindingContext.get(BindingContext.REFERENCE_TARGET, expr))
-  }
-
-  def typeFromImports(name: String, file: KtFile): Option[String] = {
-    file.getImportList.getImports.asScala.flatMap { directive =>
-      if (directive.getImportedName != null && directive.getImportedName.toString == name.stripSuffix("?"))
-        Some(directive.getImportPath.getPathStr)
-      else None
-    }.headOption
   }
 }
 

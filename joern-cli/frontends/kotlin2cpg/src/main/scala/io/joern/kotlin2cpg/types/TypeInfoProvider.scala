@@ -29,13 +29,10 @@ import org.jetbrains.kotlin.types.KotlinType
 case class AnonymousObjectContext(declaration: KtElement)
 
 trait TypeInfoProvider(val typeRenderer: TypeRenderer = new TypeRenderer()) {
-  val bindingContext: BindingContext
 
   def usedAsExpression(expr: KtExpression): Option[Boolean]
 
   def isStaticMethodCall(expr: KtQualifiedExpression): Boolean
-
-  def propertyType(expr: KtProperty, defaultValue: String): String
 
   def isReferenceToClass(expr: KtNameReferenceExpression): Boolean
 
@@ -48,6 +45,4 @@ trait TypeInfoProvider(val typeRenderer: TypeRenderer = new TypeRenderer()) {
   def hasStaticDesc(expr: KtQualifiedExpression): Boolean
 
   def isRefToCompanionObject(expr: KtNameReferenceExpression): Boolean
-
-  def typeFromImports(name: String, file: KtFile): Option[String]
 }

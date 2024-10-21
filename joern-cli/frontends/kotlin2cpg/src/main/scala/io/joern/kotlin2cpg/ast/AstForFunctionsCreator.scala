@@ -196,8 +196,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val explicitTypeName = Option(param.getTypeReference)
       .map(typeRef =>
-        typeInfoProvider
-          .typeFromImports(typeRef.getText, param.getContainingKtFile)
+        fullNameByImportPath(typeRef, param.getContainingKtFile)
           .getOrElse(typeRef.getText)
       )
       .getOrElse(TypeConstants.any)

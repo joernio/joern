@@ -502,18 +502,16 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       .getOrElse(explicitSignature)
     val fullName = nameRenderer.combineFunctionFullName(descFullName, signature)
 
-    val bindingContext = typeInfoProvider.bindingContext
-    val call           = bindingContext.get(BindingContext.CALL, expr.getCalleeExpression)
-    val resolvedCall   = bindingContext.get(BindingContext.RESOLVED_CALL, call)
+    val resolvedCall = bindingUtils.getResolvedCallDesc(expr.getCalleeExpression)
 
     val (dispatchType, instanceAsArgument) =
-      if (resolvedCall == null) {
+      if (resolvedCall.isEmpty) {
         (DispatchTypes.STATIC_DISPATCH, false)
       } else {
-        if (resolvedCall.getDispatchReceiver == null) {
+        if (resolvedCall.get.getDispatchReceiver == null) {
           (DispatchTypes.STATIC_DISPATCH, false)
         } else {
-          resolvedCall.getResultingDescriptor match {
+          resolvedCall.get.getResultingDescriptor match {
             case functionDescriptor: FunctionDescriptor
                 if functionDescriptor.getVisibility == DescriptorVisibilities.PRIVATE =>
               (DispatchTypes.STATIC_DISPATCH, true)
@@ -536,7 +534,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
               expr,
               Constants.this_,
               Constants.this_,
-              nameRenderer.typeFullName(resolvedCall.getDispatchReceiver.getType).getOrElse(TypeConstants.any)
+              nameRenderer.typeFullName(resolvedCall.get.getDispatchReceiver.getType).getOrElse(TypeConstants.any)
             )
             val args = argAsts.prepended(Ast(instanceArgument))
             setArgumentIndices(args, 0)
@@ -555,7 +553,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
           expr,
           Constants.this_,
           Constants.this_,
-          nameRenderer.typeFullName(resolvedCall.getDispatchReceiver.getType).getOrElse(TypeConstants.any)
+          nameRenderer.typeFullName(resolvedCall.get.getDispatchReceiver.getType).getOrElse(TypeConstants.any)
         )
 
         callAst(

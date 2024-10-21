@@ -67,7 +67,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
             .flatMap(nameRenderer.typeFullName)
 
           superType.orElse {
-            typeInfoProvider.typeFromImports(typeRef.getText, ktClass.getContainingKtFile)
+            fullNameByImportPath(typeRef, ktClass.getContainingKtFile)
           }
         }
         .to(mutable.ArrayBuffer)
@@ -625,9 +625,15 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       case _                            => false
     }
     if (ctorCallExprMaybe.nonEmpty) {
-      val callExpr          = ctorCallExprMaybe.get
-      val localTypeFullName = registerType(typeInfoProvider.propertyType(expr, explicitTypeName))
-      val local             = localNode(expr, expr.getName, expr.getName, localTypeFullName)
+      val callExpr = ctorCallExprMaybe.get
+      val localTypeFullName =
+        bindingUtils
+          .getVariableDesc(expr)
+          .flatMap(desc => nameRenderer.typeFullName(desc.getType))
+          .orElse(fullNameByImportPath(expr.getTypeReference, expr.getContainingKtFile))
+          .getOrElse(explicitTypeName)
+      registerType(localTypeFullName)
+      val local = localNode(expr, expr.getName, expr.getName, localTypeFullName)
       scope.addToScope(expr.getName, local)
       val localAst = Ast(local)
 
@@ -718,8 +724,13 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
           .withChildren(annotations.map(astForAnnotationEntry))
       Seq(typeDeclAst, localAst, assignmentCallAst, initAst)
     } else {
-      val typeFullName = registerType(typeInfoProvider.propertyType(expr, explicitTypeName))
-      val node         = localNode(expr, expr.getName, expr.getName, typeFullName)
+      val typeFullName = bindingUtils
+        .getVariableDesc(expr)
+        .flatMap(desc => nameRenderer.typeFullName(desc.getType))
+        .orElse(fullNameByImportPath(expr.getTypeReference, expr.getContainingKtFile))
+        .getOrElse(explicitTypeName)
+      registerType(typeFullName)
+      val node = localNode(expr, expr.getName, expr.getName, typeFullName)
       scope.addToScope(expr.getName, node)
       val localAst = Ast(node)
 
@@ -742,8 +753,13 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       case _                                           => TypeConstants.any
     }
     val typeFullName = decl match {
-      case typed: KtProperty => typeInfoProvider.propertyType(typed, explicitTypeName)
-      case _                 => explicitTypeName
+      case typed: KtProperty =>
+        bindingUtils
+          .getVariableDesc(typed)
+          .flatMap(desc => nameRenderer.typeFullName(desc.getType))
+          .orElse(fullNameByImportPath(typed.getTypeReference, typed.getContainingKtFile))
+          .getOrElse(explicitTypeName)
+      case _ => explicitTypeName
     }
     registerType(typeFullName)
 

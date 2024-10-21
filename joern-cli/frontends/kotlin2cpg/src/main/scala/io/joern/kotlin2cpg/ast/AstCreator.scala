@@ -516,4 +516,15 @@ class AstCreator(
     bindingUtils.getExprType(expr).flatMap(nameRenderer.typeFullName)
   }
 
+  protected def fullNameByImportPath(typeRef: KtTypeReference, file: KtFile): Option[String] = {
+    if (typeRef == null) {
+      return None
+    }
+
+    file.getImportList.getImports.asScala.flatMap { directive =>
+      if (directive.getImportedName != null && directive.getImportedName.toString == typeRef.getText.stripSuffix("?"))
+        Some(directive.getImportPath.getPathStr)
+      else None
+    }.headOption
+  }
 }
