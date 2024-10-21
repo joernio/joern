@@ -1,6 +1,8 @@
 package io.joern.x2cpg.utils
 
-Fiximport java.io.BufferedReader
+import org.slf4j.LoggerFactory
+
+import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
 import java.nio.file.{Path, Paths}
@@ -10,6 +12,8 @@ import scala.jdk.CollectionConverters.*
 
 object ExternalCommand {
 
+  private val logger = LoggerFactory.getLogger(ExternalCommand.getClass)
+
   case class ExternalCommandResult(exitCode: Int, stdOut: Seq[String], stdErr: Seq[String]) {
     def successOption: Option[Seq[String]] = exitCode match {
       case 0 => Some(stdOut)
@@ -17,7 +21,12 @@ object ExternalCommand {
     }
     def toTry: Try[Seq[String]] = exitCode match {
       case 0 => Success(stdOut)
-      case _ => Failure(new RuntimeException((stdOut ++ stdErr).mkString(System.lineSeparator())))
+      case nonZeroExitCode =>
+        val allOutput = stdOut ++ stdErr
+        val message = s"""Process exited with code $nonZeroExitCode. Output:
+           |${allOutput.mkString(System.lineSeparator())}
+           |""".stripMargin
+        Failure(new RuntimeException(message))
     }
   }
 
@@ -57,13 +66,17 @@ object ExternalCommand {
       errorReaderThread.join()
       process.destroy()
 
-      val result = ExternalCommandResult(returnValue, stdOut.iterator().asScala.toSeq, stdErr.iterator().asScala.toSeq)
+      val stdErrLines = stdErr.iterator().asScala.toSeq
+      if (stdErrLines.nonEmpty) logger.warn(s"subprocess stderr: ${stdErrLines.mkString(System.lineSeparator())}")
+      val result = ExternalCommandResult(returnValue, stdOut.iterator().asScala.toSeq, stdErrLines)
       process.getInputStream.close()
       process.getOutputStream.close()
       process.getErrorStream.close()
       result
     } catch {
-      case ex: Throwable => ExternalCommandResult(1, Seq.empty, stdErr = Seq(ex.getMessage))
+      case ex: Throwable =>
+        logger.warn(s"subprocess stderr: ${ex.getMessage}")
+        ExternalCommandResult(1, Seq.empty, stdErr = Seq(ex.getMessage))
     }
   }
 
