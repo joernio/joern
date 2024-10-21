@@ -1,7 +1,10 @@
 package io.joern.x2cpg.utils
 
+Fiximport java.io.BufferedReader
 import java.io.File
+import java.io.InputStreamReader
 import java.nio.file.{Path, Paths}
+import java.util.concurrent.ConcurrentLinkedQueue
 import scala.util.{Failure, Success, Try}
 import scala.jdk.CollectionConverters.*
 
@@ -29,17 +32,32 @@ object ExternalCommand {
     builder.environment().putAll(extraEnv.asJava)
     builder.directory(new File(cwd))
     builder.redirectErrorStream(mergeStdErrInStdOut)
+
+    val stdOut = new ConcurrentLinkedQueue[String]
+    val stdErr = new ConcurrentLinkedQueue[String]
+
     try {
-      val process     = builder.start()
+      val process = builder.start()
+
+      val outputReaderThread = new Thread(() => {
+        val outputReader = new BufferedReader(new InputStreamReader(process.getInputStream))
+        outputReader.lines.iterator.forEachRemaining(stdOut.add)
+      })
+
+      val errorReaderThread = new Thread(() => {
+        val errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream))
+        errorReader.lines.iterator.forEachRemaining(stdErr.add)
+      })
+
+      outputReaderThread.start()
+      errorReaderThread.start()
+
       val returnValue = process.waitFor()
-      val outputBytes = process.getInputStream.readAllBytes()
-      val errBytes    = process.getErrorStream.readAllBytes()
-      val result =
-        ExternalCommandResult(
-          returnValue,
-          new String(outputBytes).lines().iterator().asScala.toSeq,
-          new String(errBytes).lines().iterator().asScala.toSeq
-        )
+      outputReaderThread.join()
+      errorReaderThread.join()
+      process.destroy()
+
+      val result = ExternalCommandResult(returnValue, stdOut.iterator().asScala.toSeq, stdErr.iterator().asScala.toSeq)
       process.getInputStream.close()
       process.getOutputStream.close()
       process.getErrorStream.close()
