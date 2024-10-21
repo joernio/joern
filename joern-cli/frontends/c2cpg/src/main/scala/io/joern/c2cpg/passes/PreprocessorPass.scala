@@ -3,12 +3,15 @@ package io.joern.c2cpg.passes
 import io.joern.c2cpg.C2Cpg.DefaultIgnoredFolders
 import io.joern.c2cpg.Config
 import io.joern.c2cpg.parser.{CdtParser, FileDefaults}
+import io.joern.c2cpg.parser.JSONCompilationDatabaseParser
+import io.joern.c2cpg.parser.JSONCompilationDatabaseParser.CommandObject
 import io.joern.x2cpg.SourceFiles
 import org.eclipse.cdt.core.dom.ast.{
-  IASTPreprocessorIfStatement,
   IASTPreprocessorIfdefStatement,
+  IASTPreprocessorIfStatement,
   IASTPreprocessorStatement
 }
+import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths
 import scala.collection.parallel.CollectionConverters.ImmutableIterableIsParallelizable
@@ -16,9 +19,14 @@ import scala.collection.parallel.immutable.ParIterable
 
 class PreprocessorPass(config: Config) {
 
-  private val parser = new CdtParser(config)
+  private val logger = LoggerFactory.getLogger(classOf[PreprocessorPass])
 
-  def run(): ParIterable[String] =
+  private val compilationDatabase: List[CommandObject] =
+    config.compilationDatabase.map(JSONCompilationDatabaseParser.parse).getOrElse(List.empty)
+
+  private val parser = new CdtParser(config, compilationDatabase)
+
+  private def sourceFilesFromDirectory(): ParIterable[String] = {
     SourceFiles
       .determine(
         config.inputPath,
@@ -29,6 +37,32 @@ class PreprocessorPass(config: Config) {
       )
       .par
       .flatMap(runOnPart)
+  }
+
+  private def sourceFilesFromCompilationDatabase(compilationDatabaseFile: String): ParIterable[String] = {
+    if (compilationDatabase.isEmpty) {
+      logger.warn(s"'$compilationDatabaseFile' contains no source files.")
+    }
+    SourceFiles
+      .filterFiles(
+        compilationDatabase.map(_.compiledFile()),
+        config.inputPath,
+        ignoredDefaultRegex = Option(DefaultIgnoredFolders),
+        ignoredFilesRegex = Option(config.ignoredFilesRegex),
+        ignoredFilesPath = Option(config.ignoredFiles)
+      )
+      .par
+      .flatMap(runOnPart)
+  }
+
+  def run(): ParIterable[String] = {
+    if (config.compilationDatabase.isEmpty) {
+      sourceFilesFromDirectory()
+    } else {
+      sourceFilesFromCompilationDatabase(config.compilationDatabase.get)
+    }
+
+  }
 
   private def preprocessorStatement2String(stmt: IASTPreprocessorStatement): Option[String] = stmt match {
     case s: IASTPreprocessorIfStatement =>
