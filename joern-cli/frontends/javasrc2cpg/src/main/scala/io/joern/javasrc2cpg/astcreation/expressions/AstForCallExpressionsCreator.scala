@@ -52,8 +52,6 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  private var tempConstCount = 0
-
   private[expressions] def astForMethodCall(call: MethodCallExpr, expectedReturnType: ExpectedType): Ast = {
     val maybeResolvedCall = tryWithSafeStackOverflow(call.resolve())
     val argumentAsts      = argAstsForCall(call, maybeResolvedCall, call.getArguments)
@@ -143,8 +141,7 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
   }
 
   private[expressions] def blockAstForObjectCreationExpr(expr: ObjectCreationExpr, expectedType: ExpectedType): Ast = {
-    val tmpName = "$obj" ++ tempConstCount.toString
-    tempConstCount += 1
+    val tmpName = tempNameProvider.next
 
     // Use an untyped identifier for receiver here, create the alloc and init ASTs,
     // then use the types of those to fix the local type.

@@ -14,8 +14,11 @@ import io.joern.javasrc2cpg.scope.Scope.CapturedVariable
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethodParameterIn
 import io.joern.javasrc2cpg.scope.Scope.ScopeParameter
 import io.joern.javasrc2cpg.scope.Scope.NotInScope
+import io.joern.x2cpg.ValidationMode
 
 class ScopeTests extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
+  private implicit val withSchemaValidation: ValidationMode = ValidationMode.Enabled
+
   behavior of "javasrc2cpg scope"
 
   it should "find a simple variable for a member" in {

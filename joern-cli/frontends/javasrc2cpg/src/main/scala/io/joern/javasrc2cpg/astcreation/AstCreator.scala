@@ -43,7 +43,8 @@ import io.joern.javasrc2cpg.util.{
   BindingTable,
   BindingTableAdapterForJavaparser,
   MultiBindingTableAdapterForJavaparser,
-  NameConstants
+  NameConstants,
+  TemporaryNameProvider
 }
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.utils.OffsetUtils
@@ -104,6 +105,8 @@ class AstCreator(
   private[astcreation] val typeInfoCalc: TypeInfoCalculator =
     TypeInfoCalculator(global, symbolSolver, keepTypeArguments)
   private[astcreation] val bindingTableCache = mutable.HashMap.empty[String, BindingTable]
+
+  private[astcreation] val tempNameProvider: TemporaryNameProvider = new TemporaryNameProvider
 
   /** Entry point of AST creation. Translates a compilation unit created by JavaParser into a DiffGraph containing the
     * corresponding CPG AST.

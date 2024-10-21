@@ -92,7 +92,9 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
       scope.enclosingMethod.get.addParameter(node)
     }
 
-    val bodyAst = methodDeclaration.getBody.toScala.map(astForBlockStatement(_)).getOrElse(Ast(NewBlock()))
+    val bodyAst = methodDeclaration.getBody.toScala
+      .map(astForBlockStatement(_, includeTemporaryLocals = true))
+      .getOrElse(Ast(NewBlock()))
     val (lineNr, columnNr) = tryWithSafeStackOverflow(methodDeclaration.getType) match {
       case Success(typ) => (line(typ), column(typ))
       case Failure(_)   => (line(methodDeclaration), column(methodDeclaration))
@@ -173,8 +175,9 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
       fieldDeclaration.getVariables.asScala.filter(_.getInitializer.isPresent).toList.flatMap { variableDeclaration =>
         scope.pushFieldDeclScope(fieldDeclaration.isStatic, variableDeclaration.getNameAsString)
         val assignmentAsts = astsForVariableDeclarator(variableDeclaration, fieldDeclaration)
+        val patternAsts    = scope.enclosingMethod.get.getUnaddedPatternVariableAstsAndMarkAdded()
         scope.popFieldDeclScope()
-        assignmentAsts
+        patternAsts ++ assignmentAsts
       }
     }
   }
@@ -198,7 +201,8 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
 
     val thisNode = thisNodeForMethod(typeFullName, lineNumber = None)
     scope.enclosingMethod.foreach(_.addParameter(thisNode))
-    val bodyStatementAsts = astsForFieldInitializers(instanceFieldDeclarations)
+    val bodyStatementAsts  = astsForFieldInitializers(instanceFieldDeclarations)
+    val temporaryLocalAsts = scope.enclosingMethod.map(_.getTemporaryLocals).getOrElse(Nil).map(Ast(_))
 
     val returnNode = newMethodReturnNode(TypeConstants.Void, line = None, column = None)
 
@@ -209,7 +213,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
         constructorNode,
         thisNode,
         explicitParameterAsts = Nil,
-        bodyStatementAsts = bodyStatementAsts,
+        bodyStatementAsts = temporaryLocalAsts ++ bodyStatementAsts,
         methodReturn = returnNode,
         annotationAsts = Nil,
         modifiers = modifiers,
@@ -345,18 +349,21 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
 
       scope.pushBlockScope()
       val bodyStatements = constructorDeclaration.getBody.getStatements.asScala.toList
+      val statementsAsts = bodyStatements.flatMap(astsForStatement)
       val bodyContainsThis = bodyStatements.headOption
         .collect { case consInvocation: ExplicitConstructorInvocationStmt => consInvocation.isThis }
         .getOrElse(false)
-      val fieldAssignments =
+      val fieldAssignmentsAndTempLocals =
         if (bodyContainsThis)
           Nil
         else
-          astsForFieldInitializers(instanceFieldDeclarations)
+          scope.enclosingMethod.get.getTemporaryLocals.map(Ast(_)) ++ astsForFieldInitializers(
+            instanceFieldDeclarations
+          )
 
-      // The this(...) call must always be the first statement in the body, but adding the fieldAssignments
+      // The this(...) call must always be the first statement in the body, but adding the fieldAssignmentsAndTempLocals
       // before the body asts here is safe, since the list will be empty if the body does start with this()
-      val bodyAsts = fieldAssignments ++ bodyStatements.flatMap(astsForStatement)
+      val bodyAsts = fieldAssignmentsAndTempLocals ++ statementsAsts
       scope.popBlockScope()
       val methodReturn = constructorReturnNode(constructorDeclaration)
 
