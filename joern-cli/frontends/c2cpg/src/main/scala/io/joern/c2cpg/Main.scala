@@ -99,9 +99,9 @@ private object Frontend {
         .text("instructs the parser to skip function and method bodies.")
         .action((_, c) => c.withSkipFunctionBodies(true)),
       opt[Unit]("no-image-locations")
-        .text(
-          "performance optimization, allows the parser not to create image-locations. An image location explains how a name made it into the translation unit. Eg: via macro expansion or preprocessor."
-        )
+        .text("""performance optimization, allows the parser not to create image-locations.
+            | An image location explains how a name made it into the translation unit.
+            | E.g., via macro expansion or preprocessor.""".stripMargin)
         .action((_, c) => c.withNoImageLocations(true)),
       opt[Unit]("with-preprocessed-files")
         .text("includes *.i files and gives them priority over their unprocessed origin source files.")
@@ -111,7 +111,12 @@ private object Frontend {
         .text("define a name")
         .action((d, c) => c.withDefines(c.defines + d)),
       opt[String]("compilation-database")
-        .text("use this compilation database file (only handles files and compile settings listed in this file")
+        .text("""enables the processing of compilation database files (e.g., compile_commands.json).
+            | This allows to automatically extract compiler options, source files, and other build information from the specified database
+            | and ensuring consistency with the build configuration.
+            | For a cmake based build such a file is generated with the environment variable CMAKE_EXPORT_COMPILE_COMMANDS being present.
+            | Clang based build are supported e.g., with https://github.com/rizsotto/Bear
+            | """.stripMargin)
         .action((d, c) => c.withCompilationDatabase(SourceFiles.toAbsolutePath(d, c.inputPath)))
     )
   }
