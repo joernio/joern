@@ -23,7 +23,7 @@ class ExternalCommandTest extends AnyWordSpec with Matchers {
           fail(s"expected failure, but got $result")
         case Failure(exception) =>
           exception.getMessage should include("Process exited with code") // exit code `2` on linux, `1` on mac...
-          exception.getMessage should include("ls: cannot access '/does/not/exist': No such file or directory")
+          exception.getMessage should include("No such file or directory") // again, different errors on mac and linux
       }
     }
 
