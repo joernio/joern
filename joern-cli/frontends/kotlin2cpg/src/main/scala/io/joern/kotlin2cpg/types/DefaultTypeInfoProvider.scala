@@ -28,8 +28,7 @@ import org.slf4j.LoggerFactory
 
 import scala.util.control.NonFatal
 
-class DefaultTypeInfoProvider(val bindingContext: BindingContext)
-    extends TypeInfoProvider {
+class DefaultTypeInfoProvider(val bindingContext: BindingContext) extends TypeInfoProvider {
 
   import DefaultTypeInfoProvider.*
 
