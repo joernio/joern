@@ -59,16 +59,12 @@ astGenDlTask := {
   } else {
     val astGenDir = baseDirectory.value / "bin" / "astgen"
     astGenDir.mkdirs()
-    val gemName                      = s"ruby_ast_gen_v${astGenVersion.value}.zip"
-    val gemFullPath                  = astGenDir / gemName
-    val gemNoVersionFullPath         = astGenDir / s"${gemName.stripSuffix(s"_v${astGenVersion.value}.zip")}.zip"
-    val unpackedGemNoVersion         = gemName.stripSuffix(s"_v${astGenVersion.value}.zip")
-    val unpackedGemNoVersionFullPath = astGenDir / unpackedGemNoVersion
-    //  We set this up so that the unpacked version is what the download helper aims to keep available
-    DownloadHelper.ensureIsAvailable(s"${astGenDlUrl.value}$gemName", gemNoVersionFullPath)
-
-    if (unpackedGemNoVersionFullPath.exists()) IO.delete(unpackedGemNoVersionFullPath)
-    IO.unzip(gemNoVersionFullPath, unpackedGemNoVersionFullPath)
+    val gemName             = s"ruby_ast_gen_v${astGenVersion.value}.zip"
+    val gemFullPath         = astGenDir / gemName
+    val unpackedGemFullPath = astGenDir / gemName.stripSuffix(s"_v${astGenVersion.value}.zip")
+    DownloadHelper.ensureIsAvailable(s"${astGenDlUrl.value}$gemName", gemFullPath)
+    if (unpackedGemFullPath.exists()) IO.delete(unpackedGemFullPath)
+    IO.unzip(gemFullPath, unpackedGemFullPath)
     val distDir = (Universal / stagingDirectory).value / "bin" / "astgen"
     distDir.mkdirs()
     IO.copyDirectory(astGenDir, distDir)

@@ -444,7 +444,7 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
                   val List(validateCall: Call) = methodBlock.astChildren.isCall.l: @unchecked
 
                   inside(validateCall.argument.l) {
-                    case (identArg: Identifier) :: (passwordArg: Literal) :: (presenceArg: Literal) :: (confirmationArg: Literal) :: (lengthArg: Block) :: (onArg: Literal) :: (ifArg: Literal) :: Nil =>
+                    case (identArg: Identifier) :: (passwordArg: Literal) :: (presenceArg: Literal) :: (confirmationArg: Literal) :: (lengthArg: Call) :: (onArg: Literal) :: (ifArg: Literal) :: Nil =>
                       passwordArg.code shouldBe ":password"
                       presenceArg.code shouldBe "true"
                       confirmationArg.code shouldBe "true"

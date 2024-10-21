@@ -3,13 +3,15 @@ package io.joern.rubysrc2cpg.parser
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{RubyExpression, *}
 import io.joern.rubysrc2cpg.parser.RubyJsonHelpers.*
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.rubysrc2cpg.passes.Defines.{NilClass, getBuiltInType, RubyOperators}
+import io.joern.rubysrc2cpg.passes.Defines.{NilClass, RubyOperators, getBuiltInType}
 import io.joern.rubysrc2cpg.passes.GlobalTypes.builtinPrefix
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
 import io.joern.x2cpg.frontendspecific.rubysrc2cpg.ImportsPass
 import io.joern.x2cpg.frontendspecific.rubysrc2cpg.ImportsPass.ImportCallNames
 import org.slf4j.LoggerFactory
 import ujson.{Arr, Bool, Null, Num, Obj, Str, Value}
+
+import scala.collection.mutable
 
 class RubyJsonToNodeCreator(
   variableNameGen: FreshNameGenerator[String] = FreshNameGenerator(id => s"<tmp-$id>"),
@@ -441,7 +443,10 @@ class RubyJsonToNodeCreator(
 
   private def visitKwOptArg(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
-  private def visitKwRestArg(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitKwRestArg(obj: Obj): RubyExpression = {
+    val name = obj(ParserKeys.Value).str
+    HashParameter(name)(obj.toTextSpan)
+  }
 
   private def visitKwSplat(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
@@ -523,7 +528,11 @@ class RubyJsonToNodeCreator(
     defaultResult(Option(obj.toTextSpan))
   }
 
-  private def visitOptionalArgument(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitOptionalArgument(obj: Obj): RubyExpression = {
+    val name    = obj(ParserKeys.Key).str
+    val default = visit(obj(ParserKeys.Value))
+    OptionalParameter(name, default)(obj.toTextSpan)
+  }
 
   private def visitOr(obj: Obj): RubyExpression = {
     val op  = "||"
@@ -595,7 +604,10 @@ class RubyJsonToNodeCreator(
     RescueClause(exceptionClassList, variables, body)(obj.toTextSpan)
   }
 
-  private def visitRestArg(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitRestArg(obj: Obj): RubyExpression = {
+    val name = obj(ParserKeys.Value).str
+    ArrayParameter(name)(obj.toTextSpan)
+  }
 
   private def visitRescueStatement(obj: Obj): RubyExpression = {
     val stmt          = visit(obj(ParserKeys.Statement))
@@ -667,10 +679,36 @@ class RubyJsonToNodeCreator(
     val name      = visit(obj(ParserKeys.Name))
     val baseClass = obj.visitOption(ParserKeys.SuperClass)
     val body      = obj.visitOption(ParserKeys.Body).getOrElse(StatementList(Nil)(obj.toTextSpan.spanStart("<empty>")))
-    val bodyMemberCall = createBodyMemberCall(name.text, obj.toTextSpan)
-    SingletonClassDeclaration(name = name, baseClass = baseClass, body = body, bodyMemberCall = Option(bodyMemberCall))(
-      obj.toTextSpan
-    )
+
+    obj.visitOption(ParserKeys.Def) match {
+      case Some(body) =>
+        name match {
+          case _: SelfIdentifier =>
+            SingletonClassDeclaration(freshClassName(obj.toTextSpan), baseClass, body)(obj.toTextSpan)
+          case _ =>
+            def mapDefBody(defBody: RubyExpression): RubyExpression = defBody match {
+              case method @ MethodDeclaration(methodName, parameters, body) =>
+                val memberAccess =
+                  MemberAccess(name, ".", methodName)(method.span.spanStart(s"${name.span.text}.${methodName}"))
+                val singletonBlockMethod =
+                  SingletonObjectMethodDeclaration(methodName, parameters, body, name)(method.span)
+                SingleAssignment(memberAccess, "=", singletonBlockMethod)(
+                  method.span.spanStart(s"${memberAccess.span.text} = ${method.span.text}")
+                )
+              case expr => expr
+            }
+
+            val stmts = body match {
+              case _ @StatementList(stmts) => stmts.map(mapDefBody)
+              case expr                    => mapDefBody(expr) :: Nil
+            }
+            SingletonStatementList(stmts)(obj.toTextSpan)
+        }
+
+      case None =>
+        val anonName = freshClassName(obj.toTextSpan)
+        SingletonClassDeclaration(name = anonName, baseClass = baseClass, body = body)(obj.toTextSpan)
+    }
   }
 
   private def visitSingleAssignment(obj: Obj): RubyExpression = {

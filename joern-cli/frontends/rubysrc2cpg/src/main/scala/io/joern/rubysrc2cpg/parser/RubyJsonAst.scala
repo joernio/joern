@@ -19,6 +19,7 @@ object ParserKeys {
   val Code           = "code"
   val Collection     = "collection"
   val Condition      = "condition"
+  val Def            = "def"
   val ElseClause     = "else_clause"
   val ElseBranch     = "else_branch"
   val End            = "end"

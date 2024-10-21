@@ -39,7 +39,7 @@ class MethodTests extends RubyCode2CpgFixture(useJsonAst = true) {
       val List(mSelf) = cpg.method.isModule.parameter.name(RDefines.Self).l
       mSelf.index shouldBe 0
       mSelf.isVariadic shouldBe false
-      mSelf.lineNumber shouldBe Some(1)
+      mSelf.lineNumber shouldBe Some(2)
       mSelf.referencingIdentifiers.size shouldBe 3
     }
 
