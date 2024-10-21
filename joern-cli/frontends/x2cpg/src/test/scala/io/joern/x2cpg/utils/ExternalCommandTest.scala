@@ -7,12 +7,33 @@ import org.scalatest.wordspec.AnyWordSpec
 import scala.util.{Failure, Success}
 
 class ExternalCommandTest extends AnyWordSpec with Matchers {
+  def cwd = File.currentWorkingDirectory.pathAsString
 
   "ExternalCommand.run" should {
     "be able to run `ls` successfully" in {
       File.usingTemporaryDirectory("sample") { sourceDir =>
         val cmd = "ls " + sourceDir.pathAsString
         ExternalCommand.run(cmd, sourceDir.pathAsString) should be a Symbol("success")
+      }
+    }
+
+    "report exit code and stdout/stderr for nonzero exit code" in {
+      ExternalCommand.run("ls /does/not/exist", cwd) match {
+        case result: Success[_] =>
+          fail(s"expected failure, but got $result")
+        case Failure(exception) =>
+          exception.getMessage should include("Process exited with code 2")
+          exception.getMessage should include("ls: cannot access '/does/not/exist': No such file or directory")
+      }
+    }
+
+    "report error for io exception (e.g. for nonexisting command)" in {
+      ExternalCommand.run("/command/does/not/exist", cwd) match {
+        case result: Success[_] =>
+          fail(s"expected failure, but got $result")
+        case Failure(exception) =>
+          exception.getMessage should include("""Cannot run program "/command/does/not/exist"""")
+          exception.getMessage should include("No such file or directory")
       }
     }
   }
