@@ -3,7 +3,7 @@ package io.joern.kotlin2cpg.ast
 import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.KtFileWithMeta
 import io.joern.kotlin2cpg.datastructures.Scope
-import io.joern.kotlin2cpg.types.{NameRenderer, TypeConstants, TypeInfoProvider, TypeRenderer}
+import io.joern.kotlin2cpg.types.{NameRenderer, TypeConstants, TypeInfoProvider}
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.AstCreatorBase
 import io.joern.x2cpg.AstNodeBuilder
@@ -74,7 +74,7 @@ class AstCreator(
     logger.debug(s"Started parsing file `${fileWithMeta.filename}`.")
 
     val defaultTypes =
-      Set(TypeConstants.javaLangObject, TypeConstants.kotlin) ++ TypeRenderer.primitiveArrayMappings.keys
+      Set(TypeConstants.javaLangObject, TypeConstants.kotlin)
     defaultTypes.foreach(registerType)
     storeInDiffGraph(astForFile(fileWithMeta))
     diffGraph

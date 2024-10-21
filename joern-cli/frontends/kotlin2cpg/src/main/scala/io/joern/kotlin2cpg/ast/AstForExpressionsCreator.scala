@@ -483,10 +483,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         bindingUtils.getTypeRefType(x.getTypeReference).flatMap(nameRenderer.typeFullName).getOrElse(TypeConstants.any)
       )
     val explicitSignature = s"${TypeConstants.any}(${argAsts.map { _ => TypeConstants.any }.mkString(",")})"
-    val explicitFullName =
-      if (typeInfoProvider.typeRenderer.keepTypeArguments && typeArgs.nonEmpty)
-        s"$methodFqName<${typeArgs.mkString(",")}>"
-      else methodFqName
+    val explicitFullName = methodFqName
 
     val funcDesc = bindingUtils.getCalledFunctionDesc(expr.getCalleeExpression).orElse {
       bindingUtils

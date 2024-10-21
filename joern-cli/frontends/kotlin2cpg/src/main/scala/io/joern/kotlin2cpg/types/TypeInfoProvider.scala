@@ -28,7 +28,7 @@ import org.jetbrains.kotlin.types.KotlinType
 
 case class AnonymousObjectContext(declaration: KtElement)
 
-trait TypeInfoProvider(val typeRenderer: TypeRenderer = new TypeRenderer()) {
+trait TypeInfoProvider {
 
   def usedAsExpression(expr: KtExpression): Option[Boolean]
 
