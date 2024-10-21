@@ -4,19 +4,20 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 
-object ExternalCommand extends io.joern.x2cpg.utils.ExternalCommand {
+object ExternalCommand {
 
-  override def handleRunResult(result: Try[Int], stdOut: Seq[String], stdErr: Seq[String]): Try[Seq[String]] = {
-    result match {
-      case Success(0) =>
+  import io.joern.x2cpg.utils.ExternalCommand.ExternalCommandResult
+
+  def run(command: Seq[String], cwd: String, extraEnv: Map[String, String] = Map.empty): Try[Seq[String]] = {
+    io.joern.x2cpg.utils.ExternalCommand.run(command, cwd, mergeStdErrInStdOut = true, extraEnv) match {
+      case ExternalCommandResult(0, stdOut, _) =>
         Success(stdOut)
-      case Success(_) if stdErr.isEmpty && stdOut.nonEmpty =>
+      case ExternalCommandResult(_, stdOut, stdErr) if stdErr.isEmpty && stdOut.nonEmpty =>
         // SwiftAstGen exits with exit code != 0 on Windows.
         // To catch with we specifically handle the empty stdErr here.
         Success(stdOut)
-      case _ =>
-        val allOutput = stdOut ++ stdErr
-        Failure(new RuntimeException(allOutput.mkString(System.lineSeparator())))
+      case ExternalCommandResult(_, stdOut, _) =>
+        Failure(new RuntimeException(stdOut.mkString(System.lineSeparator())))
     }
   }
 

@@ -11,8 +11,8 @@ class ExternalCommandTest extends AnyWordSpec with Matchers {
   "ExternalCommand.run" should {
     "be able to run `ls` successfully" in {
       File.usingTemporaryDirectory("sample") { sourceDir =>
-        val cmd = "ls " + sourceDir.pathAsString
-        ExternalCommand.run(cmd, sourceDir.pathAsString) should be a Symbol("success")
+        val cmd = Seq("ls", sourceDir.pathAsString)
+        ExternalCommand.run(cmd, sourceDir.pathAsString).toTry should be a Symbol("success")
       }
     }
   }

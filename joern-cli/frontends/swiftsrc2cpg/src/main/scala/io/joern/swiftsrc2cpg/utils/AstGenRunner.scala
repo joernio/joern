@@ -65,7 +65,7 @@ object AstGenRunner {
     val astGenCommand = path.getOrElse("SwiftAstGen")
     val localPath     = path.flatMap(File(_).parentOption.map(_.pathAsString)).getOrElse(".")
     val debugMsgPath  = path.getOrElse("PATH")
-    ExternalCommand.run(s"$astGenCommand -h", localPath).toOption match {
+    ExternalCommand.run(Seq(astGenCommand, "-h"), localPath).toOption match {
       case Some(_) =>
         logger.debug(s"Using SwiftAstGen from $debugMsgPath")
         true
@@ -140,7 +140,7 @@ class AstGenRunner(config: Config) {
   }
 
   private def runAstGenNative(in: File, out: File): Try[Seq[String]] =
-    ExternalCommand.run(s"$astGenCommand -o $out", in.toString())
+    ExternalCommand.run(Seq(astGenCommand, "-o", out.toString), in.toString())
 
   private def checkParsedFiles(files: List[String], in: File): List[String] = {
     val numOfParsedFiles = files.size

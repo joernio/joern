@@ -17,10 +17,9 @@ class PhpParser private (phpParserPath: String, phpIniPath: String, disableFileC
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  private def phpParseCommand(filenames: collection.Seq[String]): String = {
-    val phpParserCommands = "--with-recovery --resolve-names --json-dump"
-    val filenamesString   = filenames.mkString(" ")
-    s"php --php-ini $phpIniPath $phpParserPath $phpParserCommands $filenamesString"
+  private def phpParseCommand(filenames: collection.Seq[String]): Seq[String] = {
+    val phpParserCommands = Seq("--with-recovery", "--resolve-names", "--json-dump")
+    Seq("php", "--php-ini", phpIniPath, phpParserPath) ++ phpParserCommands ++ filenames
   }
 
   def parseFiles(inputPaths: collection.Seq[String]): collection.Seq[(String, Option[PhpFile], String)] = {
@@ -37,10 +36,10 @@ class PhpParser private (phpParserPath: String, phpIniPath: String, disableFileC
 
     val command = phpParseCommand(inputPaths)
 
-    val (returnValue, output) = ExternalCommand.runWithMergeStdoutAndStderr(command, ".")
-    returnValue match {
-      case 0 =>
-        val asJson = linesToJsonValues(output.lines().toArray(size => new Array[String](size)))
+    val result = ExternalCommand.run(command, ".", mergeStdErrInStdOut = true)
+    result match {
+      case ExternalCommand.ExternalCommandResult(0, stdOut, _) =>
+        val asJson = linesToJsonValues(stdOut)
         val asPhpFile = asJson.map { case (filename, jsonObjectOption, infoLines) =>
           (filename, jsonToPhpFile(jsonObjectOption, filename), infoLines)
         }
@@ -48,8 +47,8 @@ class PhpParser private (phpParserPath: String, phpIniPath: String, disableFileC
           (canonicalToInputPath.apply(filename), phpFileOption, infoLines)
         }
         withRemappedFileName
-      case exitCode =>
-        logger.error(s"Failure running php-parser with $command, exit code $exitCode")
+      case ExternalCommand.ExternalCommandResult(exitCode, _, _) =>
+        logger.error(s"Failure running php-parser with ${command.mkString(" ")}, exit code $exitCode")
         Nil
     }
   }

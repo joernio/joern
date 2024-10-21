@@ -45,7 +45,9 @@ object DependencyResolver {
     projectDir: Path,
     configuration: String
   ): Option[collection.Seq[String]] = {
-    val lines = ExternalCommand.run(s"gradle dependencies --configuration $configuration", projectDir.toString) match {
+    val lines = ExternalCommand
+      .run(Seq("gradle", "dependencies", "--configuration,", configuration), projectDir.toString)
+      .toTry match {
       case Success(lines) => lines
       case Failure(exception) =>
         logger.warn(
