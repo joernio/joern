@@ -8,7 +8,8 @@ import scala.util.Properties.isWin
 import scala.util.{Failure, Success}
 
 class ExternalCommandTest extends AnyWordSpec with Matchers {
-  def cwd = File.currentWorkingDirectory.pathAsString
+
+  private def cwd = File.currentWorkingDirectory.pathAsString
 
   "ExternalCommand.run" should {
     "be able to run `ls` successfully" in {
@@ -19,7 +20,7 @@ class ExternalCommandTest extends AnyWordSpec with Matchers {
     }
 
     "report exit code and stdout/stderr for nonzero exit code" in {
-      ExternalCommand.run("ls /does/not/exist", cwd) match {
+      ExternalCommand.run(Seq("ls", "/does/not/exist"), cwd).toTry match {
         case result: Success[_] =>
           fail(s"expected failure, but got $result")
         case Failure(exception) =>
@@ -29,7 +30,7 @@ class ExternalCommandTest extends AnyWordSpec with Matchers {
     }
 
     "report error for io exception (e.g. for nonexisting command)" in {
-      ExternalCommand.run("/command/does/not/exist", cwd) match {
+      ExternalCommand.run(Seq("/command/does/not/exist"), cwd).toTry match {
         case result: Success[_] =>
           fail(s"expected failure, but got $result")
         case Failure(exception) =>
