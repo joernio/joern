@@ -526,9 +526,31 @@ class RubyJsonToNodeCreator(
     )(obj.toTextSpan)
   }
 
-  private def visitMultipleAssignment(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitMultipleAssignment(obj: Obj): RubyExpression = {
+    val lhs = visit(obj(ParserKeys.Lhs)) match {
+      case _ @ArrayLiteral(elements) => elements
+      case expr                      => expr :: Nil
+    }
+    val rhs = visit(obj(ParserKeys.Rhs)) match {
+      case _ @ArrayLiteral(elements) => elements
+      case expr                      => expr :: Nil
+    }
+    lowerMultipleAssignment(
+      obj,
+      lhs,
+      rhs,
+      () => defaultResult(),
+      () => StaticLiteral(getBuiltInType(Defines.NilClass))(obj.toTextSpan)
+    )
+  }
 
-  private def visitMultipleLeftHandSide(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitMultipleLeftHandSide(obj: Obj): RubyExpression = {
+    val arr = visitArray(obj).asInstanceOf[ArrayLiteral]
+    arr.copy(elements = arr.elements.map {
+      case param: MandatoryParameter => param.toSimpleIdentifier
+      case expr                      => expr
+    })(arr.span)
+  }
 
   private def visitNext(obj: Obj): RubyExpression = NextExpression()(obj.toTextSpan)
 
@@ -760,7 +782,14 @@ class RubyJsonToNodeCreator(
     }
   }
 
-  private def visitSplat(obj: Obj): RubyExpression = SplattingRubyNode(visit(obj(ParserKeys.Value)))(obj.toTextSpan)
+  private def visitSplat(obj: Obj): RubyExpression = {
+    obj.visitOption(ParserKeys.Value) match {
+      case Some(x) => SplattingRubyNode(x)(obj.toTextSpan)
+      case None =>
+        val emptyStar = SimpleIdentifier()(obj.toTextSpan.spanStart("_"))
+        SplattingRubyNode(emptyStar)(obj.toTextSpan)
+    }
+  }
 
   private def visitStaticString(obj: Obj): RubyExpression = {
     val typeFullName = getBuiltInType(Defines.String)

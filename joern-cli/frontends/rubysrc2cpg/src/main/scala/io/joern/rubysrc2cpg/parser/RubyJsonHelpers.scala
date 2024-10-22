@@ -2,7 +2,9 @@ package io.joern.rubysrc2cpg.parser
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   AllowedTypeDeclarationChild,
+  ArrayLiteral,
   ClassFieldIdentifier,
+  DefaultMultipleAssignment,
   IfExpression,
   MemberAccess,
   MethodDeclaration,
@@ -13,6 +15,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   SelfIdentifier,
   SimpleIdentifier,
   SingleAssignment,
+  SplattingRubyNode,
   StatementList,
   StaticLiteral,
   TextSpan,
@@ -22,6 +25,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
 import io.joern.rubysrc2cpg.parser.RubyJsonHelpers.nilLiteral
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
+import io.shiftleft.codepropertygraph.generated.nodes.Unknown
 import upickle.core.*
 import upickle.default.*
 
@@ -191,6 +195,78 @@ object RubyJsonHelpers {
     IfExpression(condition = condition, thenClause = thenClause, elsifClauses = List.empty, elseClause = None)(
       span.spanStart(s"if ${condition.span.text} then ${thenClause.span.text} end")
     )
+  }
+
+  def lowerMultipleAssignment(
+    obj: ujson.Obj,
+    lhsNodes: List[RubyExpression],
+    rhsNodes: List[RubyExpression],
+    defaultResult: () => RubyExpression,
+    nilResult: () => RubyExpression
+  ): RubyExpression = {
+
+    /** Recursively expand and duplicate splatting nodes so that they line up with what they consume.
+      *
+      * @param nodes
+      *   the splat nodes.
+      * @param expandSize
+      *   how many more duplicates to create.
+      */
+    def slurp(nodes: List[RubyExpression], expandSize: Int): List[RubyExpression] = nodes match {
+      case (head: SplattingRubyNode) :: tail if expandSize > 0 => head :: slurp(head :: tail, expandSize - 1)
+      case head :: tail                                        => head :: slurp(tail, expandSize)
+      case Nil                                                 => List.empty
+    }
+    val op = "="
+    lazy val defaultAssignments = lhsNodes
+      .zipAll(rhsNodes, defaultResult(), nilResult())
+      .map { case (lhs, rhs) => SingleAssignment(lhs, op, rhs)(obj.toTextSpan) }
+
+    val assignments = if ((lhsNodes ++ rhsNodes).exists(_.isInstanceOf[SplattingRubyNode])) {
+      rhsNodes.size - lhsNodes.size match {
+        // Handle slurping the RHS values
+        case x if x > 0 => {
+          val slurpedLhs = slurp(lhsNodes, x)
+
+          slurpedLhs
+            .zip(rhsNodes)
+            .groupBy(_._1)
+            .toSeq
+            .map { case (lhsNode, xs) => lhsNode -> xs.map(_._2) }
+            .sortBy { x => slurpedLhs.indexOf(x._1) } // groupBy produces a map which discards insertion order
+            .map {
+              case (SplattingRubyNode(lhs), rhss) =>
+                SingleAssignment(lhs, op, ArrayLiteral(rhss)(obj.toTextSpan))(obj.toTextSpan)
+              case (lhs, rhs :: Nil) => SingleAssignment(lhs, op, rhs)(obj.toTextSpan)
+              case (lhs, rhss)       => SingleAssignment(lhs, op, ArrayLiteral(rhss)(obj.toTextSpan))(obj.toTextSpan)
+            }
+            .toList
+        }
+        // Handle splitting the RHS values
+        case x if x < 0 => {
+          val slurpedRhs = slurp(rhsNodes, Math.abs(x))
+
+          lhsNodes
+            .zip(slurpedRhs)
+            .groupBy(_._2)
+            .toSeq
+            .map { case (rhsNode, xs) => rhsNode -> xs.map(_._1) }
+            .sortBy { x => slurpedRhs.indexOf(x._1) } // groupBy produces a map which discards insertion order
+            .flatMap {
+              case (SplattingRubyNode(rhs), lhss) =>
+                lhss.map(SingleAssignment(_, op, SplattingRubyNode(rhs)(rhs.span))(obj.toTextSpan))
+              case (rhs, lhs :: Nil) => Seq(SingleAssignment(lhs, op, rhs)(obj.toTextSpan))
+              case (rhs, lhss) => lhss.map(SingleAssignment(_, op, SplattingRubyNode(rhs)(rhs.span))(obj.toTextSpan))
+            }
+            .toList
+        }
+        case _ => defaultAssignments
+      }
+    } else {
+      val diff = rhsNodes.size - lhsNodes.size
+      if diff < 0 then defaultAssignments.dropRight(Math.abs(diff)) else defaultAssignments
+    }
+    DefaultMultipleAssignment(assignments)(obj.toTextSpan)
   }
 
   private case class MetaData(
