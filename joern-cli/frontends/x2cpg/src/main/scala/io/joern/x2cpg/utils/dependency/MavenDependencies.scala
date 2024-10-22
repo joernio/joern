@@ -15,7 +15,14 @@ object MavenDependencies {
   // options specified by the user via the MAVEN_CLI_OPTS environment variable, while also making it clear that this
   // environment variable is being considered.
   private val fetchArgs =
-    Vector("--fail-never", "-B", "dependency:build-classpath", "-DincludeScope=compile", "-Dorg.slf4j.simpleLogger.defaultLogLevel=info", "-Dorg.slf4j.simpleLogger.logFile=System.out")
+    Vector(
+      "--fail-never",
+      "-B",
+      "dependency:build-classpath",
+      "-DincludeScope=compile",
+      "-Dorg.slf4j.simpleLogger.defaultLogLevel=info",
+      "-Dorg.slf4j.simpleLogger.logFile=System.out"
+    )
 
   private val fetchCommandWithOpts: Seq[String] = {
     // These options suppress output, so if they're provided we won't get any results.
