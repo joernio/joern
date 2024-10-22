@@ -5,10 +5,12 @@ import org.slf4j.LoggerFactory
 import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
-import java.nio.file.{Path, Paths}
-import java.util.concurrent.ConcurrentLinkedQueue
-import scala.util.{Failure, Success, Try}
+import java.nio.file.Path
+import java.nio.file.Paths
 import scala.jdk.CollectionConverters.*
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 object ExternalCommand {
 
@@ -42,20 +44,20 @@ object ExternalCommand {
     builder.directory(new File(cwd))
     builder.redirectErrorStream(mergeStdErrInStdOut)
 
-    val stdOut = new ConcurrentLinkedQueue[String]
-    val stdErr = new ConcurrentLinkedQueue[String]
+    val stdOut = scala.collection.mutable.ArrayBuffer.empty[String]
+    val stdErr = scala.collection.mutable.ArrayBuffer.empty[String]
 
     try {
       val process = builder.start()
 
       val outputReaderThread = new Thread(() => {
         val outputReader = new BufferedReader(new InputStreamReader(process.getInputStream))
-        outputReader.lines.iterator.forEachRemaining(stdOut.add)
+        outputReader.lines.iterator.forEachRemaining(stdOut.addOne)
       })
 
       val errorReaderThread = new Thread(() => {
         val errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream))
-        errorReader.lines.iterator.forEachRemaining(stdErr.add)
+        errorReader.lines.iterator.forEachRemaining(stdErr.addOne)
       })
 
       outputReaderThread.start()
@@ -70,9 +72,9 @@ object ExternalCommand {
       process.getErrorStream.close()
       process.destroy()
 
-      val stdErrLines = stdErr.iterator().asScala.toSeq
+      val stdErrLines = stdErr.toSeq
       if (stdErrLines.nonEmpty) logger.warn(s"subprocess stderr: ${stdErrLines.mkString(System.lineSeparator())}")
-      ExternalCommandResult(returnValue, stdOut.iterator().asScala.toSeq, stdErrLines)
+      ExternalCommandResult(returnValue, stdOut.toSeq, stdErrLines)
     } catch {
       case ex: Throwable =>
         ExternalCommandResult(1, Seq.empty, stdErr = Seq(ex.getMessage))
