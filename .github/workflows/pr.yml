@@ -51,4 +51,4 @@ jobs:
             ~/.coursier
           key: ${{ runner.os }}-sbt-${{ hashfiles('**/build.sbt') }}
       - name: Compile and run tests
-        run: sbt clean "csharpsrc2cpg/testOnly *TypeCastTests"
+        run: sbt clean "csharpsrc2cpg/testOnly *SimpleDataflowTests"
