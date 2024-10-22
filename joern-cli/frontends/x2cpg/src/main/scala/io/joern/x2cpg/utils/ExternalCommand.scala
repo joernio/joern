@@ -8,6 +8,7 @@ import java.io.InputStreamReader
 import java.nio.file.Path
 import java.nio.file.Paths
 import scala.jdk.CollectionConverters.*
+import scala.util.control.NonFatal
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -75,8 +76,8 @@ object ExternalCommand {
       if (stdErr.nonEmpty) logger.warn(s"subprocess stderr: ${stdErr.mkString(System.lineSeparator())}")
       ExternalCommandResult(returnValue, stdOut.toSeq, stdErr.toSeq)
     } catch {
-      case ex: Throwable =>
-        ExternalCommandResult(1, Seq.empty, stdErr = Seq(ex.getMessage))
+      case NonFatal(exception) =>
+        ExternalCommandResult(1, Seq.empty, stdErr = Seq(exception.getMessage))
     }
   }
 

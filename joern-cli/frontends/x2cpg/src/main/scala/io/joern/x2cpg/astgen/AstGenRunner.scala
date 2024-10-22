@@ -64,7 +64,8 @@ object AstGenRunner {
           s"Found local ${metaData.name} v$installedVersion in systems PATH but ${metaData.name} requires at least v$compatibleVersion"
         )
         false
-      case _ => false
+      case _ =>
+        false
     }
   }
 
