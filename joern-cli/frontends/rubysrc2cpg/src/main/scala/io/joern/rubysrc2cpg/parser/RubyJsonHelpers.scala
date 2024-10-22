@@ -3,6 +3,7 @@ package io.joern.rubysrc2cpg.parser
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   AllowedTypeDeclarationChild,
   ClassFieldIdentifier,
+  IfExpression,
   MemberAccess,
   MethodDeclaration,
   ProcedureDeclaration,
@@ -15,7 +16,8 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   StatementList,
   StaticLiteral,
   TextSpan,
-  TypeDeclBodyCall
+  TypeDeclBodyCall,
+  UnaryExpression
 }
 import io.joern.rubysrc2cpg.parser.RubyJsonHelpers.nilLiteral
 import io.joern.rubysrc2cpg.passes.Defines
@@ -152,6 +154,43 @@ object RubyJsonHelpers {
       case targetMemberAccess: MemberAccess => getParts(targetMemberAccess) :+ memberAccess.memberName
       case expr                             => expr.text :: memberAccess.memberName :: Nil
     }
+  }
+
+  /** Lowers the `||=` and `&&=` assignment operators to the respective `.nil?` checks
+    */
+  def lowerAssignmentOperator(lhs: RubyExpression, rhs: RubyExpression, op: String, span: TextSpan): RubyExpression = {
+    val condition  = nilCheckCondition(lhs, op, "nil?", span)
+    val thenClause = nilCheckThenClause(lhs, rhs, span)
+    nilCheckIfStatement(condition, thenClause, span)
+  }
+
+  /** Generates the required `.nil?` check condition used in the lowering of `||=` and `&&=`
+    */
+  private def nilCheckCondition(lhs: RubyExpression, op: String, memberName: String, span: TextSpan): RubyExpression = {
+    val memberAccess =
+      MemberAccess(lhs, op = ".", memberName = "nil?")(span.spanStart(s"${lhs.span.text}.nil?"))
+    if op == "||=" then memberAccess
+    else UnaryExpression(op = "!", expression = memberAccess)(span.spanStart(s"!${memberAccess.span.text}"))
+  }
+
+  /** Generates the assignment and the `thenClause` used in the lowering of `||=` and `&&=`
+    */
+  private def nilCheckThenClause(lhs: RubyExpression, rhs: RubyExpression, span: TextSpan): RubyExpression = {
+    StatementList(List(SingleAssignment(lhs, "=", rhs)(span.spanStart(s"${lhs.span.text} = ${rhs.span.text}"))))(
+      span.spanStart(s"${lhs.span.text} = ${rhs.span.text}")
+    )
+  }
+
+  /** Generates the if statement for the lowering of `||=` and `&&=`
+    */
+  private def nilCheckIfStatement(
+    condition: RubyExpression,
+    thenClause: RubyExpression,
+    span: TextSpan
+  ): RubyExpression = {
+    IfExpression(condition = condition, thenClause = thenClause, elsifClauses = List.empty, elseClause = None)(
+      span.spanStart(s"if ${condition.span.text} then ${thenClause.span.text} end")
+    )
   }
 
   private case class MetaData(

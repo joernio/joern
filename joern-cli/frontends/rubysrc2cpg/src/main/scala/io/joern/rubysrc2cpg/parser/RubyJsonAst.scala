@@ -62,6 +62,7 @@ enum AstType(val name: String) {
   case BackRef                      extends AstType("back_ref")
   case Begin                        extends AstType("begin")
   case Block                        extends AstType("block")
+  case BlockArg                     extends AstType("blockarg")
   case BlockPass                    extends AstType("block_pass")
   case BlockWithNumberedParams      extends AstType("numblock")
   case Break                        extends AstType("break")

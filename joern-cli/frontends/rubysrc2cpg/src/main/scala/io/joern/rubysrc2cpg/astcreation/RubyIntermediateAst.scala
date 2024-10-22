@@ -178,7 +178,9 @@ object RubyIntermediateAst {
     def name: String
   }
 
-  final case class MandatoryParameter(name: String)(span: TextSpan) extends RubyExpression(span) with MethodParameter
+  final case class MandatoryParameter(name: String)(span: TextSpan) extends RubyExpression(span) with MethodParameter {
+    def toSimpleIdentifier: SimpleIdentifier = SimpleIdentifier()(span)
+  }
 
   final case class OptionalParameter(name: String, defaultExpression: RubyExpression)(span: TextSpan)
       extends RubyExpression(span)

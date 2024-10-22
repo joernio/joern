@@ -67,6 +67,7 @@ class RubyJsonToNodeCreator(
         case AstType.BackRef                      => visitBackRef(obj)
         case AstType.Begin                        => visitBegin(obj)
         case AstType.Block                        => visitBlock(obj)
+        case AstType.BlockArg                     => visitBlockArg(obj)
         case AstType.BlockPass                    => visitBlockPass(obj)
         case AstType.BlockWithNumberedParams      => visitBlockWithNumberedParams(obj)
         case AstType.Break                        => visitBreak(obj)
@@ -199,7 +200,14 @@ class RubyJsonToNodeCreator(
     BinaryExpression(lhs, op, rhs)(obj.toTextSpan)
   }
 
-  private def visitAndAssign(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitAndAssign(obj: Obj): RubyExpression = {
+    val lhs = visit(obj(ParserKeys.Lhs)) match {
+      case param: MandatoryParameter => param.toSimpleIdentifier
+      case x                         => x
+    }
+    val rhs = visit(obj(ParserKeys.Rhs))
+    lowerAssignmentOperator(lhs, rhs, "&&=", obj.toTextSpan)
+  }
 
   private def visitArg(obj: Obj): RubyExpression = MandatoryParameter(obj(ParserKeys.Value).str)(obj.toTextSpan)
 
@@ -242,6 +250,10 @@ class RubyJsonToNodeCreator(
         logger.warn(s"Unexpected call type used for block ${x.getClass}, ignoring block")
         x
     }
+  }
+
+  private def visitBlockArg(obj: Obj): RubyExpression = {
+    ProcParameter(obj(ParserKeys.Value).str)(obj.toTextSpan)
   }
 
   private def visitBlockPass(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
@@ -534,13 +546,13 @@ class RubyJsonToNodeCreator(
   }
 
   private def visitOperatorAssign(obj: Obj): RubyExpression = {
-    /*
-      base_map[:lhs] = children[0]
-      base_map[:op] = children[1]
-      base_map[:rhs] = children[2]
-     */
-    // TODO: Something is wrong here, investigate `ruby_ast_gen`
-    defaultResult(Option(obj.toTextSpan))
+    val lhs = visit(obj(ParserKeys.Lhs)) match {
+      case param: MandatoryParameter => param.toSimpleIdentifier
+      case x                         => x
+    }
+    val op  = s"${obj(ParserKeys.Op).str}="
+    val rhs = visit(obj(ParserKeys.Rhs))
+    SingleAssignment(lhs, op, rhs)(obj.toTextSpan)
   }
 
   private def visitOptionalArgument(obj: Obj): RubyExpression = {
@@ -556,7 +568,14 @@ class RubyJsonToNodeCreator(
     BinaryExpression(lhs, op, rhs)(obj.toTextSpan)
   }
 
-  private def visitOrAssign(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitOrAssign(obj: Obj): RubyExpression = {
+    val lhs = visit(obj(ParserKeys.Lhs)) match {
+      case param: MandatoryParameter => param.toSimpleIdentifier
+      case x                         => x
+    }
+    val rhs = visit(obj(ParserKeys.Rhs))
+    lowerAssignmentOperator(lhs, rhs, "||=", obj.toTextSpan)
+  }
 
   private def visitPair(obj: Obj): RubyExpression = {
     val key   = visit(obj(ParserKeys.Key))
@@ -686,7 +705,11 @@ class RubyJsonToNodeCreator(
     val base       = visit(obj(ParserKeys.Base))
     val name       = obj(ParserKeys.Name).str
     val parameters = obj(ParserKeys.Arguments).asInstanceOf[ujson.Obj].visitArray(ParserKeys.Children)
-    val body       = obj.visitOption(ParserKeys.Body).getOrElse(StatementList(Nil)(obj.toTextSpan.spanStart("<empty>")))
+    val body =
+      obj.visitOption(ParserKeys.Body).getOrElse(StatementList(Nil)(obj.toTextSpan.spanStart("<empty>"))) match {
+        case stmtList: StatementList => stmtList
+        case expr                    => StatementList(expr :: Nil)(expr.span)
+      }
     SingletonMethodDeclaration(base, name, parameters, body)(obj.toTextSpan)
   }
 

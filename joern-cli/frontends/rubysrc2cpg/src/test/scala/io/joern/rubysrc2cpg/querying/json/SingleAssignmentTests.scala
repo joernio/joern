@@ -188,7 +188,7 @@ class SingleAssignmentTests extends RubyCode2CpgFixture(useJsonAst = true) {
         assign1.argument(2).code shouldBe "1"
         assign1.argument(2).lineNumber shouldBe Some(4)
 
-        assign2.lineNumber shouldBe Some(5)
+        assign2.lineNumber shouldBe Some(6)
         assign2.argument(1).code shouldBe "x"
         assign2.argument(2).code shouldBe "2"
         assign2.argument(2).lineNumber shouldBe Some(6)
@@ -304,7 +304,7 @@ class SingleAssignmentTests extends RubyCode2CpgFixture(useJsonAst = true) {
 
               case xs => fail(s"Expected lhs and rhs, got ${xs.code.mkString(";")}]")
             }
-          case xs => fail(s"Expected six assignemnts, got [${xs.code.mkString(";")}]")
+          case xs => fail(s"Expected six assignments, got [${xs.code.mkString(";")}]")
         }
       case xs => fail(s"Expected three lambdas, got ${xs.size} lambdas instead")
     }
