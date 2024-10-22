@@ -64,18 +64,17 @@ object ExternalCommand {
       val returnValue = process.waitFor()
       outputReaderThread.join()
       errorReaderThread.join()
+
+      process.getInputStream.close()
+      process.getOutputStream.close()
+      process.getErrorStream.close()
       process.destroy()
 
       val stdErrLines = stdErr.iterator().asScala.toSeq
       if (stdErrLines.nonEmpty) logger.warn(s"subprocess stderr: ${stdErrLines.mkString(System.lineSeparator())}")
-      val result = ExternalCommandResult(returnValue, stdOut.iterator().asScala.toSeq, stdErrLines)
-      process.getInputStream.close()
-      process.getOutputStream.close()
-      process.getErrorStream.close()
-      result
+      ExternalCommandResult(returnValue, stdOut.iterator().asScala.toSeq, stdErrLines)
     } catch {
       case ex: Throwable =>
-        logger.warn(s"subprocess stderr: ${ex.getMessage}")
         ExternalCommandResult(1, Seq.empty, stdErr = Seq(ex.getMessage))
     }
   }
