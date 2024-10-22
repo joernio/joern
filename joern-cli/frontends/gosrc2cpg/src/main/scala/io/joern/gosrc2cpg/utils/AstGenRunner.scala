@@ -75,8 +75,8 @@ class AstGenRunner(config: Config, includeFileRegex: String = "") extends AstGen
   override def runAstGenNative(in: String, out: File, exclude: String, include: String)(implicit
     metaData: AstGenProgramMetaData
   ): Try[Seq[String]] = {
-    val excludeCommand = if (exclude.isEmpty) Seq.empty else Seq("-exclude", s"\"$exclude\"")
-    val includeCommand = if (include.isEmpty) Seq.empty else Seq("-include-packages", s"\"$include\"")
+    val excludeCommand = if (exclude.isEmpty) Seq.empty else Seq("-exclude", exclude)
+    val includeCommand = if (include.isEmpty) Seq.empty else Seq("-include-packages", include)
     ExternalCommand
       .run((astGenCommand +: excludeCommand) ++ includeCommand ++ Seq("-out", out.toString(), in), ".")
       .toTry
