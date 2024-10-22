@@ -3,7 +3,6 @@ import better.files.File
 import io.joern.x2cpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
-import scala.collection.immutable.LazyList.from
 import scala.io.Source
 import scala.util.{Failure, Success, Try, Using}
 import upickle.default.*
@@ -26,11 +25,12 @@ class ClassParser(targetDir: File) {
     f
   }
 
-  private lazy val phpClassParseCommand: String = s"php ${classParserScript.pathAsString} ${targetDir.pathAsString}"
+  private lazy val phpClassParseCommand: Seq[String] =
+    Seq("php", classParserScript.pathAsString, targetDir.pathAsString)
 
   def parse(): Try[List[ClassParserClass]] = Try {
     val inputDirectory = targetDir.parent.canonicalPath
-    ExternalCommand.run(phpClassParseCommand, inputDirectory).map(_.reverse) match {
+    ExternalCommand.run(phpClassParseCommand, inputDirectory).toTry.map(_.reverse) match {
       case Success(output) =>
         read[List[ClassParserClass]](output.mkString("\n"))
       case Failure(exception) =>

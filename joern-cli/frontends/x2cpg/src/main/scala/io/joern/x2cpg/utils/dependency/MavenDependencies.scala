@@ -17,14 +17,14 @@ object MavenDependencies {
   private val fetchCommand =
     s"mvn $$$MavenCliOpts --fail-never -B dependency:build-classpath -DincludeScope=compile -Dorg.slf4j.simpleLogger.defaultLogLevel=info -Dorg.slf4j.simpleLogger.logFile=System.out"
 
-  private val fetchCommandWithOpts = {
+  private val fetchCommandWithOpts: Seq[String] = {
     // These options suppress output, so if they're provided we won't get any results.
     // "-q" and "--quiet" are the only ones that would realistically be used.
     val optionsToStrip = Set("-h", "--help", "-q", "--quiet", "-v", "--version")
 
     val mavenOpts         = Option(System.getenv(MavenCliOpts)).getOrElse("")
     val mavenOptsStripped = mavenOpts.split(raw"\s").filterNot(optionsToStrip.contains).mkString(" ")
-    fetchCommand.replace(s"$$$MavenCliOpts", mavenOptsStripped)
+    fetchCommand.replace(s"$$$MavenCliOpts", mavenOptsStripped).split(" ").toSeq
   }
 
   private def logErrors(output: String): Unit = {
@@ -40,7 +40,7 @@ object MavenDependencies {
   }
 
   private[dependency] def get(projectDir: Path): Option[collection.Seq[String]] = {
-    val lines = ExternalCommand.run(fetchCommandWithOpts, projectDir.toString) match {
+    val lines = ExternalCommand.run(fetchCommandWithOpts, projectDir.toString).toTry match {
       case Success(lines) =>
         if (lines.contains("[INFO] Build failures were ignored.")) {
           logErrors(lines.mkString(System.lineSeparator()))

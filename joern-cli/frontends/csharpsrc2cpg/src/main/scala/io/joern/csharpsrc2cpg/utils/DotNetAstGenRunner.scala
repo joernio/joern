@@ -63,8 +63,8 @@ class DotNetAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
   override def runAstGenNative(in: String, out: File, exclude: String, include: String)(implicit
     metaData: AstGenProgramMetaData
   ): Try[Seq[String]] = {
-    val excludeCommand = if (exclude.isEmpty) "" else s"-e \"$exclude\""
-    ExternalCommand.run(s"$astGenCommand -o ${out.toString()} -i \"$in\" $excludeCommand", ".")
+    val excludeCommand = if (exclude.isEmpty) Seq.empty else Seq("-e", exclude)
+    ExternalCommand.run(Seq(astGenCommand, "-o", out.toString(), "-i", in) ++ excludeCommand, ".").toTry
   }
 
 }

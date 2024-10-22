@@ -22,7 +22,7 @@ class Php2Cpg extends X2CpgFrontend[Config] {
   private val PhpVersionRegex = new Regex("^PHP ([78]\\.[1-9]\\.[0-9]|[9-9]\\d\\.\\d\\.\\d)")
 
   private def isPhpVersionSupported: Boolean = {
-    val result = ExternalCommand.run("php --version", ".")
+    val result = ExternalCommand.run(Seq("php", "--version"), ".").toTry
     result match {
       case Success(listString) =>
         val phpVersionStr = listString.headOption.getOrElse("")

@@ -91,14 +91,13 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
 
   private def downloadDependency(inputPath: String, tempPath: String): Unit = {
     if (Files.isRegularFile(Paths.get(s"${inputPath}${java.io.File.separator}Gemfile"))) {
-      ExternalCommand.run(s"bundle config set --local path ${tempPath}", inputPath) match {
+      ExternalCommand.run(Seq("bundle", "config", "set", "--local", "path", tempPath), inputPath).toTry match {
         case Success(configOutput) =>
           logger.info(s"Gem config successfully done: $configOutput")
         case Failure(exception) =>
           logger.error(s"Error while configuring Gem Path: ${exception.getMessage}")
       }
-      val command = s"bundle install"
-      ExternalCommand.run(command, inputPath) match {
+      ExternalCommand.run(Seq("bundle", "install"), inputPath).toTry match {
         case Success(bundleOutput) =>
           logger.info(s"Dependency installed successfully: $bundleOutput")
         case Failure(exception) =>

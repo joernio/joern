@@ -75,16 +75,18 @@ class AstGenRunner(config: Config, includeFileRegex: String = "") extends AstGen
   override def runAstGenNative(in: String, out: File, exclude: String, include: String)(implicit
     metaData: AstGenProgramMetaData
   ): Try[Seq[String]] = {
-    val excludeCommand = if (exclude.isEmpty) "" else s"-exclude \"$exclude\""
-    val includeCommand = if (include.isEmpty) "" else s"-include-packages \"$include\""
-    ExternalCommand.run(s"$astGenCommand $excludeCommand $includeCommand -out ${out.toString()} $in", ".")
+    val excludeCommand = if (exclude.isEmpty) Seq.empty else Seq("-exclude", exclude)
+    val includeCommand = if (include.isEmpty) Seq.empty else Seq("-include-packages", include)
+    ExternalCommand
+      .run((astGenCommand +: excludeCommand) ++ includeCommand ++ Seq("-out", out.toString(), in), ".")
+      .toTry
   }
 
   def executeForGo(out: File): List[GoAstGenRunnerResult] = {
     implicit val metaData: AstGenProgramMetaData = config.astGenMetaData
     val in                                       = File(config.inputPath)
     logger.info(s"Running goastgen in '$config.inputPath' ...")
-    runAstGenNative(config.inputPath, out, config.ignoredFilesRegex.toString(), includeFileRegex.toString()) match {
+    runAstGenNative(config.inputPath, out, config.ignoredFilesRegex.toString(), includeFileRegex) match {
       case Success(result) =>
         val srcFiles = SourceFiles.determine(
           out.toString(),
@@ -114,7 +116,7 @@ class AstGenRunner(config: Config, includeFileRegex: String = "") extends AstGen
   ): List[GoAstGenRunnerResult] = {
     val moduleMeta: ModuleMeta =
       ModuleMeta(inputPath, outPath, None, ListBuffer[String](), ListBuffer[String](), ListBuffer[ModuleMeta]())
-    if (parsedModFiles.size > 0) {
+    if (parsedModFiles.nonEmpty) {
       parsedModFiles
         .sortBy(_.split(UtilityConstants.fileSeparateorPattern).length)
         .foreach(modFile => {
@@ -122,11 +124,11 @@ class AstGenRunner(config: Config, includeFileRegex: String = "") extends AstGen
         })
       parsedFiles.foreach(moduleMeta.addParsedFile)
       skippedFiles.foreach(moduleMeta.addSkippedFile)
-      moduleMeta.getOnlyChilds()
+      moduleMeta.getOnlyChildren
     } else {
       parsedFiles.foreach(moduleMeta.addParsedFile)
       skippedFiles.foreach(moduleMeta.addSkippedFile)
-      moduleMeta.getAllChilds()
+      moduleMeta.getAllChildren
     }
   }
 
@@ -184,12 +186,12 @@ class AstGenRunner(config: Config, includeFileRegex: String = "") extends AstGen
       }
     }
 
-    def getOnlyChilds(): List[GoAstGenRunnerResult] = {
-      childModules.flatMap(_.getAllChilds()).toList
+    def getOnlyChildren: List[GoAstGenRunnerResult] = {
+      childModules.flatMap(_.getAllChildren).toList
     }
 
-    def getAllChilds(): List[GoAstGenRunnerResult] = {
-      getOnlyChilds() ++ List(
+    def getAllChildren: List[GoAstGenRunnerResult] = {
+      getOnlyChildren ++ List(
         GoAstGenRunnerResult(
           modulePath = modulePath,
           parsedModFile = modFilePath,

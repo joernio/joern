@@ -13,13 +13,15 @@ object IncludeAutoDiscovery {
 
   private val IS_WIN = scala.util.Properties.isWin
 
-  val GCC_VERSION_COMMAND = "gcc --version"
+  val GCC_VERSION_COMMAND = Seq("gcc", "--version")
 
   private val CPP_INCLUDE_COMMAND =
-    if (IS_WIN) "gcc -xc++ -E -v . -o nul" else "gcc -xc++ -E -v /dev/null -o /dev/null"
+    if (IS_WIN) Seq("gcc", "-xc++", "-E", "-v", ".", "-o", "nul")
+    else Seq("gcc", "-xc++", "-E", "-v", "/dev/null", "-o", "/dev/null")
 
   private val C_INCLUDE_COMMAND =
-    if (IS_WIN) "gcc -xc -E -v . -o nul" else "gcc -xc -E -v /dev/null -o /dev/null"
+    if (IS_WIN) Seq("gcc", "-xc", "-E", "-v", ".", "-o", "nul")
+    else Seq("gcc", "-xc", "-E", "-v", "/dev/null", "-o", "/dev/null")
 
   // Only check once
   private var isGccAvailable: Option[Boolean] = None
@@ -57,7 +59,7 @@ object IncludeAutoDiscovery {
     output.slice(startIndex, endIndex).map(p => Paths.get(p.trim).toRealPath()).toSet
   }
 
-  private def discoverPaths(command: String): Set[Path] = ExternalCommand.run(command, ".") match {
+  private def discoverPaths(command: Seq[String]): Set[Path] = ExternalCommand.run(command, ".") match {
     case Success(output) => extractPaths(output)
     case Failure(exception) =>
       logger.warn(s"Unable to discover system include paths. Running '$command' failed.", exception)

@@ -126,7 +126,7 @@ object AstGenRunner {
     val astGenCommand = path.getOrElse("astgen")
     val localPath     = path.flatMap(File(_).parentOption.map(_.pathAsString)).getOrElse(".")
     val debugMsgPath  = path.getOrElse("PATH")
-    ExternalCommand.run(s"$astGenCommand --version", localPath).toOption.map(_.mkString.strip()) match {
+    ExternalCommand.run(Seq(astGenCommand, "--version"), localPath).successOption.map(_.mkString.strip()) match {
       case Some(installedVersion)
           if installedVersion != "unknown" &&
             Try(VersionHelper.compare(installedVersion, astGenVersion)).toOption.getOrElse(-1) >= 0 =>
@@ -175,7 +175,7 @@ class AstGenRunner(config: Config) {
 
   import io.joern.jssrc2cpg.utils.AstGenRunner._
 
-  private val executableArgs = if (!config.tsTypes) " --no-tsTypes" else ""
+  private val executableArgs = if (!config.tsTypes) Seq("--no-tsTypes") else Seq.empty
 
   private def skippedFiles(astGenOut: List[String]): List[String] = {
     val skipped = astGenOut.collect {
@@ -297,7 +297,11 @@ class AstGenRunner(config: Config) {
     }
 
     val result =
-      ExternalCommand.run(s"$astGenCommand$executableArgs -t ts -o $out", out.toString(), extraEnv = NODE_OPTIONS)
+      ExternalCommand.run(
+        (astGenCommand +: executableArgs) ++ Seq("-t", "ts", "-o", out.toString),
+        out.toString(),
+        extraEnv = NODE_OPTIONS
+      )
 
     val jsons = SourceFiles.determine(out.toString(), Set(".json"))
     jsons.foreach { jsonPath =>
@@ -312,7 +316,7 @@ class AstGenRunner(config: Config) {
     }
 
     tmpJsFiles.foreach(_.delete())
-    result
+    result.toTry
   }
 
   private def ejsFiles(in: File, out: File): Try[Seq[String]] = {
@@ -337,12 +341,24 @@ class AstGenRunner(config: Config) {
       ignoredFilesPath = Some(config.ignoredFiles)
     )
     if (files.nonEmpty)
-      ExternalCommand.run(s"$astGenCommand$executableArgs -t vue -o $out", in.toString(), extraEnv = NODE_OPTIONS)
+      ExternalCommand
+        .run(
+          (astGenCommand +: executableArgs) ++ Seq("-t", "vue", "-o", out.toString),
+          in.toString(),
+          extraEnv = NODE_OPTIONS
+        )
+        .toTry
     else Success(Seq.empty)
   }
 
   private def jsFiles(in: File, out: File): Try[Seq[String]] =
-    ExternalCommand.run(s"$astGenCommand$executableArgs -t ts -o $out", in.toString(), extraEnv = NODE_OPTIONS)
+    ExternalCommand
+      .run(
+        (astGenCommand +: executableArgs) ++ Seq("-t", "ts", "-o", out.toString),
+        in.toString(),
+        extraEnv = NODE_OPTIONS
+      )
+      .toTry
 
   private def runAstGenNative(in: File, out: File): Try[Seq[String]] = for {
     ejsResult <- ejsFiles(in, out)

@@ -53,7 +53,7 @@ object AstGenRunner {
       .toString
 
   def hasCompatibleAstGenVersion(compatibleVersion: String)(implicit metaData: AstGenProgramMetaData): Boolean = {
-    ExternalCommand.run(s"$metaData.name -version", ".").toOption.map(_.mkString.strip()) match {
+    ExternalCommand.run(Seq(metaData.name, "-version"), ".").successOption.map(_.mkString.strip()) match {
       case Some(installedVersion)
           if installedVersion != "unknown" &&
             Try(VersionHelper.compare(installedVersion, compatibleVersion)).toOption.getOrElse(-1) >= 0 =>
@@ -64,7 +64,8 @@ object AstGenRunner {
           s"Found local ${metaData.name} v$installedVersion in systems PATH but ${metaData.name} requires at least v$compatibleVersion"
         )
         false
-      case _ => false
+      case _ =>
+        false
     }
   }
 
