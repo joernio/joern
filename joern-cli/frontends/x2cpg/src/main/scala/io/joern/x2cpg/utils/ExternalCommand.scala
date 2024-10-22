@@ -44,6 +44,7 @@ trait ExternalCommand {
       case Nil => Process(command, new java.io.File(cwd), extraEnv.toList*)
       case _   => Process(shellPrefix :+ command, new java.io.File(cwd), extraEnv.toList*)
     }
+    println(s"XXX0 command=$command; cwd=$cwd")
     handleRunResult(Try(process.!(processLogger)), stdOutOutput.asScala.toSeq, stdErrOutput.asScala.toSeq)
   }
 
