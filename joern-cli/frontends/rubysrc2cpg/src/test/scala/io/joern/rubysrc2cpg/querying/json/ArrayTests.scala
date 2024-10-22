@@ -201,19 +201,21 @@ class ArrayTests extends RubyCode2CpgFixture(useJsonAst = true) {
   }
 
   "Array bodies with mixed elements" in {
-    val cpg = code("[1, 2 => 1]")
+    val cpg = code("[1, 2 => 1, 2 => 3]")
 
     inside(cpg.call.name(Operators.arrayInitializer).argument.l) {
-      case (argLit: Literal) :: (argAssoc: Call) :: Nil =>
+      case (argLit: Literal) :: (argAssoc: Call) :: (argAssoc2: Call) :: Nil =>
         argLit.code shouldBe "1"
 
         argAssoc.code shouldBe "2 => 1"
         argAssoc.methodFullName shouldBe Defines.RubyOperators.association
+
+        argAssoc2.code shouldBe "2 => 3"
+        argAssoc2.methodFullName shouldBe Defines.RubyOperators.association
       case xs => fail(s"Expected two elements for array init, got ${xs.code.mkString(",")}")
     }
   }
 
-  // TODO: This gives a cbase with null base and null name. Investigate
   "Array with mixed elements" in {
     val cpg = code("""
                      |[

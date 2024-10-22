@@ -205,7 +205,14 @@ class RubyJsonToNodeCreator(
 
   private def visitArgs(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
-  private def visitArray(obj: Obj): RubyExpression = ArrayLiteral(obj.visitArray(ParserKeys.Children))(obj.toTextSpan)
+  private def visitArray(obj: Obj): RubyExpression = {
+    val children = obj.visitArray(ParserKeys.Children).flatMap {
+      case x: AssociationList => x.elements
+      case x                  => x :: Nil
+    }
+
+    ArrayLiteral(children)(obj.toTextSpan)
+  }
 
   private def visitArrayPattern(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
@@ -294,13 +301,15 @@ class RubyJsonToNodeCreator(
 
   private def visitDynamicString(obj: Obj): RubyExpression = {
     val typeFullName = getBuiltInType(Defines.String)
-    val expressions  = obj.visitArray(ParserKeys.Children)
+    // Children contain all elements, including items that are not the interpolations (becomes StaticLiteral), so we have to filter these out.
+    val expressions = obj.visitArray(ParserKeys.Children).filter(x => !x.isInstanceOf[StaticLiteral])
     DynamicLiteral(typeFullName, expressions)(obj.toTextSpan)
   }
 
   private def visitDynamicSymbol(obj: Obj): RubyExpression = {
     val typeFullName = getBuiltInType(Defines.Symbol)
-    val expressions  = obj.visitArray(ParserKeys.Children)
+    // Children contain all elements, including items that are not the interpolations (becomes StaticLiteral), so we have to filter these out.
+    val expressions = obj.visitArray(ParserKeys.Children).filter(x => !x.isInstanceOf[StaticLiteral])
     DynamicLiteral(typeFullName, expressions)(obj.toTextSpan)
   }
 
@@ -368,9 +377,15 @@ class RubyJsonToNodeCreator(
   private def visitGlobalVariableAssign(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
   private def visitHash(obj: Obj): RubyExpression = {
+    val isHashLiteral = obj.toTextSpan.text.stripMargin.startsWith("{")
+
     obj.visitArray(ParserKeys.Children) match {
-      case (assoc: Association) :: Nil => assoc // 2 => 1 is interpreted as {2: 1}, so we lower this for now
-      case children                    => HashLiteral(children)(obj.toTextSpan)
+      case (assoc: Association) :: Nil =>
+        if isHashLiteral then HashLiteral(List(assoc))(obj.toTextSpan)
+        else assoc // 2 => 1 is interpreted as {2: 1}, so we lower this for now
+      case children =>
+        if isHashLiteral then HashLiteral(children)(obj.toTextSpan)
+        else AssociationList(children)(obj.toTextSpan)
     }
   }
 
@@ -746,8 +761,12 @@ class RubyJsonToNodeCreator(
   }
 
   private def visitTopLevelConstant(obj: Obj): RubyExpression = {
-    val identifier = obj(ParserKeys.Name).str
-    SimpleIdentifier()(obj.toTextSpan.spanStart(identifier))
+    if (obj.contains(ParserKeys.Name)) {
+      val identifier = obj(ParserKeys.Name).str
+      SimpleIdentifier()(obj.toTextSpan.spanStart(identifier))
+    } else {
+      SelfIdentifier()(obj.toTextSpan.spanStart("self"))
+    }
   }
 
   private def visitTrue(obj: Obj): RubyExpression = StaticLiteral(getBuiltInType(Defines.TrueClass))(obj.toTextSpan)

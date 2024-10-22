@@ -421,6 +421,8 @@ object RubyIntermediateAst {
 
   final case class Association(key: RubyExpression, value: RubyExpression)(span: TextSpan) extends RubyExpression(span)
 
+  final case class AssociationList(elements: List[RubyExpression])(span: TextSpan) extends RubyExpression(span)
+
   /** Represents a call.
     */
   sealed trait RubyCall extends RubyExpression {
