@@ -3,6 +3,7 @@ package io.joern.c2cpg
 import io.joern.c2cpg.Frontend.*
 import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
 import io.joern.x2cpg.utils.server.FrontendHTTPServer
+import io.joern.x2cpg.SourceFiles
 import org.slf4j.LoggerFactory
 import scopt.OParser
 
@@ -16,7 +17,8 @@ final case class Config(
   includePathsAutoDiscovery: Boolean = false,
   skipFunctionBodies: Boolean = false,
   noImageLocations: Boolean = false,
-  withPreprocessedFiles: Boolean = false
+  withPreprocessedFiles: Boolean = false,
+  compilationDatabase: Option[String] = None
 ) extends X2CpgConfig[Config] {
   def withIncludePaths(includePaths: Set[String]): Config = {
     this.copy(includePaths = includePaths).withInheritedFields(this)
@@ -57,6 +59,10 @@ final case class Config(
   def withPreprocessedFiles(value: Boolean): Config = {
     this.copy(withPreprocessedFiles = value).withInheritedFields(this)
   }
+
+  def withCompilationDatabase(value: String): Config = {
+    this.copy(compilationDatabase = Some(value)).withInheritedFields(this)
+  }
 }
 
 private object Frontend {
@@ -93,9 +99,9 @@ private object Frontend {
         .text("instructs the parser to skip function and method bodies.")
         .action((_, c) => c.withSkipFunctionBodies(true)),
       opt[Unit]("no-image-locations")
-        .text(
-          "performance optimization, allows the parser not to create image-locations. An image location explains how a name made it into the translation unit. Eg: via macro expansion or preprocessor."
-        )
+        .text("""performance optimization, allows the parser not to create image-locations.
+            | An image location explains how a name made it into the translation unit.
+            | E.g., via macro expansion or preprocessor.""".stripMargin)
         .action((_, c) => c.withNoImageLocations(true)),
       opt[Unit]("with-preprocessed-files")
         .text("includes *.i files and gives them priority over their unprocessed origin source files.")
@@ -103,7 +109,15 @@ private object Frontend {
       opt[String]("define")
         .unbounded()
         .text("define a name")
-        .action((d, c) => c.withDefines(c.defines + d))
+        .action((d, c) => c.withDefines(c.defines + d)),
+      opt[String]("compilation-database")
+        .text("""enables the processing of compilation database files (e.g., compile_commands.json).
+            | This allows to automatically extract compiler options, source files, and other build information from the specified database
+            | and ensuring consistency with the build configuration.
+            | For a cmake based build such a file is generated with the environment variable CMAKE_EXPORT_COMPILE_COMMANDS being present.
+            | Clang based build are supported e.g., with https://github.com/rizsotto/Bear
+            | """.stripMargin)
+        .action((d, c) => c.withCompilationDatabase(SourceFiles.toAbsolutePath(d, c.inputPath)))
     )
   }
 
