@@ -39,10 +39,10 @@ object ExternalCommand {
     extraEnv: Map[String, String] = Map.empty
   ): ExternalCommandResult = {
     val builder = new ProcessBuilder()
-    builder.command(command.toList.asJava)
+      .command(command.toArray*)
+      .directory(new File(cwd))
+      .redirectErrorStream(mergeStdErrInStdOut)
     builder.environment().putAll(extraEnv.asJava)
-    builder.directory(new File(cwd))
-    builder.redirectErrorStream(mergeStdErrInStdOut)
 
     val stdOut = scala.collection.mutable.ArrayBuffer.empty[String]
     val stdErr = scala.collection.mutable.ArrayBuffer.empty[String]
@@ -72,9 +72,8 @@ object ExternalCommand {
       process.getErrorStream.close()
       process.destroy()
 
-      val stdErrLines = stdErr.toSeq
-      if (stdErrLines.nonEmpty) logger.warn(s"subprocess stderr: ${stdErrLines.mkString(System.lineSeparator())}")
-      ExternalCommandResult(returnValue, stdOut.toSeq, stdErrLines)
+      if (stdErr.nonEmpty) logger.warn(s"subprocess stderr: ${stdErr.mkString(System.lineSeparator())}")
+      ExternalCommandResult(returnValue, stdOut.toSeq, stdErr.toSeq)
     } catch {
       case ex: Throwable =>
         ExternalCommandResult(1, Seq.empty, stdErr = Seq(ex.getMessage))
