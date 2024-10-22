@@ -38,6 +38,7 @@ object ExternalCommand {
     mergeStdErrInStdOut: Boolean = false,
     extraEnv: Map[String, String] = Map.empty
   ): ExternalCommandResult = {
+    println(s"XXX0 command=$command; cwd=$cwd")
     val builder = new ProcessBuilder()
     builder.command(command.toList.asJava)
     builder.environment().putAll(extraEnv.asJava)
