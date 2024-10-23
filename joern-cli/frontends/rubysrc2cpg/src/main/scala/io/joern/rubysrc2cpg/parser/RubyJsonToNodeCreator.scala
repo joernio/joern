@@ -738,6 +738,8 @@ class RubyJsonToNodeCreator(
         val lhs = visit(obj(ParserKeys.Receiver))
         val rhs = obj.visitArray(ParserKeys.Arguments).head
         BinaryExpression(lhs, callName, rhs)(obj.toTextSpan)
+      case _ if UnaryOperators.isUnaryOperatorName(callName) =>
+        UnaryExpression(callName, visit(obj(ParserKeys.Receiver)))(obj.toTextSpan)
       case _ =>
         val target      = SimpleIdentifier()(obj.toTextSpan.spanStart(callName))
         val argumentArr = obj.visitArray(ParserKeys.Arguments)

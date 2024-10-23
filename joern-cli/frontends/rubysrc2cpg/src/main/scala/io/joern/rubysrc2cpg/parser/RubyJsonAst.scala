@@ -199,3 +199,10 @@ object BinaryOperators {
 
   def isBinaryOperatorName(op: String): Boolean = BinaryOperators.contains(op)
 }
+
+object UnaryOperators {
+  private val UnaryOperators: Set[String] =
+    Set("!", "not", "~", "+", "-")
+
+  def isUnaryOperatorName(op: String): Boolean = UnaryOperators.contains(op)
+}
