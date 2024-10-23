@@ -3,6 +3,7 @@ package io.joern.rubysrc2cpg.querying.json
 import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelPrefix
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.Literal
 import io.shiftleft.semanticcpg.language.*
 
 class LiteralTests extends RubyCode2CpgFixture(useJsonAst = true) {
@@ -117,15 +118,23 @@ class LiteralTests extends RubyCode2CpgFixture(useJsonAst = true) {
     literal.typeFullName shouldBe s"$kernelPrefix.String"
   }
 
-  "`'x' 'y' 'z'` is represented by a LITERAL node" in {
+  "`'x' 'y' 'z'` is represented by a dynamic literal node call" in {
     val cpg = code("""
         |'x' 'y' 'z'
         |""".stripMargin)
 
-    val List(literal) = cpg.literal.l
-    literal.code shouldBe "'x' 'y' 'z'"
-    literal.lineNumber shouldBe Some(2)
-    literal.typeFullName shouldBe s"$kernelPrefix.String"
+    val List(dynamicLitCall) = cpg.call.methodFullNameExact(Operators.formatString).l: @unchecked
+    dynamicLitCall.code shouldBe "'x' 'y' 'z'"
+    dynamicLitCall.methodFullName shouldBe Operators.formatString
+
+    inside(dynamicLitCall.argument.astChildren.l) { case (x: Literal) :: (y: Literal) :: (z: Literal) :: Nil =>
+      x.code shouldBe "'x'"
+      x.typeFullName shouldBe s"$kernelPrefix.String"
+      y.code shouldBe "'y'"
+      y.typeFullName shouldBe s"$kernelPrefix.String"
+      z.code shouldBe "'z'"
+      z.typeFullName shouldBe s"$kernelPrefix.String"
+    }
   }
 
   "`\"hello\"` is represented by a LITERAL node" in {
@@ -180,15 +189,15 @@ class LiteralTests extends RubyCode2CpgFixture(useJsonAst = true) {
         |>
         |""".stripMargin)
 
-    val List(literal) = cpg.literal.l
-    literal.code shouldBe
-      """%q<
-        |xyz
-        |123
-        |>""".stripMargin
-    literal.lineNumber shouldBe Some(2)
-    literal.typeFullName shouldBe s"$kernelPrefix.String"
-
+    val List(firstLine, xyz, one23) = cpg.literal.l
+    firstLine.code shouldBe ""
+    firstLine.lineNumber shouldBe Some(2)
+    xyz.code shouldBe "xyz"
+    xyz.lineNumber shouldBe Some(3)
+    xyz.typeFullName shouldBe s"$kernelPrefix.String"
+    one23.code shouldBe "123"
+    one23.lineNumber shouldBe Some(4)
+    one23.typeFullName shouldBe s"$kernelPrefix.String"
   }
 
   "`:symbol` is represented by a LITERAL node" in {

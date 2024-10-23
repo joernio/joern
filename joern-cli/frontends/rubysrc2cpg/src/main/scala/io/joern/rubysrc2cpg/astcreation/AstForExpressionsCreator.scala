@@ -98,8 +98,16 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         )
         astForUnknown(stmtList)
       case node =>
-        logger.warn(s"Unsupported interpolated literal content: ${code(node)} ($relativeFileName), skipping")
-        astForUnknown(node)
+        val call = callNode(
+          node = node,
+          code = node.text,
+          name = Operators.formattedValue,
+          methodFullName = Operators.formattedValue,
+          dispatchType = DispatchTypes.STATIC_DISPATCH,
+          signature = None,
+          typeFullName = Option(Defines.Any)
+        )
+        callAst(call, Seq(astForExpression(node)))
     }
     callAst(
       callNode(

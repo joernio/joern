@@ -321,15 +321,13 @@ class RubyJsonToNodeCreator(
 
   private def visitDynamicString(obj: Obj): RubyExpression = {
     val typeFullName = getBuiltInType(Defines.String)
-    // Children contain all elements, including items that are not the interpolations (becomes StaticLiteral), so we have to filter these out.
-    val expressions = obj.visitArray(ParserKeys.Children).filter(x => !x.isInstanceOf[StaticLiteral])
+    val expressions  = obj.visitArray(ParserKeys.Children)
     DynamicLiteral(typeFullName, expressions)(obj.toTextSpan)
   }
 
   private def visitDynamicSymbol(obj: Obj): RubyExpression = {
     val typeFullName = getBuiltInType(Defines.Symbol)
-    // Children contain all elements, including items that are not the interpolations (becomes StaticLiteral), so we have to filter these out.
-    val expressions = obj.visitArray(ParserKeys.Children).filter(x => !x.isInstanceOf[StaticLiteral])
+    val expressions  = obj.visitArray(ParserKeys.Children)
     DynamicLiteral(typeFullName, expressions)(obj.toTextSpan)
   }
 
@@ -676,7 +674,11 @@ class RubyJsonToNodeCreator(
   }
 
   private def visitRegexExpression(obj: Obj): RubyExpression = {
-    StaticLiteral(Defines.getBuiltInType(Defines.Regexp))(obj.toTextSpan)
+    obj.visitOption(ParserKeys.Value) match {
+      case Some(_ @StatementList(stmts)) =>
+        DynamicLiteral(Defines.getBuiltInType(Defines.Regexp), stmts)(obj.toTextSpan)
+      case _ => StaticLiteral(Defines.getBuiltInType(Defines.Regexp))(obj.toTextSpan)
+    }
   }
 
   private def visitRegexOption(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
