@@ -53,28 +53,27 @@ object ExternalCommand {
 
       val outputReaderThread = new Thread(() => {
         val outputReader = new BufferedReader(new InputStreamReader(process.getInputStream))
-        while (outputReader.ready()) {
-          val line = outputReader.readLine()
-          if (line != null) stdOut.addOne(line)
-        }
+        outputReader.lines.iterator.forEachRemaining(stdOut.addOne)
       })
 
       val errorReaderThread = new Thread(() => {
         val errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream))
-        while (errorReader.ready()) {
-          val line = errorReader.readLine()
-          if (line != null) stdErr.addOne(line)
-        }
+        errorReader.lines.iterator.forEachRemaining(stdErr.addOne)
       })
 
       outputReaderThread.start()
       errorReaderThread.start()
 
-      val returnValue = process.waitFor()
-      outputReaderThread.join()
-      errorReaderThread.join()
-      process.destroy() // also closes in/out/err streams
-
+      try {
+        process.waitFor()
+      } finally {
+        // default 0 means to wait forever (in this case until the streams closed themselves, but we do
+        // not want to wait that long)
+        outputReaderThread.join(1)
+        errorReaderThread.join(1)
+        process.destroy() // also closes in/out/err streams
+      }
+      val returnValue = process.exitValue()
       if (stdErr.nonEmpty) logger.warn(s"subprocess stderr: ${stdErr.mkString(System.lineSeparator())}")
       ExternalCommandResult(returnValue, stdOut.toSeq, stdErr.toSeq)
     } catch {
