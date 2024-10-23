@@ -52,7 +52,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
     new BinaryFrontend("jvm", Languages.JAVA, "Java/Dalvik Bytecode Frontend (based on SOOT's jimple)")
   def ghidra: Frontend = new BinaryFrontend("ghidra", Languages.GHIDRA, "ghidra reverse engineering frontend")
   def kotlin: SourceBasedFrontend =
-    new SourceBasedFrontend("kotlin", Languages.KOTLIN, "Kotlin Source Frontend", "kotlin")
+    new SourceBasedFrontend("kotlin", Languages.KOTLIN, "Kotlin Source Frontend", "kt")
   def python: SourceBasedFrontend =
     new SourceBasedFrontend("python", Languages.PYTHONSRC, "Python Source Frontend", "py")
   def golang: SourceBasedFrontend = new SourceBasedFrontend("golang", Languages.GOLANG, "Golang Source Frontend", "go")
