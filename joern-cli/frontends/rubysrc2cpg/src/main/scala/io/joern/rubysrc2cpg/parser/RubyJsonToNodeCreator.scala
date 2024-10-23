@@ -720,7 +720,14 @@ class RubyJsonToNodeCreator(
     RescueExpression(stmt, rescueClauses, elseClause, Option.empty)(obj.toTextSpan)
   }
 
-  private def visitRequireLike(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitRequireLike(obj: Obj): RubyExpression = {
+    val callName   = obj(ParserKeys.Name).str
+    val target     = SimpleIdentifier()(obj.toTextSpan.spanStart(callName))
+    val argument   = obj.visitArray(ParserKeys.Arguments).head
+    val isRelative = callName == "require_relative" || callName == "require_all"
+    val isWildcard = callName == "require_all"
+    RequireCall(target, argument, isRelative, isWildcard)(obj.toTextSpan)
+  }
 
   private def visitScopedConstant(obj: Obj): RubyExpression = {
     val identifier = obj(ParserKeys.Name).str
