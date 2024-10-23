@@ -62,7 +62,7 @@ class IndexAccessTests extends RubyCode2CpgFixture(useJsonAst = true) {
 
         inside(indexCall.argument.l) {
           case target :: index :: Nil =>
-            target.code shouldBe "(<tmp-1> = @params.dig(:event, :links))&.first"
+            target.code shouldBe "(<tmp-1> = @params.dig(:event, :links))&.first()"
             index.code shouldBe ":url"
           case xs => fail(s"Expected target and index, got [${xs.code.mkString(",")}]")
         }

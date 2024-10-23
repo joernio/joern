@@ -65,7 +65,7 @@ class HereDocTests extends RubyCode2CpgFixture(useJsonAst = true) {
     }
   }
 
-  "HereDoc as a function argument" ignore {
+  "HereDoc as a function argument" should {
     val cpg = code("""
         |def foo(arg)
         |  bar(arg, <<-SOME_HEREDOC, arg + 1)
@@ -74,7 +74,11 @@ class HereDocTests extends RubyCode2CpgFixture(useJsonAst = true) {
         |end
         |""".stripMargin)
 
-    // TODO: This creates a syntax error
+    "create a string literal in the 2nd argument position" in {
+      val barCall = cpg.call("bar").head
+      val hereDoc = barCall.argument(2).asInstanceOf[Literal]
+      hereDoc.code shouldBe "   inside here doc\n"
+    }
   }
 
 }

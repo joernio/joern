@@ -53,7 +53,7 @@ class FieldAccessTests extends RubyCode2CpgFixture(useJsonAst = true) {
             self.code shouldBe "self"
             self.typeFullName should endWith("PaidTimeOff")
 
-            sickDaysId.canonicalName shouldBe "@sick_days_earned"
+            sickDaysId.canonicalName shouldBe "sick_days_earned"
             sickDaysId.code shouldBe "sick_days_earned"
           case xs => fail(s"Expected exactly two field access arguments, instead got [${xs.code.mkString(", ")}]")
         }
