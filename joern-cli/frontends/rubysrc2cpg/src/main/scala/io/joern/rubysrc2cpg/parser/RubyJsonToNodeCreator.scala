@@ -301,8 +301,14 @@ class RubyJsonToNodeCreator(
       ParserKeys.Base     -> ujson.Null,
       ParserKeys.Name     -> ujson.Str(collectionName)
     )
-    val arguments = obj(ParserKeys.Arguments).arr.head.asInstanceOf[ujson.Obj].visitArray(ParserKeys.Children)
-    IndexAccess(visit(receiver), arguments)(obj.toTextSpan)
+    val arguments = obj(ParserKeys.Arguments).arr.head.asInstanceOf[ujson.Obj].visitArray(ParserKeys.Children).flatMap {
+      case x: AssociationList => x.elements
+      case x                  => x :: Nil
+    }
+
+    val textSpan = obj.toTextSpan.spanStart(s"${collectionName} [${arguments.map(_.span.text).mkString(", ")}]")
+
+    IndexAccess(visit(receiver), arguments)(textSpan)
   }
 
   private def visitConditionalSend(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
@@ -477,7 +483,13 @@ class RubyJsonToNodeCreator(
     HashParameter(name)(obj.toTextSpan)
   }
 
-  private def visitKwSplat(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitKwSplat(obj: Obj): RubyExpression = {
+    val values = visit(obj(ParserKeys.Value)) match {
+      case x: StatementList => x.statements.head
+      case x                => x
+    }
+    SplattingRubyNode(values)(obj.toTextSpan)
+  }
 
   private def visitLocalVariable(obj: Obj): RubyExpression = SimpleIdentifier()(obj.toTextSpan)
 
@@ -651,7 +663,9 @@ class RubyJsonToNodeCreator(
     }
   }
 
-  private def visitRegexExpression(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitRegexExpression(obj: Obj): RubyExpression = {
+    StaticLiteral(Defines.getBuiltInType(Defines.Regexp))(obj.toTextSpan)
+  }
 
   private def visitRegexOption(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
@@ -804,7 +818,10 @@ class RubyJsonToNodeCreator(
 
   private def visitStaticSymbol(obj: Obj): RubyExpression = {
     val typeFullName = getBuiltInType(Defines.Symbol)
-    StaticLiteral(typeFullName)(obj.toTextSpan)
+    val objTextSpan  = obj.toTextSpan
+
+    if objTextSpan.text.startsWith(":") then StaticLiteral(typeFullName)(obj.toTextSpan)
+    else StaticLiteral(typeFullName)(objTextSpan.spanStart(s":${objTextSpan.text}"))
   }
 
   private def visitSuper(obj: Obj): RubyExpression = {

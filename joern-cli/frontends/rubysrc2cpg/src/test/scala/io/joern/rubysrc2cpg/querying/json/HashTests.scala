@@ -64,13 +64,13 @@ class HashTests extends RubyCode2CpgFixture(useJsonAst = true) {
     regexp.code shouldBe "/(eu|us)/"
   }
 
-  "`{:x : /(eu|us)/}` is represented by a `hashInitializer` operator call" in {
+  "`{x: /(eu|us)/}` is represented by a `hashInitializer` operator call" in {
     val cpg = code("""
-        |{:x : /(eu|us)/}
+        |{x: /(eu|us)/}
         |""".stripMargin)
 
     val List(hashCall) = cpg.call.name(RubyOperators.hashInitializer).l
-    hashCall.code shouldBe "{:x : /(eu|us)/}"
+    hashCall.code shouldBe "{x: /(eu|us)/}"
     hashCall.lineNumber shouldBe Some(2)
 
     val List(assocCall) = hashCall.inCall.astSiblings.assignment.l
@@ -81,8 +81,8 @@ class HashTests extends RubyCode2CpgFixture(useJsonAst = true) {
 
   "Inclusive Range of primitive ordinal type should expand in hash key" in {
     val cpg = code("""
-        |{1..3:"abc", 4..5:"ade"}
-        |{'a'..'c': "abc"}
+        |{1..3 => "abc", 4..5 => "ade"}
+        |{'a'..'c' => "abc"}
         |""".stripMargin)
 
     inside(cpg.call.name(RubyOperators.hashInitializer).l) {
@@ -132,14 +132,14 @@ class HashTests extends RubyCode2CpgFixture(useJsonAst = true) {
             }
           case _ => fail("Expected 3 calls (one per item in range)")
         }
-      case _ => fail("Expected one hash initializer function")
+      case _ => fail("Expected two hash initializer functions")
     }
 
   }
 
   "Exclusive Range of primitive ordinal type should expand in hash key" in {
     val cpg = code("""
-                     |{1...3:"abc"}
+                     |{1...3 => "abc"}
                      |""".stripMargin)
 
     inside(cpg.call.name(RubyOperators.hashInitializer).l) {
@@ -157,7 +157,7 @@ class HashTests extends RubyCode2CpgFixture(useJsonAst = true) {
 
   "Non-Primitive ordinal type should not expand in hash key" in {
     val cpg = code("""
-        |{:a...:b:"a"}
+        |{:a...:b => "a"}
         |""".stripMargin)
 
     inside(cpg.call.name(RubyOperators.hashInitializer).l) {
@@ -228,6 +228,7 @@ class HashTests extends RubyCode2CpgFixture(useJsonAst = true) {
 
   "Function call in hash" in {
     val cpg = code("""
+        |bar = 200
         |a = {**foo(bar)}
         |""".stripMargin)
 
@@ -241,8 +242,8 @@ class HashTests extends RubyCode2CpgFixture(useJsonAst = true) {
 
         splatCallArg.code shouldBe "foo(bar)"
 
-        val List(selfCallArg, barCallArg) = splatCallArg.argument.l
-        barCallArg.code shouldBe "self.bar"
+        val List(_, barCallArg) = splatCallArg.argument.l
+        barCallArg.code shouldBe "bar"
       case xs => fail(s"Expected one call for init, got [${xs.code.mkString(",")}]")
     }
   }
