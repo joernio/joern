@@ -445,10 +445,22 @@ class RubyJsonToNodeCreator(
   private def visitInclusiveFlipFlop(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
   private def visitInclusiveRange(obj: Obj): RubyExpression = {
-    val start = visit(obj(ParserKeys.Start))
-    val end   = visit(obj(ParserKeys.End))
-    val op    = RangeOperator(false)(obj.toTextSpan.spanStart(".."))
+    val start = obj.visitOption(ParserKeys.Start) match {
+      case Some(expr) => expr
+      case None       => infinityLowerBound(obj)
+    }
+    val end = obj.visitOption(ParserKeys.End) match {
+      case Some(expr) => expr
+      case None       => infinityUpperBound(obj)
+    }
+    val op = RangeOperator(false)(obj.toTextSpan.spanStart(".."))
     RangeExpression(start, end, op)(obj.toTextSpan)
+  }
+
+  private def visitIndexAccessAsSend(obj: Obj): RubyExpression = {
+    val target  = visit(obj(ParserKeys.Receiver))
+    val indices = obj.visitArray(ParserKeys.Arguments)
+    IndexAccess(target, indices)(obj.toTextSpan)
   }
 
   private def visitInPattern(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
@@ -716,6 +728,7 @@ class RubyJsonToNodeCreator(
     callName match {
       case "new"                                                => visitObjectInstantiation(obj)
       case "Array" | "Hash"                                     => visitCollectionAliasSend(obj)
+      case "[]"                                                 => visitIndexAccessAsSend(obj)
       case "raise"                                              => visitRaise(obj)
       case "include"                                            => visitInclude(obj)
       case "attr_reader" | "attr_writer" | "attr_accessor"      => visitFieldDeclaration(obj)
@@ -729,8 +742,9 @@ class RubyJsonToNodeCreator(
         val target      = SimpleIdentifier()(obj.toTextSpan.spanStart(callName))
         val argumentArr = obj.visitArray(ParserKeys.Arguments)
         val arguments = argumentArr.flatMap {
-          case hashLiteral: HashLiteral => hashLiteral.elements // a hash is likely named arguments
-          case x                        => x :: Nil
+          case hashLiteral: HashLiteral   => hashLiteral.elements // a hash is likely named arguments
+          case assocList: AssociationList => assocList.elements   // same as above
+          case x                          => x :: Nil
         }
         if (obj.contains(ParserKeys.Receiver)) {
           val base = visit(obj(ParserKeys.Receiver))

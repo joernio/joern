@@ -269,6 +269,23 @@ object RubyJsonHelpers {
     DefaultMultipleAssignment(assignments)(obj.toTextSpan)
   }
 
+  def infinityUpperBound(obj: ujson.Obj): MemberAccess =
+    MemberAccess(
+      SimpleIdentifier(Option(getBuiltInType(Defines.Float)))(obj.toTextSpan.spanStart("Float")),
+      "::",
+      "INFINITY"
+    )(obj.toTextSpan.spanStart("Float::INFINITY"))
+
+  def infinityLowerBound(obj: ujson.Obj): UnaryExpression =
+    UnaryExpression(
+      "-",
+      MemberAccess(
+        SimpleIdentifier(Option(getBuiltInType(Defines.Float)))(obj.toTextSpan.spanStart("Float")),
+        "::",
+        "INFINITY"
+      )(obj.toTextSpan.spanStart("Float::INFINITY"))
+    )(obj.toTextSpan.spanStart("-Float::INFINITY"))
+
   private case class MetaData(
     code: String,
     @upickle.implicits.key("start_line") lineNumber: Int,
