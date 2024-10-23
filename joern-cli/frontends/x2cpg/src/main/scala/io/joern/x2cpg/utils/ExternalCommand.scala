@@ -49,17 +49,20 @@ object ExternalCommand {
     val stdErr = scala.collection.mutable.ArrayBuffer.empty[String]
 
     try {
-      val process = builder.start()
-      process.waitFor()
+      val process     = builder.start()
+      val returnValue = process.waitFor()
 
       val outputReader = new BufferedReader(new InputStreamReader(process.getInputStream))
       outputReader.lines.iterator.forEachRemaining(stdOut.addOne)
 
-      val errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream))
-      errorReader.lines.iterator.forEachRemaining(stdErr.addOne)
+      if (!mergeStdErrInStdOut) {
+        val errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream))
+        errorReader.lines.iterator.forEachRemaining(stdErr.addOne)
+      }
 
-      val returnValue = process.exitValue()
-      process.destroy() // this also closes in/out/err streams
+      process.getInputStream.close()
+      process.getErrorStream.close()
+      process.destroy()
 
       if (stdErr.nonEmpty) logger.warn(s"subprocess stderr: ${stdErr.mkString(System.lineSeparator())}")
       ExternalCommandResult(returnValue, stdOut.toSeq, stdErr.toSeq)
