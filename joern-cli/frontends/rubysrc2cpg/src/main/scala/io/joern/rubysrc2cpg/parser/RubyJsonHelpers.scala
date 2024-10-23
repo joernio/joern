@@ -38,12 +38,17 @@ object RubyJsonHelpers {
         if (o.obj.contains(ParserKeys.MetaData)) read[MetaData](o(ParserKeys.MetaData))
         else read[MetaData](o)
 
+      val offset = Option(metaData.offsetStart) -> Option(metaData.offsetEnd) match {
+        case (Some(start), Some(end)) => Option(start -> end)
+        case _                        => None
+      }
+
       TextSpan(
         line = Option(metaData.lineNumber).filterNot(_ == -1),
         column = Option(metaData.columnNumber).filterNot(_ == -1),
         lineEnd = Option(metaData.lineNumberEnd).filterNot(_ == -1),
         columnEnd = Option(metaData.columnNumberEnd).filterNot(_ == -1),
-        offset = Option(metaData.lineNumber, metaData.lineNumberEnd + 1),
+        offset = offset,
         text = metaData.code
       )
     }
@@ -291,7 +296,9 @@ object RubyJsonHelpers {
     @upickle.implicits.key("start_line") lineNumber: Int,
     @upickle.implicits.key("start_column") columnNumber: Int,
     @upickle.implicits.key("end_line") lineNumberEnd: Int,
-    @upickle.implicits.key("end_column") columnNumberEnd: Int
+    @upickle.implicits.key("end_column") columnNumberEnd: Int,
+    @upickle.implicits.key("offset_start") offsetStart: Int,
+    @upickle.implicits.key("offset_end") offsetEnd: Int
   ) derives ReadWriter
 
 }

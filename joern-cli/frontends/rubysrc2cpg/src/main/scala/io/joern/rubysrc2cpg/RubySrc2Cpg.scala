@@ -173,7 +173,8 @@ object RubySrc2Cpg {
       val parserResult     = RubyJsonParser.readFile(Paths.get(fileName))
       val relativeFileName = SourceFiles.toRelativePath(parserResult.fullPath, config.inputPath)
       val rubyProgram      = new RubyJsonToNodeCreator().visitProgram(parserResult.json)
-      val fileContent      = (File(config.inputPath) / fileName).contentAsString
+      val sourceFileName   = parserResult.json("file_path").str
+      val fileContent      = File(sourceFileName).contentAsString
       new AstCreator(
         relativeFileName,
         None,

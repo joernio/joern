@@ -5,6 +5,7 @@ import io.joern.rubysrc2cpg.Config
 import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, executableDir}
 import io.joern.x2cpg.astgen.AstGenRunnerBase
 import org.jruby.RubyInstanceConfig
+import org.jruby.embed.{LocalContextScope, LocalVariableBehavior, PathType, ScriptingContainer}
 import org.slf4j.LoggerFactory
 
 import java.io.File.separator
@@ -63,22 +64,25 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
     val cwd            = Seq(executableDir, "ruby_ast_gen").mkString(separator)
     val gemPath        = Seq(cwd, "vendor", "bundle", "jruby", "3.1.0").mkString(separator)
     val rubyArgs       = Array("--log", "info", "-o", out.toString(), "-i", in, excludeCommand)
-    val mainScript     = Seq("exe", "ruby_ast_gen").mkString(separator)
+    val mainScript     = Seq(cwd, "exe", "ruby_ast_gen").mkString(separator)
     val outStream      = new ByteArrayOutputStream()
     val errStream      = new ByteArrayOutputStream()
-    val config         = RubyInstanceConfig()
-    config.setCurrentDirectory(cwd)
-    config.setOutput(new PrintStream(outStream))
-    config.setError(new PrintStream(errStream))
+    val container      = new ScriptingContainer(LocalContextScope.SINGLETHREAD, LocalVariableBehavior.TRANSIENT)
+    val config         = container.getProvider.getRubyInstanceConfig
+    container.setCompileMode(RubyInstanceConfig.CompileMode.OFF)
+    container.setNativeEnabled(false)
+    container.setObjectSpaceEnabled(true)
+    container.setCurrentDirectory(cwd)
+    container.setOutput(new PrintStream(outStream))
+    container.setError(new PrintStream(errStream))
     config.setLoadGemfile(true)
-    config.setArgv(rubyArgs)
-    config.setEnvironment(Map("GEM_PATH" -> gemPath, "GEM_FILE" -> gemPath).asJava)
+    container.setArgv(rubyArgs)
+    container.setEnvironment(Map("GEM_PATH" -> gemPath, "GEM_FILE" -> gemPath).asJava)
     config.setHasShebangLine(true)
-    config.setScriptFileName(mainScript)
     config.setHardExit(false)
 
     try {
-      org.jruby.Main(config).run(Array.empty)
+      container.runScriptlet(PathType.ABSOLUTE, mainScript)
       val consoleOut = outStream.toString.split("\n").toIndexedSeq ++ errStream.toString.split("\n")
       Success(consoleOut)
     } catch {
