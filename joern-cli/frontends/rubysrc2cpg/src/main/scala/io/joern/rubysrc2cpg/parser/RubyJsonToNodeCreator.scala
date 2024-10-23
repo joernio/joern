@@ -77,7 +77,7 @@ class RubyJsonToNodeCreator(
         case AstType.ClassVariable                => visitClassVariable(obj)
         case AstType.ClassVariableAssign          => visitSingleAssignment(obj)
         case AstType.ConstVariableAssign          => visitSingleAssignment(obj)
-        case AstType.ConditionalSend              => visitConditionalSend(obj)
+        case AstType.ConditionalSend              => visitSend(obj, isConditional = true)
         case AstType.Defined                      => visitDefined(obj)
         case AstType.DynamicString                => visitDynamicString(obj)
         case AstType.DynamicSymbol                => visitDynamicSymbol(obj)
@@ -311,17 +311,17 @@ class RubyJsonToNodeCreator(
       ParserKeys.Base     -> ujson.Null,
       ParserKeys.Name     -> ujson.Str(collectionName)
     )
-    val arguments = obj(ParserKeys.Arguments).arr.head.asInstanceOf[ujson.Obj].visitArray(ParserKeys.Children).flatMap {
-      case x: AssociationList => x.elements
-      case x                  => x :: Nil
-    }
+    val arguments = obj(ParserKeys.Arguments).arr.headOption
+      .map(_.asInstanceOf[ujson.Obj].visitArray(ParserKeys.Children).flatMap {
+        case x: AssociationList => x.elements
+        case x                  => x :: Nil
+      })
+      .getOrElse(Nil)
 
     val textSpan = obj.toTextSpan.spanStart(s"${collectionName} [${arguments.map(_.span.text).mkString(", ")}]")
 
     IndexAccess(visit(receiver), arguments)(textSpan)
   }
-
-  private def visitConditionalSend(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
   private def visitDefined(obj: Obj): RubyExpression = {
     val name      = SimpleIdentifier(Option(getBuiltInType(Defines.Defined)))(obj.toTextSpan.spanStart(Defines.Defined))
@@ -742,7 +742,7 @@ class RubyJsonToNodeCreator(
 
   private def visitSelf(obj: Obj): RubyExpression = SelfIdentifier()(obj.toTextSpan)
 
-  private def visitSend(obj: Obj): RubyExpression = {
+  private def visitSend(obj: Obj, isConditional: Boolean = false): RubyExpression = {
     val callName = obj(ParserKeys.Name).str
     callName match {
       case "new"                                                => visitObjectInstantiation(obj)
@@ -768,8 +768,9 @@ class RubyJsonToNodeCreator(
           case x                          => x :: Nil
         }
         if (obj.contains(ParserKeys.Receiver)) {
+          val op   = if isConditional then "&." else "."
           val base = visit(obj(ParserKeys.Receiver))
-          MemberCall(base, ".", callName, arguments)(obj.toTextSpan)
+          MemberCall(base, op, callName, arguments)(obj.toTextSpan)
         } else {
           SimpleCall(target, arguments)(obj.toTextSpan)
         }
@@ -848,7 +849,11 @@ class RubyJsonToNodeCreator(
 
   private def visitStaticString(obj: Obj): RubyExpression = {
     val typeFullName = getBuiltInType(Defines.String)
-    StaticLiteral(typeFullName)(obj.toTextSpan)
+    val originalSpan = obj.toTextSpan
+    val value        = obj(ParserKeys.Value).str
+    // In general, we want the quotations, unless it is a HEREDOC string, then we'd prefer the value
+    val span = if !originalSpan.text.contains(value) then originalSpan.spanStart(value) else originalSpan
+    StaticLiteral(typeFullName)(span)
   }
 
   private def visitStaticSymbol(obj: Obj): RubyExpression = {

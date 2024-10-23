@@ -165,7 +165,7 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true, useJsonAs
     "create an assignment from `a` to an alloc lowering invocation block" in {
       inside(cpg.method.isModule.assignment.and(_.target.isIdentifier.name("a"), _.source.isBlock).l) {
         case assignment :: Nil =>
-          assignment.code shouldBe "a = A.new"
+          assignment.code shouldBe "a = A.new 1, 2"
           inside(assignment.argument.l) {
             case (a: Identifier) :: (_: Block) :: Nil =>
               a.name shouldBe "a"
@@ -185,7 +185,7 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true, useJsonAs
 
               alloc.name shouldBe Operators.alloc
               alloc.methodFullName shouldBe Operators.alloc
-              alloc.code shouldBe "A.new"
+              alloc.code shouldBe "A.new 1, 2"
               alloc.argument.size shouldBe 0
             case xs => fail(s"Expected one identifier and one call argument, got [${xs.code.mkString(",")}]")
           }
@@ -210,10 +210,10 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true, useJsonAs
           val recv = constructor.receiver.head.asInstanceOf[Call]
           recv.methodFullName shouldBe Operators.fieldAccess
           recv.name shouldBe Operators.fieldAccess
-          recv.code shouldBe s"A.${RubyDefines.Initialize}"
+          recv.code shouldBe s"(<tmp-2> = A).${RubyDefines.Initialize}"
 
           recv.argument(1).label shouldBe NodeTypes.CALL
-          recv.argument(1).code shouldBe "self.A"
+          recv.argument(1).code shouldBe "<tmp-2> = A"
           recv.argument(2).label shouldBe NodeTypes.FIELD_IDENTIFIER
           recv.argument(2).code shouldBe RubyDefines.Initialize
         case xs => fail(s"Expected a single alloc, got [${xs.code.mkString(",")}]")
@@ -236,14 +236,14 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true, useJsonAs
               a.typeFullName shouldBe Defines.Any
               a.argumentIndex shouldBe 0
 
-              selfPath.code shouldBe "self.path"
+              selfPath.code shouldBe "path"
             case xs => fail(s"Expected one identifier and one call argument, got [${xs.code.mkString(",")}]")
           }
 
           val recv = constructor.receiver.head.asInstanceOf[Call]
           recv.methodFullName shouldBe Operators.fieldAccess
           recv.name shouldBe Operators.fieldAccess
-          recv.code shouldBe s"(<tmp-2> = params[:type].constantize).${RubyDefines.Initialize}"
+          recv.code shouldBe s"(<tmp-3> = params[:type].constantize).${RubyDefines.Initialize}"
 
           recv.argument(2).asInstanceOf[FieldIdentifier].canonicalName shouldBe RubyDefines.Initialize
 
@@ -462,7 +462,7 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true, useJsonAs
     cpg.call("find_by").code.head shouldBe "(<tmp-0> = User).find_by(auth_token: cookies[:auth_token].to_s)"
     cpg.call(Operators.indexAccess).code.head shouldBe "cookies[:auth_token]"
     cpg.fieldAccess
-      .where(_.fieldIdentifier.canonicalNameExact("@to_s"))
+      .where(_.fieldIdentifier.canonicalNameExact("to_s"))
       .code
       .head shouldBe "(<tmp-1> = cookies[:auth_token]).to_s"
   }
