@@ -548,7 +548,10 @@ object RubyIntermediateAst {
 
   final case class SimpleObjectInstantiation(target: RubyExpression, arguments: List[RubyExpression])(span: TextSpan)
       extends RubyExpression(span)
-      with ObjectInstantiation
+      with ObjectInstantiation {
+    override def withBlock(block: Block): RubyCallWithBlock[SimpleObjectInstantiation] =
+      ObjectInstantiationWithBlock(target, arguments, block)(span)
+  }
 
   final case class ObjectInstantiationWithBlock(target: RubyExpression, arguments: List[RubyExpression], block: Block)(
     span: TextSpan

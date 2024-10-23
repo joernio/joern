@@ -234,18 +234,20 @@ class RubyJsonToNodeCreator(
 
   private def visitBlock(obj: Obj): RubyExpression = {
     val parameters = obj(ParserKeys.Arguments).asInstanceOf[ujson.Obj].visitArray(ParserKeys.Children)
-    val body       = visit(obj(ParserKeys.Body))
-    val block      = Block(parameters, body)(obj.toTextSpan)
+    val body = visit(obj(ParserKeys.Body)) match {
+      case stmt: StatementList => stmt
+      case expr                => StatementList(expr :: Nil)(expr.span)
+    }
+    val block = Block(parameters, body)(obj.toTextSpan)
     visit(obj(ParserKeys.CallName)) match {
       case classNew: ObjectInstantiation if classNew.target.text == "Class.new" =>
         AnonymousClassDeclaration(freshClassName(obj.toTextSpan), None, block.toStatementList)(obj.toTextSpan)
+      case objNew: ObjectInstantiation                        => objNew.withBlock(block)
+      case lambda: RubyCall if lambda.target.text == "lambda" => ProcOrLambdaExpr(block)(obj.toTextSpan)
       case simpleCall @ SimpleCall(ident: SimpleIdentifier, _) if ident.span.text == "loop" =>
-        DoWhileExpression(
-          StaticLiteral(Defines.getBuiltInType(Defines.TrueClass))(simpleCall.span.spanStart("true")),
-          body
-        )(simpleCall.span)
-      case simpleCall: RubyCall =>
-        simpleCall.withBlock(block)
+        val trueLiteral = StaticLiteral(Defines.getBuiltInType(Defines.TrueClass))(simpleCall.span.spanStart("true"))
+        DoWhileExpression(trueLiteral, body)(simpleCall.span)
+      case simpleCall: RubyCall => simpleCall.withBlock(block)
       case x =>
         logger.warn(s"Unexpected call type used for block ${x.getClass}, ignoring block")
         x
@@ -561,7 +563,7 @@ class RubyJsonToNodeCreator(
   private def visitObjectInstantiation(obj: Obj): RubyExpression = {
     val callName  = Defines.New
     val receiver  = visit(obj(ParserKeys.Receiver))
-    val target    = MemberAccess(receiver, ".", callName)(obj.toTextSpan)
+    val target    = MemberAccess(receiver, ".", callName)(obj.toTextSpan.spanStart(receiver.text))
     val arguments = obj.visitArray(ParserKeys.Arguments)
 
     SimpleObjectInstantiation(target, arguments)(obj.toTextSpan)
@@ -656,7 +658,11 @@ class RubyJsonToNodeCreator(
   private def visitResBody(obj: Obj): RubyExpression = {
     val exceptionClassList = obj.visitOption(ParserKeys.ExecList)
     val variables          = obj.visitOption(ParserKeys.ExecVar)
-    val body               = visit(obj(ParserKeys.Body))
+    val body = obj.visitOption(ParserKeys.Body) match {
+      case Some(stmt: StatementList) => stmt
+      case Some(expr)                => StatementList(expr :: Nil)(expr.span)
+      case None                      => StatementList(Nil)(obj.toTextSpan)
+    }
     RescueClause(exceptionClassList, variables, body)(obj.toTextSpan)
   }
 

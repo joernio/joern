@@ -285,7 +285,10 @@ class DoBlockTests extends RubyCode2CpgFixture(useJsonAst = true) {
                 s"Expected four nodes under the lowering block of a constructor, instead got [${xs.code.mkString(",")}]"
               )
           }
-        case xs => fail(s"Unexpected `foo` assignment children [${xs.code.mkString(",")}]")
+        case xs =>
+          val x = xs.last.propertiesMap
+          println(x)
+          fail(s"Unexpected `foo` assignment children [${xs.code.mkString(",")}]")
       }
     }
   }
@@ -339,7 +342,7 @@ class DoBlockTests extends RubyCode2CpgFixture(useJsonAst = true) {
     "create a lambda method with a `y` parameter" in {
       inside(cpg.method.isLambda.headOption) {
         case Some(lambda) =>
-          lambda.code shouldBe "{ y }"
+          lambda.code shouldBe "->(y) { y }"
           lambda.parameter.name.l shouldBe List("self", "y")
         case xs => fail(s"Expected a lambda method")
       }
@@ -365,7 +368,7 @@ class DoBlockTests extends RubyCode2CpgFixture(useJsonAst = true) {
     "create a lambda method with a `y` parameter" in {
       inside(cpg.method.isLambda.headOption) {
         case Some(lambda) =>
-          lambda.code shouldBe "{ |y| y }"
+          lambda.code shouldBe "lambda { |y| y }"
           lambda.parameter.name.l shouldBe List("self", "y")
         case xs => fail(s"Expected a lambda method")
       }
