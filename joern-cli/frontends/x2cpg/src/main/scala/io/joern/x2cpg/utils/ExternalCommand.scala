@@ -56,7 +56,7 @@ object ExternalCommand {
       val outputReaderThread = new Thread(() => {
         val outputReader = new BufferedReader(new InputStreamReader(process.getInputStream))
         val outIt        = outputReader.lines.iterator
-        while (!processIsFinished.isDone || outIt.hasNext) {
+        while (!processIsFinished.isDone && outIt.hasNext) {
           stdOut.addOne(outIt.next())
         }
         process.getInputStream.close()
@@ -65,7 +65,7 @@ object ExternalCommand {
       val errorReaderThread = new Thread(() => {
         val errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream))
         val outErr      = errorReader.lines.iterator
-        while (!processIsFinished.isDone || outErr.hasNext) {
+        while (!processIsFinished.isDone && outErr.hasNext) {
           stdOut.addOne(outErr.next())
         }
         process.getErrorStream.close()
