@@ -19,8 +19,12 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
-import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
-import org.jetbrains.kotlin.descriptors.DescriptorVisibility
+import org.jetbrains.kotlin.descriptors.{
+  DeclarationDescriptor,
+  DescriptorVisibilities,
+  DescriptorVisibility,
+  FunctionDescriptor
+}
 import org.jetbrains.kotlin.lexer.KtToken
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
@@ -90,6 +94,33 @@ class AstCreator(
     typeName
   }
 
+  protected def getFallback[T](
+    expr: KtExpression,
+    propertyExtractor: FunctionDescriptor => Option[T]
+  ): Option[FunctionDescriptor] = {
+    val candidates = bindingUtils.getAmbiguousCalledFunctionDescs(expr)
+    if (candidates.isEmpty) {
+      return None
+    }
+
+    val candidateProperties = candidates.map(propertyExtractor)
+    val allPropertiesEqual  = candidateProperties.forall(_ == candidateProperties.head)
+
+    if (allPropertiesEqual) {
+      candidates.headOption
+    } else {
+      None
+    }
+  }
+
+  protected def getAmbiguousFuncDescIfFullNamesEqual(expr: KtExpression): Option[FunctionDescriptor] = {
+    getFallback(expr, nameRenderer.descFullName)
+  }
+
+  protected def getAmbiguousFuncDescIfSignaturesEqual(expr: KtExpression): Option[FunctionDescriptor] = {
+    getFallback(expr, nameRenderer.funcDescSignature)
+  }
+
   protected def calleeFullnameAndSignature(
     calleeExpr: KtExpression,
     fullNameFallback: => String,
@@ -97,9 +128,11 @@ class AstCreator(
   ): (String, String) = {
     val funcDesc = bindingUtils.getCalledFunctionDesc(calleeExpr)
     val descFullName = funcDesc
+      .orElse(getAmbiguousFuncDescIfFullNamesEqual(calleeExpr))
       .flatMap(nameRenderer.descFullName)
       .getOrElse(fullNameFallback)
     val signature = funcDesc
+      .orElse(getAmbiguousFuncDescIfSignaturesEqual(calleeExpr))
       .flatMap(nameRenderer.funcDescSignature)
       .getOrElse(signatureFallback)
     val fullName = nameRenderer.combineFunctionFullName(descFullName, signature)
@@ -477,7 +510,7 @@ class AstCreator(
         ""
     }
 
-    val astDerivedSignature = typeInfoProvider.anySignature(argAsts)
+    val astDerivedSignature = s"${Defines.UnresolvedSignature}(${argAsts.size})"
     (astDerivedMethodFullName, astDerivedSignature)
   }
 

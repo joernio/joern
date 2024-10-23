@@ -11,15 +11,18 @@ import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.load.java.`lazy`.descriptors.LazyJavaClassDescriptor
 import org.jetbrains.kotlin.load.java.sources.JavaSourceElement
 import org.jetbrains.kotlin.load.java.structure.impl.classFiles.BinaryJavaMethod
-import org.jetbrains.kotlin.psi.KtArrayAccessExpression
-import org.jetbrains.kotlin.psi.KtBinaryExpression
-import org.jetbrains.kotlin.psi.KtCallExpression
-import org.jetbrains.kotlin.psi.KtElement
-import org.jetbrains.kotlin.psi.KtExpression
-import org.jetbrains.kotlin.psi.KtNameReferenceExpression
-import org.jetbrains.kotlin.psi.KtQualifiedExpression
-import org.jetbrains.kotlin.psi.KtSuperExpression
-import org.jetbrains.kotlin.psi.KtThisExpression
+import org.jetbrains.kotlin.psi.{
+  Call,
+  KtArrayAccessExpression,
+  KtBinaryExpression,
+  KtCallExpression,
+  KtElement,
+  KtExpression,
+  KtNameReferenceExpression,
+  KtQualifiedExpression,
+  KtSuperExpression,
+  KtThisExpression
+}
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.`lazy`.descriptors.LazyClassDescriptor
@@ -183,7 +186,7 @@ object DefaultTypeInfoProvider {
     result
   }
 
-  def bindingsForEntity(bindings: BindingContext, entity: KtElement): KeyFMap = {
+  def bindingsForEntity(bindings: BindingContext, entity: KtElement | Call): KeyFMap = {
     try {
       val thisField = bindings.getClass.getDeclaredField("this$0")
       thisField.setAccessible(true)
@@ -202,11 +205,11 @@ object DefaultTypeInfoProvider {
     } catch {
       case noSuchField: NoSuchFieldException =>
         logger.debug(
-          s"Encountered _no such field_ exception while retrieving type info for `${entity.getName}`: `$noSuchField`."
+          s"Encountered _no such field_ exception while retrieving type info for `${entity}`: `$noSuchField`."
         )
         KeyFMap.EMPTY_MAP
       case e if NonFatal(e) =>
-        logger.debug(s"Encountered general exception while retrieving type info for `${entity.getName}`: `$e`.")
+        logger.debug(s"Encountered general exception while retrieving type info for `${entity}`: `$e`.")
         KeyFMap.EMPTY_MAP
     }
   }

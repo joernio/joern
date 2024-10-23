@@ -32,7 +32,7 @@ class MissingTypeInformationTests extends KotlinCode2CpgFixture(withOssDataflow 
 
     "contain a CALL node with the correct METHOD_FULL_NAME set" in {
       val List(c: Call) = cpg.call.codeExact("println(fixedUrl)").l
-      c.methodFullName shouldBe s"kotlin.io.println:void(long)"
+      c.methodFullName shouldBe s"kotlin.io.println:${Defines.UnresolvedSignature}(1)"
     }
   }
 

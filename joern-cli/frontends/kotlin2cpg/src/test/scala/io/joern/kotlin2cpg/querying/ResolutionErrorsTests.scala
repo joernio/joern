@@ -22,7 +22,7 @@ class ResolutionErrorsTests extends KotlinCode2CpgFixture(withOssDataflow = fals
 
     "should contain a CALL node with an MFN starting with a placeholder type" in {
       val List(c) = cpg.call.slice(1, 2).l
-      c.methodFullName shouldBe Defines.UnresolvedNamespace + ".flatMap:ANY(ANY)"
+      c.methodFullName shouldBe s"${Defines.UnresolvedNamespace}.flatMap:${Defines.UnresolvedSignature}(1)"
     }
   }
 
@@ -113,7 +113,7 @@ class ResolutionErrorsTests extends KotlinCode2CpgFixture(withOssDataflow = fals
 
     "should contain a CALL node with the correct MFN set when type info is not available" in {
       val List(c) = cpg.call.methodFullName(Operators.assignment).where(_.argument(1).code("bar")).argument(2).isCall.l
-      c.methodFullName shouldBe Defines.UnresolvedNamespace + ".filter:ANY(ANY)"
+      c.methodFullName shouldBe s"${Defines.UnresolvedNamespace}.filter:${Defines.UnresolvedSignature}(1)"
     }
   }
 

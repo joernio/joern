@@ -2,6 +2,7 @@ package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
@@ -259,11 +260,11 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
     "should contain a CALL node for `MyCaseClass(\\\"AN_ARGUMENT\\\")` with the correct props set" in {
       val List(c) = cpg.call.code("MyCaseClass.*AN_ARGUMENT.*").l
-      c.methodFullName shouldBe "no.such.CaseClass:ANY(ANY)"
+      c.methodFullName shouldBe s"no.such.CaseClass:${Defines.UnresolvedSignature}(1)"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.lineNumber shouldBe Some(10)
       c.columnNumber shouldBe Some(17)
-      c.signature shouldBe "ANY(ANY)"
+      c.signature shouldBe s"${Defines.UnresolvedSignature}(1)"
     }
   }
 

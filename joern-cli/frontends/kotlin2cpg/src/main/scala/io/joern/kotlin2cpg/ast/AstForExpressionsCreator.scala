@@ -81,9 +81,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       else {
         val funcDesc = bindingUtils.getCalledFunctionDesc(expr.getOperationReference)
         val descFullName = funcDesc
+          .orElse(getAmbiguousFuncDescIfFullNamesEqual(expr.getOperationReference))
           .flatMap(nameRenderer.descFullName)
           .getOrElse(TypeConstants.any)
         val signature = funcDesc
+          .orElse(getAmbiguousFuncDescIfSignaturesEqual(expr.getOperationReference))
           .flatMap(nameRenderer.funcDescSignature)
           .getOrElse(TypeConstants.any)
         val fullName = nameRenderer.combineFunctionFullName(descFullName, signature)
@@ -98,6 +100,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val typeFullName = registerType(
       bindingUtils
         .getCalledFunctionDesc(expr.getOperationReference)
+        .orElse(getAmbiguousFuncDescIfSignaturesEqual(expr.getOperationReference))
         .flatMap(funcDesc => nameRenderer.typeFullName(funcDesc.getOriginal.getReturnType))
         .getOrElse(TypeConstants.any)
     )
@@ -478,23 +481,16 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     } else {
       s"${expr.getContainingKtFile.getPackageFqName.toString}.$referencedName"
     }
-    lazy val typeArgs =
-      expr.getTypeArguments.asScala.map(x =>
-        bindingUtils.getTypeRefType(x.getTypeReference).flatMap(nameRenderer.typeFullName).getOrElse(TypeConstants.any)
-      )
-    val explicitSignature = s"${TypeConstants.any}(${argAsts.map { _ => TypeConstants.any }.mkString(",")})"
+    val explicitSignature = s"${Defines.UnresolvedSignature}(${argAsts.size})"
     val explicitFullName  = methodFqName
 
-    val funcDesc = bindingUtils.getCalledFunctionDesc(expr.getCalleeExpression).orElse {
-      bindingUtils
-        .getAmbiguousCalledFunctionDescs(expr.getCalleeExpression)
-        .find(_.getValueParameters.size == expr.getValueArguments.size)
-    }
-
+    val funcDesc = bindingUtils.getCalledFunctionDesc(expr.getCalleeExpression)
     val descFullName = funcDesc
+      .orElse(getAmbiguousFuncDescIfFullNamesEqual(expr.getCalleeExpression))
       .flatMap(nameRenderer.descFullName)
       .getOrElse(explicitFullName)
     val signature = funcDesc
+      .orElse(getAmbiguousFuncDescIfSignaturesEqual(expr.getCalleeExpression))
       .flatMap(nameRenderer.funcDescSignature)
       .getOrElse(explicitSignature)
     val fullName = nameRenderer.combineFunctionFullName(descFullName, signature)

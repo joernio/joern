@@ -30,7 +30,7 @@ import org.jetbrains.kotlin.types.error.ErrorType
 
 import scala.jdk.CollectionConverters.*
 
-class BindingContextUtils(bindingContext: BindingContext) {
+class BindingContextUtils(val bindingContext: BindingContext) {
   def getClassDesc(classAst: KtClassOrObject): ClassDescriptor = {
     bindingContext.get(BindingContext.CLASS, classAst)
   }
