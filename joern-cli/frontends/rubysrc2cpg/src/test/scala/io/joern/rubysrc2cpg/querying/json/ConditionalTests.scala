@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.querying.json
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Local}
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Local}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
@@ -59,12 +59,22 @@ class ConditionalTests extends RubyCode2CpgFixture(useJsonAst = true) {
     val cpg = code("""x, y, z = false, true, false
                      |f(unless x then y else z end)
                      |""".stripMargin)
-    inside(cpg.controlStructure.controlStructureTypeExact(ControlStructureTypes.IF).l) {
-      case ifNode :: Nil =>
-        ifNode.whenTrue.astChildren.code.l shouldBe List("y")
-        ifNode.whenFalse.astChildren.code.l shouldBe List("z")
-        ifNode.condition.isCall.name(Operators.logicalNot).argument.code.l shouldBe List("x")
-      case xs => fail(s"Expected exactly one conditional, got [${xs.code.mkString(",")}]")
+    inside(cpg.call.nameExact(Operators.conditional).l) {
+      case conditionalCall :: Nil =>
+        conditionalCall.code shouldBe "unless x then y else z end"
+        inside(conditionalCall.argument.l) {
+          case condition :: (trueBranch: Block) :: (falseBranch: Block) :: Nil =>
+            condition.code shouldBe "x"
+
+            val List(trueBranchIdent) = trueBranch.astChildren.isIdentifier.l
+            trueBranchIdent.code shouldBe "z"
+
+            val List(falseBranchIdent) = falseBranch.astChildren.isIdentifier.l
+            falseBranchIdent.code shouldBe "y"
+
+          case xs => fail(s"Expected three arguments for conditional call, got [${xs.code.mkString(",")}]")
+        }
+      case xs => fail(s"Expected one call to conditional, got [${xs.code.mkString(",")}]")
     }
   }
 
