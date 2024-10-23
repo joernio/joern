@@ -14,17 +14,25 @@ object MavenDependencies {
   // also separate this from fetchCommandWithOpts to log a version that clearly separates options we provide from
   // options specified by the user via the MAVEN_CLI_OPTS environment variable, while also making it clear that this
   // environment variable is being considered.
-  private val fetchCommand =
-    s"mvn $$$MavenCliOpts --fail-never -B dependency:build-classpath -DincludeScope=compile -Dorg.slf4j.simpleLogger.defaultLogLevel=info -Dorg.slf4j.simpleLogger.logFile=System.out"
+  private val fetchArgs =
+    Vector(
+      "--fail-never",
+      "-B",
+      "dependency:build-classpath",
+      "-DincludeScope=compile",
+      "-Dorg.slf4j.simpleLogger.defaultLogLevel=info",
+      "-Dorg.slf4j.simpleLogger.logFile=System.out"
+    )
 
-  private val fetchCommandWithOpts = {
+  private val fetchCommandWithOpts: Seq[String] = {
     // These options suppress output, so if they're provided we won't get any results.
     // "-q" and "--quiet" are the only ones that would realistically be used.
     val optionsToStrip = Set("-h", "--help", "-q", "--quiet", "-v", "--version")
 
-    val mavenOpts         = Option(System.getenv(MavenCliOpts)).getOrElse("")
-    val mavenOptsStripped = mavenOpts.split(raw"\s").filterNot(optionsToStrip.contains).mkString(" ")
-    fetchCommand.replace(s"$$$MavenCliOpts", mavenOptsStripped)
+    val cli = org.apache.commons.exec.CommandLine("mvn")
+    cli.addArguments(System.getenv(MavenCliOpts), false) // a null from getenv() does not add any argument
+
+    cli.toStrings.toIndexedSeq.filterNot(optionsToStrip.contains) ++ fetchArgs
   }
 
   private def logErrors(output: String): Unit = {
@@ -34,13 +42,13 @@ object MavenDependencies {
         "The compile class path may be missing or partial.\n" +
         "Results will suffer from poor type information.\n" +
         "To fix this issue, please ensure that the below command can be executed successfully from the project root directory:\n" +
-        fetchCommand + "\n\n",
+        s"mvn $MavenCliOpts " + fetchArgs.mkString(" ") + "\n\n",
       output
     )
   }
 
   private[dependency] def get(projectDir: Path): Option[collection.Seq[String]] = {
-    val lines = ExternalCommand.run(fetchCommandWithOpts, projectDir.toString) match {
+    val lines = ExternalCommand.run(fetchCommandWithOpts, projectDir.toString).toTry match {
       case Success(lines) =>
         if (lines.contains("[INFO] Build failures were ignored.")) {
           logErrors(lines.mkString(System.lineSeparator()))

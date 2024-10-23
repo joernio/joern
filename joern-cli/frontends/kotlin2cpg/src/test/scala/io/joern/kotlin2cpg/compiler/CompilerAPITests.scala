@@ -77,8 +77,9 @@ class CompilerAPITests extends AnyFreeSpec with Matchers {
 
     "should not contain methods with unresolved types/namespaces" in {
       val command =
-        if (scala.util.Properties.isWin) "cmd.exe /C gradlew.bat gatherDependencies" else "./gradlew gatherDependencies"
-      ExternalCommand.run(command, projectDirPath) shouldBe Symbol("success")
+        if (scala.util.Properties.isWin) Seq("cmd.exe", "/C", "gradlew.bat", "gatherDependencies")
+        else Seq("./gradlew", "gatherDependencies")
+      ExternalCommand.run(command, projectDirPath).toTry shouldBe Symbol("success")
       val config = Config(classpath = Set(projectDependenciesPath.toString))
       val cpg = new Kotlin2Cpg().createCpg(projectDirPath)(config).getOrElse {
         fail("Could not create a CPG!")

@@ -27,13 +27,13 @@ class DownloadDependenciesPass(cpg: Cpg, parentGoMod: GoModHelper, goGlobal: GoG
       parentGoMod
         .getModMetaData()
         .foreach(mod => {
-          ExternalCommand.run("go mod init joern.io/temp", projDir) match {
+          ExternalCommand.run(Seq("go", "mod", "init", "joern.io/temp"), projDir).toTry match {
             case Success(_) =>
               mod.dependencies
                 .filter(dep => dep.beingUsed)
                 .map(dependency => {
-                  val cmd     = s"go get ${dependency.dependencyStr()}"
-                  val results = ExternalCommand.run(cmd, projDir)
+                  val cmd     = Seq("go", "get", dependency.dependencyStr())
+                  val results = ExternalCommand.run(cmd, projDir).toTry
                   results match {
                     case Success(_) =>
                       print(". ")
