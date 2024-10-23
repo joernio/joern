@@ -264,7 +264,17 @@ class RubyJsonToNodeCreator(
 
   private def visitBreak(obj: Obj): RubyExpression = BreakExpression()(obj.toTextSpan)
 
-  private def visitCaseExpression(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitCaseExpression(obj: Obj): RubyExpression = {
+    val expression  = obj.visitOption(ParserKeys.CaseExpression)
+    val whenClauses = obj.visitArray(ParserKeys.WhenClauses)
+
+    val elseClause = obj.visitOption(ParserKeys.ElseClause) match {
+      case Some(elseClause) => Some(ElseClause(elseClause)(elseClause.span))
+      case None             => None
+    }
+
+    CaseExpression(expression, whenClauses, elseClause)(obj.toTextSpan)
+  }
 
   private def visitCaseMatchStatement(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
@@ -886,7 +896,16 @@ class RubyJsonToNodeCreator(
     DoWhileExpression(condition, body)(obj.toTextSpan)
   }
 
-  private def visitWhenStatement(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitWhenStatement(obj: Obj): RubyExpression = {
+    val (matchCondition, matchSplatCondition) = obj.visitArray(ParserKeys.Conditions).partition {
+      case x: SplattingRubyNode => false
+      case x                    => true
+    }
+
+    val thenClause = visit(obj(ParserKeys.ThenBranch))
+
+    WhenClause(matchCondition, matchSplatCondition.headOption, thenClause)(obj.toTextSpan)
+  }
 
   private def visitWhileStatement(obj: Obj): RubyExpression = {
     val condition = visit(obj(ParserKeys.Condition)) match {
