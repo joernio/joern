@@ -7,6 +7,7 @@ import java.io.File
 import java.io.InputStreamReader
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.concurrent.CompletableFuture
 import scala.jdk.CollectionConverters.*
 import scala.util.control.NonFatal
 import scala.util.Failure
@@ -45,32 +46,36 @@ object ExternalCommand {
       .redirectErrorStream(mergeStdErrInStdOut)
     builder.environment().putAll(extraEnv.asJava)
 
-    val stdOut = scala.collection.mutable.ArrayBuffer.empty[String]
-    val stdErr = scala.collection.mutable.ArrayBuffer.empty[String]
+    val stdOut            = scala.collection.mutable.ArrayBuffer.empty[String]
+    val stdErr            = scala.collection.mutable.ArrayBuffer.empty[String]
+    val processIsFinished = new CompletableFuture[Boolean]()
 
     try {
       val process = builder.start()
 
       val outputReaderThread = new Thread(() => {
         val outputReader = new BufferedReader(new InputStreamReader(process.getInputStream))
-        outputReader.lines.iterator.forEachRemaining(stdOut.addOne)
+        val outIt        = outputReader.lines.iterator
+        while (!processIsFinished.isDone && outIt.hasNext) {
+          stdOut.addOne(outIt.next())
+        }
+        process.getInputStream.close()
       })
 
       val errorReaderThread = new Thread(() => {
         val errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream))
-        errorReader.lines.iterator.forEachRemaining(stdErr.addOne)
+        val outErr      = errorReader.lines.iterator
+        while (!processIsFinished.isDone && outErr.hasNext) {
+          stdOut.addOne(outErr.next())
+        }
+        process.getErrorStream.close()
       })
 
       outputReaderThread.start()
       errorReaderThread.start()
 
       val returnValue = process.waitFor()
-      outputReaderThread.join()
-      errorReaderThread.join()
-
-      process.getInputStream.close()
-      process.getOutputStream.close()
-      process.getErrorStream.close()
+      processIsFinished.complete(true)
       process.destroy()
 
       if (stdErr.nonEmpty) logger.warn(s"subprocess stderr: ${stdErr.mkString(System.lineSeparator())}")
