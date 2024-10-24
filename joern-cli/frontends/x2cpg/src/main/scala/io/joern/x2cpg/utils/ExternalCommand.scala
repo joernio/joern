@@ -1,7 +1,6 @@
 package io.joern.x2cpg.utils
 
 import io.shiftleft.utils.IOUtils
-import org.slf4j.LoggerFactory
 
 import java.io.File
 import java.nio.file.{Path, Paths}
@@ -10,8 +9,6 @@ import scala.util.{Failure, Success, Try}
 import scala.util.control.NonFatal
 
 object ExternalCommand {
-
-  private val logger = LoggerFactory.getLogger(ExternalCommand.getClass)
 
   case class ExternalCommandResult(exitCode: Int, stdOut: Seq[String], stdErr: Seq[String]) {
     def successOption: Option[Seq[String]] = exitCode match {
@@ -53,8 +50,6 @@ object ExternalCommand {
 
       val stdOut = IOUtils.readLinesInFile(stdOutFile.toPath)
       val stdErr = stdErrFile.map(f => IOUtils.readLinesInFile(f.toPath)).getOrElse(Seq.empty)
-
-      if (stdErr.nonEmpty) logger.warn(s"subprocess stderr: ${stdErr.mkString(System.lineSeparator())}")
       ExternalCommandResult(returnValue, stdOut, stdErr)
     } catch {
       case NonFatal(exception) =>
