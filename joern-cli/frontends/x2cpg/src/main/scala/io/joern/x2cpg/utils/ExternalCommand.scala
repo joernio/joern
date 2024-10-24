@@ -1,21 +1,14 @@
 package io.joern.x2cpg.utils
 
-import org.slf4j.LoggerFactory
+import io.shiftleft.utils.IOUtils
 
-import java.io.BufferedReader
 import java.io.File
-import java.io.InputStreamReader
-import java.nio.file.Path
-import java.nio.file.Paths
+import java.nio.file.{Path, Paths}
 import scala.jdk.CollectionConverters.*
+import scala.util.{Failure, Success, Try}
 import scala.util.control.NonFatal
-import scala.util.Failure
-import scala.util.Success
-import scala.util.Try
 
 object ExternalCommand {
-
-  private val logger = LoggerFactory.getLogger(ExternalCommand.getClass)
 
   case class ExternalCommandResult(exitCode: Int, stdOut: Seq[String], stdErr: Seq[String]) {
     def successOption: Option[Seq[String]] = exitCode match {
@@ -45,39 +38,25 @@ object ExternalCommand {
       .redirectErrorStream(mergeStdErrInStdOut)
     builder.environment().putAll(extraEnv.asJava)
 
-    val stdOut = scala.collection.mutable.ArrayBuffer.empty[String]
-    val stdErr = scala.collection.mutable.ArrayBuffer.empty[String]
+    val stdOutFile = File.createTempFile("x2cpg", "stdout")
+    val stdErrFile = Option.when(!mergeStdErrInStdOut)(File.createTempFile("x2cpg", "stderr"))
 
     try {
-      val process = builder.start()
+      builder.redirectOutput(stdOutFile)
+      stdErrFile.foreach(f => builder.redirectError(f))
 
-      val outputReaderThread = new Thread(() => {
-        val outputReader = new BufferedReader(new InputStreamReader(process.getInputStream))
-        outputReader.lines.iterator.forEachRemaining(stdOut.addOne)
-      })
-
-      val errorReaderThread = new Thread(() => {
-        val errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream))
-        errorReader.lines.iterator.forEachRemaining(stdErr.addOne)
-      })
-
-      outputReaderThread.start()
-      errorReaderThread.start()
-
+      val process     = builder.start()
       val returnValue = process.waitFor()
-      outputReaderThread.join()
-      errorReaderThread.join()
 
-      process.getInputStream.close()
-      process.getOutputStream.close()
-      process.getErrorStream.close()
-      process.destroy()
-
-      if (stdErr.nonEmpty) logger.warn(s"subprocess stderr: ${stdErr.mkString(System.lineSeparator())}")
-      ExternalCommandResult(returnValue, stdOut.toSeq, stdErr.toSeq)
+      val stdOut = IOUtils.readLinesInFile(stdOutFile.toPath)
+      val stdErr = stdErrFile.map(f => IOUtils.readLinesInFile(f.toPath)).getOrElse(Seq.empty)
+      ExternalCommandResult(returnValue, stdOut, stdErr)
     } catch {
       case NonFatal(exception) =>
         ExternalCommandResult(1, Seq.empty, stdErr = Seq(exception.getMessage))
+    } finally {
+      stdOutFile.delete()
+      stdErrFile.foreach(_.delete())
     }
   }
 
