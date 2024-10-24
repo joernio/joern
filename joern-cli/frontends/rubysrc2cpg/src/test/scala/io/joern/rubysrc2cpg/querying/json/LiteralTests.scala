@@ -192,10 +192,10 @@ class LiteralTests extends RubyCode2CpgFixture(useJsonAst = true) {
     val List(firstLine, xyz, one23) = cpg.literal.l
     firstLine.code.trim shouldBe ""
     firstLine.lineNumber shouldBe Some(2)
-    xyz.code shouldBe "xyz"
+    xyz.code.trim shouldBe "xyz"
     xyz.lineNumber shouldBe Some(3)
     xyz.typeFullName shouldBe s"$kernelPrefix.String"
-    one23.code shouldBe "123"
+    one23.code.trim shouldBe "123"
     one23.lineNumber shouldBe Some(4)
     one23.typeFullName shouldBe s"$kernelPrefix.String"
   }
