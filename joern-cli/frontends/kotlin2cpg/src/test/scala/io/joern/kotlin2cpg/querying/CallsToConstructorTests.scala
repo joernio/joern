@@ -69,12 +69,12 @@ class CallsToConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = fa
       val List(qeCall) = cpg.call.methodFullName(".*writeText.*").l
 
       val List(callLhs: Block, callRhs: Literal) = qeCall.argument.l: @unchecked
-      callRhs.argumentIndex shouldBe 1
+      callRhs.argumentIndex shouldBe 2
 
       val loweredBlock = callLhs
       loweredBlock.typeFullName shouldBe "java.io.File"
       loweredBlock.code shouldBe ""
-      loweredBlock.argumentIndex shouldBe 0
+      loweredBlock.argumentIndex shouldBe 1
 
       val List(firstBlockChild: Local) = loweredBlock.astChildren.take(1).l: @unchecked
       firstBlockChild.name shouldBe "tmp_1"

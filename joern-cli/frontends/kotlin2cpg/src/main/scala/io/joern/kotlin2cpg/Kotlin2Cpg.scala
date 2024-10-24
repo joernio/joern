@@ -7,7 +7,7 @@ import io.joern.kotlin2cpg.files.SourceFilesPicker
 import io.joern.kotlin2cpg.interop.JavasrcInterop
 import io.joern.kotlin2cpg.jar4import.UsesService
 import io.joern.kotlin2cpg.passes.*
-import io.joern.kotlin2cpg.types.{ContentSourcesPicker, DefaultTypeInfoProvider, TypeRenderer}
+import io.joern.kotlin2cpg.types.{ContentSourcesPicker, DefaultTypeInfoProvider}
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
@@ -20,8 +20,9 @@ import io.joern.x2cpg.SourceFiles.filterFile
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.utils.IOUtils
-import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
+import org.jetbrains.kotlin.cli.jvm.compiler.{KotlinCoreEnvironment, KotlinToJVMBytecodeCompiler}
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.resolve.BindingContext
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Files
@@ -226,10 +227,11 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
 
       new MetaDataPass(cpg, Languages.KOTLIN, config.inputPath).createAndApply()
 
-      val typeRenderer = new TypeRenderer(config.keepTypeArguments)
-      val astCreator = new AstCreationPass(sourceFiles, new DefaultTypeInfoProvider(environment, typeRenderer), cpg)(
-        config.schemaValidation
-      )
+      val bindingContext = createBindingContext(environment)
+      val astCreator =
+        new AstCreationPass(sourceFiles, new DefaultTypeInfoProvider(bindingContext), bindingContext, cpg)(
+          config.schemaValidation
+        )
       astCreator.createAndApply()
 
       val kotlinAstCreatorTypes = astCreator.usedTypes()
@@ -314,5 +316,20 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
       relPath      <- Try(SourceFiles.toRelativePath(fileName, sourceDir)).toOption
       fileContents <- Try(IOUtils.readEntireFile(Paths.get(fileName))).toOption
     } yield FileContentAtPath(fileContents, relPath, fileName)
+  }
+
+  private def createBindingContext(environment: KotlinCoreEnvironment): BindingContext = {
+    try {
+      logger.info("Running Kotlin compiler analysis...")
+      val t0             = System.nanoTime()
+      val analysisResult = KotlinToJVMBytecodeCompiler.INSTANCE.analyze(environment)
+      val t1             = System.nanoTime()
+      logger.info(s"Kotlin compiler analysis finished in `${(t1 - t0) / 1000000}` ms.")
+      analysisResult.getBindingContext
+    } catch {
+      case exc: Exception =>
+        logger.error(s"Kotlin compiler analysis failed with exception `${exc.toString}`:`${exc.getMessage}`.", exc)
+        BindingContext.EMPTY
+    }
   }
 }

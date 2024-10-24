@@ -1,6 +1,7 @@
 package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, ModifierTypes}
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.Ignore
@@ -23,8 +24,8 @@ class AnonymousFunctionsTests extends KotlinCode2CpgFixture(withOssDataflow = fa
 
     "should contain a METHOD node for the anonymous fn with the correct props set" in {
       val List(m) = cpg.method.fullName(".*lambda.*0.*").l
-      m.fullName shouldBe "mypkg.<f_Test0.kt>.<lambda>0:java.lang.Object(java.lang.Object)"
-      m.signature shouldBe "java.lang.Object(java.lang.Object)"
+      m.fullName shouldBe s"mypkg.foo.${Defines.ClosurePrefix}0:boolean(int)"
+      m.signature shouldBe "boolean(int)"
     }
 
     "should contain a METHOD node for the lambda with a corresponding METHOD_RETURN which has the correct props set" in {
@@ -58,8 +59,8 @@ class AnonymousFunctionsTests extends KotlinCode2CpgFixture(withOssDataflow = fa
 
     "should contain a METHOD node for the anonymous fn with the correct props set" in {
       val List(m) = cpg.method.fullName(".*lambda.*0.*").l
-      m.fullName shouldBe "mypkg.<f_Test0.kt>.<lambda>0:java.lang.Object(java.lang.Object)"
-      m.signature shouldBe "java.lang.Object(java.lang.Object)"
+      m.fullName shouldBe s"mypkg.foo.${Defines.ClosurePrefix}0:boolean(int)"
+      m.signature shouldBe "boolean(int)"
     }
 
     "should contain a METHOD node for the lambda with a corresponding METHOD_RETURN which has the correct props set" in {

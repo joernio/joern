@@ -53,7 +53,7 @@ class PrimitiveArrayTypeMappingTests extends KotlinCode2CpgFixture(withOssDatafl
 
     "should contain a CALL node with a METHOD_FULL_NAME starting with `kotlin.ByteArray`" in {
       val List(c) = cpg.call.code("byte.*toString.*").l
-      c.methodFullName shouldBe "kotlin.ByteArray.toString:java.lang.String(java.nio.charset.Charset)"
+      c.methodFullName shouldBe "kotlin.collections.toString:java.lang.String(byte[],java.nio.charset.Charset)"
     }
   }
 

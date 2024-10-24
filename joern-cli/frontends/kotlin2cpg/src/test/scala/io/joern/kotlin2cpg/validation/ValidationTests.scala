@@ -723,6 +723,7 @@ class ValidationTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         .fullNameNot(".*<init>.*")
         .fullNameNot("<operator>.*")
         .fullNameNot("<unresolvedNamespace>.*")
+        .fullNameNot(".*<unresolvedSignature>.*")
         .fullName(".*>.*")
         .fullName
         .l shouldBe List()
@@ -734,6 +735,7 @@ class ValidationTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         .methodFullNameNot(".*<init>.*")
         .methodFullNameNot("<operator>.*")
         .methodFullNameNot("<unresolvedNamespace>.*")
+        .methodFullNameNot(".*<unresolvedSignature>.*")
         .methodFullName(".*>.*")
         .methodFullName
         .l shouldBe List()

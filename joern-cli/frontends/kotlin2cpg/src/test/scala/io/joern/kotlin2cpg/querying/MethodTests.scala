@@ -31,9 +31,9 @@ class MethodTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       x.filename.endsWith(".kt") shouldBe true
 
       val List(y) = cpg.method.name("main").isExternal(false).l
-      y.fullName shouldBe "main:void(kotlin.Array)"
+      y.fullName shouldBe "main:void(java.lang.String[])"
       y.code shouldBe "main"
-      y.signature shouldBe "void(kotlin.Array)"
+      y.signature shouldBe "void(java.lang.String[])"
       y.isExternal shouldBe false
       y.lineNumber shouldBe Some(6)
       x.columnNumber shouldBe Some(4)
@@ -180,6 +180,17 @@ class MethodTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
           sortedWith.method.name shouldBe "sorted"
         case xs => fail(s"Expected a single call with the method reference argument. Instead got [$xs]")
       }
+    }
+  }
+
+  "test correct translation of parameter kotlin type to java type" in {
+    val cpg = code("""
+        |fun method(x: kotlin.CharArray) {
+        |}
+        |""".stripMargin)
+
+    inside(cpg.method.name("method").l) { case List(method) =>
+      method.fullName shouldBe "method:void(char[])"
     }
   }
 }

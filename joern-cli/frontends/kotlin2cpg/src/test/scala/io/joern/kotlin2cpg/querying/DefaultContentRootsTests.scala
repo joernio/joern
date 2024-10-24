@@ -240,7 +240,7 @@ class DefaultContentRootsTests extends KotlinCode2CpgFixture(withOssDataflow = f
 
     "should contain a CALL node for `routes` with the correct methodFullName set" in {
       val List(c) = cpg.call.methodFullName(".*routes.*").l
-      c.methodFullName shouldBe "org.http4k.routing.routes:org.http4k.routing.RoutingHttpHandler(kotlin.Array)"
+      c.methodFullName shouldBe "org.http4k.routing.routes:org.http4k.routing.RoutingHttpHandler(org.http4k.routing.RoutingHttpHandler[])"
     }
 
     "should contain a CALL node for `req.query` with the correct methodFullName set" in {

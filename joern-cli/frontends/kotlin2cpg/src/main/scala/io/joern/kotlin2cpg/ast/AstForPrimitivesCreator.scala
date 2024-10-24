@@ -17,6 +17,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewMember
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethodParameterIn
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
+import org.jetbrains.kotlin.descriptors.{ClassifierDescriptor, PropertyDescriptor, ValueDescriptor}
+import org.jetbrains.kotlin.descriptors.impl.PropertyDescriptorImpl
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtClassLiteralExpression
 import org.jetbrains.kotlin.psi.KtConstantExpression
@@ -27,6 +29,7 @@ import org.jetbrains.kotlin.psi.KtSuperExpression
 import org.jetbrains.kotlin.psi.KtThisExpression
 import org.jetbrains.kotlin.psi.KtTypeAlias
 import org.jetbrains.kotlin.psi.KtTypeReference
+import org.jetbrains.kotlin.types.error.ErrorType
 
 import scala.annotation.unused
 import scala.jdk.CollectionConverters.*
@@ -41,7 +44,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     argName: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val typeFullName   = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+    val typeFullName   = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
     val node           = literalNode(expr, expr.getText, typeFullName)
     val annotationAsts = annotations.map(astForAnnotationEntry)
     Ast(withArgumentName(withArgumentIndex(node, argIdx), argName)).withChildren(annotationAsts)
@@ -53,11 +56,11 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     argName: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+    val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
     val outAst =
       if (expr.hasInterpolation) {
         val args = expr.getEntries.filter(_.getExpression != null).zipWithIndex.map { case (entry, idx) =>
-          val entryTypeFullName = registerType(typeInfoProvider.expressionType(entry.getExpression, TypeConstants.any))
+          val entryTypeFullName = registerType(exprTypeFullName(entry.getExpression).getOrElse(TypeConstants.any))
           val valueCallNode = NodeBuilders.newOperatorCallNode(
             Operators.formattedValue,
             entry.getExpression.getText,
@@ -104,7 +107,9 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForNameReferenceToType(expr: KtNameReferenceExpression, argIdx: Option[Int])(implicit
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
-    val typeFullName              = registerType(typeInfoProvider.typeFullName(expr, TypeConstants.any))
+    val declDesc =
+      bindingUtils.getDeclDesc(expr).collect { case classifierDesc: ClassifierDescriptor => classifierDesc }
+    val typeFullName = registerType(declDesc.flatMap(nameRenderer.descFullName).getOrElse(TypeConstants.any))
     val referencesCompanionObject = typeInfoProvider.isRefToCompanionObject(expr)
     if (referencesCompanionObject) {
       val argAsts = List(
@@ -129,11 +134,18 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForNameReferenceToMember(expr: KtNameReferenceExpression, argIdx: Option[Int])(implicit
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
-    val typeFullName = registerType(typeInfoProvider.typeFullName(expr, TypeConstants.any))
-    val referenceTargetTypeFullName = registerType(
-      typeInfoProvider.referenceTargetTypeFullName(expr, TypeConstants.any)
-    )
-    val thisNode             = identifierNode(expr, Constants.this_, Constants.this_, referenceTargetTypeFullName)
+    val declDesc = bindingUtils.getDeclDesc(expr).collect { case propDesc: PropertyDescriptor => propDesc }
+    val typeFullName = declDesc
+      .flatMap(desc => nameRenderer.typeFullName(desc.getType))
+      .getOrElse(TypeConstants.any)
+    registerType(typeFullName)
+
+    val baseTypeFullName = declDesc
+      .flatMap(desc => nameRenderer.typeFullName(desc.getDispatchReceiverParameter.getType))
+      .getOrElse(TypeConstants.any)
+    registerType(baseTypeFullName)
+
+    val thisNode             = identifierNode(expr, Constants.this_, Constants.this_, baseTypeFullName)
     val thisAst              = astWithRefEdgeMaybe(Constants.this_, thisNode)
     val _fieldIdentifierNode = fieldIdentifierNode(expr, expr.getReferencedName, expr.getReferencedName)
     val node = NodeBuilders.newOperatorCallNode(
@@ -151,17 +163,19 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     argIdx: Option[Int],
     argName: Option[String] = None
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val typeFromScopeMaybe = scope.lookupVariable(expr.getIdentifier.getText) match {
-      case Some(n: NewLocal)             => Some(n.typeFullName)
-      case Some(n: NewMethodParameterIn) => Some(n.typeFullName)
-      case _                             => None
-    }
-    val typeFromProvider = typeInfoProvider.typeFullName(expr, Defines.UnresolvedNamespace)
-    val typeFullName =
-      typeFromScopeMaybe match {
-        case Some(fullName) => registerType(fullName)
-        case None           => registerType(typeFromProvider)
+    val declDesc = bindingUtils.getDeclDesc(expr).collect { case valueDesc: ValueDescriptor => valueDesc }
+    val typeFullName = declDesc
+      .flatMap(desc => nameRenderer.typeFullName(desc.getType))
+      .orElse {
+        val typeFromScopeMaybe = scope.lookupVariable(expr.getIdentifier.getText) match {
+          case Some(n: NewLocal)             => Some(n.typeFullName)
+          case Some(n: NewMethodParameterIn) => Some(n.typeFullName)
+          case _                             => None
+        }
+        typeFromScopeMaybe
       }
+      .getOrElse(TypeConstants.any)
+
     val name = expr.getIdentifier.getText
     val node =
       withArgumentName(withArgumentIndex(identifierNode(expr, name, name, typeFullName), argIdx), argName)
@@ -174,7 +188,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     argName: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+    val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
     val node = withArgumentName(
       withArgumentIndex(identifierNode(expr, expr.getText, expr.getText, typeFullName), argIdx),
       argName
@@ -189,7 +203,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     argName: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+    val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
     val node = withArgumentName(
       withArgumentIndex(identifierNode(expr, expr.getText, expr.getText, typeFullName), argIdx),
       argName
@@ -204,12 +218,13 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     argName: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val (fullName, signature) = typeInfoProvider.fullNameWithSignature(expr, ("", "")) // TODO: fix the fallback names
-    val typeFullName          = registerType(typeInfoProvider.expressionType(expr, TypeConstants.javaLangObject))
+    val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.javaLangObject))
+    val fullName     = "<operator>.class"
+    val signature    = s"$typeFullName()"
     val node = callNode(
       expr,
       expr.getText,
-      TypeConstants.classLiteralReplacementMethodName,
+      fullName,
       fullName,
       DispatchTypes.STATIC_DISPATCH,
       Some(signature),
@@ -251,13 +266,11 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   def astForAnnotationEntry(entry: KtAnnotationEntry)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val typeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any) match {
-      case value if value != TypeConstants.any => value
-      case _ =>
-        typeInfoProvider
-          .typeFromImports(entry.getShortName.toString, entry.getContainingKtFile)
-          .getOrElse(s"${Defines.UnresolvedNamespace}.${entry.getShortName.toString}")
-    })
+    val typeFullName = nameRenderer
+      .typeFullName(bindingUtils.getAnnotationDesc(entry).getType)
+      .orElse(fullNameByImportPath(entry.getTypeReference, entry.getContainingKtFile))
+      .getOrElse(s"${Defines.UnresolvedNamespace}.${entry.getShortName.toString}")
+    registerType(typeFullName)
 
     val node =
       NewAnnotation()
@@ -283,13 +296,21 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   def astForTypeAlias(typeAlias: KtTypeAlias)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+    val typeAliasDesc = bindingUtils.getTypeAliasDesc(typeAlias)
+    val aliasedType = typeAliasDesc.getExpandedType match {
+      case _: ErrorType =>
+        None
+      case nonErrorType =>
+        Some(nonErrorType)
+    }
+
     val node = typeDeclNode(
       typeAlias,
       typeAlias.getName,
-      registerType(typeInfoProvider.fullName(typeAlias, TypeConstants.any)),
+      registerType(nameRenderer.descFullName(typeAliasDesc).getOrElse(TypeConstants.any)),
       relativizedPath,
       Seq(),
-      Option(registerType(typeInfoProvider.aliasTypeFullName(typeAlias, TypeConstants.any)))
+      Option(registerType(aliasedType.flatMap(nameRenderer.typeFullName).getOrElse(TypeConstants.any)))
     )
     Ast(node)
   }
@@ -297,8 +318,10 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
   def astForTypeReference(expr: KtTypeReference, argIdx: Option[Int], argName: Option[String])(implicit
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
-    val typeFullName = registerType(typeInfoProvider.typeFullName(expr, TypeConstants.any))
-    val node         = typeRefNode(expr, expr.getText, typeFullName)
+    val typeFullName = registerType(
+      bindingUtils.getTypeRefType(expr).flatMap(nameRenderer.typeFullName).getOrElse(TypeConstants.any)
+    )
+    val node = typeRefNode(expr, expr.getText, typeFullName)
     Ast(withArgumentName(withArgumentIndex(node, argIdx), argName))
   }
 }

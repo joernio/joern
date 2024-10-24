@@ -1,17 +1,8 @@
 package io.joern.dataflowengineoss.queryengine
 
 import io.joern.dataflowengineoss.queryengine.Engine.argToOutputParams
-import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  Call,
-  Expression,
-  Method,
-  MethodParameterIn,
-  MethodParameterOut,
-  MethodRef,
-  Return
-}
-import io.shiftleft.semanticcpg.language.NoResolve
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -98,9 +89,15 @@ class TaskCreator(context: EngineContext) {
     * `m`, return `foo` in `foo.bar(m)` TODO: I'm not sure whether `methodRef.methodFullNameExact(...)` uses an index.
     * If not, then caching these lookups or keeping a map of all method names to their references may make sense.
     */
-
-  private def paramToMethodRefCallReceivers(param: MethodParameterIn): List[Expression] =
-    new Cpg(param.graph).methodRef.methodFullNameExact(param.method.fullName).inCall.argument(0).l
+  private def paramToMethodRefCallReceivers(param: MethodParameterIn): List[Expression] = {
+    val cpg  = new Cpg(param.graph)
+    def trav = cpg.methodRef.methodFullNameExact(param.method.fullName).inCall
+    cpg.metaData.language.headOption match {
+      // Kotlin higher-level functions are often static and don't have the arg0 recv
+      case Some(Languages.KOTLIN) => trav.argument(1).l
+      case _                      => trav.argument(0).l
+    }
+  }
 
   /** Create new tasks from all results that end in an output argument, including return arguments. In this case, we
     * want to traverse to corresponding method output parameters and method return nodes respectively.
