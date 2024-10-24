@@ -60,8 +60,8 @@ object ExternalCommand {
       case NonFatal(exception) =>
         ExternalCommandResult(1, Seq.empty, stdErr = Seq(exception.getMessage))
     } finally {
-      stdOutFile.deleteOnExit()
-      stdErrFile.foreach(_.deleteOnExit())
+      stdOutFile.delete()
+      stdErrFile.foreach(_.delete())
     }
   }
 
