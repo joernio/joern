@@ -235,7 +235,7 @@ class RubyJsonToNodeCreator(
     StatementList(obj.visitArray(ParserKeys.Body))(obj.toTextSpan)
   }
 
-  private def createGroupedParameter(arrayParam: ArrayLiteral): RubyExpression = {
+  private def visitGroupedParameter(arrayParam: ArrayLiteral): RubyExpression = {
     val freshTmpVar       = variableNameGen.fresh
     val tmpMandatoryParam = MandatoryParameter(freshTmpVar)(arrayParam.span.spanStart(freshTmpVar))
 
@@ -265,7 +265,7 @@ class RubyJsonToNodeCreator(
 
   private def visitBlock(obj: Obj): RubyExpression = {
     val parameters = obj(ParserKeys.Arguments).asInstanceOf[ujson.Obj].visitArray(ParserKeys.Children).map {
-      case x: ArrayLiteral => createGroupedParameter(x)
+      case x: ArrayLiteral => visitGroupedParameter(x)
       case x               => x
     }
 
