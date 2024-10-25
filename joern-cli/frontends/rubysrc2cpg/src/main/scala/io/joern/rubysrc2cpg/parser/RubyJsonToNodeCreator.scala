@@ -2,6 +2,7 @@ package io.joern.rubysrc2cpg.parser
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{RubyExpression, *}
 import io.joern.rubysrc2cpg.parser.RubyJsonHelpers.*
+import io.joern.rubysrc2cpg.parser.RubyParser.{ArrayParameterContext, MandatoryParameterContext}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.{NilClass, RubyOperators, getBuiltInType}
 import io.joern.rubysrc2cpg.passes.GlobalTypes.builtinPrefix
@@ -211,7 +212,9 @@ class RubyJsonToNodeCreator(
 
   private def visitArg(obj: Obj): RubyExpression = MandatoryParameter(obj(ParserKeys.Value).str)(obj.toTextSpan)
 
-  private def visitArgs(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitArgs(obj: Obj): RubyExpression = {
+    defaultResult(Option(obj.toTextSpan))
+  }
 
   private def visitArray(obj: Obj): RubyExpression = {
     val children = obj.visitArray(ParserKeys.Children).flatMap {
@@ -232,12 +235,49 @@ class RubyJsonToNodeCreator(
     StatementList(obj.visitArray(ParserKeys.Body))(obj.toTextSpan)
   }
 
-  private def visitBlock(obj: Obj): RubyExpression = {
-    val parameters = obj(ParserKeys.Arguments).asInstanceOf[ujson.Obj].visitArray(ParserKeys.Children)
-    val body = visit(obj(ParserKeys.Body)) match {
-      case stmt: StatementList => stmt
-      case expr                => StatementList(expr :: Nil)(expr.span)
+  private def createGroupedParameter(arrayParam: ArrayLiteral): RubyExpression = {
+    val freshTmpVar       = variableNameGen.fresh
+    val tmpMandatoryParam = MandatoryParameter(freshTmpVar)(arrayParam.span.spanStart(freshTmpVar))
+
+    val singleAssignments = arrayParam.elements.map { param =>
+      val rhsSplattingNode = SplattingRubyNode(tmpMandatoryParam)(arrayParam.span.spanStart(s"*$freshTmpVar"))
+      val lhs = param match {
+        case x: SimpleIdentifier => SimpleIdentifier()(x.span)
+        case x: ArrayParameter =>
+          SplattingRubyNode(SimpleIdentifier()(arrayParam.span.spanStart(x.span.text.stripPrefix("*"))))(
+            arrayParam.span.spanStart(s"${x.span.text}")
+          )
+        case x =>
+          logger.warn(s"Invalid parameter type in grouped parameter list: ${x.getClass}")
+          defaultResult()
+      }
+      SingleAssignment(lhs, "=", rhsSplattingNode)(
+        arrayParam.span.spanStart(s"${lhs.span.text} = ${rhsSplattingNode.span.text}")
+      )
     }
+
+    GroupedParameter(
+      tmpMandatoryParam.span.text,
+      tmpMandatoryParam,
+      GroupedParameterDesugaring(singleAssignments)(arrayParam.span)
+    )(arrayParam.span)
+  }
+
+  private def visitBlock(obj: Obj): RubyExpression = {
+    val parameters = obj(ParserKeys.Arguments).asInstanceOf[ujson.Obj].visitArray(ParserKeys.Children).map {
+      case x: ArrayLiteral => createGroupedParameter(x)
+      case x               => x
+    }
+
+    val assignments = parameters.collect { case x: GroupedParameter =>
+      x.multipleAssignment
+    }
+
+    val body = visit(obj(ParserKeys.Body)) match {
+      case stmt: StatementList => stmt.copy(stmt.statements ++ assignments)(stmt.span)
+      case expr                => StatementList(expr +: assignments)(expr.span)
+    }
+
     val block = Block(parameters, body)(obj.toTextSpan)
     visit(obj(ParserKeys.CallName)) match {
       case classNew: ObjectInstantiation if classNew.target.text == "Class.new" =>

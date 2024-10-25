@@ -390,6 +390,7 @@ class DoBlockTests extends RubyCode2CpgFixture(useJsonAst = true) {
                      | def get_pto_schedule
                      |    begin
                      |       jfs = []
+                     |       schedules = []
                      |       schedules.each do |s|
                      |          hash = Hash.new
                      |          hash[:id] = s[:id]
@@ -404,18 +405,18 @@ class DoBlockTests extends RubyCode2CpgFixture(useJsonAst = true) {
                      |""".stripMargin)
 
     inside(cpg.local.l) {
-      case jfsOutsideLocal :: hashInsideLocal :: tmp0 :: jfsCapturedLocal :: tmp1 :: Nil =>
+      case jfsOutsideLocal :: schedules :: hashInsideLocal :: tmp1 :: tmp0 :: jfsCapturedLocal :: Nil =>
         jfsOutsideLocal.closureBindingId shouldBe None
         hashInsideLocal.closureBindingId shouldBe None
         jfsCapturedLocal.closureBindingId shouldBe Some("Test0.rb:<main>.get_pto_schedule.jfs")
 
         tmp0.name shouldBe "<tmp-0>"
         tmp1.name shouldBe "<tmp-1>"
-      case xs => fail(s"Expected 5 locals, got ${xs.code.mkString(",")}")
+      case xs => fail(s"Expected 6 locals, got ${xs.code.mkString(",")}")
     }
 
     inside(cpg.method.isLambda.local.l) {
-      case hashLocal :: _ :: jfsLocal :: Nil =>
+      case hashLocal :: _ :: _ :: jfsLocal :: Nil =>
         hashLocal.closureBindingId shouldBe None
         jfsLocal.closureBindingId shouldBe Some("Test0.rb:<main>.get_pto_schedule.jfs")
       case xs => fail(s"Expected 3 locals in lambda, got ${xs.code.mkString(",")}")
