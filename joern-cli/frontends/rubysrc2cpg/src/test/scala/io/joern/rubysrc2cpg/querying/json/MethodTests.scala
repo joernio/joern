@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.querying.json
 
 import io.joern.rubysrc2cpg.passes.Defines as RDefines
-import io.joern.rubysrc2cpg.passes.Defines.Main
+import io.joern.rubysrc2cpg.passes.Defines.{Main, RubyOperators}
 import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelPrefix
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -722,7 +722,7 @@ class MethodTests extends RubyCode2CpgFixture(useJsonAst = true) {
         inside(fooCall.argument.l) {
           case selfArg :: xArg :: yArg :: Nil =>
             xArg.code shouldBe "*x"
-            yArg.code shouldBe "self.y"
+            yArg.code shouldBe "y"
           case xs => fail(s"Expected two args, got [${xs.code.mkString(",")}]")
         }
       case xs => fail(s"Expected one call to foo, got [${xs.code.mkString(",")}]")
@@ -876,9 +876,9 @@ class MethodTests extends RubyCode2CpgFixture(useJsonAst = true) {
         |%x(ls -l)
         |""".stripMargin)
 
-    inside(cpg.call.name("exec").l) {
+    inside(cpg.call.name(RubyOperators.backticks).l) {
       case execCall :: Nil =>
-        execCall.name shouldBe "exec"
+        execCall.name shouldBe RubyOperators.backticks
         inside(execCall.argument.l) {
           case selfArg :: lsArg :: Nil =>
             selfArg.code shouldBe "self"

@@ -464,7 +464,7 @@ class SingleAssignmentTests extends RubyCode2CpgFixture(useJsonAst = true) {
       case assignmentCall :: Nil =>
         val List(lhs: Call, rhs) = assignmentCall.argument.l: @unchecked
 
-        lhs.code shouldBe "A.b"
+        lhs.code shouldBe "A::b"
         lhs.methodFullName shouldBe Operators.fieldAccess
 
         rhs.code shouldBe "1"
@@ -482,7 +482,7 @@ class SingleAssignmentTests extends RubyCode2CpgFixture(useJsonAst = true) {
         assignmentCall.code shouldBe "A::b *= 1"
         val List(lhs: Call, rhs) = assignmentCall.argument.l: @unchecked
 
-        lhs.code shouldBe "A.b"
+        lhs.code shouldBe "A::b"
         lhs.methodFullName shouldBe Operators.fieldAccess
 
         rhs.code shouldBe "1"
