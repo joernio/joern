@@ -254,8 +254,7 @@ class SingleAssignmentTests extends RubyCode2CpgFixture(useJsonAst = true) {
     }
   }
 
-  // TODO: Fixme - Only getting 1 lambda instead of 3
-  "Bracket Assignments" ignore {
+  "Bracket Assignments" in {
     val cpg = code("""
                      | def get_pto_schedule
                      |    begin
@@ -280,7 +279,7 @@ class SingleAssignmentTests extends RubyCode2CpgFixture(useJsonAst = true) {
     inside(cpg.method.isLambda.l) {
       case scheduleLambda :: _ :: _ :: Nil =>
         inside(scheduleLambda.call.name(Operators.assignment).l) {
-          case _ :: id :: title :: start :: end :: _ :: Nil =>
+          case _ :: id :: title :: start :: end :: _ :: _ :: Nil =>
             id.code shouldBe "hash[:id] = s[:id]"
 
             inside(id.argument.l) {

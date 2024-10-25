@@ -248,6 +248,9 @@ class RubyJsonToNodeCreator(
         val trueLiteral = StaticLiteral(Defines.getBuiltInType(Defines.TrueClass))(simpleCall.span.spanStart("true"))
         DoWhileExpression(trueLiteral, body)(simpleCall.span)
       case simpleCall: RubyCall => simpleCall.withBlock(block)
+      case memberAccess @ MemberAccess(target, op, memberName) =>
+        val memberCall = MemberCall(target, op, memberName, List.empty)(memberAccess.span)
+        memberCall.withBlock(block)
       case x =>
         logger.warn(s"Unexpected call type used for block ${x.getClass}, ignoring block")
         x
@@ -263,6 +266,16 @@ class RubyJsonToNodeCreator(
   }
 
   private def visitBlockWithNumberedParams(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+
+  private def visitBracketAssignmentAsSend(obj: Obj): RubyExpression = {
+    val lhsBase = visit(obj(ParserKeys.Receiver))
+    val args    = obj.visitArray(ParserKeys.Arguments)
+
+    val lhs =
+      IndexAccess(lhsBase, List(args.head))(obj.toTextSpan.spanStart(s"${lhsBase.span.text}[${args.head.span.text}]"))
+
+    SingleAssignment(lhs, "=", args(1))(obj.toTextSpan)
+  }
 
   private def visitBreak(obj: Obj): RubyExpression = BreakExpression()(obj.toTextSpan)
 
@@ -750,6 +763,7 @@ class RubyJsonToNodeCreator(
       case "new"                                                => visitObjectInstantiation(obj)
       case "Array" | "Hash"                                     => visitCollectionAliasSend(obj)
       case "[]"                                                 => visitIndexAccessAsSend(obj)
+      case "[]="                                                => visitBracketAssignmentAsSend(obj)
       case "raise"                                              => visitRaise(obj)
       case "include"                                            => visitInclude(obj)
       case "attr_reader" | "attr_writer" | "attr_accessor"      => visitFieldDeclaration(obj)
@@ -771,8 +785,8 @@ class RubyJsonToNodeCreator(
         }
         if (obj.contains(ParserKeys.Receiver)) {
           val isMemberCall = obj.toTextSpan.text.endsWith(")") || callName == "each" || callName == "<<"
-          val op   = if isConditional then "&." else "."
-          val base = visit(obj(ParserKeys.Receiver))
+          val op           = if isConditional then "&." else "."
+          val base         = visit(obj(ParserKeys.Receiver))
           if isMemberCall then MemberCall(base, op, callName, arguments)(obj.toTextSpan)
           else MemberAccess(base, op, callName)(obj.toTextSpan)
         } else {
