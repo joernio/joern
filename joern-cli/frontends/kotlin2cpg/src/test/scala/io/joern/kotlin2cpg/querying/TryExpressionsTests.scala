@@ -49,7 +49,7 @@ class TryExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = false)
       firstAstChildOfSecondArg.order shouldBe 1
       firstAstChildOfSecondArg.name shouldBe "toInt"
       firstAstChildOfSecondArg.code shouldBe "r.toInt()"
-      firstAstChildOfSecondArg.methodFullName shouldBe "java.lang.String.toInt:int()"
+      firstAstChildOfSecondArg.methodFullName shouldBe "kotlin.text.toInt:int(java.lang.String)"
     }
   }
 }

@@ -92,7 +92,7 @@ private object Frontend {
       opt[Unit]("keep-type-arguments")
         .hidden()
         .action((_, c) => c.withKeepTypeArguments(true))
-        .text("Type full names of variables keep their type arguments.")
+        .text("Type full names of variables keep their type arguments. (Deprecated, no effect.")
     )
   }
 }

@@ -3,9 +3,7 @@ package io.joern.kotlin2cpg.ast
 import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.KtFileWithMeta
 import io.joern.kotlin2cpg.datastructures.Scope
-import io.joern.kotlin2cpg.types.TypeConstants
-import io.joern.kotlin2cpg.types.TypeInfoProvider
-import io.joern.kotlin2cpg.types.TypeRenderer
+import io.joern.kotlin2cpg.types.{NameRenderer, TypeConstants, TypeInfoProvider}
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.AstCreatorBase
 import io.joern.x2cpg.AstNodeBuilder
@@ -21,14 +19,19 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
-import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
-import org.jetbrains.kotlin.descriptors.DescriptorVisibility
+import org.jetbrains.kotlin.descriptors.{
+  DeclarationDescriptor,
+  DescriptorVisibilities,
+  DescriptorVisibility,
+  FunctionDescriptor
+}
 import org.jetbrains.kotlin.lexer.KtToken
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
+import org.jetbrains.kotlin.resolve.BindingContext
 
 import java.io.PrintWriter
 import java.io.StringWriter
@@ -39,9 +42,13 @@ import scala.jdk.CollectionConverters.*
 case class BindingInfo(node: NewBinding, edgeMeta: Seq[(NewNode, NewNode, String)])
 case class ClosureBindingDef(node: NewClosureBinding, captureEdgeTo: NewMethodRef, refEdgeTo: NewNode)
 
-class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvider, global: Global)(implicit
-  withSchemaValidation: ValidationMode
-) extends AstCreatorBase(fileWithMeta.filename)
+class AstCreator(
+  fileWithMeta: KtFileWithMeta,
+  xTypeInfoProvider: TypeInfoProvider,
+  bindingContext: BindingContext,
+  global: Global
+)(implicit withSchemaValidation: ValidationMode)
+    extends AstCreatorBase(fileWithMeta.filename)
     with AstForDeclarationsCreator
     with AstForPrimitivesCreator
     with AstForFunctionsCreator
@@ -63,12 +70,15 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   protected val scope: Scope[String, DeclarationNew, NewNode] = new Scope()
   protected val debugScope: mutable.Stack[KtDeclaration]      = mutable.Stack.empty[KtDeclaration]
 
+  protected val nameRenderer = new NameRenderer()
+  protected val bindingUtils = new BindingContextUtils(bindingContext)
+
   def createAst(): DiffGraphBuilder = {
     implicit val typeInfoProvider: TypeInfoProvider = xTypeInfoProvider
     logger.debug(s"Started parsing file `${fileWithMeta.filename}`.")
 
     val defaultTypes =
-      Set(TypeConstants.javaLangObject, TypeConstants.kotlin) ++ TypeRenderer.primitiveArrayMappings.keys
+      Set(TypeConstants.javaLangObject, TypeConstants.kotlin)
     defaultTypes.foreach(registerType)
     storeInDiffGraph(astForFile(fileWithMeta))
     diffGraph
@@ -82,6 +92,61 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   protected def registerType(typeName: String): String = {
     global.usedTypes.putIfAbsent(typeName, true)
     typeName
+  }
+
+  protected def getFallback[T](
+    expr: KtExpression,
+    propertyExtractor: FunctionDescriptor => Option[T]
+  ): Option[FunctionDescriptor] = {
+    val candidates = bindingUtils.getAmbiguousCalledFunctionDescs(expr)
+    if (candidates.isEmpty) {
+      return None
+    }
+
+    val candidateProperties = candidates.map(propertyExtractor)
+    val allPropertiesEqual  = candidateProperties.forall(_ == candidateProperties.head)
+
+    if (allPropertiesEqual) {
+      candidates.headOption
+    } else {
+      None
+    }
+  }
+
+  protected def getAmbiguousFuncDescIfFullNamesEqual(expr: KtExpression): Option[FunctionDescriptor] = {
+    getFallback(expr, nameRenderer.descFullName)
+  }
+
+  protected def getAmbiguousFuncDescIfSignaturesEqual(expr: KtExpression): Option[FunctionDescriptor] = {
+    getFallback(expr, nameRenderer.funcDescSignature)
+  }
+
+  protected def calleeFullnameAndSignature(
+    calleeExpr: KtExpression,
+    fullNameFallback: => String,
+    signatureFallback: => String
+  ): (String, String) = {
+    val funcDesc = bindingUtils.getCalledFunctionDesc(calleeExpr)
+    val descFullName = funcDesc
+      .orElse(getAmbiguousFuncDescIfFullNamesEqual(calleeExpr))
+      .flatMap(nameRenderer.descFullName)
+      .getOrElse(fullNameFallback)
+    val signature = funcDesc
+      .orElse(getAmbiguousFuncDescIfSignaturesEqual(calleeExpr))
+      .flatMap(nameRenderer.funcDescSignature)
+      .getOrElse(signatureFallback)
+    val fullName = nameRenderer.combineFunctionFullName(descFullName, signature)
+
+    (fullName, signature)
+  }
+
+  protected def getCalleeExpr(expr: KtExpression): KtExpression = {
+    expr match {
+      case qualifiedExpression: KtQualifiedExpression =>
+        getCalleeExpr(qualifiedExpression.getSelectorExpression)
+      case callExpr: KtCallExpression =>
+        callExpr.getCalleeExpression
+    }
   }
 
   // TODO: use this everywhere in kotlin2cpg instead of manual .getText calls
@@ -343,11 +408,9 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     val result =
       try {
         decl match {
-          case c: KtClass             => astsForClassOrObject(c)
-          case o: KtObjectDeclaration => astsForClassOrObject(o)
-          case n: KtNamedFunction =>
-            val isExtensionFn = typeInfoProvider.isExtensionFn(n)
-            astsForMethod(n, isExtensionFn)
+          case c: KtClass                => astsForClassOrObject(c)
+          case o: KtObjectDeclaration    => astsForClassOrObject(o)
+          case n: KtNamedFunction        => astsForMethod(n)
           case t: KtTypeAlias            => Seq(astForTypeAlias(t))
           case s: KtSecondaryConstructor => Seq(astForUnknown(s, None, None))
           case p: KtProperty             => astsForProperty(p)
@@ -385,24 +448,29 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
   protected def assignmentAstForDestructuringEntry(
     entry: KtDestructuringDeclarationEntry,
-    componentNReceiverName: String,
-    componentNTypeFullName: String,
+    rhsBaseAst: Ast,
     componentIdx: Integer
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val entryTypeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
+    val entryTypeFullName = registerType(
+      bindingUtils
+        .getVariableDesc(entry)
+        .flatMap(desc => nameRenderer.typeFullName(desc.getType))
+        .getOrElse(TypeConstants.any)
+    )
     val assignmentLHSNode = identifierNode(entry, entry.getText, entry.getText, entryTypeFullName)
     val assignmentLHSAst  = astWithRefEdgeMaybe(assignmentLHSNode.name, assignmentLHSNode)
 
-    val componentNIdentifierNode =
-      identifierNode(entry, componentNReceiverName, componentNReceiverName, componentNTypeFullName)
-        .argumentIndex(0)
+    val desc = bindingUtils.getCalledFunctionDesc(entry)
+    val descFullName = desc
+      .flatMap(nameRenderer.descFullName)
+      .getOrElse(s"${Defines.UnresolvedNamespace}${Constants.componentNPrefix}$componentIdx")
+    val signature = desc
+      .flatMap(nameRenderer.funcDescSignature)
+      .getOrElse(s"${Defines.UnresolvedSignature}()")
+    val fullName = nameRenderer.combineFunctionFullName(descFullName, signature)
 
-    val fallbackSignature = s"${Defines.UnresolvedNamespace}()"
-    val fallbackFullName =
-      s"${Defines.UnresolvedNamespace}${Constants.componentNPrefix}$componentIdx:$fallbackSignature"
-    val (fullName, signature) =
-      typeInfoProvider.fullNameWithSignature(entry, (fallbackFullName, fallbackSignature))
-    val componentNCallCode = s"$componentNReceiverName.${Constants.componentNPrefix}$componentIdx()"
+    val componentNCallCode =
+      s"${rhsBaseAst.root.get.asInstanceOf[ExpressionNew].code}.${Constants.componentNPrefix}$componentIdx()"
     val componentNCallNode = callNode(
       entry,
       componentNCallCode,
@@ -413,9 +481,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       Some(entryTypeFullName)
     )
 
-    val componentNIdentifierAst = astWithRefEdgeMaybe(componentNIdentifierNode.name, componentNIdentifierNode)
     val componentNAst =
-      callAst(componentNCallNode, Seq(), Option(componentNIdentifierAst))
+      callAst(componentNCallNode, Seq(), Option(rhsBaseAst))
 
     val assignmentCallNode = NodeBuilders.newOperatorCallNode(
       Operators.assignment,
@@ -435,7 +502,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         val receiverPlaceholderType = Defines.UnresolvedNamespace
         val shortName               = expr.getSelectorExpression.getFirstChild.getText
         val args                    = expression.getValueArguments
-        s"$receiverPlaceholderType.$shortName:${typeInfoProvider.anySignature(args.asScala.toList)}"
+        s"$receiverPlaceholderType.$shortName"
       case _: KtNameReferenceExpression =>
         Operators.fieldAccess
       case _ =>
@@ -443,23 +510,17 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         ""
     }
 
-    val astDerivedSignature = typeInfoProvider.anySignature(argAsts)
+    val astDerivedSignature = s"${Defines.UnresolvedSignature}(${argAsts.size})"
     (astDerivedMethodFullName, astDerivedSignature)
   }
 
-  protected def selectorExpressionArgAsts(
-    expr: KtQualifiedExpression
-  )(implicit typeInfoProvider: TypeInfoProvider): List[Ast] = {
-    expr.getSelectorExpression match {
-      case typedExpr: KtCallExpression =>
-        withIndex(typedExpr.getValueArguments.asScala.toSeq) { case (arg, idx) =>
-          astsForExpression(arg.getArgumentExpression, Some(idx))
-        }.flatten.toList
-      case typedExpr: KtNameReferenceExpression =>
-        val node = fieldIdentifierNode(typedExpr, typedExpr.getText, typedExpr.getText).argumentIndex(2)
-        List(Ast(node))
-      case _ => List()
-    }
+  protected def selectorExpressionArgAsts(expr: KtQualifiedExpression, startIndex: Int = 1)(implicit
+    typeInfoProvider: TypeInfoProvider
+  ): List[Ast] = {
+    val callExpr = expr.getSelectorExpression.asInstanceOf[KtCallExpression]
+    withIndex(callExpr.getValueArguments.asScala.toSeq) { case (arg, idx) =>
+      astsForExpression(arg.getArgumentExpression, Some(startIndex + idx - 1))
+    }.flatten.toList
   }
 
   protected def modifierTypeForVisibility(visibility: DescriptorVisibility): String = {
@@ -472,5 +533,31 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     else if (visibility.toString == DescriptorVisibilities.INTERNAL.toString)
       ModifierTypes.INTERNAL
     else "UNKNOWN"
+  }
+
+  protected def addToLambdaBindingInfoQueue(
+    bindingNode: NewBinding,
+    typeDecl: NewTypeDecl,
+    methodNode: NewMethod
+  ): Unit = {
+    lambdaBindingInfoQueue.prepend(
+      BindingInfo(bindingNode, Seq((typeDecl, bindingNode, EdgeTypes.BINDS), (bindingNode, methodNode, EdgeTypes.REF)))
+    )
+  }
+
+  protected def exprTypeFullName(expr: KtExpression): Option[String] = {
+    bindingUtils.getExprType(expr).flatMap(nameRenderer.typeFullName)
+  }
+
+  protected def fullNameByImportPath(typeRef: KtTypeReference, file: KtFile): Option[String] = {
+    if (typeRef == null) {
+      return None
+    }
+
+    file.getImportList.getImports.asScala.flatMap { directive =>
+      if (directive.getImportedName != null && directive.getImportedName.toString == typeRef.getText.stripSuffix("?"))
+        Some(directive.getImportPath.getPathStr)
+      else None
+    }.headOption
   }
 }

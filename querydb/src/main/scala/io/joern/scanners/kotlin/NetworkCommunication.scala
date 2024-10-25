@@ -37,7 +37,9 @@ object NetworkCommunication extends QueryBundle {
         def nopTrustManagersAllocs =
           cpg.method.fullNameExact(Operators.alloc).callIn.typeFullNameExact(nopTrustManagerFullNames*)
         def sslCtxInitCalls = cpg.method
-          .fullNameExact("javax.net.ssl.SSLContext.init:void(kotlin.Array,kotlin.Array,java.security.SecureRandom)")
+          .fullNameExact(
+            "javax.net.ssl.SSLContext.init:void(javax.net.ssl.KeyManager[],javax.net.ssl.TrustManager[],java.security.SecureRandom)"
+          )
           .callIn
         sslCtxInitCalls.filter { call =>
           call.argument(2).reachableBy(nopTrustManagersAllocs).nonEmpty

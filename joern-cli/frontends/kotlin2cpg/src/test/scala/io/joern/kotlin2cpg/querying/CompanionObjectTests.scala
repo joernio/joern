@@ -68,6 +68,25 @@ class CompanionObjectTests extends KotlinCode2CpgFixture(withOssDataflow = false
     }
   }
 
+  "nested companion object and nested class test" in {
+    val cpg = code("""
+                     |package mypkg
+                     |
+                     |class AClass {
+                     |    companion object {
+                     |        class BClass {
+                     |            companion object NamedCompanion {
+                     |            }
+                     |        }
+                     |    }
+                     |}
+                     |""".stripMargin)
+
+    inside(cpg.typeDecl.nameExact("NamedCompanion").l) { case List(typeDecl) =>
+      typeDecl.fullName shouldBe "mypkg.AClass$Companion$BClass$NamedCompanion"
+    }
+  }
+
   "CPG for code with simple named companion object" should {
     val cpg = code("""
         |package mypkg
