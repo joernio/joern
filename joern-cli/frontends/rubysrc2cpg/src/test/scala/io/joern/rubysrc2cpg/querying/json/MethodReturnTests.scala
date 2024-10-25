@@ -431,7 +431,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(useJsonAst = true) {
     inside(cpg.method.nameExact("foo").methodReturn.toReturn.astChildren.l) {
       case (heredoc: Literal) :: Nil =>
         heredoc.typeFullName shouldBe s"$kernelPrefix.String"
-        heredoc.code should startWith("<<-EOM")
+        heredoc.code should startWith("   puts \"hello\"")
       case xs => fail(s"Expected a single literal node, instead got [${xs.code.mkString(", ")}]")
     }
   }
