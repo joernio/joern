@@ -274,7 +274,11 @@ class RubyJsonToNodeCreator(
     val lhs =
       IndexAccess(lhsBase, List(args.head))(obj.toTextSpan.spanStart(s"${lhsBase.span.text}[${args.head.span.text}]"))
 
-    SingleAssignment(lhs, "=", args(1))(obj.toTextSpan)
+    val rhs =
+      if args.size == 2 then args(1)
+      else SimpleIdentifier()(obj.toTextSpan.spanStart("*"))
+
+    SingleAssignment(lhs, "=", rhs)(obj.toTextSpan)
   }
 
   private def visitBreak(obj: Obj): RubyExpression = BreakExpression()(obj.toTextSpan)
