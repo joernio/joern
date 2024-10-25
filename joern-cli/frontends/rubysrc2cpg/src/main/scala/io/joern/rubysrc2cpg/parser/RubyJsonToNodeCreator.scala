@@ -258,7 +258,9 @@ class RubyJsonToNodeCreator(
     ProcParameter(obj(ParserKeys.Value).str)(obj.toTextSpan)
   }
 
-  private def visitBlockPass(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitBlockPass(obj: Obj): RubyExpression = {
+    visit(obj(ParserKeys.Value))
+  }
 
   private def visitBlockWithNumberedParams(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
@@ -770,7 +772,8 @@ class RubyJsonToNodeCreator(
         if (obj.contains(ParserKeys.Receiver)) {
           val op   = if isConditional then "&." else "."
           val base = visit(obj(ParserKeys.Receiver))
-          MemberCall(base, op, callName, arguments)(obj.toTextSpan)
+          if arguments.nonEmpty then MemberCall(base, op, callName, arguments)(obj.toTextSpan)
+          else MemberAccess(base, op, callName)(obj.toTextSpan)
         } else {
           SimpleCall(target, arguments)(obj.toTextSpan)
         }
