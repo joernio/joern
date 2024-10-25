@@ -276,7 +276,7 @@ class RubyJsonToNodeCreator(
       case expr                => StatementList(expr +: assignments)(expr.span)
     }
 
-    val block = Block(parameters, body)(obj.toTextSpan)
+    val block = Block(parameters, body)(body.span)
     visit(obj(ParserKeys.CallName)) match {
       case classNew: ObjectInstantiation if classNew.target.text == "Class.new" =>
         AnonymousClassDeclaration(freshClassName(obj.toTextSpan), None, block.toStatementList)(obj.toTextSpan)
@@ -296,11 +296,14 @@ class RubyJsonToNodeCreator(
   }
 
   private def visitBlockArg(obj: Obj): RubyExpression = {
-    ProcParameter(obj(ParserKeys.Value).str)(obj.toTextSpan)
+    val span = obj.toTextSpan
+    val name = obj(ParserKeys.Value).strOpt.orElse(procParamGen.fresh.toOption).getOrElse(span.text)
+    ProcParameter(name)(span)
   }
 
   private def visitBlockPass(obj: Obj): RubyExpression = {
-    visit(obj(ParserKeys.Value))
+    lazy val default = SimpleIdentifier()(obj.toTextSpan.spanStart(procParamGen.current.value))
+    obj.visitOption(ParserKeys.Value).getOrElse(default)
   }
 
   private def visitBlockWithNumberedParams(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
@@ -830,10 +833,15 @@ class RubyJsonToNodeCreator(
           case x                          => x :: Nil
         }
         if (obj.contains(ParserKeys.Receiver)) {
-          val isMemberCall =
-            obj.toTextSpan.text.endsWith(")") || callName == "each" || callName == "<<" || arguments.nonEmpty
-          val op   = if isConditional then "&." else "."
-          val base = visit(obj(ParserKeys.Receiver))
+          val objSpan = obj.toTextSpan
+          val base    = visit(obj(ParserKeys.Receiver))
+          val isMemberCall = // fixme: is the callName == 'each' not superseded by the other checks?
+            objSpan.text.endsWith(")") || callName == "each" || callName == "<<" || arguments.nonEmpty
+          val op = {
+            val dot = if objSpan.text.stripPrefix(base.text).startsWith("::") then "::" else "."
+            if isConditional then s"&$dot" else dot
+          }
+
           if isMemberCall then MemberCall(base, op, callName, arguments)(obj.toTextSpan)
           else MemberAccess(base, op, callName)(obj.toTextSpan)
         } else {
@@ -865,7 +873,11 @@ class RubyJsonToNodeCreator(
       case Some(body) =>
         name match {
           case _: SelfIdentifier =>
-            SingletonClassDeclaration(freshClassName(obj.toTextSpan), baseClass, body)(obj.toTextSpan)
+            val bodyList = body match {
+              case stmtList: StatementList => stmtList
+              case expr                    => StatementList(expr :: Nil)(expr.span)
+            }
+            SingletonClassDeclaration(freshClassName(obj.toTextSpan), baseClass, bodyList)(obj.toTextSpan)
           case _ =>
             def mapDefBody(defBody: RubyExpression): RubyExpression = defBody match {
               case method @ MethodDeclaration(methodName, parameters, body) =>
