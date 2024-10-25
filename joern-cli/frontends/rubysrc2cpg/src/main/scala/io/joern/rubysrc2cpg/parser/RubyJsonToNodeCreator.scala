@@ -276,8 +276,7 @@ class RubyJsonToNodeCreator(
       case expr                => StatementList(expr +: assignments)(expr.span)
     }
 
-//    val block = Block(parameters, body)(body.span)
-    val block = Block(parameters, body)(obj.toTextSpan)
+    val block = Block(parameters, body)(body.span.spanStart(obj.toTextSpan.text))
     visit(obj(ParserKeys.CallName)) match {
       case classNew: ObjectInstantiation if classNew.span.text == "Class.new" =>
         AnonymousClassDeclaration(freshClassName(obj.toTextSpan), None, block.toStatementList)(obj.toTextSpan)
