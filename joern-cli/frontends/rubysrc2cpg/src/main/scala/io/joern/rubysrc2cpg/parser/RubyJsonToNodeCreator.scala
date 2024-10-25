@@ -788,9 +788,10 @@ class RubyJsonToNodeCreator(
           case x                          => x :: Nil
         }
         if (obj.contains(ParserKeys.Receiver)) {
-          val isMemberCall = obj.toTextSpan.text.endsWith(")") || callName == "each" || callName == "<<"
-          val op           = if isConditional then "&." else "."
-          val base         = visit(obj(ParserKeys.Receiver))
+          val isMemberCall =
+            obj.toTextSpan.text.endsWith(")") || callName == "each" || callName == "<<" || arguments.nonEmpty
+          val op   = if isConditional then "&." else "."
+          val base = visit(obj(ParserKeys.Receiver))
           if isMemberCall then MemberCall(base, op, callName, arguments)(obj.toTextSpan)
           else MemberAccess(base, op, callName)(obj.toTextSpan)
         } else {
