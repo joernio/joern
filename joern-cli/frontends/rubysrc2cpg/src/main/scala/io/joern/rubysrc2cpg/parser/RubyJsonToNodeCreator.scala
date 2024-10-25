@@ -212,9 +212,7 @@ class RubyJsonToNodeCreator(
 
   private def visitArg(obj: Obj): RubyExpression = MandatoryParameter(obj(ParserKeys.Value).str)(obj.toTextSpan)
 
-  private def visitArgs(obj: Obj): RubyExpression = {
-    defaultResult(Option(obj.toTextSpan))
-  }
+  private def visitArgs(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
   private def visitArray(obj: Obj): RubyExpression = {
     val children = obj.visitArray(ParserKeys.Children).flatMap {
@@ -245,11 +243,11 @@ class RubyJsonToNodeCreator(
         case x: SimpleIdentifier => SimpleIdentifier()(x.span)
         case x: ArrayParameter =>
           SplattingRubyNode(SimpleIdentifier()(arrayParam.span.spanStart(x.span.text.stripPrefix("*"))))(
-            arrayParam.span.spanStart(s"${x.span.text}")
+            arrayParam.span.spanStart(x.span.text)
           )
         case x =>
           logger.warn(s"Invalid parameter type in grouped parameter list: ${x.getClass}")
-          defaultResult()
+          defaultResult(Option(arrayParam.span))
       }
       SingleAssignment(lhs, "=", rhsSplattingNode)(
         arrayParam.span.spanStart(s"${lhs.span.text} = ${rhsSplattingNode.span.text}")
