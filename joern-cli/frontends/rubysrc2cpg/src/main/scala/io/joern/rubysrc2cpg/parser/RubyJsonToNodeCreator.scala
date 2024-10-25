@@ -277,8 +277,9 @@ class RubyJsonToNodeCreator(
     }
 
     val block = Block(parameters, body)(obj.toTextSpan)
+
     visit(obj(ParserKeys.CallName)) match {
-      case classNew: ObjectInstantiation if classNew.target.text == "Class.new" =>
+      case classNew: ObjectInstantiation if classNew.span.text == "Class.new" =>
         AnonymousClassDeclaration(freshClassName(obj.toTextSpan), None, block.toStatementList)(obj.toTextSpan)
       case objNew: ObjectInstantiation                        => objNew.withBlock(block)
       case lambda: RubyCall if lambda.target.text == "lambda" => ProcOrLambdaExpr(block)(obj.toTextSpan)
