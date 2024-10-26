@@ -2153,4 +2153,35 @@ class DataFlowTestsWithCallDepth extends DataFlowCodeToCpgSuite {
       )
     }
   }
+
+  "DataFlowTest80" should {
+    val cpg = code("""
+        |int main(void) {
+        | int x = 10;
+        | int y = 20;
+        | int z[] = {x, y, 30};
+        | call1(z);
+        |}
+        |""".stripMargin)
+
+    "elements of an arrayInitializer should not taint each other" in {
+      val x = cpg.identifier("x").lineNumber(5).l
+      val y = cpg.identifier("y").lineNumber(5).l
+      val z = cpg.literal("30").l
+      x.reachableByFlows(y ++ z) shouldBe empty
+      y.reachableByFlows(x ++ z) shouldBe empty
+      z.reachableByFlows(x ++ y) shouldBe empty
+    }
+
+    "elements of an arrayInitializer should taint its return value" in {
+      val x = cpg.literal("10")
+      val y = cpg.literal("20")
+      val z = cpg.literal("30")
+      cpg.call("call1").argument.reachableByFlows(x ++ y ++ z).map(flowToResultPairs).l.sorted shouldBe List(
+        List(("x = 10", 3), ("{x, y, 30}", 5), ("z[] = {x, y, 30}", 5), ("call1(z)", 6)),
+        List(("y = 20", 4), ("{x, y, 30}", 5), ("z[] = {x, y, 30}", 5), ("call1(z)", 6)),
+        List(("{x, y, 30}", 5), ("z[] = {x, y, 30}", 5), ("call1(z)", 6))
+      )
+    }
+  }
 }
