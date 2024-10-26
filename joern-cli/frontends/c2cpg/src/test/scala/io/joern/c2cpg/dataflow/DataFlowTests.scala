@@ -3,7 +3,7 @@ package io.joern.c2cpg.dataflow
 import io.joern.c2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Identifier, Literal}
 import io.shiftleft.semanticcpg.language.*
 import flatgraph.help.Table.AvailableWidthProvider
@@ -2119,6 +2119,38 @@ class DataFlowTestsWithCallDepth extends DataFlowCodeToCpgSuite {
       val source = cpg.literal("2")
       val sink   = cpg.call("call2")
       sink.reachableByFlows(source).map(flowToResultPairs).l shouldBe List(List(("x>>=2", 4), ("call2(x)", 5)))
+    }
+  }
+
+  "DataFlowTest79" should {
+    val cpg = code("""
+        |int main(void) {
+        | int x = 5;
+        | int y = 2;
+        | int z = x % y;
+        | call1(z);
+        |}
+        |""".stripMargin)
+
+    "the first argument in a % operation should not taint its second argument" in {
+      val source = cpg.literal("5")
+      val sink   = cpg.identifier("y").lineNumber(5)
+      sink.reachableByFlows(source) shouldBe empty
+    }
+
+    "the second argument in a % operation should not taint its first argument" in {
+      val source = cpg.literal("2")
+      val sink   = cpg.identifier("x").lineNumber(5)
+      sink.reachableByFlows(source) shouldBe empty
+    }
+
+    "the arguments in a % operation should taint its return value" in {
+      val source = cpg.literal
+      val sink   = cpg.call("call1").argument
+      sink.reachableByFlows(source).map(flowToResultPairs).l.sorted shouldBe List(
+        List(("x = 5", 3), ("x % y", 5), ("z = x % y", 5), ("call1(z)", 6)),
+        List(("y = 2", 4), ("x % y", 5), ("z = x % y", 5), ("call1(z)", 6))
+      )
     }
   }
 }
