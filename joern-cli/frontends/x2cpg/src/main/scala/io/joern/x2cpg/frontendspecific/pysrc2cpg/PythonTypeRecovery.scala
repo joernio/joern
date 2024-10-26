@@ -1,19 +1,13 @@
 package io.joern.x2cpg.frontendspecific.pysrc2cpg
 
-import io.joern.x2cpg.passes.frontend.{RecoverForXCompilationUnit, XTypeRecovery, XTypeRecoveryState}
-import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.File
-import io.shiftleft.semanticcpg.language.*
-import io.joern.x2cpg.frontendspecific.pysrc2cpg.Constants
+import io.joern.x2cpg.Defines
 import io.joern.x2cpg.passes.frontend.*
-import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{Cpg, DiffGraphBuilder, Operators, PropertyNames}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.importresolver.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
-import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 
 private class PythonTypeRecovery(cpg: Cpg, state: XTypeRecoveryState, iteration: Int)
     extends XTypeRecovery[File](cpg, state, iteration) {
@@ -56,7 +50,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
             .member
             .nameExact(memberName)
             .flatMap(m => m.typeFullName +: m.dynamicTypeHintFullName)
-            .filterNot(_ == Constants.ANY)
+            .filterNot(_ == Defines.Any)
             .toSet
           symbolTable.put(LocalVar(entityName), memberTypes)
         case UnknownMethod(fullName, alias, receiver, _) =>
@@ -204,7 +198,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
           .foreach { cls =>
             val clsPath = classMethod.typeDecl.fullName.toSet
             symbolTable.put(LocalVar(cls.name), clsPath)
-            if (cls.typeFullName == Constants.ANY)
+            if (cls.typeFullName == Defines.Any)
               builder.setNodeProperty(cls, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, clsPath.toSeq)
           }
     }
