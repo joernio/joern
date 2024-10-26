@@ -260,7 +260,7 @@ class ContextStack {
     */
   def considerAsGlobalVariable(lhs: NewNode): Unit = {
     lhs match {
-      case n: NewIdentifier if findEnclosingMethodContext(stack).scopeName.contains("<module>") =>
+      case n: NewIdentifier if findEnclosingMethodContext(stack).scopeName.contains(Constants.moduleName) =>
         addGlobalVariable(n.name)
       case _ =>
     }
