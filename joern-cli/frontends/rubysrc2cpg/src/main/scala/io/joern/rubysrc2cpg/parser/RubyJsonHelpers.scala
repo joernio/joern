@@ -134,7 +134,7 @@ object RubyJsonHelpers {
 
     obj.visitOption(ParserKeys.Body).map(lowerAliasStatementsToMethods) match {
       case Some(stmtList @ StatementList(expression :: Nil)) if expression.isInstanceOf[AllowedTypeDeclarationChild] =>
-        (stmtList, getFields(expression))
+        (StatementList(bodyMethod(Nil) :: expression :: Nil)(stmtList.span), getFields(expression))
       case Some(stmtList @ StatementList(expression :: Nil)) if isFieldStmt(expression) =>
         (StatementList(bodyMethod(expression :: Nil) :: Nil)(stmtList.span), getFields(expression))
       case Some(stmtList: StatementList) =>

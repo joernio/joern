@@ -193,9 +193,9 @@ class RubyJsonToNodeCreator(
   }
 
   private def visitAlias(obj: Obj): RubyExpression = {
-    val name  = visit(obj(ParserKeys.Name)).text
-    val alias = visit(obj(ParserKeys.Alias)).text
-    AliasStatement(name, alias)(obj.toTextSpan)
+    val name  = visit(obj(ParserKeys.Name)).text.stripPrefix(":")
+    val alias = visit(obj(ParserKeys.Alias)).text.stripPrefix(":")
+    AliasStatement(alias, name)(obj.toTextSpan)
   }
 
   private def visitAnd(obj: Obj): RubyExpression = {

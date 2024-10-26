@@ -473,7 +473,7 @@ class MethodTests extends RubyCode2CpgFixture(useJsonAst = true) {
               inside(loopMethod.block.astChildren.isControlStructure.l) {
                 case ifStruct :: Nil =>
                   inside(ifStruct.astChildren.isBlock.l) {
-                    case breakBlock :: nilBlock :: Nil =>
+                    case nilBlock :: breakBlock :: Nil =>
                       inside(breakBlock.astChildren.isControlStructure.l) {
                         case breakStruct :: Nil =>
                           breakStruct.code shouldBe "break"
@@ -525,15 +525,18 @@ class MethodTests extends RubyCode2CpgFixture(useJsonAst = true) {
 
     "Should be represented as a TRY structure" in {
       inside(cpg.method.name("foo").controlStructure.l) {
-        case tryStruct :: ensureStruct :: Nil =>
+        case tryStruct :: emptyElseStruct :: ensureStruct :: Nil =>
           tryStruct.controlStructureType shouldBe ControlStructureTypes.TRY
           val body = tryStruct.astChildren.head
           body.ast.isLiteral.code.l shouldBe List("1")
 
+          emptyElseStruct.controlStructureType shouldBe ControlStructureTypes.ELSE
+          emptyElseStruct.ast.isLiteral.code.l shouldBe List("nil")
+
           ensureStruct.controlStructureType shouldBe ControlStructureTypes.FINALLY
           ensureStruct.ast.isLiteral.code.l shouldBe List("2")
 
-        case xs => fail(s"Expected two structures, got ${xs.code.mkString(",")}")
+        case xs => fail(s"Expected three structures, got ${xs.code.mkString(",")}")
       }
     }
   }
