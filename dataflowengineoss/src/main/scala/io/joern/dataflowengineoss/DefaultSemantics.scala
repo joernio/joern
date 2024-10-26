@@ -44,6 +44,7 @@ object DefaultSemantics {
     F(Operators.fieldAccess, List((1, -1))),
     F(Operators.getElementPtr, List((1, -1))),
     PTF(Operators.modulo, List.empty),
+    PTF(Operators.arrayInitializer, List.empty),
 
     // TODO does this still exist?
     F("<operator>.incBy", List((1, 1), (2, 1), (3, 1), (4, 1))),
