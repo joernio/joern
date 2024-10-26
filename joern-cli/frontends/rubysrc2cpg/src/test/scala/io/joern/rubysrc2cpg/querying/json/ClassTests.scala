@@ -555,7 +555,7 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
         |end
         |""".stripMargin)
 
-    "create respective member nodes" ignore {
+    "create respective member nodes" in {
       inside(cpg.typeDecl.name("Foo").l) {
         case fooType :: Nil =>
           inside(fooType.member.name("@.*").l) {
@@ -572,7 +572,7 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
       }
     }
 
-    "create nil assignments under the class initializer" ignore {
+    "create nil assignments under the class initializer" in {
       inside(cpg.typeDecl.name("Foo").l) {
         case fooType :: Nil =>
           inside(fooType.method.name(RubyDefines.TypeDeclBody).l) {
@@ -722,13 +722,13 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
       cpg.method.nameExact("verify_signature").nonEmpty shouldBe true
     }
 
-    "create the `StandardError` local variable" ignore {
+    "create the `StandardError` local variable" in {
       cpg.local.nameExact("some_variable").dynamicTypeHintFullName.toList shouldBe List(
         s"${GlobalTypes.builtinPrefix}.StandardError"
       )
     }
 
-    "create the splatted error local variable" ignore {
+    "create the splatted error local variable" in {
       cpg.local.nameExact("splat_errors").size shouldBe 1
     }
   }
@@ -743,7 +743,7 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
         |end
         |""".stripMargin)
 
-    "be moved to <init> constructor method" ignore {
+    "be moved to <init> constructor method" in {
       inside(cpg.typeDecl.name("Foo").l) {
         case fooClass :: Nil =>
           inside(fooClass.method.name(RubyDefines.TypeDeclBody).l) {
@@ -777,12 +777,12 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
         |end
         |""".stripMargin)
 
-    "correct method full name for method ref under call" ignore {
+    "correct method full name for method ref under call" in {
       inside(cpg.typeDecl.name("Foo").l) {
         case fooClass :: Nil =>
           inside(fooClass.method.name(RubyDefines.TypeDeclBody).l) {
             case initMethod :: Nil =>
-              initMethod.code shouldBe "def <body>\nscope :hits_by_ip, ->(ip, col = \"*\") { select(\"#{col}\").where(ip_address: ip).order(\"id DESC\") }\nend"
+              initMethod.code shouldBe "def <body>; (...); end"
               inside(initMethod.astChildren.isBlock.l) {
                 case methodBlock :: Nil =>
                   inside(methodBlock.astChildren.l) {
@@ -840,7 +840,7 @@ class ClassTests extends RubyCode2CpgFixture(useJsonAst = true) {
         |class X 1 end
         |""".stripMargin)
 
-    "create TYPE_DECL" ignore {
+    "create TYPE_DECL" in {
       inside(cpg.typeDecl.name("X").l) {
         case xClass :: Nil =>
           inside(xClass.astChildren.isMethod.l) {

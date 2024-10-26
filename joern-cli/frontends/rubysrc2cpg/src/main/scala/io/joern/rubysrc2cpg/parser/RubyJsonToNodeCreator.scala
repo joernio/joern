@@ -192,7 +192,11 @@ class RubyJsonToNodeCreator(
     }
   }
 
-  private def visitAlias(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitAlias(obj: Obj): RubyExpression = {
+    val name  = visit(obj(ParserKeys.Name)).text
+    val alias = visit(obj(ParserKeys.Alias)).text
+    AliasStatement(name, alias)(obj.toTextSpan)
+  }
 
   private def visitAnd(obj: Obj): RubyExpression = {
     val op  = "&&"
@@ -297,7 +301,7 @@ class RubyJsonToNodeCreator(
 
   private def visitBlockArg(obj: Obj): RubyExpression = {
     val span = obj.toTextSpan
-    val name = obj(ParserKeys.Value).strOpt.orElse(procParamGen.fresh.toOption).getOrElse(span.text)
+    val name = obj(ParserKeys.Value).strOpt.filterNot(_ == "&").getOrElse(procParamGen.fresh.value)
     ProcParameter(name)(span)
   }
 
@@ -905,7 +909,12 @@ class RubyJsonToNodeCreator(
   }
 
   private def visitSingleAssignment(obj: Obj): RubyExpression = {
-    val lhs = SimpleIdentifier()(obj.toTextSpan.spanStart(obj(ParserKeys.Lhs).str))
+    val lhsSpan = obj.toTextSpan.spanStart(obj(ParserKeys.Lhs).str)
+    val lhs = obj(ParserKeys.Lhs).str match {
+      case s"@@$_" => ClassFieldIdentifier()(lhsSpan)
+      case s"@$_"  => InstanceFieldIdentifier()(lhsSpan)
+      case _       => SimpleIdentifier()(lhsSpan)
+    }
     obj.visitOption(ParserKeys.Rhs) match {
       case Some(rhs) =>
         SingleAssignment(lhs, "=", rhs)(obj.toTextSpan)

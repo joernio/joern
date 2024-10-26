@@ -1,6 +1,7 @@
 package io.joern.rubysrc2cpg.parser
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
+  AliasStatement,
   AllowedTypeDeclarationChild,
   ArrayLiteral,
   ClassFieldIdentifier,
@@ -13,6 +14,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   RubyExpression,
   RubyFieldIdentifier,
   SelfIdentifier,
+  SimpleCall,
   SimpleIdentifier,
   SingleAssignment,
   SplattingRubyNode,
@@ -26,10 +28,13 @@ import io.joern.rubysrc2cpg.parser.RubyJsonHelpers.nilLiteral
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import io.shiftleft.codepropertygraph.generated.nodes.Unknown
+import org.slf4j.LoggerFactory
 import upickle.core.*
 import upickle.default.*
 
 object RubyJsonHelpers {
+
+  private val logger = LoggerFactory.getLogger(getClass)
 
   implicit class JsonObjHelper(o: ujson.Obj) {
 
@@ -127,7 +132,7 @@ object RubyJsonHelpers {
       }
     }
 
-    obj.visitOption(ParserKeys.Body) match {
+    obj.visitOption(ParserKeys.Body).map(lowerAliasStatementsToMethods) match {
       case Some(stmtList @ StatementList(expression :: Nil)) if expression.isInstanceOf[AllowedTypeDeclarationChild] =>
         (stmtList, getFields(expression))
       case Some(stmtList @ StatementList(expression :: Nil)) if isFieldStmt(expression) =>
@@ -141,10 +146,6 @@ object RubyJsonHelpers {
         )(stmtList.span)
 
         (body, fields)
-      case Some(expression) if isFieldStmt(expression) || !expression.isInstanceOf[AllowedTypeDeclarationChild] =>
-        (StatementList(bodyMethod(expression +: getFields(expression)) :: Nil)(obj.toTextSpan), getFields(expression))
-      case Some(expression) =>
-        (StatementList(bodyMethod(Nil) :: expression :: Nil)(obj.toTextSpan), getFields(expression))
       case None => (StatementList(bodyMethod(Nil) :: Nil)(obj.toTextSpan.spanStart("<empty>")), Nil)
     }
   }
@@ -290,6 +291,41 @@ object RubyJsonHelpers {
         "INFINITY"
       )(obj.toTextSpan.spanStart("Float::INFINITY"))
     )(obj.toTextSpan.spanStart("-Float::INFINITY"))
+
+  def lowerAliasStatementsToMethods(classBody: RubyExpression): StatementList = {
+    val stmts = classBody match {
+      case StatementList(stmts) => stmts
+      case x                    => List(x)
+    }
+
+    val methodParamMap = stmts.collect { case method: ProcedureDeclaration =>
+      method.methodName -> method.parameters
+    }.toMap
+
+    val transformedStmts = stmts.map {
+      case alias: AliasStatement if methodParamMap.contains(alias.oldName) =>
+        val aliasingMethodParams = methodParamMap(alias.oldName)
+        val argsCode             = aliasingMethodParams.map(_.text).mkString(", ")
+        val callCode             = s"${alias.oldName}($argsCode)"
+
+        val forwardingCall = SimpleCall(
+          SimpleIdentifier(None)(alias.span.spanStart(alias.oldName)),
+          aliasingMethodParams.map { x => SimpleIdentifier(None)(alias.span.spanStart(x.span.text)) }
+        )(alias.span.spanStart(callCode))
+        val aliasMethodBody = StatementList(forwardingCall :: Nil)(alias.span.spanStart(callCode))
+        MethodDeclaration(alias.newName, aliasingMethodParams, aliasMethodBody)(
+          alias.span.spanStart(s"def ${alias.newName}($argsCode)")
+        )
+
+      case alias: AliasStatement =>
+        logger.warn(s"Unable to correctly lower aliased method ${alias.oldName} (aliased method not found)")
+        val forwardingCall = SimpleCall(SimpleIdentifier(None)(alias.span.spanStart(alias.oldName)), Nil)(alias.span)
+        MethodDeclaration(alias.newName, Nil, StatementList(forwardingCall :: Nil)(alias.span))(alias.span)
+      case expr => expr
+    }
+
+    StatementList(transformedStmts)(classBody.span)
+  }
 
   private case class MetaData(
     code: String,
