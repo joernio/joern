@@ -2147,9 +2147,9 @@ class DataFlowTestsWithCallDepth extends DataFlowCodeToCpgSuite {
     "the arguments in a % operation should taint its return value" in {
       val source = cpg.literal
       val sink   = cpg.call("call1").argument
-      sink.reachableByFlows(source).map(flowToResultPairs).l shouldBe List(
-        List(("y = 2", 4), ("x % y", 5), ("z = x % y", 5), ("call1(z)", 6)),
-        List(("x = 5", 3), ("x % y", 5), ("z = x % y", 5), ("call1(z)", 6))
+      sink.reachableByFlows(source).map(flowToResultPairs).l.sorted shouldBe List(
+        List(("x = 5", 3), ("x % y", 5), ("z = x % y", 5), ("call1(z)", 6)),
+        List(("y = 2", 4), ("x % y", 5), ("z = x % y", 5), ("call1(z)", 6))
       )
     }
   }
