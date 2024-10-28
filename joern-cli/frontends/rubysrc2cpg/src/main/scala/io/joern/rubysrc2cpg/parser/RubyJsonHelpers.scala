@@ -337,21 +337,11 @@ object RubyJsonHelpers {
     classBody match {
       case stmtList: StatementList =>
         StatementList(stmtList.statements.flatMap {
-          case singletonClassDeclaration: SingletonClassDeclaration =>
-            singletonClassDeclaration.baseClass match {
-              case Some(selfIdentifier: SelfIdentifier) =>
-                singletonClassDeclaration.body match {
-                  case singletonClassStmtList: StatementList =>
-                    singletonClassStmtList.statements.map {
-                      case method: MethodDeclaration =>
-                        SingletonMethodDeclaration(selfIdentifier, method.methodName, method.parameters, method.body)(
-                          method.span
-                        )
-                      case nonMethodStatement => nonMethodStatement
-                    }
-                  case singletonBody => singletonBody :: Nil
-                }
-              case _ => singletonClassDeclaration.body :: Nil
+          case _ @SingletonClassDeclaration(_, baseClass: Some[RubyExpression], body: StatementList, _) =>
+            body.statements.map {
+              case method @ MethodDeclaration(methodName, parameters, body) =>
+                SingletonMethodDeclaration(baseClass.get, methodName, parameters, body)(method.span)
+              case nonMethodStatement => nonMethodStatement
             }
           case nonStmtListBody => nonStmtListBody :: Nil
         })(stmtList.span)
