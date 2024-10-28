@@ -8,10 +8,13 @@ import io.shiftleft.semanticcpg.language.*
 class CallMethods(val node: Call) extends AnyVal with NodeExtension with HasLocation {
 
   def isStatic: Boolean =
-    node.dispatchType == "STATIC_DISPATCH"
+    node.dispatchType == DispatchTypes.STATIC_DISPATCH
 
   def isDynamic: Boolean =
-    node.dispatchType == "DYNAMIC_DISPATCH"
+    node.dispatchType == DispatchTypes.DYNAMIC_DISPATCH
+
+  def isInline: Boolean =
+    node.dispatchType == DispatchTypes.INLINED
 
   def receiver: Iterator[Expression] =
     node.receiverOut.collectAll[Expression]
