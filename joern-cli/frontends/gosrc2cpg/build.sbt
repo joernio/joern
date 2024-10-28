@@ -78,16 +78,15 @@ goAstGenDlTask := {
   val goAstGenDir = baseDirectory.value / "bin" / "astgen"
 
   goAstGenBinaryNames.value.foreach { fileName =>
-    DownloadHelper.ensureIsAvailable(s"${goAstGenDlUrl.value}$fileName", goAstGenDir / fileName)
+    val file = goAstGenDir / fileName
+    DownloadHelper.ensureIsAvailable(s"${goAstGenDlUrl.value}$fileName", file)
+    // permissions are lost during the download; need to set them manually
+    file.setExecutable(true, false)
   }
 
   val distDir = (Universal / stagingDirectory).value / "bin" / "astgen"
   distDir.mkdirs()
-  IO.copyDirectory(goAstGenDir, distDir)
-
-  // permissions are lost during the download; need to set them manually
-  goAstGenDir.listFiles().foreach(_.setExecutable(true, false))
-  distDir.listFiles().foreach(_.setExecutable(true, false))
+  IO.copyDirectory(goAstGenDir, distDir, preserveExecutable = true)
 }
 
 Compile / compile := ((Compile / compile) dependsOn goAstGenDlTask).value
