@@ -13,6 +13,9 @@ class CallMethods(val node: Call) extends AnyVal with NodeExtension with HasLoca
   def isDynamic: Boolean =
     node.dispatchType == DispatchTypes.DYNAMIC_DISPATCH
 
+  def isInline: Boolean =
+    node.dispatchType == DispatchTypes.INLINED
+
   def receiver: Iterator[Expression] =
     node.receiverOut.collectAll[Expression]
 
