@@ -661,12 +661,13 @@ class RubyJsonToNodeCreator(
   private def visitNthRef(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
   private def visitObjectInstantiation(obj: Obj): RubyExpression = {
-    val callName  = Defines.New
-    val receiver  = visit(obj(ParserKeys.Receiver))
-    val target    = MemberAccess(receiver, ".", callName)(obj.toTextSpan.spanStart(receiver.text))
-    val arguments = obj.visitArray(ParserKeys.Arguments)
+    val callName = Defines.New
 
-    SimpleObjectInstantiation(target, arguments)(obj.toTextSpan)
+    // The receiver is the target with the JSON parser
+    val receiver = visit(obj(ParserKeys.Receiver))
+
+    val arguments = obj.visitArray(ParserKeys.Arguments)
+    SimpleObjectInstantiation(receiver, arguments)(obj.toTextSpan)
   }
 
   private def visitOperatorAssign(obj: Obj): RubyExpression = {
@@ -881,7 +882,13 @@ class RubyJsonToNodeCreator(
               case stmtList: StatementList => stmtList
               case expr                    => StatementList(expr :: Nil)(expr.span)
             }
-            SingletonClassDeclaration(freshClassName(obj.toTextSpan), baseClass, bodyList)(obj.toTextSpan)
+
+            val base = baseClass match {
+              case Some(baseClass) => baseClass
+              case None            => SelfIdentifier()(obj.toTextSpan.spanStart("self"))
+            }
+
+            SingletonClassDeclaration(freshClassName(obj.toTextSpan), Some(base), bodyList)(obj.toTextSpan)
           case _ =>
             def mapDefBody(defBody: RubyExpression): RubyExpression = defBody match {
               case method @ MethodDeclaration(methodName, parameters, body) =>

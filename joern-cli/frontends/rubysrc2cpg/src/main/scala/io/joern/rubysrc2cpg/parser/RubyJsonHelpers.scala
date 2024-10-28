@@ -17,6 +17,8 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   SimpleCall,
   SimpleIdentifier,
   SingleAssignment,
+  SingletonClassDeclaration,
+  SingletonMethodDeclaration,
   SplattingRubyNode,
   StatementList,
   StaticLiteral,
@@ -77,7 +79,6 @@ object RubyJsonHelpers {
   )(implicit visit: ujson.Value => RubyExpression): (StatementList, List[RubyExpression & RubyFieldIdentifier]) = {
 
     def bodyMethod(fieldStatements: List[RubyExpression]): MethodDeclaration = {
-
       val body = fieldStatements
         .map {
           case field: SimpleIdentifier =>
@@ -293,7 +294,12 @@ object RubyJsonHelpers {
     )(obj.toTextSpan.spanStart("-Float::INFINITY"))
 
   def lowerAliasStatementsToMethods(classBody: RubyExpression): StatementList = {
-    val stmts = classBody match {
+    val loweredStmts = classBody match {
+      case x: StatementList => lowerSingletonClassDeclarations(x)
+      case x                => lowerSingletonClassDeclarations(StatementList(List(x))(x.span))
+    }
+
+    val stmts = loweredStmts match {
       case StatementList(stmts) => stmts
       case x                    => List(x)
     }
@@ -325,6 +331,32 @@ object RubyJsonHelpers {
     }
 
     StatementList(transformedStmts)(classBody.span)
+  }
+
+  private def lowerSingletonClassDeclarations(classBody: RubyExpression): RubyExpression = {
+    classBody match {
+      case stmtList: StatementList =>
+        StatementList(stmtList.statements.flatMap {
+          case singletonClassDeclaration: SingletonClassDeclaration =>
+            singletonClassDeclaration.baseClass match {
+              case Some(selfIdentifier: SelfIdentifier) =>
+                singletonClassDeclaration.body match {
+                  case singletonClassStmtList: StatementList =>
+                    singletonClassStmtList.statements.map {
+                      case method: MethodDeclaration =>
+                        SingletonMethodDeclaration(selfIdentifier, method.methodName, method.parameters, method.body)(
+                          method.span
+                        )
+                      case nonMethodStatement => nonMethodStatement
+                    }
+                  case singletonBody => singletonBody :: Nil
+                }
+              case _ => singletonClassDeclaration.body :: Nil
+            }
+          case nonStmtListBody => nonStmtListBody :: Nil
+        })(stmtList.span)
+      case nonStmtList => nonStmtList
+    }
   }
 
   private case class MetaData(

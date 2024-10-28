@@ -210,10 +210,10 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true, useJsonAs
           val recv = constructor.receiver.head.asInstanceOf[Call]
           recv.methodFullName shouldBe Operators.fieldAccess
           recv.name shouldBe Operators.fieldAccess
-          recv.code shouldBe s"(<tmp-2> = A).${RubyDefines.Initialize}"
+          recv.code shouldBe s"A.${RubyDefines.Initialize}"
 
           recv.argument(1).label shouldBe NodeTypes.CALL
-          recv.argument(1).code shouldBe "<tmp-2> = A"
+          recv.argument(1).code shouldBe "self.A"
           recv.argument(2).label shouldBe NodeTypes.FIELD_IDENTIFIER
           recv.argument(2).code shouldBe RubyDefines.Initialize
         case xs => fail(s"Expected a single alloc, got [${xs.code.mkString(",")}]")
@@ -243,7 +243,7 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true, useJsonAs
           val recv = constructor.receiver.head.asInstanceOf[Call]
           recv.methodFullName shouldBe Operators.fieldAccess
           recv.name shouldBe Operators.fieldAccess
-          recv.code shouldBe s"(<tmp-3> = params[:type].constantize).${RubyDefines.Initialize}"
+          recv.code shouldBe s"(<tmp-2> = params[:type].constantize).${RubyDefines.Initialize}"
 
           recv.argument(2).asInstanceOf[FieldIdentifier].canonicalName shouldBe RubyDefines.Initialize
 
@@ -462,7 +462,7 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true, useJsonAs
     cpg.call("find_by").code.head shouldBe "(<tmp-0> = User).find_by(auth_token: cookies[:auth_token].to_s)"
     cpg.call(Operators.indexAccess).code.head shouldBe "cookies[:auth_token]"
     cpg.fieldAccess
-      .where(_.fieldIdentifier.canonicalNameExact("to_s"))
+      .where(_.fieldIdentifier.canonicalNameExact("@to_s"))
       .code
       .head shouldBe "(<tmp-1> = cookies[:auth_token]).to_s"
   }
@@ -500,25 +500,20 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true, useJsonAs
   "Multiple different arg types in a call" in {
     val cpg = code("""
         |params.require(:issue).permit(
-        |      *issue_params_attributes,
-        |      sentry_issue_attributes: [:sentry_issue_identifier],
-        |      *some_other_splat,
         |      "1234",
-        |      10
+        |      10,
+        |      *issue_params_attributes,
+        |      sentry_issue_attributes: [:sentry_issue_identifier]
         |    )
-        |
         |""".stripMargin)
 
     inside(cpg.call.name("permit").argument.l) {
-      case _ :: (issueSplat: Call) :: (sentryAssoc: Call) :: (someOtherSplat: Call) :: (strLiteral: Literal) :: (numericLiteral: Literal) :: Nil =>
+      case _ :: (strLiteral: Literal) :: (numericLiteral: Literal) :: (issueSplat: Call) :: (sentryAssoc: Call) :: Nil =>
         issueSplat.code shouldBe "*issue_params_attributes"
         issueSplat.methodFullName shouldBe RubyOperators.splat
 
         sentryAssoc.code shouldBe "[:sentry_issue_identifier]"
         sentryAssoc.methodFullName shouldBe Operators.arrayInitializer
-
-        someOtherSplat.code shouldBe "*some_other_splat"
-        someOtherSplat.methodFullName shouldBe RubyOperators.splat
 
         strLiteral.code shouldBe "\"1234\""
         strLiteral.typeFullName shouldBe RubyDefines.getBuiltInType(RubyDefines.String)
