@@ -25,14 +25,9 @@ libraryDependencies ++= Seq(
   "org.apache.commons" % "commons-compress" % Versions.commonsCompress, // For unpacking Gems with `--download-dependencies`
   "org.jruby"      % "jruby-complete" % Versions.jRuby,
   "org.scalatest" %% "scalatest"      % Versions.scalatest % Test,
-  "org.antlr"      % "antlr4-runtime" % Versions.antlr // TODO: Remove
 )
 
-enablePlugins(JavaAppPackaging, LauncherJarPlugin, Antlr4Plugin)
-// TODO Remove antlr stuff
-Antlr4 / antlr4Version    := Versions.antlr
-Antlr4 / antlr4GenVisitor := true
-Antlr4 / javaSource       := (Compile / sourceManaged).value
+enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 
 lazy val astGenVersion = settingKey[String]("ruby_ast_gen version")
 astGenVersion := appProperties.value.getString("rubysrc2cpg.ruby_ast_gen_version")

@@ -5,7 +5,7 @@ import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.semanticcpg.language.*
 
 class SingleAssignmentTests
-    extends RubyCode2CpgFixture(withPostProcessing = true, withDataFlow = true, useJsonAst = true) {
+    extends RubyCode2CpgFixture(withPostProcessing = true, withDataFlow = true) {
 
   "flow through two inline assignments `z = x = y = 1`" in {
     val cpg = code("""

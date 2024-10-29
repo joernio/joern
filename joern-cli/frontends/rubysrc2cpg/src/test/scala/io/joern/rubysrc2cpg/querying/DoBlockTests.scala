@@ -8,7 +8,7 @@ import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
-class DoBlockTests extends RubyCode2CpgFixture(useJsonAst = true) {
+class DoBlockTests extends RubyCode2CpgFixture {
 
   "a basic unparameterized do block off a simple call" should {
 

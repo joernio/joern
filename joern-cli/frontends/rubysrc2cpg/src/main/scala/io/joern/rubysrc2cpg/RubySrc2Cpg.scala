@@ -4,19 +4,8 @@ import better.files.File
 import io.joern.rubysrc2cpg.astcreation.AstCreator
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.StatementList
 import io.joern.rubysrc2cpg.datastructures.RubyProgramSummary
-import io.joern.rubysrc2cpg.parser.{
-  RubyAstGenRunner,
-  RubyJsonParser,
-  RubyJsonToNodeCreator,
-  RubyNodeCreator,
-  RubyParser
-}
-import io.joern.rubysrc2cpg.passes.{
-  AstCreationPass,
-  ConfigFileCreationPass,
-  DependencyPass,
-  DependencySummarySolverPass
-}
+import io.joern.rubysrc2cpg.parser.*
+import io.joern.rubysrc2cpg.passes.{AstCreationPass, ConfigFileCreationPass, DependencyPass, DependencySummarySolverPass}
 import io.joern.rubysrc2cpg.utils.DependencyDownloader
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.frontendspecific.rubysrc2cpg.*
@@ -32,9 +21,6 @@ import org.slf4j.LoggerFactory
 import upickle.default.*
 
 import java.nio.file.{Files, Paths}
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
 import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try, Using}
 
@@ -52,108 +38,49 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
   }
 
   private def createCpgAction(cpg: Cpg, config: Config): Unit = {
-    if (config.useJsonAst) {
-      File.usingTemporaryDirectory("rubysrc2cpgOut") { tmpDir =>
-        val astGenResult = RubyAstGenRunner(config).execute(tmpDir)
+    File.usingTemporaryDirectory("rubysrc2cpgOut") { tmpDir =>
+      val astGenResult = RubyAstGenRunner(config).execute(tmpDir)
 
-        val astCreators = ConcurrentTaskUtil
-          .runUsingThreadPool(
-            RubySrc2Cpg.processAstGenRunnerResults(astGenResult.parsedFiles, config, cpg.metaData.root.headOption)
-          )
-          .flatMap {
-            case Failure(exception)  => logger.warn(s"Unable to parse Ruby file, skipping -", exception); None
-            case Success(astCreator) => Option(astCreator)
-          }
-          .filter(x => {
-            if x.fileContent.isBlank then logger.info(s"File content empty, skipping - ${x.fileName}")
-            !x.fileContent.isBlank
-          })
-
-        val internalProgramSummary = ConcurrentTaskUtil
-          .runUsingThreadPool(astCreators.map(x => () => x.summarize()).iterator)
-          .flatMap {
-            case Failure(exception) => logger.warn(s"Unable to pre-parse Ruby file, skipping - ", exception); None
-            case Success(summary)   => Option(summary)
-          }
-          .foldLeft(RubyProgramSummary(RubyProgramSummary.BuiltinTypes(config.typeStubMetaData)))(_ ++= _)
-
-        val dependencySummary = if (config.downloadDependencies) {
-          DependencyDownloader(cpg).download()
-        } else {
-          RubyProgramSummary()
+      val astCreators = ConcurrentTaskUtil
+        .runUsingThreadPool(
+          RubySrc2Cpg.processAstGenRunnerResults(astGenResult.parsedFiles, config, cpg.metaData.root.headOption)
+        )
+        .flatMap {
+          case Failure(exception)  => logger.warn(s"Unable to parse Ruby file, skipping -", exception); None
+          case Success(astCreator) => Option(astCreator)
         }
+        .filter(x => {
+          if x.fileContent.isBlank then logger.info(s"File content empty, skipping - ${x.fileName}")
+          !x.fileContent.isBlank
+        })
 
-        val programSummary = internalProgramSummary ++= dependencySummary
-
-        AstCreationPass(cpg, astCreators.map(_.withSummary(programSummary))).createAndApply()
-        if config.downloadDependencies then {
-          DependencySummarySolverPass(cpg, dependencySummary).createAndApply()
+      val internalProgramSummary = ConcurrentTaskUtil
+        .runUsingThreadPool(astCreators.map(x => () => x.summarize()).iterator)
+        .flatMap {
+          case Failure(exception) => logger.warn(s"Unable to pre-parse Ruby file, skipping - ", exception); None
+          case Success(summary)   => Option(summary)
         }
-        TypeNodePass.withTypesFromCpg(cpg).createAndApply()
+        .foldLeft(RubyProgramSummary(RubyProgramSummary.BuiltinTypes(config.typeStubMetaData)))(_ ++= _)
+
+      val dependencySummary = if (config.downloadDependencies) {
+        DependencyDownloader(cpg).download()
+      } else {
+        RubyProgramSummary()
       }
-    } else {
-      Using.resource(
-        new parser.ResourceManagedParser(config.antlrCacheMemLimit, config.antlrDebug, config.antlrProfiling)
-      ) { parser =>
-        val astCreators = ConcurrentTaskUtil
-          .runUsingThreadPool(RubySrc2Cpg.generateParserTasks(parser, config, cpg.metaData.root.headOption))
-          .flatMap {
-            case Failure(exception)  => logger.warn(s"Could not parse file, skipping - ", exception); None
-            case Success(astCreator) => Option(astCreator)
-          }
-          .filter(x => {
-            if x.fileContent.isBlank then logger.info(s"File content empty, skipping - ${x.fileName}")
 
-            !x.fileContent.isBlank
-          })
+      val programSummary = internalProgramSummary ++= dependencySummary
 
-        // Pre-parse the AST creators for high level structures
-        val internalProgramSummary = ConcurrentTaskUtil
-          .runUsingThreadPool(astCreators.map(x => () => x.summarize()).iterator)
-          .flatMap {
-            case Failure(exception) => logger.warn(s"Unable to pre-parse Ruby file, skipping - ", exception); None
-            case Success(summary)   => Option(summary)
-          }
-          .foldLeft(RubyProgramSummary(RubyProgramSummary.BuiltinTypes(config.typeStubMetaData)))(_ ++= _)
-
-        val dependencySummary = if (config.downloadDependencies) {
-          DependencyDownloader(cpg).download()
-        } else {
-          RubyProgramSummary()
-        }
-
-        val programSummary = internalProgramSummary ++= dependencySummary
-
-        AstCreationPass(cpg, astCreators.map(_.withSummary(programSummary))).createAndApply()
-        if config.downloadDependencies then {
-          DependencySummarySolverPass(cpg, dependencySummary).createAndApply()
-        }
-        TypeNodePass.withTypesFromCpg(cpg).createAndApply()
+      AstCreationPass(cpg, astCreators.map(_.withSummary(programSummary))).createAndApply()
+      if config.downloadDependencies then {
+        DependencySummarySolverPass(cpg, dependencySummary).createAndApply()
       }
+      TypeNodePass.withTypesFromCpg(cpg).createAndApply()
     }
   }
 
-  private def downloadDependency(inputPath: String, tempPath: String): Unit = {
-    if (Files.isRegularFile(Paths.get(s"${inputPath}${java.io.File.separator}Gemfile"))) {
-      ExternalCommand.run(Seq("bundle", "config", "set", "--local", "path", tempPath), inputPath).toTry match {
-        case Success(configOutput) =>
-          logger.info(s"Gem config successfully done: $configOutput")
-        case Failure(exception) =>
-          logger.error(s"Error while configuring Gem Path: ${exception.getMessage}")
-      }
-      ExternalCommand.run(Seq("bundle", "install"), inputPath).toTry match {
-        case Success(bundleOutput) =>
-          logger.info(s"Dependency installed successfully: $bundleOutput")
-        case Failure(exception) =>
-          logger.error(s"Error while downloading dependency: ${exception.getMessage}")
-      }
-    }
-  }
 }
 
 object RubySrc2Cpg {
-
-  private val RubySourceFileExtensions: Set[String] = Set(".rb")
 
   def postProcessingPasses(cpg: Cpg, config: Config): List[CpgPassBase] = {
     val implicitRequirePass = if (cpg.dependency.name.contains("zeitwerk")) ImplicitRequirePass(cpg) :: Nil else Nil
@@ -170,55 +97,18 @@ object RubySrc2Cpg {
     projectRoot: Option[String]
   ): Iterator[() => AstCreator] = {
     astFiles.map { fileName => () =>
-      val parserResult     = RubyJsonParser.readFile(Paths.get(fileName))
-      val relativeFileName = SourceFiles.toRelativePath(parserResult.fullPath, config.inputPath)
-      val rubyProgram      = new RubyJsonToNodeCreator().visitProgram(parserResult.json)
-      val sourceFileName   = parserResult.json("file_path").str
-      val fileContent      = File(sourceFileName).contentAsString
+      val parserResult   = RubyJsonParser.readFile(Paths.get(fileName))
+      val rubyProgram    = new RubyJsonToNodeCreator().visitProgram(parserResult.json)
+      val sourceFileName = parserResult.json("file_path").str
+      val fileContent    = File(sourceFileName).contentAsString
       new AstCreator(
         sourceFileName,
-        None,
-        Some(parserResult.json),
-        config.useJsonAst,
         projectRoot,
         enableFileContents = !config.disableFileContent,
         fileContent = fileContent,
-        rootNode = Option(rubyProgram)
+        rootNode = rubyProgram
       )(config.schemaValidation)
     }.iterator
-  }
-
-  def generateParserTasks(
-    resourceManagedParser: parser.ResourceManagedParser,
-    config: Config,
-    projectRoot: Option[String]
-  ): Iterator[() => AstCreator] = {
-    SourceFiles
-      .determine(
-        config.inputPath,
-        RubySourceFileExtensions,
-        ignoredDefaultRegex = Option(config.defaultIgnoredFilesRegex),
-        ignoredFilesRegex = Option(config.ignoredFilesRegex),
-        ignoredFilesPath = Option(config.ignoredFiles)
-      )
-      .map { fileName => () =>
-        resourceManagedParser.parse(File(config.inputPath), fileName) match {
-          case Failure(exception) => throw exception
-          case Success(ctx) =>
-            val fileContent = (File(config.inputPath) / fileName).contentAsString
-            new AstCreator(
-              fileName,
-              Option(ctx),
-              None,
-              false,
-              projectRoot,
-              enableFileContents = !config.disableFileContent,
-              fileContent = fileContent,
-              rootNode = Option(new RubyNodeCreator().visit(ctx).asInstanceOf[StatementList])
-            )(config.schemaValidation)
-        }
-      }
-      .iterator
   }
 
 }

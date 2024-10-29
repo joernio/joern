@@ -6,7 +6,7 @@ import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.semanticcpg.language.*
 
-class AccessModifierTests extends RubyCode2CpgFixture(useJsonAst = true) {
+class AccessModifierTests extends RubyCode2CpgFixture {
 
   "methods defined on the <main> level are private" in {
     val cpg = code("""

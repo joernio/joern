@@ -4,7 +4,7 @@ import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.*
 
-class RangeTests extends RubyCode2CpgFixture(useJsonAst = true) {
+class RangeTests extends RubyCode2CpgFixture {
 
   "`0..1` is represented by a `range` operator call" in {
     val cpg = code("""

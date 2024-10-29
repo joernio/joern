@@ -18,9 +18,6 @@ import scala.jdk.CollectionConverters.*
 trait RubyFrontend(
   withDownloadDependencies: Boolean,
   disableFileContent: Boolean,
-  antlrDebugging: Boolean,
-  antlrProfiling: Boolean,
-  useJsonAst: Boolean
 ) extends LanguageFrontend {
   override val fileSuffix: String = ".rb"
 
@@ -30,33 +27,9 @@ trait RubyFrontend(
       .getOrElse(Config().withSchemaValidation(ValidationMode.Enabled))
       .withDownloadDependencies(withDownloadDependencies)
       .withDisableFileContent(disableFileContent)
-      .withAntlrDebugging(antlrDebugging)
-      .withAntlrProfiling(antlrProfiling)
-      .withUseJsonAst(useJsonAst)
 
   override def execute(sourceCodeFile: File): Cpg = {
-    val cpg = new RubySrc2Cpg().createCpg(sourceCodeFile.getAbsolutePath).get
-    if (antlrProfiling) {
-      if (sourceCodeFile.isDirectory) {
-        Files
-          .walk(sourceCodeFile.toPath)
-          .iterator()
-          .asScala
-          .filter(_.getFileName.toString.endsWith(".log"))
-          .map(_.toFile)
-          .foreach(printAntlrProfilingInfo)
-      } else {
-        printAntlrProfilingInfo(sourceCodeFile)
-      }
-    }
-    cpg
-  }
-
-  private def printAntlrProfilingInfo(logfile: File): Unit = {
-    if (logfile.exists()) {
-      println(Files.readString(logfile.toPath))
-      logfile.delete() // cleanup
-    }
+    new RubySrc2Cpg().createCpg(sourceCodeFile.getAbsolutePath).get
   }
 
 }
@@ -64,11 +37,8 @@ trait RubyFrontend(
 class DefaultTestCpgWithRuby(
   downloadDependencies: Boolean = false,
   disableFileContent: Boolean = true,
-  antlrDebugging: Boolean = false,
-  antlrProfiling: Boolean,
-  useJsonAst: Boolean = false
 ) extends DefaultTestCpg
-    with RubyFrontend(downloadDependencies, disableFileContent, antlrDebugging, antlrProfiling, useJsonAst)
+    with RubyFrontend(downloadDependencies, disableFileContent)
     with SemanticTestCpg {
 
   override protected def applyPasses(): Unit = {
@@ -87,11 +57,8 @@ class RubyCode2CpgFixture(
   downloadDependencies: Boolean = false,
   disableFileContent: Boolean = true,
   semantics: Semantics = DefaultSemantics(),
-  antlrDebugging: Boolean = false,
-  antlrProfiling: Boolean = false,
-  useJsonAst: Boolean = false
 ) extends Code2CpgFixture(() =>
-      new DefaultTestCpgWithRuby(downloadDependencies, disableFileContent, antlrDebugging, antlrProfiling, useJsonAst)
+      new DefaultTestCpgWithRuby(downloadDependencies, disableFileContent)
         .withOssDataflow(withDataFlow)
         .withSemantics(semantics)
         .withPostProcessingPasses(withPostProcessing)
@@ -110,11 +77,8 @@ class RubyCode2CpgFixture(
 class RubyCfgTestCpg(
   downloadDependencies: Boolean = false,
   disableFileContent: Boolean = true,
-  antlrDebugging: Boolean = false,
-  antlrProfiling: Boolean = false,
-  useJsonAst: Boolean = false
 ) extends CfgTestCpg
-    with RubyFrontend(downloadDependencies, disableFileContent, antlrDebugging, antlrProfiling, useJsonAst) {
+    with RubyFrontend(downloadDependencies, disableFileContent) {
   override val fileSuffix: String = ".rb"
 
 }

@@ -5,7 +5,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, 
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
-class ConditionalTests extends RubyCode2CpgFixture(useJsonAst = true) {
+class ConditionalTests extends RubyCode2CpgFixture {
 
   "`x ? y : z` is lowered into an if-else expression" in {
     val cpg = code("""x, y, z = false, true, false

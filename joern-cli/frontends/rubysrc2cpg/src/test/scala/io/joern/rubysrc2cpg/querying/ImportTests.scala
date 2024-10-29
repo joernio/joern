@@ -10,7 +10,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.Literal
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.Inspectors
 
-class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true, useJsonAst = true) with Inspectors {
+class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with Inspectors {
 
   "`require 'test'` is a CALL node with an IMPORT node pointing to it" in {
     val cpg = code("""

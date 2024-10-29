@@ -2,7 +2,6 @@ package io.joern.rubysrc2cpg.parser
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{RubyExpression, *}
 import io.joern.rubysrc2cpg.parser.RubyJsonHelpers.*
-import io.joern.rubysrc2cpg.parser.RubyParser.{ArrayParameterContext, MandatoryParameterContext}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.{NilClass, RubyOperators, getBuiltInType}
 import io.joern.rubysrc2cpg.passes.GlobalTypes.builtinPrefix
@@ -10,9 +9,7 @@ import io.joern.rubysrc2cpg.utils.FreshNameGenerator
 import io.joern.x2cpg.frontendspecific.rubysrc2cpg.ImportsPass
 import io.joern.x2cpg.frontendspecific.rubysrc2cpg.ImportsPass.ImportCallNames
 import org.slf4j.LoggerFactory
-import ujson.{Arr, Bool, Null, Num, Obj, Str, Value}
-
-import scala.collection.mutable
+import ujson.*
 
 class RubyJsonToNodeCreator(
   variableNameGen: FreshNameGenerator[String] = FreshNameGenerator(id => s"<tmp-$id>"),
@@ -785,8 +782,13 @@ class RubyJsonToNodeCreator(
   }
 
   private def visitRestArg(obj: Obj): RubyExpression = {
-    val name = obj(ParserKeys.Value).str
-    ArrayParameter(name)(obj.toTextSpan)
+    obj(ParserKeys.Value) match {
+      case ujson.Null => ArrayParameter("*")(obj.toTextSpan)
+      case ujson.Str(name) => ArrayParameter(name)(obj.toTextSpan)
+      case x =>
+        logger.warn(s"Unhandled `restarg` JSON type '$x'")
+        defaultResult(Option(obj.toTextSpan))
+    }
   }
 
   private def visitRescueStatement(obj: Obj): RubyExpression = {

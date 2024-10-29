@@ -6,7 +6,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, 
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
-class SingleAssignmentTests extends RubyCode2CpgFixture(useJsonAst = true) {
+class SingleAssignmentTests extends RubyCode2CpgFixture {
 
   "`=` is represented by an `assignment` operator call" in {
     val cpg = code("""

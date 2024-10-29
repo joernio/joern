@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.querying
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.semanticcpg.language.*
 
-class ContentTests extends RubyCode2CpgFixture(disableFileContent = false, useJsonAst = true) {
+class ContentTests extends RubyCode2CpgFixture(disableFileContent = false) {
   "Content of file" in {
     val fileContent =
       """

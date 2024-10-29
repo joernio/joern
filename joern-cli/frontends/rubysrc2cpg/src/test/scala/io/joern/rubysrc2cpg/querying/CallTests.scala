@@ -9,7 +9,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, NodeTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
-class CallTests extends RubyCode2CpgFixture(withPostProcessing = true, useJsonAst = true) {
+class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
 
   "`puts 'hello'` is represented by a CALL node" in {
     val cpg = code("""

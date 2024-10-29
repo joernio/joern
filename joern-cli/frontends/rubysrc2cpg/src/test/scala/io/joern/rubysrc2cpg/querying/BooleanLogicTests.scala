@@ -4,7 +4,7 @@ import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.*
 
-class BooleanLogicTests extends RubyCode2CpgFixture(useJsonAst = true) {
+class BooleanLogicTests extends RubyCode2CpgFixture {
 
   "`or` is represented by a `logicalOr` operator call" in {
     val cpg = code("""

@@ -4,7 +4,7 @@ import io.joern.dataflowengineoss.language.*
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.semanticcpg.language.*
 
-class CallTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataFlow = true, useJsonAst = true) {
+class CallTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataFlow = true) {
 
   "Flow through call" in {
     val cpg = code("""

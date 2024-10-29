@@ -9,7 +9,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, 
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
-class ArrayTests extends RubyCode2CpgFixture(useJsonAst = true) {
+class ArrayTests extends RubyCode2CpgFixture {
 
   "`[]` is represented by an `arrayInitializer` operator call" in {
     val cpg = code("""

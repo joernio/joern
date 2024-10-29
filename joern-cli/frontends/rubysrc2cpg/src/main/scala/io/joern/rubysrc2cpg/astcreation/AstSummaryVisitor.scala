@@ -3,7 +3,6 @@ package io.joern.rubysrc2cpg.astcreation
 import flatgraph.DiffGraphApplier
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{RubyExpression, StatementList}
 import io.joern.rubysrc2cpg.datastructures.{RubyField, RubyMethod, RubyProgramSummary, RubyStubbedType, RubyType}
-import io.joern.rubysrc2cpg.parser.RubyNodeCreator
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.layers.Base
 import io.joern.x2cpg.passes.base.{AstLinkerPass, FileCreationPass}
@@ -25,11 +24,6 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
 
     Using.resource(Cpg.empty) { cpg =>
       // Build and store compilation unit AST
-      val rootNode = this.rootNode match {
-        case Some(rootNode) => rootNode.asInstanceOf[StatementList]
-        case None           => new RubyNodeCreator().visit(programCtx.get).asInstanceOf[StatementList]
-      }
-
       val ast = astForRubyFile(rootNode)
       Ast.storeInDiffGraph(ast, diffGraph)
       DiffGraphApplier.applyDiff(cpg.graph, diffGraph)
@@ -44,9 +38,6 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
   def withSummary(newSummary: RubyProgramSummary): AstCreator = {
     AstCreator(
       fileName,
-      programCtx,
-      programCtxJson,
-      useJsonCtx,
       projectRoot,
       newSummary,
       enableFileContents,

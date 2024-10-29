@@ -7,7 +7,7 @@ import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{File, NamespaceBlock}
 import io.shiftleft.semanticcpg.language.*
 
-class ModuleTests extends RubyCode2CpgFixture(useJsonAst = true) {
+class ModuleTests extends RubyCode2CpgFixture {
 
   "`module M ... end` is represented by a TYPE_DECL node" in {
     val cpg = code("""

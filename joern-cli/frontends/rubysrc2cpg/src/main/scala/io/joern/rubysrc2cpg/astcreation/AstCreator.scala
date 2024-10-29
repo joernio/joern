@@ -2,13 +2,12 @@ package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.{BlockScope, NamespaceScope, RubyProgramSummary, RubyScope}
-import io.joern.rubysrc2cpg.parser.{RubyJsonToNodeCreator, RubyNodeCreator, RubyParser}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
 import io.joern.x2cpg.utils.NodeBuilders.{newModifierNode, newThisParameterNode}
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, ModifierTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, ModifierTypes}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -16,14 +15,11 @@ import java.util.regex.Matcher
 
 class AstCreator(
   val fileName: String,
-  protected val programCtx: Option[RubyParser.ProgramContext] = None,
-  protected val programCtxJson: Option[ujson.Value] = None,
-  protected val useJsonCtx: Boolean = false,
   protected val projectRoot: Option[String] = None,
   protected val programSummary: RubyProgramSummary = RubyProgramSummary(),
   val enableFileContents: Boolean = false,
   val fileContent: String = "",
-  val rootNode: Option[RubyExpression] = None
+  val rootNode: StatementList
 )(implicit withSchemaValidation: ValidationMode)
     extends AstCreatorBase(fileName)
     with AstCreatorHelper
@@ -64,20 +60,7 @@ class AstCreator(
     relativeFileName.replaceAll(Matcher.quoteReplacement(java.io.File.separator), "/")
 
   override def createAst(): DiffGraphBuilder = {
-    val astRootNode =
-      if useJsonCtx then
-        rootNode match {
-          case Some(node) => node.asInstanceOf[StatementList]
-          case None =>
-            new RubyJsonToNodeCreator(tmpGen, procParamGen).visitProgram(programCtxJson.get).asInstanceOf[StatementList]
-        }
-      else
-        rootNode.match {
-          case Some(node) => node.asInstanceOf[StatementList]
-          case None       => new RubyNodeCreator(tmpGen, procParamGen).visit(programCtx.get).asInstanceOf[StatementList]
-        }
-
-    val ast = astForRubyFile(astRootNode)
+    val ast = astForRubyFile(rootNode)
     Ast.storeInDiffGraph(ast, diffGraph)
     diffGraph
   }
