@@ -4,7 +4,8 @@ import io.joern.dataflowengineoss.language.*
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.semanticcpg.language.*
 
-class DestructuredAssignmentsTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataFlow = true) {
+class DestructuredAssignmentsTests
+    extends RubyCode2CpgFixture(withPostProcessing = true, withDataFlow = true, useJsonAst = true) {
   "Data flow through packing left hand side through the first identifier" in {
     val cpg = code("""
                      |x = 1

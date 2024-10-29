@@ -4,7 +4,7 @@ import io.joern.dataflowengineoss.language.*
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.semanticcpg.language.*
 
-class RegexTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataFlow = true) {
+class RegexTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataFlow = true, useJsonAst = true) {
   // Works in deprecated - could not represent expression /x#{x}b/ in new frontend
   "Data flow through a regex interpolation" ignore {
     val cpg = code(s"""

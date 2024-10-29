@@ -130,7 +130,7 @@ class ArrayTests extends RubyCode2CpgFixture(withPostProcessing = true, withData
                      |puts a
                      |""".stripMargin)
 
-    val source     = cpg.literal.code("b").l
+    val source     = cpg.literal.code(".*b.*").l
     val sink       = cpg.call.name("puts").argument(1).l
     val List(flow) = sink.reachableByFlows(source).map(flowToResultPairs).distinct.sortBy(_.length).l
     flow shouldBe List(

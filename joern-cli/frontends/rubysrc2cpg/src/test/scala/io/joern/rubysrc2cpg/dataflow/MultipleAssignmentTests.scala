@@ -4,7 +4,8 @@ import io.joern.dataflowengineoss.language.*
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.semanticcpg.language.*
 
-class MultipleAssignmentTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataFlow = true) {
+class MultipleAssignmentTests
+    extends RubyCode2CpgFixture(withPostProcessing = true, withDataFlow = true, useJsonAst = true) {
   "flow through multiple assignments" in {
     val cpg = code("""
                      |x = 1

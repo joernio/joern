@@ -4,7 +4,7 @@ import io.joern.dataflowengineoss.language.*
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.semanticcpg.language.*
 
-class ClassTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataFlow = true) {
+class ClassTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataFlow = true, useJsonAst = true) {
   // Works in deprecated
   "Data flow through class member" ignore {
     val cpg = code("""

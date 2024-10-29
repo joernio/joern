@@ -4,7 +4,8 @@ import io.joern.dataflowengineoss.language.*
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.semanticcpg.language.*
 
-class ControlStructureTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataFlow = true) {
+class ControlStructureTests
+    extends RubyCode2CpgFixture(withPostProcessing = true, withDataFlow = true, useJsonAst = true) {
 
   "flow through body of a `while-end` statement" in {
     val cpg = code("""

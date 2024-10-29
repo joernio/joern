@@ -4,7 +4,8 @@ import io.joern.dataflowengineoss.language.*
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.semanticcpg.language.*
 
-class ProcParameterAndYieldTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataFlow = true) {
+class ProcParameterAndYieldTests
+    extends RubyCode2CpgFixture(withPostProcessing = true, withDataFlow = true, useJsonAst = true) {
   // Works in deprecated
   "Data flow through yield with argument having parenthesis" ignore {
     val cpg = code("""
