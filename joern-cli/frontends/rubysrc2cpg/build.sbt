@@ -2,6 +2,7 @@ import better.files
 import com.typesafe.config.{Config, ConfigFactory}
 import versionsort.VersionHelper
 
+import java.net.URI
 import scala.sys.process.stringToProcess
 import scala.util.Try
 
@@ -44,38 +45,20 @@ libraryDependencies ++= Seq(
 lazy val astGenDlUrl = settingKey[String]("astgen download url")
 astGenDlUrl := s"https://github.com/joernio/ruby_ast_gen/releases/download/v${astGenVersion.value}/"
 
-def hasCompatibleAstGenVersion(astGenVersion: String): Boolean = {
-  Try("ruby_ast_gen --version".!!).toOption.map(_.strip()) match {
-    case Some(installedVersion) if installedVersion != "unknown" =>
-      VersionHelper.compare(installedVersion, astGenVersion) >= 0
-    case _ => false
-  }
-}
-
-lazy val astGenDlTask = taskKey[Unit](s"Download astgen binaries")
+lazy val astGenDlTask = taskKey[Unit](s"Download astgen binaries and update bundled resource")
 astGenDlTask := {
-  if (hasCompatibleAstGenVersion(astGenVersion.value)) {
-    Seq.empty
-  } else {
-    val astGenDir = baseDirectory.value / "bin" / "astgen"
-    astGenDir.mkdirs()
-    val gemName             = s"ruby_ast_gen_v${astGenVersion.value}.zip"
-    val gemFullPath         = astGenDir / gemName
-    val unpackedGemFullPath = astGenDir / gemName.stripSuffix(s"_v${astGenVersion.value}.zip")
-    DownloadHelper.ensureIsAvailable(s"${astGenDlUrl.value}$gemName", gemFullPath)
-    if (unpackedGemFullPath.exists()) IO.delete(unpackedGemFullPath)
-    IO.unzip(gemFullPath, unpackedGemFullPath)
-    val distDir = (Universal / stagingDirectory).value / "bin" / "astgen"
-    distDir.mkdirs()
-    IO.copyDirectory(astGenDir, distDir)
-
-    // permissions are lost during the download; need to set them manually
-    astGenDir.listFiles().foreach(_.setExecutable(true, false))
-    distDir.listFiles().foreach(_.setExecutable(true, false))
+  val astGenDir           = baseDirectory.value / "src" / "main" / "resources"
+  val gemName             = s"ruby_ast_gen_v${astGenVersion.value}.zip"
+  val gemFullPath         = astGenDir / gemName
+  val unpackedGemFullPath = astGenDir / gemName.stripSuffix(s"_v${astGenVersion.value}.zip")
+  sbt.io.Using.urlInputStream(new URI(s"${astGenDlUrl.value}$gemName").toURL) { inputStream =>
+    sbt.IO.transfer(inputStream, gemFullPath)
   }
+  if (unpackedGemFullPath.exists()) IO.delete(unpackedGemFullPath)
+  IO.unzip(gemFullPath, unpackedGemFullPath)
+  IO.delete(gemFullPath)
+  astGenDir.listFiles().foreach(_.setExecutable(true, false))
 }
-
-Compile / compile := ((Compile / compile) dependsOn astGenDlTask).value
 
 lazy val joernTypeStubsDlUrl = settingKey[String]("joern_type_stubs download url")
 joernTypeStubsDlUrl := s"https://github.com/joernio/joern-type-stubs/releases/download/v${joernTypeStubsVersion.value}/"

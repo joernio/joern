@@ -9,10 +9,12 @@ import org.jruby.embed.{LocalContextScope, LocalVariableBehavior, PathType, Scri
 import org.slf4j.LoggerFactory
 
 import java.io.File.separator
-import java.io.{ByteArrayOutputStream, PrintStream}
+import java.io.{ByteArrayOutputStream, InputStream, PrintStream}
+import java.nio.file.{Files, Path, Paths, StandardCopyOption}
+import java.util.jar.JarFile
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success, Try, Using}
 
 class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
 
@@ -60,34 +62,97 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
   override def runAstGenNative(in: String, out: File, exclude: String, include: String)(implicit
     metaData: AstGenProgramMetaData
   ): Try[Seq[String]] = {
-    val excludeCommand = if (exclude.isEmpty) "" else s"-e \"$exclude\""
-    val cwd            = Seq(executableDir, "ruby_ast_gen").mkString(separator)
-    val gemPath        = Seq(cwd, "vendor", "bundle", "jruby", "3.1.0").mkString(separator)
-    val rubyArgs       = Array("--log", "info", "-o", out.toString(), "-i", in, excludeCommand)
-    val mainScript     = Seq(cwd, "exe", "ruby_ast_gen").mkString(separator)
-    val outStream      = new ByteArrayOutputStream()
-    val errStream      = new ByteArrayOutputStream()
-    val container      = new ScriptingContainer(LocalContextScope.SINGLETHREAD, LocalVariableBehavior.TRANSIENT)
-    val config         = container.getProvider.getRubyInstanceConfig
-    container.setCompileMode(RubyInstanceConfig.CompileMode.OFF)
-    container.setNativeEnabled(false)
-    container.setObjectSpaceEnabled(true)
-    container.setCurrentDirectory(cwd)
-    container.setOutput(new PrintStream(outStream))
-    container.setError(new PrintStream(errStream))
-    config.setLoadGemfile(true)
-    container.setArgv(rubyArgs)
-    container.setEnvironment(Map("GEM_PATH" -> gemPath, "GEM_FILE" -> gemPath).asJava)
-    config.setHasShebangLine(true)
-    config.setHardExit(false)
-
     try {
-      container.runScriptlet(PathType.ABSOLUTE, mainScript)
-      val consoleOut = outStream.toString.split("\n").toIndexedSeq ++ errStream.toString.split("\n")
-      Success(consoleOut)
+      Using.resource(prepareExecutionEnvironment("ruby_ast_gen")) { env =>
+        val cwd            = env.path.toAbsolutePath.toString
+        val excludeCommand = if (exclude.isEmpty) "" else s"-e \"$exclude\""
+        val gemPath        = Seq(cwd, "vendor", "bundle", "jruby", "3.1.0").mkString(separator)
+        val rubyArgs       = Array("--log", "info", "-o", out.toString(), "-i", in, excludeCommand)
+        val mainScript     = Seq(cwd, "exe", "ruby_ast_gen").mkString(separator)
+        val outStream      = new ByteArrayOutputStream()
+        val errStream      = new ByteArrayOutputStream()
+        val container      = new ScriptingContainer(LocalContextScope.SINGLETHREAD, LocalVariableBehavior.TRANSIENT)
+        val config         = container.getProvider.getRubyInstanceConfig
+        container.setCompileMode(RubyInstanceConfig.CompileMode.OFF)
+        container.setNativeEnabled(false)
+        container.setObjectSpaceEnabled(true)
+        container.setCurrentDirectory(cwd)
+        container.setOutput(new PrintStream(outStream))
+        container.setError(new PrintStream(errStream))
+        config.setLoadGemfile(true)
+        container.setArgv(rubyArgs)
+        container.setEnvironment(Map("GEM_PATH" -> gemPath, "GEM_FILE" -> gemPath).asJava)
+        config.setHasShebangLine(true)
+        config.setHardExit(false)
+
+        try {
+          container.runScriptlet(PathType.ABSOLUTE, mainScript)
+          val consoleOut = outStream.toString.split("\n").toIndexedSeq ++ errStream.toString.split("\n")
+          Success(consoleOut)
+        } catch {
+          case e: Exception => Failure(e)
+        }
+      }
     } catch {
-      case e: Exception => Failure(e)
+      case tempPathException: Exception => Failure(tempPathException)
     }
   }
+
+  private def prepareExecutionEnvironment(resourceDir: String): ExecutionEnvironment = {
+    val resourceUrl = getClass.getClassLoader.getResource(resourceDir)
+    if (resourceUrl == null) {
+      throw new IllegalArgumentException(s"Resource directory '$resourceDir' not found in JAR.")
+    }
+
+    resourceUrl.getProtocol match {
+      case "jar" =>
+        val tempPath = Files.createTempDirectory("ruby_ast_gen-")
+        val jarPath  = resourceUrl.getPath.split("!")(0).stripPrefix("file:")
+        val jarFile  = new JarFile(jarPath)
+
+        val entries = jarFile.entries().asScala.filter(_.getName.startsWith(resourceDir + "/"))
+        entries.foreach { entry =>
+          val entryPath = tempPath.resolve(entry.getName.stripPrefix(resourceDir + "/"))
+          if (entry.isDirectory) {
+            Files.createDirectories(entryPath)
+          } else {
+            Files.createDirectories(entryPath.getParent)
+            val inputStream: InputStream = jarFile.getInputStream(entry)
+            try {
+              Files.copy(inputStream, entryPath, StandardCopyOption.REPLACE_EXISTING)
+            } finally {
+              inputStream.close()
+            }
+          }
+        }
+        TempDir(tempPath)
+      case "file" => LocalDir(Paths.get(resourceUrl.toURI))
+      case x =>
+        throw new IllegalArgumentException(s"Resources is within an unsupported environment '$x'.")
+    }
+  }
+
+  private sealed trait ExecutionEnvironment extends AutoCloseable {
+    def path: Path
+
+    def close(): Unit = {}
+  }
+
+  private case class TempDir(path: Path) extends ExecutionEnvironment {
+
+    override def close(): Unit = {
+      def cleanUpDir(f: Path): Unit = {
+        if (Files.isDirectory(f)) {
+          Files.list(f).iterator.asScala.foreach(cleanUpDir)
+        }
+        Files.deleteIfExists(f)
+      }
+
+      cleanUpDir(path)
+    }
+
+  }
+
+  private case class LocalDir(path: Path) extends ExecutionEnvironment
 
 }

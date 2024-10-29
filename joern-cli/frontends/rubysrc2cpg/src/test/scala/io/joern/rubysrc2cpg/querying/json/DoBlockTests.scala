@@ -286,8 +286,6 @@ class DoBlockTests extends RubyCode2CpgFixture(useJsonAst = true) {
               )
           }
         case xs =>
-          val x = xs.last.propertiesMap
-          println(x)
           fail(s"Unexpected `foo` assignment children [${xs.code.mkString(",")}]")
       }
     }
