@@ -424,7 +424,9 @@ class DoBlockTests extends RubyCode2CpgFixture(useJsonAst = true) {
 
   "Various do-block parameters" should {
     val cpg = code("""
-        |f { |a, (b, c), *d, e, (f, *g), **h, &i| }
+        |f { |a, (b, c), *d, e, (f, *g), **h, &i| 
+        | puts a
+        |}
         |""".stripMargin)
 
     "Generate correct parameters" in {
