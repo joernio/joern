@@ -36,7 +36,7 @@ class RubyJsonToNodeCreator(
   private def visit(v: ujson.Value): RubyExpression = {
     v match {
       case obj: ujson.Obj => visit(obj)
-      case ujson.Null     => defaultResult()
+      case ujson.Null     => StatementList(Nil)(defaultTextSpan())
       case ujson.Str(x)   => StaticLiteral(getBuiltInType(Defines.String))(defaultTextSpan(x))
       case x =>
         logger.warn(s"Unhandled ujson type ${x.getClass}")
@@ -275,9 +275,10 @@ class RubyJsonToNodeCreator(
       x.multipleAssignment
     }
 
-    val body = visit(obj(ParserKeys.Body)) match {
-      case stmt: StatementList => stmt.copy(stmt.statements ++ assignments)(stmt.span)
-      case expr                => StatementList(expr +: assignments)(expr.span)
+    val body = obj.visitOption(ParserKeys.Body) match {
+      case Some(stmt: StatementList) => stmt.copy(stmt.statements ++ assignments)(stmt.span)
+      case Some(expr)                => StatementList(expr +: assignments)(expr.span)
+      case None                      => StatementList(Nil)(obj.toTextSpan)
     }
 
     val block = Block(parameters, body)(body.span.spanStart(obj.toTextSpan.text))
@@ -560,7 +561,11 @@ class RubyJsonToNodeCreator(
 
   private def visitKwNilArg(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
-  private def visitKwOptArg(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitKwOptArg(obj: Obj): RubyExpression = {
+    val name    = obj(ParserKeys.Key).str
+    val default = visit(obj(ParserKeys.Value))
+    OptionalParameter(name, default)(obj.toTextSpan)
+  }
 
   private def visitKwRestArg(obj: Obj): RubyExpression = {
     val name = obj(ParserKeys.Value).str
@@ -737,9 +742,15 @@ class RubyJsonToNodeCreator(
 
   private def visitRational(obj: Obj): RubyExpression = StaticLiteral(getBuiltInType(Defines.Rational))(obj.toTextSpan)
 
-  private def visitRedo(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitRedo(obj: Obj): RubyExpression = {
+    val callTarget = SimpleIdentifier()(obj.toTextSpan.spanStart("redo"))
+    SimpleCall(callTarget, Nil)(obj.toTextSpan)
+  }
 
-  private def visitRetry(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitRetry(obj: Obj): RubyExpression = {
+    val callTarget = SimpleIdentifier()(obj.toTextSpan.spanStart("retry"))
+    SimpleCall(callTarget, Nil)(obj.toTextSpan)
+  }
 
   private def visitReturn(obj: Obj): RubyExpression = {
     if (obj.contains(ParserKeys.Values)) {

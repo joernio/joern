@@ -586,8 +586,7 @@ class ControlStructureTests extends RubyCode2CpgFixture(useJsonAst = true) {
     }
   }
 
-  // TODO: fixme when classes are finished
-  "Ternary if" ignore {
+  "Ternary if" in {
     val cpg = code("""
                      |class Api::V1::UsersController < ApplicationController
                      |  def index

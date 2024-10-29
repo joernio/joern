@@ -279,7 +279,7 @@ class SingleAssignmentTests extends RubyCode2CpgFixture(useJsonAst = true) {
     inside(cpg.method.isLambda.l) {
       case scheduleLambda :: _ :: _ :: Nil =>
         inside(scheduleLambda.call.name(Operators.assignment).l) {
-          case _ :: id :: title :: start :: end :: _ :: _ :: Nil =>
+          case _ :: id :: title :: start :: end :: _ :: Nil =>
             id.code shouldBe "hash[:id] = s[:id]"
 
             inside(id.argument.l) {
