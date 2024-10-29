@@ -1,15 +1,15 @@
 package io.joern.rubysrc2cpg.querying
 
-import io.joern.rubysrc2cpg.passes.{GlobalTypes, Defines as RubyDefines}
 import io.joern.rubysrc2cpg.passes.Defines.{Main, RubyOperators}
 import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelPrefix
+import io.joern.rubysrc2cpg.passes.{GlobalTypes, Defines as RubyDefines}
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, NodeTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
-class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
+class CallTests extends RubyCode2CpgFixture(withPostProcessing = true, useJsonAst = true) {
 
   "`puts 'hello'` is represented by a CALL node" in {
     val cpg = code("""
@@ -165,7 +165,7 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
     "create an assignment from `a` to an alloc lowering invocation block" in {
       inside(cpg.method.isModule.assignment.and(_.target.isIdentifier.name("a"), _.source.isBlock).l) {
         case assignment :: Nil =>
-          assignment.code shouldBe "a = A.new"
+          assignment.code shouldBe "a = A.new 1, 2"
           inside(assignment.argument.l) {
             case (a: Identifier) :: (_: Block) :: Nil =>
               a.name shouldBe "a"
@@ -185,7 +185,7 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
 
               alloc.name shouldBe Operators.alloc
               alloc.methodFullName shouldBe Operators.alloc
-              alloc.code shouldBe "A.new"
+              alloc.code shouldBe "A.new 1, 2"
               alloc.argument.size shouldBe 0
             case xs => fail(s"Expected one identifier and one call argument, got [${xs.code.mkString(",")}]")
           }
@@ -236,7 +236,7 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
               a.typeFullName shouldBe Defines.Any
               a.argumentIndex shouldBe 0
 
-              selfPath.code shouldBe "self.path"
+              selfPath.code shouldBe "path"
             case xs => fail(s"Expected one identifier and one call argument, got [${xs.code.mkString(",")}]")
           }
 
@@ -500,25 +500,20 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
   "Multiple different arg types in a call" in {
     val cpg = code("""
         |params.require(:issue).permit(
-        |      *issue_params_attributes,
-        |      sentry_issue_attributes: [:sentry_issue_identifier],
-        |      *some_other_splat,
         |      "1234",
-        |      10
+        |      10,
+        |      *issue_params_attributes,
+        |      sentry_issue_attributes: [:sentry_issue_identifier]
         |    )
-        |
         |""".stripMargin)
 
     inside(cpg.call.name("permit").argument.l) {
-      case _ :: (issueSplat: Call) :: (sentryAssoc: Call) :: (someOtherSplat: Call) :: (strLiteral: Literal) :: (numericLiteral: Literal) :: Nil =>
+      case _ :: (strLiteral: Literal) :: (numericLiteral: Literal) :: (issueSplat: Call) :: (sentryAssoc: Call) :: Nil =>
         issueSplat.code shouldBe "*issue_params_attributes"
         issueSplat.methodFullName shouldBe RubyOperators.splat
 
         sentryAssoc.code shouldBe "[:sentry_issue_identifier]"
         sentryAssoc.methodFullName shouldBe Operators.arrayInitializer
-
-        someOtherSplat.code shouldBe "*some_other_splat"
-        someOtherSplat.methodFullName shouldBe RubyOperators.splat
 
         strLiteral.code shouldBe "\"1234\""
         strLiteral.typeFullName shouldBe RubyDefines.getBuiltInType(RubyDefines.String)

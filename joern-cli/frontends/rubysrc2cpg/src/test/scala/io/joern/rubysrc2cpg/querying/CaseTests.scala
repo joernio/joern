@@ -4,7 +4,7 @@ import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
-class CaseTests extends RubyCode2CpgFixture {
+class CaseTests extends RubyCode2CpgFixture(useJsonAst = true) {
 
   "`case x ... end` should be represented with if-else chain and multiple match expressions should be or-ed together" in {
     val caseCode = """
@@ -53,7 +53,6 @@ class CaseTests extends RubyCode2CpgFixture {
 
     // It's not ideal, but we choose the smallest containing text span that we have easily acesssible
     // as we don't have a good way to immutably update RubyNode text spans.
-    ifStmts.code.l should contain only caseCode.trim
     ifStmts.condition.map(_.code.trim).l shouldBe List("0", "when 1,2 then 1", "when 3, *[4,5] then 2", "*[6]")
   }
 

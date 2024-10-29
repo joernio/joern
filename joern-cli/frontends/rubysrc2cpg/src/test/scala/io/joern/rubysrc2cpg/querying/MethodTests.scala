@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.passes.Defines as RDefines
-import io.joern.rubysrc2cpg.passes.Defines.Main
+import io.joern.rubysrc2cpg.passes.Defines.{Main, RubyOperators}
 import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelPrefix
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -9,7 +9,7 @@ import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, NodeType
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, FieldAccess}
 
-class MethodTests extends RubyCode2CpgFixture {
+class MethodTests extends RubyCode2CpgFixture(useJsonAst = true) {
 
   "`def f(x) = 1`" should {
     val cpg = code("""
@@ -39,7 +39,7 @@ class MethodTests extends RubyCode2CpgFixture {
       val List(mSelf) = cpg.method.isModule.parameter.name(RDefines.Self).l
       mSelf.index shouldBe 0
       mSelf.isVariadic shouldBe false
-      mSelf.lineNumber shouldBe Some(1)
+      mSelf.lineNumber shouldBe Some(2)
       mSelf.referencingIdentifiers.size shouldBe 3
     }
 
@@ -473,7 +473,7 @@ class MethodTests extends RubyCode2CpgFixture {
               inside(loopMethod.block.astChildren.isControlStructure.l) {
                 case ifStruct :: Nil =>
                   inside(ifStruct.astChildren.isBlock.l) {
-                    case breakBlock :: nilBlock :: Nil =>
+                    case nilBlock :: breakBlock :: Nil =>
                       inside(breakBlock.astChildren.isControlStructure.l) {
                         case breakStruct :: Nil =>
                           breakStruct.code shouldBe "break"
@@ -525,15 +525,18 @@ class MethodTests extends RubyCode2CpgFixture {
 
     "Should be represented as a TRY structure" in {
       inside(cpg.method.name("foo").controlStructure.l) {
-        case tryStruct :: ensureStruct :: Nil =>
+        case tryStruct :: emptyElseStruct :: ensureStruct :: Nil =>
           tryStruct.controlStructureType shouldBe ControlStructureTypes.TRY
           val body = tryStruct.astChildren.head
           body.ast.isLiteral.code.l shouldBe List("1")
 
+          emptyElseStruct.controlStructureType shouldBe ControlStructureTypes.ELSE
+          emptyElseStruct.ast.isLiteral.code.l shouldBe List("nil")
+
           ensureStruct.controlStructureType shouldBe ControlStructureTypes.FINALLY
           ensureStruct.ast.isLiteral.code.l shouldBe List("2")
 
-        case xs => fail(s"Expected two structures, got ${xs.code.mkString(",")}")
+        case xs => fail(s"Expected three structures, got ${xs.code.mkString(",")}")
       }
     }
   }
@@ -722,7 +725,7 @@ class MethodTests extends RubyCode2CpgFixture {
         inside(fooCall.argument.l) {
           case selfArg :: xArg :: yArg :: Nil =>
             xArg.code shouldBe "*x"
-            yArg.code shouldBe "self.y"
+            yArg.code shouldBe "y"
           case xs => fail(s"Expected two args, got [${xs.code.mkString(",")}]")
         }
       case xs => fail(s"Expected one call to foo, got [${xs.code.mkString(",")}]")
@@ -876,9 +879,9 @@ class MethodTests extends RubyCode2CpgFixture {
         |%x(ls -l)
         |""".stripMargin)
 
-    inside(cpg.call.name("exec").l) {
+    inside(cpg.call.name(RubyOperators.backticks).l) {
       case execCall :: Nil =>
-        execCall.name shouldBe "exec"
+        execCall.name shouldBe RubyOperators.backticks
         inside(execCall.argument.l) {
           case selfArg :: lsArg :: Nil =>
             selfArg.code shouldBe "self"

@@ -1,13 +1,13 @@
 package io.joern.rubysrc2cpg.querying
 
+import io.joern.rubysrc2cpg.passes.Defines
+import io.joern.rubysrc2cpg.passes.Defines.Main
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, TypeRef}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
-import io.joern.rubysrc2cpg.passes.Defines.Main
-import io.joern.rubysrc2cpg.passes.Defines
 
-class FieldAccessTests extends RubyCode2CpgFixture {
+class FieldAccessTests extends RubyCode2CpgFixture(useJsonAst = true) {
 
   "`x.y` is represented by a `x.y` field access" in {
     val cpg = code("""

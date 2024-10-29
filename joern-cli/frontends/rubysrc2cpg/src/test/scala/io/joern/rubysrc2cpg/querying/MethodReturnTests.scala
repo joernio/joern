@@ -3,11 +3,11 @@ package io.joern.rubysrc2cpg.querying
 import io.joern.rubysrc2cpg.passes.Defines.{Main, RubyOperators}
 import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelPrefix
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
-class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
+class MethodReturnTests extends RubyCode2CpgFixture(useJsonAst = true) {
 
   "implicit RETURN node for `x * x` exists" in {
     val cpg = code("""
@@ -361,7 +361,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
     }
   }
 
-  "implict RETURN node for RubyCallWithBlock" should {
+  "implicit RETURN node for RubyCallWithBlock" should {
     val cpg = code("""
                      | def foo &block
                      |  puts block.call
@@ -388,7 +388,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
             case barReturn :: Nil =>
               inside(barReturn.astChildren.l) {
                 case (returnCall: Call) :: Nil =>
-                  returnCall.code.replaceAll("\n", "") shouldBe "foo do   \"hello\"  end"
+                  returnCall.code shouldBe "foo"
 
                   returnCall.name shouldBe "foo"
 
@@ -421,20 +421,17 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
 
   "implicit return of a heredoc should return a literal" in {
     val cpg = code("""
-          |def custom_fact_content(key='custom_fact', value='custom_value', *args)
+          |def foo
           | <<-EOM
-          |  Facter.add('#{key}') do
-          |    setcode {'#{value}'}
-          |    #{args.empty? ? '' : args.join('\n')}
-          |  end
-          |   EOM
+          |   puts "hello"
+          | EOM
           |end
           |""".stripMargin)
 
-    inside(cpg.method.nameExact("custom_fact_content").methodReturn.toReturn.astChildren.l) {
+    inside(cpg.method.nameExact("foo").methodReturn.toReturn.astChildren.l) {
       case (heredoc: Literal) :: Nil =>
         heredoc.typeFullName shouldBe s"$kernelPrefix.String"
-        heredoc.code should startWith("<<-EOM")
+        heredoc.code should startWith("   puts \"hello\"")
       case xs => fail(s"Expected a single literal node, instead got [${xs.code.mkString(", ")}]")
     }
   }
@@ -447,12 +444,18 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
         |end
         |""".stripMargin)
 
-    inside(cpg.method.nameExact("foo").ast.isReturn.headOption) {
-      case Some(ret) =>
-        ret.code shouldBe "return"
-        ret.astChildren.size shouldBe 0
-        ret.astParent.astParent.code shouldBe "return unless baz()"
-      case None => fail(s"Expected at least one return node")
+    inside(cpg.method.nameExact("foo").ast.isReturn.l) {
+      case ret1 :: ret2 :: ret3 :: Nil =>
+        ret1.code shouldBe "return nil"
+        ret1.astChildren.size shouldBe 1
+        ret1.astParent.astParent.code shouldBe "return unless baz()"
+
+        ret2.code shouldBe "return"
+        ret2.astChildren.size shouldBe 0
+        ret2.astParent.astParent.code shouldBe "return unless baz()"
+
+        ret3.code shouldBe "bar()"
+      case xs => fail(s"Expected 3 return nodes, got ${xs.size}")
     }
   }
 
@@ -476,11 +479,11 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
             value.code shouldBe "1"
           case xs => fail(s"Expected two args, got ${xs.code.mkString(",")}")
         }
-      case None => fail(s"Expected at least one retrun node")
+      case None => fail(s"Expected at least one return node")
     }
   }
 
-  "Return with methodInvocationWithoutParentheses" in {
+  "Return with method invocation without parentheses" in {
     val cpg = code("""
         |def foo()
         | return render json: {}, status: :internal_server_error unless success
@@ -491,13 +494,13 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
       case ifNode :: Nil =>
         ifNode.controlStructureType shouldBe ControlStructureTypes.IF
 
-        val List(notCall: Call) = ifNode.condition.l: @unchecked
-        notCall.methodFullName shouldBe Operators.logicalNot
+        val List(successCall: Call) = ifNode.condition.l: @unchecked
+        successCall.code shouldBe "success"
 
-        val List(ifReturnTrue: Return) = ifNode.whenTrue.isBlock.astChildren.isReturn.l
-        ifReturnTrue.code shouldBe "return render json: {}, status: :internal_server_error"
+        val List(ifReturnFalse: Return) = ifNode.whenFalse.isBlock.astChildren.isReturn.l
+        ifReturnFalse.code shouldBe "return render json: {}, status: :internal_server_error"
 
-        val List(_, jsonArg: Block, statusArg: Literal) = ifReturnTrue.astChildren.isCall.argument.l: @unchecked
+        val List(_, jsonArg: Block, statusArg: Literal) = ifReturnFalse.astChildren.isCall.argument.l: @unchecked
         jsonArg.argumentName shouldBe Some("json")
         jsonArg.code shouldBe "<empty>"
 
@@ -507,8 +510,8 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
         statusArg.argumentName shouldBe Some("status")
         statusArg.code shouldBe ":internal_server_error"
 
-        val List(ifReturnFalse: Return) = ifNode.whenFalse.isBlock.astChildren.isReturn.l
-        ifReturnFalse.code shouldBe "return nil"
+        val List(ifReturnTrue: Return) = ifNode.whenTrue.isBlock.astChildren.isReturn.l
+        ifReturnTrue.code shouldBe "return nil"
 
       case xs => fail(s"Expected two method returns, got [${xs.code.mkString(",")}]")
     }

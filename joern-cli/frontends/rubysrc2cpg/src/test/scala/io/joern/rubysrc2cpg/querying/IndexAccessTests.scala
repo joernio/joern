@@ -4,7 +4,7 @@ import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
-class IndexAccessTests extends RubyCode2CpgFixture {
+class IndexAccessTests extends RubyCode2CpgFixture(useJsonAst = true) {
 
   "`x[1]` is represented by an `indexAccess` operator call" in {
     val cpg = code("""x = Array()
