@@ -176,7 +176,7 @@ object RubySrc2Cpg {
       val sourceFileName   = parserResult.json("file_path").str
       val fileContent      = File(sourceFileName).contentAsString
       new AstCreator(
-        relativeFileName,
+        sourceFileName,
         None,
         Some(parserResult.json),
         config.useJsonAst,
