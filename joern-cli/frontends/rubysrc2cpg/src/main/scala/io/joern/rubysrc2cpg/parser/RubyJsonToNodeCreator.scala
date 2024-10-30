@@ -462,7 +462,12 @@ class RubyJsonToNodeCreator(
 
   private def visitForwardedArgs(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
-  private def visitGlobalVariable(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitGlobalVariable(obj: Obj): RubyExpression = {
+    val span     = obj.toTextSpan
+    val name     = obj(ParserKeys.Value).str
+    val selfBase = SelfIdentifier()(span.spanStart("self"))
+    MemberAccess(selfBase, ".", name)(span)
+  }
 
   private def visitGlobalVariableAssign(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
@@ -542,7 +547,13 @@ class RubyJsonToNodeCreator(
 
   private def visitInstanceVariable(obj: Obj): RubyExpression = InstanceFieldIdentifier()(obj.toTextSpan)
 
-  private def visitKwArg(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitKwArg(obj: Obj): RubyExpression = {
+    val name = obj(ParserKeys.Key).str
+    val default = obj
+      .visitOption(ParserKeys.Value)
+      .getOrElse(StaticLiteral(getBuiltInType(Defines.NilClass))(obj.toTextSpan.spanStart("nil")))
+    OptionalParameter(name, default)(obj.toTextSpan)
+  }
 
   private def visitKwBegin(obj: Obj): RubyExpression = {
     val stmts = obj(ParserKeys.Body) match {
@@ -558,11 +569,7 @@ class RubyJsonToNodeCreator(
 
   private def visitKwNilArg(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
-  private def visitKwOptArg(obj: Obj): RubyExpression = {
-    val name    = obj(ParserKeys.Key).str
-    val default = visit(obj(ParserKeys.Value))
-    OptionalParameter(name, default)(obj.toTextSpan)
-  }
+  private def visitKwOptArg(obj: Obj): RubyExpression = visitKwArg(obj)
 
   private def visitKwRestArg(obj: Obj): RubyExpression = {
     val name = obj(ParserKeys.Value).str
@@ -663,11 +670,8 @@ class RubyJsonToNodeCreator(
   private def visitNthRef(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
   private def visitObjectInstantiation(obj: Obj): RubyExpression = {
-    val callName = Defines.New
-
     // The receiver is the target with the JSON parser
-    val receiver = visit(obj(ParserKeys.Receiver))
-
+    val receiver  = visit(obj(ParserKeys.Receiver))
     val arguments = obj.visitArray(ParserKeys.Arguments)
     SimpleObjectInstantiation(receiver, arguments)(obj.toTextSpan)
   }
@@ -783,7 +787,7 @@ class RubyJsonToNodeCreator(
 
   private def visitRestArg(obj: Obj): RubyExpression = {
     obj(ParserKeys.Value) match {
-      case ujson.Null => ArrayParameter("*")(obj.toTextSpan)
+      case ujson.Null      => ArrayParameter("*")(obj.toTextSpan)
       case ujson.Str(name) => ArrayParameter(name)(obj.toTextSpan)
       case x =>
         logger.warn(s"Unhandled `restarg` JSON type '$x'")

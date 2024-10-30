@@ -15,10 +15,7 @@ import java.io.File
 import java.nio.file.Files
 import scala.jdk.CollectionConverters.*
 
-trait RubyFrontend(
-  withDownloadDependencies: Boolean,
-  disableFileContent: Boolean,
-) extends LanguageFrontend {
+trait RubyFrontend(withDownloadDependencies: Boolean, disableFileContent: Boolean) extends LanguageFrontend {
   override val fileSuffix: String = ".rb"
 
   implicit val config: Config =
@@ -34,10 +31,8 @@ trait RubyFrontend(
 
 }
 
-class DefaultTestCpgWithRuby(
-  downloadDependencies: Boolean = false,
-  disableFileContent: Boolean = true,
-) extends DefaultTestCpg
+class DefaultTestCpgWithRuby(downloadDependencies: Boolean = false, disableFileContent: Boolean = true)
+    extends DefaultTestCpg
     with RubyFrontend(downloadDependencies, disableFileContent)
     with SemanticTestCpg {
 
@@ -56,7 +51,7 @@ class RubyCode2CpgFixture(
   withDataFlow: Boolean = false,
   downloadDependencies: Boolean = false,
   disableFileContent: Boolean = true,
-  semantics: Semantics = DefaultSemantics(),
+  semantics: Semantics = DefaultSemantics()
 ) extends Code2CpgFixture(() =>
       new DefaultTestCpgWithRuby(downloadDependencies, disableFileContent)
         .withOssDataflow(withDataFlow)
@@ -74,10 +69,8 @@ class RubyCode2CpgFixture(
     }
 }
 
-class RubyCfgTestCpg(
-  downloadDependencies: Boolean = false,
-  disableFileContent: Boolean = true,
-) extends CfgTestCpg
+class RubyCfgTestCpg(downloadDependencies: Boolean = false, disableFileContent: Boolean = true)
+    extends CfgTestCpg
     with RubyFrontend(downloadDependencies, disableFileContent) {
   override val fileSuffix: String = ".rb"
 

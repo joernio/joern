@@ -9,7 +9,8 @@ module NodeHandling
   CALLS = [:send, :csend]
   DYNAMIC_LITERALS = [:dsym, :dstr]
   CONTROL_KW = [:break, :next]
-  ARGUMENTS = [:arg, :restarg, :blockarg, :kwrestarg, :kwarg, :shadowarg, :kwnilarg]
+  ARGUMENTS = [:arg, :restarg, :blockarg, :kwrestarg, :shadowarg]
+  KW_ARGUMENTS = [:kwarg, :kwnilarg, :kwoptarg]
   REFS = [:nth_ref, :back_ref]
   FORWARD_ARGUMENTS = [:forward_args, :forwarded_args, :forward_arg]
   ASSIGNMENTS = [:or_asgn, :and_asgn, :lvasgn, :ivasgn, :gvasgn, :cvasgn, :match_with_lvasgn]
@@ -158,7 +159,7 @@ module NodeHandling
       base_map[:value] = children[0] if children[0]
     when :return
       base_map[:values] = children[0..-1] if children[0]
-    when *CONTROL_KW 
+    when *CONTROL_KW
       base_map[:arguments] = children[0] if children[0]
     when *FORWARD_ARGUMENTS, :retry, :zsuper, :match_nil_pattern
       # refer to :type
@@ -178,7 +179,7 @@ module NodeHandling
       base_map[:rhs] = children[1]
     when *SINGLETONS
       base_map[:value] = node_type
-    when :kwoptarg
+    when *KW_ARGUMENTS
       base_map[:key] = children[0]
       base_map[:value] = children[1]
     when *LITERALS, *ARGUMENTS, *ACCESS, :match_rest

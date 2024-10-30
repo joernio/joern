@@ -212,15 +212,15 @@ class DependencyDownloader(cpg: Cpg) {
 
     val tmpDir = File.newTemporaryDirectory("rubysrc2cpgOut")
     try {
-      val config = Config().withDisableFileContent(true)
+      val config       = Config().withDisableFileContent(true)
       val astGenResult = RubyAstGenRunner(Config().withInputPath(targetDir.toString)).execute(tmpDir)
 
       val astCreators = ConcurrentTaskUtil
         .runUsingThreadPool(
-          RubySrc2Cpg.processAstGenRunnerResults(astGenResult.parsedFiles, config, cpg.metaData.root.headOption)
+          RubySrc2Cpg.processAstGenRunnerResults(astGenResult.parsedFiles, config, Option(targetDir.toString))
         )
         .flatMap {
-          case Failure(exception) => logger.warn(s"Unable to parse Ruby file, skipping -", exception); None
+          case Failure(exception)  => logger.warn(s"Unable to parse Ruby file, skipping -", exception); None
           case Success(astCreator) => Option(astCreator)
         }
         .filter(x => {
@@ -233,7 +233,7 @@ class DependencyDownloader(cpg: Cpg) {
         .runUsingThreadPool(astCreators.map(x => () => remapPaths(x.summarize(asExternal = true))).iterator)
         .flatMap {
           case Failure(exception) => logger.warn(s"Unable to pre-parse Ruby file, skipping - ", exception); None
-          case Success(summary) => Option(summary)
+          case Success(summary)   => Option(summary)
         }
         .reduceOption((a, b) => a ++= b)
         .getOrElse(RubyProgramSummary())
