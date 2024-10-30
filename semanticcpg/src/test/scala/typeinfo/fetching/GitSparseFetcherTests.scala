@@ -36,7 +36,7 @@ class GitSparseFetcherTests extends AnyWordSpec with Matchers {
 
       Using.resource(GitSparseFetcher()) { fetcher =>
         val versionsBytes =
-          Await.result(fetcher.fetchMetaData(PackageIdentifier(LanguagePlatform.JVM, "ion-java")), testDefaultTimeout)
+          Await.result(fetcher.fetchMetaData(List(PackageIdentifier(LanguagePlatform.JVM, "ion-java"))), testDefaultTimeout)
         versionsBytes shouldEqual expectedMetaDataBytes
       }
     }

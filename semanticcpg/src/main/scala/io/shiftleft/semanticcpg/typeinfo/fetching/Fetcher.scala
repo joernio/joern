@@ -58,13 +58,8 @@ abstract class Fetcher extends AutoCloseable {
     }
   }
 
-  /** The metadata file contains a list of all versions stored stored for this package identifier and a list of all
-    * types stored for this versioned package identifier.
+  /** The metadata file contains a list of all versions stored stored for this package identifier
     */
-  def fetchMetaData(pid: PackageIdentifier): Future[Array[Byte]] = {
-    fetchMetaData(List(pid)).flatMap(map => Future(map.values.head))
-  }
-
   def fetchMetaData(pids: List[PackageIdentifier]): Future[Map[PackageIdentifier, Array[Byte]]] = {
     val infoFilePaths = pids.map(ServerPath.build(_).getMetaDataPath)
     Future {
