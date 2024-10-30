@@ -10,4 +10,7 @@ object Constants {
   val builtinIntType     = s"${builtinPrefix}int"
   val builtinFloatType   = s"${builtinPrefix}float"
   val builtinComplexType = s"${builtinPrefix}complex"
+
+  val moduleName = "<module>"
+  val initName   = "__init__"
 }

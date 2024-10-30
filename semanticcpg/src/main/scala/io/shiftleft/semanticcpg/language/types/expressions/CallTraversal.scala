@@ -16,6 +16,10 @@ class CallTraversal(val traversal: Iterator[Call]) extends AnyVal {
   def isDynamic: Iterator[Call] =
     traversal.filter(_.isDynamic)
 
+  /** Only dispatched calls inline */
+  def isInline: Iterator[Call] =
+    traversal.filter(_.isInline)
+
   /** Only assignment calls
     */
   def isAssignment: Iterator[Assignment] =
