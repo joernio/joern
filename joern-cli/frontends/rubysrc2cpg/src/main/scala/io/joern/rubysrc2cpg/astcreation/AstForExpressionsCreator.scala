@@ -47,7 +47,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     case node: YieldExpr                        => astForYield(node)
     case node: RangeExpression                  => astForRange(node)
     case node: ArrayLiteral                     => astForArrayLiteral(node)
-    case node: HashLiteral                      => astForHashLiteral(node)
+    case node: HashLike                         => astForHashLiteral(node)
     case node: Association                      => astForAssociation(node)
     case node: MandatoryParameter               => astForMandatoryParameter(node)
     case node: SplattingRubyNode                => astForSplattingRubyNode(node)
@@ -690,7 +690,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     callAst(call, argumentAsts)
   }
 
-  protected def astForHashLiteral(node: HashLiteral): Ast = {
+  protected def astForHashLiteral(node: HashLike): Ast = {
     val tmp = this.tmpGen.fresh
 
     def tmpAst(tmpNode: Option[RubyExpression] = None) = astForSimpleIdentifier(

@@ -415,15 +415,20 @@ object RubyIntermediateAst {
     def typeFullName: String = Defines.getBuiltInType(Defines.Array)
   }
 
-  final case class HashLiteral(elements: List[RubyExpression])(span: TextSpan)
-      extends RubyExpression(span)
-      with LiteralExpr {
+  sealed trait HashLike extends RubyExpression with LiteralExpr {
+    def elements: List[RubyExpression]
     def typeFullName: String = Defines.getBuiltInType(Defines.Hash)
   }
 
+  final case class HashLiteral(elements: List[RubyExpression])(span: TextSpan)
+      extends RubyExpression(span)
+      with HashLike
+
   final case class Association(key: RubyExpression, value: RubyExpression)(span: TextSpan) extends RubyExpression(span)
 
-  final case class AssociationList(elements: List[RubyExpression])(span: TextSpan) extends RubyExpression(span)
+  final case class AssociationList(elements: List[RubyExpression])(span: TextSpan)
+      extends RubyExpression(span)
+      with HashLike
 
   /** Represents a call.
     */

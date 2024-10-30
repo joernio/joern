@@ -53,8 +53,13 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
       case (filename, Nil) =>
         logger.debug(s"Successfully parsed '$filename'")
         None
+      case (filename, "Skipped" :: Nil) =>
+        logger.info(s"Skipped '$filename' due to file filter")
+        Option(filename)
       case (filename, diagnostics) =>
-        logger.warn(s"Failed to parse '$filename':\n${diagnostics.map(x => s" - $x").mkString("\n")}")
+        logger.warn(
+          s"Parsed '$filename' with the following diagnostics:\n${diagnostics.map(x => s" - $x").mkString("\n")}"
+        )
         Option(filename)
     }.toList
   }

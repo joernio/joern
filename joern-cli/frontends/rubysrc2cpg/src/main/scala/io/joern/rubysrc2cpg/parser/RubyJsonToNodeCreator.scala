@@ -667,7 +667,12 @@ class RubyJsonToNodeCreator(
 
   private def visitNil(obj: Obj): RubyExpression = StaticLiteral(getBuiltInType(Defines.NilClass))(obj.toTextSpan)
 
-  private def visitNthRef(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitNthRef(obj: Obj): RubyExpression = {
+    val span     = obj.toTextSpan
+    val name     = obj(ParserKeys.Value).num.toInt
+    val selfBase = SelfIdentifier()(span.spanStart("self"))
+    MemberAccess(selfBase, ".", s"$$$name")(span)
+  }
 
   private def visitObjectInstantiation(obj: Obj): RubyExpression = {
     // The receiver is the target with the JSON parser
