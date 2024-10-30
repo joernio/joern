@@ -35,9 +35,9 @@ class MavenDependencyResolverTests extends AnyWordSpec with Matchers {
         )
       val topLevelPackage = PackageIdentifier(JVM, "package2")
       val topLevelPackageVersion = SemVer2("1.0.0")
-      
-      val dependenciesFuture = MavenDependencyResolver.resolveDependencies(
-        mockFetcher, 
+
+      val resolver           = MavenDependencyResolver(mockFetcher)
+      val dependenciesFuture = resolver.resolveDependencies(
         topLevelPackage, 
         topLevelPackageVersion)
       val dependencies = Await.result(dependenciesFuture, mockFetcherTimeOut)
@@ -54,7 +54,8 @@ class MavenDependencyResolverTests extends AnyWordSpec with Matchers {
       Using.resource(GitSparseFetcher()) { fetcher =>
         val amazonIonPid       = PackageIdentifier(JVM, "ion-java")
         val version            = SemVer2("1.11.9")
-        val dependenciesFuture = MavenDependencyResolver.resolveDependencies(fetcher, amazonIonPid, version)
+        val resolver           = MavenDependencyResolver(fetcher)
+        val dependenciesFuture = resolver.resolveDependencies(amazonIonPid, version)
         val dependencies       = Await.result(dependenciesFuture, gitSparseFetcherTimeOut)
         val expectedDependencies =
           List(TransitiveDependency(amazonIonPid.name, version), TransitiveDependency("java.lang", SemVer2("8.0.0")))

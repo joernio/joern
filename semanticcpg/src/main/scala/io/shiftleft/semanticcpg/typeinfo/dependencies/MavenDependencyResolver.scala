@@ -22,7 +22,7 @@ import scala.util.{Failure, Success, Try}
   * TODO Resolution: https://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html If multiple
   * versions are allowed for a dependency, then the version of the library with the shortest dependency chain is used.
   */
-object MavenDependencyResolver {
+class MavenDependencyResolver(fetcher: Fetcher) {
   private lazy val logger: Logger = LoggerFactory.getLogger(getClass)
 
   private class CurrentChoices private (val choices: List[(String, SemVer2)]) {
@@ -153,11 +153,10 @@ object MavenDependencyResolver {
   }
 
   def resolveDependencies(
-    fetcher: Fetcher,
     pid: PackageIdentifier,
     version: SemVer2
   ): Future[List[TransitiveDependency]] = {
-    val candidates = downloadAllTransitiveDependencies(fetcher, List(pid.name))
+    val candidates = downloadAllTransitiveDependencies(List(pid.name))
     candidates.foreach(candidates => logger.debug(s"Maven dependency resolution candidates are: $candidates"))
     candidates.map(pickAllVersions(_).toTransitiveDependencies)
   }
@@ -222,18 +221,17 @@ object MavenDependencyResolver {
   }
 
   private def downloadAllTransitiveDependencies(
-    fetcher: Fetcher,
     packageNames: List[String],
     candidates: ResolutionCandidates = ResolutionCandidates()
   ): Future[ResolutionCandidates] = {
-    downloadMetadata(fetcher, packageNames)
-      .flatMap(downloadDirectDependencyInfo(fetcher, _))
+    downloadMetadata(packageNames)
+      .flatMap(downloadDirectDependencyInfo(_))
       .map(listDirectDependencies)
       .flatMap { loadedDeps =>
         val (newCandidates, changed) = candidates.mergeWithLoadedDeps(loadedDeps)
         if (changed) {
           val nextToDownload = listNextToDownload(loadedDeps)
-          downloadAllTransitiveDependencies(fetcher, nextToDownload, newCandidates)
+          downloadAllTransitiveDependencies(nextToDownload, newCandidates)
         } else {
           Future(candidates)
         }
@@ -241,7 +239,6 @@ object MavenDependencyResolver {
   }
 
   private def downloadMetadata(
-    fetcher: Fetcher,
     packageNames: List[String]
   ): Future[Map[PackageIdentifier, Array[Byte]]] = {
     val pids      = packageNames.map(PackageIdentifier(JVM, _))
@@ -250,7 +247,6 @@ object MavenDependencyResolver {
   }
 
   private def downloadDirectDependencyInfo(
-    fetcher: Fetcher,
     metadatas: Map[PackageIdentifier, Array[Byte]]
   ): Future[Map[(PackageIdentifier, Version), Array[Byte]]] = {
     val neededVersions = listNeededVersions(metadatas)
