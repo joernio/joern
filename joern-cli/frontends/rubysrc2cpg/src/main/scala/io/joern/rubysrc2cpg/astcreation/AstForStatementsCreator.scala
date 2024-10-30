@@ -201,6 +201,12 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case ret: ReturnExpression => astForReturnExpression(ret) :: Nil
       case node: (MethodDeclaration | SingletonMethodDeclaration) =>
         (astsForStatement(node) :+ astForReturnMethodDeclarationSymbolName(node)).toList
+      case stmtList: StatementList if stmtList.statements.lastOption.exists(_.isInstanceOf[ReturnExpression]) =>
+        stmtList.statements.map(astForExpression)
+      case StatementList(stmts) =>
+        val nilReturnSpan    = node.span.spanStart("return nil")
+        val nilReturnLiteral = StaticLiteral(Defines.NilClass)(nilReturnSpan)
+        stmts.map(astForExpression) ++ astsForImplicitReturnStatement(nilReturnLiteral)
       case node =>
         logger.warn(
           s"Implicit return here not supported yet: ${node.text} (${node.getClass.getSimpleName}), only generating statement"

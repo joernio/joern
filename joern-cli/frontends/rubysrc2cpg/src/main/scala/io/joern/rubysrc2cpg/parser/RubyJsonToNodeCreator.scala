@@ -374,7 +374,10 @@ class RubyJsonToNodeCreator(
       ParserKeys.Name     -> ujson.Str(collectionName)
     )
     val arguments = obj(ParserKeys.Arguments).arr.headOption
-      .collect { case x: ujson.Obj => AstType.fromString(x(ParserKeys.Type).str) -> x }
+      .flatMap {
+        case x: ujson.Obj => AstType.fromString(x(ParserKeys.Type).str).map(t => t -> x)
+        case _            => None
+      }
       .map {
         case (AstType.Array, o) =>
           o.visitArray(ParserKeys.Children).flatMap {

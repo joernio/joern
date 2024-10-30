@@ -24,6 +24,7 @@ trait RubyFrontend(withDownloadDependencies: Boolean, disableFileContent: Boolea
       .getOrElse(Config().withSchemaValidation(ValidationMode.Enabled))
       .withDownloadDependencies(withDownloadDependencies)
       .withDisableFileContent(disableFileContent)
+      .withTryLocalRuby(true)
 
   override def execute(sourceCodeFile: File): Cpg = {
     new RubySrc2Cpg().createCpg(sourceCodeFile.getAbsolutePath).get

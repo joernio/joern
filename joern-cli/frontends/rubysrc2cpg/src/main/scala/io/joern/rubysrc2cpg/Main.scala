@@ -10,8 +10,11 @@ import scopt.OParser
 
 import java.nio.file.Paths
 
-final case class Config(downloadDependencies: Boolean = false, useTypeStubs: Boolean = true)
-    extends X2CpgConfig[Config]
+final case class Config(
+  tryLocalRuby: Boolean = false,
+  downloadDependencies: Boolean = false,
+  useTypeStubs: Boolean = true
+) extends X2CpgConfig[Config]
     with DependencyDownloadConfig[Config]
     with TypeRecoveryParserConfig[Config]
     with TypeStubConfig[Config]
@@ -21,8 +24,12 @@ final case class Config(downloadDependencies: Boolean = false, useTypeStubs: Boo
   override val astGenConfigPrefix: String       = "rubysrc2cpg"
   override val multiArchitectureBuilds: Boolean = true
 
-  this.defaultIgnoredFilesRegex = List("spec", "test", "tests", "vendor").flatMap { directory =>
+  this.defaultIgnoredFilesRegex = List("spec", "tests?", "vendor", "db(\\|/)migrate").flatMap { directory =>
     List(s"(^|\\\\)$directory($$|\\\\)".r.unanchored, s"(^|/)$directory($$|/)".r.unanchored)
+  }
+
+  def withTryLocalRuby(value: Boolean): Config = {
+    copy(tryLocalRuby = value).withInheritedFields(this)
   }
 
   override def withDownloadDependencies(value: Boolean): Config = {
@@ -43,6 +50,9 @@ private object Frontend {
     import builder.*
     OParser.sequence(
       programName("rubysrc2cpg"),
+      opt[Unit]("try-local-ruby")
+        .action((_, c) => c.withTryLocalRuby(true))
+        .text("Attempts to run the parser Gem with the natively installed Ruby binary first."),
       opt[Unit]("enable-file-content")
         .action((_, c) => c.withDisableFileContent(false))
         .text("Enable file content"),

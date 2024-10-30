@@ -52,7 +52,6 @@ astGenDlTask := {
   if (unpackedGemFullPath.exists()) IO.delete(unpackedGemFullPath)
   IO.unzip(gemFullPath, unpackedGemFullPath)
   IO.delete(gemFullPath)
-  astGenDir.listFiles().foreach(_.setExecutable(true, false))
 }
 
 lazy val joernTypeStubsDlUrl = settingKey[String]("joern_type_stubs download url")
