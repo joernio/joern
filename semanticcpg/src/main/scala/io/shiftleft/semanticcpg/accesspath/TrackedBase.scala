@@ -29,6 +29,19 @@ case class TrackedMethod(method: MethodRef) extends TrackedMethodOrTypeRef {
 }
 case class TrackedTypeRef(typeRef: TypeRef) extends TrackedMethodOrTypeRef {
   override def code: String = typeRef.code
+
+  override def equals(obj: Any): Boolean = {
+    obj match {
+      case TrackedTypeRef(otherTypeRef) =>
+        typeRef.evalTypeOut.head equals otherTypeRef.evalTypeOut.head
+      case _ =>
+        false
+    }
+  }
+
+  override def hashCode(): Int = {
+    typeRef.evalTypeOut.head.hashCode()
+  }
 }
 
 case class TrackedAlias(argIndex: Int) extends TrackedBase {
