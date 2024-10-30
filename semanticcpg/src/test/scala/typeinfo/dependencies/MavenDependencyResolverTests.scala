@@ -10,21 +10,11 @@ import org.scalatest.wordspec.AnyWordSpec
 
 import scala.concurrent.Await
 import scala.concurrent.duration.*
-import scala.math.Ordering
 import scala.util.Using
 
 class MavenDependencyResolverTests extends AnyWordSpec with Matchers {
   private val mockFetcherTimeOut = 10.seconds
   private val gitSparseFetcherTimeOut = 60.seconds
-  
-  implicit object TransitiveDependencyOrdering extends Ordering[TransitiveDependency] {
-    def compare(x: TransitiveDependency, y: TransitiveDependency): Int = {
-      val nameCompare = x.name.compare(y.name)
-      if (nameCompare == 0)
-      then x.version.compare(y.version)
-      else nameCompare
-    }
-  }
   
   "resolution" should {
     "handle simple constraints" in {
@@ -57,7 +47,7 @@ class MavenDependencyResolverTests extends AnyWordSpec with Matchers {
         TransitiveDependency("package1", SemVer2("1.0.0"))
       )
       
-      dependencies.sorted shouldEqual expectedDependencies.sorted
+      dependencies should contain theSameElementsAs expectedDependencies
     }
     
     "get all expected dependencies for test data in test repo" in {
@@ -68,7 +58,7 @@ class MavenDependencyResolverTests extends AnyWordSpec with Matchers {
         val dependencies       = Await.result(dependenciesFuture, gitSparseFetcherTimeOut)
         val expectedDependencies =
           List(TransitiveDependency(amazonIonPid.name, version), TransitiveDependency("java.lang", SemVer2("8.0.0")))
-        dependencies.sorted shouldEqual expectedDependencies.sorted
+        dependencies should contain theSameElementsAs expectedDependencies
       }
     }
   }
