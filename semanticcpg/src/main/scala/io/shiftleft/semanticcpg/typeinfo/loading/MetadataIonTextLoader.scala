@@ -2,11 +2,12 @@ package io.shiftleft.semanticcpg.typeinfo.loading
 
 import com.amazon.ion.{IonReader, IonType}
 import com.amazon.ion.system.IonReaderBuilder
-import io.shiftleft.semanticcpg.typeinfo.{PackageMetadata, TypeMetadata}
+import io.shiftleft.semanticcpg.typeinfo.PackageMetadata
 
 import scala.annotation.tailrec
 import scala.util.Using
 
+/** TODO: add dependency data to metadata file, there are pointless/overlapping functions until then */
 object MetadataIonTextLoader {
   def loadFromBytes(data: Array[Byte]): PackageMetadata = {
     Using.resource(IonReaderBuilder.standard().build(data))(parseTopLevelStruct)
@@ -49,41 +50,11 @@ object MetadataIonTextLoader {
         reader.stepIn()
         val newPackageMetadata: PackageMetadata = reader.getFieldName match {
           case "VERSIONS"       => packageMetadata.copy(versions = parseStringList(reader))
-          case "TYPE_NAME_INFO" => parseTypeNameInfo(reader, packageMetadata)
         }
         reader.stepOut()
         newPackageMetadata
       }
       case _ => throw new RuntimeException("Invalid type info package metadata format")
-  }
-
-  @tailrec
-  private def parseTypeNameInfo(reader: IonReader, packageMetadata: PackageMetadata): PackageMetadata = {
-    Option(reader.next()) match
-      case Some(IonType.STRUCT) => {
-        reader.stepIn()
-        val typeInfo = parseTypeInfoStruct(reader, parseTypeInfoStruct(reader))
-        reader.stepOut()
-        val newPackageMetadata =
-          packageMetadata.copy(perVersionTypeInfo = typeInfo :: packageMetadata.perVersionTypeInfo)
-        parseTypeNameInfo(reader, newPackageMetadata)
-      }
-      case None => packageMetadata.copy(perVersionTypeInfo = packageMetadata.perVersionTypeInfo.reverse)
-      case _ =>
-        throw new RuntimeException("Invalid type info package metadata format: type info list has invalid format")
-  }
-
-  private def parseTypeInfoStruct(reader: IonReader, typeMetadata: TypeMetadata = TypeMetadata()): TypeMetadata = {
-    Option(reader.next()) match
-      case Some(IonType.STRING) => typeMetadata.copy(version = reader.stringValue())
-      case Some(IonType.LIST) => {
-        reader.stepIn()
-        val typeNames = parseStringList(reader)
-        reader.stepOut()
-        typeMetadata.copy(typeNames = typeNames)
-      }
-      case _ =>
-        throw new RuntimeException("Invalid type info package metadata format: type info struct has invalid format")
   }
 
   @tailrec
