@@ -38,20 +38,20 @@ object DirectDependencyIonTextLoader {
 
   @tailrec
   private def parseDependencyStruct(
-    r: IonReader,
-    versionParser: String => Version,
-    dep: DirectDependency
+                                     reader: IonReader,
+                                     versionParser: String => Version,
+                                     dep: DirectDependency
   ): DirectDependency = {
-    Option(r.next()) match
+    Option(reader.next()) match
       case None => dep
       case Some(_) =>
-        r.getFieldName match
-          case "NAME" => parseDependencyStruct(r, versionParser, dep.copy(name = r.stringValue()))
+        reader.getFieldName match
+          case "NAME" => parseDependencyStruct(reader, versionParser, dep.copy(name = reader.stringValue()))
           case "VERSION_CONSTRAINT" =>
             parseDependencyStruct(
-              r,
+              reader,
               versionParser,
-              dep.copy(version = VersionConstraint.parse(r.stringValue(), versionParser))
+              dep.copy(version = VersionConstraint.parse(reader.stringValue(), versionParser))
             )
   }
 }
