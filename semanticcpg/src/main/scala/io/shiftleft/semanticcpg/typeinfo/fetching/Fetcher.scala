@@ -60,12 +60,12 @@ abstract class Fetcher extends AutoCloseable {
 
   /** The metadata file contains a list of all versions stored stored for this package identifier
     */
-  def fetchMetaData(pids: List[PackageIdentifier]): Future[Map[PackageIdentifier, Array[Byte]]] = {
+  def fetchMetaData(pids: List[PackageIdentifier]): Future[List[(PackageIdentifier, Array[Byte])]] = {
     val infoFilePaths = pids.map(ServerPath.build(_).getMetaDataPath)
     Future {
       blocking {
         val downloadResults = downloadFiles(infoFilePaths)
-        Map.from(pids.zip(downloadResults.map(_.data)))
+        pids.zip(downloadResults.map(_.data)).toList
       }
     }
   }
@@ -77,25 +77,25 @@ abstract class Fetcher extends AutoCloseable {
     pid: PackageIdentifier,
     version: Version,
     typeNames: List[String]
-  ): Future[Map[String, Array[Byte]]] = {
+  ): Future[List[(String, Array[Byte])]] = {
     val versionedPackageDir = ServerPath.build(pid).getVersionPath(version)
     val typePaths           = typeNames.map(versionedPackageDir.getTypeFilePath)
     Future {
       blocking {
         val downloadResults = downloadFiles(typePaths).map(_.data)
-        Map.from(typeNames.zip(downloadResults))
+        typeNames.zip(downloadResults).toList
       }
     }
   }
   
   def fetchDirectDependencies(
     versionedPids: List[(PackageIdentifier, Version)]
-  ): Future[Map[(PackageIdentifier, Version), Array[Byte]]] = {
+  ): Future[List[((PackageIdentifier, Version), Array[Byte])]] = {
     val directDepPaths = versionedPids.map((pid, version) => ServerPath.build(pid).getDirectDepsPath(version))
     Future {
       blocking {
         val downloadResults = downloadFiles(directDepPaths).map(_.data)
-        Map.from(versionedPids.zip(downloadResults))
+        versionedPids.zip(downloadResults).toList
       }
     }
   }

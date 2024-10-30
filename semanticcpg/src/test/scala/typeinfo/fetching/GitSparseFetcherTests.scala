@@ -77,8 +77,10 @@ class GitSparseFetcherTests extends AnyWordSpec with Matchers {
       val version   = SemVer2("1.0.0")
       val typeNames = List("IonFloat")
       Using.resource(GitSparseFetcher()) { fetcher =>
-        val typeMap = Await.result(fetcher.fetchTypeData(pid, version, typeNames), testDefaultTimeout)
-        typeMap.size shouldEqual 1
+        val typeData = Await.result(fetcher.fetchTypeData(pid, version, typeNames), testDefaultTimeout)
+        typeData.size shouldEqual 1
+        
+        val typeMap = Map.from(typeData)
         val ionFloatBytes = typeMap("IonFloat")
         ionFloatBytes shouldEqual expectedBytes
       }

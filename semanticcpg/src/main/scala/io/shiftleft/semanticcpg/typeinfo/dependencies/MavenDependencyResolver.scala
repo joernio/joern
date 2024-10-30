@@ -127,19 +127,19 @@ class MavenDependencyResolver(fetcher: Fetcher) {
     def this() = this(Map())
 
     def mergeWithLoadedDeps(
-      deps: Map[(PackageIdentifier, Version), List[DirectDependency]]
+      deps: List[((PackageIdentifier, Version), List[DirectDependency])]
     ): (ResolutionCandidates, Boolean) = {
-      val newMap = deps.foldLeft(map)((map, data) => {
-        val pid        = data._1._1
-        val semVer2    = data._1._2.asInstanceOf[SemVer2]
-        val directDeps = data._2
-        val versToDeps = map.getOrElse(pid.name, Map())
-        if (versToDeps.contains(semVer2)) {
-          map
-        } else {
-          map.updated(pid.name, versToDeps.updated(semVer2, directDeps))
+      val newMap = deps.foldLeft(map) {
+        case (map, ((pid, version), directDeps)) => {
+          val semVer2 = version.asInstanceOf[SemVer2]
+          val versToDeps = map.getOrElse(pid.name, Map())
+          if (versToDeps.contains(semVer2)) {
+            map
+          } else {
+            map.updated(pid.name, versToDeps.updated(semVer2, directDeps))
+          }
         }
-      })
+      }
       if (newMap == map)
       then (this, false)
       else (ResolutionCandidates(newMap), true)
@@ -225,7 +225,7 @@ class MavenDependencyResolver(fetcher: Fetcher) {
     candidates: ResolutionCandidates = ResolutionCandidates()
   ): Future[ResolutionCandidates] = {
     downloadMetadata(packageNames)
-      .flatMap(downloadDirectDependencyInfo(_))
+      .flatMap(downloadDirectDependencyInfo)
       .map(listDirectDependencies)
       .flatMap { loadedDeps =>
         val (newCandidates, changed) = candidates.mergeWithLoadedDeps(loadedDeps)
@@ -240,36 +240,38 @@ class MavenDependencyResolver(fetcher: Fetcher) {
 
   private def downloadMetadata(
     packageNames: List[String]
-  ): Future[Map[PackageIdentifier, Array[Byte]]] = {
+  ): Future[List[(PackageIdentifier, Array[Byte])]] = {
     val pids      = packageNames.map(PackageIdentifier(JVM, _))
     val metadatas = fetcher.fetchMetaData(pids)
     metadatas
   }
 
   private def downloadDirectDependencyInfo(
-    metadatas: Map[PackageIdentifier, Array[Byte]]
-  ): Future[Map[(PackageIdentifier, Version), Array[Byte]]] = {
+    metadatas: List[(PackageIdentifier, Array[Byte])]
+  ): Future[List[((PackageIdentifier, Version), Array[Byte])]] = {
     val neededVersions = listNeededVersions(metadatas)
     val directDeps     = fetcher.fetchDirectDependencies(neededVersions)
     directDeps
   }
 
   private def listDirectDependencies(
-    deps: Map[(PackageIdentifier, Version), Array[Byte]]
-  ): Map[(PackageIdentifier, Version), List[DirectDependency]] = {
+    deps: List[((PackageIdentifier, Version), Array[Byte])]
+  ): List[((PackageIdentifier, Version), List[DirectDependency])] = {
     deps.map((pidAndVersion, directDepBytes) => {
       val directDeps = Loader.loadDirectDependencies(SemVer2.apply, directDepBytes)
       (pidAndVersion, directDeps)
     })
   }
 
-  private def listNextToDownload(deps: Map[(PackageIdentifier, Version), List[DirectDependency]]): List[String] = {
-    deps.flatMap(data => data._2.map(_.name)).toList
+  private def listNextToDownload(deps: List[((PackageIdentifier, Version), List[DirectDependency])]): List[String] = {
+    deps.flatMap {
+      case ((pid, version), directDeps) => directDeps.map(_.name)
+    }.toList
   }
 
   @tailrec
   private def listNeededVersions(
-    metadatas: Map[PackageIdentifier, Array[Byte]],
+    metadatas: List[(PackageIdentifier, Array[Byte])],
     versions: List[(PackageIdentifier, SemVer2)] = Nil
   ): List[(PackageIdentifier, SemVer2)] = {
     metadatas.headOption match
