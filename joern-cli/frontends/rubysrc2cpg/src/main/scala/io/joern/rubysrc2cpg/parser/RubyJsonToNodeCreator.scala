@@ -308,7 +308,7 @@ class RubyJsonToNodeCreator(
     obj.visitOption(ParserKeys.Value).getOrElse(default)
   }
 
-  private def visitBlockWithNumberedParams(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitBlockWithNumberedParams(obj: Obj): RubyExpression = SimpleIdentifier()(obj.toTextSpan)
 
   private def visitBracketAssignmentAsSend(obj: Obj): RubyExpression = {
     val lhsBase = visit(obj(ParserKeys.Receiver))
@@ -374,13 +374,19 @@ class RubyJsonToNodeCreator(
       ParserKeys.Name     -> ujson.Str(collectionName)
     )
     val arguments = obj(ParserKeys.Arguments).arr.headOption
-      .map(_.asInstanceOf[ujson.Obj].visitArray(ParserKeys.Children).flatMap {
-        case x: AssociationList => x.elements
-        case x                  => x :: Nil
-      })
+      .collect { case x: ujson.Obj => AstType.fromString(x(ParserKeys.Type).str) -> x }
+      .map {
+        case (AstType.Array, o) =>
+          o.visitArray(ParserKeys.Children).flatMap {
+            case x: AssociationList => x.elements
+            case x                  => x :: Nil
+          }
+        case (_, o) =>
+          visit(o) :: Nil
+      }
       .getOrElse(Nil)
 
-    val textSpan = obj.toTextSpan.spanStart(s"${collectionName} [${arguments.map(_.span.text).mkString(", ")}]")
+    val textSpan = obj.toTextSpan.spanStart(s"$collectionName [${arguments.map(_.span.text).mkString(", ")}]")
 
     IndexAccess(visit(receiver), arguments)(textSpan)
   }
@@ -812,9 +818,12 @@ class RubyJsonToNodeCreator(
   }
 
   private def visitRequireLike(obj: Obj): RubyExpression = {
-    val callName   = obj(ParserKeys.Name).str
-    val target     = SimpleIdentifier()(obj.toTextSpan.spanStart(callName))
-    val argument   = obj.visitArray(ParserKeys.Arguments).head
+    val callName = obj(ParserKeys.Name).str
+    val target   = SimpleIdentifier()(obj.toTextSpan.spanStart(callName))
+    val argument = obj
+      .visitArray(ParserKeys.Arguments)
+      .headOption
+      .getOrElse(StaticLiteral(getBuiltInType(Defines.NilClass))(obj.toTextSpan.spanStart("nil")))
     val isRelative = callName == "require_relative" || callName == "require_all"
     val isWildcard = callName == "require_all"
     RequireCall(target, argument, isRelative, isWildcard)(obj.toTextSpan)
@@ -834,17 +843,18 @@ class RubyJsonToNodeCreator(
   private def visitSelf(obj: Obj): RubyExpression = SelfIdentifier()(obj.toTextSpan)
 
   private def visitSend(obj: Obj, isConditional: Boolean = false): RubyExpression = {
-    val callName = obj(ParserKeys.Name).str
+    val callName    = obj(ParserKeys.Name).str
+    val hasReceiver = obj.contains(ParserKeys.Receiver)
     callName match {
-      case "new"                                                => visitObjectInstantiation(obj)
-      case "Array" | "Hash"                                     => visitCollectionAliasSend(obj)
-      case "[]"                                                 => visitIndexAccessAsSend(obj)
-      case "[]="                                                => visitBracketAssignmentAsSend(obj)
-      case "raise"                                              => visitRaise(obj)
-      case "include"                                            => visitInclude(obj)
-      case "attr_reader" | "attr_writer" | "attr_accessor"      => visitFieldDeclaration(obj)
-      case "private" | "public" | "protected"                   => visitAccessModifier(obj)
-      case requireLike if ImportCallNames.contains(requireLike) => visitRequireLike(obj)
+      case "new"                                                                => visitObjectInstantiation(obj)
+      case "Array" | "Hash"                                                     => visitCollectionAliasSend(obj)
+      case "[]"                                                                 => visitIndexAccessAsSend(obj)
+      case "[]="                                                                => visitBracketAssignmentAsSend(obj)
+      case "raise"                                                              => visitRaise(obj)
+      case "include"                                                            => visitInclude(obj)
+      case "attr_reader" | "attr_writer" | "attr_accessor"                      => visitFieldDeclaration(obj)
+      case "private" | "public" | "protected"                                   => visitAccessModifier(obj)
+      case requireLike if ImportCallNames.contains(requireLike) && !hasReceiver => visitRequireLike(obj)
       case _ if BinaryOperators.isBinaryOperatorName(callName) =>
         val lhs = visit(obj(ParserKeys.Receiver))
         val rhs = obj.visitArray(ParserKeys.Arguments).head
