@@ -98,7 +98,7 @@ class GitSparseFetcherTests extends AnyWordSpec with Matchers {
       val pid     = PackageIdentifier(LanguagePlatform.JVM, "ion-java")
       val version = SemVer2("1.0.0")
       Using.resource(GitSparseFetcher()) { fetcher =>
-        val directDepBytes = Await.result(fetcher.fetchDirectDependencies(pid, version), testDefaultTimeout)
+        val directDepBytes = Await.result(fetcher.fetchDirectDependencies(List((pid, version))), testDefaultTimeout)
         directDepBytes shouldEqual expectedBytes
       }
     }
