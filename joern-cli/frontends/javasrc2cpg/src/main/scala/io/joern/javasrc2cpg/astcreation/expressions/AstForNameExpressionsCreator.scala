@@ -47,7 +47,8 @@ trait AstForNameExpressionsCreator { this: AstCreator =>
       case SimpleVariable(variable: ScopeMember) =>
         createImplicitBaseFieldAccess(
           variable.isStatic,
-          scope.enclosingTypeDecl.get,
+          scope.enclosingTypeDecl.name.get,
+          scope.enclosingTypeDecl.fullName.get,
           nameExpr,
           variable.name,
           variable.typeFullName
@@ -68,9 +69,10 @@ trait AstForNameExpressionsCreator { this: AstCreator =>
     }
   }
 
-  def createImplicitBaseFieldAccess(
+  private[expressions] def createImplicitBaseFieldAccess(
     isStatic: Boolean,
-    baseTypeDecl: TypeDeclScope,
+    baseTypeDeclName: String,
+    baseTypeDeclFullName: String,
     node: Node,
     fieldName: String,
     fieldTypeFullName: String
@@ -78,12 +80,12 @@ trait AstForNameExpressionsCreator { this: AstCreator =>
     val base =
       if (isStatic) {
         NewTypeRef()
-          .code(baseTypeDecl.typeDecl.name)
-          .typeFullName(baseTypeDecl.typeDecl.fullName)
+          .code(baseTypeDeclName)
+          .typeFullName(baseTypeDeclFullName)
           .lineNumber(line(node))
           .columnNumber(column(node))
       } else {
-        newIdentifierNode(NameConstants.This, baseTypeDecl.typeDecl.fullName)
+        newIdentifierNode(NameConstants.This, baseTypeDeclFullName)
       }
     createFieldAccessAst(
       Ast(base),
@@ -99,10 +101,12 @@ trait AstForNameExpressionsCreator { this: AstCreator =>
 
   private def astForStaticImportOrUnknown(nameExpr: NameExpr, name: String, typeFullName: Option[String]): Ast = {
     tryWithSafeStackOverflow(nameExpr.resolve()) match {
-      case Success(value) if value.isField =>
+      case Success(value: ResolvedFieldDeclaration) =>
+        // TODO using the enclosingTypeDecl is wrong if the field was imported via a static import.
         createImplicitBaseFieldAccess(
           value.asField().isStatic,
-          scope.enclosingTypeDecl.get,
+          typeInfoCalc.name(value.declaringType()).getOrElse(TypeConstants.Any),
+          typeInfoCalc.fullName(value.declaringType()).getOrElse(TypeConstants.Any),
           nameExpr,
           name,
           typeFullName.getOrElse(TypeConstants.Any)

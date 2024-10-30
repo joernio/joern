@@ -250,7 +250,7 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
     astsForExpression(expr.getInner, expectedType)
   }
 
-  def createFieldAccessAst(
+  private[expressions] def createFieldAccessAst(
     base: Ast,
     fieldAccessCode: String,
     fieldAccessLineNo: Option[Int],

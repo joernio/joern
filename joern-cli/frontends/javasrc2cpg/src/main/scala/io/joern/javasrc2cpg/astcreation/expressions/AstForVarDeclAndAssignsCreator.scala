@@ -155,7 +155,8 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
           case member: NewMember =>
             createImplicitBaseFieldAccess(
               scope.isEnclosingScopeStatic,
-              scope.enclosingTypeDecl.get,
+              scope.enclosingTypeDecl.name.get,
+              scope.enclosingTypeDecl.fullName.get,
               originNode,
               variableName,
               declarationNode.typeFullName
