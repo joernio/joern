@@ -1,12 +1,20 @@
 package io.joern.javasrc2cpg.astcreation.expressions
 
+import com.github.javaparser.ast.Node
 import com.github.javaparser.ast.expr.NameExpr
 import com.github.javaparser.resolution.declarations.ResolvedFieldDeclaration
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
+import io.joern.javasrc2cpg.scope.JavaScopeElement.TypeDeclScope
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.javasrc2cpg.util.NameConstants
 import io.joern.x2cpg.{Ast, Defines}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewLocal, NewMethodParameterIn}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  NewLocal,
+  NewMethodParameterIn,
+  NewTypeDecl,
+  NewTypeRef,
+  NewUnknown
+}
 
 import scala.util.Success
 import io.joern.javasrc2cpg.scope.Scope.{
@@ -17,12 +25,10 @@ import io.joern.javasrc2cpg.scope.Scope.{
   ScopeVariable,
   SimpleVariable
 }
-import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import org.slf4j.LoggerFactory
-import io.shiftleft.codepropertygraph.generated.nodes.NewUnknown
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.joern.x2cpg.utils.NodeBuilders.newOperatorCallNode
+import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode, newOperatorCallNode}
 
 trait AstForNameExpressionsCreator { this: AstCreator =>
 
@@ -39,15 +45,13 @@ trait AstForNameExpressionsCreator { this: AstCreator =>
         astForStaticImportOrUnknown(nameExpr, name, typeFullName)
 
       case SimpleVariable(variable: ScopeMember) =>
-        val targetName =
-          Option.when(variable.isStatic)(scope.enclosingTypeDecl.fullName).flatten.getOrElse(NameConstants.This)
-        fieldAccessAst(
-          targetName,
-          scope.enclosingTypeDecl.fullName,
+        createImplicitBaseFieldAccess(
+          variable.isStatic,
+          scope.enclosingTypeDecl.name.get,
+          scope.enclosingTypeDecl.fullName.get,
+          nameExpr,
           variable.name,
-          Some(variable.typeFullName),
-          line(nameExpr),
-          column(nameExpr)
+          variable.typeFullName
         )
 
       case SimpleVariable(variable) =>
@@ -65,28 +69,48 @@ trait AstForNameExpressionsCreator { this: AstCreator =>
     }
   }
 
+  private[expressions] def createImplicitBaseFieldAccess(
+    isStatic: Boolean,
+    baseTypeDeclName: String,
+    baseTypeDeclFullName: String,
+    node: Node,
+    fieldName: String,
+    fieldTypeFullName: String
+  ): Ast = {
+    val base =
+      if (isStatic) {
+        NewTypeRef()
+          .code(baseTypeDeclName)
+          .typeFullName(baseTypeDeclFullName)
+          .lineNumber(line(node))
+          .columnNumber(column(node))
+      } else {
+        newIdentifierNode(NameConstants.This, baseTypeDeclFullName)
+      }
+    createFieldAccessAst(
+      Ast(base),
+      s"${base.code}.${fieldName}",
+      line(node),
+      column(node),
+      fieldName,
+      fieldTypeFullName,
+      line(node),
+      column(node)
+    )
+  }
+
   private def astForStaticImportOrUnknown(nameExpr: NameExpr, name: String, typeFullName: Option[String]): Ast = {
     tryWithSafeStackOverflow(nameExpr.resolve()) match {
-      case Success(value) if value.isField =>
-        val identifierName = if (value.asField.isStatic) {
-          // TODO: v is wrong. Statically imported expressions can also be represented by just the name.
-          // A static field represented by a NameExpr must belong to the class in which it's used. Static fields
-          // from other classes are represented by a FieldAccessExpr instead.
-          scope.enclosingTypeDecl.map(_.typeDecl.name).getOrElse(s"${Defines.UnresolvedNamespace}.$name")
-        } else {
-          NameConstants.This
-        }
-
-        val identifierTypeFullName =
-          value match {
-            case fieldDecl: ResolvedFieldDeclaration =>
-              // TODO It is not quite correct to use the declaring classes type.
-              // Instead we should take the using classes type which is either the same or a
-              // sub class of the declaring class.
-              typeInfoCalc.fullName(fieldDecl.declaringType())
-          }
-
-        fieldAccessAst(identifierName, identifierTypeFullName, name, typeFullName, line(nameExpr), column(nameExpr))
+      case Success(value: ResolvedFieldDeclaration) =>
+        // TODO using the enclosingTypeDecl is wrong if the field was imported via a static import.
+        createImplicitBaseFieldAccess(
+          value.asField().isStatic,
+          typeInfoCalc.name(value.declaringType()).getOrElse(TypeConstants.Any),
+          typeInfoCalc.fullName(value.declaringType()).getOrElse(TypeConstants.Any),
+          nameExpr,
+          name,
+          typeFullName.getOrElse(TypeConstants.Any)
+        )
 
       case _ =>
         Ast(identifierNode(nameExpr, name, name, typeFullName.getOrElse(TypeConstants.Any)))

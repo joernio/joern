@@ -250,6 +250,34 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
     astsForExpression(expr.getInner, expectedType)
   }
 
+  private[expressions] def createFieldAccessAst(
+    base: Ast,
+    fieldAccessCode: String,
+    fieldAccessLineNo: Option[Int],
+    fieldAccessColumnNo: Option[Int],
+    fieldName: String,
+    fieldTypeFullName: String,
+    fieldLineNo: Option[Int],
+    fieldColumnNo: Option[Int]
+  ): Ast = {
+    val callNode =
+      newOperatorCallNode(
+        Operators.fieldAccess,
+        fieldAccessCode,
+        Some(fieldTypeFullName),
+        fieldAccessLineNo,
+        fieldAccessColumnNo
+      )
+
+    val fieldIdentifierNode = NewFieldIdentifier()
+      .code(fieldName)
+      .canonicalName(fieldName)
+      .lineNumber(fieldLineNo)
+      .columnNumber(fieldColumnNo)
+
+    callAst(callNode, Seq(base, Ast(fieldIdentifierNode)))
+  }
+
   private[expressions] def astForFieldAccessExpr(expr: FieldAccessExpr, expectedType: ExpectedType): Ast = {
     val typeFullName =
       expressionReturnTypeFullName(expr)
@@ -257,19 +285,19 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
         .map(typeInfoCalc.registerType)
         .getOrElse(TypeConstants.Any)
 
-    val callNode =
-      newOperatorCallNode(Operators.fieldAccess, expr.toString, Some(typeFullName), line(expr), column(expr))
-
     val fieldIdentifier = expr.getName
     val identifierAsts  = astsForExpression(expr.getScope, ExpectedType.empty)
-    val fieldIdentifierNode = NewFieldIdentifier()
-      .canonicalName(fieldIdentifier.toString)
-      .lineNumber(line(fieldIdentifier))
-      .columnNumber(column(fieldIdentifier))
-      .code(fieldIdentifier.toString)
-    val fieldIdAst = Ast(fieldIdentifierNode)
 
-    callAst(callNode, identifierAsts ++ Seq(fieldIdAst))
+    createFieldAccessAst(
+      identifierAsts.head,
+      expr.toString,
+      line(expr),
+      column(expr),
+      fieldIdentifier.toString,
+      typeFullName,
+      line(fieldIdentifier),
+      column(fieldIdentifier)
+    )
   }
 
   private[expressions] def astForInstanceOfExpr(expr: InstanceOfExpr): Ast = {
@@ -289,41 +317,6 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
     val typeAst = Ast(typeNode)
 
     callAst(callNode, exprAst ++ Seq(typeAst))
-  }
-
-  private[expressions] def fieldAccessAst(
-    identifierName: String,
-    identifierType: Option[String],
-    fieldIdentifierName: String,
-    returnType: Option[String],
-    lineNo: Option[Int],
-    columnNo: Option[Int]
-  ): Ast = {
-    val typeFullName     = identifierType.orElse(Some(TypeConstants.Any)).map(typeInfoCalc.registerType)
-    val identifier       = newIdentifierNode(identifierName, typeFullName.getOrElse("ANY"))
-    val maybeCorrespNode = scope.lookupVariable(identifierName).variableNode
-
-    val fieldIdentifier = NewFieldIdentifier()
-      .code(fieldIdentifierName)
-      .canonicalName(fieldIdentifierName)
-      .lineNumber(lineNo)
-      .columnNumber(columnNo)
-
-    val fieldAccessCode = s"$identifierName.$fieldIdentifierName"
-    val fieldAccess =
-      newOperatorCallNode(
-        Operators.fieldAccess,
-        fieldAccessCode,
-        returnType.orElse(Some(TypeConstants.Any)),
-        lineNo,
-        columnNo
-      )
-
-    val identifierAst = Ast(identifier)
-    val fieldIdentAst = Ast(fieldIdentifier)
-
-    callAst(fieldAccess, Seq(identifierAst, fieldIdentAst))
-      .withRefEdges(identifier, maybeCorrespNode.toList)
   }
 
   private[expressions] def astForLiteralExpr(expr: LiteralExpr): Ast = {

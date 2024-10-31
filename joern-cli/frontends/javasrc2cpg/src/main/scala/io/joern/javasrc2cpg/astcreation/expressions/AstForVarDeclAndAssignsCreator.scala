@@ -19,6 +19,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewIdentifier,
   NewLocal,
   NewMember,
+  NewTypeRef,
   NewUnknown
 }
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
@@ -28,6 +29,7 @@ import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
 import scala.util.{Failure, Success, Try}
 import io.joern.javasrc2cpg.scope.JavaScopeElement.PartialInit
+import io.joern.x2cpg.utils.NodeBuilders.newIdentifierNode
 
 trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
   private val logger = LoggerFactory.getLogger(this.getClass())
@@ -151,17 +153,13 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
       case Some(declarationNode) =>
         val assignmentTarget = declarationNode match {
           case member: NewMember =>
-            val name =
-              if (scope.isEnclosingScopeStatic)
-                scope.enclosingTypeDecl.map(_.typeDecl.name).getOrElse(NameConstants.Unknown)
-              else NameConstants.This
-            fieldAccessAst(
-              name,
-              scope.enclosingTypeDecl.fullName,
-              declarationNode.name,
-              Option(declarationNode.typeFullName),
-              line(originNode),
-              column(originNode)
+            createImplicitBaseFieldAccess(
+              scope.isEnclosingScopeStatic,
+              scope.enclosingTypeDecl.name.get,
+              scope.enclosingTypeDecl.fullName.get,
+              originNode,
+              variableName,
+              declarationNode.typeFullName
             )
 
           case variable =>
