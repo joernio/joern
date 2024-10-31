@@ -87,7 +87,10 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
 
   private def getDependencyList(inputPath: String): List[String] = {
     val envVarValue = Option(System.getenv(JavaSrcEnvVar.FetchDependencies.name))
-    val shouldFetch = if (envVarValue.exists(_.nonEmpty)) {
+    val shouldFetch = if (envVarValue.contains("no-fetch")) {
+      logger.info(s"Disabling dependency fetching as envvar is set to \"no-fetch\"")
+      false
+    } else if (envVarValue.exists(_.nonEmpty)) {
       logger.info(s"Enabling dependency fetching: Environment variable ${JavaSrcEnvVar.FetchDependencies.name} is set")
       true
     } else if (config.fetchDependencies) {
