@@ -4,7 +4,7 @@ import versionsort.VersionHelper
 
 import java.net.URI
 import scala.sys.process.stringToProcess
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 name := "rubysrc2cpg"
 
@@ -29,16 +29,29 @@ libraryDependencies ++= Seq(
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 
-lazy val astGenVersion = settingKey[String]("ruby_ast_gen.rb version")
-astGenVersion := appProperties.value.getString("rubysrc2cpg.ruby_ast_gen_version")
-
 libraryDependencies ++= Seq(
   "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
   "org.scalatest" %% "scalatest"         % Versions.scalatest % Test
 )
 
+lazy val astGenVersion = settingKey[String]("ruby_ast_gen.rb version")
+astGenVersion := appProperties.value.getString("rubysrc2cpg.ruby_ast_gen_version")
+
 lazy val astGenDlUrl = settingKey[String]("astgen download url")
 astGenDlUrl := s"https://github.com/joernio/ruby_ast_gen/releases/download/v${astGenVersion.value}/"
+
+def hasCompatibleAstGenVersion(astGenBaseDir: File, astGenVersion: String): Boolean = {
+  val versionFile = astGenBaseDir / "lib" / "ruby_ast_gen" / "version.rb"
+  if (!versionFile.exists) return false
+  val versionPattern = "VERSION = \"([0-9]+\\.[0-9]+\\.[0-9]+)\"".r
+  versionPattern.findFirstIn(IO.read(versionFile)) match {
+    case Some(versionString) =>
+      // Regex group matching doesn't appear to work in SBT
+      val version = versionString.stripPrefix("VERSION = \"").stripSuffix("\"")
+      version == astGenVersion
+    case _ => false
+  }
+}
 
 lazy val astGenDlTask = taskKey[Unit](s"Download astgen binaries and update bundled resource")
 astGenDlTask := {
@@ -46,7 +59,12 @@ astGenDlTask := {
   val gemName             = s"ruby_ast_gen_v${astGenVersion.value}.zip"
   val gemFullPath         = targetDir / gemName
   val unpackedGemFullPath = targetDir / gemName.stripSuffix(s"_v${astGenVersion.value}.zip")
-  DownloadHelper.ensureIsAvailable(s"${astGenDlUrl.value}$gemName", gemFullPath)
+  if (!hasCompatibleAstGenVersion(unpackedGemFullPath, astGenVersion.value)) {
+    val url = s"${astGenDlUrl.value}$gemName"
+    sbt.io.Using.urlInputStream(new URI(url).toURL) { inputStream =>
+      sbt.IO.transfer(inputStream, gemFullPath)
+    }
+  }
   if (unpackedGemFullPath.exists()) IO.delete(unpackedGemFullPath)
   IO.unzip(gemFullPath, unpackedGemFullPath)
   IO.delete(gemFullPath)

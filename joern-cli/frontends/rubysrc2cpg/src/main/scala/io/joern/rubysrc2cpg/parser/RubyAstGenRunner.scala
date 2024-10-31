@@ -42,13 +42,13 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
     }
 
     astGenOut.map(_.strip()).foreach {
-      case s"W, [$_]  WARN -- : $reason - $fileName"   => addReason(reason, Option(fileName))
-      case s"E, [$_] ERROR -- : '$fileName' - $reason" => addReason(reason, Option(fileName))
-      case s"E, [$_] ERROR -- : Failed to parse $fileName: $reason" =>
+      case s"[WARN] $reason - $fileName"  => addReason(reason, Option(fileName))
+      case s"[ERR] '$fileName' - $reason" => addReason(reason, Option(fileName))
+      case s"[ERR] Failed to parse $fileName: $reason" =>
         addReason(s"Failed to parse: $reason", Option(fileName))
-      case s"I, [$_]  INFO -- : Processed: $fileName -> $_" => diagnosticMap.put(fileName, Nil)
-      case s"I, [$_]  INFO -- : Excluding: $fileName"       => addReason("Skipped", Option(fileName))
-      case _                                                => // ignore
+      case s"[INFO] Processed: $fileName -> $_" => diagnosticMap.put(fileName, Nil)
+      case s"[INFO] Excluding: $fileName"       => addReason("Skipped", Option(fileName))
+      case _                                    => // ignore
     }
 
     diagnosticMap.flatMap {
@@ -74,7 +74,7 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
         val cwd            = env.path.toAbsolutePath.toString
         val excludeCommand = if (exclude.isEmpty) "" else s"-e \"$exclude\""
         val gemPath        = Seq(cwd, "vendor", "bundle", "jruby", "3.1.0").mkString(separator)
-        val rubyArgs       = Array("--log", "info", "-o", out.toString(), "-i", in, excludeCommand)
+        val rubyArgs       = Array("-o", out.toString(), "-i", in, excludeCommand).filterNot(_.isBlank)
         val mainScript     = Seq(cwd, "exe", "ruby_ast_gen.rb").mkString(separator)
         if (config.tryLocalRuby) {
           executeWithNativeRuby(mainScript, cwd, rubyArgs, gemPath)
