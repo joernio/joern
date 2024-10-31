@@ -4,6 +4,7 @@ import io.joern.x2cpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Path
+import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
 
 object MavenDependencies {
@@ -47,8 +48,10 @@ object MavenDependencies {
     logger.debug(s"Full maven error output:\n$output")
   }
 
-  private[dependency] def get(projectDir: Path): Option[collection.Seq[String]] = {
-    val lines = ExternalCommand.run(fetchCommandWithOpts, projectDir.toString).toTry match {
+  private[dependency] def get(projectDir: Path, timeoutDuration: Option[Duration]): Option[collection.Seq[String]] = {
+    val lines = ExternalCommand
+      .run(fetchCommandWithOpts, projectDir.toString, timeout = timeoutDuration)
+      .toTry match {
       case Success(lines) =>
         if (lines.contains("[INFO] Build failures were ignored.")) {
           logErrors(lines.mkString(System.lineSeparator()))

@@ -6,6 +6,7 @@ import io.joern.x2cpg.utils.dependency.GradleConfigKeys.GradleConfigKey
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Path
+import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
 
 object GradleConfigKeys extends Enumeration {
@@ -64,13 +65,14 @@ object DependencyResolver {
 
   def getDependencies(
     projectDir: Path,
-    params: DependencyResolverParams = new DependencyResolverParams
+    params: DependencyResolverParams = new DependencyResolverParams,
+    timeout: Option[Duration] = None
   ): Option[Seq[String]] = {
     val dependencies = findSupportedBuildFiles(projectDir).flatMap { buildFile =>
       if (isMavenBuildFile(buildFile)) {
-        MavenDependencies.get(buildFile.getParent)
+        MavenDependencies.get(buildFile.getParent, timeout)
       } else if (isGradleBuildFile(buildFile)) {
-        getDepsForGradleProject(params, buildFile.getParent)
+        getDepsForGradleProject(params, buildFile.getParent, timeout)
       } else {
         logger.warn(s"Found unsupported build file $buildFile")
         Nil
@@ -82,13 +84,14 @@ object DependencyResolver {
 
   private def getDepsForGradleProject(
     params: DependencyResolverParams,
-    projectDir: Path
+    projectDir: Path,
+    timeout: Option[Duration]
   ): Option[collection.Seq[String]] = {
     logger.info("resolving Gradle dependencies at {}", projectDir)
     val maybeProjectNameOverride   = params.forGradle.get(GradleConfigKeys.ProjectName)
     val maybeConfigurationOverride = params.forGradle.get(GradleConfigKeys.ConfigurationName)
 
-    GradleDependencies.get(projectDir, maybeProjectNameOverride, maybeConfigurationOverride) match {
+    GradleDependencies.get(projectDir, maybeProjectNameOverride, maybeConfigurationOverride, timeout) match {
       case dependenciesMap if dependenciesMap.values.exists(_.nonEmpty) =>
         Option(dependenciesMap.values.flatten.toSet.toSeq)
 

@@ -9,8 +9,10 @@ import org.slf4j.LoggerFactory
 import java.io.ByteArrayOutputStream
 import java.nio.file.{Files, Path}
 import java.io.File as JFile
+import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
 import scala.collection.mutable
+import scala.concurrent.duration.Duration
 import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Random, Success, Try, Using}
 
@@ -65,7 +67,12 @@ object GradleDependencies {
 
   // works with Gradle 5.1+ because the script makes use of `task.register`:
   //   https://docs.gradle.org/current/userguide/task_configuration_avoidance.html
-  private def getInitScriptContent(taskName: String, destination: String, projectInfo: GradleProjectInfo): String = {
+  private def getInitScriptContent(
+    taskName: String,
+    destination: String,
+    projectInfo: GradleProjectInfo,
+    timeoutDuration: Option[Duration]
+  ): String = {
     val projectConfigurationString = projectInfo.subprojects
       .map { case (projectNameInfo, configurationNames) =>
         val quotedConfigurationNames = configurationNames.map(name => s"\"$name\"").mkString(", ")
@@ -78,9 +85,13 @@ object GradleDependencies {
       case _                                          => "tasks.create"
     }
 
+    val timeoutString =
+      timeoutDuration.map(timeout => s"timeout = Duration.ofMillis(${timeout.toMillis})").getOrElse("")
+
     val androidTaskDefinition = Option.when(projectInfo.hasAndroidSubproject)(s"""
            |def androidDepsCopyTaskName = taskName + "_androidDeps"
            |      $taskCreationFunction(androidDepsCopyTaskName, Copy) {
+           |        $timeoutString
            |        duplicatesStrategy = 'include'
            |        into destinationDir
            |        from project.configurations.find { it.name.equals("androidApis") }
@@ -125,6 +136,7 @@ object GradleDependencies {
        |      }
        |      ${androidTaskDefinition.getOrElse("")}
        |      $taskCreationFunction(taskName, Copy) {
+       |        $timeoutString
        |        ${dependsOnAndroidTask.getOrElse("")} 
        |        dependsOn compileDepsCopyTaskName
        |      }
@@ -134,9 +146,13 @@ object GradleDependencies {
        |""".stripMargin
   }
 
-  private def makeInitScript(destinationDir: Path, projectInfo: GradleProjectInfo): GradleDepsInitScript = {
+  private def makeInitScript(
+    destinationDir: Path,
+    projectInfo: GradleProjectInfo,
+    timeout: Option[Duration]
+  ): GradleDepsInitScript = {
     val taskName = taskNamePrefix + "_" + (Random.alphanumeric take 8).toList.mkString
-    val content  = getInitScriptContent(taskName, destinationDir.toString, projectInfo)
+    val content  = getInitScriptContent(taskName, destinationDir.toString, projectInfo, timeout)
     GradleDepsInitScript(content, taskName, destinationDir)
   }
 
@@ -417,7 +433,8 @@ object GradleDependencies {
   private[dependency] def get(
     projectDir: Path,
     projectNameOverride: Option[String],
-    configurationNameOverride: Option[String]
+    configurationNameOverride: Option[String],
+    timeout: Option[Duration]
   ): Map[String, collection.Seq[String]] = {
     logger.info(s"Fetching Gradle project information at path `$projectDir`.")
     getGradleProjectInfo(projectDir, projectNameOverride, configurationNameOverride) match {
@@ -430,7 +447,15 @@ object GradleDependencies {
           case Success(destinationDir) =>
             Try(File.newTemporaryFile(initScriptPrefix).deleteOnExit()) match {
               case Success(initScriptFile) =>
-                val initScript = makeInitScript(destinationDir.path, projectInfo)
+                val timeoutPerSubproject = timeout.map { timeout =>
+                  val projectCount = projectInfo.subprojects.keys.size
+                  val newMillis    = timeout.toMillis / projectCount
+                  logger.debug(
+                    s"Total timeout of ${timeout.toMillis}ms set and $projectCount subprojects found, so setting dependency fetching timeout per project to ${newMillis}ms"
+                  )
+                  Duration(newMillis, TimeUnit.MILLISECONDS)
+                }
+                val initScript = makeInitScript(destinationDir.path, projectInfo, timeoutPerSubproject)
                 initScriptFile.write(initScript.contents)
 
                 Try(makeConnection(projectDir.toFile)) match {

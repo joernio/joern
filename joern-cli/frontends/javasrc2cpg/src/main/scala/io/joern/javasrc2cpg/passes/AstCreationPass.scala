@@ -33,6 +33,7 @@ import java.nio.file.{Path, Paths}
 import java.util.concurrent.ConcurrentHashMap
 import scala.collection.parallel.CollectionConverters.*
 import scala.collection.concurrent
+import scala.concurrent.duration.Duration
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
 import scala.util.{Success, Try}
@@ -99,7 +100,20 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
     }
 
     if (shouldFetch) {
-      DependencyResolver.getDependencies(Paths.get(inputPath)) match {
+      val envVarTimeout = Option(System.getenv(JavaSrcEnvVar.FetchDependenciesTimeout.name))
+      val dependencyFetchingTimeout = if (envVarTimeout.exists(_.nonEmpty)) {
+        val timeout = Duration(envVarTimeout.get)
+        logger.info(s"Using dependency fetching timeout from envvar: ${timeout.toMillis}ms")
+        Option(timeout)
+      } else if (config.dependencyFetchingTimeout.isDefined) {
+        val timeout = config.dependencyFetchingTimeout.get
+        logger.info(s"Using dependency fetching timeout from --fetch-dependencies-timeout flag: ${timeout.toMillis}ms")
+        Option(timeout)
+      } else {
+        logger.info(s"No timeout set for dependency fetching")
+        None
+      }
+      DependencyResolver.getDependencies(Paths.get(inputPath), timeout = dependencyFetchingTimeout) match {
         case Some(deps) => deps.toList
         case None =>
           logger.warn(s"Could not fetch dependencies for project at path $inputPath")

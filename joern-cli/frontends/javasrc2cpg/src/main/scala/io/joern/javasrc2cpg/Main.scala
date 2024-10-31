@@ -11,6 +11,7 @@ import io.joern.x2cpg.utils.server.FrontendHTTPServer
 import scopt.OParser
 
 import java.util.concurrent.ExecutorService
+import scala.concurrent.duration.Duration
 
 /** Command line configuration parameters
   */
@@ -26,7 +27,8 @@ final case class Config(
   skipTypeInfPass: Boolean = false,
   dumpJavaparserAsts: Boolean = false,
   cacheJdkTypeSolver: Boolean = false,
-  keepTypeArguments: Boolean = false
+  keepTypeArguments: Boolean = false,
+  dependencyFetchingTimeout: Option[Duration] = None
 ) extends X2CpgConfig[Config]
     with TypeRecoveryParserConfig[Config] {
   def withInferenceJarPaths(paths: Set[String]): Config = {
@@ -75,6 +77,10 @@ final case class Config(
 
   def withKeepTypeArguments(value: Boolean): Config = {
     copy(keepTypeArguments = value).withInheritedFields(this)
+  }
+
+  def withDependencyFetchingTimeout(value: Duration): Config = {
+    copy(dependencyFetchingTimeout = Option(value)).withInheritedFields(this)
   }
 }
 
@@ -133,7 +139,10 @@ private object Frontend {
       opt[Unit]("keep-type-arguments")
         .hidden()
         .action((_, c) => c.withKeepTypeArguments(true))
-        .text("Type full names of variables keep their type arguments.")
+        .text("Type full names of variables keep their type arguments."),
+      opt[String]("fetch-dependencies-timeout")
+        .action((timeoutString, c) => c.withDependencyFetchingTimeout(Duration(timeoutString)))
+        .text("Timeout for the Maven dependency fetcher in the format <length><unit>")
     )
   }
 }

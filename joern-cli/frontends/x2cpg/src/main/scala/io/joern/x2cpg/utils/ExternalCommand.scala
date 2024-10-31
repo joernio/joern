@@ -1,14 +1,18 @@
 package io.joern.x2cpg.utils
 
 import io.shiftleft.utils.IOUtils
+import org.slf4j.LoggerFactory
 
 import java.io.File
 import java.nio.file.{Path, Paths}
+import java.util.concurrent.TimeUnit
+import scala.concurrent.duration.Duration
 import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
 import scala.util.control.NonFatal
 
 object ExternalCommand {
+  private val logger = LoggerFactory.getLogger(this.getClass)
 
   case class ExternalCommandResult(exitCode: Int, stdOut: Seq[String], stdErr: Seq[String]) {
     def successOption: Option[Seq[String]] = exitCode match {
@@ -30,7 +34,8 @@ object ExternalCommand {
     command: Seq[String],
     cwd: String,
     mergeStdErrInStdOut: Boolean = false,
-    extraEnv: Map[String, String] = Map.empty
+    extraEnv: Map[String, String] = Map.empty,
+    timeout: Option[Duration] = None
   ): ExternalCommandResult = {
     val builder = new ProcessBuilder()
       .command(command.toArray*)
@@ -45,8 +50,20 @@ object ExternalCommand {
       builder.redirectOutput(stdOutFile)
       stdErrFile.foreach(f => builder.redirectError(f))
 
-      val process     = builder.start()
-      val returnValue = process.waitFor()
+      val process = builder.start()
+
+      val returnValue = timeout match {
+        case Some(timeout) =>
+          if (process.waitFor(timeout.toMillis, TimeUnit.MILLISECONDS)) {
+            0
+          } else {
+            logger.warn(s"Command timed out after timeout of ${timeout.toMillis}ms: ${command.mkString(" ")}")
+            process.destroy()
+            1
+          }
+
+        case None => process.waitFor()
+      }
 
       val stdOut = IOUtils.readLinesInFile(stdOutFile.toPath)
       val stdErr = stdErrFile.map(f => IOUtils.readLinesInFile(f.toPath)).getOrElse(Seq.empty)

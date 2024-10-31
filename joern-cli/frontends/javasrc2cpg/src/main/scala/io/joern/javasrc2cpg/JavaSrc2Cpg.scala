@@ -70,5 +70,10 @@ object JavaSrc2Cpg {
           "JAVASRC_FETCH_DEPENDENCIES",
           "If set, javasrc2cpg will fetch dependencies regardless of the --fetch-dependencies flag."
         )
+    case FetchDependenciesTimeout
+        extends JavaSrcEnvVar(
+          "JAVASRC_FETCH_DEPENDENCIES_TIMEOUT",
+          "Timeout for dependency fetching in the format <length><unit>. Overrides the --fetch-dependencies-timeout flag."
+        )
   }
 }
