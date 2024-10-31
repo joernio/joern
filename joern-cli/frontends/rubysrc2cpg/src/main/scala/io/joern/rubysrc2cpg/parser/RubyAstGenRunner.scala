@@ -4,7 +4,8 @@ import better.files.File
 import io.joern.rubysrc2cpg.Config
 import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, executableDir}
 import io.joern.x2cpg.astgen.AstGenRunnerBase
-import io.joern.x2cpg.utils.ExternalCommand
+import io.joern.x2cpg.utils.Environment.OperatingSystemType
+import io.joern.x2cpg.utils.{Environment, ExternalCommand}
 import org.jruby.RubyInstanceConfig
 import org.jruby.embed.{LocalContextScope, LocalVariableBehavior, PathType, ScriptingContainer}
 import org.slf4j.LoggerFactory
@@ -153,8 +154,13 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
       throw new IllegalArgumentException(s"Resource directory '$resourceDir' not found in JAR.")
     }
 
-    lazy val execPerms =
-      util.Set.of(PosixFilePermission.OWNER_EXECUTE, PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE)
+    def setFilePerms(targetPath: Path): Unit = {
+      val execPerms =
+        util.Set.of(PosixFilePermission.OWNER_EXECUTE, PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE)
+
+      if (Environment.operatingSystem != OperatingSystemType.Windows)
+        Files.setPosixFilePermissions(targetPath, execPerms)
+    }
 
     resourceUrl.getProtocol match {
       case "jar" =>
@@ -172,7 +178,7 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
             val inputStream: InputStream = jarFile.getInputStream(entry)
             try {
               Files.copy(inputStream, entryPath, StandardCopyOption.REPLACE_EXISTING)
-              if entryPath.endsWith("ruby_ast_gen") then Files.setPosixFilePermissions(entryPath, execPerms)
+              if entryPath.endsWith("ruby_ast_gen") then setFilePerms(entryPath)
             } finally {
               inputStream.close()
             }
@@ -182,7 +188,7 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
       case "file" =>
         val resourcePath = Paths.get(resourceUrl.toURI)
         val mainScript   = resourcePath.resolve("exe").resolve("ruby_ast_gen")
-        Files.setPosixFilePermissions(mainScript, execPerms)
+        setFilePerms(mainScript)
         LocalDir(resourcePath)
       case x =>
         throw new IllegalArgumentException(s"Resources is within an unsupported environment '$x'.")
