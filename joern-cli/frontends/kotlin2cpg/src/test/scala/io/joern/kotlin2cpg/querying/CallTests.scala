@@ -321,6 +321,20 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     }
   }
 
+  "CPG for code with named arguments in call on object" should {
+    val cpg = code("""
+                     |package no.such.pkg
+                     |fun outer() {
+                     |    Pair(1,2).copy(second = 3)
+                     |}
+                     |""".stripMargin)
+
+    "contain a CALL node with arguments that have the argument name set" ignore {
+      val List(c) = cpg.call.name("copy").l
+      c.argument(1).argumentName shouldBe Some("second")
+    }
+  }
+
   "CPG for code with call with argument with type with upper bound" should {
     val cpg = code("""
       |package mypkg
