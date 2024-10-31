@@ -34,7 +34,7 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest"         % Versions.scalatest % Test
 )
 
-lazy val astGenVersion = settingKey[String]("ruby_ast_gen.rb version")
+lazy val astGenVersion = settingKey[String]("`ruby_ast_gen` version")
 astGenVersion := appProperties.value.getString("rubysrc2cpg.ruby_ast_gen_version")
 
 lazy val astGenDlUrl = settingKey[String]("astgen download url")
@@ -53,8 +53,8 @@ def hasCompatibleAstGenVersion(astGenBaseDir: File, astGenVersion: String): Bool
   }
 }
 
-lazy val astGenDlTask = taskKey[Unit](s"Download astgen binaries and update bundled resource")
-astGenDlTask := {
+lazy val astGenResourceTask = taskKey[Seq[File]](s"Download `ruby_ast_gen` and package this under `resources`")
+astGenResourceTask := {
   val targetDir           = baseDirectory.value / "src" / "main" / "resources"
   val gemName             = s"ruby_ast_gen_v${astGenVersion.value}.zip"
   val compressGemPath     = targetDir / gemName
@@ -68,9 +68,10 @@ astGenDlTask := {
     IO.unzip(compressGemPath, unpackedGemFullPath)
     IO.delete(compressGemPath)
   }
+  (unpackedGemFullPath ** "*").get.filter(_.isFile)
 }
 
-Compile / compile := ((Compile / compile) dependsOn astGenDlTask).value
+Compile / resourceGenerators += astGenResourceTask
 
 lazy val joernTypeStubsDlUrl = settingKey[String]("joern_type_stubs download url")
 joernTypeStubsDlUrl := s"https://github.com/joernio/joern-type-stubs/releases/download/v${joernTypeStubsVersion.value}/"
