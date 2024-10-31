@@ -24,7 +24,7 @@ libraryDependencies ++= Seq(
   "io.shiftleft" %% "codepropertygraph" % Versions.cpg,
   "org.apache.commons" % "commons-compress" % Versions.commonsCompress, // For unpacking Gems with `--download-dependencies`
   "org.jruby"      % "jruby-complete" % Versions.jRuby,
-  "org.scalatest" %% "scalatest"      % Versions.scalatest % Test,
+  "org.scalatest" %% "scalatest"      % Versions.scalatest % Test
 )
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
@@ -57,17 +57,17 @@ lazy val astGenDlTask = taskKey[Unit](s"Download astgen binaries and update bund
 astGenDlTask := {
   val targetDir           = baseDirectory.value / "src" / "main" / "resources"
   val gemName             = s"ruby_ast_gen_v${astGenVersion.value}.zip"
-  val gemFullPath         = targetDir / gemName
+  val compressGemPath     = targetDir / gemName
   val unpackedGemFullPath = targetDir / gemName.stripSuffix(s"_v${astGenVersion.value}.zip")
   if (!hasCompatibleAstGenVersion(unpackedGemFullPath, astGenVersion.value)) {
+    if (unpackedGemFullPath.exists()) IO.delete(unpackedGemFullPath)
     val url = s"${astGenDlUrl.value}$gemName"
     sbt.io.Using.urlInputStream(new URI(url).toURL) { inputStream =>
-      sbt.IO.transfer(inputStream, gemFullPath)
+      sbt.IO.transfer(inputStream, compressGemPath)
     }
+    IO.unzip(compressGemPath, unpackedGemFullPath)
+    IO.delete(compressGemPath)
   }
-  if (unpackedGemFullPath.exists()) IO.delete(unpackedGemFullPath)
-  IO.unzip(gemFullPath, unpackedGemFullPath)
-  IO.delete(gemFullPath)
 }
 
 Compile / compile := ((Compile / compile) dependsOn astGenDlTask).value
