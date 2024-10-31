@@ -42,17 +42,17 @@ astGenDlUrl := s"https://github.com/joernio/ruby_ast_gen/releases/download/v${as
 
 lazy val astGenDlTask = taskKey[Unit](s"Download astgen binaries and update bundled resource")
 astGenDlTask := {
-  val astGenDir           = baseDirectory.value / "src" / "main" / "resources"
+  val targetDir           = baseDirectory.value / "src" / "main" / "resources"
   val gemName             = s"ruby_ast_gen_v${astGenVersion.value}.zip"
-  val gemFullPath         = astGenDir / gemName
-  val unpackedGemFullPath = astGenDir / gemName.stripSuffix(s"_v${astGenVersion.value}.zip")
-  sbt.io.Using.urlInputStream(new URI(s"${astGenDlUrl.value}$gemName").toURL) { inputStream =>
-    sbt.IO.transfer(inputStream, gemFullPath)
-  }
+  val gemFullPath         = targetDir / gemName
+  val unpackedGemFullPath = targetDir / gemName.stripSuffix(s"_v${astGenVersion.value}.zip")
+  DownloadHelper.ensureIsAvailable(s"${astGenDlUrl.value}$gemName", gemFullPath)
   if (unpackedGemFullPath.exists()) IO.delete(unpackedGemFullPath)
   IO.unzip(gemFullPath, unpackedGemFullPath)
   IO.delete(gemFullPath)
 }
+
+Compile / compile := ((Compile / compile) dependsOn astGenDlTask).value
 
 lazy val joernTypeStubsDlUrl = settingKey[String]("joern_type_stubs download url")
 joernTypeStubsDlUrl := s"https://github.com/joernio/joern-type-stubs/releases/download/v${joernTypeStubsVersion.value}/"
