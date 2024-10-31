@@ -2,9 +2,8 @@ package io.joern.rubysrc2cpg.parser
 
 import better.files.File
 import io.joern.rubysrc2cpg.Config
-import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, executableDir}
+import io.joern.x2cpg.astgen.AstGenRunner.AstGenProgramMetaData
 import io.joern.x2cpg.astgen.AstGenRunnerBase
-import io.joern.x2cpg.utils.Environment.OperatingSystemType
 import io.joern.x2cpg.utils.{Environment, ExternalCommand}
 import org.jruby.RubyInstanceConfig
 import org.jruby.embed.{LocalContextScope, LocalVariableBehavior, PathType, ScriptingContainer}
@@ -12,13 +11,12 @@ import org.slf4j.LoggerFactory
 
 import java.io.File.separator
 import java.io.{ByteArrayOutputStream, InputStream, PrintStream}
-import java.nio.file.attribute.PosixFilePermission
 import java.nio.file.{Files, Path, Paths, StandardCopyOption}
+import java.util
 import java.util.jar.JarFile
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try, Using}
-import java.util
 
 class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
 
@@ -77,7 +75,7 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
         val excludeCommand = if (exclude.isEmpty) "" else s"-e \"$exclude\""
         val gemPath        = Seq(cwd, "vendor", "bundle", "jruby", "3.1.0").mkString(separator)
         val rubyArgs       = Array("--log", "info", "-o", out.toString(), "-i", in, excludeCommand)
-        val mainScript     = Seq(cwd, "exe", "ruby_ast_gen").mkString(separator)
+        val mainScript     = Seq(cwd, "exe", "ruby_ast_gen.rb").mkString(separator)
         if (config.tryLocalRuby) {
           executeWithNativeRuby(mainScript, cwd, rubyArgs, gemPath)
             .recoverWith(throwable =>
@@ -170,7 +168,7 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
             val inputStream: InputStream = jarFile.getInputStream(entry)
             try {
               Files.copy(inputStream, entryPath, StandardCopyOption.REPLACE_EXISTING)
-              if entryPath.endsWith("ruby_ast_gen") then entryPath.toFile.setExecutable(true, true)
+              if entryPath.endsWith("ruby_ast_gen.rb") then entryPath.toFile.setExecutable(true, true)
             } finally {
               inputStream.close()
             }
@@ -179,7 +177,7 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
         TempDir(tempPath)
       case "file" =>
         val resourcePath = Paths.get(resourceUrl.toURI)
-        val mainScript   = resourcePath.resolve("exe").resolve("ruby_ast_gen")
+        val mainScript   = resourcePath.resolve("exe").resolve("ruby_ast_gen.rb")
         mainScript.toFile.setExecutable(true, false)
         LocalDir(resourcePath)
       case x =>

@@ -29,7 +29,7 @@ libraryDependencies ++= Seq(
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 
-lazy val astGenVersion = settingKey[String]("ruby_ast_gen version")
+lazy val astGenVersion = settingKey[String]("ruby_ast_gen.rb version")
 astGenVersion := appProperties.value.getString("rubysrc2cpg.ruby_ast_gen_version")
 
 libraryDependencies ++= Seq(

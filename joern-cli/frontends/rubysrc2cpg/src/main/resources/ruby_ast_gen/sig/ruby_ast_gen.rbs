@@ -1,6 +1,0 @@
-module RubyAstGen
-  VERSION: String
-  @logger: Logger
-
-  def self.logger: -> Logger
-end
