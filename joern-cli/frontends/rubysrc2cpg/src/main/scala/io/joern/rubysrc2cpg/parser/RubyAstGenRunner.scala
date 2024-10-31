@@ -154,14 +154,6 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
       throw new IllegalArgumentException(s"Resource directory '$resourceDir' not found in JAR.")
     }
 
-    def setFilePerms(targetPath: Path): Unit = {
-      val execPerms =
-        util.Set.of(PosixFilePermission.OWNER_EXECUTE, PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE)
-
-      if (Environment.operatingSystem != OperatingSystemType.Windows)
-        Files.setPosixFilePermissions(targetPath, execPerms)
-    }
-
     resourceUrl.getProtocol match {
       case "jar" =>
         val tempPath = Files.createTempDirectory("ruby_ast_gen-")
@@ -178,7 +170,7 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
             val inputStream: InputStream = jarFile.getInputStream(entry)
             try {
               Files.copy(inputStream, entryPath, StandardCopyOption.REPLACE_EXISTING)
-              if entryPath.endsWith("ruby_ast_gen") then setFilePerms(entryPath)
+              if entryPath.endsWith("ruby_ast_gen") then entryPath.toFile.setExecutable(true, true)
             } finally {
               inputStream.close()
             }
@@ -188,7 +180,7 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
       case "file" =>
         val resourcePath = Paths.get(resourceUrl.toURI)
         val mainScript   = resourcePath.resolve("exe").resolve("ruby_ast_gen")
-        setFilePerms(mainScript)
+        mainScript.toFile.setExecutable(true, false)
         LocalDir(resourcePath)
       case x =>
         throw new IllegalArgumentException(s"Resources is within an unsupported environment '$x'.")
