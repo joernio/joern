@@ -2,7 +2,7 @@ package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, TypeRef}
 import io.shiftleft.semanticcpg.language.*
 
 class ScopeTests extends JavaSrcCode2CpgFixture {
@@ -151,9 +151,8 @@ class ScopeTests extends JavaSrcCode2CpgFixture {
         fieldAccess.methodFullName shouldBe Operators.fieldAccess
         fieldAccess.typeFullName shouldBe "java.lang.Object"
         fieldAccess.argument.l match {
-          case List(identifier: Identifier, fieldIdentifier: FieldIdentifier) =>
-            identifier.name shouldBe "Test"
-            identifier.typeFullName shouldBe "Test"
+          case List(typeRef: TypeRef, fieldIdentifier: FieldIdentifier) =>
+            typeRef.typeFullName shouldBe "Test"
             fieldIdentifier.canonicalName shouldBe "staticO"
           case res => fail(s"Expected field access args but got $res")
         }

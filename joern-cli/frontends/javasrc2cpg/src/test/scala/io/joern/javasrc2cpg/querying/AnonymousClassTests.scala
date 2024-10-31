@@ -3,7 +3,15 @@ package io.joern.javasrc2cpg.querying
 import io.joern.javasrc2cpg.JavaSrc2Cpg
 import io.shiftleft.semanticcpg.language.*
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.{Binding, Block, Call, FieldIdentifier, Identifier, TypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  Binding,
+  Block,
+  Call,
+  FieldIdentifier,
+  Identifier,
+  TypeDecl,
+  TypeRef
+}
 import io.shiftleft.codepropertygraph.generated.Operators
 
 class AnonymousClassTests extends JavaSrcCode2CpgFixture {
@@ -178,10 +186,8 @@ class AnonymousClassTests extends JavaSrcCode2CpgFixture {
           fieldAccess.name shouldBe Operators.fieldAccess
           fieldAccess.typeFullName shouldBe "foo.Bar"
 
-          inside(fieldAccess.argument.l) { case List(fooIdentifier: Identifier, bField: FieldIdentifier) =>
-            fooIdentifier.name shouldBe "Foo"
-            fooIdentifier.typeFullName shouldBe "foo.Foo"
-
+          inside(fieldAccess.argument.l) { case List(typeRef: TypeRef, bField: FieldIdentifier) =>
+            typeRef.typeFullName shouldBe "foo.Foo"
             bField.canonicalName shouldBe "b"
           }
         }
