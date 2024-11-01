@@ -11,11 +11,11 @@ import io.joern.x2cpg.utils.NodeBuilders
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethodRef
-import org.jetbrains.kotlin.descriptors.{DescriptorVisibilities, FunctionDescriptor}
+import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.lexer.KtToken
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.resolve.BindingContext
 
 import scala.jdk.CollectionConverters.*
 
@@ -266,10 +266,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         val initReceiverNode = identifierNode(expr, identifier.name, identifier.name, identifier.typeFullName)
         val initReceiverAst  = Ast(initReceiverNode).withRefEdge(initReceiverNode, local)
 
-        val argAsts = withIndex(callExpr.getValueArguments.asScala.toSeq) { case (arg, idx) =>
-          val argNameOpt = if (arg.isNamed) Option(arg.getArgumentName.getAsName.toString) else None
-          astsForExpression(arg.getArgumentExpression, Option(idx), argNameOpt)
-        }.flatten
+        val argAsts = astsForKtCallExpressionArguments(callExpr)
         val initAst = callAst(initCallNode, argAsts, Option(initReceiverAst))
 
         val returningIdentifierNode = identifierNode(expr, identifier.name, identifier.name, identifier.typeFullName)
@@ -454,10 +451,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     argNameMaybe: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
   )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
-    val argAsts = withIndex(expr.getValueArguments.asScala.toSeq) { case (arg, idx) =>
-      val argNameOpt = if (arg.isNamed) Option(arg.getArgumentName.getAsName.toString) else None
-      astsForExpression(arg.getArgumentExpression, Option(idx), argNameOpt)
-    }.flatten
+    val argAsts = astsForKtCallExpressionArguments(expr)
 
     // TODO: add tests for the empty `referencedName` here
     val referencedName = Option(expr.getFirstChild)

@@ -323,15 +323,33 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
   "CPG for code with named arguments in call on object" should {
     val cpg = code("""
-                     |package no.such.pkg
-                     |fun outer() {
-                     |    Pair(1,2).copy(second = 3)
-                     |}
-                     |""".stripMargin)
+       |package no.such.pkg
+       |fun outer() {
+       |    Pair(1,2).copy(second = 3)
+       |}
+       |""".stripMargin)
 
-    "contain a CALL node with arguments that have the argument name set" ignore {
+    "contain a CALL node with arguments that have the argument name set" in {
       val List(c) = cpg.call.name("copy").l
       c.argument(1).argumentName shouldBe Some("second")
+    }
+  }
+
+  "CPG for code with implicit this access on apply and run call" should {
+    val cpg = code("""
+        |package no.such.pkg
+        |
+        |fun outer() {
+        |    Pair(1,2).apply { println(second) }
+        |}
+        |""".stripMargin)
+
+    "contain a CALL node with argument that is a this access" in {
+      val List(printCall) = cpg.call.name("println").l
+      val secondCall      = printCall.argument(1).asInstanceOf[Call]
+      secondCall.methodFullName shouldBe Operators.fieldAccess
+      secondCall.code shouldBe "this.second"
+      secondCall.argument(1).asInstanceOf[Identifier].typeFullName shouldBe "kotlin.Pair"
     }
   }
 
