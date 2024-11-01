@@ -452,6 +452,18 @@ class RubyJsonToNodeCreator(
 
   private def visitFindPattern(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
+  private def visitFieldAssignmentSend(obj: Obj): RubyExpression = {
+    val span         = obj.toTextSpan
+    val receiver     = visit(obj(ParserKeys.Receiver))
+    val fieldName    = obj(ParserKeys.Name).str.stripSuffix("=")
+    val memberAccess = MemberAccess(receiver, ".", fieldName)(receiver.span.spanStart(s"${receiver.text}.@$fieldName"))
+    val argument = obj
+      .visitArray(ParserKeys.Arguments)
+      .headOption
+      .getOrElse(StaticLiteral(getBuiltInType(Defines.NilClass))(span.spanStart("nil")))
+    SingleAssignment(memberAccess, "=", argument)(span)
+  }
+
   private def visitFloat(obj: Obj): RubyExpression = StaticLiteral(getBuiltInType(Defines.Float))(obj.toTextSpan)
 
   private def visitForStatement(obj: Obj): RubyExpression = {
@@ -857,6 +869,7 @@ class RubyJsonToNodeCreator(
       case "include"                                                            => visitInclude(obj)
       case "attr_reader" | "attr_writer" | "attr_accessor"                      => visitFieldDeclaration(obj)
       case "private" | "public" | "protected"                                   => visitAccessModifier(obj)
+      case s"$name="                                                            => visitFieldAssignmentSend(obj)
       case requireLike if ImportCallNames.contains(requireLike) && !hasReceiver => visitRequireLike(obj)
       case _ if BinaryOperators.isBinaryOperatorName(callName) =>
         val lhs = visit(obj(ParserKeys.Receiver))

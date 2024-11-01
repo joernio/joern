@@ -388,7 +388,7 @@ class ClassTests extends RubyCode2CpgFixture {
         |animal.bark # => 'Woof'
         |""".stripMargin)
 
-    "Create assignments to method refs for methods on singleton object" ignore {
+    "Create assignments to method refs for methods on singleton object" in {
       inside(cpg.method.isModule.block.assignment.l) {
         case _ :: _ :: _ :: barkAssignment :: legsAssignment :: Nil =>
           inside(barkAssignment.argument.l) {
@@ -414,7 +414,7 @@ class ClassTests extends RubyCode2CpgFixture {
       }
     }
 
-    "Create TYPE_DECL nodes for two singleton methods" ignore {
+    "Create TYPE_DECL nodes for two singleton methods" in {
       inside(cpg.typeDecl.name("(bark|legs)").l) {
         case barkTypeDecl :: legsTypeDecl :: Nil =>
           barkTypeDecl.fullName shouldBe s"Test0.rb:$Main.class<<animal.bark"
