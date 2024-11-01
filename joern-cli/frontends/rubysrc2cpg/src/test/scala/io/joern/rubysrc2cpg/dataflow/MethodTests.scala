@@ -5,8 +5,8 @@ import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.semanticcpg.language.*
 
 class MethodTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataFlow = true) {
-  // Works in deprecated
-  "Data flow through class method" ignore {
+
+  "Data flow through class method" in {
     val cpg = code("""
                      |class MyClass
                      |  def print(text)
@@ -21,8 +21,8 @@ class MethodTests extends RubyCode2CpgFixture(withPostProcessing = true, withDat
                      |""".stripMargin)
 
     val src  = cpg.identifier.name("x").l
-    val sink = cpg.call.name("puts").l
-    sink.reachableByFlows(src).l.size shouldBe 2
+    val sink = cpg.call.name("puts").argument.l
+    sink.reachableByFlows(src).size shouldBe 4
   }
 
   "Data flow through do-while loop" in {
@@ -57,7 +57,7 @@ class MethodTests extends RubyCode2CpgFixture(withPostProcessing = true, withDat
   }
 
   // Works in deprecated
-  "Data flow through blockExprAssocTypeArguments" ignore {
+  "Data flow through blockExprAssocTypeArguments" in {
     val cpg = code("""
                      |def foo(*args)
                      |puts args
@@ -69,12 +69,11 @@ class MethodTests extends RubyCode2CpgFixture(withPostProcessing = true, withDat
                      |""".stripMargin)
 
     val source = cpg.identifier.name("x").l
-    val sink   = cpg.call.name("puts").l
-    sink.reachableByFlows(source).size shouldBe 2
+    val sink   = cpg.call.name("puts").argument.l
+    sink.reachableByFlows(source).size shouldBe 4
   }
 
-  // Works in deprecated - Unsupported element type SplattingArgumentArgumentList
-  "Data flow through blockSplattingTypeArguments" ignore {
+  "Data flow through blockSplattingTypeArguments" in {
     val cpg = code("""
                      |def foo(arg)
                      |puts arg
@@ -86,12 +85,11 @@ class MethodTests extends RubyCode2CpgFixture(withPostProcessing = true, withDat
                      |""".stripMargin)
 
     val source = cpg.identifier.name("x").l
-    val sink   = cpg.call.name("puts").l
-    sink.reachableByFlows(source).size shouldBe 2
+    val sink   = cpg.call.name("puts").argument.l
+    sink.reachableByFlows(source).size shouldBe 4
   }
 
-  // Works in deprecated
-  "Data flow through blockSplattingExprAssocTypeArguments without block" ignore {
+  "Data flow through blockSplattingExprAssocTypeArguments without block" in {
     val cpg = code("""
                      |def foo(*arg)
                      |puts arg
@@ -103,12 +101,11 @@ class MethodTests extends RubyCode2CpgFixture(withPostProcessing = true, withDat
                      |""".stripMargin)
 
     val source = cpg.identifier.name("x").l
-    val sink   = cpg.call.name("puts").l
-    sink.reachableByFlows(source).size shouldBe 2
+    val sink   = cpg.call.name("puts").argument.l
+    sink.reachableByFlows(source).size shouldBe 4
   }
 
-  // Works in deprecated - Unsupported element type SplattingArgumentArgumentList
-  "Data flow through blockSplattingTypeArguments without block" ignore {
+  "Data flow through blockSplattingTypeArguments without block" in {
     val cpg = code("""
                      |def foo (blockArg,&block)
                      |block.call(blockArg)
@@ -124,7 +121,7 @@ class MethodTests extends RubyCode2CpgFixture(withPostProcessing = true, withDat
                      |""".stripMargin)
 
     val source = cpg.identifier.name("x").l
-    val sink   = cpg.call.name("puts").l
+    val sink   = cpg.call.name("puts").argument.l
     sink.reachableByFlows(source).size shouldBe 2
   }
 

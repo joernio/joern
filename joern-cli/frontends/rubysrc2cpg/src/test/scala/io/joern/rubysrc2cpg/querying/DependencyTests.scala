@@ -1,11 +1,11 @@
 package io.joern.rubysrc2cpg.querying
 
+import io.joern.rubysrc2cpg.passes.Defines.Main
+import io.joern.rubysrc2cpg.passes.{DependencyPass, Defines as RubyDefines}
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
-import io.joern.rubysrc2cpg.passes.{DependencyPass, Defines as RubyDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, Identifier}
 import io.shiftleft.semanticcpg.language.*
-import io.joern.rubysrc2cpg.passes.Defines.Main
 
 class DependencyTests extends RubyCode2CpgFixture {
 
