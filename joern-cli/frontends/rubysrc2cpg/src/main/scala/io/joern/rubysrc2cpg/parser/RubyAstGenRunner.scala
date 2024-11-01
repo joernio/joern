@@ -75,43 +75,11 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
         val excludeCommand = if (exclude.isEmpty) "" else s"-e \"$exclude\""
         val gemPath        = Seq(cwd, "vendor", "bundle", "jruby", "3.1.0").mkString(separator)
         val rubyArgs       = Array("-o", out.toString(), "-i", in, excludeCommand).filterNot(_.isBlank)
-        val mainScript     = Seq(cwd, "exe", "ruby_ast_gen.rb").mkString(separator)
-        if (config.tryLocalRuby) {
-          executeWithNativeRuby(mainScript, cwd, rubyArgs, gemPath)
-            .recoverWith(throwable =>
-              logger.warn(
-                s"Encountered exception while executing with native Ruby, trying with JRuby: '${throwable.getMessage}'"
-              )
-              executeWithJRuby(mainScript, cwd, rubyArgs, gemPath)
-            )
-        } else {
-          executeWithJRuby(mainScript, cwd, rubyArgs, gemPath)
-        }
+        val mainScript     = Seq(cwd, "exe", "ruby_ast_gen").mkString(separator)
+        executeWithJRuby(mainScript, cwd, rubyArgs, gemPath)
       }
     } catch {
       case tempPathException: Exception => Failure(tempPathException)
-    }
-  }
-
-  private def executeWithNativeRuby(
-    mainScript: String,
-    cwd: String,
-    rubyArgs: Array[String],
-    gemPath: String
-  ): Try[Seq[String]] = {
-    val isCompatible =
-      ExternalCommand.run("ruby" :: "--version" :: Nil, ".").successOption.map(_.mkString("\n").strip()) match {
-        case Some(s"ruby $major.$minor.$patch ($_) [$_]") =>
-          major.toInt == 3 && ((minor.toInt == 0 && patch.toInt >= 4) || (minor.toInt >= 1))
-        case Some(versionOutput) => throw new RuntimeException(s"Unable to parse Ruby version from $versionOutput")
-        case None                => throw new RuntimeException(s"Unable to execute native Ruby binary")
-      }
-    if (isCompatible) {
-      ExternalCommand
-        .run(mainScript +: rubyArgs.toSeq, cwd, extraEnv = Map("GEM_PATH" -> gemPath, "GEM_FILE" -> gemPath))
-        .toTry
-    } else {
-      throw new RuntimeException("Non compatible Ruby version detected. Ruby version of at least 3.0.4 is required.")
     }
   }
 
@@ -137,19 +105,16 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
     config.setHasShebangLine(true)
     config.setHardExit(false)
 
-    try {
+    Try {
       container.runScriptlet(PathType.ABSOLUTE, mainScript)
-      val consoleOut = outStream.toString.split("\n").toIndexedSeq ++ errStream.toString.split("\n")
-      Success(consoleOut)
-    } catch {
-      case e: Exception => Failure(e)
+      outStream.toString.split("\n").toIndexedSeq ++ errStream.toString.split("\n")
     }
   }
 
   private def prepareExecutionEnvironment(resourceDir: String): ExecutionEnvironment = {
     val resourceUrl = getClass.getClassLoader.getResource(resourceDir)
     if (resourceUrl == null) {
-      throw new IllegalArgumentException(s"Resource directory '$resourceDir' not found in JAR.")
+      throw new IllegalArgumentException(s"Resource sub-directory '$resourceDir' not found.")
     }
 
     resourceUrl.getProtocol match {
@@ -168,7 +133,7 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
             val inputStream: InputStream = jarFile.getInputStream(entry)
             try {
               Files.copy(inputStream, entryPath, StandardCopyOption.REPLACE_EXISTING)
-              if entryPath.endsWith("ruby_ast_gen.rb") then entryPath.toFile.setExecutable(true, true)
+              if entryPath.endsWith("ruby_ast_gen") then entryPath.toFile.setExecutable(true, true)
             } finally {
               inputStream.close()
             }
@@ -177,7 +142,7 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
         TempDir(tempPath)
       case "file" =>
         val resourcePath = Paths.get(resourceUrl.toURI)
-        val mainScript   = resourcePath.resolve("exe").resolve("ruby_ast_gen.rb")
+        val mainScript   = resourcePath.resolve("exe").resolve("ruby_ast_gen")
         mainScript.toFile.setExecutable(true, false)
         LocalDir(resourcePath)
       case x =>
