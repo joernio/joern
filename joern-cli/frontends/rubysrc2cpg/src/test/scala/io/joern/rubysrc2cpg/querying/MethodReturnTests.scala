@@ -388,7 +388,7 @@ class MethodReturnTests extends RubyCode2CpgFixture {
             case barReturn :: Nil =>
               inside(barReturn.astChildren.l) {
                 case (returnCall: Call) :: Nil =>
-                  returnCall.code shouldBe "foo"
+                  returnCall.code should startWith("foo")
 
                   returnCall.name shouldBe "foo"
 
@@ -495,7 +495,7 @@ class MethodReturnTests extends RubyCode2CpgFixture {
         ifNode.controlStructureType shouldBe ControlStructureTypes.IF
 
         val List(successCall: Call) = ifNode.condition.l: @unchecked
-        successCall.code shouldBe "success"
+        successCall.code shouldBe "self.success"
 
         val List(ifReturnFalse: Return) = ifNode.whenFalse.isBlock.astChildren.isReturn.l
         ifReturnFalse.code shouldBe "return render json: {}, status: :internal_server_error"

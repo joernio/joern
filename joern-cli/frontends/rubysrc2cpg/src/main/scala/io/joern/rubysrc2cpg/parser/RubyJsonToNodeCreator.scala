@@ -282,11 +282,13 @@ class RubyJsonToNodeCreator(
     visit(obj(ParserKeys.CallName)) match {
       case classNew: ObjectInstantiation if classNew.span.text == "Class.new" =>
         AnonymousClassDeclaration(freshClassName(obj.toTextSpan), None, block.toStatementList)(obj.toTextSpan)
-      case objNew: ObjectInstantiation                        => objNew.withBlock(block)
-      case lambda: RubyCall if lambda.target.text == "lambda" => ProcOrLambdaExpr(block)(obj.toTextSpan)
-      case simpleCall @ SimpleCall(ident: SimpleIdentifier, _) if ident.span.text == "loop" =>
-        val trueLiteral = StaticLiteral(Defines.getBuiltInType(Defines.TrueClass))(simpleCall.span.spanStart("true"))
-        DoWhileExpression(trueLiteral, body)(simpleCall.span)
+      case objNew: ObjectInstantiation                         => objNew.withBlock(block)
+      case lambda: SimpleIdentifier if lambda.text == "lambda" => ProcOrLambdaExpr(block)(obj.toTextSpan)
+      case ident: SimpleIdentifier if ident.span.text == "loop" =>
+        val trueLiteral = StaticLiteral(Defines.getBuiltInType(Defines.TrueClass))(ident.span.spanStart("true"))
+        DoWhileExpression(trueLiteral, body)(ident.span)
+      case simpleIdentifier: SimpleIdentifier =>
+        SimpleCall(simpleIdentifier, Nil)(obj.toTextSpan).withBlock(block)
       case simpleCall: RubyCall => simpleCall.withBlock(block)
       case memberAccess @ MemberAccess(target, op, memberName) =>
         val memberCall = MemberCall(target, op, memberName, List.empty)(memberAccess.span)
@@ -884,20 +886,24 @@ class RubyJsonToNodeCreator(
           case assocList: AssociationList => assocList.elements   // same as above
           case x                          => x :: Nil
         }
+        val objSpan         = obj.toTextSpan
+        val hasArguments    = arguments.nonEmpty
+        val usesParenthesis = objSpan.text.endsWith(")")
         if (obj.contains(ParserKeys.Receiver)) {
-          val objSpan = obj.toTextSpan
-          val base    = visit(obj(ParserKeys.Receiver))
-          val isMemberCall = // fixme: is the callName == 'each' not superseded by the other checks?
-            objSpan.text.endsWith(")") || callName == "each" || callName == "<<" || arguments.nonEmpty
+          val base         = visit(obj(ParserKeys.Receiver))
+          val isMemberCall = usesParenthesis || callName == "<<" || hasArguments
           val op = {
             val dot = if objSpan.text.stripPrefix(base.text).startsWith("::") then "::" else "."
             if isConditional then s"&$dot" else dot
           }
-
           if isMemberCall then MemberCall(base, op, callName, arguments)(obj.toTextSpan)
           else MemberAccess(base, op, callName)(obj.toTextSpan)
-        } else {
+        } else if (hasArguments || usesParenthesis) {
           SimpleCall(target, arguments)(obj.toTextSpan)
+        } else {
+          // The following allows the AstCreator to approximate when an identifier could be a call or not - puts less
+          //  strain on data-flow tracking for externally inherited accessor calls such as `params` in RubyOnRails
+          SimpleIdentifier()(obj.toTextSpan.spanStart(callName))
         }
     }
   }

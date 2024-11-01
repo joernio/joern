@@ -236,7 +236,7 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
               a.typeFullName shouldBe Defines.Any
               a.argumentIndex shouldBe 0
 
-              selfPath.code shouldBe "path"
+              selfPath.code shouldBe "self.path"
             case xs => fail(s"Expected one identifier and one call argument, got [${xs.code.mkString(",")}]")
           }
 

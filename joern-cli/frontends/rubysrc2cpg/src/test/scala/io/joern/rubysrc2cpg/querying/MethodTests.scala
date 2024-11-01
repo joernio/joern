@@ -725,7 +725,7 @@ class MethodTests extends RubyCode2CpgFixture {
         inside(fooCall.argument.l) {
           case selfArg :: xArg :: yArg :: Nil =>
             xArg.code shouldBe "*x"
-            yArg.code shouldBe "y"
+            yArg.code shouldBe "self.y"
           case xs => fail(s"Expected two args, got [${xs.code.mkString(",")}]")
         }
       case xs => fail(s"Expected one call to foo, got [${xs.code.mkString(",")}]")

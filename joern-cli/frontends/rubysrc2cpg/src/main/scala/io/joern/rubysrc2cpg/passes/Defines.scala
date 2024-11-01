@@ -35,7 +35,7 @@ object Defines {
   def getBuiltInType(typeInString: String) = s"${GlobalTypes.kernelPrefix}.$typeInString"
 
   object RubyOperators {
-    val backticks: String = "<operators>.backticks"
+    val backticks: String = "<operator>.backticks"
     val hashInitializer   = "<operator>.hashInitializer"
     val association       = "<operator>.association"
     val splat             = "<operator>.splat"
