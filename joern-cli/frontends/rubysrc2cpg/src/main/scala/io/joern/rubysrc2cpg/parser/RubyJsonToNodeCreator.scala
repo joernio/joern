@@ -452,10 +452,9 @@ class RubyJsonToNodeCreator(
 
   private def visitFindPattern(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
-  private def visitFieldAssignmentSend(obj: Obj): RubyExpression = {
+  private def visitFieldAssignmentSend(obj: Obj, fieldName: String): RubyExpression = {
     val span         = obj.toTextSpan
     val receiver     = visit(obj(ParserKeys.Receiver))
-    val fieldName    = obj(ParserKeys.Name).str.stripSuffix("=")
     val memberAccess = MemberAccess(receiver, ".", fieldName)(receiver.span.spanStart(s"${receiver.text}.@$fieldName"))
     val argument = obj
       .visitArray(ParserKeys.Arguments)
@@ -869,7 +868,6 @@ class RubyJsonToNodeCreator(
       case "include"                                                            => visitInclude(obj)
       case "attr_reader" | "attr_writer" | "attr_accessor"                      => visitFieldDeclaration(obj)
       case "private" | "public" | "protected"                                   => visitAccessModifier(obj)
-      case s"$name="                                                            => visitFieldAssignmentSend(obj)
       case requireLike if ImportCallNames.contains(requireLike) && !hasReceiver => visitRequireLike(obj)
       case _ if BinaryOperators.isBinaryOperatorName(callName) =>
         val lhs = visit(obj(ParserKeys.Receiver))
@@ -877,6 +875,7 @@ class RubyJsonToNodeCreator(
         BinaryExpression(lhs, callName, rhs)(obj.toTextSpan)
       case _ if UnaryOperators.isUnaryOperatorName(callName) =>
         UnaryExpression(callName, visit(obj(ParserKeys.Receiver)))(obj.toTextSpan)
+      case s"$name=" if hasReceiver => visitFieldAssignmentSend(obj, name)
       case _ =>
         val target      = SimpleIdentifier()(obj.toTextSpan.spanStart(callName))
         val argumentArr = obj.visitArray(ParserKeys.Arguments)
