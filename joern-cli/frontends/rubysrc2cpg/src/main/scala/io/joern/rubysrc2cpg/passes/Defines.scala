@@ -3,12 +3,14 @@ package io.joern.rubysrc2cpg.passes
 object Defines {
 
   val Any: String          = "ANY"
+  val Defined: String      = "defined"
   val Undefined: String    = "Undefined"
   val Object: String       = "Object"
   val NilClass: String     = "NilClass"
   val TrueClass: String    = "TrueClass"
   val FalseClass: String   = "FalseClass"
   val Numeric: String      = "Numeric"
+  val New: String          = "new"
   val Integer: String      = "Integer"
   val Float: String        = "Float"
   val String: String       = "String"
@@ -21,6 +23,8 @@ object Defines {
   val Proc: String         = "proc"
   val Loop: String         = "loop"
   val Self: String         = "self"
+  val Super: String        = "super"
+  val Rational: String     = "Rational"
   val Initialize: String   = "initialize"
   val TypeDeclBody: String = "<body>"
 
@@ -31,11 +35,12 @@ object Defines {
   def getBuiltInType(typeInString: String) = s"${GlobalTypes.kernelPrefix}.$typeInString"
 
   object RubyOperators {
-    val hashInitializer = "<operator>.hashInitializer"
-    val association     = "<operator>.association"
-    val splat           = "<operator>.splat"
-    val regexpMatch     = "=~"
-    val regexpNotMatch  = "!~"
+    val backticks: String = "<operator>.backticks"
+    val hashInitializer   = "<operator>.hashInitializer"
+    val association       = "<operator>.association"
+    val splat             = "<operator>.splat"
+    val regexpMatch       = "=~"
+    val regexpNotMatch    = "!~"
   }
 }
 

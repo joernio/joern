@@ -343,7 +343,7 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
     }
   }
 
-  "Destructered Assignment RHS" in {
+  "Destructured Assignment RHS" in {
     val cpg = code("""
         |a, *b, c = 1, 2, *d, *f, 4
         |""".stripMargin)

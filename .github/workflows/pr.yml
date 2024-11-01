@@ -21,10 +21,6 @@ jobs:
       - name: Install php
         if: matrix.os == 'macos-latest'
         run: brew install php
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: 2.7
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -36,8 +32,6 @@ jobs:
         with:
           development: true
           swift-version: "5.10"
-      - name: Install Bundler
-        run: gem install bundler -v 2.4.22
       - name: Delete `.rustup` directory
         run: rm -rf /home/runner/.rustup # to save disk space
         if: runner.os == 'Linux'
