@@ -14,7 +14,7 @@ object RubyJsonParser {
     val filePath          = Paths.get(fullFilePath)
     val relFilePath       = json(ParserKeys.RelFilePath).str
     val sourceFileContent = IOUtils.readEntireFile(filePath)
-    ParserResult(relFilePath, fullFilePath, json, sourceFileContent)
+    ParserResult(relFilePath, filePath.toString, json, sourceFileContent)
   }
 
 }

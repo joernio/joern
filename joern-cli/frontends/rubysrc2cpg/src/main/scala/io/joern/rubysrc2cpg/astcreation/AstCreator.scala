@@ -73,7 +73,8 @@ class AstCreator(
     fileNode =
       if enableFileContents then Option(NewFile().name(relativeFileName).content(fileContent))
       else Option(NewFile().name(relativeFileName))
-    val fullName = s"$relativeUnixStyleFileName:${NamespaceTraversal.globalNamespaceName}"
+    val fullName = s"$relativeUnixStyleFileName:${NamespaceTraversal.globalNamespaceName}".stripPrefix("/")
+
     val namespaceBlock = NewNamespaceBlock()
       .filename(relativeFileName)
       .name(NamespaceTraversal.globalNamespaceName)

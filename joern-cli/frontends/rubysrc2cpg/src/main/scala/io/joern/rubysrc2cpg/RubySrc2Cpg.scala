@@ -104,7 +104,7 @@ object RubySrc2Cpg {
     astFiles.map { fileName => () =>
       val parserResult   = RubyJsonParser.readFile(Paths.get(fileName))
       val rubyProgram    = new RubyJsonToNodeCreator().visitProgram(parserResult.json)
-      val sourceFileName = parserResult.json("file_path").str
+      val sourceFileName = parserResult.fullPath
       val fileContent    = File(sourceFileName).contentAsString
       new AstCreator(
         sourceFileName,
