@@ -133,7 +133,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     ast
   }
 
-  private def astForIfStatement(ifStmt: ParserNodeInfo): Ast = {
+  private def astForIfStatement(ifStmt: ParserNodeInfo): Seq[Ast] = {
     //handle init code before condition in if;
     val initParserNode = nullSafeCreateParserNodeInfo(ifStmt.json.obj.get(ParserKeys.Init))
     val initAstBlock = blockNode(ifStmt, Defines.empty, Defines.voidTypeName)
