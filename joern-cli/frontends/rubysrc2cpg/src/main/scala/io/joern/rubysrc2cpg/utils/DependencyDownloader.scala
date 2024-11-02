@@ -2,6 +2,7 @@ package io.joern.rubysrc2cpg.utils
 
 import better.files.File
 import io.joern.rubysrc2cpg.datastructures.RubyProgramSummary
+import io.joern.rubysrc2cpg.parser.RubyAstGenRunner
 import io.joern.rubysrc2cpg.passes.{Defines, DependencyPass}
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg, parser}
 import io.joern.x2cpg.utils.ConcurrentTaskUtil
@@ -209,16 +210,24 @@ class DependencyDownloader(cpg: Cpg) {
       RubyProgramSummary(libSummary.namespaceToType, pathMappings)
     }
 
-    Using.resource(new parser.ResourceManagedParser(0.8)) { parser =>
+    val tmpDir = File.newTemporaryDirectory("rubysrc2cpgOut")
+    try {
+      val config       = Config().withDisableFileContent(true)
+      val astGenResult = RubyAstGenRunner(Config().withInputPath(targetDir.toString)).execute(tmpDir)
+
       val astCreators = ConcurrentTaskUtil
         .runUsingThreadPool(
-          RubySrc2Cpg
-            .generateParserTasks(parser, Config().withInputPath(targetDir.pathAsString), Option(targetDir.pathAsString))
+          RubySrc2Cpg.processAstGenRunnerResults(astGenResult.parsedFiles, config, Option(targetDir.toString))
         )
         .flatMap {
-          case Failure(exception)  => logger.warn(s"Could not parse file, skipping - ", exception); None
+          case Failure(exception)  => logger.warn(s"Unable to parse Ruby file, skipping -", exception); None
           case Success(astCreator) => Option(astCreator)
         }
+        .filter(x => {
+          if x.fileContent.isBlank then logger.info(s"File content empty, skipping - ${x.fileName}")
+          !x.fileContent.isBlank
+        })
+
       // Pre-parse the AST creators for high level structures
       val librarySummaries = ConcurrentTaskUtil
         .runUsingThreadPool(astCreators.map(x => () => remapPaths(x.summarize(asExternal = true))).iterator)
@@ -230,6 +239,8 @@ class DependencyDownloader(cpg: Cpg) {
         .getOrElse(RubyProgramSummary())
 
       librarySummaries
+    } finally {
+      tmpDir.delete(swallowIOExceptions = true)
     }
   }
 

@@ -1,14 +1,12 @@
 package io.joern.rubysrc2cpg.querying
 
+import io.joern.rubysrc2cpg.passes.Defines.{Initialize, Main, TypeDeclBody}
 import io.joern.rubysrc2cpg.passes.{GlobalTypes, Defines as RubyDefines}
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, NodeTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
-import io.joern.rubysrc2cpg.passes.Defines.{Initialize, Main, TypeDeclBody}
-import io.joern.rubysrc2cpg.passes.GlobalTypes
-import io.shiftleft.codepropertygraph.generated.NodeTypes
 
 class ClassTests extends RubyCode2CpgFixture {
 
@@ -446,7 +444,7 @@ class ClassTests extends RubyCode2CpgFixture {
                   val List(validateCall: Call) = methodBlock.astChildren.isCall.l: @unchecked
 
                   inside(validateCall.argument.l) {
-                    case (identArg: Identifier) :: (passwordArg: Literal) :: (presenceArg: Literal) :: (confirmationArg: Literal) :: (lengthArg: Block) :: (onArg: Literal) :: (ifArg: Literal) :: Nil =>
+                    case (identArg: Identifier) :: (passwordArg: Literal) :: (presenceArg: Literal) :: (confirmationArg: Literal) :: (_: Block) :: (onArg: Literal) :: (ifArg: Literal) :: Nil =>
                       passwordArg.code shouldBe ":password"
                       presenceArg.code shouldBe "true"
                       confirmationArg.code shouldBe "true"
@@ -466,8 +464,8 @@ class ClassTests extends RubyCode2CpgFixture {
       val cpg = code("""
           | class AdminController < ApplicationController
           |   before_action :administrative, if: :admin_param, except: [:get_user]
-          |    skip_before_action :has_info
-          |    layout false, only: [:get_all_users, :get_user]
+          |     skip_before_action :has_info
+          |     layout false, only: [:get_all_users, :get_user]
           | end
           |""".stripMargin)
 
@@ -657,7 +655,7 @@ class ClassTests extends RubyCode2CpgFixture {
               cMember.code shouldBe "@@c"
               dMember.code shouldBe "@@d"
               oMember.code shouldBe "@@o"
-            case _ => fail("Expected 5 members")
+            case xs => fail(s"Expected 5 members, instead got ${xs.size}: [${xs.code.mkString(",")}]")
           }
         case xs => fail(s"Expected TypeDecl for Foo, instead got ${xs.name.mkString(", ")}")
       }
@@ -671,7 +669,6 @@ class ClassTests extends RubyCode2CpgFixture {
               inside(clinitMethod.block.astChildren.isCall.name(Operators.assignment).l) {
                 case aAssignment :: bAssignment :: cAssignment :: dAssignment :: oAssignment :: Nil =>
                   aAssignment.code shouldBe "@@a = nil"
-
                   bAssignment.code shouldBe "@@b = nil"
                   cAssignment.code shouldBe "@@c = nil"
                   dAssignment.code shouldBe "@@d = nil"
@@ -692,9 +689,10 @@ class ClassTests extends RubyCode2CpgFixture {
                       rhs.code shouldBe "nil"
                     case _ => fail("Expected only LHS and RHS for assignment call")
                   }
-                case _ => fail("")
+                case xs =>
+                  fail(s"Expected 5 fields initializers, got ${xs.size} instead ${xs.code.mkString(", ")}")
               }
-            case xs => fail(s"Expected one method for clinit, instead got ${xs.name.mkString(", ")}")
+            case xs => fail(s"Expected one method for <body>, instead got ${xs.name.mkString(", ")}")
           }
         case xs => fail(s"Expected TypeDecl for Foo, instead got ${xs.name.mkString(", ")}")
       }
@@ -784,7 +782,7 @@ class ClassTests extends RubyCode2CpgFixture {
         case fooClass :: Nil =>
           inside(fooClass.method.name(RubyDefines.TypeDeclBody).l) {
             case initMethod :: Nil =>
-              initMethod.code shouldBe "def <body>\nscope :hits_by_ip, ->(ip, col = \"*\") { select(\"#{col}\").where(ip_address: ip).order(\"id DESC\") }\nend"
+              initMethod.code shouldBe "def <body>; (...); end"
               inside(initMethod.astChildren.isBlock.l) {
                 case methodBlock :: Nil =>
                   inside(methodBlock.astChildren.l) {
@@ -921,7 +919,7 @@ class ClassTests extends RubyCode2CpgFixture {
 
     "have an explicit init method" in {
       inside(cpg.typeDecl.nameExact("Foo").method.l) {
-        case initMethod :: bodyMethod :: Nil =>
+        case bodyMethod :: initMethod :: Nil =>
           bodyMethod.name shouldBe TypeDeclBody
 
           initMethod.name shouldBe Initialize
@@ -939,7 +937,9 @@ class ClassTests extends RubyCode2CpgFixture {
           }
 
           inside(bodyMethod.block.astChildren.l) {
-            case (one: Literal) :: Nil =>
+            case (barInit: Call) :: (one: Literal) :: Nil =>
+              barInit.code shouldBe "bar = nil"
+
               one.code shouldBe "1"
               one.typeFullName shouldBe s"${GlobalTypes.kernelPrefix}.Integer"
             case xs => fail(s"Expected one literal, got [${xs.code.mkString(",")}]")

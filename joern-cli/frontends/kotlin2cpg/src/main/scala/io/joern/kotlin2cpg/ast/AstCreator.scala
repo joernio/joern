@@ -500,8 +500,7 @@ class AstCreator(
     val astDerivedMethodFullName = expr.getSelectorExpression match {
       case expression: KtCallExpression =>
         val receiverPlaceholderType = Defines.UnresolvedNamespace
-        val shortName               = expr.getSelectorExpression.getFirstChild.getText
-        val args                    = expression.getValueArguments
+        val shortName               = expression.getFirstChild.getText
         s"$receiverPlaceholderType.$shortName"
       case _: KtNameReferenceExpression =>
         Operators.fieldAccess
@@ -514,13 +513,20 @@ class AstCreator(
     (astDerivedMethodFullName, astDerivedSignature)
   }
 
+  protected def astsForKtCallExpressionArguments(callExpr: KtCallExpression, startIndex: Int = 1)(implicit
+    typeInfoProvider: TypeInfoProvider
+  ): List[Ast] = {
+    withIndex(callExpr.getValueArguments.asScala.toSeq) { case (arg, idx) =>
+      val argumentNameMaybe = Option(arg.getArgumentName).map(_.getText)
+      astsForExpression(arg.getArgumentExpression, Some(startIndex + idx - 1), argumentNameMaybe)
+    }.flatten.toList
+  }
+
   protected def selectorExpressionArgAsts(expr: KtQualifiedExpression, startIndex: Int = 1)(implicit
     typeInfoProvider: TypeInfoProvider
   ): List[Ast] = {
     val callExpr = expr.getSelectorExpression.asInstanceOf[KtCallExpression]
-    withIndex(callExpr.getValueArguments.asScala.toSeq) { case (arg, idx) =>
-      astsForExpression(arg.getArgumentExpression, Some(startIndex + idx - 1))
-    }.flatten.toList
+    astsForKtCallExpressionArguments(callExpr, startIndex)
   }
 
   protected def modifierTypeForVisibility(visibility: DescriptorVisibility): String = {

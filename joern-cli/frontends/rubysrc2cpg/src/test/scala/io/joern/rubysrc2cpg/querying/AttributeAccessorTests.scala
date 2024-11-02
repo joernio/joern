@@ -12,6 +12,7 @@ class AttributeAccessorTests extends RubyCode2CpgFixture {
     val cpg = code("""x = Foo.new
                      |x.y = 1
                      |""".stripMargin)
+
     inside(cpg.assignment.where(_.source.isLiteral.codeExact("1")).l) {
       case xyAssign :: Nil =>
         xyAssign.lineNumber shouldBe Some(2)
@@ -36,9 +37,9 @@ class AttributeAccessorTests extends RubyCode2CpgFixture {
 
   "`x.y` is represented by a field access `x.y`" in {
     val cpg = code("""x = Foo.new
-        |a = x.y
-        |b = x.z()
-        |""".stripMargin)
+                     |a = x.y
+                     |b = x.z()
+                     |""".stripMargin)
     // Test the field access
     inside(cpg.fieldAccess.lineNumber(2).codeExact("x.y").l) {
       case xyCall :: Nil =>
