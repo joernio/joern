@@ -346,11 +346,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         val initReceiverNode =
           identifierNode(expr, tmpName, tmpName, localForTmpNode.typeFullName).argumentIndex(0)
         val initReceiverAst = Ast(initReceiverNode).withRefEdge(initReceiverNode, localForTmpNode)
-
-        val argAsts = withIndex(call.getValueArguments.asScala.toSeq) { case (arg, idx) =>
-          astsForExpression(arg.getArgumentExpression, Some(idx))
-        }.flatten
-
+        val argAsts         = astsForKtCallExpressionArguments(call)
         val (fullName, signature) =
           calleeFullnameAndSignature(
             getCalleeExpr(rhsCall),
@@ -666,11 +662,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       )
       val initReceiverNode = identifierNode(expr, identifier.name, identifier.name, identifier.typeFullName)
       val initReceiverAst  = Ast(initReceiverNode).withRefEdge(initReceiverNode, local)
-
-      val argAsts = withIndex(callExpr.getValueArguments.asScala.toSeq) { case (arg, idx) =>
-        val argNameOpt = if (arg.isNamed) Option(arg.getArgumentName.getAsName.toString) else None
-        astsForExpression(arg.getArgumentExpression, Option(idx), argNameOpt)
-      }.flatten
+      val argAsts          = astsForKtCallExpressionArguments(callExpr)
 
       val initAst =
         callAst(initCallNode, argAsts, Option(initReceiverAst))

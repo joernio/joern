@@ -17,8 +17,9 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewMember
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethodParameterIn
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
-import org.jetbrains.kotlin.descriptors.{ClassifierDescriptor, PropertyDescriptor, ValueDescriptor}
-import org.jetbrains.kotlin.descriptors.impl.PropertyDescriptorImpl
+import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.descriptors.ValueDescriptor
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtClassLiteralExpression
 import org.jetbrains.kotlin.psi.KtConstantExpression
@@ -97,9 +98,10 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
       case Some(_: NewMember) => true
       case _                  => false
     }
+    val isUsedAsImplicitThis = typeInfoProvider.usedAsImplicitThis(expr)
     val outAst =
       if (typeInfoProvider.isReferenceToClass(expr)) astForNameReferenceToType(expr, argIdx)
-      else if (isReferencingMember) astForNameReferenceToMember(expr, argIdx)
+      else if (isReferencingMember || isUsedAsImplicitThis) astForNameReferenceToMember(expr, argIdx)
       else astForNonSpecialNameReference(expr, argIdx, argName)
     outAst.withChildren(annotations.map(astForAnnotationEntry))
   }

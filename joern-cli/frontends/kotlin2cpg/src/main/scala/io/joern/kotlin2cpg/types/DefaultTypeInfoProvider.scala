@@ -8,6 +8,7 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.impl.ClassConstructorDescriptorImpl
 import org.jetbrains.kotlin.descriptors.impl.TypeAliasConstructorDescriptorImpl
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.load.java.`lazy`.descriptors.LazyJavaClassDescriptor
 import org.jetbrains.kotlin.load.java.sources.JavaSourceElement
 import org.jetbrains.kotlin.load.java.structure.impl.classFiles.BinaryJavaMethod
@@ -52,6 +53,20 @@ class DefaultTypeInfoProvider(val bindingContext: BindingContext) extends TypeIn
     Option(mapForEntity.get(BindingContext.USED_AS_EXPRESSION.getKey)).map(_.booleanValue())
   }
 
+  def usedAsImplicitThis(expr: KtNameReferenceExpression): Boolean = {
+    val mapForEntity = bindingsForEntity(bindingContext, expr)
+    val isCallExprWithTarget = Option(mapForEntity)
+      .map(_.getKeys)
+      .exists(ks =>
+        ks.contains(BindingContext.CALL.getKey)
+          && ks.contains(BindingContext.USED_AS_EXPRESSION.getKey)
+          && ks.contains(BindingContext.REFERENCE_TARGET.getKey)
+      )
+    isCallExprWithTarget && resolvedPropertyDescriptor(expr).exists { d =>
+      d.getDispatchReceiverParameter != null && d.getDispatchReceiverParameter.getName.asString() == "<this>"
+    }
+  }
+
   def isStaticMethodCall(expr: KtQualifiedExpression): Boolean = {
     resolvedCallDescriptor(expr)
       .map(_.getSource)
@@ -85,6 +100,14 @@ class DefaultTypeInfoProvider(val bindingContext: BindingContext) extends TypeIn
           .getOrElse(expr)
       case _ => expr
     }
+  }
+
+  private def resolvedPropertyDescriptor(expr: KtNameReferenceExpression): Option[PropertyDescriptor] = {
+    val descMaybe = for {
+      callForSubexpression <- Option(bindingContext.get(BindingContext.REFERENCE_TARGET, expr))
+      desc = callForSubexpression
+    } yield desc
+    descMaybe.collect { case desc: PropertyDescriptor => desc }
   }
 
   private def resolvedCallDescriptor(expr: KtExpression): Option[FunctionDescriptor] = {
