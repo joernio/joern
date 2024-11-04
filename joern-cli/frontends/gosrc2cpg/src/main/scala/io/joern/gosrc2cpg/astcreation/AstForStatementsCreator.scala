@@ -38,7 +38,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case DeclStmt       => astForNode(statement.json(ParserKeys.Decl))
       case ExprStmt       => astsForExpression(createParserNodeInfo(statement.json(ParserKeys.X)))
       case ForStmt        => Seq(astForForStatement(statement))
-      case IfStmt         => Seq(astForIfStatement(statement))
+      case IfStmt         => astForIfStatement(statement)
       case IncDecStmt     => Seq(astForIncDecStatement(statement))
       case RangeStmt      => Seq(astForRangeStatement(statement))
       case SwitchStmt     => Seq(astForSwitchStatement(statement))
@@ -133,7 +133,13 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     ast
   }
 
-  private def astForIfStatement(ifStmt: ParserNodeInfo): Ast = {
+  private def astForIfStatement(ifStmt: ParserNodeInfo): Seq[Ast] = {
+    // handle init code before condition in if;
+    val initParserNode = nullSafeCreateParserNodeInfo(ifStmt.json.obj.get(ParserKeys.Init))
+    val initAstBlock   = blockNode(ifStmt, Defines.empty, Defines.voidTypeName)
+    scope.pushNewScope(initAstBlock)
+    val initAst = blockAst(initAstBlock, astsForStatement(initParserNode, 1).toList)
+    scope.popScope()
 
     val conditionParserNode = createParserNodeInfo(ifStmt.json(ParserKeys.Cond))
     val conditionAst        = astForConditionExpression(conditionParserNode)
@@ -159,7 +165,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         Ast(elseNode).withChild(blockAst(elseBlock, a.toList))
       case _ => Ast()
     }
-    controlStructureAst(ifNode, Some(conditionAst), Seq(thenAst, elseAst))
+    Seq(initAst, controlStructureAst(ifNode, Some(conditionAst), Seq(thenAst, elseAst)))
   }
 
   private def astForSwitchStatement(switchStmt: ParserNodeInfo): Ast = {
