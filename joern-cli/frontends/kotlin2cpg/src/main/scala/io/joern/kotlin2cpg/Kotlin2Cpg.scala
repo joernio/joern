@@ -7,7 +7,7 @@ import io.joern.kotlin2cpg.files.SourceFilesPicker
 import io.joern.kotlin2cpg.interop.JavasrcInterop
 import io.joern.kotlin2cpg.jar4import.UsesService
 import io.joern.kotlin2cpg.passes.*
-import io.joern.kotlin2cpg.types.{ContentSourcesPicker, DefaultTypeInfoProvider}
+import io.joern.kotlin2cpg.types.{ContentSourcesPicker, TypeInfoProvider}
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
@@ -34,9 +34,7 @@ import scala.util.matching.Regex
 
 object Kotlin2Cpg {
 
-  private val logger = LoggerFactory.getLogger(getClass)
-
-  private val parsingError: String = "KOTLIN2CPG_PARSING_ERROR"
+  private val logger               = LoggerFactory.getLogger(getClass)
   private val jarExtension: String = ".jar"
   private val importRegex: Regex   = ".*import([^;]*).*".r
 
@@ -45,9 +43,6 @@ object Kotlin2Cpg {
     DefaultContentRootJarPath("jars/kotlin-stdlib-common-1.9.0.jar", isResource = true),
     DefaultContentRootJarPath("jars/kotlin-stdlib-jdk8-1.9.0.jar", isResource = true)
   )
-
-  case class InputPair(content: String, fileName: String)
-  type InputProvider = () => InputPair
 
   def postProcessingPass(cpg: Cpg): Unit = {
     new KotlinTypeRecoveryPassGenerator(cpg).generate().foreach(_.createAndApply())
@@ -133,7 +128,7 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
     } else Seq()
   }
 
-  private def gatherJarsAtConfigClassPath(sourceDir: String, config: Config): Seq[String] = {
+  private def gatherJarsAtConfigClassPath(config: Config): Seq[String] = {
     val jarsAtConfigClassPath = findJarsIn(config.classpath)
     if (config.classpath.nonEmpty) {
       if (jarsAtConfigClassPath.nonEmpty) {
@@ -151,7 +146,7 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
     filesWithJavaExtension: List[String]
   ): Seq[DefaultContentRootJarPath] = {
     val stdlibJars            = if (config.withStdlibJarsInClassPath) defaultKotlinStdlibContentRootJarPaths else Seq()
-    val jarsAtConfigClassPath = gatherJarsAtConfigClassPath(sourceDir, config)
+    val jarsAtConfigClassPath = gatherJarsAtConfigClassPath(config)
     val dependenciesPaths     = gatherDependenciesPaths(sourceDir, config, filesWithJavaExtension)
     val defaultContentRootJars = stdlibJars ++
       jarsAtConfigClassPath.map { path => DefaultContentRootJarPath(path, isResource = false) } ++
@@ -188,7 +183,6 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
 
   private def runJavasrcInterop(
     cpg: Cpg,
-    sourceDir: String,
     config: Config,
     filesWithJavaExtension: List[String],
     kotlinAstCreatorTypes: List[String]
@@ -228,16 +222,13 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
       new MetaDataPass(cpg, Languages.KOTLIN, config.inputPath).createAndApply()
 
       val bindingContext = createBindingContext(environment)
-      val astCreator =
-        new AstCreationPass(sourceFiles, new DefaultTypeInfoProvider(bindingContext), bindingContext, cpg)(
-          config.schemaValidation
-        )
+      val astCreator     = new AstCreationPass(sourceFiles, bindingContext, cpg)(config.schemaValidation)
       astCreator.createAndApply()
 
       val kotlinAstCreatorTypes = astCreator.usedTypes()
       TypeNodePass.withRegisteredTypes(kotlinAstCreatorTypes, cpg).createAndApply()
 
-      runJavasrcInterop(cpg, sourceDir, config, filesWithJavaExtension, kotlinAstCreatorTypes)
+      runJavasrcInterop(cpg, config, filesWithJavaExtension, kotlinAstCreatorTypes)
       new ConfigPass(configFiles, cpg).createAndApply()
       new DependenciesFromMavenCoordinatesPass(mavenCoordinates, cpg).createAndApply()
     }

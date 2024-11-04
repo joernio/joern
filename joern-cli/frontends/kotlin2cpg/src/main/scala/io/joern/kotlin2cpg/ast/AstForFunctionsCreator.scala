@@ -1,8 +1,10 @@
 package io.joern.kotlin2cpg.ast
 
 import io.joern.kotlin2cpg.Constants
-import io.joern.kotlin2cpg.types.{TypeConstants, TypeInfoProvider}
-import io.joern.x2cpg.{Ast, Defines, ValidationMode}
+import io.joern.kotlin2cpg.types.TypeConstants
+import io.joern.x2cpg.Ast
+import io.joern.x2cpg.Defines
+import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Stack.StackWrapper
 import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.utils.NodeBuilders.newBindingNode
@@ -14,19 +16,16 @@ import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
-import org.jetbrains.kotlin.descriptors.{
-  ClassDescriptor,
-  DescriptorVisibilities,
-  FunctionDescriptor,
-  Modality,
-  ParameterDescriptor,
-  ReceiverParameterDescriptor
-}
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.Modality
+import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCallArgument
-import org.jetbrains.kotlin.resolve.calls.tower.{NewAbstractResolvedCall, PSIFunctionKotlinCallArgument}
-import org.jetbrains.kotlin.resolve.sam.{SamConstructorDescriptor, SamConversionResolverImplKt}
-import org.jetbrains.kotlin.resolve.DescriptorUtils
+import org.jetbrains.kotlin.resolve.calls.tower.NewAbstractResolvedCall
+import org.jetbrains.kotlin.resolve.calls.tower.PSIFunctionKotlinCallArgument
+import org.jetbrains.kotlin.resolve.sam.SamConstructorDescriptor
+import org.jetbrains.kotlin.resolve.sam.SamConversionResolverImplKt
 import org.jetbrains.kotlin.resolve.source.KotlinSourceElement
 
 import java.util.UUID.nameUUIDFromBytes
@@ -35,6 +34,8 @@ import scala.jdk.CollectionConverters.*
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
+
+  import AstCreator.ClosureBindingDef
 
   private def createFunctionTypeAndTypeDeclAst(
     node: KtNamedFunction,
@@ -68,9 +69,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  def astsForMethod(ktFn: KtNamedFunction, withVirtualModifier: Boolean = false)(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Seq[Ast] = {
+  def astsForMethod(ktFn: KtNamedFunction, withVirtualModifier: Boolean = false): Seq[Ast] = {
     val funcDesc = bindingUtils.getFunctionDesc(ktFn)
     val descFullName = nameRenderer
       .descFullName(funcDesc)
@@ -187,7 +186,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     )
   }
 
-  def astForParameter(param: KtParameter, order: Int)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  def astForParameter(param: KtParameter, order: Int): Ast = {
     val name = if (param.getDestructuringDeclaration != null) {
       Constants.paramNameLambdaDestructureDecl
     } else {
@@ -217,7 +216,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     argIdxMaybe: Option[Int],
     argNameMaybe: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
-  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  ): Ast = {
     val funcDesc = bindingUtils.getFunctionDesc(fn)
     val name     = nameRenderer.descName(funcDesc)
     val descFullName = nameRenderer
@@ -324,7 +323,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     argIdxMaybe: Option[Int],
     argNameMaybe: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
-  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  ): Ast = {
     val funcDesc = bindingUtils.getFunctionDesc(expr.getFunctionLiteral)
     val name     = nameRenderer.descName(funcDesc)
     val descFullName = nameRenderer
@@ -549,7 +548,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     addToLambdaBindingInfoQueue(nativeLambdaBinding, lambdaTypeDecl, lambdaMethodNode)
   }
 
-  def astForReturnExpression(expr: KtReturnExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  def astForReturnExpression(expr: KtReturnExpression): Ast = {
     val returnedExpr =
       if (expr.getReturnedExpression != null) {
         astsForExpression(expr.getReturnedExpression, None)

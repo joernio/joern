@@ -2,7 +2,6 @@ package io.joern.kotlin2cpg.ast
 
 import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.types.TypeConstants
-import io.joern.kotlin2cpg.types.TypeInfoProvider
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.utils.NodeBuilders
@@ -35,9 +34,7 @@ import scala.jdk.CollectionConverters.*
 trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
 
-  def astForFor(expr: KtForExpression, annotations: Seq[KtAnnotationEntry] = Seq())(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
+  def astForFor(expr: KtForExpression, annotations: Seq[KtAnnotationEntry] = Seq()): Ast = {
     val outAst =
       if (expr.getDestructuringDeclaration != null) astForForWithDestructuringLHS(expr)
       else astForForWithSimpleVarLHS(expr)
@@ -60,7 +57,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
   //                            |-> loweringOf{d2 = tmp.component2()}
   //                            |-> <statements>
   //
-  private def astForForWithDestructuringLHS(expr: KtForExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  private def astForForWithDestructuringLHS(expr: KtForExpression): Ast = {
     val loopRangeText         = expr.getLoopRange.getText
     val iteratorName          = s"${Constants.iteratorPrefix}${iteratorKeyPool.next}"
     val localForIterator      = localNode(expr, iteratorName, iteratorName, TypeConstants.any)
@@ -176,7 +173,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
   //                            |-> loweringOf{one = iterator.next()}
   //                            |-> <statements>
   //
-  private def astForForWithSimpleVarLHS(expr: KtForExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  private def astForForWithSimpleVarLHS(expr: KtForExpression): Ast = {
     val loopRangeText         = expr.getLoopRange.getText
     val iteratorName          = s"${Constants.iteratorPrefix}${iteratorKeyPool.next}"
     val iteratorLocal         = localNode(expr, iteratorName, iteratorName, TypeConstants.any)
@@ -271,15 +268,13 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     argIdx: Option[Int],
     argNameMaybe: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
-  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  ): Ast = {
     val isChildOfControlStructureBody = expr.getParent.isInstanceOf[KtContainerNodeForControlStructureBody]
     if (KtPsiUtil.isStatement(expr) && !isChildOfControlStructureBody) astForIfAsControlStructure(expr, annotations)
     else astForIfAsExpression(expr, argIdx, argNameMaybe, annotations)
   }
 
-  private def astForIfAsControlStructure(expr: KtIfExpression, annotations: Seq[KtAnnotationEntry] = Seq())(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
+  private def astForIfAsControlStructure(expr: KtIfExpression, annotations: Seq[KtAnnotationEntry] = Seq()): Ast = {
     val conditionAst = astsForExpression(expr.getCondition, None).headOption
     val thenAsts     = astsForExpression(expr.getThen, None)
     val elseAsts     = Option(expr.getElse).toSeq.flatMap(astsForExpression(_, None))
@@ -294,7 +289,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     argIdx: Option[Int],
     argNameMaybe: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
-  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  ): Ast = {
     val conditionAsts = astsForExpression(expr.getCondition, None)
     val thenAsts      = astsForExpression(expr.getThen, None)
     val elseAsts      = Option(expr.getElse).toSeq.flatMap(astsForExpression(_, None))
@@ -318,9 +313,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  def astForWhile(expr: KtWhileExpression, annotations: Seq[KtAnnotationEntry] = Seq())(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
+  def astForWhile(expr: KtWhileExpression, annotations: Seq[KtAnnotationEntry] = Seq()): Ast = {
     val conditionAst = astsForExpression(expr.getCondition, None).headOption
     val stmtAsts     = astsForExpression(expr.getBody, None)
     val code         = Option(expr.getText)
@@ -331,9 +324,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
       .withChildren(annotations.map(astForAnnotationEntry))
   }
 
-  def astForDoWhile(expr: KtDoWhileExpression, annotations: Seq[KtAnnotationEntry] = Seq())(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
+  def astForDoWhile(expr: KtDoWhileExpression, annotations: Seq[KtAnnotationEntry] = Seq()): Ast = {
     val conditionAst = astsForExpression(expr.getCondition, None).headOption
     val stmtAsts     = astsForExpression(expr.getBody, None)
     val code         = Option(expr.getText)
@@ -344,9 +335,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
       .withChildren(annotations.map(astForAnnotationEntry))
   }
 
-  private def astForWhenAsStatement(expr: KtWhenExpression, argIdx: Option[Int])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
+  private def astForWhenAsStatement(expr: KtWhenExpression, argIdx: Option[Int]): Ast = {
     val (astForSubject, finalAstForSubject) = Option(expr.getSubjectExpression) match {
       case Some(subjectExpression) =>
         val astForSubject = astsForExpression(subjectExpression, Some(1)).headOption.getOrElse(Ast())
@@ -383,10 +372,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  def astForWhenAsExpression(expr: KtWhenExpression, argIdx: Option[Int], argNameMaybe: Option[String])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
-
+  def astForWhenAsExpression(expr: KtWhenExpression, argIdx: Option[Int], argNameMaybe: Option[String]): Ast = {
     val callNode =
       withArgumentIndex(NodeBuilders.newOperatorCallNode("<operator>.when", "<operator>.when", None), argIdx)
         .argumentName(argNameMaybe)
@@ -415,7 +401,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     callAst(callNode, List(subjectBlockAst) ++ argAsts)
   }
 
-  private def astForNoArgWhen(expr: KtWhenExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  private def astForNoArgWhen(expr: KtWhenExpression): Ast = {
     assert(expr.getSubjectExpression == null)
 
     val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
@@ -463,7 +449,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     argIdx: Option[Int],
     argNameMaybe: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
-  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  ): Ast = {
     val outAst =
       if (expr.getSubjectExpression != null) {
         typeInfoProvider.usedAsExpression(expr) match {
@@ -476,9 +462,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     outAst.withChildren(annotations.map(astForAnnotationEntry))
   }
 
-  private def astsForWhenEntry(entry: KtWhenEntry, argIdx: Int)(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Seq[Ast] = {
+  private def astsForWhenEntry(entry: KtWhenEntry, argIdx: Int): Seq[Ast] = {
     // TODO: get all conditions with entry.getConditions()
     val name =
       if (entry.getElseKeyword == null) Constants.defaultCaseNode
@@ -489,7 +473,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     Seq(Ast(jumpNode), exprNode)
   }
 
-  private def astForTryAsStatement(expr: KtTryExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  private def astForTryAsStatement(expr: KtTryExpression): Ast = {
     val tryAst = astsForExpression(expr.getTryBlock, None).headOption.getOrElse(Ast())
     val clauseAsts = expr.getCatchClauses.asScala.toSeq.map { catchClause =>
       val catchNode    = controlStructureNode(catchClause, ControlStructureTypes.CATCH, catchClause.getText)
@@ -512,7 +496,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     argIdx: Option[Int],
     argNameMaybe: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
-  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  ): Ast = {
     val typeFullName = registerType(
       // TODO: remove the `last`
       exprTypeFullName(expr.getTryBlock.getStatements.asScala.last).getOrElse(TypeConstants.any)
@@ -536,7 +520,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     argIdx: Option[Int],
     argNameMaybe: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
-  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  ): Ast = {
     if (KtPsiUtil.isStatement(expr)) astForTryAsStatement(expr)
     else astForTryAsExpression(expr, argIdx, argNameMaybe, annotations)
   }
@@ -559,7 +543,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     localsForCaptures: List[NewLocal] = List(),
     implicitReturnAroundLastStatement: Boolean = false,
     preStatements: Option[Seq[Ast]] = None
-  )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
+  ): Seq[Ast] = {
     val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
     val node =
       withArgumentIndex(

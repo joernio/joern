@@ -3,13 +3,7 @@ package io.joern.kotlin2cpg.ast
 import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.psi.PsiUtils
 import io.joern.kotlin2cpg.psi.PsiUtils.nonUnderscoreDestructuringEntries
-import io.joern.kotlin2cpg.types.{
-  AnonymousObjectContext,
-  DefaultTypeInfoProvider,
-  NameRenderer,
-  TypeConstants,
-  TypeInfoProvider
-}
+import io.joern.kotlin2cpg.types.TypeConstants
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.Defines
@@ -30,7 +24,6 @@ import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.semanticcpg.language.*
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.resolve.DescriptorUtils
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
@@ -39,11 +32,14 @@ import scala.util.Random
 trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
 
+  import AstCreator.AnonymousObjectContext
+  import AstCreator.BindingInfo
+
   def astsForClassOrObject(
     ktClass: KtClassOrObject,
     ctx: Option[AnonymousObjectContext] = None,
     annotations: Seq[KtAnnotationEntry] = Seq()
-  )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
+  ): Seq[Ast] = {
     val className = ctx match {
       case Some(_) => "anonymous_obj"
       case None    => ktClass.getName
@@ -253,9 +249,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     Seq(finalAst.withChildren(annotations.map(astForAnnotationEntry))) ++ companionObjectAsts ++ innerTypeDeclAsts
   }
 
-  private def memberSetCallAst(param: KtParameter, classFullName: String)(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
+  private def memberSetCallAst(param: KtParameter, classFullName: String): Ast = {
     val typeFullName = registerType(
       bindingUtils
         .getVariableDesc(param)
@@ -278,9 +272,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     callAst(assignmentNode, List(fieldAccessCallAst, paramIdentifierAst))
   }
 
-  private def astsForDestructuringDeclarationWithRHS(
-    expr: KtDestructuringDeclaration
-  )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
+  private def astsForDestructuringDeclarationWithRHS(expr: KtDestructuringDeclaration): Seq[Ast] = {
     val typedInit = Option(expr.getInitializer).collect {
       case c: KtCallExpression           => c
       case dqe: KtDotQualifiedExpression => dqe
@@ -391,9 +383,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   | -> CALL two = person.component2()
   |__________________________________
    */
-  private def astsForDestructuringDeclarationWithVarRHS(
-    expr: KtDestructuringDeclaration
-  )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
+  private def astsForDestructuringDeclarationWithVarRHS(expr: KtDestructuringDeclaration): Seq[Ast] = {
     val typedInit = Option(expr.getInitializer).collect { case e: KtNameReferenceExpression => e }
     if (typedInit.isEmpty) {
       logger.warn(s"Unhandled case for destructuring declaration: `${expr.getText}` in this file `$relativizedPath`.")
@@ -427,9 +417,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       .toSeq
   }
 
-  def astsForDestructuringDeclaration(
-    expr: KtDestructuringDeclaration
-  )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
+  def astsForDestructuringDeclaration(expr: KtDestructuringDeclaration): Seq[Ast] = {
     val hasNonRefExprRHS = expr.getInitializer match {
       case _: KtNameReferenceExpression => false
       case _: KtExpression              => true
@@ -439,9 +427,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     else astsForDestructuringDeclarationWithVarRHS(expr)
   }
 
-  private def componentNMethodAsts(typeDecl: NewTypeDecl, parameters: Seq[KtParameter])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Seq[Ast] = {
+  private def componentNMethodAsts(typeDecl: NewTypeDecl, parameters: Seq[KtParameter]): Seq[Ast] = {
     parameters.zipWithIndex.map { case (valueParam, idx) =>
       val typeFullName = registerType(
         bindingUtils
@@ -480,8 +466,10 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  private def secondaryCtorAsts(ctors: Seq[KtSecondaryConstructor], classFullName: String, primaryCtorCall: NewCall)(
-    implicit typeInfoProvider: TypeInfoProvider
+  private def secondaryCtorAsts(
+    ctors: Seq[KtSecondaryConstructor],
+    classFullName: String,
+    primaryCtorCall: NewCall
   ): Seq[Ast] = {
     ctors.map { ctor =>
       val primaryCtorCallAst = List(Ast(primaryCtorCall.copy))
@@ -535,7 +523,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     argIdxMaybe: Option[Int],
     argNameMaybe: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
-  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  ): Ast = {
     val parentFn = KtPsiUtil.getTopmostParentOfTypes(expr, classOf[KtNamedFunction])
     val ctx =
       Option(parentFn)
@@ -596,9 +584,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       .withChildren(annotations.map(astForAnnotationEntry))
   }
 
-  def astsForProperty(expr: KtProperty, annotations: Seq[KtAnnotationEntry] = Seq())(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Seq[Ast] = {
+  def astsForProperty(expr: KtProperty, annotations: Seq[KtAnnotationEntry] = Seq()): Seq[Ast] = {
     val explicitTypeName = Option(expr.getTypeReference).map(_.getText).getOrElse(TypeConstants.any)
     val elem             = expr.getIdentifyingElement
 
@@ -738,7 +724,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  private def astForMember(decl: KtDeclaration)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  private def astForMember(decl: KtDeclaration): Ast = {
     val name = Option(decl.getName).getOrElse(TypeConstants.any)
     val explicitTypeName = decl.getOriginalElement match {
       case p: KtProperty if p.getTypeReference != null => p.getTypeReference.getText
