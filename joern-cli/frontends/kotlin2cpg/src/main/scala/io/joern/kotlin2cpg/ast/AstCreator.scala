@@ -39,22 +39,24 @@ import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 
-case class BindingInfo(node: NewBinding, edgeMeta: Seq[(NewNode, NewNode, String)])
-case class ClosureBindingDef(node: NewClosureBinding, captureEdgeTo: NewMethodRef, refEdgeTo: NewNode)
+object AstCreator {
+  case class AnonymousObjectContext(declaration: KtElement)
+  case class BindingInfo(node: NewBinding, edgeMeta: Seq[(NewNode, NewNode, String)])
+  case class ClosureBindingDef(node: NewClosureBinding, captureEdgeTo: NewMethodRef, refEdgeTo: NewNode)
+}
 
-class AstCreator(
-  fileWithMeta: KtFileWithMeta,
-  xTypeInfoProvider: TypeInfoProvider,
-  bindingContext: BindingContext,
-  global: Global
-)(implicit withSchemaValidation: ValidationMode)
-    extends AstCreatorBase(fileWithMeta.filename)
+class AstCreator(fileWithMeta: KtFileWithMeta, bindingContext: BindingContext, global: Global)(implicit
+  withSchemaValidation: ValidationMode
+) extends AstCreatorBase(fileWithMeta.filename)
     with AstForDeclarationsCreator
     with AstForPrimitivesCreator
     with AstForFunctionsCreator
     with AstForStatementsCreator
     with AstForExpressionsCreator
     with AstNodeBuilder[PsiElement, AstCreator] {
+
+  import AstCreator.ClosureBindingDef
+  import AstCreator.BindingInfo
 
   protected val closureBindingDefQueue: mutable.ArrayBuffer[ClosureBindingDef] = mutable.ArrayBuffer.empty
   protected val bindingInfoQueue: mutable.ArrayBuffer[BindingInfo]             = mutable.ArrayBuffer.empty
@@ -70,15 +72,13 @@ class AstCreator(
   protected val scope: Scope[String, DeclarationNew, NewNode] = new Scope()
   protected val debugScope: mutable.Stack[KtDeclaration]      = mutable.Stack.empty[KtDeclaration]
 
-  protected val nameRenderer = new NameRenderer()
-  protected val bindingUtils = new BindingContextUtils(bindingContext)
+  protected val nameRenderer     = new NameRenderer()
+  protected val bindingUtils     = new BindingContextUtils(bindingContext)
+  protected val typeInfoProvider = new TypeInfoProvider(bindingContext)
 
   def createAst(): DiffGraphBuilder = {
-    implicit val typeInfoProvider: TypeInfoProvider = xTypeInfoProvider
     logger.debug(s"Started parsing file `${fileWithMeta.filename}`.")
-
-    val defaultTypes =
-      Set(TypeConstants.javaLangObject, TypeConstants.kotlin)
+    val defaultTypes = Set(TypeConstants.javaLangObject, TypeConstants.kotlin)
     defaultTypes.foreach(registerType)
     storeInDiffGraph(astForFile(fileWithMeta))
     diffGraph
@@ -269,7 +269,7 @@ class AstCreator(
     argIdxMaybe: Option[Int],
     argNameMaybe: Option[String] = None,
     annotations: Seq[KtAnnotationEntry] = Seq()
-  )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
+  ): Seq[Ast] = {
     expr match {
       case typedExpr: KtAnnotatedExpression =>
         astsForExpression(
@@ -347,7 +347,7 @@ class AstCreator(
     }
   }
 
-  private def astForFile(fileWithMeta: KtFileWithMeta)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  private def astForFile(fileWithMeta: KtFileWithMeta): Ast = {
     val ktFile = fileWithMeta.f
 
     val importDirectives = ktFile.getImportList.getImports.asScala
@@ -403,7 +403,7 @@ class AstCreator(
     Ast(fileNode).withChildren(namespaceBlockAst :: namespaceBlocksForImports)
   }
 
-  def astsForDeclaration(decl: KtDeclaration)(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
+  def astsForDeclaration(decl: KtDeclaration): Seq[Ast] = {
     debugScope.push(decl)
     val result =
       try {
@@ -440,7 +440,7 @@ class AstCreator(
     argIdx: Option[Int],
     argNameMaybe: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
-  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  ): Ast = {
     val node = unknownNode(expr, Option(expr).map(_.getText).getOrElse(Constants.codePropUndefinedValue))
     Ast(withArgumentIndex(node, argIdx).argumentName(argNameMaybe))
       .withChildren(annotations.map(astForAnnotationEntry))
@@ -450,7 +450,7 @@ class AstCreator(
     entry: KtDestructuringDeclarationEntry,
     rhsBaseAst: Ast,
     componentIdx: Integer
-  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  ): Ast = {
     val entryTypeFullName = registerType(
       bindingUtils
         .getVariableDesc(entry)
@@ -494,9 +494,7 @@ class AstCreator(
     callAst(assignmentCallNode, List(assignmentLHSAst, componentNAst))
   }
 
-  protected def astDerivedFullNameWithSignature(expr: KtQualifiedExpression, argAsts: List[Ast])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): (String, String) = {
+  protected def astDerivedFullNameWithSignature(expr: KtQualifiedExpression, argAsts: List[Ast]): (String, String) = {
     val astDerivedMethodFullName = expr.getSelectorExpression match {
       case expression: KtCallExpression =>
         val receiverPlaceholderType = Defines.UnresolvedNamespace
@@ -513,18 +511,14 @@ class AstCreator(
     (astDerivedMethodFullName, astDerivedSignature)
   }
 
-  protected def astsForKtCallExpressionArguments(callExpr: KtCallExpression, startIndex: Int = 1)(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): List[Ast] = {
+  protected def astsForKtCallExpressionArguments(callExpr: KtCallExpression, startIndex: Int = 1): List[Ast] = {
     withIndex(callExpr.getValueArguments.asScala.toSeq) { case (arg, idx) =>
       val argumentNameMaybe = Option(arg.getArgumentName).map(_.getText)
       astsForExpression(arg.getArgumentExpression, Some(startIndex + idx - 1), argumentNameMaybe)
     }.flatten.toList
   }
 
-  protected def selectorExpressionArgAsts(expr: KtQualifiedExpression, startIndex: Int = 1)(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): List[Ast] = {
+  protected def selectorExpressionArgAsts(expr: KtQualifiedExpression, startIndex: Int = 1): List[Ast] = {
     val callExpr = expr.getSelectorExpression.asInstanceOf[KtCallExpression]
     astsForKtCallExpressionArguments(callExpr, startIndex)
   }

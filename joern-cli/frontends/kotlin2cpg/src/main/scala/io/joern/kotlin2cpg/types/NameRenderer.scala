@@ -13,7 +13,7 @@ import org.jetbrains.kotlin.descriptors.{
   PackageFragmentDescriptor,
   TypeParameterDescriptor
 }
-import org.jetbrains.kotlin.name.{FqNameUnsafe}
+import org.jetbrains.kotlin.name.FqNameUnsafe
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.error.ErrorClassDescriptor
 
@@ -42,7 +42,7 @@ object NameRenderer {
   )
 }
 
-class NameRenderer() {
+class NameRenderer {
   private val anonDescriptorToIndex = mutable.HashMap.empty[DeclarationDescriptor, Int]
   private var anonObjectCounter     = 0
 
@@ -52,7 +52,7 @@ class NameRenderer() {
         case _: ConstructorDescriptor =>
           Defines.ConstructorMethodName
         case functionDesc: FunctionDescriptor =>
-          Defines.ClosurePrefix + getAnonDescIndex(desc)
+          Defines.ClosurePrefix + getAnonDescIndex(functionDesc)
         case _ =>
           "object$" + getAnonDescIndex(desc)
       }
@@ -62,45 +62,30 @@ class NameRenderer() {
   }
 
   def descFullName(desc: DeclarationDescriptor): Option[String] = {
-    val dealiasedDesc =
-      desc match {
-        case typeAliasDesc: TypeAliasConstructorDescriptor =>
-          typeAliasDesc.getUnderlyingConstructorDescriptor
-        case _ =>
-          desc
-      }
-    val fullName = descFullNameInternal(dealiasedDesc).map(_.reverse.mkString(""))
-    fullName
+    val dealiasedDesc = desc match {
+      case typeAliasDesc: TypeAliasConstructorDescriptor => typeAliasDesc.getUnderlyingConstructorDescriptor
+      case _                                             => desc
+    }
+    descFullNameInternal(dealiasedDesc).map(_.reverse.mkString(""))
   }
 
   def funcDescSignature(functionDesc: FunctionDescriptor): Option[String] = {
-    val originalDesc = functionDesc.getOriginal
-
+    val originalDesc        = functionDesc.getOriginal
     val extRecvDesc         = Option(originalDesc.getExtensionReceiverParameter)
     val extRecvTypeFullName = extRecvDesc.flatMap(paramDesc => typeFullName(paramDesc.getType))
 
-    if (extRecvDesc.nonEmpty && extRecvTypeFullName.isEmpty) {
-      return None
-    }
+    if (extRecvDesc.nonEmpty && extRecvTypeFullName.isEmpty) { return None }
 
     val paramTypeFullNames = originalDesc.getValueParameters.asScala.map(paramDesc => typeFullName(paramDesc.getType))
-    if (paramTypeFullNames.exists(_.isEmpty)) {
-      return None
-    }
+    if (paramTypeFullNames.exists(_.isEmpty)) { return None }
 
-    val returnTypeFullName =
-      if (isConstructorDesc(originalDesc)) {
-        Some("void")
-      } else {
-        typeFullName(originalDesc.getReturnType)
-      }
-    if (returnTypeFullName.isEmpty) {
-      return None
-    }
+    val returnTypeFullName = if (isConstructorDesc(originalDesc)) { Some("void") }
+    else { typeFullName(originalDesc.getReturnType) }
+
+    if (returnTypeFullName.isEmpty) { return None }
 
     val combinedParamTypeFn = paramTypeFullNames.prepended(extRecvTypeFullName)
-
-    val signature = s"${returnTypeFullName.get}(${combinedParamTypeFn.flatten.mkString(",")})"
+    val signature           = s"${returnTypeFullName.get}(${combinedParamTypeFn.flatten.mkString(",")})"
     Some(signature)
   }
 
@@ -187,22 +172,18 @@ class NameRenderer() {
         if (!packageFragmentDesc.getName.isSpecial) {
           extendedFnParts = packageFragmentDesc.getFqName.toString :: extendedFnParts
         }
-      case moduleDesc: ModuleDescriptor =>
-      // Nothing todo since this is just the root element which has no namespace representation.
+      case _: ModuleDescriptor => // Do nothing since this is just the root element which has no namespace representation
       case _ =>
         if (extendedFnParts.nonEmpty) {
-          val separator =
-            if (parentDesc.isInstanceOf[ClassDescriptor] && desc.isInstanceOf[ClassDescriptor]) {
-              // Nested class.
-              "$"
-            } else {
-              "."
-            }
+          val separator = if (parentDesc.isInstanceOf[ClassDescriptor] && desc.isInstanceOf[ClassDescriptor]) {
+            // Nested class
+            "$"
+          } else {
+            "."
+          }
           extendedFnParts = separator :: extendedFnParts
         }
-
         val name = descName(desc)
-
         extendedFnParts = name :: extendedFnParts
     }
     Some(extendedFnParts)

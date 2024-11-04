@@ -31,6 +31,7 @@ import org.jetbrains.kotlin.types.error.ErrorType
 import scala.jdk.CollectionConverters.*
 
 class BindingContextUtils(val bindingContext: BindingContext) {
+
   def getClassDesc(classAst: KtClassOrObject): ClassDescriptor = {
     bindingContext.get(BindingContext.CLASS, classAst)
   }
@@ -55,28 +56,18 @@ class BindingContextUtils(val bindingContext: BindingContext) {
   def getCalledFunctionDesc(expressionAst: KtExpression): Option[FunctionDescriptor] = {
     val call         = Option(bindingContext.get(BindingContext.CALL, expressionAst))
     val resolvedCall = call.flatMap(call => Option(bindingContext.get(BindingContext.RESOLVED_CALL, call)))
-
-    resolvedCall.map(_.getResultingDescriptor).collect { case functionDesc: FunctionDescriptor =>
-      functionDesc
-    }
+    resolvedCall.map(_.getResultingDescriptor).collect { case functionDesc: FunctionDescriptor => functionDesc }
   }
 
   def getAmbiguousCalledFunctionDescs(expression: KtExpression): collection.Seq[FunctionDescriptor] = {
     val descriptors = bindingContext.get(BindingContext.AMBIGUOUS_REFERENCE_TARGET, expression)
-    if (descriptors == null) {
-      return Seq.empty
-    }
-
-    descriptors.asScala.toSeq.collect { case functionDescriptor: FunctionDescriptor =>
-      functionDescriptor
-    }
-
+    if (descriptors == null) { return Seq.empty }
+    descriptors.asScala.toSeq.collect { case functionDescriptor: FunctionDescriptor => functionDescriptor }
   }
 
   def getResolvedCallDesc(expr: KtExpression): Option[ResolvedCall[?]] = {
     val call         = Option(bindingContext.get(BindingContext.CALL, expr))
     val resolvedCall = call.flatMap(call => Option(bindingContext.get(BindingContext.RESOLVED_CALL, call)))
-
     resolvedCall
   }
 
@@ -111,10 +102,8 @@ class BindingContextUtils(val bindingContext: BindingContext) {
 
   def getTypeRefType(typeRef: KtTypeReference): Option[KotlinType] = {
     Option(bindingContext.get(BindingContext.TYPE, typeRef)) match {
-      case Some(error: ErrorType) =>
-        None
-      case other =>
-        other
+      case Some(_: ErrorType) => None
+      case other              => other
     }
   }
 }

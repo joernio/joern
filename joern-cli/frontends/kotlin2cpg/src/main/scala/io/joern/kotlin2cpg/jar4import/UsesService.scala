@@ -4,7 +4,7 @@ import com.squareup.tools.maven.resolution.ArtifactResolver
 import io.joern.kotlin2cpg.Kotlin2Cpg
 import org.slf4j.LoggerFactory
 
-import java.net.{MalformedURLException, URL}
+import java.net.{MalformedURLException, URI}
 
 trait UsesService { this: Kotlin2Cpg =>
 
@@ -12,7 +12,7 @@ trait UsesService { this: Kotlin2Cpg =>
 
   protected def reachableServiceMaybe(serviceUrl: String): Option[Service] = {
     try {
-      val url            = new URL(serviceUrl)
+      val url            = new URI(serviceUrl).toURL
       val healthResponse = requests.get(url.toString + "/health")
       if (healthResponse.statusCode != 200) {
         println(s"The jar4import service at `${url.toString}` did not respond with 200 on the `/health` endpoint.")

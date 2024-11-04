@@ -2,7 +2,6 @@ package io.joern.kotlin2cpg.ast
 
 import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.types.TypeConstants
-import io.joern.kotlin2cpg.types.TypeInfoProvider
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.ValidationMode
@@ -44,7 +43,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     argIdx: Option[Int],
     argName: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
-  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  ): Ast = {
     val typeFullName   = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
     val node           = literalNode(expr, expr.getText, typeFullName)
     val annotationAsts = annotations.map(astForAnnotationEntry)
@@ -56,7 +55,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     argIdx: Option[Int],
     argName: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
-  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  ): Ast = {
     val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
     val outAst =
       if (expr.hasInterpolation) {
@@ -93,7 +92,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     argIdx: Option[Int],
     argName: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
-  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  ): Ast = {
     val isReferencingMember = scope.lookupVariable(expr.getIdentifier.getText) match {
       case Some(_: NewMember) => true
       case _                  => false
@@ -106,9 +105,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     outAst.withChildren(annotations.map(astForAnnotationEntry))
   }
 
-  private def astForNameReferenceToType(expr: KtNameReferenceExpression, argIdx: Option[Int])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
+  private def astForNameReferenceToType(expr: KtNameReferenceExpression, argIdx: Option[Int]): Ast = {
     val declDesc =
       bindingUtils.getDeclDesc(expr).collect { case classifierDesc: ClassifierDescriptor => classifierDesc }
     val typeFullName = registerType(declDesc.flatMap(nameRenderer.descFullName).getOrElse(TypeConstants.any))
@@ -133,9 +130,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  private def astForNameReferenceToMember(expr: KtNameReferenceExpression, argIdx: Option[Int])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
+  private def astForNameReferenceToMember(expr: KtNameReferenceExpression, argIdx: Option[Int]): Ast = {
     val declDesc = bindingUtils.getDeclDesc(expr).collect { case propDesc: PropertyDescriptor => propDesc }
     val typeFullName = declDesc
       .flatMap(desc => nameRenderer.typeFullName(desc.getType))
@@ -164,7 +159,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     expr: KtNameReferenceExpression,
     argIdx: Option[Int],
     argName: Option[String] = None
-  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  ): Ast = {
     val declDesc = bindingUtils.getDeclDesc(expr).collect { case valueDesc: ValueDescriptor => valueDesc }
     val typeFullName = declDesc
       .flatMap(desc => nameRenderer.typeFullName(desc.getType))
@@ -189,7 +184,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     argIdx: Option[Int],
     argName: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
-  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  ): Ast = {
     val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
     val node = withArgumentName(
       withArgumentIndex(identifierNode(expr, expr.getText, expr.getText, typeFullName), argIdx),
@@ -204,7 +199,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     argIdx: Option[Int],
     argName: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
-  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  ): Ast = {
     val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
     val node = withArgumentName(
       withArgumentIndex(identifierNode(expr, expr.getText, expr.getText, typeFullName), argIdx),
@@ -219,7 +214,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     argIdx: Option[Int],
     argName: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
-  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  ): Ast = {
     val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.javaLangObject))
     val fullName     = "<operator>.class"
     val signature    = s"$typeFullName()"
@@ -267,7 +262,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     Ast(node)
   }
 
-  def astForAnnotationEntry(entry: KtAnnotationEntry)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  def astForAnnotationEntry(entry: KtAnnotationEntry): Ast = {
     val typeFullName = nameRenderer
       .typeFullName(bindingUtils.getAnnotationDesc(entry).getType)
       .orElse(fullNameByImportPath(entry.getTypeReference, entry.getContainingKtFile))
@@ -297,7 +292,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     annotationAst(node, children)
   }
 
-  def astForTypeAlias(typeAlias: KtTypeAlias)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  def astForTypeAlias(typeAlias: KtTypeAlias): Ast = {
     val typeAliasDesc = bindingUtils.getTypeAliasDesc(typeAlias)
     val aliasedType = typeAliasDesc.getExpandedType match {
       case _: ErrorType =>
@@ -317,9 +312,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     Ast(node)
   }
 
-  def astForTypeReference(expr: KtTypeReference, argIdx: Option[Int], argName: Option[String])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
+  def astForTypeReference(expr: KtTypeReference, argIdx: Option[Int], argName: Option[String]): Ast = {
     val typeFullName = registerType(
       bindingUtils.getTypeRefType(expr).flatMap(nameRenderer.typeFullName).getOrElse(TypeConstants.any)
     )

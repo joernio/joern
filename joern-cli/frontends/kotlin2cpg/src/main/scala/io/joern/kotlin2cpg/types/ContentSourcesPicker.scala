@@ -1,7 +1,6 @@
 package io.joern.kotlin2cpg.types
 
-import better.files.{File => BFile}
-import io.joern.kotlin2cpg.DefaultContentRootJarPath
+import better.files.File
 
 object ContentSourcesPicker {
 
@@ -19,7 +18,7 @@ object ContentSourcesPicker {
   //  `Seq("dir1/dir2/dir3")` and nothing else.
 
   def dirsForRoot(rootDir: String): Seq[String] = {
-    val dir        = BFile(rootDir)
+    val dir        = File(rootDir)
     val hasSubDirs = dir.list.exists(_.isDirectory)
     if (!hasSubDirs) {
       return Seq(rootDir)
