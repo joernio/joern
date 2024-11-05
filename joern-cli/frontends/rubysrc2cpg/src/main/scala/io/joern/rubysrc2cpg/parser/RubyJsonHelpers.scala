@@ -5,6 +5,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   AllowedTypeDeclarationChild,
   ArrayLiteral,
   ClassFieldIdentifier,
+  ControlFlowStatement,
   DefaultMultipleAssignment,
   IfExpression,
   MemberAccess,
@@ -169,7 +170,8 @@ object RubyJsonHelpers {
 
   /** Lowers the `||=` and `&&=` assignment operators to the respective `.nil?` checks
     */
-  def lowerAssignmentOperator(lhs: RubyExpression, rhs: RubyExpression, op: String, span: TextSpan): RubyExpression = {
+  def lowerAssignmentOperator(lhs: RubyExpression, rhs: RubyExpression, op: String, span: TextSpan): RubyExpression &
+    ControlFlowStatement = {
     val condition  = nilCheckCondition(lhs, op, "nil?", span)
     val thenClause = nilCheckThenClause(lhs, rhs, span)
     nilCheckIfStatement(condition, thenClause, span)
@@ -198,7 +200,7 @@ object RubyJsonHelpers {
     condition: RubyExpression,
     thenClause: RubyExpression,
     span: TextSpan
-  ): RubyExpression = {
+  ): RubyExpression & ControlFlowStatement = {
     IfExpression(condition = condition, thenClause = thenClause, elsifClauses = List.empty, elseClause = None)(
       span.spanStart(s"if ${condition.span.text} then ${thenClause.span.text} end")
     )

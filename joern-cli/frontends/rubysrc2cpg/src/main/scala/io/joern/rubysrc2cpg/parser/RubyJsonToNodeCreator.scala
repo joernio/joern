@@ -208,7 +208,7 @@ class RubyJsonToNodeCreator(
       case x                         => x
     }
     val rhs = visit(obj(ParserKeys.Rhs))
-    lowerAssignmentOperator(lhs, rhs, "&&=", obj.toTextSpan)
+    OperatorAssignment(lhs, "&&=", rhs)(obj.toTextSpan)
   }
 
   private def visitArg(obj: Obj): RubyExpression = MandatoryParameter(obj(ParserKeys.Value).str)(obj.toTextSpan)
@@ -732,7 +732,7 @@ class RubyJsonToNodeCreator(
       case x                         => x
     }
     val rhs = visit(obj(ParserKeys.Rhs))
-    lowerAssignmentOperator(lhs, rhs, "||=", obj.toTextSpan)
+    OperatorAssignment(lhs, "||=", rhs)(obj.toTextSpan)
   }
 
   private def visitPair(obj: Obj): RubyExpression = {
