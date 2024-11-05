@@ -210,6 +210,11 @@ object RubyIntermediateAst {
     def assignments: List[SingleAssignment]
   }
 
+  final case class OperatorAssignment(lhs: RubyExpression, op: String, rhs: RubyExpression)(span: TextSpan)
+      extends RubyExpression(span)
+      with RubyStatement
+      with ControlFlowStatement
+
   final case class DefaultMultipleAssignment(assignments: List[SingleAssignment])(span: TextSpan)
       extends RubyExpression(span)
       with MultipleAssignment

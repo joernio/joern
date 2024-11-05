@@ -2,6 +2,7 @@ package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{RubyStatement, *}
 import io.joern.rubysrc2cpg.datastructures.BlockScope
+import io.joern.rubysrc2cpg.parser.RubyJsonHelpers
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import io.joern.x2cpg.{Ast, ValidationMode}
@@ -14,6 +15,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     baseAstCache.clear() // A safe approximation on where to reset the cache
     node match {
       case node: IfExpression               => astForIfStatement(node)
+      case node: OperatorAssignment         => astForOperatorAssignment(node)
       case node: CaseExpression             => astsForCaseExpression(node)
       case node: StatementList              => astForStatementList(node) :: Nil
       case node: ReturnExpression           => astForReturnExpression(node) :: Nil
@@ -46,6 +48,11 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case None =>
         foldIfExpression(builder)(node) :: Nil
     }
+  }
+
+  private def astForOperatorAssignment(node: OperatorAssignment): Seq[Ast] = {
+    val loweredAssignment = lowerAssignmentOperator(node.lhs, node.rhs, node.op, node.span)
+    astsForStatement(loweredAssignment)
   }
 
   private def astForJsonIfStatement(node: IfExpression): Seq[Ast] = {
@@ -177,7 +184,14 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case expr: ControlFlowStatement =>
         def transform(e: RubyExpression & ControlFlowStatement): RubyExpression =
           transformLastRubyNodeInControlFlowExpressionBody(e, returnLastNode(_, transform), elseReturnNil)
-        astsForStatement(transform(expr))
+
+        expr match {
+          case x @ OperatorAssignment(lhs, op, rhs) =>
+            val loweredAssignment = lowerAssignmentOperator(lhs, rhs, op, x.span)
+            astsForStatement(transform(loweredAssignment))
+          case x =>
+            astsForStatement(transform(expr))
+        }
       case node: MemberCallWithBlock => returnAstForRubyCall(node)
       case node: SimpleCallWithBlock => returnAstForRubyCall(node)
       case _: (LiteralExpr | BinaryExpression | UnaryExpression | SimpleIdentifier | SelfIdentifier | IndexAccess |
@@ -208,9 +222,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         val nilReturnLiteral = StaticLiteral(Defines.NilClass)(nilReturnSpan)
         stmts.map(astForExpression) ++ astsForImplicitReturnStatement(nilReturnLiteral)
       case node =>
-        logger.warn(
-          s"Implicit return here not supported yet: ${node.text} (${node.getClass.getSimpleName}), only generating statement"
-        )
+        logger.warn(s" not supported yet: ${node.text} (${node.getClass.getSimpleName}), only generating statement")
         astsForStatement(node).toList
   }
 
@@ -311,6 +323,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case WhileExpression(condition, body)   => WhileExpression(condition, transform(body))(node.span)
       case DoWhileExpression(condition, body) => DoWhileExpression(condition, transform(body))(node.span)
       case UntilExpression(condition, body)   => UntilExpression(condition, transform(body))(node.span)
+      case OperatorAssignment(lhs, op, rhs) =>
+        val loweredNode = lowerAssignmentOperator(lhs, rhs, op, node.span)
+        transformLastRubyNodeInControlFlowExpressionBody(loweredNode, transform, defaultElseBranch)
       case IfExpression(condition, thenClause, elsifClauses, elseClause) =>
         IfExpression(
           condition,

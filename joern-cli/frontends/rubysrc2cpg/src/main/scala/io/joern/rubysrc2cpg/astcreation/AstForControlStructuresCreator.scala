@@ -11,6 +11,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   IfExpression,
   MemberCall,
   NextExpression,
+  OperatorAssignment,
   RescueExpression,
   ReturnExpression,
   RubyExpression,
@@ -25,6 +26,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   WhenClause,
   WhileExpression
 }
+import io.joern.rubysrc2cpg.parser.RubyJsonHelpers
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
@@ -39,16 +41,17 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
 trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected def astForControlStructureExpression(node: ControlFlowStatement): Ast = node match {
-    case node: WhileExpression   => astForWhileStatement(node)
-    case node: DoWhileExpression => astForDoWhileStatement(node)
-    case node: UntilExpression   => astForUntilStatement(node)
-    case node: CaseExpression    => blockAst(NewBlock(), astsForCaseExpression(node).toList)
-    case node: IfExpression      => astForIfExpression(node)
-    case node: UnlessExpression  => astForUnlessStatement(node)
-    case node: ForExpression     => astForForExpression(node)
-    case node: RescueExpression  => astForRescueExpression(node)
-    case node: NextExpression    => astForNextExpression(node)
-    case node: BreakExpression   => astForBreakExpression(node)
+    case node: WhileExpression    => astForWhileStatement(node)
+    case node: DoWhileExpression  => astForDoWhileStatement(node)
+    case node: UntilExpression    => astForUntilStatement(node)
+    case node: CaseExpression     => blockAst(NewBlock(), astsForCaseExpression(node).toList)
+    case node: IfExpression       => astForIfExpression(node)
+    case node: UnlessExpression   => astForUnlessStatement(node)
+    case node: ForExpression      => astForForExpression(node)
+    case node: RescueExpression   => astForRescueExpression(node)
+    case node: NextExpression     => astForNextExpression(node)
+    case node: BreakExpression    => astForBreakExpression(node)
+    case node: OperatorAssignment => astForOperatorAssignmentExpression(node)
   }
 
   private def astForWhileStatement(node: WhileExpression): Ast = {
@@ -293,6 +296,11 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
       }
       .getOrElse(StatementList(goCase(None))(node.span))
     astsForStatement(generatedNode)
+  }
+
+  private def astForOperatorAssignmentExpression(node: OperatorAssignment): Ast = {
+    val loweredAssignment = lowerAssignmentOperator(node.lhs, node.rhs, node.op, node.span)
+    astForControlStructureExpression(loweredAssignment)
   }
 
 }

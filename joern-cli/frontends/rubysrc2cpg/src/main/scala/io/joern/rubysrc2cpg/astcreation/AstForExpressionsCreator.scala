@@ -2,6 +2,7 @@ package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{Unknown, Block as RubyBlock, *}
 import io.joern.rubysrc2cpg.datastructures.BlockScope
+import io.joern.rubysrc2cpg.parser.RubyJsonHelpers
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.GlobalTypes
 import io.joern.rubysrc2cpg.passes.Defines.{RubyOperators, getBuiltInType}
@@ -482,7 +483,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
                     elseAssignNil
                   )
 
-                astForExpression(transform(cfNode))
+                cfNode match {
+                  case x @ OperatorAssignment(lhs, op, rhs) =>
+                    val loweredNode = lowerAssignmentOperator(lhs, rhs, op, x.span)
+                    astForExpression(transform(loweredNode))
+                  case x =>
+                    astForExpression(transform(cfNode))
+                }
+
               case _ =>
                 // The if the LHS defines a new variable, put the local variable into scope
                 val lhsAst = node.lhs match {
