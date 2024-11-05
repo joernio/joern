@@ -51,7 +51,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def astForOperatorAssignment(node: OperatorAssignment): Seq[Ast] = {
-    val loweredAssignment = RubyJsonHelpers.lowerAssignmentOperator(node.lhs, node.rhs, node.op, node.span)
+    val loweredAssignment = lowerAssignmentOperator(node.lhs, node.rhs, node.op, node.span)
     astsForStatement(loweredAssignment)
   }
 
@@ -187,7 +187,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
         expr match {
           case x @ OperatorAssignment(lhs, op, rhs) =>
-            val loweredAssignment = RubyJsonHelpers.lowerAssignmentOperator(lhs, rhs, op, x.span)
+            val loweredAssignment = lowerAssignmentOperator(lhs, rhs, op, x.span)
             astsForStatement(transform(loweredAssignment))
           case x =>
             astsForStatement(transform(expr))
@@ -324,7 +324,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case DoWhileExpression(condition, body) => DoWhileExpression(condition, transform(body))(node.span)
       case UntilExpression(condition, body)   => UntilExpression(condition, transform(body))(node.span)
       case OperatorAssignment(lhs, op, rhs) =>
-        val loweredNode = RubyJsonHelpers.lowerAssignmentOperator(lhs, rhs, op, node.span)
+        val loweredNode = lowerAssignmentOperator(lhs, rhs, op, node.span)
         transformLastRubyNodeInControlFlowExpressionBody(loweredNode, transform, defaultElseBranch)
       case IfExpression(condition, thenClause, elsifClauses, elseClause) =>
         IfExpression(

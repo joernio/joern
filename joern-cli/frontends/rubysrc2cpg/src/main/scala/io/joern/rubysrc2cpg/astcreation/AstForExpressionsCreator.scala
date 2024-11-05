@@ -485,7 +485,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
 
                 cfNode match {
                   case x @ OperatorAssignment(lhs, op, rhs) =>
-                    val loweredNode = RubyJsonHelpers.lowerAssignmentOperator(lhs, rhs, op, x.span)
+                    val loweredNode = lowerAssignmentOperator(lhs, rhs, op, x.span)
                     astForExpression(transform(loweredNode))
                   case x =>
                     astForExpression(transform(cfNode))

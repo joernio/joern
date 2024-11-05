@@ -299,7 +299,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
   }
 
   private def astForOperatorAssignmentExpression(node: OperatorAssignment): Ast = {
-    val loweredAssignment = RubyJsonHelpers.lowerAssignmentOperator(node.lhs, node.rhs, node.op, node.span)
+    val loweredAssignment = lowerAssignmentOperator(node.lhs, node.rhs, node.op, node.span)
     astForControlStructureExpression(loweredAssignment)
   }
 
