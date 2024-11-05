@@ -74,7 +74,8 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 
 // publishing info for sonatype / maven central
 ThisBuild / publishTo  := sonatypePublishToBundle.value
-sonatypeCredentialHost := "s01.oss.sonatype.org"
+ThisBuild / sonatypeCredentialHost := xerial.sbt.Sonatype.sonatypeCentralHost
+
 ThisBuild / scmInfo    := Some(ScmInfo(url("https://github.com/joernio/joern"), "scm:git@github.com:joernio/joern.git"))
 ThisBuild / homepage   := Some(url("https://joern.io/"))
 ThisBuild / licenses   := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
