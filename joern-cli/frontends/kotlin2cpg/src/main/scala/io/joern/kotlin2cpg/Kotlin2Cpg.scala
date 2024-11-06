@@ -21,6 +21,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.utils.IOUtils
 import org.jetbrains.kotlin.cli.jvm.compiler.{KotlinCoreEnvironment, KotlinToJVMBytecodeCompiler}
+import org.jetbrains.kotlin.com.intellij.openapi.util.Disposer
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.slf4j.LoggerFactory
@@ -224,6 +225,8 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
       val bindingContext = createBindingContext(environment)
       val astCreator     = new AstCreationPass(sourceFiles, bindingContext, cpg)(config.schemaValidation)
       astCreator.createAndApply()
+      
+      Disposer.dispose(environment.getProjectEnvironment.getParentDisposable)
 
       val kotlinAstCreatorTypes = astCreator.usedTypes()
       TypeNodePass.withRegisteredTypes(kotlinAstCreatorTypes, cpg).createAndApply()
