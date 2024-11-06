@@ -7,6 +7,8 @@ import scala.util.Using
 /** The lifetime of the Fetcher that generates a FetcherResult must be
  * at least as long as the lifetimes of the FetcherResults. */
 abstract class FetcherResult {
+  /** @param func the inputstream passed to func should not be saved outside the 
+   * context of func */
   def withNewInputStream[T](func: InputStream => T): T
 }
 

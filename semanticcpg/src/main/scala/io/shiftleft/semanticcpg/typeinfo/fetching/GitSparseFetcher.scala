@@ -12,10 +12,15 @@ import java.util.Comparator
 import java.util.concurrent.TimeUnit
 import scala.util.{Failure, Success, Try, Using}
 
-final class GitSparseFetcher private (repoUrl: String = "git@github.com:flandini/typeinfo.git", gitRef: String = "main")
-    extends Fetcher {
+/** @param repoUrl Identifier for the repo to be used in a git clone
+ *  @param gitRef Which commit/tag object to checkout in the repo (e.g., main)
+ *  @param repoPath If non-None value provided, then a Filesystem path to existing repo, else a new temporary directory 
+ *                  will be created. */
+final class GitSparseFetcher (repoUrl: String = "git@github.com:flandini/typeinfo.git", 
+                              gitRef: String = "main",
+                              repoPath: Option[Path] = None) extends Fetcher {
   private var firstDownload: Boolean = true
-  private lazy val tmpDir: Path      = Files.createTempDirectory("typeinfo-")
+  private lazy val tmpDir: Path      = repoPath.getOrElse(Files.createTempDirectory("typeinfo-"))
 
   /** The repo stores all data in the data/ dir. Other top-level dirs and files are used for maintaining the type info
     * storage repo.
