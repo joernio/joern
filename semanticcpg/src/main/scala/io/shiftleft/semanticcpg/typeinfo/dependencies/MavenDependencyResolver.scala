@@ -2,7 +2,7 @@ package io.shiftleft.semanticcpg.typeinfo.dependencies
 
 import io.shiftleft.semanticcpg.typeinfo.LanguagePlatform.JVM
 import io.shiftleft.semanticcpg.typeinfo.dependencies.*
-import io.shiftleft.semanticcpg.typeinfo.fetching.Fetcher
+import io.shiftleft.semanticcpg.typeinfo.fetching.{Fetcher, FetcherResult}
 import io.shiftleft.semanticcpg.typeinfo.loading.Loader
 import io.shiftleft.semanticcpg.typeinfo.{PackageIdentifier, PackageMetadata}
 import io.shiftleft.semanticcpg.typeinfo.version.{SemVer2, Version}
@@ -240,25 +240,25 @@ class MavenDependencyResolver(fetcher: Fetcher) {
 
   private def downloadMetadata(
     packageNames: List[String]
-  ): Future[List[(PackageIdentifier, Array[Byte])]] = {
+  ): Future[List[(PackageIdentifier, FetcherResult)]] = {
     val pids      = packageNames.map(PackageIdentifier(JVM, _))
     val metadatas = fetcher.fetchMetaData(pids)
     metadatas
   }
 
   private def downloadDirectDependencyInfo(
-    metadatas: List[(PackageIdentifier, Array[Byte])]
-  ): Future[List[((PackageIdentifier, Version), Array[Byte])]] = {
+    metadatas: List[(PackageIdentifier, FetcherResult)]
+  ): Future[List[((PackageIdentifier, Version), FetcherResult)]] = {
     val neededVersions = listNeededVersions(metadatas)
     val directDeps     = fetcher.fetchDirectDependencies(neededVersions)
     directDeps
   }
 
   private def listDirectDependencies(
-    deps: List[((PackageIdentifier, Version), Array[Byte])]
+    deps: List[((PackageIdentifier, Version), FetcherResult)]
   ): List[((PackageIdentifier, Version), List[DirectDependency])] = {
-    deps.map((pidAndVersion, directDepBytes) => {
-      val directDeps = Loader.loadDirectDependencies(SemVer2.apply, directDepBytes)
+    deps.map((pidAndVersion, fetchedDirectDeps) => {
+      val directDeps = fetchedDirectDeps.withNewInputStream(Loader.loadDirectDependencies(SemVer2.apply, _))
       (pidAndVersion, directDeps)
     })
   }
@@ -271,14 +271,15 @@ class MavenDependencyResolver(fetcher: Fetcher) {
 
   @tailrec
   private def listNeededVersions(
-    metadatas: List[(PackageIdentifier, Array[Byte])],
+    metadatas: List[(PackageIdentifier, FetcherResult)],
     versions: List[(PackageIdentifier, SemVer2)] = Nil
   ): List[(PackageIdentifier, SemVer2)] = {
     metadatas.headOption match
       case None => versions
-      case Some((pid, metadataBytes)) => {
-        val thisPackageAvailVersions = Loader
-          .loadMetadataVersions(metadataBytes)
+      case Some((pid, fetchedMetadata)) => {
+        
+        val thisPackageAvailVersions = fetchedMetadata
+          .withNewInputStream(Loader.loadMetadataVersions)
           .map(SemVer2.apply)
           .map(semver => (pid, semver))
         listNeededVersions(metadatas.tail, thisPackageAvailVersions ++ versions)

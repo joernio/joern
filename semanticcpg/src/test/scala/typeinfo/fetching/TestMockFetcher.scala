@@ -2,6 +2,8 @@ package io.shiftleft.semanticcpg.typeinfo.fetching
 
 import io.shiftleft.semanticcpg.typeinfo.fetching._
 
+import java.io.{InputStream}
+
 /** For use in testing, this is a fetcher that is just an immutable wrapper around an
  * immutable `Map[String, Array[Byte]]` where the String is a server path like
  * `/jvm/$PACKAGE_NAME/$VERSION/$TYPE_NAME.ion` */
@@ -19,7 +21,10 @@ class TestMockFetcher private (private val store: Map[String, Array[Byte]]) exte
 
   override protected def downloadFiles(paths: List[ServerPath]): List[FetcherResult] = {
     paths.foreach(validateFileInStore)
-    paths.map(serverPath => FetcherResult(serverPath, store(serverPath.toString)))
+    paths.map(serverPath => {
+      val fileContents = store(serverPath.toString)
+      ByteArrayFetcherResult(fileContents)
+    })
   }
   
   private def validateFileInStore(path: ServerPath): Unit = {

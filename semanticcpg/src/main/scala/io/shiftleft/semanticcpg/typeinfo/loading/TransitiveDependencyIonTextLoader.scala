@@ -3,12 +3,14 @@ package io.shiftleft.semanticcpg.typeinfo.loading
 import io.shiftleft.semanticcpg.typeinfo.dependencies.{DirectDependency, Eq, TransitiveDependency}
 import io.shiftleft.semanticcpg.typeinfo.version.Version
 
+import java.io.InputStream
+
 /** parses as a DirectDependency and then ensures that all constraints are just version equal constraints, and maps to
   * TransitiveDependencies
   */
 object TransitiveDependencyIonTextLoader {
-  def loadFromBytes(versionParser: String => Version, data: Array[Byte]): List[TransitiveDependency] = {
-    val directDeps = DirectDependencyIonTextLoader.loadFromBytes(versionParser, data)
+  def loadFromStream(versionParser: String => Version, data: InputStream): List[TransitiveDependency] = {
+    val directDeps = DirectDependencyIonTextLoader.loadFromStream(versionParser, data)
     validate(directDeps)
     directDeps.map { case DirectDependency(name, Eq(version)) =>
       TransitiveDependency(name, version)

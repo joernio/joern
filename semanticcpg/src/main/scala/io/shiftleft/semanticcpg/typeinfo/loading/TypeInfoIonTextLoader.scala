@@ -3,6 +3,7 @@ package io.shiftleft.semanticcpg.typeinfo
 import com.amazon.ion.{IonReader, IonType}
 import com.amazon.ion.system.IonReaderBuilder
 
+import java.io.InputStream
 import scala.annotation.tailrec
 import scala.util.Using
 
@@ -12,7 +13,7 @@ object TypeInfoIonTextLoader {
     Using.resource(IonReaderBuilder.standard().build(data))(loop(_))
   }
 
-  def loadFromBytes(data: Array[Byte]): TypeDecl = {
+  def loadFromStream(data: InputStream): TypeDecl = {
     Using.resource(IonReaderBuilder.standard().build(data))(loop(_))
   }
 

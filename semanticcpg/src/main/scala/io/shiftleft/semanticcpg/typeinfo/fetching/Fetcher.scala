@@ -16,15 +16,17 @@ import scala.util.Try
   * data that was downloaded by deriving fetchers.
   */
 abstract class Fetcher extends AutoCloseable {
-  protected final case class FetcherResult(path: ServerPath, data: Array[Byte])
-
   /** Much of fetching is building paths to resources and converting between different types of paths: paths that
     * generic fetching understands (e.g., path to version info or dependency files), paths that a specific fetcher
     * understands (e.g., git repo paths), and filesystem paths. To avoid mixing incompatible Path instances, instances
     * of ServerPath are given to abstract methods that deriving types should implement; these deriving types can use
     * ServerPaths as they are or convert between other fetcher-specific Path types.
     */
-  protected final case class ServerPath(path: Path) {
+  protected final class ServerPath private (val path: Path) {
+    def this(pid: PackageIdentifier) = {
+      this(Paths.get(pid.platform.toString).resolve(pid.name))
+    }
+
     def getMetaDataPath: ServerPath = {
       ServerPath(path.resolve("metadata").resolve("metadata.ion"))
     }
@@ -44,28 +46,22 @@ abstract class Fetcher extends AutoCloseable {
     def getTypeFilePath(typeName: String): ServerPath = {
       ServerPath(path.resolve(typeName + ".ion"))
     }
-
-    def resolve(other: String): ServerPath = {
-      ServerPath(path.resolve(other))
+    
+    def getParent: ServerPath = {
+      ServerPath(path.getParent)
     }
 
     override def toString: String = path.toString
   }
-  protected object ServerPath {
-    def build(pid: PackageIdentifier): ServerPath = {
-      val packageDirPath = Paths.get(pid.platform.toString).resolve(pid.name)
-      ServerPath(packageDirPath)
-    }
-  }
-
+  
   /** The metadata file contains a list of all versions stored stored for this package identifier
     */
-  def fetchMetaData(pids: List[PackageIdentifier]): Future[List[(PackageIdentifier, Array[Byte])]] = {
-    val infoFilePaths = pids.map(ServerPath.build(_).getMetaDataPath)
+  def fetchMetaData(pids: List[PackageIdentifier]): Future[List[(PackageIdentifier, FetcherResult)]] = {
+    val infoFilePaths = pids.map(ServerPath(_).getMetaDataPath)
     Future {
       blocking {
         val downloadResults = downloadFiles(infoFilePaths)
-        pids.zip(downloadResults.map(_.data)).toList
+        pids.zip(downloadResults).toList
       }
     }
   }
@@ -77,12 +73,12 @@ abstract class Fetcher extends AutoCloseable {
     pid: PackageIdentifier,
     version: Version,
     typeNames: List[String]
-  ): Future[List[(String, Array[Byte])]] = {
-    val versionedPackageDir = ServerPath.build(pid).getVersionPath(version)
+  ): Future[List[(String, FetcherResult)]] = {
+    val versionedPackageDir = ServerPath(pid).getVersionPath(version)
     val typePaths           = typeNames.map(versionedPackageDir.getTypeFilePath)
     Future {
       blocking {
-        val downloadResults = downloadFiles(typePaths).map(_.data)
+        val downloadResults = downloadFiles(typePaths)
         typeNames.zip(downloadResults).toList
       }
     }
@@ -90,22 +86,22 @@ abstract class Fetcher extends AutoCloseable {
   
   def fetchDirectDependencies(
     versionedPids: List[(PackageIdentifier, Version)]
-  ): Future[List[((PackageIdentifier, Version), Array[Byte])]] = {
-    val directDepPaths = versionedPids.map((pid, version) => ServerPath.build(pid).getDirectDepsPath(version))
+  ): Future[List[((PackageIdentifier, Version), FetcherResult)]] = {
+    val directDepPaths = versionedPids.map((pid, version) => ServerPath(pid).getDirectDepsPath(version))
     Future {
       blocking {
-        val downloadResults = downloadFiles(directDepPaths).map(_.data)
+        val downloadResults = downloadFiles(directDepPaths)
         versionedPids.zip(downloadResults).toList
       }
     }
   }
 
-  def fetchTransitiveDependencies(pid: PackageIdentifier, version: Version): Future[Array[Byte]] = {
-    val transitiveDepPath = ServerPath.build(pid).getTransitiveDepsPath(version)
+  def fetchTransitiveDependencies(pid: PackageIdentifier, version: Version): Future[FetcherResult] = {
+    val transitiveDepPath = ServerPath(pid).getTransitiveDepsPath(version)
     Future {
       blocking {
         val downloadResults = downloadFiles(List(transitiveDepPath))
-        downloadResults.head.data
+        downloadResults.head
       }
     }
   }

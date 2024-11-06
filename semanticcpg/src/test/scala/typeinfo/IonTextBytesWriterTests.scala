@@ -5,6 +5,8 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import scala.util.Try
 
+import java.io.ByteArrayInputStream
+
 class IonTextBytesWriterTests extends AnyWordSpec with Matchers {
   private val test1: String = """
       |{
@@ -35,7 +37,8 @@ class IonTextBytesWriterTests extends AnyWordSpec with Matchers {
   "text writer" should {
     "roundtrip without error" in {
       val typ    = TypeInfoIonTextLoader.loadFromString(test1)
-      val result = TypeInfoIonTextLoader.loadFromBytes(IonTextBytesWriter.write(typ))
+      val byteStream = ByteArrayInputStream(IonTextBytesWriter.write(typ))
+      val result = TypeInfoIonTextLoader.loadFromStream(byteStream)
       result shouldEqual typ
     }
   }

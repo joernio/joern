@@ -4,16 +4,17 @@ import com.amazon.ion.{IonReader, IonType}
 import com.amazon.ion.system.IonReaderBuilder
 import io.shiftleft.semanticcpg.typeinfo.PackageMetadata
 
+import java.io.InputStream
 import scala.annotation.tailrec
 import scala.util.Using
 
 /** TODO: add dependency data to metadata file, there are pointless/overlapping functions until then */
 object MetadataIonTextLoader {
-  def loadFromBytes(data: Array[Byte]): PackageMetadata = {
+  def loadFromStream(data: InputStream): PackageMetadata = {
     Using.resource(IonReaderBuilder.standard().build(data))(parseTopLevelStruct)
   }
 
-  def loadRawVersionsFromBytes(data: Array[Byte]): List[String] = {
+  def loadRawVersionsFromStream(data: InputStream): List[String] = {
     Using.resource(IonReaderBuilder.standard().build(data))(parseOnlyVersions)
   }
 

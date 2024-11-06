@@ -12,7 +12,7 @@ import java.util.Comparator
 import java.util.concurrent.TimeUnit
 import scala.util.{Failure, Success, Try, Using}
 
-final class GitSparseFetcher(repoUrl: String = "git@github.com:flandini/typeinfo.git", gitRef: String = "main")
+final class GitSparseFetcher private (repoUrl: String = "git@github.com:flandini/typeinfo.git", gitRef: String = "main")
     extends Fetcher {
   private var firstDownload: Boolean = true
   private lazy val tmpDir: Path      = Files.createTempDirectory("typeinfo-")
@@ -20,10 +20,10 @@ final class GitSparseFetcher(repoUrl: String = "git@github.com:flandini/typeinfo
   /** The repo stores all data in the data/ dir. Other top-level dirs and files are used for maintaining the type info
     * storage repo.
     */
-  private class GitPath(serverPath: ServerPath) {
+  private class GitPath(private val serverPath: ServerPath) {
     val path: Path = Paths.get("data").resolve(serverPath.path)
 
-    def getParent: GitPath = GitPath(ServerPath(serverPath.path.getParent))
+    def getParent: GitPath = GitPath(serverPath.getParent)
 
     override def toString: String = path.toString
 
@@ -34,11 +34,9 @@ final class GitSparseFetcher(repoUrl: String = "git@github.com:flandini/typeinfo
     }
   }
 
-  private class FileSystemPath(gitPath: GitPath) {
+  private class FileSystemPath(private val gitPath: GitPath) {
     val path: Path = tmpDir.resolve(gitPath.path)
-
-    def readBytes(): Array[Byte] = Files.newInputStream(path).readAllBytes()
-
+    val toFetcherResult: FetcherResult = FileBasedFetcherResult(path)
     override def toString: String = path.toString
   }
 
@@ -55,16 +53,16 @@ final class GitSparseFetcher(repoUrl: String = "git@github.com:flandini/typeinfo
     *      fetcher to map each fetcher Path to a file system Path 4. Open input streams to each file on the file system
     *      and return these as download results
     */
-  override protected def downloadFiles(paths: List[ServerPath]): List[FetcherResult] = {
-    val gitPaths    = paths.map(GitPath(_))
+  override protected def downloadFiles(serverPaths: List[ServerPath]): List[FetcherResult] = {
+    val gitPaths    = serverPaths.map(GitPath(_))
     val gitDirPaths = gitPaths.map(_.getParent).distinct
 
     downloadDirs(gitDirPaths)
 
     val fsPaths   = gitPaths.map(FileSystemPath(_))
-    val downloads = fsPaths.map(_.readBytes())
+    val results = fsPaths.map(_.toFetcherResult)
 
-    paths.zip(downloads).map((path, downloadedBytes) => FetcherResult(path, downloadedBytes))
+    results
   }
 
   private def downloadDirs(dirPaths: List[GitPath]): Unit = {
