@@ -225,7 +225,7 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
       val bindingContext = createBindingContext(environment)
       val astCreator     = new AstCreationPass(sourceFiles, bindingContext, cpg)(config.schemaValidation)
       astCreator.createAndApply()
-      
+
       Disposer.dispose(environment.getProjectEnvironment.getParentDisposable)
 
       val kotlinAstCreatorTypes = astCreator.usedTypes()
