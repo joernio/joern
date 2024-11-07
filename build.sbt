@@ -1,6 +1,6 @@
 name                     := "joern"
 ThisBuild / organization := "io.joern"
-ThisBuild / scalaVersion := "3.4.3"
+ThisBuild / scalaVersion := "3.5.2"
 
 val cpgVersion = "1.7.13"
 
@@ -46,7 +46,7 @@ ThisBuild / scalacOptions ++= Seq(
   "-deprecation", // Emit warning and location for usages of deprecated APIs.
   "--release",
   "11",
-  "-Wshadow:type-parameter-shadow",
+  "-Wshadow:type-parameter-shadow"
 )
 
 lazy val createDistribution = taskKey[File]("Create a complete Joern distribution")
@@ -73,12 +73,12 @@ ThisBuild / Test / fork := true
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
 // publishing info for sonatype / maven central
-ThisBuild / publishTo  := sonatypePublishToBundle.value
+ThisBuild / publishTo              := sonatypePublishToBundle.value
 ThisBuild / sonatypeCredentialHost := xerial.sbt.Sonatype.sonatypeCentralHost
 
-ThisBuild / scmInfo    := Some(ScmInfo(url("https://github.com/joernio/joern"), "scm:git@github.com:joernio/joern.git"))
-ThisBuild / homepage   := Some(url("https://joern.io/"))
-ThisBuild / licenses   := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
+ThisBuild / scmInfo  := Some(ScmInfo(url("https://github.com/joernio/joern"), "scm:git@github.com:joernio/joern.git"))
+ThisBuild / homepage := Some(url("https://joern.io/"))
+ThisBuild / licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
 ThisBuild / developers := List(
   /* sonatype requires this to be non-empty */
   Developer("fabsx00", "Fabian Yamaguchi", "fabs@shiftleft.io", url("https://github.com/fabsx00"))
