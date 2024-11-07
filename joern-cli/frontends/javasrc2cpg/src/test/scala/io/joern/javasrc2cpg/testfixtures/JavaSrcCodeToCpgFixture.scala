@@ -1,6 +1,7 @@
 package io.joern.javasrc2cpg.testfixtures
 
 import io.joern.dataflowengineoss.DefaultSemantics
+import io.joern.dataflowengineoss.language.Path
 import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
 import io.joern.dataflowengineoss.testfixtures.{SemanticCpgTestFixture, SemanticTestCpg}
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
@@ -81,4 +82,6 @@ class JavaSrcCode2CpgFixture(
 
     (source, sink)
   }
+
+  protected def flowToResultPairs(path: Path): List[(String, Option[Int])] = path.resultPairs()
 }
