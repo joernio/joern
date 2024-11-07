@@ -394,7 +394,9 @@ class AstGenRunner(config: Config) {
         AstGenRunnerResult(parsed.map((in.toString(), _)), skipped.map((in.toString(), _)))
       case Failure(f) =>
         logger.error("\t- running astgen failed!", f)
-        AstGenRunnerResult()
+        val parsed  = checkParsedFiles(filterFiles(SourceFiles.determine(out.toString(), Set(".json")), out), in)
+        val skipped = List.empty
+        AstGenRunnerResult(parsed.map((in.toString(), _)), skipped.map((in.toString(), _)))
     }
   }
 
