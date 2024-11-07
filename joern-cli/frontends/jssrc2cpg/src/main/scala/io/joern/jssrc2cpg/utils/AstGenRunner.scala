@@ -28,6 +28,8 @@ object AstGenRunner {
 
   private val MinifiedPathRegex: Regex = ".*([.-]min\\..*js|bundle\\.js)".r
 
+  private val Extensions = Set(".js", ".ts", ".vue", ".ejs", ".jsx", ".cjs", ".mjs", ".tsx")
+
   private val AstGenDefaultIgnoreRegex: Seq[Regex] =
     List(
       "(conf|test|spec|[.-]min|\\.d)\\.(js|ts|jsx|tsx)$".r,
@@ -376,20 +378,18 @@ class AstGenRunner(config: Config) {
     logger.info(s"Parsed $numOfParsedFiles files.")
     if (numOfParsedFiles == 0) {
       logger.warn("You may want to check the DEBUG logs for a list of files that are ignored by default.")
-      SourceFiles.determine(
-        in.pathAsString,
-        Set(".js", ".ts", ".vue", ".ejs", ".jsx", ".cjs", ".mjs", ".tsx"),
-        ignoredDefaultRegex = Option(AstGenDefaultIgnoreRegex)
-      )
+      SourceFiles.determine(in.pathAsString, Extensions, ignoredDefaultRegex = Option(AstGenDefaultIgnoreRegex))
     }
     files
   }
 
   def execute(out: File): AstGenRunnerResult = {
-    val in = File(config.inputPath)
+    val tmpInput = filterAndCopyFiles()
+    val in       = File(config.inputPath)
+    logger.info(s"Running astgen in '$tmpInput' ...")
     runAstGenNative(in, out) match {
       case Success(result) =>
-        val parsed  = checkParsedFiles(filterFiles(SourceFiles.determine(out.toString(), Set(".json")), out), in)
+        val parsed  = checkParsedFiles(filterFiles(SourceFiles.determine(out.toString(), Set(".json")), out), tmpInput)
         val skipped = skippedFiles(result.toList)
         AstGenRunnerResult(parsed.map((in.toString(), _)), skipped.map((in.toString(), _)))
       case Failure(f) =>
@@ -398,6 +398,28 @@ class AstGenRunner(config: Config) {
         val skipped = List.empty
         AstGenRunnerResult(parsed.map((in.toString(), _)), skipped.map((in.toString(), _)))
     }
+  }
+
+  def filterAndCopyFiles(): File = {
+
+    /** Before running AstGen, filter and copy all the files in a temporary folder, which can be given as in input to
+      * AstGen, Earlier the filter used to happen post AstGen result, now it will be before. This helps in parsing files
+      * which are needed in AstGen
+      */
+    val filteredFiles = SourceFiles.determine(
+      config.inputPath,
+      Extensions,
+      ignoredDefaultRegex = Option(AstGenDefaultIgnoreRegex),
+      ignoredFilesRegex = Option(config.ignoredFilesRegex)
+    )
+    val tmpInput = File.newTemporaryDirectory("jsTemporaryInputDir")
+    filteredFiles.foreach { filePath =>
+      val file            = File(filePath)
+      val destinationFile = tmpInput / Paths.get(config.inputPath).relativize(file.path).toString
+      destinationFile.parent.createDirectoryIfNotExists(createParents = true)
+      file.copyTo(destinationFile, overwrite = true)
+    }
+    tmpInput
   }
 
 }
