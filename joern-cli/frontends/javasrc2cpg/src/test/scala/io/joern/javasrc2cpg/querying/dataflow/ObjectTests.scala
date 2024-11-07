@@ -6,8 +6,7 @@ import io.shiftleft.semanticcpg.language.*
 
 class NewObjectTests extends JavaSrcCode2CpgFixture(withOssDataflow = true) {
 
-  // FIXME: stopped working after https://github.com/joernio/joern/pull/5036
-  "static field passed as an argument inside a same-class static method whilst being referenced by its simple name" ignore {
+  "static field passed as an argument inside a same-class static method whilst being referenced by its simple name" in {
     val cpg = code("""
         |class Bar {
         | static String CONST = "<const>";
@@ -18,7 +17,7 @@ class NewObjectTests extends JavaSrcCode2CpgFixture(withOssDataflow = true) {
     val sink   = cpg.call("println").argument(1)
     val source = cpg.literal
     sink.reachableByFlows(source).map(flowToResultPairs).l shouldBe List(
-      List(("String Bar.CONST = \"<const>\"", Some(3)), ("System.out.println(Bar.CONST)", Some(5)))
+      List(("String Bar.CONST = \"<const>\"", Some(3)), ("System.out.println(CONST)", Some(5)))
     )
   }
 

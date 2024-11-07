@@ -147,7 +147,10 @@ class SourceToStartingPointsInMethod(
   private def usageInOtherClasses(m: Method, usageInputs: List[UsageInput]): List[StartingPointWithSource] = {
     usageInputs.flatMap { case UsageInput(src, typeDecl, astNode) =>
       m.fieldAccess
-        .where(_.argument(1).isIdentifier.typeFullNameExact(typeDecl.fullName))
+        .or(
+          _.argument(1).isIdentifier.typeFullNameExact(typeDecl.fullName),
+          _.argument(1).isTypeRef.typeFullNameExact(typeDecl.fullName)
+        )
         .where { x =>
           astNode match {
             case identifier: Identifier =>
