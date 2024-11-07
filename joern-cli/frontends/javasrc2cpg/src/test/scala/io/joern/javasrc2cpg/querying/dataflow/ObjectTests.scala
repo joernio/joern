@@ -5,7 +5,7 @@ import io.joern.dataflowengineoss.language.*
 import io.shiftleft.semanticcpg.language.*
 
 class NewObjectTests extends JavaSrcCode2CpgFixture(withOssDataflow = true) {
-  
+
   "static field passed as an argument inside a same-class static method whilst being referenced by its simple name" in {
     val cpg = code("""
         |class Bar {
