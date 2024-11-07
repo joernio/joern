@@ -24,6 +24,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case node: FieldsDeclaration          => astsForFieldDeclarations(node)
       case node: AccessModifier             => registerAccessModifier(node)
       case node: MethodDeclaration          => astForMethodDeclaration(node)
+      case node: MethodAccessModifier       => astForMethodAccessModifier(node)
       case node: SingletonMethodDeclaration => astForSingletonMethodDeclaration(node)
       case node: MultipleAssignment         => node.assignments.map(astForExpression)
       case node: BreakExpression            => astForBreakExpression(node) :: Nil

@@ -628,6 +628,23 @@ class RubyJsonToNodeCreator(
     MemberCall(lhs, ".", RubyOperators.regexpMatch, rhs :: Nil)(obj.toTextSpan)
   }
 
+  private def visitMethodAccessModifier(obj: Obj): RubyExpression = {
+    val body = obj.visitArray(ParserKeys.Arguments) match {
+      case head :: Nil => head
+      case xs          => xs.head
+    }
+
+    obj(ParserKeys.Name).str match {
+      case "public_class_method" =>
+        PublicMethodModifier(body)(obj.toTextSpan)
+      case "private_class_method" =>
+        PrivateMethodModifier(body)(obj.toTextSpan)
+      case modifierName =>
+        logger.warn(s"Unknown modifier type $modifierName")
+        defaultResult(Option(obj.toTextSpan))
+    }
+  }
+
   private def visitMethodDefinition(obj: Obj): RubyExpression = {
     val name       = obj(ParserKeys.Name).str
     val parameters = obj(ParserKeys.Arguments).asInstanceOf[ujson.Obj].visitArray(ParserKeys.Children)
@@ -870,6 +887,7 @@ class RubyJsonToNodeCreator(
       case "include"                                                            => visitInclude(obj)
       case "attr_reader" | "attr_writer" | "attr_accessor"                      => visitFieldDeclaration(obj)
       case "private" | "public" | "protected"                                   => visitAccessModifier(obj)
+      case "private_class_method" | "public_class_method"                       => visitMethodAccessModifier(obj)
       case requireLike if ImportCallNames.contains(requireLike) && !hasReceiver => visitRequireLike(obj)
       case _ if BinaryOperators.isBinaryOperatorName(callName) =>
         val lhs = visit(obj(ParserKeys.Receiver))
