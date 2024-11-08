@@ -5,6 +5,7 @@ Joern - The Bug Hunter's Workbench
 [![Joern SBT](https://index.scala-lang.org/joernio/joern/latest.svg)](https://index.scala-lang.org/joernio/joern)
 [![Github All Releases](https://img.shields.io/github/downloads/joernio/joern/total.svg)](https://github.com/joernio/joern/releases/)
 [![Gitter](https://img.shields.io/badge/-Discord-lime?style=for-the-badge&logo=discord&logoColor=white&color=black)](https://discord.com/invite/vv4MH284Hc)
+[![Gurubase](https://img.shields.io/badge/Gurubase-Ask%20Joern%20Guru-006BFF)](https://gurubase.io/g/joern)
 
 Joern is a platform for analyzing source code, bytecode, and binary
 executables. It generates code property graphs (CPGs), a graph
