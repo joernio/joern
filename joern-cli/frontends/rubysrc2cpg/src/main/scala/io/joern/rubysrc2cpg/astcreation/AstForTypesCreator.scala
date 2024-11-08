@@ -262,7 +262,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         val setterAst   = Option.when(node.hasSetter)(astForSetterMethod(node, fieldName)).getOrElse(Nil)
         Seq(memberAst) ++ getterAst ++ setterAst
       case _ =>
-        logger.warn(s"Unsupported field declaration: ${nameNode.text}, skipping")
+        logger.warn(s"Unsupported field declaration: ${nameNode.text} (${nameNode.getClass}), skipping")
         Seq()
   }
 

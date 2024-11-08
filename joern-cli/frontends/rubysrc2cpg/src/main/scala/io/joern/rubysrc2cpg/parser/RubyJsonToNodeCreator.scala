@@ -480,9 +480,11 @@ class RubyJsonToNodeCreator(
 
   private def visitForwardArg(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
-  private def visitForwardArgs(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  // Note: Forward args should probably be handled more explicitly, but this should preserve flows if the same
+  // identifier is used in latter forwarding
+  private def visitForwardArgs(obj: Obj): RubyExpression = MandatoryParameter("...")(obj.toTextSpan)
 
-  private def visitForwardedArgs(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitForwardedArgs(obj: Obj): RubyExpression = SimpleIdentifier()(obj.toTextSpan)
 
   private def visitGlobalVariable(obj: Obj): RubyExpression = {
     val span     = obj.toTextSpan
@@ -594,7 +596,7 @@ class RubyJsonToNodeCreator(
   private def visitKwOptArg(obj: Obj): RubyExpression = visitKwArg(obj)
 
   private def visitKwRestArg(obj: Obj): RubyExpression = {
-    val name = obj(ParserKeys.Value).str
+    val name = if obj.contains(ParserKeys.Value) then obj(ParserKeys.Value).str else obj.toTextSpan.text
     HashParameter(name)(obj.toTextSpan)
   }
 
@@ -647,7 +649,7 @@ class RubyJsonToNodeCreator(
 
   private def visitMethodDefinition(obj: Obj): RubyExpression = {
     val name       = obj(ParserKeys.Name).str
-    val parameters = obj(ParserKeys.Arguments).asInstanceOf[ujson.Obj].visitArray(ParserKeys.Children)
+    val parameters = visitMethodParameters(obj(ParserKeys.Arguments).asInstanceOf[ujson.Obj])
     val body = obj
       .visitOption(ParserKeys.Body)
       .map {
@@ -756,6 +758,19 @@ class RubyJsonToNodeCreator(
     val key   = visit(obj(ParserKeys.Key))
     val value = visit(obj(ParserKeys.Value))
     Association(key, value)(obj.toTextSpan)
+  }
+
+  private def visitMethodParameters(paramsNode: Obj): List[RubyExpression] = {
+    AstType.fromString(paramsNode(ParserKeys.Type).str) match {
+      case Some(AstType.Args)        => paramsNode.visitArray(ParserKeys.Children)
+      case Some(AstType.ForwardArgs) => visit(paramsNode) :: Nil
+      case Some(x) =>
+        logger.warn(s"Not explicitly handled parameter type '$x', no special handling applied")
+        visit(paramsNode) :: Nil
+      case _ =>
+        logger.error(s"Unknown JSON type used as method parameter ${paramsNode(ParserKeys.Type).str}")
+        defaultResult(Option(paramsNode.toTextSpan)) :: Nil
+    }
   }
 
   private def visitPostExpression(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
@@ -931,7 +946,7 @@ class RubyJsonToNodeCreator(
   private def visitSingletonMethodDefinition(obj: Obj): RubyExpression = {
     val base       = visit(obj(ParserKeys.Base))
     val name       = obj(ParserKeys.Name).str
-    val parameters = obj(ParserKeys.Arguments).asInstanceOf[ujson.Obj].visitArray(ParserKeys.Children)
+    val parameters = visitMethodParameters(obj(ParserKeys.Arguments).asInstanceOf[ujson.Obj])
     val body =
       obj.visitOption(ParserKeys.Body).getOrElse(StatementList(Nil)(obj.toTextSpan.spanStart("<empty>"))) match {
         case stmtList: StatementList => stmtList
