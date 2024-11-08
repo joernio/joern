@@ -2,7 +2,8 @@ package io.joern.rubysrc2cpg.parser
 
 import better.files.File
 import io.joern.rubysrc2cpg.Config
-import io.joern.x2cpg.astgen.AstGenRunner.AstGenProgramMetaData
+import io.joern.x2cpg.SourceFiles
+import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, AstGenRunnerResult, DefaultAstGenRunnerResult}
 import io.joern.x2cpg.astgen.AstGenRunnerBase
 import io.joern.x2cpg.utils.{Environment, ExternalCommand}
 import org.jruby.RubyInstanceConfig
@@ -24,10 +25,15 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
 
   override def fileFilter(file: String, out: File): Boolean = {
     file.stripSuffix(".json").replace(out.pathAsString, config.inputPath) match {
-      case filePath if isIgnoredByUserConfig(filePath) => false
-      case filePath if filePath.endsWith(".csproj")    => false
-      case _                                           => true
+      case filePath if isIgnoredByUserConfig(filePath)   => false
+      case filePath if isIgnoredByDefaultRegex(filePath) => false
+      case filePath if filePath.endsWith(".csproj")      => false
+      case _                                             => true
     }
+  }
+
+  private def isIgnoredByDefaultRegex(filePath: String): Boolean = {
+    config.defaultIgnoredFilesRegex.exists(_.matches(filePath))
   }
 
   override def skippedFiles(in: File, astGenOut: List[String]): List[String] = {
@@ -72,9 +78,9 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
     try {
       Using.resource(prepareExecutionEnvironment("ruby_ast_gen")) { env =>
         val cwd            = env.path.toAbsolutePath.toString
-        val excludeCommand = if (exclude.isEmpty) "" else s"-e \"$exclude\""
+        val excludeCommand = if (exclude.isEmpty) Array.empty[String] else Array("-e", s"$exclude")
         val gemPath        = Seq(cwd, "vendor", "bundle", "jruby", "3.1.0").mkString(separator)
-        val rubyArgs       = Array("-o", out.toString(), "-i", in, excludeCommand).filterNot(_.isBlank)
+        val rubyArgs       = Array("-o", out.toString(), "-i", in).appendedAll(excludeCommand).filterNot(_.isBlank)
         val mainScript     = Seq(cwd, "exe", "ruby_ast_gen").mkString(separator)
         executeWithJRuby(mainScript, cwd, rubyArgs, gemPath)
       }
@@ -147,6 +153,40 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
         LocalDir(resourcePath)
       case x =>
         throw new IllegalArgumentException(s"Resources is within an unsupported environment '$x'.")
+    }
+  }
+
+  override def execute(out: File): AstGenRunnerResult = {
+    implicit val metaData: AstGenProgramMetaData = config.astGenMetaData
+    val in                                       = File(config.inputPath)
+    logger.info(s"Running ${metaData.name} on '${config.inputPath}'")
+
+    val combineIgnoreRegex =
+      if (config.ignoredFilesRegex.toString().isEmpty && config.defaultIgnoredFilesRegex.toString.nonEmpty) {
+        config.defaultIgnoredFilesRegex.mkString("|")
+      } else if (config.ignoredFilesRegex.toString().nonEmpty && config.defaultIgnoredFilesRegex.toString.isEmpty) {
+        config.ignoredFilesRegex.toString()
+      } else if (config.ignoredFilesRegex.toString().nonEmpty && config.defaultIgnoredFilesRegex.toString().nonEmpty) {
+        s"((${config.ignoredFilesRegex.toString()})|(${config.defaultIgnoredFilesRegex.mkString("|")}))"
+      } else {
+        ""
+      }
+
+    runAstGenNative(config.inputPath, out, combineIgnoreRegex, "") match {
+      case Success(result) =>
+        val srcFiles = SourceFiles.determine(
+          out.toString(),
+          Set(".json"),
+          ignoredDefaultRegex = Option(config.defaultIgnoredFilesRegex),
+          ignoredFilesRegex = Option(config.ignoredFilesRegex),
+          ignoredFilesPath = Option(config.ignoredFiles)
+        )
+        val parsed  = filterFiles(srcFiles, out)
+        val skipped = skippedFiles(in, result.toList)
+        DefaultAstGenRunnerResult(parsed, skipped)
+      case Failure(f) =>
+        logger.error(s"\t- running ${metaData.name} failed!", f)
+        DefaultAstGenRunnerResult()
     }
   }
 
