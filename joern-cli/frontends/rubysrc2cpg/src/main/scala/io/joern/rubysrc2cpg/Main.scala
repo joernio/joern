@@ -21,8 +21,9 @@ final case class Config(downloadDependencies: Boolean = false, useTypeStubs: Boo
   override val astGenConfigPrefix: String       = "rubysrc2cpg"
   override val multiArchitectureBuilds: Boolean = true
 
-  this.defaultIgnoredFilesRegex = List("spec", "tests?", "vendor", "db(\\|/)migrate").flatMap { directory =>
-    List(s"(^|\\\\)$directory($$|\\\\)".r.unanchored, s"(^|/)$directory($$|/)".r.unanchored)
+  this.defaultIgnoredFilesRegex = List("spec", "tests?", "vendor", "db(\\\\|/)([\\w_]*)migrate([_\\w]*)").flatMap {
+    directory =>
+      List(s"(^|\\\\)$directory($$|\\\\)".r.unanchored, s"(^|/)$directory($$|/)".r.unanchored)
   }
 
   override def withDownloadDependencies(value: Boolean): Config = {
