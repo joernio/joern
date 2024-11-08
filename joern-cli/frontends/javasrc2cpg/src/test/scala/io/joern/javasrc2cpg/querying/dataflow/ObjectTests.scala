@@ -1,8 +1,41 @@
 package io.joern.javasrc2cpg.querying.dataflow
 
-import io.joern.javasrc2cpg.testfixtures.JavaDataflowFixture
+import io.joern.javasrc2cpg.testfixtures.{JavaDataflowFixture, JavaSrcCode2CpgFixture}
 import io.joern.dataflowengineoss.language.*
 import io.shiftleft.semanticcpg.language.*
+
+class NewObjectTests extends JavaSrcCode2CpgFixture(withOssDataflow = true) {
+
+  "static field passed as an argument inside a same-class static method whilst being referenced by its simple name" in {
+    val cpg = code("""
+        |class Bar {
+        | static String CONST = "<const>";
+        | static void run() {
+        |   System.out.println(CONST);
+        | }
+        |}""".stripMargin)
+    val sink   = cpg.call("println").argument(1)
+    val source = cpg.literal
+    sink.reachableByFlows(source).map(flowToResultPairs).l shouldBe List(
+      List(("String Bar.CONST = \"<const>\"", Some(3)), ("System.out.println(CONST)", Some(5)))
+    )
+  }
+
+  "static field passed as an argument inside a same-class static method whilst being referenced by its qualified name" in {
+    val cpg = code("""
+        |class Bar {
+        | static String CONST = "<const>";
+        | static void run() {
+        |   System.out.println(Bar.CONST);
+        | }
+        |}""".stripMargin)
+    val sink   = cpg.call("println").argument(1)
+    val source = cpg.literal
+    sink.reachableByFlows(source).map(flowToResultPairs).l shouldBe List(
+      List(("String Bar.CONST = \"<const>\"", Some(3)), ("System.out.println(Bar.CONST)", Some(5)))
+    )
+  }
+}
 
 class ObjectTests extends JavaDataflowFixture {
 

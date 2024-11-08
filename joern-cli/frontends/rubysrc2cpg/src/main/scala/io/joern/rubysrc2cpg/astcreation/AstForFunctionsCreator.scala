@@ -180,6 +180,25 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     if isClosure || isSingletonObjectMethod then refs else createMethodRefPointer(method) :: Nil
   }
 
+  protected def astForMethodAccessModifier(node: MethodAccessModifier): Seq[Ast] = {
+    val originalAccessModifier = currentAccessModifier
+    popAccessModifier()
+
+    node match {
+      case _: PrivateMethodModifier =>
+        pushAccessModifier(ModifierTypes.PRIVATE)
+      case _: PublicMethodModifier =>
+        pushAccessModifier(ModifierTypes.PUBLIC)
+    }
+
+    val methodAst = astsForStatement(node.method)
+
+    popAccessModifier()
+    pushAccessModifier(originalAccessModifier)
+
+    methodAst
+  }
+
   private def transformAsClosureBody(refs: List[Ast], baseStmtBlockAst: Ast) = {
     // Determine which locals are captured
     val capturedLocalNodes = baseStmtBlockAst.nodes
@@ -440,7 +459,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
             parameterAsts ++ anonProcParam,
             stmtBlockAst,
             methodReturnNode(node, Defines.Any),
-            newModifierNode(ModifierTypes.VIRTUAL) :: Nil
+            newModifierNode(ModifierTypes.VIRTUAL) :: newModifierNode(currentAccessModifier) :: Nil
           )
 
         _methodAst :: methodTypeDeclAst :: Nil foreach (Ast.storeInDiffGraph(_, diffGraph))
