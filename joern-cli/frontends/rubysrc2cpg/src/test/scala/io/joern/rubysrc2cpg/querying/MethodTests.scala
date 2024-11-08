@@ -1014,4 +1014,28 @@ class MethodTests extends RubyCode2CpgFixture {
       getLineNumberOfLambdaForCall("map") shouldBe 6
     }
   }
+
+  "Forwarded args from method to call" should {
+    val cpg = code("""
+        |def foo(...)
+        |   bar('foo', ...)
+        |end
+        |
+        |""".stripMargin)
+
+    "create a '...' parameter node" in {
+      inside(cpg.method.nameExact("foo").parameter.l) { case _ :: forwardArgs :: Nil =>
+        forwardArgs.name shouldBe "..."
+        forwardArgs.code shouldBe "(...)"
+      }
+    }
+
+    "create a '...' identifier node as a call argument" in {
+      inside(cpg.call("bar").argument.isIdentifier.l) { case _ :: forwardedArgs :: Nil =>
+        forwardedArgs.name shouldBe "..."
+        forwardedArgs.code shouldBe "..."
+        forwardedArgs.argumentIndex shouldBe 2
+      }
+    }
+  }
 }

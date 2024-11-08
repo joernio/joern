@@ -610,8 +610,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
 
   protected def astForSimpleCall(node: SimpleCall): Ast = {
     node.target match
-      case targetNode: SimpleIdentifier => astForMethodCallWithoutBlock(node, targetNode)
-      case targetNode: MemberAccess     => astForMemberCallWithoutBlock(node, targetNode)
+      case targetNode: SimpleIdentifier    => astForMethodCallWithoutBlock(node, targetNode)
+      case targetNode: RubyFieldIdentifier => astForMemberCallWithoutBlock(node, targetNode.toMemberAccess)
+      case targetNode: MemberAccess        => astForMemberCallWithoutBlock(node, targetNode)
       case targetNode =>
         logger.warn(s"Unrecognized target of call: ${targetNode.text} ($relativeFileName), skipping")
         astForUnknown(targetNode)

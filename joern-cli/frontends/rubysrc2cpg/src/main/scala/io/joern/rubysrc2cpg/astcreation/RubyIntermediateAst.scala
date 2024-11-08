@@ -250,7 +250,11 @@ object RubyIntermediateAst {
 
   /** Ruby Instance or Class Variable Identifiers: `@a`, `@@a`
     */
-  sealed trait RubyFieldIdentifier extends RubyIdentifier
+  sealed trait RubyFieldIdentifier extends RubyIdentifier {
+    def toMemberAccess: MemberAccess = {
+      MemberAccess(SelfIdentifier()(span), ".", span.text)(span)
+    }
+  }
 
   sealed trait SingletonMethodIdentifier
 
