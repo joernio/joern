@@ -478,10 +478,7 @@ class RubyJsonToNodeCreator(
     ForExpression(forVariable, iterableVariable, doBlock)(obj.toTextSpan)
   }
 
-  private def visitForwardArg(obj: Obj): RubyExpression = {
-    println("forward args")
-    defaultResult(Option(obj.toTextSpan))
-  }
+  private def visitForwardArg(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
   // Note: Forward args should probably be handled more explicitly, but this should preserve flows if the same
   // identifier is used in latter forwarding
