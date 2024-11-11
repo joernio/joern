@@ -22,7 +22,7 @@ object Constants {
   val nextIteratorMethodName         = "next"
   val codePropUndefinedValue         = ""
   val operatorSuffix                 = "<operator>"
-  val paramNameLambdaDestructureDecl = "DESTRUCTURE_PARAM"
+  val destructedParamNamePrefix = "<destructed_param>"
   val parserTypeName                 = "KOTLIN_PSI_PARSER"
   val retCode                        = "RET"
   val ret                            = "RET"

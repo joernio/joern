@@ -1,11 +1,10 @@
 package io.joern.x2cpg
 
-import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, EdgeTypes}
+import flatgraph.SchemaViolationException
+import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode.PropertyDefaults
-import org.slf4j.LoggerFactory
-import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
-import flatgraph.SchemaViolationException
 
 case class AstEdge(src: NewNode, dst: NewNode)
 
@@ -14,8 +13,6 @@ enum ValidationMode {
 }
 
 object Ast {
-
-  private val logger = LoggerFactory.getLogger(getClass)
 
   def apply(node: NewNode)(implicit withSchemaValidation: ValidationMode): Ast = Ast(Vector.empty :+ node)
   def apply()(implicit withSchemaValidation: ValidationMode): Ast              = new Ast(Vector.empty)
@@ -244,11 +241,9 @@ case class Ast(
       case None    => node.copy
     }
     if (argIndex != -1) {
-      // newNode.order = argIndex
       newNode match {
-        case expr: ExpressionNew =>
-          expr.argumentIndex = argIndex
-        case _ =>
+        case expr: ExpressionNew => expr.argumentIndex = argIndex
+        case _                   =>
       }
     }
 

@@ -9,11 +9,13 @@ import io.joern.x2cpg.datastructures.Stack.StackWrapper
 import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.utils.NodeBuilders.newBindingNode
 import io.joern.x2cpg.utils.NodeBuilders.newClosureBindingNode
+import io.joern.x2cpg.utils.NodeBuilders.newIdentifierNode
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -186,9 +188,93 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     )
   }
 
+  private def astsForDestructing(param: KtParameter): Seq[Ast] = {
+    val decl             = param.getDestructuringDeclaration
+    val tmpName          = s"${Constants.tmpLocalPrefix}${tmpKeyPool.next}"
+    var localForTmp      = Option.empty[NewLocal]
+    val additionalLocals = mutable.ArrayBuffer.empty[Ast]
+
+    val initCallAst = if (decl.hasInitializer) {
+      val init = decl.getInitializer
+      val asts = astsForExpression(init, Some(2))
+      val initAst =
+        if (asts.size == 1) asts.head
+        else {
+          val block = blockNode(init, "", "").argumentIndex(2)
+          blockAst(block, asts.toList)
+        }
+      val local = localNode(decl, tmpName, tmpName, TypeConstants.any)
+      localForTmp = Some(local)
+      scope.addToScope(tmpName, local)
+      val tmpIdentifier    = newIdentifierNode(tmpName, TypeConstants.any)
+      val tmpIdentifierAst = Ast(tmpIdentifier).withRefEdge(tmpIdentifier, local)
+      val assignmentCallNode = NodeBuilders.newOperatorCallNode(
+        Operators.assignment,
+        s"$tmpName = ${init.getText}",
+        None,
+        line(init),
+        column(init)
+      )
+      callAst(assignmentCallNode, List(tmpIdentifierAst, initAst))
+    } else {
+      val explicitTypeName = Option(param.getTypeReference)
+        .map(typeRef => fullNameByImportPath(typeRef, param.getContainingKtFile).getOrElse(typeRef.getText))
+        .getOrElse(TypeConstants.any)
+      val typeFullName = registerType(
+        nameRenderer.typeFullName(bindingUtils.getVariableDesc(param).get.getType).getOrElse(explicitTypeName)
+      )
+      val localForIt = localNode(decl, "it", "it", typeFullName)
+      additionalLocals.addOne(Ast(localForIt))
+      val identifierForIt = newIdentifierNode("it", typeFullName)
+      val initAst         = Ast(identifierForIt).withRefEdge(identifierForIt, localForIt)
+      val tmpIdentifier   = newIdentifierNode(tmpName, typeFullName)
+      val local           = localNode(decl, tmpName, tmpName, typeFullName)
+      localForTmp = Some(local)
+      scope.addToScope(tmpName, local)
+      val tmpIdentifierAst = Ast(tmpIdentifier).withRefEdge(tmpIdentifier, local)
+      val assignmentCallNode =
+        NodeBuilders.newOperatorCallNode(Operators.assignment, s"$tmpName = it", None, line(decl), column(decl))
+      callAst(assignmentCallNode, List(tmpIdentifierAst, initAst))
+    }
+
+    val localsForDestructuringVars = localsForDestructuringEntries(decl)
+    val assignmentsForEntries =
+      decl.getEntries.asScala.filterNot(_.getText == Constants.unusedDestructuringEntryText).zipWithIndex.map {
+        case (entry, idx) =>
+          val rhsBaseAst = astWithRefEdgeMaybe(
+            tmpName,
+            identifierNode(entry, tmpName, tmpName, localForTmp.map(_.typeFullName).getOrElse(TypeConstants.any))
+              .argumentIndex(0)
+          )
+          assignmentAstForDestructuringEntry(entry, rhsBaseAst, idx + 1)
+      }
+
+    localForTmp
+      .map(l => Ast(l))
+      .toSeq ++ additionalLocals ++ localsForDestructuringVars ++ (initCallAst +: assignmentsForEntries)
+  }
+
+  private def astForDestructedParameter(param: KtParameter, order: Int): Ast = {
+    val name = s"${Constants.destructedParamNamePrefix}${destructedParamKeyPool.next}"
+    val explicitTypeName = Option(param.getTypeReference)
+      .map(typeRef =>
+        fullNameByImportPath(typeRef, param.getContainingKtFile)
+          .getOrElse(typeRef.getText)
+      )
+      .getOrElse(TypeConstants.any)
+    val typeFullName = registerType(
+      nameRenderer.typeFullName(bindingUtils.getVariableDesc(param).get.getType).getOrElse(explicitTypeName)
+    )
+    val node = parameterInNode(param, name, name, order, false, EvaluationStrategies.BY_VALUE, typeFullName)
+    scope.addToScope(name, node)
+
+    val annotations = param.getAnnotationEntries.asScala.map(astForAnnotationEntry).toSeq
+    Ast(node).withChildren(annotations)
+  }
+
   def astForParameter(param: KtParameter, order: Int): Ast = {
     val name = if (param.getDestructuringDeclaration != null) {
-      Constants.paramNameLambdaDestructureDecl
+      Constants.destructedParamNamePrefix
     } else {
       param.getName
     }
@@ -316,8 +402,6 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       .withChildren(annotations.map(astForAnnotationEntry))
   }
 
-  // TODO Handling for destructuring of lambda parameters is missing.
-  // More specifically the creation and initialisation of the thereby introduced variables.
   def astForLambda(
     expr: KtLambdaExpression,
     argIdxMaybe: Option[Int],
@@ -363,7 +447,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       node
     }
 
-    val paramAsts = mutable.ArrayBuffer.empty[Ast]
+    val paramAsts           = mutable.ArrayBuffer.empty[Ast]
+    val destructedParamAsts = mutable.ArrayBuffer.empty[Ast]
     val valueParamStartIndex =
       if (funcDesc.getExtensionReceiverParameter != null) {
         // Lambdas which are arguments to function parameters defined
@@ -382,13 +467,18 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       case parameters =>
         parameters.zipWithIndex.foreach { (paramDesc, idx) =>
           val param = paramDesc.getSource.asInstanceOf[KotlinSourceElement].getPsi.asInstanceOf[KtParameter]
-          paramAsts.append(astForParameter(param, valueParamStartIndex + idx))
+          if (param.getDestructuringDeclaration != null) {
+            paramAsts.append(astForDestructedParameter(param, valueParamStartIndex + idx))
+            val destructAsts = astsForDestructing(param)
+            destructedParamAsts.appendAll(destructAsts)
+          } else {
+            paramAsts.append(astForParameter(param, valueParamStartIndex + idx))
+          }
         }
     }
 
     val lastChildNotReturnExpression = !expr.getBodyExpression.getLastChild.isInstanceOf[KtReturnExpression]
-    val needsReturnExpression =
-      lastChildNotReturnExpression
+    val needsReturnExpression        = lastChildNotReturnExpression
     val bodyAsts = Option(expr.getBodyExpression)
       .map(
         astsForBlock(
@@ -397,7 +487,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
           None,
           pushToScope = false,
           localsForCaptured,
-          implicitReturnAroundLastStatement = needsReturnExpression
+          implicitReturnAroundLastStatement = needsReturnExpression,
+          Some(destructedParamAsts.toSeq)
         )
       )
       .getOrElse(Seq(Ast(NewBlock())))
