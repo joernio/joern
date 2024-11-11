@@ -1,6 +1,6 @@
 package io.joern.rubysrc2cpg.querying
 
-import io.joern.rubysrc2cpg.passes.Defines.{Initialize, Main}
+import io.joern.rubysrc2cpg.passes.Defines.{Initialize, Main, RubyOperators}
 import io.joern.rubysrc2cpg.passes.GlobalTypes.builtinPrefix
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
@@ -481,6 +481,52 @@ class DoBlockTests extends RubyCode2CpgFixture {
     "Return nil and not the desugaring" in {
       val nilLiteral = cpg.method.isLambda.methodReturn.toReturn.astChildren.isLiteral.head
       nilLiteral.code shouldBe "return nil"
+    }
+  }
+
+  "Nested grouped parameter in block" in {
+    val cpg = code("""
+        |def format_result(result)
+        |  result.each_with_object({}) do |((label_id, date), count), hash|
+        |    label = labels_by_id.fetch(label_id)
+        |  end.values
+        |end
+        |""".stripMargin)
+
+    inside(cpg.method.isLambda.body.astChildren.isCall.name(Operators.assignment).l) {
+      case _ :: groupedParam :: countAssignment :: Nil =>
+        inside(groupedParam.argument.l) {
+          case (labelIdAssign: Call) :: (dateAssign: Call) :: (tmp0Splat: Call) :: Nil =>
+            inside(labelIdAssign.argument.l) {
+              case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+                lhs.code shouldBe "label_id"
+
+                rhs.code shouldBe "*<tmp-1>"
+                rhs.methodFullName shouldBe RubyOperators.splat
+              case xs =>
+                fail(s"Expected lhs and rhs for assignment, got ${xs.code.mkString(",")}")
+            }
+
+            inside(dateAssign.argument.l) {
+              case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+                lhs.code shouldBe "date"
+
+                rhs.code shouldBe "*<tmp-1>"
+                rhs.methodFullName shouldBe RubyOperators.splat
+              case xs =>
+                fail(s"Expected lhs and rhs for assignment, got ${xs.code.mkString(",")}")
+            }
+          case xs => fail(s"Expected four arguments for call, got [${xs.code.mkString(",")}]")
+        }
+
+        inside(countAssignment.argument.l) {
+          case (lhs: Identifier) :: (rhs: Call) :: Nil =>
+            lhs.code shouldBe "count"
+            rhs.code shouldBe "*<tmp-0>"
+            rhs.methodFullName shouldBe RubyOperators.splat
+          case xs => fail(s"Expected LHS and RHS for assignment, got ${xs.code.mkString(",")}")
+        }
+      case xs => fail(s"Expected three assignment calls, got [${xs.code.mkString(",")}]")
     }
   }
 }
