@@ -222,7 +222,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       "|"   -> Operators.or,
       "^"   -> Operators.xor,
 //      "<<"  -> Operators.shiftLeft,  Note: Generally Ruby abstracts this as an append operator based on the LHS
-      ">>" -> Operators.logicalShiftRight
+      ">>" -> Operators.arithmeticShiftRight
     )
 
   protected val AssignmentOperatorNames: Map[String, String] = Map(
@@ -233,8 +233,9 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     "/="  -> Operators.assignmentDivision,
     "%="  -> Operators.assignmentModulo,
     "**=" -> Operators.assignmentExponentiation,
-    // Strictly speaking, `a ||= b` means `a || a = b`, but I reckon we wouldn't gain much representing it that way.
-    "||=" -> Operators.assignmentOr,
-    "&&=" -> Operators.assignmentAnd
+    "|="  -> Operators.assignmentOr,
+    "&="  -> Operators.assignmentAnd,
+    "<<=" -> Operators.assignmentShiftLeft,
+    ">>=" -> Operators.assignmentArithmeticShiftRight
   )
 }
