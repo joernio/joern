@@ -1038,4 +1038,25 @@ class MethodTests extends RubyCode2CpgFixture {
       }
     }
   }
+
+  "Implicit return of range expression" in {
+    val cpg = code("""
+                     |def size_range
+                     |    1..MAX_FILE_SIZE
+                     |end""".stripMargin)
+
+    inside(cpg.method.name("size_range").methodReturn.toReturn.l) {
+      case rangeReturn :: Nil =>
+        rangeReturn.code shouldBe "1..MAX_FILE_SIZE"
+
+        val List(rangeOp) = rangeReturn.astChildren.isCall.l
+        rangeOp.methodFullName shouldBe Operators.range
+
+        val List(lhs: Literal, rhs: Call) = rangeOp.argument.l: @unchecked
+        lhs.code shouldBe "1"
+
+        rhs.code shouldBe "self.MAX_FILE_SIZE"
+      case xs => fail(s"Expected one return, got [${xs.code.mkString(",")}]")
+    }
+  }
 }

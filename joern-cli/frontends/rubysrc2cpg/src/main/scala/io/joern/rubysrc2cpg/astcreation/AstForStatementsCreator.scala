@@ -222,6 +222,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         val nilReturnSpan    = node.span.spanStart("return nil")
         val nilReturnLiteral = StaticLiteral(Defines.NilClass)(nilReturnSpan)
         stmts.map(astForExpression) ++ astsForImplicitReturnStatement(nilReturnLiteral)
+      case x: RangeExpression =>
+        astForReturnRangeExpression(x) :: Nil
       case node =>
         logger.warn(s" not supported yet: ${node.text} (${node.getClass.getSimpleName}), only generating statement")
         astsForStatement(node).toList
@@ -242,6 +244,10 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val literalNode_ = literalNode(node, s":${node.methodName}", getBuiltInType(Defines.Symbol))
     val returnNode_  = returnNode(node, literalNode_.code)
     returnAst(returnNode_, Seq(Ast(literalNode_)))
+  }
+
+  private def astForReturnRangeExpression(node: RangeExpression): Ast = {
+    returnAst(returnNode(node, code(node)), List(astForRange(node)))
   }
 
   private def astForReturnMemberCall(node: MemberAccess): Ast = {
