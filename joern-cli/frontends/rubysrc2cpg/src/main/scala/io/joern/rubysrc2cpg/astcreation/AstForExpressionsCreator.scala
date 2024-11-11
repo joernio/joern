@@ -492,6 +492,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
                 }
 
               case _ =>
+                val rhsAst = astForExpression(node.rhs)
                 // The if the LHS defines a new variable, put the local variable into scope
                 val lhsAst = node.lhs match {
                   case x: SimpleIdentifier if scope.lookupVariable(code(x)).isEmpty =>
@@ -510,10 +511,12 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
                       case _                 =>
                     }
                     astForExpression(node.lhs)
+                  case x: GroupedParameter =>
+                    val asts = astsForStatement(x.multipleAssignment)
+                    val call = callNode(node, code(node), op, op, DispatchTypes.STATIC_DISPATCH)
+                    return callAst(call, asts :+ rhsAst)
                   case _ => astForExpression(node.lhs)
                 }
-
-                val rhsAst = astForExpression(node.rhs)
 
                 // If this is a simple object instantiation assignment, we can give the LHS variable a type hint
                 if (node.rhs.isInstanceOf[ObjectInstantiation] && lhsAst.root.exists(_.isInstanceOf[NewIdentifier])) {

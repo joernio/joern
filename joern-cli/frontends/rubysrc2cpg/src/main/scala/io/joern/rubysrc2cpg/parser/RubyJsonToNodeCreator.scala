@@ -246,8 +246,12 @@ class RubyJsonToNodeCreator(
           SplattingRubyNode(SimpleIdentifier()(arrayParam.span.spanStart(x.span.text.stripPrefix("*"))))(
             arrayParam.span.spanStart(x.span.text)
           )
+        case x: ArrayLiteral =>
+          visitGroupedParameter(x)
         case x =>
-          logger.warn(s"Invalid parameter type in grouped parameter list: ${x.getClass}")
+          logger.warn(
+            s"Invalid parameter type in grouped parameter list: ${x.getClass} (code: ${arrayParam.span.text})"
+          )
           defaultResult(Option(arrayParam.span))
       }
       SingleAssignment(lhs, "=", rhsSplattingNode)(
