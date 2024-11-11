@@ -274,7 +274,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
 
   def astForParameter(param: KtParameter, order: Int): Ast = {
     val name = if (param.getDestructuringDeclaration != null) {
-      Constants.destructedParamNamePrefix
+      s"${Constants.destructedParamNamePrefix}${destructedParamKeyPool.next}"
     } else {
       param.getName
     }
