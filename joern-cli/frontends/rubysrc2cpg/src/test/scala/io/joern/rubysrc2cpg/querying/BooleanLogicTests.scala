@@ -161,4 +161,28 @@ class BooleanLogicTests extends RubyCode2CpgFixture {
     four.code shouldBe "4"
   }
 
+  "bitwise AND/OR assignments should parse correctly" in {
+    val cpg = code(
+      """
+        |x = 1
+        |x &= 0
+        |x |= 1
+        |x >>= 1
+        |x <<= 2
+        |""".stripMargin)
+
+    cpg.call.name.foreach(println)
+  }
+
+  "shift left/right assignments should parse correctly" in {
+    val cpg = code(
+      """
+        |x = 1
+        |x >>= 1
+        |x <<= 2
+        |""".stripMargin)
+
+    cpg.call.name.foreach(println)
+  }
+
 }
