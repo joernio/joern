@@ -13,7 +13,8 @@ import ujson.*
 
 class RubyJsonToNodeCreator(
   variableNameGen: FreshNameGenerator[String] = FreshNameGenerator(id => s"<tmp-$id>"),
-  procParamGen: FreshNameGenerator[Left[String, Nothing]] = FreshNameGenerator(id => Left(s"<proc-param-$id>"))
+  procParamGen: FreshNameGenerator[Left[String, Nothing]] = FreshNameGenerator(id => Left(s"<proc-param-$id>")),
+  fileName: String = ""
 ) {
 
   private val logger       = LoggerFactory.getLogger(getClass)
@@ -297,6 +298,8 @@ class RubyJsonToNodeCreator(
       case memberAccess @ MemberAccess(target, op, memberName) =>
         val memberCall = MemberCall(target, op, memberName, List.empty)(memberAccess.span)
         memberCall.withBlock(block)
+      case x: ProtectedModifier =>
+        SimpleCall(x.toSimpleIdentifier, Nil)(obj.toTextSpan).withBlock(block)
       case x =>
         logger.warn(s"Unexpected call type used for block ${x.getClass}, ignoring block")
         x

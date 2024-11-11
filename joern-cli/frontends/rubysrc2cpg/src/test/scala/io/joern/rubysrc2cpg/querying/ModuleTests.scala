@@ -119,4 +119,31 @@ class ModuleTests extends RubyCode2CpgFixture {
       }
     }
   }
+
+  "Protected call with block" should {
+    val cpg = code("""
+        |module QA
+        |  trait :protected do
+        |    protected { true }
+        |  end
+        |end
+        |""".stripMargin)
+
+    "Have the correct proc arg in call" in {
+      inside(cpg.call.name("protected").argument.l) {
+        case _ :: proc :: Nil =>
+          proc.code shouldBe "<lambda>1&Proc"
+        case xs => fail(s"Expected one call for protected, got [${xs.code.mkString(",")}]")
+      }
+    }
+
+    "Generate a lambda with true body" in {
+      inside(cpg.method.isLambda.l) {
+        case protectedLambda :: _ :: Nil =>
+          val List(lambdaReturn) = protectedLambda.body.astChildren.isReturn.l
+          lambdaReturn.code shouldBe "true"
+        case xs => fail(s"Expected two lambdas, got [${xs.code.mkString(",")}]")
+      }
+    }
+  }
 }
