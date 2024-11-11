@@ -505,4 +505,36 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
       case xs => fail(s"Expected two args, found [${xs.code.mkString(",")}]")
     }
   }
+
+  "bitwise AND/OR assignments should parse correctly" in {
+    val cpg = code("""
+        |x = 1
+        |x &= 0
+        |x |= 1
+        |""".stripMargin)
+
+    inside(cpg.assignment.l) { case _ :: and :: or :: Nil =>
+      and.name shouldBe Operators.assignmentAnd
+      and.code shouldBe "x &= 0"
+
+      or.name shouldBe Operators.assignmentOr
+      or.code shouldBe "x |= 1"
+    }
+  }
+
+  "shift left/right assignments should parse correctly" in {
+    val cpg = code("""
+        |x = 1
+        |x >>= 1
+        |x <<= 2
+        |""".stripMargin)
+
+    inside(cpg.assignment.l) { case _ :: sr :: sl :: Nil =>
+      sr.name shouldBe Operators.assignmentArithmeticShiftRight
+      sr.code shouldBe "x >>= 1"
+
+      sl.name shouldBe Operators.assignmentShiftLeft
+      sl.code shouldBe "x <<= 2"
+    }
+  }
 }
