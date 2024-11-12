@@ -188,7 +188,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     )
   }
 
-  private def astsForDestructing(param: KtParameter): Seq[Ast] = {
+  private def astsForDestructuring(param: KtParameter): Seq[Ast] = {
     val decl             = param.getDestructuringDeclaration
     val tmpName          = s"${Constants.tmpLocalPrefix}${tmpKeyPool.next}"
     var localForTmp      = Option.empty[NewLocal]
@@ -198,9 +198,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       val init = decl.getInitializer
       val asts = astsForExpression(init, Some(2))
       val initAst =
-        if (asts.size == 1) asts.head
+        if (asts.size == 1) { asts.head }
         else {
-          val block = blockNode(init, "", "").argumentIndex(2)
+          val block = blockNode(init, "", "")
           blockAst(block, asts.toList)
         }
       val local = localNode(decl, tmpName, tmpName, TypeConstants.any)
@@ -244,7 +244,6 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
           val rhsBaseAst = astWithRefEdgeMaybe(
             tmpName,
             identifierNode(entry, tmpName, tmpName, localForTmp.map(_.typeFullName).getOrElse(TypeConstants.any))
-              .argumentIndex(0)
           )
           assignmentAstForDestructuringEntry(entry, rhsBaseAst, idx + 1)
       }
@@ -469,7 +468,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
           val param = paramDesc.getSource.asInstanceOf[KotlinSourceElement].getPsi.asInstanceOf[KtParameter]
           if (param.getDestructuringDeclaration != null) {
             paramAsts.append(astForDestructedParameter(param, valueParamStartIndex + idx))
-            val destructAsts = astsForDestructing(param)
+            val destructAsts = astsForDestructuring(param)
             destructedParamAsts.appendAll(destructAsts)
           } else {
             paramAsts.append(astForParameter(param, valueParamStartIndex + idx))
