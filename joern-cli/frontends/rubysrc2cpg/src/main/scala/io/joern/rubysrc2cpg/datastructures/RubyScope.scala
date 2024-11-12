@@ -236,8 +236,12 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
 
   /** Get the name of the implicit or explicit proc param */
   def anonProcParam: Option[String] = stack.collectFirst {
-    case ScopeElement(MethodScope(_, Left(param), true), _)      => param
-    case ScopeElement(ConstructorScope(_, Left(param), true), _) => param
+    case ScopeElement(x: MethodLikeScope, _) if x.procParam.isLeft =>
+      x.procParam match {
+        case Left(param) => param
+        case Right(param) =>
+          param // this is just so that we don't get a pattern match warning, but should never be triggered
+      }
   }
 
   /** Set the name of explicit proc param */
@@ -253,10 +257,11 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
   def procParamName: Option[NewMethodParameterIn] = {
     stack
       .collectFirst {
-        case ScopeElement(MethodScope(_, Left(param), true), _)       => param
-        case ScopeElement(MethodScope(_, Right(param), true), _)      => param
-        case ScopeElement(ConstructorScope(_, Left(param), true), _)  => param
-        case ScopeElement(ConstructorScope(_, Right(param), true), _) => param
+        case ScopeElement(x: MethodLikeScope, _) if x.hasYield =>
+          x.procParam match {
+            case Left(param)  => param
+            case Right(param) => param
+          }
       }
       .flatMap(lookupVariable(_).collect { case p: NewMethodParameterIn => p })
   }

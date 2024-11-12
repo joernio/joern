@@ -55,6 +55,8 @@ case class TypeScope(fullName: String, fields: List[FieldDecl]) extends TypeLike
   */
 trait MethodLikeScope extends TypedScopeElement {
   def fullName: String
+  def procParam: Either[String, String]
+  def hasYield: Boolean
 }
 
 case class MethodScope(fullName: String, procParam: Either[String, String], hasYield: Boolean = false)
