@@ -2,11 +2,13 @@ package io.joern.c2cpg.dataflow
 
 import io.joern.c2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.joern.dataflowengineoss.language.*
-import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Identifier, Literal}
+import io.joern.dataflowengineoss.queryengine.EngineConfig
+import io.joern.dataflowengineoss.queryengine.EngineContext
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
+import io.shiftleft.codepropertygraph.generated.nodes.Identifier
+import io.shiftleft.codepropertygraph.generated.nodes.Literal
 import io.shiftleft.semanticcpg.language.*
-import flatgraph.help.Table.AvailableWidthProvider
 
 class DataFlowTests extends DataFlowCodeToCpgSuite {
 
@@ -2147,7 +2149,7 @@ class DataFlowTestsWithCallDepth extends DataFlowCodeToCpgSuite {
     "the arguments in a % operation should taint its return value" in {
       val source = cpg.literal
       val sink   = cpg.call("call1").argument
-      sink.reachableByFlows(source).map(flowToResultPairs).l.sorted shouldBe List(
+      sink.reachableByFlows(source).map(flowToResultPairs).toSetMutable shouldBe Set(
         List(("x = 5", 3), ("x % y", 5), ("z = x % y", 5), ("call1(z)", 6)),
         List(("y = 2", 4), ("x % y", 5), ("z = x % y", 5), ("call1(z)", 6))
       )
@@ -2177,7 +2179,7 @@ class DataFlowTestsWithCallDepth extends DataFlowCodeToCpgSuite {
       val x = cpg.literal("10")
       val y = cpg.literal("20")
       val z = cpg.literal("30")
-      cpg.call("call1").argument.reachableByFlows(x ++ y ++ z).map(flowToResultPairs).l.sorted shouldBe List(
+      cpg.call("call1").argument.reachableByFlows(x ++ y ++ z).map(flowToResultPairs).toSetMutable shouldBe Set(
         List(("x = 10", 3), ("{x, y, 30}", 5), ("z[] = {x, y, 30}", 5), ("call1(z)", 6)),
         List(("y = 20", 4), ("{x, y, 30}", 5), ("z[] = {x, y, 30}", 5), ("call1(z)", 6)),
         List(("{x, y, 30}", 5), ("z[] = {x, y, 30}", 5), ("call1(z)", 6))

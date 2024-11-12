@@ -26,7 +26,7 @@ object Path {
     availableWidthProvider: AvailableWidthProvider = semanticcpg.defaultAvailableWidthProvider
   ): Show[Path] = { path =>
     val table = Table(
-      columnNames = Array("nodeType", "tracked", "line", "method", "file"),
+      columnNames = Seq("nodeType", "tracked", "line", "method", "file"),
       rows = path.elements.map { astNode =>
         val nodeType   = astNode.getClass.getSimpleName
         val lineNumber = astNode.lineNumber.getOrElse("N/A").toString
@@ -36,7 +36,7 @@ object Path {
           case member: Member =>
             val tracked    = member.name
             val methodName = "<not-in-method>"
-            Array(nodeType, tracked, lineNumber, methodName, fileName)
+            Seq(nodeType, tracked, lineNumber, methodName, fileName)
           case cfgNode: CfgNode =>
             val method     = cfgNode.method
             val methodName = method.name
@@ -46,7 +46,7 @@ object Path {
                 s"$methodName($paramsPretty)"
               case _ => cfgNode.statement.repr
             }
-            Array(nodeType, statement, lineNumber, methodName, fileName)
+            Seq(nodeType, statement, lineNumber, methodName, fileName)
         }
       }
     )

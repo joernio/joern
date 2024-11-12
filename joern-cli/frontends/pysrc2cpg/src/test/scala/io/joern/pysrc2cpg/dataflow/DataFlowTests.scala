@@ -1028,7 +1028,7 @@ class NoCrossTaintDataFlowTest1
         |""".stripMargin)
     val source = cpg.literal.lineNumber(3, 4)
     val sink   = cpg.call("print").argument
-    sink.reachableByFlows(source).map(flowToResultPairs).sorted shouldBe List(
+    sink.reachableByFlows(source).map(flowToResultPairs).toSetMutable shouldBe Set(
       List(("a = 1", 3), ("bar.foo(b, X = a)", 5), ("c = bar.foo(b, X = a)", 5), ("print(c)", 6)),
       List(("b = 2", 4), ("bar.foo(b, X = a)", 5), ("c = bar.foo(b, X = a)", 5), ("print(c)", 6))
     )
