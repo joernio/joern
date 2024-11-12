@@ -671,7 +671,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       case None =>
         logger.warn(s"Yield expression outside of method scope: ${code(node)} ($relativeFileName), skipping")
         astForUnknown(node)
-
     }
   }
 

@@ -67,7 +67,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     )
 
     val isSurroundedByProgramScope = scope.isSurroundedByProgramScope
-    if (isConstructor) scope.pushNewScope(ConstructorScope(fullName))
+    if (isConstructor) scope.pushNewScope(ConstructorScope(fullName, this.procParamGen.fresh))
     else scope.pushNewScope(MethodScope(fullName, this.procParamGen.fresh))
 
     val thisParameterNode = newThisParameterNode(

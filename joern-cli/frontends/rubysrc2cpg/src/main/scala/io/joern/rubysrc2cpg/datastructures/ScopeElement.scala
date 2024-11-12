@@ -60,7 +60,8 @@ trait MethodLikeScope extends TypedScopeElement {
 case class MethodScope(fullName: String, procParam: Either[String, String], hasYield: Boolean = false)
     extends MethodLikeScope
 
-case class ConstructorScope(fullName: String) extends MethodLikeScope
+case class ConstructorScope(fullName: String, procParam: Either[String, String], hasYield: Boolean = false)
+    extends MethodLikeScope
 
 /** Represents scope objects that map to a block node.
   */
