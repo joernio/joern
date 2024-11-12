@@ -64,8 +64,9 @@ class AstCreator(fileWithMeta: KtFileWithMeta, bindingContext: BindingContext, g
   protected val lambdaBindingInfoQueue: mutable.ArrayBuffer[BindingInfo]       = mutable.ArrayBuffer.empty
   protected val methodAstParentStack: Stack[NewNode]                           = new Stack()
 
-  protected val tmpKeyPool      = new IntervalKeyPool(first = 1, last = Long.MaxValue)
-  protected val iteratorKeyPool = new IntervalKeyPool(first = 1, last = Long.MaxValue)
+  protected val tmpKeyPool             = new IntervalKeyPool(first = 1, last = Long.MaxValue)
+  protected val destructedParamKeyPool = new IntervalKeyPool(first = 1, last = Long.MaxValue)
+  protected val iteratorKeyPool        = new IntervalKeyPool(first = 1, last = Long.MaxValue)
 
   protected val relativizedPath: String = fileWithMeta.relativizedPath
 

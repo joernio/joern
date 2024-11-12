@@ -450,7 +450,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       val fieldAccessCallAst = callAst(fieldAccessCall, List(thisAst, Ast(fieldIdentifier)))
       val methodBlockAst = blockAst(
         blockNode(valueParam, fieldAccessCall.code, typeFullName),
-        List(returnAst(returnNode(valueParam, Constants.ret), List(fieldAccessCallAst)))
+        List(returnAst(returnNode(valueParam, Constants.retCode), List(fieldAccessCallAst)))
       )
 
       val componentIdx  = idx + 1

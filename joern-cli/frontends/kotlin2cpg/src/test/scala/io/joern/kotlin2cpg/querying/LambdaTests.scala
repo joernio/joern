@@ -186,11 +186,12 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
   "CPG for code with a scope function lambda with implicit parameter" should {
     val cpg = code("""
         |package mypkg
+        |
         |fun f3(p: String): String {
-        |    val out = p.apply { println(this) }
-        |    return out
+        |  val out = p.apply { println(this) }
+        |  return out
         |}
-        ||""".stripMargin)
+        |""".stripMargin)
 
     "should contain a METHOD_PARAMETER_IN for the lambda with the correct properties set" in {
       val List(p) = cpg.method.fullName(".*lambda.*").parameter.l
@@ -202,12 +203,14 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
 
   "lambda should contain METHOD_PARAMETER_IN for both implicit lambda parameters" in {
     val cpg = code("""
-                     |package mypkg
-                     |public fun myFunc(block: String.(Int) -> Unit): Unit {}
-                     |fun outer(param: String): Unit {
-                     |  myFunc { println(it); println(this)}
-                     |}
-                     ||""".stripMargin)
+       |package mypkg
+       |
+       |public fun myFunc(block: String.(Int) -> Unit): Unit {}
+       |  fun outer(param: String): Unit {
+       |    myFunc { println(it); println(this)
+       |  }
+       |}
+       |""".stripMargin)
 
     val List(thisParam, itParam) = cpg.method.fullName(".*lambda.*").parameter.l
     thisParam.code shouldBe "this"
@@ -219,13 +222,14 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
   }
 
   "CPG for code containing a lambda with parameter destructuring" should {
-    val cpg = code("""|package mypkg
+    val cpg = code("""
+        |package mypkg
         |
         |fun f1(p: String) {
-        |    val m = mapOf(p to 1, "two" to 2, "three" to 3)
-        |    m.forEach { (k, v) ->
-        |        println(k)
-        |    }
+        |  val m = mapOf(p to 1, "two" to 2, "three" to 3)
+        |  m.forEach { (k, v) ->
+        |    println(k)
+        |  }
         |}
         |""".stripMargin)
 
@@ -237,12 +241,41 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
 
     "should contain METHOD_PARAMETER_IN nodes for the lambda with the correct properties set" in {
       val List(p1) = cpg.method.fullName(".*lambda.*").parameter.l
-      p1.code shouldBe Constants.paramNameLambdaDestructureDecl
+      p1.code shouldBe s"${Constants.destructedParamNamePrefix}1"
       p1.index shouldBe 1
       p1.typeFullName shouldBe "java.util.Map$Entry"
     }
 
-    // TODO add tests for initialisation of destructured parameter
+    "should contain the correct initialization" in {
+      val List(_, _, localTmp, localIt, localK, localV) = cpg.method.fullName(".*lambda.*").local.l
+      localTmp.name shouldBe "tmp_1"
+      localTmp.typeFullName shouldBe "java.util.Map$Entry"
+      localIt.name shouldBe "it"
+      localIt.typeFullName shouldBe "java.util.Map$Entry"
+      localK.name shouldBe "k"
+      localK.typeFullName shouldBe "java.lang.String"
+      localV.name shouldBe "v"
+      localV.typeFullName shouldBe "int"
+
+      val List(tmpAssignment, kAssignment, vAssignment) = cpg.method.fullName(".*lambda.*").ast.isCall.isAssignment.l
+      tmpAssignment.code shouldBe "tmp_1 = it"
+      val List(tmp, it) = tmpAssignment.astChildren.isIdentifier.l
+      tmp.typeFullName shouldBe "java.util.Map$Entry"
+      it.typeFullName shouldBe "java.util.Map$Entry"
+
+      kAssignment.code shouldBe "k = tmp_1.component1()"
+      val List(k) = kAssignment.astChildren.isIdentifier.l
+      k.typeFullName shouldBe "java.lang.String"
+
+      vAssignment.code shouldBe "v = tmp_1.component2()"
+      val List(v) = vAssignment.astChildren.isIdentifier.l
+      v.typeFullName shouldBe "int"
+
+      cpg.identifier.filter(_._astIn.isEmpty) shouldBe empty
+      cpg.identifier.filter(_.refsTo.isEmpty) shouldBe empty
+      cpg.local.filter(_._astIn.isEmpty) shouldBe empty
+    }
+
   }
 
   "CPG for code containing a lambda with parameter destructuring and an `_` entry" should {
@@ -265,9 +298,33 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
 
     "should contain one METHOD_PARAMETER_IN node for the lambda with the correct properties set" in {
       val List(p1) = cpg.method.fullName(".*lambda.*").parameter.l
-      p1.code shouldBe Constants.paramNameLambdaDestructureDecl
+      p1.code shouldBe s"${Constants.destructedParamNamePrefix}1"
       p1.index shouldBe 1
       p1.typeFullName shouldBe "java.util.Map$Entry"
+    }
+
+    "should contain the correct initialization" in {
+      val List(_, _, localTmp, localIt, localK) = cpg.method.fullName(".*lambda.*").local.l
+      localTmp.name shouldBe "tmp_1"
+      localTmp.typeFullName shouldBe "java.util.Map$Entry"
+      localIt.name shouldBe "it"
+      localIt.typeFullName shouldBe "java.util.Map$Entry"
+      localK.name shouldBe "k"
+      localK.typeFullName shouldBe "java.lang.String"
+
+      val List(tmpAssignment, kAssignment) = cpg.method.fullName(".*lambda.*").ast.isCall.isAssignment.l
+      tmpAssignment.code shouldBe "tmp_1 = it"
+      val List(tmp, it) = tmpAssignment.astChildren.isIdentifier.l
+      tmp.typeFullName shouldBe "java.util.Map$Entry"
+      it.typeFullName shouldBe "java.util.Map$Entry"
+
+      kAssignment.code shouldBe "k = tmp_1.component1()"
+      val List(k) = kAssignment.astChildren.isIdentifier.l
+      k.typeFullName shouldBe "java.lang.String"
+
+      cpg.identifier.filter(_._astIn.isEmpty) shouldBe empty
+      cpg.identifier.filter(_.refsTo.isEmpty) shouldBe empty
+      cpg.local.filter(_._astIn.isEmpty) shouldBe empty
     }
   }
 
