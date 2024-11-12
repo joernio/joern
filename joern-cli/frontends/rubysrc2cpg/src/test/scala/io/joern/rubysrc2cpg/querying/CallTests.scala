@@ -523,4 +523,48 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
       case xs => fail(s"Expected 6 parameters for call, got [${xs.code.mkString(", ")}]")
     }
   }
+
+  "Call with association IndexAccess key" in {
+    val cpg = code("""
+        |foo(bar[:baz] => nil)
+        |""".stripMargin)
+
+    inside(cpg.call.name("foo").argument.l) {
+      case _ :: (assocParam: Call) :: Nil =>
+        assocParam.methodFullName shouldBe RubyOperators.association
+        assocParam.code shouldBe "bar[:baz] => nil"
+
+        inside(assocParam.argument.l) {
+          case (lhs: Call) :: (rhs: Literal) :: Nil =>
+            lhs.methodFullName shouldBe Operators.indexAccess
+            lhs.code shouldBe "bar[:baz]"
+
+            rhs.code shouldBe "nil"
+          case xs => fail(s"Expected lhs and rhs for association, got [${xs.code.mkString(",")}]")
+        }
+      case xs => fail(s"Expected two params, got [${xs.code.mkString(",")}]")
+    }
+  }
+
+  "Call with association MemberAccess key" in {
+    val cpg = code("""
+        |foo(bar.baz => nil)
+        |""".stripMargin)
+
+    inside(cpg.call.name("foo").argument.l) {
+      case _ :: (assocParam: Call) :: Nil =>
+        assocParam.methodFullName shouldBe RubyOperators.association
+        assocParam.code shouldBe "bar.baz => nil"
+
+        inside(assocParam.argument.l) {
+          case (lhs: Call) :: (rhs: Literal) :: Nil =>
+            lhs.methodFullName shouldBe Operators.fieldAccess
+            lhs.code shouldBe "bar.baz"
+
+            rhs.code shouldBe "nil"
+          case xs => fail(s"Expected lhs and rhs for association, got [${xs.code.mkString(",")}]")
+        }
+      case xs => fail(s"Expected two params, got [${xs.code.mkString(",")}]")
+    }
+  }
 }

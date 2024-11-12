@@ -1004,7 +1004,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       case keyIdentifier: SimpleIdentifier => setArgumentName(value, keyIdentifier.text)
       case symbol @ StaticLiteral(typ) if typ == getBuiltInType(Defines.Symbol) =>
         setArgumentName(value, symbol.text.stripPrefix(":"))
-      case _: (LiteralExpr | RubyCall | ProcOrLambdaExpr) => astForExpression(assoc)
+      case _: (LiteralExpr | RubyCall | ProcOrLambdaExpr | MemberAccess | IndexAccess) => astForExpression(assoc)
       case x =>
         logger.warn(s"Not explicitly handled argument association key of type ${x.getClass.getSimpleName}")
         astForExpression(assoc)
