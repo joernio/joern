@@ -33,7 +33,7 @@ case class TrackedTypeRef(typeRef: TypeRef) extends TrackedMethodOrTypeRef {
   override def equals(obj: Any): Boolean = {
     obj match {
       case TrackedTypeRef(otherTypeRef) =>
-        typeRef.evalTypeOut.head equals otherTypeRef.evalTypeOut.head
+        typeRef.evalTypeOut.head.equals(otherTypeRef.evalTypeOut.head)
       case _ =>
         false
     }
