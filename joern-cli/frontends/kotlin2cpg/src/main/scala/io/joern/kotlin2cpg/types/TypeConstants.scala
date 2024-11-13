@@ -1,10 +1,10 @@
 package io.joern.kotlin2cpg.types
 
 object TypeConstants {
-  val any                   = "ANY"
-  val kotlinFunctionXPrefix = "kotlin.Function"
-  val javaLangBoolean       = "boolean"
-  val javaLangObject        = "java.lang.Object"
-  val kotlin                = "kotlin"
-  val void                  = "void"
+  val Any                  = "ANY"
+  val KotlinFunctionPrefix = "kotlin.Function"
+  val JavaLangBoolean      = "boolean"
+  val JavaLangObject       = "java.lang.Object"
+  val Kotlin               = "kotlin"
+  val Void                 = "void"
 }

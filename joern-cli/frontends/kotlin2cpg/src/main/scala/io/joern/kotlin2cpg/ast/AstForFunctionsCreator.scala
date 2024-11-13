@@ -60,7 +60,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
         methodName,
         astParentType = astParentType,
         astParentFullName = astParentFullName,
-        Seq(TypeConstants.kotlinFunctionXPrefix)
+        Seq(TypeConstants.KotlinFunctionPrefix)
       )
     if (astParentName == NamespaceTraversal.globalNamespaceName || astParentType == Method.Label) {
       // Bindings for others (classes, interfaces, and such) are already created in their respective CPG creation functions
@@ -93,9 +93,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     val thisParameterAsts = if (needsThisParameter) {
       val typeDeclFullName =
         if (funcDesc.getDispatchReceiverParameter != null) {
-          nameRenderer.typeFullName(funcDesc.getDispatchReceiverParameter.getType).getOrElse(TypeConstants.any)
+          nameRenderer.typeFullName(funcDesc.getDispatchReceiverParameter.getType).getOrElse(TypeConstants.Any)
         } else {
-          nameRenderer.typeFullName(funcDesc.getExtensionReceiverParameter.getType).getOrElse(TypeConstants.any)
+          nameRenderer.typeFullName(funcDesc.getExtensionReceiverParameter.getType).getOrElse(TypeConstants.Any)
         }
 
       registerType(typeDeclFullName)
@@ -108,7 +108,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
         thisParam.order(1)
         thisParam.index(1)
       }
-      scope.addToScope(Constants.this_, thisParam)
+      scope.addToScope(Constants.ThisName, thisParam)
       List(Ast(thisParam))
     } else {
       List.empty
@@ -130,28 +130,28 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       case None =>
         Option(ktFn.getBodyExpression)
           .map { expr =>
-            val bodyBlock = blockNode(expr, expr.getText, TypeConstants.any)
+            val bodyBlock = blockNode(expr, expr.getText, TypeConstants.Any)
             val asts      = astsForExpression(expr, Some(1))
             val blockChildAsts =
               if (asts.nonEmpty) {
                 val allStatementsButLast = asts.dropRight(1)
-                val lastStatementAst     = asts.lastOption.getOrElse(Ast(unknownNode(expr, Constants.empty)))
-                val returnAst_           = returnAst(returnNode(expr, Constants.retCode), Seq(lastStatementAst))
+                val lastStatementAst     = asts.lastOption.getOrElse(Ast(unknownNode(expr, Constants.Empty)))
+                val returnAst_           = returnAst(returnNode(expr, Constants.RetCode), Seq(lastStatementAst))
                 (allStatementsButLast ++ Seq(returnAst_)).toList
               } else List()
             Seq(blockAst(bodyBlock, blockChildAsts))
           }
           .getOrElse {
-            val bodyBlock = blockNode(ktFn, "<empty>", TypeConstants.any)
+            val bodyBlock = blockNode(ktFn, "<empty>", TypeConstants.Any)
             Seq(blockAst(bodyBlock, List[Ast]()))
           }
     }
     methodAstParentStack.pop()
     scope.popScope()
 
-    val bodyAst           = bodyAsts.headOption.getOrElse(Ast(unknownNode(ktFn, Constants.empty)))
+    val bodyAst           = bodyAsts.headOption.getOrElse(Ast(unknownNode(ktFn, Constants.Empty)))
     val otherBodyAsts     = bodyAsts.drop(1)
-    val explicitTypeName  = Option(ktFn.getTypeReference).map(_.getText).getOrElse(TypeConstants.any)
+    val explicitTypeName  = Option(ktFn.getTypeReference).map(_.getText).getOrElse(TypeConstants.Any)
     val typeFullName      = registerType(nameRenderer.typeFullName(funcDesc.getReturnType).getOrElse(explicitTypeName))
     val _methodReturnNode = newMethodReturnNode(typeFullName, None, line(ktFn), column(ktFn))
 
@@ -190,7 +190,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
 
   private def astsForDestructuring(param: KtParameter): Seq[Ast] = {
     val decl             = param.getDestructuringDeclaration
-    val tmpName          = s"${Constants.tmpLocalPrefix}${tmpKeyPool.next}"
+    val tmpName          = s"${Constants.TmpLocalPrefix}${tmpKeyPool.next}"
     var localForTmp      = Option.empty[NewLocal]
     val additionalLocals = mutable.ArrayBuffer.empty[Ast]
 
@@ -203,10 +203,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
           val block = blockNode(init, "", "")
           blockAst(block, asts.toList)
         }
-      val local = localNode(decl, tmpName, tmpName, TypeConstants.any)
+      val local = localNode(decl, tmpName, tmpName, TypeConstants.Any)
       localForTmp = Some(local)
       scope.addToScope(tmpName, local)
-      val tmpIdentifier    = newIdentifierNode(tmpName, TypeConstants.any)
+      val tmpIdentifier    = newIdentifierNode(tmpName, TypeConstants.Any)
       val tmpIdentifierAst = Ast(tmpIdentifier).withRefEdge(tmpIdentifier, local)
       val assignmentCallNode = NodeBuilders.newOperatorCallNode(
         Operators.assignment,
@@ -219,7 +219,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     } else {
       val explicitTypeName = Option(param.getTypeReference)
         .map(typeRef => fullNameByImportPath(typeRef, param.getContainingKtFile).getOrElse(typeRef.getText))
-        .getOrElse(TypeConstants.any)
+        .getOrElse(TypeConstants.Any)
       val typeFullName = registerType(
         nameRenderer.typeFullName(bindingUtils.getVariableDesc(param).get.getType).getOrElse(explicitTypeName)
       )
@@ -239,11 +239,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val localsForDestructuringVars = localsForDestructuringEntries(decl)
     val assignmentsForEntries =
-      decl.getEntries.asScala.filterNot(_.getText == Constants.unusedDestructuringEntryText).zipWithIndex.map {
+      decl.getEntries.asScala.filterNot(_.getText == Constants.UnusedDestructuringEntryText).zipWithIndex.map {
         case (entry, idx) =>
           val rhsBaseAst = astWithRefEdgeMaybe(
             tmpName,
-            identifierNode(entry, tmpName, tmpName, localForTmp.map(_.typeFullName).getOrElse(TypeConstants.any))
+            identifierNode(entry, tmpName, tmpName, localForTmp.map(_.typeFullName).getOrElse(TypeConstants.Any))
           )
           assignmentAstForDestructuringEntry(entry, rhsBaseAst, idx + 1)
       }
@@ -254,13 +254,13 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForDestructedParameter(param: KtParameter, order: Int): Ast = {
-    val name = s"${Constants.destructedParamNamePrefix}${destructedParamKeyPool.next}"
+    val name = s"${Constants.DestructedParamNamePrefix}${destructedParamKeyPool.next}"
     val explicitTypeName = Option(param.getTypeReference)
       .map(typeRef =>
         fullNameByImportPath(typeRef, param.getContainingKtFile)
           .getOrElse(typeRef.getText)
       )
-      .getOrElse(TypeConstants.any)
+      .getOrElse(TypeConstants.Any)
     val typeFullName = registerType(
       nameRenderer.typeFullName(bindingUtils.getVariableDesc(param).get.getType).getOrElse(explicitTypeName)
     )
@@ -273,7 +273,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
 
   def astForParameter(param: KtParameter, order: Int): Ast = {
     val name = if (param.getDestructuringDeclaration != null) {
-      s"${Constants.destructedParamNamePrefix}${destructedParamKeyPool.next}"
+      s"${Constants.DestructedParamNamePrefix}${destructedParamKeyPool.next}"
     } else {
       param.getName
     }
@@ -283,7 +283,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
         fullNameByImportPath(typeRef, param.getContainingKtFile)
           .getOrElse(typeRef.getText)
       )
-      .getOrElse(TypeConstants.any)
+      .getOrElse(TypeConstants.Any)
     val typeFullName = registerType(
       nameRenderer.typeFullName(bindingUtils.getVariableDesc(param).get.getType).getOrElse(explicitTypeName)
     )
@@ -350,20 +350,20 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       case None =>
         Option(fn.getBodyExpression)
           .map { expr =>
-            val bodyBlock  = blockNode(expr, expr.getText, TypeConstants.any)
-            val returnAst_ = returnAst(returnNode(expr, Constants.retCode), astsForExpression(expr, Some(1)))
+            val bodyBlock  = blockNode(expr, expr.getText, TypeConstants.Any)
+            val returnAst_ = returnAst(returnNode(expr, Constants.RetCode), astsForExpression(expr, Some(1)))
             Seq(blockAst(bodyBlock, localsForCaptured.map(Ast(_)) ++ List(returnAst_)))
           }
           .getOrElse {
-            val bodyBlock = blockNode(fn, "<empty>", TypeConstants.any)
+            val bodyBlock = blockNode(fn, "<empty>", TypeConstants.Any)
             Seq(blockAst(bodyBlock, List[Ast]()))
           }
     }
 
-    val returnTypeFullName     = TypeConstants.javaLangObject
+    val returnTypeFullName     = TypeConstants.JavaLangObject
     val lambdaTypeDeclFullName = fullName.split(":").head
 
-    val bodyAst = bodyAsts.headOption.getOrElse(Ast(unknownNode(fn, Constants.empty)))
+    val bodyAst = bodyAsts.headOption.getOrElse(Ast(unknownNode(fn, Constants.Empty)))
     val lambdaMethodAst = methodAst(
       lambdaMethodNode,
       parametersAsts,
@@ -378,11 +378,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val samInterface = getSamInterface(fn)
 
-    val baseClassFullName = samInterface.flatMap(nameRenderer.descFullName).getOrElse(Constants.unknownLambdaBaseClass)
+    val baseClassFullName = samInterface.flatMap(nameRenderer.descFullName).getOrElse(Constants.UnknownLambdaBaseClass)
 
     val lambdaTypeDecl = typeDeclNode(
       fn,
-      Constants.lambdaTypeDeclName,
+      Constants.LambdaTypeDeclName,
       lambdaTypeDeclFullName,
       relativizedPath,
       Seq(registerType(baseClassFullName)),
@@ -493,7 +493,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       .getOrElse(Seq(Ast(NewBlock())))
 
     val returnTypeFullName = registerType(
-      nameRenderer.typeFullName(funcDesc.getReturnType).getOrElse(TypeConstants.javaLangObject)
+      nameRenderer.typeFullName(funcDesc.getReturnType).getOrElse(TypeConstants.JavaLangObject)
     )
     val lambdaTypeDeclFullName = fullName.split(":").head
 
@@ -502,7 +502,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
         if (nestedLambdaDecls.exists(_.root.exists(x => !x.isInstanceOf[NewMethod])))
           logger.warn("Detected non-method related AST nodes under lambda expression. This is unexpected.")
         body -> nestedLambdaDecls
-      case Nil => Ast(unknownNode(expr, Constants.empty)) -> Nil
+      case Nil => Ast(unknownNode(expr, Constants.Empty)) -> Nil
     }
     val lambdaMethodAst = methodAst(
       lambdaMethodNode,
@@ -518,11 +518,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val samInterface = getSamInterface(expr)
 
-    val baseClassFullName = samInterface.flatMap(nameRenderer.descFullName).getOrElse(Constants.unknownLambdaBaseClass)
+    val baseClassFullName = samInterface.flatMap(nameRenderer.descFullName).getOrElse(Constants.UnknownLambdaBaseClass)
 
     val lambdaTypeDecl = typeDeclNode(
       expr,
-      Constants.lambdaTypeDeclName,
+      Constants.LambdaTypeDeclName,
       lambdaTypeDeclFullName,
       relativizedPath,
       Seq(registerType(baseClassFullName)),
@@ -555,7 +555,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       index,
       false,
       EvaluationStrategies.BY_REFERENCE,
-      nameRenderer.typeFullName(paramDesc.getType).getOrElse(TypeConstants.any)
+      nameRenderer.typeFullName(paramDesc.getType).getOrElse(TypeConstants.Any)
     )
     scope.addToScope(paramName, node)
     Ast(node)
@@ -626,7 +626,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     samInterface: Option[ClassDescriptor]
   ): Unit = {
     val samMethod          = samInterface.map(SamConversionResolverImplKt.getSingleAbstractMethodOrNull)
-    val samMethodName      = samMethod.map(_.getName.toString).getOrElse(Constants.unknownLambdaBindingName)
+    val samMethodName      = samMethod.map(_.getName.toString).getOrElse(Constants.UnknownLambdaBindingName)
     val samMethodSignature = samMethod.flatMap(nameRenderer.funcDescSignature)
 
     if (samMethodSignature.isDefined) {

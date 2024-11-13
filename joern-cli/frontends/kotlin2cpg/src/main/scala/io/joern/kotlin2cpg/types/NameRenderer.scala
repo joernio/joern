@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.types
 
-import io.joern.kotlin2cpg.types.NameRenderer.builtinTypeTranslationTable
+import io.joern.kotlin2cpg.types.NameRenderer.BuiltinTypeTranslationTable
 import io.joern.x2cpg.Defines
 import org.jetbrains.kotlin.builtins.jvm.JavaToKotlinClassMap
 import org.jetbrains.kotlin.descriptors.impl.TypeAliasConstructorDescriptor
@@ -21,7 +21,7 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 
 object NameRenderer {
-  private val builtinTypeTranslationTable = mutable.HashMap(
+  private val BuiltinTypeTranslationTable = mutable.HashMap(
     "kotlin.Unit"         -> "void",
     "kotlin.Boolean"      -> "boolean",
     "kotlin.Char"         -> "char",
@@ -117,7 +117,7 @@ class NameRenderer {
   }
 
   private def typeFullNameKotlinToJava(kotlinFullName: String): String = {
-    val javaFullName = builtinTypeTranslationTable.get(kotlinFullName)
+    val javaFullName = BuiltinTypeTranslationTable.get(kotlinFullName)
     if (javaFullName.isDefined) {
       javaFullName.get
     } else {

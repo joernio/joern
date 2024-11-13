@@ -41,7 +41,7 @@ private class RecoverForKotlinFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
 
     val alias    = i.importedAs.getOrElse("")
     val fullName = i.importedEntity.getOrElse("")
-    if (alias != Constants.wildcardImportName) {
+    if (alias != Constants.WildcardImportName) {
       symbolTable.append(CallAlias(alias), fullName)
       symbolTable.append(LocalVar(alias), fullName)
     }
