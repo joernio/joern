@@ -937,9 +937,7 @@ class ClassTests extends RubyCode2CpgFixture {
           }
 
           inside(bodyMethod.block.astChildren.l) {
-            case (barInit: Call) :: (one: Literal) :: Nil =>
-              barInit.code shouldBe "bar = nil"
-
+            case (one: Literal) :: Nil =>
               one.code shouldBe "1"
               one.typeFullName shouldBe s"${GlobalTypes.kernelPrefix}.Integer"
             case xs => fail(s"Expected one literal, got [${xs.code.mkString(",")}]")
@@ -1017,4 +1015,5 @@ class ClassTests extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
   }
+
 }

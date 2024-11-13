@@ -1,10 +1,10 @@
 package io.joern.rubysrc2cpg.querying
 
-import io.joern.rubysrc2cpg.passes.Defines
+import io.joern.rubysrc2cpg.passes.{Defines, GlobalTypes}
 import io.joern.rubysrc2cpg.passes.Defines.Main
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.{File, NamespaceBlock}
+import io.shiftleft.codepropertygraph.generated.nodes.{File, Literal, NamespaceBlock}
 import io.shiftleft.semanticcpg.language.*
 
 class ModuleTests extends RubyCode2CpgFixture {
@@ -144,6 +144,28 @@ class ModuleTests extends RubyCode2CpgFixture {
           lambdaReturn.code shouldBe "true"
         case xs => fail(s"Expected two lambdas, got [${xs.code.mkString(",")}]")
       }
+    }
+  }
+  "Argument `(...)` in call should not be lifted" in {
+    val cpg = code("""
+        |module ArticlesHelper
+        |  def foo
+        |  end
+        |
+        |  def active_threads(...)
+        |    Articles::ActiveThreadsQuery.call(...)
+        |  end
+        |end
+        |
+        |""".stripMargin)
+
+    inside(cpg.typeDecl.name("ArticlesHelper").method.l) {
+      case bodyMethod :: _ :: _ :: Nil =>
+        inside(bodyMethod.block.astChildren.l) {
+          case Nil => // bodyMethod should be empty
+          case xs  => fail(s"Expected empty body, got [${xs.code.mkString(",")}]")
+        }
+      case xs => fail(s"Expected three methods got [${xs.name.mkString(",")}]")
     }
   }
 }

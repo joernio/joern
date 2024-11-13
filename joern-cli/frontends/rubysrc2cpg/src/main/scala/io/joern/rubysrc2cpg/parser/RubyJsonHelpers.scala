@@ -121,16 +121,19 @@ object RubyJsonHelpers {
       * @param expr
       *   An expression that is a direct child to a class or module.
       */
-    def getFields(expr: RubyExpression): List[RubyExpression & RubyFieldIdentifier] = {
+    def getFields(
+      expr: RubyExpression,
+      typeDeclChildStatements: Boolean = true
+    ): List[RubyExpression & RubyFieldIdentifier] = {
       expr match {
-        case field: SimpleIdentifier                             => ClassFieldIdentifier()(field.span) :: Nil
-        case field: RubyFieldIdentifier                          => field :: Nil
-        case _ @SingleAssignment(lhs: RubyFieldIdentifier, _, _) => lhs :: Nil
-        case _ @SingleAssignment(lhs: SimpleIdentifier, _, _)    => ClassFieldIdentifier()(lhs.span) :: Nil
-        case proc: ProcedureDeclaration                          => getFields(proc.body)
-        case _ @StatementList(stmts)                             => stmts.flatMap(getFields).distinctBy(_.text)
-        case x: RubyCall                                         => x.arguments.flatMap(getFields).distinctBy(_.text)
-        case _                                                   => Nil
+        case field: SimpleIdentifier if typeDeclChildStatements    => ClassFieldIdentifier()(field.span) :: Nil
+        case field: RubyFieldIdentifier if typeDeclChildStatements => field :: Nil
+        case _ @SingleAssignment(lhs: RubyFieldIdentifier, _, _)   => lhs :: Nil
+        case _ @SingleAssignment(lhs: SimpleIdentifier, _, _) if typeDeclChildStatements =>
+          ClassFieldIdentifier()(lhs.span) :: Nil
+        case proc: ProcedureDeclaration => getFields(proc.body, false)
+        case _ @StatementList(stmts)    => stmts.flatMap(x => getFields(x, typeDeclChildStatements)).distinctBy(_.text)
+        case _                          => Nil
       }
     }
 
@@ -142,9 +145,11 @@ object RubyJsonHelpers {
       case Some(stmtList: StatementList) =>
         val (fieldStmts, otherStmts)   = stmtList.statements.partition(isFieldStmt)
         val (typeDeclStmts, bodyStmts) = otherStmts.partition(_.isInstanceOf[AllowedTypeDeclarationChild])
-        val fields = (fieldStmts.flatMap(getFields) ++ typeDeclStmts.flatMap(getFields)).distinctBy(_.text)
+        val fields =
+          (fieldStmts.flatMap(x => getFields(x)) ++ typeDeclStmts.flatMap(x => getFields(x)))
+            .distinctBy(_.text)
         val body = stmtList.copy(statements =
-          bodyMethod(fieldStmts ++ typeDeclStmts.flatMap(getFields) ++ bodyStmts) +: typeDeclStmts
+          bodyMethod(fieldStmts ++ typeDeclStmts.flatMap(x => getFields(x)) ++ bodyStmts) +: typeDeclStmts
         )(stmtList.span)
 
         (body, fields)
