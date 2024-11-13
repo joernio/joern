@@ -97,7 +97,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         val fullName     = nameRenderer.combineFunctionFullName(descFullName, signature)
         (fullName, signature)
       }
-    val primaryCtorMethodNode = methodNode(primaryCtor, TypeConstants.initPrefix, fullName, signature, relativizedPath)
+    val primaryCtorMethodNode =
+      methodNode(primaryCtor, Defines.ConstructorMethodName, fullName, signature, relativizedPath)
     val ctorThisParam =
       NodeBuilders.newThisParameterNode(typeFullName = classFullName, dynamicTypeHintFullName = Seq(classFullName))
     scope.addToScope(Constants.this_, ctorThisParam)
@@ -172,7 +173,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val primaryCtorCall =
       callNode(
         ktClass.getPrimaryConstructor,
-        TypeConstants.initPrefix,
+        Defines.ConstructorMethodName,
         primaryCtorMethodNode.name,
         primaryCtorMethodNode.fullName,
         DispatchTypes.STATIC_DISPATCH,
@@ -557,7 +558,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     )
     val assignmentCallAst = callAst(assignmentNode, List(identifierAst) ++ List(rhsAst))
     val initSignature     = s"${TypeConstants.void}()"
-    val initFullName      = s"$typeDeclFullName.${TypeConstants.initPrefix}:$initSignature"
+    val initFullName      = s"$typeDeclFullName.${Defines.ConstructorMethodName}:$initSignature"
     val initCallNode =
       callNode(
         expr,
@@ -684,7 +685,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         NodeBuilders.newOperatorCallNode(Operators.assignment, expr.getText, None, line(expr), column(expr))
       val assignmentCallAst = callAst(assignmentNode, List(identifierAst) ++ List(rhsAst))
       val initSignature     = s"${TypeConstants.void}()"
-      val initFullName      = s"$typeFullName${TypeConstants.initPrefix}:$initSignature"
+      val initFullName      = s"$typeFullName${Defines.ConstructorMethodName}:$initSignature"
       val initCallNode = callNode(
         expr,
         Constants.init,

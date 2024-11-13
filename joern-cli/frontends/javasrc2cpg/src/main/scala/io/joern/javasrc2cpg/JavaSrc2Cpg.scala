@@ -15,8 +15,6 @@ import scala.util.matching.Regex
 class JavaSrc2Cpg extends X2CpgFrontend[Config] {
   import JavaSrc2Cpg._
 
-  private val logger = LoggerFactory.getLogger(this.getClass)
-
   override def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
       new MetaDataPass(cpg, language, config.inputPath).createAndApply()
@@ -35,28 +33,24 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
 }
 
 object JavaSrc2Cpg {
-  val language: String = Languages.JAVASRC
-  private val logger   = LoggerFactory.getLogger(this.getClass)
-
+  val language: String                  = Languages.JAVASRC
   val sourceFileExtensions: Set[String] = Set(".java")
 
   val DefaultIgnoredFilesRegex: List[Regex] = List(".git", ".mvn", "test").flatMap { directory =>
     List(s"(^|\\\\)$directory($$|\\\\)".r.unanchored, s"(^|/)$directory($$|/)".r.unanchored)
   }
-
   val DefaultConfig: Config =
     Config().withDefaultIgnoredFilesRegex(DefaultIgnoredFilesRegex)
 
   def apply(): JavaSrc2Cpg = new JavaSrc2Cpg()
 
   def showEnv(): Unit = {
-    val value =
-      JavaSrcEnvVar.values.foreach { envVar =>
-        val currentValue = Option(System.getenv(envVar.name)).getOrElse("<unset>")
-        println(s"${envVar.name}:")
-        println(s"  Description  : ${envVar.description}")
-        println(s"  Current value: $currentValue")
-      }
+    JavaSrcEnvVar.values.foreach { envVar =>
+      val currentValue = sys.env.getOrElse(envVar.name, "<unset>")
+      println(s"${envVar.name}:")
+      println(s"\tDescription  : ${envVar.description}")
+      println(s"\tCurrent value: $currentValue")
+    }
   }
 
   enum JavaSrcEnvVar(val name: String, val description: String) {
