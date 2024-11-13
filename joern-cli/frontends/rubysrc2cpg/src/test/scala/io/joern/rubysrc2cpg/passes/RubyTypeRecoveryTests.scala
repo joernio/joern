@@ -174,6 +174,7 @@ class RubyInternalTypeRecoveryTests extends RubyCode2CpgFixture(withPostProcessi
       }
     }
   }
+
 }
 
 class RubyExternalTypeRecoveryTests

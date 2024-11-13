@@ -566,14 +566,19 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** Returns the appropriate field parent scope.
     */
   protected def getFieldParents(fa: FieldAccess): Set[String] = {
-    val fieldName = getFieldName(fa).split(Pattern.quote(pathSep)).last
-    Try(cpg.member.nameExact(fieldName).typeDecl.fullName.filterNot(_.contains("ANY")).toSet) match
-      case Failure(exception) =>
-        logger.warn(
-          s"Unable to obtain name of member's parent type declaration: ${cpg.member.nameExact(fieldName).propertiesMap.mkString(",")}"
-        )
+    getFieldName(fa).split(Pattern.quote(pathSep)).lastOption match {
+      case Some(fieldName) =>
+        Try(cpg.member.nameExact(fieldName).typeDecl.fullName.filterNot(_.contains("ANY")).toSet) match
+          case Failure(exception) =>
+            logger.warn(
+              s"Unable to obtain name of member's parent type declaration: ${cpg.member.nameExact(fieldName).propertiesMap.mkString(",")}"
+            )
+            Set.empty
+          case Success(typeDeclNames) => typeDeclNames
+      case None =>
+        logger.warn(s"Unable to find a fieldName: ${debugLocation(fa)}")
         Set.empty
-      case Success(typeDeclNames) => typeDeclNames
+    }
   }
 
   /** Associates the types with the identifier. This may sometimes be an identifier that should be considered a field
