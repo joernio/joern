@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory
 object SourceFilesPicker {
   private val logger = LoggerFactory.getLogger(getClass)
 
-  private val substringsToFilterFor = List(
+  private val SubstringsToFilterFor = List(
     ".idea",
     "target",
     "build",
@@ -22,7 +22,7 @@ object SourceFilesPicker {
   )
 
   def shouldFilter(fileName: String): Boolean = {
-    val containsUnwantedSubstring = substringsToFilterFor.exists(fileName.contains)
+    val containsUnwantedSubstring = SubstringsToFilterFor.exists(fileName.contains)
 
     val isAndroidLayoutXml = fileName.endsWith("xml") && (fileName.contains("drawable") || fileName.contains("layout"))
     val containsSrcTest    = fileName.contains("src/test")

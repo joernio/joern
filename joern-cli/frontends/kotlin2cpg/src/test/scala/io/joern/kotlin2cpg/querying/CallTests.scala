@@ -646,11 +646,11 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       call.methodFullName shouldBe "somePackage.A.close:void()"
       call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       inside(call.receiver.l) { case List(receiver: Identifier) =>
-        receiver.name shouldBe Constants.this_
+        receiver.name shouldBe Constants.ThisName
         receiver.typeFullName shouldBe "somePackage.A"
       }
       inside(call.argument.l) { case List(argument: Identifier) =>
-        argument.name shouldBe Constants.this_
+        argument.name shouldBe Constants.ThisName
         argument.argumentIndex shouldBe 0
       }
     }

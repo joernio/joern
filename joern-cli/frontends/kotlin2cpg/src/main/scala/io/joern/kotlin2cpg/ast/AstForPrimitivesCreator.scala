@@ -44,7 +44,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     argName: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
   ): Ast = {
-    val typeFullName   = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
+    val typeFullName   = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.Any))
     val node           = literalNode(expr, expr.getText, typeFullName)
     val annotationAsts = annotations.map(astForAnnotationEntry)
     Ast(withArgumentName(withArgumentIndex(node, argIdx), argName)).withChildren(annotationAsts)
@@ -56,11 +56,11 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     argName: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
   ): Ast = {
-    val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
+    val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.Any))
     val outAst =
       if (expr.hasInterpolation) {
         val args = expr.getEntries.filter(_.getExpression != null).zipWithIndex.map { case (entry, idx) =>
-          val entryTypeFullName = registerType(exprTypeFullName(entry.getExpression).getOrElse(TypeConstants.any))
+          val entryTypeFullName = registerType(exprTypeFullName(entry.getExpression).getOrElse(TypeConstants.Any))
           val valueCallNode = NodeBuilders.newOperatorCallNode(
             Operators.formattedValue,
             entry.getExpression.getText,
@@ -108,13 +108,13 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForNameReferenceToType(expr: KtNameReferenceExpression, argIdx: Option[Int]): Ast = {
     val declDesc =
       bindingUtils.getDeclDesc(expr).collect { case classifierDesc: ClassifierDescriptor => classifierDesc }
-    val typeFullName = registerType(declDesc.flatMap(nameRenderer.descFullName).getOrElse(TypeConstants.any))
+    val typeFullName = registerType(declDesc.flatMap(nameRenderer.descFullName).getOrElse(TypeConstants.Any))
     val referencesCompanionObject = typeInfoProvider.isRefToCompanionObject(expr)
     if (referencesCompanionObject) {
       val argAsts = List(
         // TODO: change this to a TYPE_REF node as soon as the closed source data-flow engine supports it
         identifierNode(expr, expr.getIdentifier.getText, expr.getIdentifier.getText, typeFullName),
-        fieldIdentifierNode(expr, Constants.companionObjectMemberName, Constants.companionObjectMemberName)
+        fieldIdentifierNode(expr, Constants.CompanionObjectMemberName, Constants.CompanionObjectMemberName)
       ).map(Ast(_))
       val node = NodeBuilders.newOperatorCallNode(
         Operators.fieldAccess,
@@ -134,20 +134,20 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     val declDesc = bindingUtils.getDeclDesc(expr).collect { case propDesc: PropertyDescriptor => propDesc }
     val typeFullName = declDesc
       .flatMap(desc => nameRenderer.typeFullName(desc.getType))
-      .getOrElse(TypeConstants.any)
+      .getOrElse(TypeConstants.Any)
     registerType(typeFullName)
 
     val baseTypeFullName = declDesc
       .flatMap(desc => nameRenderer.typeFullName(desc.getDispatchReceiverParameter.getType))
-      .getOrElse(TypeConstants.any)
+      .getOrElse(TypeConstants.Any)
     registerType(baseTypeFullName)
 
-    val thisNode             = identifierNode(expr, Constants.this_, Constants.this_, baseTypeFullName)
-    val thisAst              = astWithRefEdgeMaybe(Constants.this_, thisNode)
+    val thisNode             = identifierNode(expr, Constants.ThisName, Constants.ThisName, baseTypeFullName)
+    val thisAst              = astWithRefEdgeMaybe(Constants.ThisName, thisNode)
     val _fieldIdentifierNode = fieldIdentifierNode(expr, expr.getReferencedName, expr.getReferencedName)
     val node = NodeBuilders.newOperatorCallNode(
       Operators.fieldAccess,
-      s"${Constants.this_}.${expr.getReferencedName}",
+      s"${Constants.ThisName}.${expr.getReferencedName}",
       Option(typeFullName),
       line(expr),
       column(expr)
@@ -171,7 +171,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
         }
         typeFromScopeMaybe
       }
-      .getOrElse(TypeConstants.any)
+      .getOrElse(TypeConstants.Any)
 
     val name = expr.getIdentifier.getText
     val node =
@@ -185,7 +185,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     argName: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
   ): Ast = {
-    val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
+    val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.Any))
     val node = withArgumentName(
       withArgumentIndex(identifierNode(expr, expr.getText, expr.getText, typeFullName), argIdx),
       argName
@@ -200,7 +200,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     argName: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
   ): Ast = {
-    val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
+    val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.Any))
     val node = withArgumentName(
       withArgumentIndex(identifierNode(expr, expr.getText, expr.getText, typeFullName), argIdx),
       argName
@@ -215,7 +215,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     argName: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
   ): Ast = {
-    val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.javaLangObject))
+    val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.JavaLangObject))
     val fullName     = "<operator>.class"
     val signature    = s"$typeFullName()"
     val node = callNode(
@@ -233,14 +233,14 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
 
   def astForImportDirective(directive: KtImportDirective): Ast = {
     val importedAs = Try(directive.getImportedName.getIdentifier).toOption
-    val isWildcard = importedAs.contains(Constants.wildcardImportName) || directive.getImportedName == null
+    val isWildcard = importedAs.contains(Constants.WildcardImportName) || directive.getImportedName == null
     val node =
       NewImport()
         .isWildcard(isWildcard)
         .isExplicit(true)
         .importedAs(importedAs)
         .importedEntity(directive.getImportPath.getPathStr)
-        .code(s"${Constants.importKeyword} ${directive.getImportPath.getPathStr}")
+        .code(s"${Constants.ImportKeyword} ${directive.getImportPath.getPathStr}")
         .lineNumber(line(directive))
         .columnNumber(column(directive))
     Ast(node)
@@ -249,7 +249,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
   @unused
   def astForPackageDeclaration(packageName: String): Ast = {
     val node =
-      if (packageName == Constants.root)
+      if (packageName == Constants.Root)
         NodeBuilders.newNamespaceBlockNode(
           NamespaceTraversal.globalNamespaceName,
           NamespaceTraversal.globalNamespaceName,
@@ -304,17 +304,17 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
     val node = typeDeclNode(
       typeAlias,
       typeAlias.getName,
-      registerType(nameRenderer.descFullName(typeAliasDesc).getOrElse(TypeConstants.any)),
+      registerType(nameRenderer.descFullName(typeAliasDesc).getOrElse(TypeConstants.Any)),
       relativizedPath,
       Seq(),
-      Option(registerType(aliasedType.flatMap(nameRenderer.typeFullName).getOrElse(TypeConstants.any)))
+      Option(registerType(aliasedType.flatMap(nameRenderer.typeFullName).getOrElse(TypeConstants.Any)))
     )
     Ast(node)
   }
 
   def astForTypeReference(expr: KtTypeReference, argIdx: Option[Int], argName: Option[String]): Ast = {
     val typeFullName = registerType(
-      bindingUtils.getTypeRefType(expr).flatMap(nameRenderer.typeFullName).getOrElse(TypeConstants.any)
+      bindingUtils.getTypeRefType(expr).flatMap(nameRenderer.typeFullName).getOrElse(TypeConstants.Any)
     )
     val node = typeRefNode(expr, expr.getText, typeFullName)
     Ast(withArgumentName(withArgumentIndex(node, argIdx), argName))

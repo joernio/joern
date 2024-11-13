@@ -241,7 +241,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
 
     "should contain METHOD_PARAMETER_IN nodes for the lambda with the correct properties set" in {
       val List(p1) = cpg.method.fullName(".*lambda.*").parameter.l
-      p1.code shouldBe s"${Constants.destructedParamNamePrefix}1"
+      p1.code shouldBe s"${Constants.DestructedParamNamePrefix}1"
       p1.index shouldBe 1
       p1.typeFullName shouldBe "java.util.Map$Entry"
     }
@@ -298,7 +298,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
 
     "should contain one METHOD_PARAMETER_IN node for the lambda with the correct properties set" in {
       val List(p1) = cpg.method.fullName(".*lambda.*").parameter.l
-      p1.code shouldBe s"${Constants.destructedParamNamePrefix}1"
+      p1.code shouldBe s"${Constants.DestructedParamNamePrefix}1"
       p1.index shouldBe 1
       p1.typeFullName shouldBe "java.util.Map$Entry"
     }

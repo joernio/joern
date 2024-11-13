@@ -72,28 +72,28 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         logger.warn(
           s"Unhandled operator token type `${opRef.getOperationSignTokenType}` for expression `${expr.getText}` in this file `$relativizedPath`."
         )
-        Some(Constants.unknownOperator)
+        Some(Constants.UnknownOperator)
     }
     val (fullName, signature) =
-      if (operatorOption.isDefined) (operatorOption.get, TypeConstants.any)
+      if (operatorOption.isDefined) (operatorOption.get, TypeConstants.Any)
       // TODO: fix the fallback METHOD_FULL_NAME and SIGNATURE here (should be a correct number of ANYs)
       else {
         val funcDesc = bindingUtils.getCalledFunctionDesc(expr.getOperationReference)
         val descFullName = funcDesc
           .orElse(getAmbiguousFuncDescIfFullNamesEqual(expr.getOperationReference))
           .flatMap(nameRenderer.descFullName)
-          .getOrElse(TypeConstants.any)
+          .getOrElse(TypeConstants.Any)
         val signature = funcDesc
           .orElse(getAmbiguousFuncDescIfSignaturesEqual(expr.getOperationReference))
           .flatMap(nameRenderer.funcDescSignature)
-          .getOrElse(TypeConstants.any)
+          .getOrElse(TypeConstants.Any)
         val fullName = nameRenderer.combineFunctionFullName(descFullName, signature)
         (fullName, signature)
       }
 
     val finalSignature =
       // TODO: add test case for this situation
-      if (fullName.startsWith(Constants.operatorSuffix)) Constants.empty
+      if (fullName.startsWith(Constants.OperatorSuffix)) Constants.Empty
       else signature
 
     val typeFullName = registerType(
@@ -101,7 +101,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         .getCalledFunctionDesc(expr.getOperationReference)
         .orElse(getAmbiguousFuncDescIfSignaturesEqual(expr.getOperationReference))
         .flatMap(funcDesc => nameRenderer.typeFullName(funcDesc.getOriginal.getReturnType))
-        .getOrElse(TypeConstants.any)
+        .getOrElse(TypeConstants.Any)
     )
     val name =
       if (operatorOption.isDefined) operatorOption.get
@@ -122,8 +122,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       callAst(
         withArgumentIndex(node, argIdx).argumentName(argNameMaybe),
         List(
-          lhsArgs.lastOption.getOrElse(Ast(unknownNode(expr.getLeft, Constants.empty))),
-          rhsArgs.lastOption.getOrElse(Ast(unknownNode(expr.getRight, Constants.empty)))
+          lhsArgs.lastOption.getOrElse(Ast(unknownNode(expr.getLeft, Constants.Empty))),
+          rhsArgs.lastOption.getOrElse(Ast(unknownNode(expr.getRight, Constants.Empty)))
         )
       )
         .withChildren(annotations.map(astForAnnotationEntry))
@@ -136,14 +136,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     argNameMaybe: Option[String]
   ): Ast = {
     val exprNode = astsForExpression(expr.getReceiverExpression, Some(1)).headOption
-      .getOrElse(Ast(unknownNode(expr.getReceiverExpression, Constants.empty)))
+      .getOrElse(Ast(unknownNode(expr.getReceiverExpression, Constants.Empty)))
 
     val nameReferenceExpr = expr.getSelectorExpression.asInstanceOf[KtNameReferenceExpression]
     val fieldIdentifier = Ast(
       fieldIdentifierNode(nameReferenceExpr, nameReferenceExpr.getText, nameReferenceExpr.getText).argumentIndex(2)
     )
 
-    val retType = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
+    val retType = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.Any))
     val node = withArgumentIndex(
       NodeBuilders.newOperatorCallNode(Operators.fieldAccess, expr.getText, Option(retType), line(expr), column(expr)),
       argIdx
@@ -165,7 +165,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       astDerivedFullNameWithSignature(expr, argAsts)._2
     )
 
-    val retType    = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
+    val retType    = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.Any))
     val methodName = expr.getSelectorExpression.getFirstChild.getText
     val node =
       withArgumentIndex(
@@ -182,7 +182,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       ).argumentName(argNameMaybe)
 
     val instanceArg = astsForExpression(expr.getReceiverExpression, Some(1)).headOption
-      .getOrElse(Ast(unknownNode(expr.getReceiverExpression, Constants.empty)))
+      .getOrElse(Ast(unknownNode(expr.getReceiverExpression, Constants.Empty)))
     callAst(node, instanceArg +: argAsts)
   }
 
@@ -192,7 +192,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     argNameMaybe: Option[String]
   ): Ast = {
     val receiverAst = astsForExpression(expr.getReceiverExpression, Some(0)).headOption
-      .getOrElse(Ast(unknownNode(expr.getReceiverExpression, Constants.empty)))
+      .getOrElse(Ast(unknownNode(expr.getReceiverExpression, Constants.Empty)))
     val argAsts = selectorExpressionArgAsts(expr)
 
     val (fullName, signature) = calleeFullnameAndSignature(
@@ -201,7 +201,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       astDerivedFullNameWithSignature(expr, argAsts)._2
     )
 
-    val retType    = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
+    val retType    = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.Any))
     val methodName = expr.getSelectorExpression.getFirstChild.getText
     val node =
       withArgumentIndex(
@@ -227,7 +227,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     expr.getSelectorExpression match {
       case callExpr: KtCallExpression =>
         val localName         = "tmp"
-        val localTypeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
+        val localTypeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.Any))
         val local             = localNode(expr, localName, localName, localTypeFullName)
         scope.addToScope(localName, local)
         val localAst = Ast(local)
@@ -256,11 +256,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         val initCallNode = callNode(
           callExpr,
           callExpr.getText,
-          Constants.init,
+          Defines.ConstructorMethodName,
           fullName,
           DispatchTypes.STATIC_DISPATCH,
           Some(signature),
-          Some(TypeConstants.void)
+          Some(TypeConstants.Void)
         )
         val initReceiverNode = identifierNode(expr, identifier.name, identifier.name, identifier.typeFullName)
         val initReceiverAst  = Ast(initReceiverNode).withRefEdge(initReceiverNode, local)
@@ -278,7 +278,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         }
         blockAst(node, List(localAst, assignmentCallAst, initAst, returningIdentifierAst))
       case _ =>
-        val node = blockNode(expr, "", TypeConstants.any).argumentName(argNameMaybe)
+        val node = blockNode(expr, "", TypeConstants.Any).argumentName(argNameMaybe)
         argIdx match {
           case Some(idx) => node.argumentIndex(idx)
           case _         =>
@@ -293,7 +293,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     argNameMaybe: Option[String]
   ): Ast = {
     val receiverAst = astsForExpression(expr.getReceiverExpression, Some(1)).headOption
-      .getOrElse(Ast(unknownNode(expr.getReceiverExpression, Constants.empty)))
+      .getOrElse(Ast(unknownNode(expr.getReceiverExpression, Constants.Empty)))
     val argAsts = selectorExpressionArgAsts(expr)
 
     val (fullName, signature) = calleeFullnameAndSignature(
@@ -301,7 +301,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       astDerivedFullNameWithSignature(expr, argAsts)._1,
       astDerivedFullNameWithSignature(expr, argAsts)._2
     )
-    val retType      = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
+    val retType      = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.Any))
     val methodName   = expr.getSelectorExpression.getFirstChild.getText
     val dispatchType = DispatchTypes.STATIC_DISPATCH
 
@@ -332,7 +332,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       else DispatchTypes.STATIC_DISPATCH
 
     val receiverAst = astsForExpression(expr.getReceiverExpression, Some(argIdxForReceiver)).headOption
-      .getOrElse(Ast(unknownNode(expr.getReceiverExpression, Constants.empty)))
+      .getOrElse(Ast(unknownNode(expr.getReceiverExpression, Constants.Empty)))
     val argAsts = selectorExpressionArgAsts(expr)
 
     val (fullName, signature) = calleeFullnameAndSignature(
@@ -340,7 +340,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       astDerivedFullNameWithSignature(expr, argAsts)._1,
       astDerivedFullNameWithSignature(expr, argAsts)._2
     )
-    val retType    = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
+    val retType    = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.Any))
     val methodName = expr.getSelectorExpression.getFirstChild.getText
 
     val node =
@@ -412,7 +412,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     argName: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
   ): Ast = {
-    registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
+    registerType(exprTypeFullName(expr).getOrElse(TypeConstants.Any))
     val args = astsForExpression(expr.getLeftHandSide, None) ++
       Seq(astForTypeReference(expr.getTypeReference, None, argName))
     val node = NodeBuilders.newOperatorCallNode(Operators.is, expr.getText, None, line(expr), column(expr))
@@ -426,7 +426,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     argName: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
   ): Ast = {
-    registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
+    registerType(exprTypeFullName(expr).getOrElse(TypeConstants.Any))
     val args = astsForExpression(expr.getLeft, None) ++ Seq(astForTypeReference(expr.getRight, None, None))
     val node = NodeBuilders.newOperatorCallNode(Operators.cast, expr.getText, None, line(expr), column(expr))
     callAst(withArgumentName(withArgumentIndex(node, argIdx), argName), args.toList)
@@ -462,7 +462,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val imports = expr.getContainingKtFile.getImportList.getImports.asScala.toList
     val importedNames = imports.map { imp =>
-      val importedName = Option(imp.getImportedName).map(_.toString).getOrElse(Constants.wildcardImportName)
+      val importedName = Option(imp.getImportedName).map(_.toString).getOrElse(Constants.WildcardImportName)
       importedName -> imp
     }.toMap
 
@@ -508,7 +508,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       }
 
     // TODO: add test case to confirm whether the ANY fallback makes sense (could be void)
-    val returnType = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
+    val returnType = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.Any))
     val node = callNode(expr, expr.getText, referencedName, fullName, dispatchType, Some(signature), Some(returnType))
 
     val annotationsAsts = annotations.map(astForAnnotationEntry)
@@ -518,9 +518,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
           if (instanceAsArgument) {
             val instanceArgument = identifierNode(
               expr,
-              Constants.this_,
-              Constants.this_,
-              nameRenderer.typeFullName(resolvedCall.get.getDispatchReceiver.getType).getOrElse(TypeConstants.any)
+              Constants.ThisName,
+              Constants.ThisName,
+              nameRenderer.typeFullName(resolvedCall.get.getDispatchReceiver.getType).getOrElse(TypeConstants.Any)
             )
             val args = argAsts.prepended(Ast(instanceArgument))
             setArgumentIndices(args, 0)
@@ -537,9 +537,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       } else {
         val receiverNode = identifierNode(
           expr,
-          Constants.this_,
-          Constants.this_,
-          nameRenderer.typeFullName(resolvedCall.get.getDispatchReceiver.getType).getOrElse(TypeConstants.any)
+          Constants.ThisName,
+          Constants.ThisName,
+          nameRenderer.typeFullName(resolvedCall.get.getDispatchReceiver.getType).getOrElse(TypeConstants.Any)
         )
 
         callAst(withArgumentIndex(node, argIdx).argumentName(argNameMaybe), argAsts, base = Some(Ast(receiverNode)))
@@ -557,13 +557,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   ): Seq[Ast] = {
     val typeFullName = registerType(exprTypeFullName(expr).getOrElse(Defines.UnresolvedNamespace))
     val tmpBlockNode = blockNode(expr, "", typeFullName)
-    val tmpName      = s"${Constants.tmpLocalPrefix}${tmpKeyPool.next}"
+    val tmpName      = s"${Constants.TmpLocalPrefix}${tmpKeyPool.next}"
     val tmpLocalNode = localNode(expr, tmpName, tmpName, typeFullName)
     scope.addToScope(tmpName, tmpLocalNode)
     val tmpLocalAst = Ast(tmpLocalNode)
 
     val assignmentRhsNode =
-      NodeBuilders.newOperatorCallNode(Operators.alloc, Constants.alloc, Option(typeFullName), line(expr), column(expr))
+      NodeBuilders.newOperatorCallNode(Operators.alloc, Constants.Alloc, Option(typeFullName), line(expr), column(expr))
     val assignmentLhsNode = identifierNode(expr, tmpName, tmpName, typeFullName)
     val assignmentLhsAst  = astWithRefEdgeMaybe(tmpName, assignmentLhsNode)
 
@@ -577,7 +577,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       withIndex(expr.getValueArguments.asScala.toSeq) { case (arg, idx) =>
         val argNameOpt = if (arg.isNamed) Option(arg.getArgumentName.getAsName.toString) else None
         val asts       = astsForExpression(arg.getArgumentExpression, Option(idx), argNameOpt)
-        (asts.dropRight(1), asts.lastOption.getOrElse(Ast(unknownNode(arg.getArgumentExpression, Constants.empty))))
+        (asts.dropRight(1), asts.lastOption.getOrElse(Ast(unknownNode(arg.getArgumentExpression, Constants.Empty))))
       }
     val astsForTrails    = argAstsWithTrail.map(_._2)
     val astsForNonTrails = argAstsWithTrail.flatMap(_._1)
@@ -588,16 +588,16 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         Defines.UnresolvedNamespace,
         s"${Defines.UnresolvedSignature}(${expr.getValueArguments.size()})"
       )
-    registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
+    registerType(exprTypeFullName(expr).getOrElse(TypeConstants.Any))
 
     val initCallNode = callNode(
       expr,
       expr.getText,
-      Constants.init,
+      Defines.ConstructorMethodName,
       fullName,
       DispatchTypes.STATIC_DISPATCH,
       Some(signature),
-      Some(TypeConstants.void)
+      Some(TypeConstants.Void)
     )
     val initCallAst       = callAst(initCallNode, astsForTrails, Option(initReceiverAst))
     val lastIdentifier    = identifierNode(expr, tmpName, tmpName, typeFullName)
@@ -622,10 +622,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       KtPsiUtil.getOperationToken(expr),
       { (token: KtToken) =>
         logger.warn(s"Unsupported token type encountered: $token")
-        Constants.unknownOperator
+        Constants.UnknownOperator
       }
     )
-    val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
+    val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.Any))
     val args = List(astsForExpression(expr.getBaseExpression, None).headOption.getOrElse(Ast()))
       .filterNot(_.root == null)
     val node =
@@ -644,10 +644,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       KtPsiUtil.getOperationToken(expr),
       { (token: KtToken) =>
         logger.warn(s"Unsupported token type encountered: $token")
-        Constants.unknownOperator
+        Constants.UnknownOperator
       }
     )
-    val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.any))
+    val typeFullName = registerType(exprTypeFullName(expr).getOrElse(TypeConstants.Any))
     val args = List(astsForExpression(expr.getBaseExpression, None).headOption.getOrElse(Ast()))
       .filterNot(_.root == null)
     val node =
@@ -663,7 +663,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     annotations: Seq[KtAnnotationEntry] = Seq()
   ): Ast = {
     val arrayExpr     = expression.getArrayExpression
-    val typeFullName  = registerType(exprTypeFullName(expression).getOrElse(TypeConstants.any))
+    val typeFullName  = registerType(exprTypeFullName(expression).getOrElse(TypeConstants.Any))
     val identifier    = identifierNode(arrayExpr, arrayExpr.getText, arrayExpr.getText, typeFullName)
     val identifierAst = astWithRefEdgeMaybe(arrayExpr.getText, identifier)
     val astsForIndexExpr = expression.getIndexExpressions.asScala.zipWithIndex.flatMap { case (expr, idx) =>

@@ -3,7 +3,9 @@ package io.joern.kotlin2cpg.ast
 import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.KtFileWithMeta
 import io.joern.kotlin2cpg.datastructures.Scope
-import io.joern.kotlin2cpg.types.{NameRenderer, TypeConstants, TypeInfoProvider}
+import io.joern.kotlin2cpg.types.NameRenderer
+import io.joern.kotlin2cpg.types.TypeConstants
+import io.joern.kotlin2cpg.types.TypeInfoProvider
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.AstCreatorBase
 import io.joern.x2cpg.AstNodeBuilder
@@ -16,28 +18,25 @@ import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
-import org.jetbrains.kotlin.descriptors.{
-  DeclarationDescriptor,
-  DescriptorVisibilities,
-  DescriptorVisibility,
-  FunctionDescriptor
-}
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
+import org.jetbrains.kotlin.descriptors.DescriptorVisibility
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.lexer.KtToken
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.resolve.BindingContext
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
-import org.jetbrains.kotlin.resolve.BindingContext
 
-import java.io.PrintWriter
-import java.io.StringWriter
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
+import scala.util.Try
 
 object AstCreator {
   case class AnonymousObjectContext(declaration: KtElement)
@@ -55,8 +54,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, bindingContext: BindingContext, g
     with AstForExpressionsCreator
     with AstNodeBuilder[PsiElement, AstCreator] {
 
-  import AstCreator.ClosureBindingDef
   import AstCreator.BindingInfo
+  import AstCreator.ClosureBindingDef
 
   protected val closureBindingDefQueue: mutable.ArrayBuffer[ClosureBindingDef] = mutable.ArrayBuffer.empty
   protected val bindingInfoQueue: mutable.ArrayBuffer[BindingInfo]             = mutable.ArrayBuffer.empty
@@ -79,7 +78,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, bindingContext: BindingContext, g
 
   def createAst(): DiffGraphBuilder = {
     logger.debug(s"Started parsing file `${fileWithMeta.filename}`.")
-    val defaultTypes = Set(TypeConstants.javaLangObject, TypeConstants.kotlin)
+    val defaultTypes = Set(TypeConstants.JavaLangObject, TypeConstants.Kotlin)
     defaultTypes.foreach(registerType)
     storeInDiffGraph(astForFile(fileWithMeta))
     diffGraph
@@ -151,30 +150,19 @@ class AstCreator(fileWithMeta: KtFileWithMeta, bindingContext: BindingContext, g
   }
 
   // TODO: use this everywhere in kotlin2cpg instead of manual .getText calls
-  override def code(element: PsiElement): String = shortenCode(element.getText)
+  override def code(element: PsiElement): String =
+    shortenCode(element.getText)
 
-  override def line(element: PsiElement): Option[Int] = {
-    try {
-      Some(
-        element.getContainingFile.getViewProvider.getDocument
-          .getLineNumber(element.getTextOffset) + 1
-      )
-    } catch {
-      case _: Throwable => None
-    }
-  }
+  override def line(element: PsiElement): Option[Int] =
+    Try(element.getContainingFile.getViewProvider.getDocument.getLineNumber(element.getTextOffset) + 1).toOption
 
   override def column(element: PsiElement): Option[Int] = {
-    try {
-      val lineNumber =
-        element.getContainingFile.getViewProvider.getDocument
-          .getLineNumber(element.getTextOffset)
-      val lineOffset =
-        element.getContainingFile.getViewProvider.getDocument.getLineStartOffset(lineNumber)
-      Some(element.getTextOffset - lineOffset)
-    } catch {
-      case _: Throwable => None
-    }
+    for {
+      lineNumber <- line(element)
+      lineOffset <- Try(
+        element.getContainingFile.getViewProvider.getDocument.getLineStartOffset(lineNumber - 1)
+      ).toOption
+    } yield element.getTextOffset - lineOffset
   }
 
   override def lineEnd(element: PsiElement): Option[Int] = {
@@ -201,7 +189,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, bindingContext: BindingContext, g
 
   protected def getName(node: NewImport): String = {
     val isWildcard = node.isWildcard.getOrElse(false)
-    if (isWildcard) Constants.wildcardImportName
+    if (isWildcard) Constants.WildcardImportName
     else node.importedEntity.getOrElse("")
   }
 
@@ -361,13 +349,13 @@ class AstCreator(fileWithMeta: KtFileWithMeta, bindingContext: BindingContext, g
 
     val packageName = ktFile.getPackageFqName.toString
     val node =
-      if (packageName == Constants.root)
+      if (packageName == Constants.Root) {
         NodeBuilders.newNamespaceBlockNode(
           NamespaceTraversal.globalNamespaceName,
           NamespaceTraversal.globalNamespaceName,
           relativizedPath
         )
-      else {
+      } else {
         val name = packageName.split("\\.").lastOption.getOrElse("")
         NodeBuilders.newNamespaceBlockNode(name, packageName, relativizedPath)
       }
@@ -384,8 +372,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, bindingContext: BindingContext, g
     methodAstParentStack.push(fakeGlobalMethod)
     scope.pushNewScope(fakeGlobalMethod)
 
-    val blockNode_   = blockNode(ktFile, "<empty>", registerType(TypeConstants.any))
-    val methodReturn = newMethodReturnNode(TypeConstants.any, None, None, None)
+    val blockNode_   = blockNode(ktFile, "<empty>", registerType(TypeConstants.Any))
+    val methodReturn = newMethodReturnNode(TypeConstants.Any, None, None, None)
 
     val declarationsAsts = ktFile.getDeclarations.asScala.flatMap(astsForDeclaration)
     val fileNode         = NewFile().name(fileWithMeta.relativizedPath)
@@ -423,12 +411,9 @@ class AstCreator(fileWithMeta: KtFileWithMeta, bindingContext: BindingContext, g
         }
       } catch {
         case exception: Exception =>
-          val declText     = decl.getText
-          val stringWriter = new StringWriter()
-          val printWriter  = new PrintWriter(stringWriter)
-          exception.printStackTrace(printWriter)
           logger.warn(
-            s"Caught exception while processing decl in this file `$relativizedPath`:\n$declText\n${stringWriter.toString}"
+            s"Caught exception while processing decl in this file `$relativizedPath`:\n${decl.getText}",
+            exception
           )
           Seq()
       }
@@ -442,7 +427,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, bindingContext: BindingContext, g
     argNameMaybe: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
   ): Ast = {
-    val node = unknownNode(expr, Option(expr).map(_.getText).getOrElse(Constants.codePropUndefinedValue))
+    val node = unknownNode(expr, Option(expr).map(_.getText).getOrElse(Constants.CodePropUndefinedValue))
     Ast(withArgumentIndex(node, argIdx).argumentName(argNameMaybe))
       .withChildren(annotations.map(astForAnnotationEntry))
   }
@@ -456,7 +441,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, bindingContext: BindingContext, g
       bindingUtils
         .getVariableDesc(entry)
         .flatMap(desc => nameRenderer.typeFullName(desc.getType))
-        .getOrElse(TypeConstants.any)
+        .getOrElse(TypeConstants.Any)
     )
     val assignmentLHSNode = identifierNode(entry, entry.getText, entry.getText, entryTypeFullName)
     val assignmentLHSAst  = astWithRefEdgeMaybe(assignmentLHSNode.name, assignmentLHSNode)
@@ -464,18 +449,18 @@ class AstCreator(fileWithMeta: KtFileWithMeta, bindingContext: BindingContext, g
     val desc = bindingUtils.getCalledFunctionDesc(entry)
     val descFullName = desc
       .flatMap(nameRenderer.descFullName)
-      .getOrElse(s"${Defines.UnresolvedNamespace}${Constants.componentNPrefix}$componentIdx")
+      .getOrElse(s"${Defines.UnresolvedNamespace}${Constants.ComponentNPrefix}$componentIdx")
     val signature = desc
       .flatMap(nameRenderer.funcDescSignature)
       .getOrElse(s"${Defines.UnresolvedSignature}()")
     val fullName = nameRenderer.combineFunctionFullName(descFullName, signature)
 
     val componentNCallCode =
-      s"${rhsBaseAst.root.get.asInstanceOf[ExpressionNew].code}.${Constants.componentNPrefix}$componentIdx()"
+      s"${rhsBaseAst.root.get.asInstanceOf[ExpressionNew].code}.${Constants.ComponentNPrefix}$componentIdx()"
     val componentNCallNode = callNode(
       entry,
       componentNCallCode,
-      s"${Constants.componentNPrefix}$componentIdx",
+      s"${Constants.ComponentNPrefix}$componentIdx",
       fullName,
       DispatchTypes.DYNAMIC_DISPATCH,
       Some(signature),
@@ -551,14 +536,13 @@ class AstCreator(fileWithMeta: KtFileWithMeta, bindingContext: BindingContext, g
   }
 
   protected def fullNameByImportPath(typeRef: KtTypeReference, file: KtFile): Option[String] = {
-    if (typeRef == null) {
-      return None
+    if (typeRef == null) { None }
+    else {
+      val typeRefText = typeRef.getText.stripSuffix("?")
+      file.getImportList.getImports.asScala.collectFirst {
+        case directive if directive.getImportedName != null && directive.getImportedName.toString == typeRefText =>
+          directive.getImportPath.getPathStr
+      }
     }
-
-    file.getImportList.getImports.asScala.flatMap { directive =>
-      if (directive.getImportedName != null && directive.getImportedName.toString == typeRef.getText.stripSuffix("?"))
-        Some(directive.getImportPath.getPathStr)
-      else None
-    }.headOption
   }
 }
