@@ -90,7 +90,7 @@ object RubySrc2Cpg {
   def postProcessingPasses(cpg: Cpg, config: Config): List[CpgPassBase] = {
     val implicitRequirePass = if (cpg.dependency.name.contains("zeitwerk")) ImplicitRequirePass(cpg) :: Nil else Nil
     implicitRequirePass ++ List(ImportsPass(cpg), RubyImportResolverPass(cpg)) ++
-      new RubyTypeRecoveryPassGenerator(cpg, config = XTypeRecoveryConfig(iterations = 2))
+      new RubyTypeRecoveryPassGenerator(cpg, config = XTypeRecoveryConfig(iterations = 4))
         .generate() ++ List(new RubyTypeHintCallLinker(cpg), new NaiveCallLinker(cpg), new AstLinkerPass(cpg))
   }
 
