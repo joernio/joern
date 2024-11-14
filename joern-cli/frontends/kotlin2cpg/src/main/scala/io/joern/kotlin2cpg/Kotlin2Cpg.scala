@@ -4,7 +4,7 @@ import better.files.File
 import io.joern.kotlin2cpg.compiler.CompilerAPI
 import io.joern.kotlin2cpg.compiler.ErrorLoggingMessageCollector
 import io.joern.kotlin2cpg.files.SourceFilesPicker
-import io.joern.kotlin2cpg.interop.JavasrcInterop
+import io.joern.kotlin2cpg.interop.JavaSrcInterop
 import io.joern.kotlin2cpg.jar4import.UsesService
 import io.joern.kotlin2cpg.passes.*
 import io.joern.kotlin2cpg.types.{ContentSourcesPicker, TypeInfoProvider}
@@ -36,8 +36,8 @@ import scala.util.matching.Regex
 object Kotlin2Cpg {
 
   private val logger               = LoggerFactory.getLogger(getClass)
-  private val jarExtension: String = ".jar"
-  private val importRegex: Regex   = ".*import([^;]*).*".r
+  private val JarExtension: String = ".jar"
+  private val ImportPattern: Regex = ".*import([^;]*).*".r
 
   private val defaultKotlinStdlibContentRootJarPaths = Seq(
     DefaultContentRootJarPath("jars/kotlin-stdlib-1.9.0.jar", isResource = true),
@@ -182,16 +182,20 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
     sourceFiles
   }
 
-  private def runJavasrcInterop(
+  private def runJavaSrcInterop(
     cpg: Cpg,
     config: Config,
     filesWithJavaExtension: List[String],
     kotlinAstCreatorTypes: List[String]
   ): Unit = {
     if (config.includeJavaSourceFiles && filesWithJavaExtension.nonEmpty) {
-      val javaAstCreator = JavasrcInterop.astCreationPass(config.inputPath, filesWithJavaExtension, cpg)
+      val javaAstCreator = JavaSrcInterop.astCreationPass(config.inputPath, filesWithJavaExtension, cpg)
       javaAstCreator.createAndApply()
       val javaAstCreatorTypes = javaAstCreator.global.usedTypes.keys().asScala.toList
+
+      javaAstCreator.sourceParser.cleanupDelombokOutput()
+      javaAstCreator.clearJavaParserCaches()
+
       TypeNodePass
         .withRegisteredTypes((javaAstCreatorTypes.toSet -- kotlinAstCreatorTypes.toSet).toList, cpg)
         .createAndApply()
@@ -231,14 +235,14 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
       val kotlinAstCreatorTypes = astCreator.usedTypes()
       TypeNodePass.withRegisteredTypes(kotlinAstCreatorTypes, cpg).createAndApply()
 
-      runJavasrcInterop(cpg, config, filesWithJavaExtension, kotlinAstCreatorTypes)
+      runJavaSrcInterop(cpg, config, filesWithJavaExtension, kotlinAstCreatorTypes)
       new ConfigPass(configFiles, cpg).createAndApply()
       new DependenciesFromMavenCoordinatesPass(mavenCoordinates, cpg).createAndApply()
     }
   }
 
   private def importNamesForFilesAtPaths(paths: Seq[String]): Seq[String] = {
-    paths.flatMap(File(_).lines.filter(_.startsWith("import")).toSeq).map(importRegex.replaceAllIn(_, "$1").trim)
+    paths.flatMap(File(_).lines.filter(_.startsWith("import")).toSeq).map(ImportPattern.replaceAllIn(_, "$1").trim)
   }
 
   private def gatherGradleParams(config: Config) = {
@@ -282,7 +286,7 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
     dirs.foldLeft(Seq[String]())((acc, classpathEntry) => {
       val f = File(classpathEntry)
       val files =
-        if (f.isDirectory) f.listRecursively.filter(_.extension.getOrElse("") == jarExtension).map(_.toString)
+        if (f.isDirectory) f.listRecursively.filter(_.extension.getOrElse("") == JarExtension).map(_.toString)
         else Seq()
       acc ++ files
     })

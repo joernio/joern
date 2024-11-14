@@ -23,11 +23,11 @@ org.springframework:spring-context:6.0.7
 ```
  */
 class DependenciesFromMavenCoordinatesPass(coordinates: Seq[String], cpg: Cpg) extends CpgPass(cpg) {
-  private val keyValPattern: Regex = "^([^:]+):([^:]+):([^:]+)$".r
+  private val KeyValPattern: Regex = "^([^:]+):([^:]+):([^:]+)$".r
 
   override def run(dstGraph: DiffGraphBuilder): Unit = {
     coordinates.foreach { coordinate =>
-      for (patternMatch <- keyValPattern.findAllMatchIn(coordinate)) {
+      for (patternMatch <- KeyValPattern.findAllMatchIn(coordinate)) {
         val groupId = patternMatch.group(1)
         val name    = patternMatch.group(2)
         val version = patternMatch.group(3)
