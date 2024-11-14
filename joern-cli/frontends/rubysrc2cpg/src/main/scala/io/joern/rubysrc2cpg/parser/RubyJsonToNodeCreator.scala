@@ -455,8 +455,9 @@ class RubyJsonToNodeCreator(
   private def visitFalse(obj: Obj): RubyExpression = StaticLiteral(getBuiltInType(Defines.FalseClass))(obj.toTextSpan)
 
   private def visitFieldDeclaration(obj: Obj): RubyExpression = {
-    val arguments = obj.visitArray(ParserKeys.Arguments)
-    FieldsDeclaration(arguments)(obj.toTextSpan)
+    val arguments  = obj.visitArray(ParserKeys.Arguments)
+    val accessType = obj(ParserKeys.Name).str
+    FieldsDeclaration(arguments, accessType)(obj.toTextSpan)
   }
 
   private def visitFindPattern(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))

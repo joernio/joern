@@ -135,12 +135,13 @@ object RubyIntermediateAst {
       extends RubyExpression(span)
       with AnonymousTypeDeclaration
 
-  final case class FieldsDeclaration(fieldNames: List[RubyExpression])(span: TextSpan)
+  final case class FieldsDeclaration(fieldNames: List[RubyExpression], accessType: String)(span: TextSpan)
       extends RubyExpression(span)
       with AllowedTypeDeclarationChild {
     def hasGetter: Boolean = text.startsWith("attr_reader") || text.startsWith("attr_accessor")
-
     def hasSetter: Boolean = text.startsWith("attr_writer") || text.startsWith("attr_accessor")
+
+    def isSplattingFieldDecl: Boolean = fieldNames.length == 1 && fieldNames.head.isInstanceOf[SplattingRubyNode]
   }
 
   sealed trait ProcedureDeclaration extends RubyStatement {
