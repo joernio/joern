@@ -537,4 +537,23 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
       sl.code shouldBe "x <<= 2"
     }
   }
+
+  "global variable assignment" in {
+    val cpg = code("""
+        |$alfred = "123"
+        |""".stripMargin)
+
+    inside(cpg.call.name(Operators.assignment).l) {
+      case alfredAssign :: Nil =>
+        alfredAssign.code shouldBe "$alfred = \"123\""
+
+        val List(lhs: Call, rhs: Literal) = alfredAssign.argument.l: @unchecked
+
+        lhs.methodFullName shouldBe Operators.fieldAccess
+        lhs.code shouldBe "self.$alfred"
+
+        rhs.code shouldBe "\"123\""
+      case xs => fail(s"Expected one assignment call, got [${xs.code.mkString(",")}]")
+    }
+  }
 }
