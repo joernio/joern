@@ -500,7 +500,18 @@ class RubyJsonToNodeCreator(
     MemberAccess(selfBase, ".", name)(span)
   }
 
-  private def visitGlobalVariableAssign(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitGlobalVariableAssign(obj: Obj): RubyExpression = {
+    val span = obj.toTextSpan
+
+    val selfBase = SelfIdentifier()(span.spanStart("self"))
+    val lhsName  = obj(ParserKeys.Lhs).str
+    val lhs      = MemberAccess(selfBase, ".", lhsName)(span.spanStart(s"${selfBase.span.text}.$lhsName"))
+
+    val rhs = visit(obj(ParserKeys.Rhs))
+    val op  = "="
+
+    SingleAssignment(lhs, op, rhs)(obj.toTextSpan)
+  }
 
   private def visitHash(obj: Obj): RubyExpression = {
     val isHashLiteral = obj.toTextSpan.text.stripMargin.startsWith("{")
