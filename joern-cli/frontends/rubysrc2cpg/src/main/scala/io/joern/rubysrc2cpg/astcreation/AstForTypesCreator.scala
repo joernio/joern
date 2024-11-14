@@ -261,8 +261,17 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         val getterAst   = Option.when(node.hasGetter)(astForGetterMethod(node, fieldName)).getOrElse(Nil)
         val setterAst   = Option.when(node.hasSetter)(astForSetterMethod(node, fieldName)).getOrElse(Nil)
         Seq(memberAst) ++ getterAst ++ setterAst
+      case nameAsIdent: SimpleIdentifier =>
+        val fieldName   = nameAsIdent.span.text.prepended('@')
+        val memberNode_ = memberNode(nameAsIdent, fieldName, code(node), Defines.Any)
+        val memberAst   = Ast(memberNode_)
+        val getterAst   = Option.when(node.hasGetter)(astForGetterMethod(node, fieldName)).getOrElse(Nil)
+        val setterAst   = Option.when(node.hasSetter)(astForSetterMethod(node, fieldName)).getOrElse(Nil)
+        Seq(memberAst) ++ getterAst ++ setterAst
       case _ =>
-        logger.warn(s"Unsupported field declaration: ${nameNode.text} (${nameNode.getClass}), skipping")
+        logger.warn(
+          s"Unsupported field declaration: ${nameNode.text} (${nameNode.getClass}) (${this.relativeFileName}), skipping"
+        )
         Seq()
   }
 

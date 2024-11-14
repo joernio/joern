@@ -7,6 +7,8 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   ClassFieldIdentifier,
   ControlFlowStatement,
   DefaultMultipleAssignment,
+  FieldsDeclaration,
+  ForExpression,
   IfExpression,
   MemberAccess,
   MethodDeclaration,
@@ -117,6 +119,19 @@ object RubyJsonHelpers {
       }
     }
 
+    /** @param expr
+      *   An expression that is a direct child to a class or module.
+      * @return
+      *   true if the expression is a Splatting Field Declaration (`attr_x(*foo)`), false otherwise.
+      */
+    def isSplattingField(expr: RubyExpression): Boolean = {
+      expr match {
+        case x: FieldsDeclaration if x.isSplattingFieldDecl => true
+        case _: AllowedTypeDeclarationChild                 => false
+        case _                                              => false
+      }
+    }
+
     /** Extracts a field from the expression.
       * @param expr
       *   An expression that is a direct child to a class or module.
@@ -137,19 +152,85 @@ object RubyJsonHelpers {
       }
     }
 
+    /** Attempts to evaluate and parse the collection associated with the splattingField, generating FieldDeclarations
+      * for each of the elements.
+      * @param fieldStmts
+      *   List of all the field statements
+      * @param splattingFields
+      *   List of splatting fields
+      * @return
+      *   List of:
+      *   - Some(_) => if splattingField either is evaluated to a list of FieldDeclarations, otherwise a SimpleCall
+      *   - None => if splattingField cannot be evaluated to either FieldsDeclaration or SimpleCall
+      */
+    def lowerSplattingFieldDecl(
+      fieldStmts: List[RubyExpression],
+      splattingFields: List[RubyExpression]
+    ): List[Option[RubyExpression]] = {
+      splattingFields.flatMap {
+        case x @ FieldsDeclaration(fieldName :: Nil, accessType) if fieldName.isInstanceOf[SplattingRubyNode] =>
+          fieldStmts.map {
+            case _ @SingleAssignment(lhs: SimpleIdentifier, _, rhs: MemberAccess)
+                if rhs.memberName == "freeze" && lhs.span.text == fieldName.span.text.stripPrefix("*") =>
+              rhs.target match {
+                case y: ArrayLiteral =>
+                  Some(FieldsDeclaration(y.elements, accessType)(x.span))
+                case _ => None
+              }
+            case _ @SingleAssignment(_: SimpleIdentifier, _, rhs: ArrayLiteral) =>
+              Some(FieldsDeclaration(rhs.elements, accessType)(x.span))
+            case _ =>
+              Some(
+                SimpleCall(SimpleIdentifier()(x.span.spanStart(accessType)), List(fieldName))(
+                  x.span.spanStart(s"$accessType(${fieldName.span.text})")
+                )
+              )
+          }
+        case _ => None
+      }
+    }
+
     obj.visitOption(ParserKeys.Body).map(lowerAliasStatementsToMethods) match {
       case Some(stmtList @ StatementList(expression :: Nil)) if expression.isInstanceOf[AllowedTypeDeclarationChild] =>
-        (StatementList(bodyMethod(Nil) :: expression :: Nil)(stmtList.span), getFields(expression))
+        if (isSplattingField(expression)) {
+          val splattingField = expression.asInstanceOf[FieldsDeclaration]
+          splattingField.fieldNames.headOption match {
+            case Some(splattingFieldName) =>
+              val nonExpandedSplattingFieldCall =
+                SimpleCall(
+                  SimpleIdentifier()(expression.span.spanStart(splattingField.accessType)),
+                  List(splattingFieldName)
+                )(expression.span.spanStart(s"${splattingField.accessType}(${splattingFieldName.span.text})"))
+              (
+                StatementList(bodyMethod(List(nonExpandedSplattingFieldCall)) :: Nil)(stmtList.span),
+                getFields(expression)
+              )
+            case None =>
+              logger.warn(s"No fieldName found for Splatting Field Decl: ${splattingField.span.text}")
+              (StatementList(bodyMethod(Nil) :: expression :: Nil)(stmtList.span), getFields(expression))
+          }
+        } else {
+          (StatementList(bodyMethod(Nil) :: expression :: Nil)(stmtList.span), getFields(expression))
+        }
       case Some(stmtList @ StatementList(expression :: Nil)) if isFieldStmt(expression) =>
         (StatementList(bodyMethod(expression :: Nil) :: Nil)(stmtList.span), getFields(expression))
       case Some(stmtList: StatementList) =>
-        val (fieldStmts, otherStmts)   = stmtList.statements.partition(isFieldStmt)
-        val (typeDeclStmts, bodyStmts) = otherStmts.partition(_.isInstanceOf[AllowedTypeDeclarationChild])
+        val (fieldStmts, otherStmts)              = stmtList.statements.partition(isFieldStmt)
+        val (typeDeclStmts, bodyStmts)            = otherStmts.partition(_.isInstanceOf[AllowedTypeDeclarationChild])
+        val (splattingFields, otherTypeDeclStmts) = typeDeclStmts.partition(isSplattingField)
+        val (expandedSplattingFields, nonExpandedSplattingFieldsCalls) =
+          lowerSplattingFieldDecl(fieldStmts, splattingFields)
+            .filter(_.isDefined)
+            .map(_.get)
+            .partition(_.isInstanceOf[FieldsDeclaration])
+
         val fields =
-          (fieldStmts.flatMap(x => getFields(x)) ++ typeDeclStmts.flatMap(x => getFields(x)))
+          (fieldStmts.flatMap(x => getFields(x)) ++ otherTypeDeclStmts.flatMap(x => getFields(x)))
             .distinctBy(_.text)
         val body = stmtList.copy(statements =
-          bodyMethod(fieldStmts ++ typeDeclStmts.flatMap(x => getFields(x)) ++ bodyStmts) +: typeDeclStmts
+          bodyMethod(
+            fieldStmts ++ otherTypeDeclStmts.flatMap(x => getFields(x)) ++ bodyStmts ++ nonExpandedSplattingFieldsCalls
+          ) +: (otherTypeDeclStmts ++ expandedSplattingFields)
         )(stmtList.span)
 
         (body, fields)

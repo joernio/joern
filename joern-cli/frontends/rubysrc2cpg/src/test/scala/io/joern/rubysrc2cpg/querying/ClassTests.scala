@@ -1016,4 +1016,62 @@ class ClassTests extends RubyCode2CpgFixture {
         |""".stripMargin)
   }
 
+  "Splat Field Declaration" in {
+    val cpg = code("""
+        |  class EpisodeRssItem
+        |    FOUND = %i[title itunes_subtitle].freeze
+        |    attr_reader(*FOUND)
+        |    attr_reader(*NOT_FOUND)
+        |   end
+        |
+        |""".stripMargin)
+
+    val List(titleMethod)  = cpg.method.name("title").l
+    val List(itunesMethod) = cpg.method.name("itunes_subtitle").l
+    val List(bodyMethod)   = cpg.method.name("<body>").l
+
+    inside(titleMethod.methodReturn.toReturn.l) {
+      case methodReturn :: Nil =>
+        methodReturn.code shouldBe "@title"
+      case xs => fail(s"Expected one return, got [${xs.code.mkString(",")}]")
+    }
+
+    inside(itunesMethod.methodReturn.toReturn.l) {
+      case methodReturn :: Nil =>
+        methodReturn.code shouldBe "@itunes_subtitle"
+      case xs => fail(s"Expected one return, got [${xs.code.mkString(",")}]")
+    }
+
+    inside(bodyMethod.call.name("attr_reader").l) {
+      case notFoundCall :: Nil =>
+        notFoundCall.code shouldBe "attr_reader(*NOT_FOUND)"
+        inside(notFoundCall.argument.l) {
+          case _ :: splatArg :: Nil =>
+            splatArg.code shouldBe "*NOT_FOUND"
+          case xs => fail(s"Expected two args, got ${xs.size}: [${xs.code.mkString(",")}]")
+        }
+      case xs => fail(s"Expected one call, got [${xs.code.mkString(",")}]")
+    }
+  }
+
+  "Unknown Splat Field Declaration" in {
+    val cpg = code("""
+                     |  class EpisodeRssItem
+                     |    attr_reader(*NOT_FOUND)
+                     |   end
+                     |""".stripMargin)
+
+    val List(bodyMethod) = cpg.method.name("<body>").l
+
+    inside(bodyMethod.call.name("attr_reader").l) {
+      case notFoundCall :: Nil =>
+        notFoundCall.code shouldBe "attr_reader(*NOT_FOUND)"
+        inside(notFoundCall.argument.l) {
+          case _ :: splatArg :: Nil =>
+            splatArg.code shouldBe "*NOT_FOUND"
+          case xs => fail(s"Expected two args, got ${xs.size}: [${xs.code.mkString(",")}]")
+        }
+      case xs => fail(s"Expected one call, got [${xs.code.mkString(",")}]")
+    }
+  }
 }
