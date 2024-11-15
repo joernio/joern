@@ -13,7 +13,9 @@ object Help {
       .map { case StepDoc(_, funcName, doc) =>
         List(funcName, doc.info, doc.example)
       }
-      .toList ++ List(runRow)
+      .toList ++ List(runRow) ++ List(
+        List("EXAMPLE COL 1", "EXAMPLE COL 2", "EXAMPLE COL 3")
+      )
 
     val header = formatNoQuotes("""
       |
