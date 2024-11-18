@@ -4,6 +4,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   AliasStatement,
   AllowedTypeDeclarationChild,
   ArrayLiteral,
+  ArrayParameter,
   ClassFieldIdentifier,
   ControlFlowStatement,
   DefaultMultipleAssignment,
@@ -12,6 +13,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   IfExpression,
   MemberAccess,
   MethodDeclaration,
+  ProcParameter,
   ProcedureDeclaration,
   RubyCall,
   RubyExpression,
@@ -354,29 +356,22 @@ object RubyJsonHelpers {
       case x                    => List(x)
     }
 
-    val methodParamMap = stmts.collect { case method: ProcedureDeclaration =>
-      method.methodName -> method.parameters
-    }.toMap
-
     val transformedStmts = stmts.map {
-      case alias: AliasStatement if methodParamMap.contains(alias.oldName) =>
-        val aliasingMethodParams = methodParamMap(alias.oldName)
-        val argsCode             = aliasingMethodParams.map(_.text).mkString(", ")
-        val callCode             = s"${alias.oldName}($argsCode)"
-
-        val forwardingCall = SimpleCall(
-          SimpleIdentifier(None)(alias.span.spanStart(alias.oldName)),
-          aliasingMethodParams.map { x => SimpleIdentifier(None)(alias.span.spanStart(x.span.text)) }
-        )(alias.span.spanStart(callCode))
-        val aliasMethodBody = StatementList(forwardingCall :: Nil)(alias.span.spanStart(callCode))
-        MethodDeclaration(alias.newName, aliasingMethodParams, aliasMethodBody)(
-          alias.span.spanStart(s"def ${alias.newName}($argsCode)")
+      case alias: AliasStatement =>
+        val span                 = alias.span
+        val forwardingCallTarget = SimpleIdentifier(None)(span.spanStart(alias.oldName))
+        val forwardedArgs  = SplattingRubyNode(SimpleIdentifier()(span.spanStart("args")))(span.spanStart("*args"))
+        val forwardedBlock = SimpleIdentifier()(span.spanStart("&block"))
+        val forwardingCall = SimpleCall(forwardingCallTarget, forwardedArgs :: forwardedBlock :: Nil)(
+          span.spanStart(s"${alias.oldName}(*args, &block)")
         )
 
-      case alias: AliasStatement =>
-        logger.warn(s"Unable to correctly lower aliased method ${alias.oldName} (aliased method not found)")
-        val forwardingCall = SimpleCall(SimpleIdentifier(None)(alias.span.spanStart(alias.oldName)), Nil)(alias.span)
-        MethodDeclaration(alias.newName, Nil, StatementList(forwardingCall :: Nil)(alias.span))(alias.span)
+        val aliasMethodBody = StatementList(forwardingCall :: Nil)(forwardingCall.span)
+        val aliasingMethodParams =
+          ArrayParameter("*args")(span.spanStart("*args")) :: ProcParameter("&block")(span.spanStart("&block")) :: Nil
+        MethodDeclaration(alias.newName, aliasingMethodParams, aliasMethodBody)(
+          alias.span.spanStart(s"def ${alias.newName}(*args, &block)")
+        )
       case expr => expr
     }
 
