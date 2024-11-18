@@ -305,13 +305,15 @@ class AstGenRunner(config: Config) {
 
     val jsons = SourceFiles.determine(out.toString(), Set(".json"))
     jsons.foreach { jsonPath =>
-      val jsonFile    = File(jsonPath)
-      val jsonContent = IOUtils.readEntireFile(jsonFile.path)
-      val json        = ujson.read(jsonContent)
-      val fileName    = json("fullName").str
-      val newFileName = fileName.patch(fileName.lastIndexOf(".js"), ".ejs", 3)
-      json("relativeName") = newFileName
-      json("fullName") = newFileName
+      val jsonFile        = File(jsonPath)
+      val jsonContent     = IOUtils.readEntireFile(jsonFile.path)
+      val json            = ujson.read(jsonContent)
+      val fullName        = json("fullName").str
+      val relativeName    = json("relativeName").str
+      val newFullName     = fullName.patch(fullName.lastIndexOf(".js"), ".ejs", 3)
+      val newRelativeName = relativeName.patch(relativeName.lastIndexOf(".js"), ".ejs", 3)
+      json("relativeName") = newRelativeName
+      json("fullName") = newFullName
       jsonFile.writeText(json.toString())
     }
 
