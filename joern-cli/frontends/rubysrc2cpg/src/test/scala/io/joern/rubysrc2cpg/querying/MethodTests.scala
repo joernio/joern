@@ -323,18 +323,23 @@ class MethodTests extends RubyCode2CpgFixture {
               x.name shouldBe "x"
               bar.name shouldBe "bar="
 
-              xeq.parameter.name.l shouldBe bar.parameter.name.l
+              bar.parameter.name.l shouldBe List("self", "*args", "&block")
               // bar forwards parameters to a call to the aliased method
               inside(bar.call.name("x=").l) {
                 case barCall :: Nil =>
                   inside(barCall.argument.l) {
-                    case _ :: (z: Identifier) :: Nil =>
-                      z.name shouldBe "z"
-                      z.argumentIndex shouldBe 1
+                    case _ :: (args: Call) :: (blockId: Identifier) :: Nil =>
+                      args.name shouldBe RubyOperators.splat
+                      args.code shouldBe "*args"
+                      args.argumentIndex shouldBe 1
+
+                      blockId.name shouldBe "&block"
+                      blockId.code shouldBe "&block"
+                      blockId.argumentIndex shouldBe 2
                     case xs =>
                       fail(s"Expected a two arguments for the call `x=`,  instead got [${xs.code.mkString(",")}]")
                   }
-                  barCall.code shouldBe "x=(z)"
+                  barCall.code shouldBe "x=(*args, &block)"
                 case xs => fail(s"Expected a single call to `bar=`,  instead got [${xs.code.mkString(",")}]")
               }
             case xs => fail(s"Expected a three virtual methods under `Foo`, instead got [${xs.code.mkString(",")}]")
