@@ -92,18 +92,32 @@ class SimpleCfgCreationPassTests extends CfgTestFixture(() => new JsSrcCfgTestCp
 
     "have correct structure for tagged runtime node" in {
       implicit val cpg: Cpg = code(s"String.raw`../$${42}\\..`")
-      succOf(":program") should contain theSameElementsAs expected(("\"../\"", AlwaysEdge))
-      succOf("\"../\"") should contain theSameElementsAs expected(("42", AlwaysEdge))
-      succOf("42") should contain theSameElementsAs expected(("\"\\..\"", AlwaysEdge))
-      succOf("\"\\..\"") should contain theSameElementsAs expected(
-        (s"${Operators.formatString}(\"../\", 42, \"\\..\")", AlwaysEdge)
+      succOf(":program") should contain theSameElementsAs expected(("String", AlwaysEdge))
+      succOf("String") should contain theSameElementsAs expected(("raw", AlwaysEdge))
+      succOf("raw") should contain theSameElementsAs expected(("String.raw", AlwaysEdge))
+      succOf("String.raw") should contain theSameElementsAs expected(("String", 1, AlwaysEdge))
+      succOf("String", 1) should contain theSameElementsAs expected(("_tmp_0", AlwaysEdge))
+      succOf("_tmp_0") should contain theSameElementsAs expected(("__ecma.Array.factory()", AlwaysEdge))
+      succOf("__ecma.Array.factory()") should contain theSameElementsAs expected(
+        ("_tmp_0 = __ecma.Array.factory()", AlwaysEdge)
       )
-      succOf(s"${Operators.formatString}(\"../\", 42, \"\\..\")") should contain theSameElementsAs expected(
-        (s"String.raw(${Operators.formatString}(\"../\", 42, \"\\..\"))", AlwaysEdge)
-      )
-      succOf(s"String.raw(${Operators.formatString}(\"../\", 42, \"\\..\"))") should contain theSameElementsAs expected(
-        ("RET", AlwaysEdge)
-      )
+      succOf("_tmp_0 = __ecma.Array.factory()") should contain theSameElementsAs expected(("_tmp_0", 1, AlwaysEdge))
+      succOf("_tmp_0", 1) should contain theSameElementsAs expected(("push", AlwaysEdge))
+      succOf("push") should contain theSameElementsAs expected(("_tmp_0.push", AlwaysEdge))
+      succOf("_tmp_0.push") should contain theSameElementsAs expected(("_tmp_0", 2, AlwaysEdge))
+      succOf("_tmp_0", 2) should contain theSameElementsAs expected(("\"../\"", AlwaysEdge))
+      succOf("\"../\"") should contain theSameElementsAs expected(("_tmp_0.push(\"../\")", AlwaysEdge))
+      succOf("_tmp_0.push(\"../\")") should contain theSameElementsAs expected(("_tmp_0", 3, AlwaysEdge))
+      succOf("_tmp_0", 3) should contain theSameElementsAs expected(("push", 1, AlwaysEdge))
+      succOf("push", 1) should contain theSameElementsAs expected(("_tmp_0.push", 1, AlwaysEdge))
+      succOf("_tmp_0.push", 1) should contain theSameElementsAs expected(("_tmp_0", 4, AlwaysEdge))
+      succOf("_tmp_0", 4) should contain theSameElementsAs expected(("\"\\..\"", AlwaysEdge))
+      succOf("\"\\..\"") should contain theSameElementsAs expected(("_tmp_0.push(\"\\..\")", AlwaysEdge))
+      succOf("_tmp_0.push(\"\\..\")") should contain theSameElementsAs expected(("_tmp_0", 5, AlwaysEdge))
+      succOf("_tmp_0", 5) should contain theSameElementsAs expected(("`../${42}\\..`", AlwaysEdge))
+      succOf("`../${42}\\..`") should contain theSameElementsAs expected(("42", AlwaysEdge))
+      succOf("42") should contain theSameElementsAs expected((s"String.raw`../$${42}\\..`", AlwaysEdge))
+      succOf(s"String.raw`../$${42}\\..`") should contain theSameElementsAs expected(("RET", AlwaysEdge))
     }
 
     "be correct for try" in {
