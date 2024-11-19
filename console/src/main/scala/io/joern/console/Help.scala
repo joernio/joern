@@ -1,19 +1,25 @@
 package io.joern.console
 
 import flatgraph.help.DocFinder.*
-import flatgraph.help.Table.AvailableWidthProvider
+import flatgraph.help.Table.{AvailableWidthProvider, Row}
 import flatgraph.help.{DocFinder, Table}
 
 object Help {
 
+  /** allows users to extend the help table with additional entries */
+  val additionalHelpEntries = Seq.newBuilder[Tuple3[String, String, String]]
+
   def overview(clazz: Class[?])(using AvailableWidthProvider): String = {
     val columnNames = List("command", "description", "example")
-    val rows = DocFinder
-      .findDocumentedMethodsOf(clazz)
-      .map { case StepDoc(_, funcName, doc) =>
-        List(funcName, doc.info, doc.example)
-      }
-      .toList ++ List(runRow)
+
+    val rows = Seq.newBuilder[Row]
+    rows += runRow
+    DocFinder.findDocumentedMethodsOf(clazz).foreach { case StepDoc(_, funcName, doc) =>
+      rows += List(funcName, doc.info, doc.example)
+    }
+    additionalHelpEntries.result().foreach { case (a, b, c) =>
+      rows += List(a, b, c)
+    }
 
     val header = formatNoQuotes("""
       |
@@ -27,7 +33,7 @@ object Help {
       |
       |
       |""".stripMargin)
-    header + "\n" + Table(columnNames, rows.sortBy(_.head)).render
+    header + "\n" + Table(columnNames, rows.result().sortBy(_.head)).render
   }
 
   def format(text: String): String = {
@@ -45,8 +51,7 @@ object Help {
     List("run", "Run analyzer on active CPG", "run.securityprofile")
 
   // Since `run` is generated dynamically, it's not picked up when looking
-  // through methods via reflection, and therefore, we are adding
-  // it manually.
+  // through methods via reflection, and therefore, we are adding it manually.
   def runLongHelp: String =
     Help.format("""
         |
@@ -60,11 +65,10 @@ object Help {
       }
       .mkString("\n")
 
-    val overview = Help.overview(clazz)
     s"""
        | class Helper() {
        |   def run: String = Help.runLongHelp
-       |   override def toString: String = \"\"\"$overview\"\"\"
+       |   override def toString: String = Help.overview(classOf[${clazz.getName}])
        |
        |  $membersCode
        | }
