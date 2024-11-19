@@ -236,7 +236,7 @@ object UseAfterFree extends QueryBundle {
           |  if (cond) {
           |    free(x);
           |    if (cond2)
-          |      return x; // not post-dominated by free call
+          |      return x; // doesn't post-dominate the free call
           |    x = NULL;
           |  }
           |  return x;
