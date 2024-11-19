@@ -269,31 +269,54 @@ class SimpleAstCreationPassTests extends AstJsSrc2CpgSuite {
       argument3.code shouldBe "\"\""
     }
 
-    "have correct structure for tagged runtime node" in {
+    "have correct structure for tagged runtime node with simple tag expression" in {
+      val cpg               = code(s"x`a $${1+1} b`")
+      val List(method)      = cpg.method.nameExact(":program").l
+      val List(methodBlock) = method.astChildren.isBlock.l
+
+      val List(rawCall) = methodBlock.astChildren.isCall.l
+      rawCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      rawCall.name shouldBe "x"
+      rawCall.receiver.isIdentifier.code.l shouldBe List("x")
+      rawCall.code shouldBe s"x`a $${1+1} b`"
+
+      val List(argument1) = rawCall.astChildren.isBlock.l
+      argument1.argumentIndex shouldBe 1
+      argument1.astChildren.code.l shouldBe List(
+        "_tmp_0",
+        "_tmp_0 = __ecma.Array.factory()",
+        "_tmp_0.push(\"a \")",
+        "_tmp_0.push(\" b\")",
+        "_tmp_0"
+      )
+
+      val List(argument2) = rawCall.astChildren.isCall.codeExact("1+1").l
+      argument2.argumentIndex shouldBe 2
+    }
+
+    "have correct structure for tagged runtime node with complex tag expression" in {
       val cpg               = code(s"String.raw`../$${42}\\..`")
       val List(method)      = cpg.method.nameExact(":program").l
       val List(methodBlock) = method.astChildren.isBlock.l
 
       val List(rawCall) = methodBlock.astChildren.isCall.l
-      rawCall.code shouldBe s"String.raw(${Operators.formatString}(\"../\", 42, \"\\..\"))"
+      rawCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+      rawCall.name shouldBe "raw"
+      rawCall.receiver.isCall.code.l shouldBe List("String.raw")
+      rawCall.code shouldBe "String.raw`../${42}\\..`"
 
-      val List(runtimeCall) = rawCall.astChildren.isCall.nameExact(Operators.formatString).l
-      runtimeCall.order shouldBe 1
-      runtimeCall.argumentIndex shouldBe 1
-      runtimeCall.code shouldBe s"${Operators.formatString}(\"../\", 42, \"\\..\")"
-
-      val List(argument1) = runtimeCall.astChildren.isLiteral.codeExact("\"../\"").l
-      argument1.order shouldBe 1
+      val List(argument1) = rawCall.astChildren.isBlock.l
       argument1.argumentIndex shouldBe 1
+      argument1.astChildren.code.l shouldBe List(
+        "_tmp_0",
+        "_tmp_0 = __ecma.Array.factory()",
+        "_tmp_0.push(\"../\")",
+        "_tmp_0.push(\"\\..\")",
+        "_tmp_0"
+      )
 
-      val List(argument2) = runtimeCall.astChildren.isLiteral.codeExact("42").l
-      argument2.order shouldBe 2
+      val List(argument2) = rawCall.astChildren.isLiteral.codeExact("42").l
       argument2.argumentIndex shouldBe 2
-
-      val List(argument3) =
-        runtimeCall.astChildren.isLiteral.codeExact("\"\\..\"").l
-      argument3.order shouldBe 3
-      argument3.argumentIndex shouldBe 3
     }
 
     "have correct structure for different string literals" in {
