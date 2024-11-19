@@ -424,6 +424,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     callAst(callNode_, quasisArg +: expressionArgs, receiver = Option(receiverAst), base = Option(Ast(baseNode)))
   }
 
+  /** Lowering from expressions like, x`a ${1+1} b` to x(["a ", " b"], 1+1)
+    */
   def astForTemplateExpression(templateExpr: BabelNodeInfo): Ast = {
     val callee     = createBabelNodeInfo(templateExpr.json("tag"))
     val calleeCode = callee.code
@@ -467,8 +469,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     handleTemplateExpressionArgs(templateExpr, receiverAst, baseNode, callName)
   }
 
-  /** Lowering from expressions like, x`a ${1+1} b` to x(["a ", " b"], 1+1)
-    */
   protected def astForObjectExpression(objExpr: BabelNodeInfo): Ast = {
     val blockNode = createBlockNode(objExpr)
 
