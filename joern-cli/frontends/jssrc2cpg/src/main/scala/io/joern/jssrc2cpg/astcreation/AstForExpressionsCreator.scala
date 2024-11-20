@@ -11,6 +11,7 @@ import io.joern.x2cpg.frontendspecific.jssrc2cpg.GlobalBuiltins
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 
 import scala.util.Try
@@ -30,14 +31,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     callAst(callNode, argAsts)
   }
 
-  private def handleCallNodeArgs(
-    callExpr: BabelNodeInfo,
-    receiverAst: Ast,
-    baseNode: NewNode,
-    callName: String
-  ): Ast = {
+  private case class CallExpressionInfo(receiverAst: Ast, baseNode: NewIdentifier, callName: String)
+
+  private def handleCallNodeArgs(callExpr: BabelNodeInfo, callExpressionInfo: CallExpressionInfo): Ast = {
     val args      = astForNodes(callExpr.json("arguments").arr.toList)
-    val callNode_ = callNode(callExpr, callExpr.code, callName, DispatchTypes.DYNAMIC_DISPATCH)
+    val callNode_ = callNode(callExpr, callExpr.code, callExpressionInfo.callName, DispatchTypes.DYNAMIC_DISPATCH)
     // If the callee is a function itself, e.g. closure, then resolve this locally, if possible
     callExpr.json.obj
       .get("callee")
@@ -47,7 +45,51 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         case _                                                => None
       }
       .foreach { case (name, fullName) => callNode_.name(name).methodFullName(fullName) }
-    callAst(callNode_, args, receiver = Option(receiverAst), base = Option(Ast(baseNode)))
+    callAst(
+      callNode_,
+      args,
+      receiver = Option(callExpressionInfo.receiverAst),
+      base = Option(Ast(callExpressionInfo.baseNode))
+    )
+  }
+
+  private def callExpressionInfoForCallLikeExpr(callLike: BabelNodeInfo): CallExpressionInfo = {
+    callLike.node match {
+      case MemberExpression =>
+        val base   = createBabelNodeInfo(callLike.json("object"))
+        val member = createBabelNodeInfo(callLike.json("property"))
+        base.node match {
+          case ThisExpression =>
+            val receiverAst = astForNodeWithFunctionReference(callLike.json)
+            val baseNode    = identifierNode(base, base.code).dynamicTypeHintFullName(typeHintForThisExpression())
+            scope.addVariableReference(base.code, baseNode)
+            CallExpressionInfo(receiverAst, baseNode, member.code)
+          case Identifier =>
+            val receiverAst = astForNodeWithFunctionReference(callLike.json)
+            val baseNode    = identifierNode(base, base.code)
+            scope.addVariableReference(base.code, baseNode)
+            CallExpressionInfo(receiverAst, baseNode, member.code)
+          case _ =>
+            val tmpVarName  = generateUnusedVariableName(usedVariableNames, "_tmp")
+            val baseTmpNode = identifierNode(base, tmpVarName)
+            scope.addVariableReference(tmpVarName, baseTmpNode)
+            val baseAst = astForNodeWithFunctionReference(base.json)
+            val code    = s"(${codeOf(baseTmpNode)} = ${base.code})"
+            val tmpAssignmentAst =
+              createAssignmentCallAst(Ast(baseTmpNode), baseAst, code, base.lineNumber, base.columnNumber)
+            val memberNode = createFieldIdentifierNode(member.code, member.lineNumber, member.columnNumber)
+            val fieldAccessAst =
+              createFieldAccessCallAst(tmpAssignmentAst, memberNode, callLike.lineNumber, callLike.columnNumber)
+            val thisTmpNode = identifierNode(callLike, tmpVarName)
+            scope.addVariableReference(tmpVarName, thisTmpNode)
+            CallExpressionInfo(fieldAccessAst, thisTmpNode, member.code)
+        }
+      case _ =>
+        val receiverAst = astForNodeWithFunctionReference(callLike.json)
+        val thisNode    = identifierNode(callLike, "this").dynamicTypeHintFullName(typeHintForThisExpression())
+        scope.addVariableReference(thisNode.name, thisNode)
+        CallExpressionInfo(receiverAst, thisNode, callLike.code)
+    }
   }
 
   protected def astForCallExpression(callExpr: BabelNodeInfo): Ast = {
@@ -56,44 +98,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     if (GlobalBuiltins.builtins.contains(calleeCode)) {
       createBuiltinStaticCall(callExpr, callee, calleeCode)
     } else {
-      val (receiverAst, baseNode, callName) = callee.node match {
-        case MemberExpression =>
-          val base   = createBabelNodeInfo(callee.json("object"))
-          val member = createBabelNodeInfo(callee.json("property"))
-          base.node match {
-            case ThisExpression =>
-              val receiverAst = astForNodeWithFunctionReference(callee.json)
-              val baseNode    = identifierNode(base, base.code).dynamicTypeHintFullName(typeHintForThisExpression())
-              scope.addVariableReference(base.code, baseNode)
-              (receiverAst, baseNode, member.code)
-            case Identifier =>
-              val receiverAst = astForNodeWithFunctionReference(callee.json)
-              val baseNode    = identifierNode(base, base.code)
-              scope.addVariableReference(base.code, baseNode)
-              (receiverAst, baseNode, member.code)
-            case _ =>
-              val tmpVarName  = generateUnusedVariableName(usedVariableNames, "_tmp")
-              val baseTmpNode = identifierNode(base, tmpVarName)
-              scope.addVariableReference(tmpVarName, baseTmpNode)
-              val baseAst = astForNodeWithFunctionReference(base.json)
-              val code    = s"(${codeOf(baseTmpNode)} = ${base.code})"
-              val tmpAssignmentAst =
-                createAssignmentCallAst(Ast(baseTmpNode), baseAst, code, base.lineNumber, base.columnNumber)
-              val memberNode = createFieldIdentifierNode(member.code, member.lineNumber, member.columnNumber)
-              val fieldAccessAst =
-                createFieldAccessCallAst(tmpAssignmentAst, memberNode, callee.lineNumber, callee.columnNumber)
-              val thisTmpNode = identifierNode(callee, tmpVarName)
-              scope.addVariableReference(tmpVarName, thisTmpNode)
-
-              (fieldAccessAst, thisTmpNode, member.code)
-          }
-        case _ =>
-          val receiverAst = astForNodeWithFunctionReference(callee.json)
-          val thisNode    = identifierNode(callee, "this").dynamicTypeHintFullName(typeHintForThisExpression())
-          scope.addVariableReference(thisNode.name, thisNode)
-          (receiverAst, thisNode, calleeCode)
-      }
-      handleCallNodeArgs(callExpr, receiverAst, baseNode, callName)
+      val callExpressionInfo = callExpressionInfoForCallLikeExpr(callee)
+      handleCallNodeArgs(callExpr, callExpressionInfo)
     }
   }
 
@@ -127,9 +133,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         newExpr.columnNumber
       )
 
-    val tmpAllocNode2      = identifierNode(newExpr, tmpAllocName)
-    val receiverNode       = astForNodeWithFunctionReference(callee)
-    val callAst            = handleCallNodeArgs(newExpr, receiverNode, tmpAllocNode2, Defines.OperatorsNew)
+    val tmpAllocNode2 = identifierNode(newExpr, tmpAllocName)
+    val receiverNode  = astForNodeWithFunctionReference(callee)
+    val callAst = handleCallNodeArgs(newExpr, CallExpressionInfo(receiverNode, tmpAllocNode2, Defines.OperatorsNew))
     val tmpAllocReturnNode = Ast(identifierNode(newExpr, tmpAllocName))
 
     scope.popScope()
@@ -403,15 +409,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     }
   }
 
-  private def handleTemplateExpressionArgs(
-    templateExpr: BabelNodeInfo,
-    receiverAst: Ast,
-    baseNode: NewNode,
-    callName: String
-  ): Ast = {
+  private def handleTemplateExpressionArgs(templateExpr: BabelNodeInfo, callExpressionInfo: CallExpressionInfo): Ast = {
     val expressionArgs = templateExpr.json("quasi")("expressions").arr.toList.map(astForNodeWithFunctionReference)
     val quasisArg      = astForArrayExpression(createBabelNodeInfo(templateExpr.json("quasi")), "quasis")
-    val callNode_      = callNode(templateExpr, templateExpr.code, callName, DispatchTypes.DYNAMIC_DISPATCH)
+    val callNode_ =
+      callNode(templateExpr, templateExpr.code, callExpressionInfo.callName, DispatchTypes.DYNAMIC_DISPATCH)
     // If the callee is a function itself, e.g. closure, then resolve this locally, if possible
     templateExpr.json.obj
       .get("callee")
@@ -421,52 +423,20 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         case _                                                => None
       }
       .foreach { case (name, fullName) => callNode_.name(name).methodFullName(fullName) }
-    callAst(callNode_, quasisArg +: expressionArgs, receiver = Option(receiverAst), base = Option(Ast(baseNode)))
+    callAst(
+      callNode_,
+      quasisArg +: expressionArgs,
+      receiver = Option(callExpressionInfo.receiverAst),
+      base = Option(Ast(callExpressionInfo.baseNode))
+    )
   }
 
   /** Lowering from expressions like, x`a ${1+1} b` to x(["a ", " b"], 1+1)
     */
   def astForTemplateExpression(templateExpr: BabelNodeInfo): Ast = {
-    val callee     = createBabelNodeInfo(templateExpr.json("tag"))
-    val calleeCode = callee.code
-    val (receiverAst, baseNode, callName) = callee.node match {
-      case MemberExpression =>
-        val base   = createBabelNodeInfo(callee.json("object"))
-        val member = createBabelNodeInfo(callee.json("property"))
-        base.node match {
-          case ThisExpression =>
-            val receiverAst = astForNodeWithFunctionReference(callee.json)
-            val baseNode    = identifierNode(base, base.code).dynamicTypeHintFullName(typeHintForThisExpression())
-            scope.addVariableReference(base.code, baseNode)
-            (receiverAst, baseNode, member.code)
-          case Identifier =>
-            val receiverAst = astForNodeWithFunctionReference(callee.json)
-            val baseNode    = identifierNode(base, base.code)
-            scope.addVariableReference(base.code, baseNode)
-            (receiverAst, baseNode, member.code)
-          case _ =>
-            val tmpVarName  = generateUnusedVariableName(usedVariableNames, "_tmp")
-            val baseTmpNode = identifierNode(base, tmpVarName)
-            scope.addVariableReference(tmpVarName, baseTmpNode)
-            val baseAst = astForNodeWithFunctionReference(base.json)
-            val code    = s"(${codeOf(baseTmpNode)} = ${base.code})"
-            val tmpAssignmentAst =
-              createAssignmentCallAst(Ast(baseTmpNode), baseAst, code, base.lineNumber, base.columnNumber)
-            val memberNode = createFieldIdentifierNode(member.code, member.lineNumber, member.columnNumber)
-            val fieldAccessAst =
-              createFieldAccessCallAst(tmpAssignmentAst, memberNode, callee.lineNumber, callee.columnNumber)
-            val thisTmpNode = identifierNode(callee, tmpVarName)
-            scope.addVariableReference(tmpVarName, thisTmpNode)
-
-            (fieldAccessAst, thisTmpNode, member.code)
-        }
-      case _ =>
-        val receiverAst = astForNodeWithFunctionReference(callee.json)
-        val thisNode    = identifierNode(callee, "this").dynamicTypeHintFullName(typeHintForThisExpression())
-        scope.addVariableReference(thisNode.name, thisNode)
-        (receiverAst, thisNode, calleeCode)
-    }
-    handleTemplateExpressionArgs(templateExpr, receiverAst, baseNode, callName)
+    val callee             = createBabelNodeInfo(templateExpr.json("tag"))
+    val callExpressionInfo = callExpressionInfoForCallLikeExpr(callee)
+    handleTemplateExpressionArgs(templateExpr, callExpressionInfo)
   }
 
   protected def astForObjectExpression(objExpr: BabelNodeInfo): Ast = {
