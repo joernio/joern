@@ -5,9 +5,10 @@ import io.joern.rubysrc2cpg.datastructures.BlockScope
 import io.joern.rubysrc2cpg.parser.RubyJsonHelpers
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
+import io.joern.x2cpg.datastructures.MethodLike
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewControlStructure}
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, ModifierTypes}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, ModifierTypes, NodeTypes}
 
 trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -22,7 +23,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case node: AnonymousTypeDeclaration   => astForAnonymousTypeDeclaration(node) :: Nil
       case node: TypeDeclaration            => astForClassDeclaration(node)
       case node: FieldsDeclaration          => astsForFieldDeclarations(node)
-      case node: AccessModifier             => registerAccessModifier(node)
+      case node: AccessModifier             => astForAccessModifier(node)
       case node: MethodDeclaration          => astForMethodDeclaration(node)
       case node: MethodAccessModifier       => astForMethodAccessModifier(node)
       case node: SingletonMethodDeclaration => astForSingletonMethodDeclaration(node)
@@ -71,6 +72,16 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
     val ifNode = controlStructureNode(node, ControlStructureTypes.IF, code(node))
     controlStructureAst(ifNode, Some(conditionAst), thenAst +: elseAsts) :: Nil
+  }
+
+  private def astForAccessModifier(node: AccessModifier): Seq[Ast] = {
+    scope.surroundingAstLabel match {
+      case Some(x) if x == NodeTypes.METHOD =>
+        val simpleIdent = node.toSimpleIdentifier
+        astForSimpleCall(SimpleCall(simpleIdent, List.empty)(simpleIdent.span)) :: Nil
+      case _ =>
+        registerAccessModifier(node)
+    }
   }
 
   /** Registers the currently set access modifier for the current type (until it is reset later).
@@ -224,6 +235,10 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         stmts.map(astForExpression) ++ astsForImplicitReturnStatement(nilReturnLiteral)
       case x: RangeExpression =>
         astForReturnRangeExpression(x) :: Nil
+      case node: AccessModifier =>
+        val simpleIdent = node.toSimpleIdentifier
+        val simpleCall  = SimpleCall(simpleIdent, List.empty)(simpleIdent.span)
+        astForReturnExpression(ReturnExpression(List(simpleCall))(node.span)) :: Nil
       case node =>
         logger.warn(s" not supported yet: ${node.text} (${node.getClass.getSimpleName}), only generating statement")
         astsForStatement(node).toList

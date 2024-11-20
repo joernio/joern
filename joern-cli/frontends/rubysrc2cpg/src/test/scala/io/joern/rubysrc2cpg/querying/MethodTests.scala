@@ -1064,4 +1064,38 @@ class MethodTests extends RubyCode2CpgFixture {
       case xs => fail(s"Expected one return, got [${xs.code.mkString(",")}]")
     }
   }
+
+  "Method call with same name as reserved keyword" in {
+    val cpg = code("""
+        |    def public
+        |      list.sort_by(&:position).filter_map { |category| category.slug if category.visible_to_public? }
+        |    end
+        |
+        |    def notifiable
+        |      public
+        |    end
+        |
+        |    def not_notifiable
+        |       public
+        |       puts 1
+        |       puts 2
+        |    end
+        |""".stripMargin)
+
+    inside(cpg.method.name("notifiable").body.astChildren.isReturn.astChildren.isCall.name("public").l) {
+      case publicCall :: Nil =>
+        publicCall.code shouldBe "public"
+
+        val List(selfArg) = publicCall.argument.l
+      case xs => fail(s"Expected one call, got ${xs.code.mkString(",")}")
+    }
+
+    inside(cpg.method.name("not_notifiable").body.astChildren.isCall.name("public").l) {
+      case publicCall :: Nil =>
+        publicCall.code shouldBe "public"
+
+        val List(selfArg) = publicCall.argument.l
+      case xs => fail(s"Expected one call, got ${xs.code.mkString(",")}")
+    }
+  }
 }
