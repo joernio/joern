@@ -672,19 +672,8 @@ class RubyJsonToNodeCreator(
     val body = obj
       .visitOption(ParserKeys.Body)
       .map {
-        case x: StatementList =>
-          x.copy(statements = x.statements.map {
-            case _: AccessModifier =>
-              val ident = SimpleIdentifier()(x.span)
-              SimpleCall(ident, List.empty)(x.span)
-            case y => y
-          })(x.span)
-        case x: AccessModifier =>
-          val ident = SimpleIdentifier()(x.span)
-          val call  = SimpleCall(ident, List.empty)(x.span)
-          StatementList(List(call))(x.span)
-        case x =>
-          StatementList(List(x))(x.span)
+        case x: StatementList => x
+        case x                => StatementList(List(x))(x.span)
       }
       .getOrElse(StatementList(Nil)(obj.toTextSpan.spanStart("<empty>")))
     MethodDeclaration(name, parameters, body)(obj.toTextSpan)

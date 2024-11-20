@@ -1074,9 +1074,23 @@ class MethodTests extends RubyCode2CpgFixture {
         |    def notifiable
         |      public
         |    end
+        |
+        |    def not_notifiable
+        |       public
+        |       puts 1
+        |       puts 2
+        |    end
         |""".stripMargin)
 
     inside(cpg.method.name("notifiable").body.astChildren.isReturn.astChildren.isCall.name("public").l) {
+      case publicCall :: Nil =>
+        publicCall.code shouldBe "public"
+
+        val List(selfArg) = publicCall.argument.l
+      case xs => fail(s"Expected one call, got ${xs.code.mkString(",")}")
+    }
+
+    inside(cpg.method.name("not_notifiable").body.astChildren.isCall.name("public").l) {
       case publicCall :: Nil =>
         publicCall.code shouldBe "public"
 
