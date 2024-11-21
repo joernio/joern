@@ -253,24 +253,6 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       .toSeq ++ additionalLocals ++ localsForDestructuringVars ++ (initCallAst +: assignmentsForEntries)
   }
 
-  private def astForDestructedParameter(param: KtParameter, order: Int): Ast = {
-    val name = s"${Constants.DestructedParamNamePrefix}${destructedParamKeyPool.next}"
-    val explicitTypeName = Option(param.getTypeReference)
-      .map(typeRef =>
-        fullNameByImportPath(typeRef, param.getContainingKtFile)
-          .getOrElse(typeRef.getText)
-      )
-      .getOrElse(TypeConstants.Any)
-    val typeFullName = registerType(
-      nameRenderer.typeFullName(bindingUtils.getVariableDesc(param).get.getType).getOrElse(explicitTypeName)
-    )
-    val node = parameterInNode(param, name, name, order, false, EvaluationStrategies.BY_VALUE, typeFullName)
-    scope.addToScope(name, node)
-
-    val annotations = param.getAnnotationEntries.asScala.map(astForAnnotationEntry).toSeq
-    Ast(node).withChildren(annotations)
-  }
-
   def astForParameter(param: KtParameter, order: Int): Ast = {
     val name = if (param.getDestructuringDeclaration != null) {
       s"${Constants.DestructedParamNamePrefix}${destructedParamKeyPool.next}"
@@ -466,12 +448,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       case parameters =>
         parameters.zipWithIndex.foreach { (paramDesc, idx) =>
           val param = paramDesc.getSource.asInstanceOf[KotlinSourceElement].getPsi.asInstanceOf[KtParameter]
+          paramAsts.append(astForParameter(param, valueParamStartIndex + idx))
           if (param.getDestructuringDeclaration != null) {
-            paramAsts.append(astForDestructedParameter(param, valueParamStartIndex + idx))
-            val destructAsts = astsForDestructuring(param)
-            destructedParamAsts.appendAll(destructAsts)
-          } else {
-            paramAsts.append(astForParameter(param, valueParamStartIndex + idx))
+            destructedParamAsts.appendAll(astsForDestructuring(param))
           }
         }
     }
