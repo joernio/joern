@@ -1,21 +1,21 @@
 package io.joern.kotlin2cpg.compiler
 
 import io.joern.kotlin2cpg.DefaultContentRootJarPath
+
+import java.io.{File, FileOutputStream}
 import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
 import org.jetbrains.kotlin.cli.common.config.KotlinSourceRoot
+import org.jetbrains.kotlin.cli.jvm.compiler.{EnvironmentConfigFiles, KotlinCoreEnvironment}
+import org.jetbrains.kotlin.cli.jvm.config.{JavaSourceRoot, JvmClasspathRoot}
+import org.jetbrains.kotlin.config.{CommonConfigurationKeys, CompilerConfiguration, JVMConfigurationKeys}
+import org.jetbrains.kotlin.metadata.jvm.deserialization.JvmProtoBufUtil
+import org.jetbrains.kotlin.com.intellij.openapi.util.Disposer
 import org.jetbrains.kotlin.cli.common.messages.{
   CompilerMessageSeverity,
   CompilerMessageSourceLocation,
   MessageCollector
 }
-import org.jetbrains.kotlin.cli.jvm.compiler.{EnvironmentConfigFiles, KotlinCoreEnvironment}
-import org.jetbrains.kotlin.cli.jvm.config.{JavaSourceRoot, JvmClasspathRoot}
-import org.jetbrains.kotlin.com.intellij.openapi.util.Disposer
-import org.jetbrains.kotlin.config.{CommonConfigurationKeys, CompilerConfiguration, JVMConfigurationKeys}
-import org.jetbrains.kotlin.metadata.jvm.deserialization.JvmProtoBufUtil
 import org.slf4j.LoggerFactory
-
-import java.io.File
 
 object CompilerAPI {
   private val logger = LoggerFactory.getLogger(getClass)
@@ -45,9 +45,23 @@ object CompilerAPI {
           logger.warn(s"Path to dependency does not point to existing file `${path.path}`.")
         }
       } else {
-        val resource = getClass.getClassLoader.getResource(path.path)
-        if (resource != null) {
-          val tempFile = File(resource.getFile)
+        // We have to copy the resource file to a proper file in the file system in order
+        // to satisfy the requirements of `JvmClassPathRoot` which expects a proper `java.io.File`
+        // which in turn cannot represent files in resources.
+        val resourceStream = getClass.getClassLoader.getResourceAsStream(path.path)
+        if (resourceStream != null) {
+          val tempFile = File.createTempFile("kotlin2cpgDependencies", "")
+          tempFile.deleteOnExit()
+          val outStream = new FileOutputStream(tempFile)
+          val buffer    = new Array[Byte](4096)
+
+          while (resourceStream.available > 0) {
+            val readBytes = resourceStream.read(buffer)
+            outStream.write(buffer, 0, readBytes)
+          }
+          outStream.flush()
+          outStream.close()
+
           config.add(CLIConfigurationKeys.CONTENT_ROOTS, new JvmClasspathRoot(tempFile))
           logger.debug(s"Added dependency from resources `${path.path}`.")
         } else {
