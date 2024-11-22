@@ -353,6 +353,31 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     }
   }
 
+  "CPG for code without implicit this access on global function call" should {
+    val cpg = code("""
+        |package no.such.pkg
+        |
+        |fun addB(a: String): String {
+        |    return a + "b"
+        |}
+        |class MyClass(val x: String) {
+        |    var m: String = addB(x) // x is not a this.x call
+        |    fun printM() = println(m) // but m is
+        |}
+        |""".stripMargin)
+
+    "contain a CALL node with argument that is a this access" in {
+      val List(addCall) = cpg.call.name("addB").l
+      val xId           = addCall.argument(1).asInstanceOf[Identifier]
+      xId.name shouldBe "x"
+      val List(printCall) = cpg.call.name("println").l
+      val thisCall        = printCall.argument(1).asInstanceOf[Call]
+      thisCall.methodFullName shouldBe Operators.fieldAccess
+      thisCall.code shouldBe "this.m"
+      thisCall.argument(1).asInstanceOf[Identifier].typeFullName shouldBe "no.such.pkg.MyClass"
+    }
+  }
+
   "CPG for code with call with argument with type with upper bound" should {
     val cpg = code("""
       |package mypkg

@@ -8,22 +8,21 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.impl.ClassConstructorDescriptorImpl
 import org.jetbrains.kotlin.descriptors.impl.TypeAliasConstructorDescriptorImpl
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.descriptors.DeserializedDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.load.java.`lazy`.descriptors.LazyJavaClassDescriptor
 import org.jetbrains.kotlin.load.java.sources.JavaSourceElement
 import org.jetbrains.kotlin.load.java.structure.impl.classFiles.BinaryJavaMethod
-import org.jetbrains.kotlin.psi.{
-  Call,
-  KtArrayAccessExpression,
-  KtBinaryExpression,
-  KtCallExpression,
-  KtElement,
-  KtExpression,
-  KtNameReferenceExpression,
-  KtQualifiedExpression,
-  KtSuperExpression,
-  KtThisExpression
-}
+import org.jetbrains.kotlin.psi.Call
+import org.jetbrains.kotlin.psi.KtArrayAccessExpression
+import org.jetbrains.kotlin.psi.KtBinaryExpression
+import org.jetbrains.kotlin.psi.KtCallExpression
+import org.jetbrains.kotlin.psi.KtElement
+import org.jetbrains.kotlin.psi.KtExpression
+import org.jetbrains.kotlin.psi.KtNameReferenceExpression
+import org.jetbrains.kotlin.psi.KtQualifiedExpression
+import org.jetbrains.kotlin.psi.KtSuperExpression
+import org.jetbrains.kotlin.psi.KtThisExpression
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.`lazy`.descriptors.LazyClassDescriptor
@@ -52,7 +51,10 @@ class TypeInfoProvider(val bindingContext: BindingContext) {
           && ks.contains(BindingContext.REFERENCE_TARGET.getKey)
       )
     isCallExprWithTarget && resolvedPropertyDescriptor(expr).exists { d =>
-      d.getDispatchReceiverParameter != null && d.getDispatchReceiverParameter.getName.asString() == "<this>"
+      d.getDispatchReceiverParameter != null &&
+      d.getContainingDeclaration.isInstanceOf[DeserializedDescriptor] &&
+      d.getContainingDeclaration == d.getDispatchReceiverParameter.getContainingDeclaration &&
+      d.getDispatchReceiverParameter.getName.asString() == "<this>"
     }
   }
 
