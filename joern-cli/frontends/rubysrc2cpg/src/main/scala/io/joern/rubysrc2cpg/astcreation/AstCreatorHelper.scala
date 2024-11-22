@@ -32,16 +32,24 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     *   the name of the entity.
     * @param counter
     *   an optional counter, used to create unique instances in the case of redefinitions.
+    * @param isAccessorMethod
+    *   flag for whether the fullName is for accessor-like method lowering
     * @return
     *   a unique full name.
     */
-  protected def computeFullName(name: String, counter: Option[Int] = None): String = {
+  protected def computeFullName(
+    name: String,
+    counter: Option[Int] = None,
+    isAccessorMethod: Boolean = false
+  ): String = {
+    val surroundingName =
+      if isAccessorMethod then scope.surroundingTypeFullName.head else scope.surroundingScopeFullName.head
     val candidate = counter match {
-      case Some(cnt) => s"${scope.surroundingScopeFullName.head}.$name$cnt"
-      case None      => s"${scope.surroundingScopeFullName.head}.$name"
+      case Some(cnt) => s"$surroundingName.$name$cnt"
+      case None      => s"$surroundingName.$name"
     }
     if (usedFullNames.contains(candidate)) {
-      computeFullName(name, counter.map(_ + 1).orElse(Option(0)))
+      computeFullName(name, counter.map(_ + 1).orElse(Option(0)), isAccessorMethod)
     } else {
       usedFullNames.add(candidate)
       candidate

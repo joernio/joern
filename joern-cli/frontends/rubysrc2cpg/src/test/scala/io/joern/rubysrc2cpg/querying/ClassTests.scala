@@ -1074,4 +1074,45 @@ class ClassTests extends RubyCode2CpgFixture {
       case xs => fail(s"Expected one call, got [${xs.code.mkString(",")}]")
     }
   }
+
+  "FieldsDeclaration in `included` block" should {
+    val cpg = code("""
+        |class Foo
+        |  included do
+        |   before_update :validate_workflows
+        |   attr_accessor :bar
+        |  end
+        |end
+        |""".stripMargin)
+
+    "Create required getters and setters directly under TYPE_DECL" in {
+      inside(cpg.typeDecl.name("Foo").astChildren.isMethod.name("bar=?").l) {
+        case barGetter :: barSetter :: Nil =>
+          barGetter.name shouldBe "bar"
+          barGetter.fullName shouldBe "Test0.rb:<main>.Foo.bar"
+
+          barSetter.name shouldBe "bar="
+          barSetter.fullName shouldBe "Test0.rb:<main>.Foo.bar="
+        case xs => fail(s"Expected two method calls for getter and setter, got [${xs.code.mkString(",")}]")
+      }
+    }
+
+    "Create required TYPE_DECL nodes directly under class TYPE_DECL" in {
+      inside(cpg.typeDecl.name("Foo").astChildren.isTypeDecl.name("bar=?").l) {
+        case barGetter :: barSetter :: Nil =>
+          barGetter.name shouldBe "bar"
+          barSetter.name shouldBe "bar="
+        case xs => fail(s"Expected two type decls, got [${xs.code.mkString(",")}]")
+      }
+    }
+
+    "Create required MEMBER nodes directly under class TYPE_DECL" in {
+      inside(cpg.typeDecl.name("Foo").astChildren.isMember.name("bar=?").l) {
+        case barGetter :: barSetter :: Nil =>
+          barGetter.name shouldBe "bar"
+          barSetter.name shouldBe "bar="
+        case xs => fail(s"Expected two member nodes, got [${xs.code.mkString(",")}]")
+      }
+    }
+  }
 }
