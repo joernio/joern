@@ -239,8 +239,14 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         val simpleIdent = node.toSimpleIdentifier
         val simpleCall  = SimpleCall(simpleIdent, List.empty)(simpleIdent.span)
         astForReturnExpression(ReturnExpression(List(simpleCall))(node.span)) :: Nil
+      case node: FieldsDeclaration =>
+        val nilReturnSpan    = node.span.spanStart("return nil")
+        val nilReturnLiteral = StaticLiteral(Defines.NilClass)(nilReturnSpan)
+        astsForFieldDeclarations(node) ++ astsForImplicitReturnStatement(nilReturnLiteral)
       case node =>
-        logger.warn(s" not supported yet: ${node.text} (${node.getClass.getSimpleName}), only generating statement")
+        logger.warn(
+          s" not supported yet: ${node.text} (${node.getClass.getSimpleName}), only generating statement (${this.relativeFileName})"
+        )
         astsForStatement(node).toList
   }
 

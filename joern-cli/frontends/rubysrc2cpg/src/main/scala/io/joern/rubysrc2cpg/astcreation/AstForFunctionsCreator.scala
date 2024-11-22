@@ -42,18 +42,22 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   protected def astForMethodDeclaration(
     node: RubyExpression & ProcedureDeclaration,
     isClosure: Boolean = false,
-    isSingletonObjectMethod: Boolean = false
+    isSingletonObjectMethod: Boolean = false,
+    isAccessorMethod: Boolean = false
   ): Seq[Ast] = {
     val isInTypeDecl  = scope.surroundingAstLabel.contains(NodeTypes.TYPE_DECL)
     val isConstructor = (node.methodName == Defines.Initialize) && isInTypeDecl
     val methodName    = node.methodName
 
-    // TODO: body could be a try
+    val fullName =
+      node match {
+        case x: SingletonObjectMethodDeclaration =>
+          computeFullName(s"class<<${x.baseClass.span.text}.$methodName", isAccessorMethod = isAccessorMethod)
+        case _ => computeFullName(methodName, isAccessorMethod = isAccessorMethod)
+      }
 
-    val fullName = node match {
-      case x: SingletonObjectMethodDeclaration => computeFullName(s"class<<${x.baseClass.span.text}.$methodName")
-      case _                                   => computeFullName(methodName)
-    }
+    val astParentType     = if isAccessorMethod then Some(NodeTypes.TYPE_DECL) else scope.surroundingAstLabel
+    val astParentFullName = if isAccessorMethod then scope.surroundingTypeFullName else scope.surroundingScopeFullName
 
     val method = methodNode(
       node = node,
@@ -62,8 +66,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       code = code(node),
       signature = None,
       fileName = relativeFileName,
-      astParentType = scope.surroundingAstLabel,
-      astParentFullName = scope.surroundingScopeFullName
+      astParentType = astParentType,
+      astParentFullName = astParentFullName
     )
 
     val isSurroundedByProgramScope = scope.isSurroundedByProgramScope
@@ -119,8 +123,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     val methodTypeDeclAst = {
       val typeDeclNode_ = typeDeclNode(node, methodName, fullName, relativeFileName, code(node))
-      scope.surroundingAstLabel.foreach(typeDeclNode_.astParentType(_))
-      scope.surroundingScopeFullName.foreach(typeDeclNode_.astParentFullName(_))
+      astParentType.foreach(typeDeclNode_.astParentType(_))
+      astParentFullName.foreach(typeDeclNode_.astParentFullName(_))
       createMethodTypeBindings(method, typeDeclNode_)
       if isClosure then Ast(typeDeclNode_).withChild(Ast(newModifierNode(ModifierTypes.LAMBDA)))
       else Ast(typeDeclNode_)
@@ -129,8 +133,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     // Due to lambdas being invoked by `call()`, this additional type ref holding that member is created.
     val lambdaTypeDeclAst = if isClosure then {
       val typeDeclNode_ = typeDeclNode(node, s"$methodName&Proc", s"$fullName&Proc", relativeFileName, code(node))
-      scope.surroundingAstLabel.foreach(typeDeclNode_.astParentType(_))
-      scope.surroundingScopeFullName.foreach(typeDeclNode_.astParentFullName(_))
+      astParentType.foreach(typeDeclNode_.astParentType(_))
+      astParentFullName.foreach(typeDeclNode_.astParentFullName(_))
       Ast(typeDeclNode_)
         .withChild(
           // This member refers back to itself, as itself is the type decl bound to the respective method
@@ -158,7 +162,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           case Some(astParentTfn) => memberForMethod(method, Option(NodeTypes.TYPE_DECL), Option(astParentTfn))
           case None               => memberForMethod(method, scope.surroundingAstLabel, scope.surroundingScopeFullName)
         }
-        Ast(memberForMethod(method, Option(NodeTypes.TYPE_DECL), scope.surroundingScopeFullName))
+        Ast(memberForMethod(method, Option(NodeTypes.TYPE_DECL), astParentFullName))
       }
     // For closures, we also want the method/type refs for upstream use
     val methodAst_ = {
