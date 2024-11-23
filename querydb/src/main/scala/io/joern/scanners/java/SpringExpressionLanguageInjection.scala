@@ -16,7 +16,8 @@ object SpringExpressionLanguageInjection extends QueryBundle {
     Query.make(
       name = "Spring-Expression-Language-Injection",
       author = Crew.SJ1iu,
-      title = "Spring-Expression-Language-Injection: The value is taken from user input and passed to ExpressionParser!!",
+      title =
+        "Spring-Expression-Language-Injection: The value is taken from user input and passed to ExpressionParser!!",
       description = """
         | In a SpEL injection, if user-controlled input is directly parsed and evaluated as a SpEL expression without validation, attackers can execute arbitrary expressions.
         |""".stripMargin,
