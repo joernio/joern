@@ -49,6 +49,12 @@ class DependencyAstCreationPassTests extends AstJsSrc2CpgSuite {
   }
 
   "AST generation for dependencies" should {
+    "reference identifiers correctly" in {
+      val cpg = code("export const foo = bar();")
+      cpg.local.name("foo").referencingIdentifiers.size shouldBe 2
+      cpg.identifier.name("foo").size shouldBe 2
+    }
+
     "have no dependencies if none are declared at all" in {
       val cpg = code("var x = 1;")
       cpg.dependency.l.size shouldBe 0
@@ -335,7 +341,7 @@ class DependencyAstCreationPassTests extends AstJsSrc2CpgSuite {
         |export = function () {}; // anonymous
         |export = class ClassA {};
         |""".stripMargin)
-      cpg.local.code.l shouldBe List("foo", "bar", "func", "<lambda>0")
+      cpg.local.code.l shouldBe List("foo", "bar", "func", "<lambda>0", "ClassA")
       cpg.typeDecl.name.l should contain allElementsOf List("func", "ClassA")
       cpg.assignment.code.l shouldBe List(
         "var foo = 1",
