@@ -604,14 +604,12 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   private def shouldUseSurroundingTypeFullName: Boolean = {
-    val inBodyMethodScope = scope.surroundingScopeFullName.exists(x => x.split("[.]").takeRight(1).head == "<body>")
+    val inBodyMethodScope =
+      scope.surroundingScopeFullName.exists(x => x.split("[.]").takeRight(1).contains(Defines.TypeDeclBody))
 
     scope.surroundingAstLabel match {
-      case Some(astLabel) =>
-        val p = astLabel
-        astLabel == NodeTypes.METHOD && inBodyMethodScope
-      case None =>
-        false
+      case Some(NodeTypes.METHOD) => inBodyMethodScope
+      case _                      => false
     }
   }
 }
