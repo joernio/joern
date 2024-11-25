@@ -213,7 +213,7 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
 
   /** code that is executed on startup */
   protected def runBeforeCode: Seq[String]
-  
+
   protected def buildRunBeforeCode(config: Config): Seq[String] = {
     val builder = Seq.newBuilder[String]
     config.cpgToLoad.foreach { cpgFile =>

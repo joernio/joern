@@ -239,9 +239,9 @@ object JoernScan extends BridgeBase {
   }
 
   override protected def runBeforeCode = ReplBridge.runBeforeCode
-  override protected def promptStr   = ReplBridge.promptStr
-  override protected def greeting = ReplBridge.greeting
-  override protected def onExitCode = ReplBridge.onExitCode
+  override protected def promptStr     = ReplBridge.promptStr
+  override protected def greeting      = ReplBridge.greeting
+  override protected def onExitCode    = ReplBridge.onExitCode
 }
 
 object Scan {
