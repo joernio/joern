@@ -52,7 +52,7 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
     val parseResultMaybe         = BabelJsonParser.readFile(Paths.get(rootPath), Paths.get(jsonFilename))
     val ((gotCpg, filename), duration) = TimeUtils.time {
       parseResultMaybe match {
-        case Some(parseResult) =>
+        case Success(parseResult) =>
           report.addReportInfo(parseResult.filename, parseResult.fileLoc, parsed = true)
           Try {
             val localDiff = new AstCreator(config, global, parseResult).createAst()
@@ -65,8 +65,10 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
               logger.debug(s"Generated a CPG for: '${parseResult.fullPath}'")
               (true, parseResult.filename)
           }
-        case None =>
-          (false, jsonFilename.replace(".json", ""))
+        case Failure(exception) =>
+          val pathOfFailedFile = jsonFilename.replaceAll("\\.[^.]*$", "")
+          logger.warn(s"Failed to read json parse result for: '$pathOfFailedFile'", exception)
+          (false, pathOfFailedFile)
       }
     }
     report.updateReport(filename, cpg = gotCpg, duration)
