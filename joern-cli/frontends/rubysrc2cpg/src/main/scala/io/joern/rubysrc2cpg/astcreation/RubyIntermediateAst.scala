@@ -613,6 +613,8 @@ object RubyIntermediateAst {
 
   final case class HereDocNode(content: String)(span: TextSpan) extends RubyExpression(span)
 
-  final case class AliasStatement(oldName: String, newName: String)(span: TextSpan) extends RubyExpression(span)
+  final case class AliasStatement(oldName: String, newName: String)(span: TextSpan)
+      extends RubyExpression(span)
+      with AllowedTypeDeclarationChild
 
 }

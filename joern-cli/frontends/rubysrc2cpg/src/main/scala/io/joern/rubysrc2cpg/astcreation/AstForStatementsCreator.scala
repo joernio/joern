@@ -30,6 +30,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case node: MultipleAssignment         => node.assignments.map(astForExpression)
       case node: BreakExpression            => astForBreakExpression(node) :: Nil
       case node: SingletonStatementList     => astForSingletonStatementList(node)
+      case node: AliasStatement             => astForAliasStatement(node)
       case _                                => astForExpression(node) :: Nil
     }
   }
@@ -378,5 +379,29 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case next: NextExpression   => next
       case break: BreakExpression => break
     }
+  }
+
+  protected def astForAliasStatement(statement: AliasStatement): Seq[Ast] = {
+    val aliasMethodDecl = generateAliasMethodDecl(statement)
+    // alias should always be lifted to the class decl
+    astForMethodDeclaration(aliasMethodDecl, useSurroundingTypeFullName = true)
+  }
+
+  private def generateAliasMethodDecl(alias: AliasStatement): MethodDeclaration = {
+    val span                 = alias.span
+    val forwardingCallTarget = SimpleIdentifier(None)(span.spanStart(alias.oldName))
+    val forwardedArgs        = SplattingRubyNode(SimpleIdentifier()(span.spanStart("args")))(span.spanStart("*args"))
+    val forwardedBlock       = SimpleIdentifier()(span.spanStart("&block"))
+    val forwardingCall = SimpleCall(forwardingCallTarget, forwardedArgs :: forwardedBlock :: Nil)(
+      span.spanStart(s"${alias.oldName}(*args, &block)")
+    )
+
+    val aliasMethodBody = StatementList(forwardingCall :: Nil)(forwardingCall.span)
+    val aliasingMethodParams =
+      ArrayParameter("*args")(span.spanStart("*args")) :: ProcParameter("&block")(span.spanStart("&block")) :: Nil
+
+    MethodDeclaration(alias.newName, aliasingMethodParams, aliasMethodBody)(
+      alias.span.spanStart(s"def ${alias.newName}(*args, &block)")
+    )
   }
 }

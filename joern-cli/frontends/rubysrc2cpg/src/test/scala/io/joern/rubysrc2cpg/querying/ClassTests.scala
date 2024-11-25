@@ -1161,4 +1161,58 @@ class ClassTests extends RubyCode2CpgFixture {
       }
     }
   }
+
+  "If Statement in class declaration with alias and method def" should {
+    val cpg = code("""
+        |module Pessimistic
+        |  if !method_defined?(:orig_lock!)
+        |    alias orig_lock! lock!
+        |
+        |    def lock!(lock = true) # rubocop:disable Style/OptionalBooleanParameter
+        |      orig_lock!(lock)
+        |    end
+        |
+        |  end
+        |end
+        |
+        |""".stripMargin)
+
+    "Lower Alias to directly under TYPE_DECL" in {
+      inside(cpg.typeDecl.name("Pessimistic").astChildren.isMethod.name("lock!").l) {
+        case lockAliasMethodDef :: _ :: Nil =>
+          lockAliasMethodDef.name shouldBe "lock!"
+
+          val List(_, args, blockArg) = lockAliasMethodDef.parameter.l
+          args.code shouldBe "*args"
+          blockArg.code shouldBe "&block"
+
+          inside(lockAliasMethodDef.body.astChildren.isReturn.astChildren.isCall.l) {
+            case origLockCall :: Nil =>
+              origLockCall.name shouldBe "orig_lock!"
+              origLockCall.code shouldBe "orig_lock!(*args, &block)"
+            case xs => fail(s"Expected one call, got ${xs.size}: [${xs.code.mkString(",")}]")
+          }
+
+        case xs => fail(s"Expected two method defs, got ${xs.size}: [${xs.code.mkString(",")}]")
+      }
+    }
+
+    "Lower method def to directly under TYPE_DECL" in {
+      inside(cpg.typeDecl.name("Pessimistic").astChildren.isMethod.name("lock!").l) {
+        case _ :: lockMethodDef :: Nil =>
+          lockMethodDef.name shouldBe "lock!"
+
+          val List(_, lockArg) = lockMethodDef.parameter.l
+          lockArg.code shouldBe "lock = true"
+
+          inside(lockMethodDef.body.astChildren.isReturn.astChildren.isCall.l) {
+            case origLockCall :: Nil =>
+              origLockCall.name shouldBe "orig_lock!"
+              origLockCall.code shouldBe "orig_lock!(lock)"
+            case xs => fail(s"Expected one call, got ${xs.size}: [${xs.code.mkString(",")}]")
+          }
+        case xs => fail(s"Expected two method defs, got ${xs.size}: [${xs.code.mkString(",")}]")
+      }
+    }
+  }
 }

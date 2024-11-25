@@ -43,7 +43,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     node: RubyExpression & ProcedureDeclaration,
     isClosure: Boolean = false,
     isSingletonObjectMethod: Boolean = false,
-    isAccessorMethod: Boolean = false
+    useSurroundingTypeFullName: Boolean = false
   ): Seq[Ast] = {
     val isInTypeDecl  = scope.surroundingAstLabel.contains(NodeTypes.TYPE_DECL)
     val isConstructor = (node.methodName == Defines.Initialize) && isInTypeDecl
@@ -52,12 +52,20 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val fullName =
       node match {
         case x: SingletonObjectMethodDeclaration =>
-          computeFullName(s"class<<${x.baseClass.span.text}.$methodName", isAccessorMethod = isAccessorMethod)
-        case _ => computeFullName(methodName, isAccessorMethod = isAccessorMethod)
+          computeFullName(
+            s"class<<${x.baseClass.span.text}.$methodName",
+            useSurroundingTypeFullName = useSurroundingTypeFullName
+          )
+        case _ => computeFullName(methodName, useSurroundingTypeFullName = useSurroundingTypeFullName)
       }
 
-    val astParentType     = if isAccessorMethod then Some(NodeTypes.TYPE_DECL) else scope.surroundingAstLabel
-    val astParentFullName = if isAccessorMethod then scope.surroundingTypeFullName else scope.surroundingScopeFullName
+    val astParentType =
+      if useSurroundingTypeFullName || shouldUseSurroundingTypeFullName then Some(NodeTypes.TYPE_DECL)
+      else scope.surroundingAstLabel
+
+    val astParentFullName =
+      if useSurroundingTypeFullName || shouldUseSurroundingTypeFullName then scope.surroundingTypeFullName
+      else scope.surroundingScopeFullName
 
     val method = methodNode(
       node = node,
@@ -595,4 +603,15 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     if (accessModifierStack.nonEmpty) accessModifierStack.pop()
   }
 
+  private def shouldUseSurroundingTypeFullName: Boolean = {
+    val inBodyMethodScope = scope.surroundingScopeFullName.exists(x => x.split("[.]").takeRight(1).head == "<body>")
+
+    scope.surroundingAstLabel match {
+      case Some(astLabel) =>
+        val p = astLabel
+        astLabel == NodeTypes.METHOD && inBodyMethodScope
+      case None =>
+        false
+    }
+  }
 }
