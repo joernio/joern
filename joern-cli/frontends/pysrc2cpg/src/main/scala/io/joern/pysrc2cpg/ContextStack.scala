@@ -156,7 +156,7 @@ class ContextStack {
 
   def createIdentifierLinks(
     createLocal: (String, Option[String]) => nodes.NewLocal,
-    createClosureBinding: (String, String) => nodes.NewClosureBinding,
+    createClosureBinding: (String) => nodes.NewClosureBinding,
     createAstEdge: (nodes.NewNode, nodes.NewNode, Int) => Unit,
     createRefEdge: (nodes.NewNode, nodes.NewNode) => Unit,
     createCaptureEdge: (nodes.NewNode, nodes.NewNode) => Unit
@@ -291,7 +291,7 @@ class ContextStack {
 
   private def linkLocalOrCapturing(
     createLocal: (String, Option[String]) => NewLocal,
-    createClosureBinding: (String, String) => NewClosureBinding,
+    createClosureBinding: (String) => NewClosureBinding,
     createAstEdge: (NewNode, NewNode, Int) => Unit,
     createRefEdge: (NewNode, NewNode) => Unit,
     createCaptureEdge: (NewNode, NewNode) => Unit,
@@ -310,38 +310,42 @@ class ContextStack {
         case methodContext: MethodContext =>
           // Context is only relevant for linking if it is not a class body methods context
           // or the identifier/reference itself is from the class body method context.
-          if (!methodContext.isClassBodyMethod || methodContext == startContext) {
-            contextHasVariable = context.variables.contains(name)
-
-            val closureBindingId =
-              methodContext.astParent.asInstanceOf[NewMethod].fullName + ":" + name
-
-            if (!contextHasVariable) {
-              if (context != moduleMethodContext.get) {
-                val localNode = createLocal(name, Some(closureBindingId))
-                transferLineColInfo(identifier, localNode)
-                createAstEdge(localNode, methodContext.methodBlockNode.get, methodContext.order.getAndInc)
-                methodContext.variables.put(name, localNode)
-              } else {
-                // When we could not even find a matching variable in the module context we get
-                // here and create a local so that we can link something and fullfil the CPG
-                // format requirements.
-                // For example this happens when there are wildcard imports directly into the
-                // modules namespace.
-                val localNode = createLocal(name, None)
-                transferLineColInfo(identifier, localNode)
-                createAstEdge(localNode, methodContext.methodBlockNode.get, methodContext.order.getAndInc)
-                methodContext.variables.put(name, localNode)
-              }
+          val mangledName =
+            if (!methodContext.isClassBodyMethod || methodContext == startContext) {
+              name
+            } else {
+              s"<captured>$name"
             }
-            val localNodeInContext = methodContext.variables(name)
+          contextHasVariable = context.variables.contains(mangledName)
 
-            createRefEdge(localNodeInContext, identifierOrClosureBindingToLink)
+          val closureBindingId =
+            methodContext.astParent.asInstanceOf[NewMethod].fullName + ":" + name
 
-            if (!contextHasVariable && context != moduleMethodContext.get) {
-              identifierOrClosureBindingToLink = createClosureBinding(closureBindingId, name)
-              createCaptureEdge(identifierOrClosureBindingToLink, methodContext.methodRefNode.get)
+          if (!contextHasVariable) {
+            if (context != moduleMethodContext.get) {
+              val localNode = createLocal(mangledName, Some(closureBindingId))
+              transferLineColInfo(identifier, localNode)
+              createAstEdge(localNode, methodContext.methodBlockNode.get, methodContext.order.getAndInc)
+              methodContext.variables.put(mangledName, localNode)
+            } else {
+              // When we could not even find a matching variable in the module context we get
+              // here and create a local so that we can link something and fullfil the CPG
+              // format requirements.
+              // For example this happens when there are wildcard imports directly into the
+              // modules namespace.
+              val localNode = createLocal(mangledName, None)
+              transferLineColInfo(identifier, localNode)
+              createAstEdge(localNode, methodContext.methodBlockNode.get, methodContext.order.getAndInc)
+              methodContext.variables.put(mangledName, localNode)
             }
+          }
+          val localNodeInContext = methodContext.variables(mangledName)
+
+          createRefEdge(localNodeInContext, identifierOrClosureBindingToLink)
+
+          if (!contextHasVariable && context != moduleMethodContext.get) {
+            identifierOrClosureBindingToLink = createClosureBinding(closureBindingId)
+            createCaptureEdge(identifierOrClosureBindingToLink, methodContext.methodRefNode.get)
           }
         case specialBlockContext: SpecialBlockContext =>
           contextHasVariable = context.variables.contains(name)
