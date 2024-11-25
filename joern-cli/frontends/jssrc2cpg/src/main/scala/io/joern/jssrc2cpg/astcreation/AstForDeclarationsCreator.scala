@@ -85,8 +85,10 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   ): Ast = {
     from match {
       case Some(value) =>
+        val identNode = identifierNode(declaration, value)
+        scope.addVariableReference(name, identNode)
         val call = createFieldAccessCallAst(
-          identifierNode(declaration, value, Seq.empty),
+          identNode,
           createFieldIdentifierNode(name, declaration.lineNumber, declaration.columnNumber),
           declaration.lineNumber,
           declaration.columnNumber
@@ -99,9 +101,11 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
           declaration.columnNumber
         )
       case None =>
+        val identNode = identifierNode(declaration, name)
+        scope.addVariableReference(name, identNode)
         createAssignmentCallAst(
           exportCallAst,
-          Ast(identifierNode(declaration, name)),
+          Ast(identNode),
           s"${codeOf(exportCallAst.nodes.head)} = $name",
           declaration.lineNumber,
           declaration.columnNumber
@@ -262,7 +266,6 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         createExportAssignmentCallAst(name, exportCallAst, assignment, None)
       }
     }
-
     setArgumentIndices(declAsts)
     blockAst(createBlockNode(assignment), declAsts)
   }
