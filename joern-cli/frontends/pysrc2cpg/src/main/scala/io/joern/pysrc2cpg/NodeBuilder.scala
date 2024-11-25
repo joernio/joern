@@ -126,12 +126,12 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
     addNodeToDiff(methodRefNode)
   }
 
-  def closureBindingNode(closureBindingId: String, closureOriginalName: String): nodes.NewClosureBinding = {
+  def closureBindingNode(closureBindingId: String): nodes.NewClosureBinding = {
     val closureBindingNode = nodes
       .NewClosureBinding()
       .closureBindingId(Some(closureBindingId))
       .evaluationStrategy(EvaluationStrategies.BY_REFERENCE)
-      .closureOriginalName(Some(closureOriginalName))
+      .closureOriginalName(None)
     addNodeToDiff(closureBindingNode)
   }
 
