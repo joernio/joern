@@ -192,7 +192,7 @@ object RubyJsonHelpers {
       }
     }
 
-    obj.visitOption(ParserKeys.Body).map(lowerAliasStatementsToMethods) match {
+    obj.visitOption(ParserKeys.Body).map(lowerSingletonClassDecls) match {
       case Some(stmtList @ StatementList(expression :: Nil)) if expression.isInstanceOf[AllowedTypeDeclarationChild] =>
         if (isSplattingField(expression)) {
           val splattingField = expression.asInstanceOf[FieldsDeclaration]
@@ -345,7 +345,7 @@ object RubyJsonHelpers {
       )(obj.toTextSpan.spanStart("Float::INFINITY"))
     )(obj.toTextSpan.spanStart("-Float::INFINITY"))
 
-  def lowerAliasStatementsToMethods(classBody: RubyExpression): StatementList = {
+  def lowerSingletonClassDecls(classBody: RubyExpression): StatementList = {
     val loweredStmts = classBody match {
       case x: StatementList => lowerSingletonClassDeclarations(x)
       case x                => lowerSingletonClassDeclarations(StatementList(List(x))(x.span))
@@ -356,26 +356,7 @@ object RubyJsonHelpers {
       case x                    => List(x)
     }
 
-    val transformedStmts = stmts.map {
-      case alias: AliasStatement =>
-        val span                 = alias.span
-        val forwardingCallTarget = SimpleIdentifier(None)(span.spanStart(alias.oldName))
-        val forwardedArgs  = SplattingRubyNode(SimpleIdentifier()(span.spanStart("args")))(span.spanStart("*args"))
-        val forwardedBlock = SimpleIdentifier()(span.spanStart("&block"))
-        val forwardingCall = SimpleCall(forwardingCallTarget, forwardedArgs :: forwardedBlock :: Nil)(
-          span.spanStart(s"${alias.oldName}(*args, &block)")
-        )
-
-        val aliasMethodBody = StatementList(forwardingCall :: Nil)(forwardingCall.span)
-        val aliasingMethodParams =
-          ArrayParameter("*args")(span.spanStart("*args")) :: ProcParameter("&block")(span.spanStart("&block")) :: Nil
-        MethodDeclaration(alias.newName, aliasingMethodParams, aliasMethodBody)(
-          alias.span.spanStart(s"def ${alias.newName}(*args, &block)")
-        )
-      case expr => expr
-    }
-
-    StatementList(transformedStmts)(classBody.span)
+    StatementList(stmts)(classBody.span)
   }
 
   private def lowerSingletonClassDeclarations(classBody: RubyExpression): RubyExpression = {

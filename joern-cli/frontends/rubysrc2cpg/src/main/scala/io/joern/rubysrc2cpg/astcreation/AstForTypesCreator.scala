@@ -286,7 +286,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         node.span.spanStart(s"return $fieldName")
       )
     )(node.span.spanStart(code))
-    astForMethodDeclaration(methodDecl, isAccessorMethod = true)
+    astForMethodDeclaration(methodDecl, useSurroundingTypeFullName = true)
   }
 
   // creates a `def <name>=(x) { <fieldName> = x }` METHOD, for <fieldName> = @<name>
@@ -303,7 +303,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       MandatoryParameter("x")(node.span.spanStart("x")) :: Nil,
       StatementList(assignment :: Nil)(node.span.spanStart(s"return $fieldName"))
     )(node.span.spanStart(code))
-    astForMethodDeclaration(methodDecl, isAccessorMethod = true)
+    astForMethodDeclaration(methodDecl, useSurroundingTypeFullName = true)
   }
 
 }
