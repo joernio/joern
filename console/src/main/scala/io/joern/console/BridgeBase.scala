@@ -216,14 +216,14 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
 
   protected def buildRunBeforeCode(config: Config): Seq[String] = {
     val builder = Seq.newBuilder[String]
+    builder ++= config.additionalImports.map(_.toString)
+    builder ++= runBeforeCode
     config.cpgToLoad.foreach { cpgFile =>
       builder += s"""importCpg("$cpgFile")"""
     }
     config.forInputPath.foreach { name =>
       builder += s"""openForInputPath("$name")""".stripMargin
     }
-    builder ++= config.additionalImports.map(_.toString)
-    builder ++= runBeforeCode
     builder.result()
   }
 
