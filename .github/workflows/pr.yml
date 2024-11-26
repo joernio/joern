@@ -97,7 +97,8 @@ jobs:
       - run: |
           mkdir /tmp/slice
           ./joern-slice data-flow tests/code/javasrc/SliceTest.java -o /tmp/slice/dataflow-slice-javasrc.json
-          ./joern --script "./test-dataflow-slice.sc" --param sliceFile=/tmp/slice/dataflow-slice-javasrc.json | grep -q 'List(boolean b, b, this, s, "MALICIOUS", s, new Foo("MALICIOUS"), s, s, "SAFE", s, b, this, this, b, s, System.out)'
+          echo "checking that the script output contains the content we expect:"
+          ./joern --script "tests/test-dataflow-slice.sc" --param sliceFile=/tmp/slice/dataflow-slice-javasrc.json | grep 'List(boolean b, b, this, s, "MALICIOUS", s, new Foo("MALICIOUS"), s, s, "SAFE", s, b, this, this, b, s, System.out)'
       - run: |
           cd joern-cli/target/universal/stage
           ./schema-extender/test.sh
