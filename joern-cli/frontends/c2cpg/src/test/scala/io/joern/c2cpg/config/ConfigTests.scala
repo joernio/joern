@@ -18,7 +18,9 @@ class ConfigTests extends AnyWordSpec with Matchers with Inside {
       "--output",
       "OUTPUT",
       "--exclude",
-      "1EXCLUDE_FILE,2EXCLUDE_FILE",
+      "1EXCLUDE_FILE",
+      "--exclude",
+      "2EXCLUDE_FILE",
       "--exclude-regex",
       "EXCLUDE_REGEX",
       // Frontend-specific args

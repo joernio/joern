@@ -277,8 +277,14 @@ object X2Cpg {
         .action { (x, c) =>
           c.withOutputPath(x)
         },
+
+      // previously this was supposed to be called with `,` as a separator,
+      // e.g. `--exclude foo,bar` - which (among others) has the disadvantage
+      // that under windows a `,` is treated as an argument separator
+      // better: provide this argument multiple times, i.e. `--exlude foo --exclude bar`
       opt[Seq[String]]("exclude")
-        .valueName("<file1>,<file2>,...")
+        .valueName("<file1>")
+        .unbounded()
         .action { (x, c) =>
           c.ignoredFiles = c.ignoredFiles ++ x.map(c.createPathForIgnore)
           c
