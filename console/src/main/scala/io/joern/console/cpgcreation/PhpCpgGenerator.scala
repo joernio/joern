@@ -7,24 +7,23 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import scopt.OParser
 
 import java.nio.file.Path
-import scala.compiletime.uninitialized
 import scala.util.Try
 
 case class PhpCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGenerator {
-  private lazy val command: Path = if (isWin) rootPath.resolve("php2cpg.bat") else rootPath.resolve("php2cpg")
-  private var typeRecoveryConfig: XTypeRecoveryConfig     = uninitialized
-  private var setKnownTypesConfig: XTypeStubsParserConfig = uninitialized
-
-  override def generate(inputPath: String, outputPath: String): Try[String] = {
-    val cmdLineArgs = config.cmdLineParams.toSeq
-    typeRecoveryConfig = XTypeRecoveryConfig.parse(cmdLineArgs)
-    setKnownTypesConfig = OParser
+  private lazy val command: Path      = if (isWin) rootPath.resolve("php2cpg.bat") else rootPath.resolve("php2cpg")
+  private lazy val cmdLineArgs        = config.cmdLineParams.toSeq
+  private lazy val typeRecoveryConfig = XTypeRecoveryConfig.parse(cmdLineArgs)
+  private lazy val setKnownTypesConfig: XTypeStubsParserConfig = {
+    OParser
       .parse(XTypeStubsParser.parserOptions2, cmdLineArgs, XTypeStubsParserConfig())
       .getOrElse(
         throw new RuntimeException(
           s"unable to parse XTypeStubsParserConfig from commandline arguments ${cmdLineArgs.mkString(" ")}"
         )
       )
+  }
+
+  override def generate(inputPath: String, outputPath: String): Try[String] = {
     val arguments = List(inputPath) ++ Seq("-o", outputPath) ++ config.cmdLineParams
     runShellCommand(command.toString, arguments).map(_ => outputPath)
   }
