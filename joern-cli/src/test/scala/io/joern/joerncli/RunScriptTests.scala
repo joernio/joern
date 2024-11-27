@@ -1,5 +1,7 @@
 package io.joern.joerncli
 
+import better.files._
+import java.nio.file.Paths
 import io.joern.console.Config
 import io.joern.joerncli.console.ReplBridge
 import io.shiftleft.utils.ProjectRoot
@@ -24,6 +26,114 @@ class RunScriptTests extends AnyWordSpec with Matchers {
     ).foreach { case (scriptFileName, codePathRelative) =>
       s"Executing '$scriptFileName' on '$codePathRelative'" in {
         exec(scriptFileName, s"$testCodeRoot/$codePathRelative")
+      }
+    }
+
+    "execute a simple script" in new Fixture {
+      def test(scriptFile: File, outputFile: File) = {
+        val escScriptPath = outputFile.pathAsString.replace("\\", "\\\\")
+        scriptFile.write(s"""
+        |val fw = new java.io.FileWriter("$escScriptPath", true)
+        |fw.write("michael was here")
+        |fw.close() 
+        """.stripMargin)
+
+        ReplBridge.main(Array("--script", scriptFile.pathAsString))
+
+        withClue(s"$outputFile content: ") {
+          outputFile.lines.head shouldBe "michael was here"
+        }
+      }
+    }
+
+    "pass parameters to script" in new Fixture {
+      def test(scriptFile: File, outputFile: File) = {
+        scriptFile.write(s"""
+          |@main def foo(outFile: String, magicNumber: Int) = {
+          |  val fw = new java.io.FileWriter(outFile, true)
+          |  fw.write(magicNumber.toString)
+          |  fw.close() 
+          |}
+          """.stripMargin)
+
+        ReplBridge.main(
+          Array(
+            "--script",
+            scriptFile.pathAsString,
+            "--param",
+            s"outFile=${outputFile.pathAsString}",
+            "--param",
+            "magicNumber=42"
+          )
+        )
+
+        withClue(s"$outputFile content: ") {
+          outputFile.lines.head shouldBe "42"
+        }
+      }
+    }
+
+    "script with multiple @main methods" in new Fixture {
+      def test(scriptFile: File, outputFile: File) = {
+        val escScriptPath = outputFile.pathAsString.replace("\\", "\\\\")
+
+        scriptFile.write(s"""
+          |@main def foo() = {
+          |  val fw = new java.io.FileWriter("$escScriptPath", true)
+          |  fw.write("foo was called")
+          |  fw.close() 
+          |}
+          |@main def bar() = {
+          |  val fw = new java.io.FileWriter("$escScriptPath", true)
+          |  fw.write("bar was called")
+          |  fw.close() 
+          |}
+          """.stripMargin)
+
+        ReplBridge.main(Array("--script", scriptFile.pathAsString, "--command", "bar"))
+
+        withClue(s"$outputFile content: ") {
+          outputFile.lines.head shouldBe "bar was called"
+        }
+      }
+    }
+
+    "use additional import script: //> using file directive" in new Fixture {
+      def test(scriptFile: File, outputFile: File) = {
+        val escScriptPath        = outputFile.pathAsString.replace("\\", "\\\\")
+        val additionalImportFile = Paths.get("joern-cli/src/test/resources/additional-import.sc").toAbsolutePath
+
+        scriptFile.write(s"""
+          |//> using file $additionalImportFile
+          |val fw = new java.io.FileWriter("$escScriptPath", true)
+          |fw.write(sayHello("michael")) //function defined in additionalImportFile
+          |fw.close() 
+          """.stripMargin)
+
+        ReplBridge.main(Array("--script", scriptFile.pathAsString))
+
+        withClue(s"$outputFile content: ") {
+          outputFile.lines.head shouldBe "hello, michael"
+        }
+      }
+    }
+
+    "use additional import script: --import parameter" in new Fixture {
+      def test(scriptFile: File, outputFile: File) = {
+        val escScriptPath        = outputFile.pathAsString.replace("\\", "\\\\")
+        val additionalImportFile = Paths.get("joern-cli/src/test/resources/additional-import.sc").toAbsolutePath
+
+        scriptFile.write(s"""
+          |val fw = new java.io.FileWriter("$escScriptPath", true)
+          |fw.write(sayHello("michael")) //function defined in additionalImportFile
+          |fw.close() 
+          """.stripMargin)
+
+        ReplBridge.main(Array("--script", scriptFile.pathAsString, "--import", additionalImportFile.toString))
+
+        withClue(s"$outputFile content: ") {
+          outputFile.lines.head shouldBe "hello, michael"
+        }
       }
     }
 
@@ -52,5 +162,13 @@ object RunScriptTests {
         Config(scriptFile = Some(scriptsRoot.resolve(scriptFileName)), params = Map("inputPath" -> codePathAbsolute))
       )
       .get
+  }
+
+  trait Fixture {
+    def test(scriptFile: File, outputFile: File): Unit
+    for {
+      scriptFile <- File.temporaryFile()
+      outputFile <- File.temporaryFile()
+    } test(scriptFile, outputFile)
   }
 }

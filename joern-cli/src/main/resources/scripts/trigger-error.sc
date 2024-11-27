@@ -1,1 +1,2 @@
-assert(true == false, "trigger an error for testing purposes")
+import scala.util.control.NoStackTrace
+throw new Exception("triggering an error for testing purposes") with NoStackTrace
