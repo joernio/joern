@@ -317,6 +317,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case ElseClause(thenClause)             => ElseClause(returnLastNode(thenClause, transform))(x.span)
       case WhenClause(matchExpressions, matchSplatExpression, thenClause) =>
         WhenClause(matchExpressions, matchSplatExpression, returnLastNode(thenClause, transform))(x.span)
+      case InClause(pattern, body) => InClause(pattern, returnLastNode(body, transform))(x.span)
     }
 
     x match {

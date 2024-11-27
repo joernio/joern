@@ -328,7 +328,7 @@ object RubyIntermediateAst {
 
   final case class CaseExpression(
     expression: Option[RubyExpression],
-    whenClauses: List[RubyExpression],
+    matchClauses: List[RubyExpression],
     elseClause: Option[RubyExpression]
   )(span: TextSpan)
       extends RubyExpression(span)
@@ -341,6 +341,12 @@ object RubyIntermediateAst {
   )(span: TextSpan)
       extends RubyExpression(span)
       with ControlFlowClause
+
+  final case class InClause(pattern: RubyExpression, body: RubyExpression)(span: TextSpan)
+      extends RubyExpression(span)
+      with ControlFlowClause
+
+  final case class ArrayPattern(children: List[RubyExpression])(span: TextSpan) extends RubyExpression(span)
 
   final case class NextExpression()(span: TextSpan) extends RubyExpression(span) with ControlFlowStatement
 
