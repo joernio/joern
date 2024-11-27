@@ -19,8 +19,6 @@ class CaseTests extends RubyCode2CpgFixture {
       |""".stripMargin
     val cpg = code(caseCode)
 
-    cpg.method.isModule.dotAst.l.foreach(println)
-
     val block @ List(_) = cpg.method.isModule.block.astChildren.isBlock.l
 
     val List(assign)   = block.astChildren.assignment.l;
@@ -99,7 +97,7 @@ class CaseTests extends RubyCode2CpgFixture {
     ifStmts.last.astChildren.order(3).l shouldBe List()
   }
 
-  "Something" in {
+  "An array pattern match statement" in {
     val cpg = code("""
         |def self.class_for(type, location)
         |        case [type, location]
@@ -119,8 +117,8 @@ class CaseTests extends RubyCode2CpgFixture {
     val List(assign)   = block.astChildren.assignment.l;
     val List(lhs, rhs) = assign.argument.l
 
-    List(lhs).isIdentifier.name.l shouldBe List("<tmp-0>")
-    List(rhs).isCall.code.l shouldBe List("[type, location]")
+    lhs.start.isIdentifier.name.l shouldBe List("<tmp-0>")
+    rhs.start.isCall.code.l shouldBe List("[type, location]")
 
     val headIf @ List(_)        = block.astChildren.isControlStructure.l
     val ifStmts @ List(_, _, _) = headIf.repeat(_.astChildren.order(3).astChildren.isControlStructure)(_.emit).l;
