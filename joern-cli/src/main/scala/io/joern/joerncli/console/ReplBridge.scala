@@ -1,7 +1,6 @@
 package io.joern.joerncli.console
 
 import io.joern.console.BridgeBase
-import java.io.PrintStream
 
 object ReplBridge extends BridgeBase {
 
@@ -13,8 +12,7 @@ object ReplBridge extends BridgeBase {
 
   /** Code that is executed when starting the shell
     */
-  override def predefLines =
-    Predefined.forInteractiveShell
+  override def runBeforeCode = RunBeforeCode.forInteractiveShell
 
   override def greeting = JoernConsole.banner()
 

@@ -2,7 +2,7 @@ package io.joern.joerncli.console
 
 import io.joern.console.{Help, Run}
 
-object Predefined {
+object RunBeforeCode {
 
   val shared: Seq[String] =
     Seq(

@@ -12,7 +12,6 @@ import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder}
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
 
-import java.io.PrintStream
 import org.json4s.native.Serialization
 import org.json4s.{Formats, NoTypeHints}
 
@@ -239,12 +238,10 @@ object JoernScan extends BridgeBase {
     }
   }
 
-  override protected def predefLines = ReplBridge.predefLines
-  override protected def promptStr   = ReplBridge.promptStr
-
-  override protected def greeting = ReplBridge.greeting
-
-  override protected def onExitCode = ReplBridge.onExitCode
+  override protected def runBeforeCode = ReplBridge.runBeforeCode
+  override protected def promptStr     = ReplBridge.promptStr
+  override protected def greeting      = ReplBridge.greeting
+  override protected def onExitCode    = ReplBridge.onExitCode
 }
 
 object Scan {

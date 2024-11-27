@@ -211,14 +211,21 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
     }
   }
 
-  protected def createPredefFile(additionalLines: Seq[String] = Nil): Path = {
-    val tmpFile = Files.createTempFile("joern-predef", "sc")
-    Files.write(tmpFile, (predefLines ++ additionalLines).asJava)
-    tmpFile.toAbsolutePath
-  }
-
   /** code that is executed on startup */
-  protected def predefLines: Seq[String]
+  protected def runBeforeCode: Seq[String]
+
+  protected def buildRunBeforeCode(config: Config): Seq[String] = {
+    val builder = Seq.newBuilder[String]
+    builder ++= config.additionalImports.map(_.toString)
+    builder ++= runBeforeCode
+    config.cpgToLoad.foreach { cpgFile =>
+      builder += s"""importCpg("$cpgFile")"""
+    }
+    config.forInputPath.foreach { name =>
+      builder += s"""openForInputPath("$name")""".stripMargin
+    }
+    builder.result()
+  }
 
   protected def greeting: String
 
@@ -229,19 +236,9 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
 
 trait InteractiveShell { this: BridgeBase =>
   protected def startInteractiveShell(config: Config) = {
-    val replConfig = config.cpgToLoad.map { cpgFile =>
-      "importCpg(\"" + cpgFile + "\")"
-    } ++ config.forInputPath.map { name =>
-      s"""
-         |openForInputPath(\"$name\")
-         |""".stripMargin
-    }
-
-    val predefFile = createPredefFile(replConfig.toSeq)
-
     replpp.InteractiveShell.run(
       replpp.Config(
-        predefFiles = predefFile +: config.additionalImports,
+        runBefore = buildRunBeforeCode(config),
         nocolors = config.nocolors,
         verbose = config.verbose,
         classpathConfig = replpp.Config
@@ -268,10 +265,9 @@ trait ScriptExecution { this: BridgeBase =>
     if (!Files.exists(scriptFile)) {
       Try(throw new AssertionError(s"given script file `$scriptFile` does not exist"))
     } else {
-      val predefFile = createPredefFile(importCpgCode(config))
       val scriptReturn = ScriptRunner.exec(
         replpp.Config(
-          predefFiles = predefFile +: config.additionalImports,
+          runBefore = buildRunBeforeCode(config),
           scriptFile = Option(scriptFile),
           command = config.command,
           params = config.params,
@@ -284,18 +280,6 @@ trait ScriptExecution { this: BridgeBase =>
         println(scriptReturn.failed.get.getMessage)
       }
       scriptReturn
-    }
-  }
-
-  /** For the given config, generate a list of commands to import the CPG
-    */
-  private def importCpgCode(config: Config): List[String] = {
-    config.cpgToLoad.map { cpgFile =>
-      "importCpg(\"" + cpgFile + "\")"
-    }.toList ++ config.forInputPath.map { name =>
-      s"""
-         |openForInputPath(\"$name\")
-         |""".stripMargin
     }
   }
 }
@@ -406,10 +390,8 @@ trait PluginHandling { this: BridgeBase =>
 trait ServerHandling { this: BridgeBase =>
 
   protected def startHttpServer(config: Config): Unit = {
-    val predefFile = createPredefFile(Nil)
-
     val baseConfig = replpp.Config(
-      predefFiles = predefFile +: config.additionalImports,
+      runBefore = buildRunBeforeCode(config),
       verbose = true, // always print what's happening - helps debugging
       classpathConfig = replpp.Config
         .ForClasspath(inheritClasspath = true, dependencies = config.dependencies, resolvers = config.resolvers)
