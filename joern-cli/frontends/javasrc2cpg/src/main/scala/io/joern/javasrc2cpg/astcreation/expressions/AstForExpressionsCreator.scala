@@ -33,6 +33,7 @@ trait AstForExpressionsCreator
     with AstForLambdasCreator
     with AstForCallExpressionsCreator
     with AstForNameExpressionsCreator
+    with AstForPatternExpressionsCreator
     with AstForVarDeclAndAssignsCreator { this: AstCreator =>
   def astsForExpression(expression: Expression, expectedType: ExpectedType): Seq[Ast] = {
     // TODO: Implement missing handlers

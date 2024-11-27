@@ -2,6 +2,8 @@ package io.joern.javasrc2cpg.astcreation.statements
 
 import com.github.javaparser.ast.expr.{Expression, NameExpr}
 import com.github.javaparser.ast.stmt.{BlockStmt, ForEachStmt, ForStmt}
+import com.github.javaparser.symbolsolver.javaparsermodel.contexts.ForStatementContext
+import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
 import io.joern.javasrc2cpg.scope.NodeTypeInfo
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
@@ -23,7 +25,6 @@ import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
-import scala.util.Try
 
 trait AstForForLoopsCreator { this: AstCreator =>
 
@@ -44,7 +45,9 @@ trait AstForForLoopsCreator { this: AstCreator =>
     s"$IterableNamePrefix${iterableKeyPool.next}"
   }
 
-  def astForFor(stmt: ForStmt): Ast = {
+  def astsForFor(stmt: ForStmt): List[Ast] = {
+    val forContext = new ForStatementContext(stmt, new CombinedTypeSolver())
+
     val forNode =
       NewControlStructure()
         .controlStructureType(ControlStructureTypes.FOR)
@@ -59,24 +62,41 @@ trait AstForForLoopsCreator { this: AstCreator =>
       astsForExpression(_, ExpectedType.Boolean)
     }
 
-    val updateAsts = stmt.getUpdate.asScala.toList.flatMap {
-      astsForExpression(_, ExpectedType.empty)
+    val updateAsts = stmt.getUpdate.asScala.toList match {
+      case Nil => Nil
+
+      case expressions =>
+        scope.pushBlockScope()
+        scope.addLocalsForPatternsToEnclosingBlock(
+          forContext.typePatternExprsExposedToChild(expressions.head).asScala.toList
+        )
+        val updateAsts = expressions.flatMap(astsForExpression(_, ExpectedType.empty))
+        scope.popBlockScope()
+        updateAsts
     }
 
-    val stmtAsts =
-      astsForStatement(stmt.getBody)
+    val patternPartition = partitionPatternAstsByScope(forContext)
+
+    scope.pushBlockScope()
+    scope.addLocalsForPatternsToEnclosingBlock(patternPartition.patternsIntroducedToBody)
+    val bodyAst = wrapInBlockWithPrefix(patternPartition.astsAddedToBody, stmt.getBody)
+    scope.popBlockScope()
+
+    scope.addLocalsForPatternsToEnclosingBlock(patternPartition.patternsIntroducedByStatement)
 
     val ast = Ast(forNode)
       .withChildren(initAsts)
       .withChildren(compareAsts)
       .withChildren(updateAsts)
-      .withChildren(stmtAsts)
+      .withChild(bodyAst)
 
-    compareAsts.flatMap(_.root) match {
+    val astWithConditionEdge = compareAsts.flatMap(_.root) match {
       case c :: Nil =>
         ast.withConditionEdge(forNode, c)
       case _ => ast
     }
+
+    patternPartition.astsAddedBeforeStatement ++ (astWithConditionEdge :: patternPartition.astsAddedAfterStatement)
   }
 
   def astForForEach(stmt: ForEachStmt): Seq[Ast] = {

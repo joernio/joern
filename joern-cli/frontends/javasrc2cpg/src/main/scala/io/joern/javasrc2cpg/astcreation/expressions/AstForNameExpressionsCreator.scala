@@ -22,6 +22,7 @@ import io.joern.javasrc2cpg.scope.Scope.{
   NotInScope,
   ScopeMember,
   ScopeParameter,
+  ScopePatternVariable,
   ScopeVariable,
   SimpleVariable
 }
@@ -29,6 +30,7 @@ import org.slf4j.LoggerFactory
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode, newOperatorCallNode}
+import io.joern.javasrc2cpg.scope.PatternVariableInfo
 
 trait AstForNameExpressionsCreator { this: AstCreator =>
 
@@ -53,6 +55,16 @@ trait AstForNameExpressionsCreator { this: AstCreator =>
           variable.name,
           variable.typeFullName
         )
+
+      case SimpleVariable(ScopePatternVariable(localNode, typePatternExpr)) =>
+        scope.enclosingMethod.flatMap(_.getPatternVariableInfo(typePatternExpr)) match {
+          case Some(PatternVariableInfo(typePatternExpr, _, initializerAst, _, false)) =>
+            scope.enclosingMethod.foreach(_.registerPatternVariableInitializerToBeAddedToGraph(typePatternExpr))
+            initializerAst
+          case _ =>
+            val identifier = identifierNode(nameExpr, localNode.name, localNode.name, localNode.typeFullName)
+            Ast(identifier).withRefEdge(identifier, localNode)
+        }
 
       case SimpleVariable(variable) =>
         val identifier = identifierNode(nameExpr, name, name, typeFullName.getOrElse(TypeConstants.Any))

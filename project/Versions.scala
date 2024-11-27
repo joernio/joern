@@ -19,7 +19,7 @@ object Versions {
   val ghidra                 = "11.2.1_PUBLIC_20241105-7"
   val gradleTooling          = "8.3"
   val jacksonDatabind        = "2.17.0"
-  val javaParser             = "3.25.9"
+  val javaParser             = "3.26.2"
   val jlhttp                 = "3.1"
   val jRuby                  = "9.4.9.0"
   val json4s                 = "4.0.7"

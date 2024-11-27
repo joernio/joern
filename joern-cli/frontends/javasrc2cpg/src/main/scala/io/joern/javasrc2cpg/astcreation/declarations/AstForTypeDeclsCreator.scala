@@ -37,7 +37,7 @@ import com.github.javaparser.resolution.declarations.{
   ResolvedReferenceTypeDeclaration,
   ResolvedTypeParameterDeclaration
 }
-import io.joern.javasrc2cpg.astcreation.AstCreator
+import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.javasrc2cpg.util.{BindingTable, BindingTableEntry, NameConstants, Util}
 import io.joern.x2cpg.utils.NodeBuilders.*
@@ -443,7 +443,8 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
   }
 
   private def getStaticFieldInitializers(staticFields: List[FieldDeclaration]): List[Ast] = {
-    staticFields.flatMap { field =>
+    scope.pushMethodScope(NewMethod(), ExpectedType.empty, isStatic = true)
+    val fieldsAsts = staticFields.flatMap { field =>
       field.getVariables.asScala.toList.flatMap { variable =>
         scope.pushFieldDeclScope(isStatic = true, name = variable.getNameAsString)
         val assignment = astsForVariableDeclarator(variable, field)
@@ -451,6 +452,9 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
         assignment
       }
     }
+    val methodScope = scope.popMethodScope()
+    methodScope.getTemporaryLocals.map(Ast(_)) ++ methodScope
+      .getUnaddedPatternVariableAstsAndMarkAdded() ++ fieldsAsts
   }
 
   private[declarations] def astForAnnotationExpr(annotationExpr: AnnotationExpr): Ast = {

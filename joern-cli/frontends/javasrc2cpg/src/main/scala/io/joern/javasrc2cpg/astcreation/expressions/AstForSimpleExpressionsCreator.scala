@@ -21,14 +21,18 @@ import com.github.javaparser.ast.expr.{
   UnaryExpr
 }
 import com.github.javaparser.ast.nodeTypes.NodeWithName
+import com.github.javaparser.ast.visitor.NodeFinderVisitor
+import com.github.javaparser.symbolsolver.javaparsermodel.contexts.{BinaryExprContext, ConditionalExprContext}
+import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
+import io.joern.javasrc2cpg.scope.PatternVariableInfo
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.javasrc2cpg.util.{NameConstants, Util}
 import io.joern.x2cpg.{Ast, Defines}
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode, newOperatorCallNode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewFieldIdentifier, NewLiteral, NewTypeRef}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNodeNew, NewCall, NewFieldIdentifier, NewLiteral, NewTypeRef}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
 
 import scala.jdk.CollectionConverters.*
@@ -155,8 +159,27 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
       case BinaryExpr.Operator.REMAINDER            => Operators.modulo
     }
 
-    val args =
-      astsForExpression(expr.getLeft, expectedType) ++ astsForExpression(expr.getRight, expectedType)
+    val lhsArgs = astsForExpression(expr.getLeft, expectedType)
+    // TODO Fix code
+    // val lhsCode = lhsArgs.headOption.flatMap(_.rootCode).getOrElse("")
+
+    scope.pushBlockScope()
+    val context = new BinaryExprContext(expr, new CombinedTypeSolver())
+
+    context
+      .typePatternExprsExposedToChild(expr.getRight)
+      .asScala
+      .flatMap(pattern => scope.enclosingMethod.flatMap(_.getPatternVariableInfo(pattern)))
+      .foreach { case PatternVariableInfo(pattern, local, _, _, _) =>
+        scope.enclosingBlock.foreach(_.addPatternLocal(local, pattern))
+      }
+
+    val rhsArgs = astsForExpression(expr.getRight, expectedType)
+    // TODO Fix code
+    // val rhsCode = rhsArgs.headOption.flatMap(_.rootCode).getOrElse("")
+    scope.popBlockScope()
+
+    val args = lhsArgs ++ rhsArgs
 
     val typeFullName =
       expressionReturnTypeFullName(expr)
@@ -168,7 +191,8 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
 
     val callNode = newOperatorCallNode(
       operatorName,
-      code = expr.toString,
+      // code = s"$lhsCode ${expr.getOperator.asString()} $rhsCode",
+      code = code(expr),
       typeFullName = Some(typeFullName),
       line = line(expr),
       column = column(expr)
@@ -229,8 +253,21 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
 
   private[expressions] def astForConditionalExpr(expr: ConditionalExpr, expectedType: ExpectedType): Ast = {
     val condAst = astsForExpression(expr.getCondition, ExpectedType.Boolean)
+
+    val context = new ConditionalExprContext(expr, new CombinedTypeSolver())
+
+    val patternsExposedToThen = context.typePatternExprsExposedToChild(expr.getThenExpr).asScala.toList
+    val patternsExposedToElse = context.typePatternExprsExposedToChild(expr.getElseExpr).asScala.toList
+
+    scope.pushBlockScope()
+    scope.addLocalsForPatternsToEnclosingBlock(patternsExposedToThen)
     val thenAst = astsForExpression(expr.getThenExpr, expectedType)
+    scope.popBlockScope()
+
+    scope.pushBlockScope()
+    scope.addLocalsForPatternsToEnclosingBlock(patternsExposedToElse)
     val elseAst = astsForExpression(expr.getElseExpr, expectedType)
+    scope.popBlockScope()
 
     val typeFullName =
       expressionReturnTypeFullName(expr)
@@ -301,22 +338,30 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
   }
 
   private[expressions] def astForInstanceOfExpr(expr: InstanceOfExpr): Ast = {
-    val booleanTypeFullName = Some(TypeConstants.Boolean)
-    val callNode =
-      newOperatorCallNode(Operators.instanceOf, expr.toString, booleanTypeFullName, line(expr), column(expr))
+    // TODO: handle multiple ASTs
+    val lhsAst = astsForExpression(expr.getExpression, ExpectedType.empty).head
+    expr.getPattern.toScala
+      .map { patternExpression =>
+        astForInstanceOfWithPattern(expr.getExpression, lhsAst, patternExpression)
+      }
+      .getOrElse {
+        val booleanTypeFullName = Some(TypeConstants.Boolean)
+        val callNode =
+          newOperatorCallNode(Operators.instanceOf, expr.toString, booleanTypeFullName, line(expr), column(expr))
 
-    val exprAst      = astsForExpression(expr.getExpression, ExpectedType.empty)
-    val exprType     = tryWithSafeStackOverflow(expr.getType).toOption
-    val typeFullName = exprType.flatMap(typeInfoCalc.fullName).getOrElse(TypeConstants.Any)
-    val typeNode =
-      NewTypeRef()
-        .code(exprType.map(_.toString).getOrElse(code(expr).split("instanceof").lastOption.getOrElse("")))
-        .lineNumber(line(expr))
-        .columnNumber(exprType.map(column(_)).getOrElse(column(expr)))
-        .typeFullName(typeFullName)
-    val typeAst = Ast(typeNode)
+        val exprAst      = astsForExpression(expr.getExpression, ExpectedType.empty)
+        val exprType     = tryWithSafeStackOverflow(expr.getType).toOption
+        val typeFullName = exprType.flatMap(typeInfoCalc.fullName).getOrElse(TypeConstants.Any)
+        val typeNode =
+          NewTypeRef()
+            .code(exprType.map(_.toString).getOrElse(code(expr).split("instanceof").lastOption.getOrElse("")))
+            .lineNumber(line(expr))
+            .columnNumber(exprType.map(column(_)).getOrElse(column(expr)))
+            .typeFullName(typeFullName)
+        val typeAst = Ast(typeNode)
 
-    callAst(callNode, exprAst ++ Seq(typeAst))
+        callAst(callNode, exprAst ++ Seq(typeAst))
+      }
   }
 
   private[expressions] def astForLiteralExpr(expr: LiteralExpr): Ast = {
@@ -378,6 +423,7 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
         .map(typeInfoCalc.registerType)
         .getOrElse(TypeConstants.Any)
 
+    // TODO Fix code
     val callNode = newOperatorCallNode(
       operatorName,
       code = expr.toString,
