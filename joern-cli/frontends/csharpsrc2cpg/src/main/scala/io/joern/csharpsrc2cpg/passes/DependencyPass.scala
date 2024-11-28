@@ -45,8 +45,8 @@ class DependencyPass(cpg: Cpg, buildFiles: List[String], registerPackageId: Stri
                 }
                 val packageVersion = packageReference.attribute("Version").map(_.toString()).getOrElse("")
                 val dependencyNode = NewDependency()
-                  .name(packageName)
-                  .version(packageVersion)
+                  .name(packageName.trim())
+                  .version(packageVersion.trim())
                 builder.addNode(dependencyNode)
               } match {
                 case Failure(exception) =>
