@@ -11,12 +11,14 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   ForExpression,
   IfExpression,
   InClause,
+  MatchVariable,
   MemberCall,
   NextExpression,
   OperatorAssignment,
   RescueExpression,
   ReturnExpression,
   RubyExpression,
+  SimpleCall,
   SimpleIdentifier,
   SingleAssignment,
   SplattingRubyNode,
@@ -293,15 +295,34 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
       } else {
         inClauses.foldRight[Option[RubyExpression]](elseThenClause) {
           (inClause: InClause, restClause: Option[RubyExpression]) =>
-            val condition = inClause.pattern match {
+            val (condition, body) = inClause.pattern match {
               case x: ArrayPattern =>
-                expr.map(e => BinaryExpression(x, "===", e)(x.span)).getOrElse(inClause.pattern)
-              case x => x
+                val condition = expr.map(e => BinaryExpression(x, "===", e)(x.span)).getOrElse(inClause.pattern)
+                val body      = inClause.body
+
+                val variables = x.children.collect { case x: MatchVariable =>
+                  x
+                }
+
+                val conditionBody = if (variables.nonEmpty) {
+                  StatementList(variables.map { x =>
+                    val lhs = SimpleIdentifier()(x.span)
+                    SingleAssignment(lhs, "=", x)(
+                      inClause.span
+                        .spanStart(s"${lhs.span.text} = ${RubyOperators.arrayPatternMatch}(${lhs.span.text})")
+                    )
+                  } :+ body)(body.span)
+                } else {
+                  body
+                }
+
+                (condition, conditionBody)
+              case x => (x, inClause.body)
             }
 
             val conditional = IfExpression(
               condition,
-              inClause.body,
+              body,
               List.empty,
               restClause.map { els => ElseClause(els.asStatementList)(els.span) }
             )(node.span)
