@@ -217,21 +217,4 @@ class CaseTests extends RubyCode2CpgFixture {
       case _ => fail(s"Expected two true branches")
     }
   }
-
-  "test" in {
-    val cpg = code("""
-        |def object_policy(object_name, id: nil, number: nil)
-        |    case [object_name, id, number]
-        |    in ['Ticket', id, nil]
-        |      ticket_policy(:id, id)
-        |    in ['Ticket', nil, number]
-        |      ticket_policy(:number, number)
-        |    in ['KnowledgeBase::Answer::Translation', *_]
-        |      kb_answer_policy(id.presence || number.presence)
-        |    end
-        |  end
-        |""".stripMargin)
-
-    cpg.method.isModule
-  }
 }
