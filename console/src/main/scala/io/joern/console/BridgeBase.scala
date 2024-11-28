@@ -13,7 +13,7 @@ case class Config(
   scriptFile: Option[Path] = None,
   command: Option[String] = None,
   params: Map[String, String] = Map.empty,
-  additionalImports: Seq[Path] = Nil,
+  predefFiles: Seq[Path] = Nil,
   additionalClasspathEntries: Seq[String] = Seq.empty,
   addPlugin: Option[String] = None,
   rmPlugin: Option[String] = None,
@@ -70,8 +70,8 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
         .valueName("script1.sc")
         .unbounded()
         .optional()
-        .action((x, c) => c.copy(additionalImports = c.additionalImports :+ x))
-        .text("import (and run) additional script(s) on startup - may be passed multiple times")
+        .action((x, c) => c.copy(predefFiles = c.predefFiles :+ x))
+        .text("given source files will be compiled and added to classpath - this may be passed multiple times")
 
       opt[String]("classpathEntry")
         .valueName("path/to/classpath")
@@ -216,7 +216,6 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
 
   protected def buildRunBeforeCode(config: Config): Seq[String] = {
     val builder = Seq.newBuilder[String]
-    builder ++= config.additionalImports.map(_.toString)
     builder ++= runBeforeCode
     config.cpgToLoad.foreach { cpgFile =>
       builder += s"""importCpg("$cpgFile")"""
@@ -238,6 +237,7 @@ trait InteractiveShell { this: BridgeBase =>
   protected def startInteractiveShell(config: Config) = {
     replpp.InteractiveShell.run(
       replpp.Config(
+        predefFiles = config.predefFiles,
         runBefore = buildRunBeforeCode(config),
         nocolors = config.nocolors,
         verbose = config.verbose,
@@ -267,6 +267,7 @@ trait ScriptExecution { this: BridgeBase =>
     } else {
       val scriptReturn = ScriptRunner.exec(
         replpp.Config(
+          predefFiles = config.predefFiles,
           runBefore = buildRunBeforeCode(config),
           scriptFile = Option(scriptFile),
           command = config.command,
@@ -391,6 +392,7 @@ trait ServerHandling { this: BridgeBase =>
 
   protected def startHttpServer(config: Config): Unit = {
     val baseConfig = replpp.Config(
+      predefFiles = config.predefFiles,
       runBefore = buildRunBeforeCode(config),
       verbose = true, // always print what's happening - helps debugging
       classpathConfig = replpp.Config
