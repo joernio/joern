@@ -9,6 +9,8 @@ import com.github.javaparser.ast.expr.{
   RecordPatternExpr,
   TypePatternExpr
 }
+import com.github.javaparser.resolution.declarations.ResolvedRecordDeclaration
+import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserRecordDeclaration
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
 import io.joern.javasrc2cpg.jartypereader.model.Model.TypeConstants
 import io.joern.javasrc2cpg.scope.Scope.NewVariableNode
@@ -57,6 +59,71 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
     }
   }
 
+  private def createAndPushAssignmentForTypePattern(typePatternExpr: TypePatternExpr, castRhs: Ast): Unit = {
+    val variableName = typePatternExpr.getNameAsString
+    val variableType = {
+      tryWithSafeStackOverflow(typePatternExpr.getType).toOption
+        .flatMap(typ => scope.lookupScopeType(typ.asString()).map(_.typeFullName).orElse(typeInfoCalc.fullName(typ)))
+        .getOrElse(TypeConstants.Any)
+    }
+
+    val variableTypeCode  = tryWithSafeStackOverflow(code(typePatternExpr.getType)).getOrElse(variableType)
+    val patternLocal      = localNode(typePatternExpr, variableName, code(typePatternExpr), variableType)
+    val patternIdentifier = identifierNode(typePatternExpr, variableName, variableName, variableType)
+    // TODO Handle record pattern initializers
+    val patternInitializerCastType = typeRefNode(typePatternExpr, code(typePatternExpr.getType), variableType)
+    val patternInitializerCast = newOperatorCallNode(
+      Operators.cast,
+      s"($variableTypeCode) ${castRhs.rootCodeOrEmpty}",
+      Option(variableType),
+      line(typePatternExpr),
+      column(typePatternExpr)
+    )
+
+    val initializerCastAst = callAst(patternInitializerCast, Ast(patternInitializerCastType) :: castRhs :: Nil)
+
+    val initializerAssignmentCall = newOperatorCallNode(
+      Operators.assignment,
+      s"$variableName = ${patternInitializerCast.code}",
+      Option(variableType),
+      line(typePatternExpr),
+      column(typePatternExpr)
+    )
+    val initializerAssignmentAst = callAst(
+      initializerAssignmentCall,
+      Ast(patternIdentifier) :: initializerCastAst :: Nil
+    ).withRefEdge(patternIdentifier, patternLocal)
+
+    scope.enclosingMethod.foreach { methodScope =>
+      methodScope.putPatternVariableInfo(typePatternExpr, patternLocal, initializerAssignmentAst)
+    }
+  }
+
+  private def createAndPushAssignmentAstsForPattern(patternExpr: PatternExpr, castRhs: Ast): Unit = {
+    patternExpr match {
+      case typePatternExpr: TypePatternExpr =>
+        createAndPushAssignmentForTypePattern(typePatternExpr, castRhs)
+
+      case recordPatternExpr: RecordPatternExpr =>
+        // TODO cast to record type
+        val recordType = tryWithSafeStackOverflow(recordPatternExpr.getType).toOption
+        val resolvedRecordType =
+          recordType.flatMap(typ => tryWithSafeStackOverflow(typ.resolve().asReferenceType()).toOption)
+
+        val recordTypeFullName = recordType
+          .flatMap(typ => scope.lookupType(code(typ)).orElse(typeInfoCalc.fullName(typ)))
+          .getOrElse(TypeConstants.Any)
+
+        val castType = typeRefNode(recordPatternExpr, code(recordPatternExpr.getType), recordTypeFullName)
+        // TODO fix RHS code
+        val castNode = newOperatorCallNode(Operators.cast, s"(${castType.code}) ")
+      // for each field
+      // TODO field access
+      // TODO recorsive call
+
+    }
+  }
+
   private[astcreation] def astForInstanceOfWithPattern(
     instanceOfLhsExpr: Expression,
     patternLhsInitAst: Ast,
@@ -80,52 +147,9 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
     val typePatterns = getTypePatterns(pattern)
 
     typePatterns.foreach { typePatternExpr =>
-      val variableName = typePatternExpr.getNameAsString
-      val variableType = {
-        tryWithSafeStackOverflow(typePatternExpr.getType).toOption
-          .map(typ =>
-            scope
-              .lookupScopeType(typ.asString())
-              .map(_.typeFullName)
-              .orElse(typeInfoCalc.fullName(typ))
-              .getOrElse(defaultTypeFallback(typ))
-          )
-          .getOrElse(defaultTypeFallback())
-      }
-      val variableTypeCode = tryWithSafeStackOverflow(code(typePatternExpr.getType)).getOrElse(variableType)
-
-      val patternLocal      = localNode(typePatternExpr, variableName, code(typePatternExpr), variableType)
-      val patternIdentifier = identifierNode(typePatternExpr, variableName, variableName, variableType)
-      // TODO Handle record pattern initializers
-      val patternInitializerCastType = typeRefNode(typePatternExpr, code(typePatternExpr.getType), variableType)
-      val patternInitializerCastRhs  = lhsIdentifier.copy
-      val patternInitializerCast = newOperatorCallNode(
-        Operators.cast,
-        s"($variableTypeCode) ${lhsIdentifier.code}",
-        Option(variableType),
-        line(typePatternExpr),
-        column(typePatternExpr)
-      )
-
-      val initializerCastAst =
-        callAst(patternInitializerCast, Ast(patternInitializerCastType) :: Ast(patternInitializerCastRhs) :: Nil)
-          .withRefEdges(patternInitializerCastRhs, lhsRefsTo.toList)
-
-      val initializerAssignmentCall = newOperatorCallNode(
-        Operators.assignment,
-        s"$variableName = ${patternInitializerCast.code}",
-        Option(variableType),
-        line(typePatternExpr),
-        column(typePatternExpr)
-      )
-      val initializerAssignmentAst = callAst(
-        initializerAssignmentCall,
-        Ast(patternIdentifier) :: initializerCastAst :: Nil
-      ).withRefEdge(patternIdentifier, patternLocal)
-
-      scope.enclosingMethod.foreach { methodScope =>
-        methodScope.putPatternVariableInfo(typePatternExpr, patternLocal, initializerAssignmentAst)
-      }
+      val lhsCopy = lhsIdentifier.copy
+      val lhsAst  = Ast(lhsCopy).withRefEdges(lhsCopy, lhsRefsTo.toList)
+      createAndPushAssignmentAstsForPattern(typePatternExpr, lhsAst)
     }
 
     val instanceOfCall = newOperatorCallNode(
