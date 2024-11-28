@@ -290,7 +290,7 @@ class Scope(implicit val withSchemaValidation: ValidationMode, val disableTypeFa
 
   def addLocalsForPatternsToEnclosingBlock(patterns: List[TypePatternExpr]): Unit = {
     patterns.flatMap(enclosingMethod.get.getPatternVariableInfo(_)).foreach {
-      case PatternVariableInfo(typePatternExpr, variableLocal, _, _, _) =>
+      case PatternVariableInfo(typePatternExpr, variableLocal, _, _, _, _) =>
         enclosingBlock.get.addPatternLocal(variableLocal, typePatternExpr)
     }
   }
