@@ -225,7 +225,10 @@ class RubyJsonToNodeCreator(
     ArrayLiteral(children)(obj.toTextSpan)
   }
 
-  private def visitArrayPattern(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitArrayPattern(obj: Obj): RubyExpression = {
+    val children = obj.visitArray(ParserKeys.Children)
+    ArrayPattern(children)(obj.toTextSpan)
+  }
 
   private def visitArrayPatternWithTail(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
@@ -347,7 +350,13 @@ class RubyJsonToNodeCreator(
     CaseExpression(expression, whenClauses, elseClause)(obj.toTextSpan)
   }
 
-  private def visitCaseMatchStatement(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitCaseMatchStatement(obj: Obj): RubyExpression = {
+    val expression = visit(obj(ParserKeys.Statement))
+    val inClauses  = obj.visitArray(ParserKeys.Bodies)
+    val elseClause = obj.visitOption(ParserKeys.ElseClause).map(x => ElseClause(x)(x.span))
+
+    CaseExpression(Some(expression), inClauses, elseClause)(obj.toTextSpan)
+  }
 
   private def visitClassDefinition(obj: Obj): RubyExpression = {
     val (name, namespaceParts) = visit(obj(ParserKeys.Name)) match {
@@ -581,7 +590,12 @@ class RubyJsonToNodeCreator(
     IndexAccess(target, indices)(obj.toTextSpan)
   }
 
-  private def visitInPattern(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitInPattern(obj: Obj): RubyExpression = {
+    val patternType = visit(obj(ParserKeys.Pattern))
+    val patternBody = visit(obj(ParserKeys.Body))
+
+    InClause(patternType, patternBody)(obj.toTextSpan)
+  }
 
   private def visitInt(obj: Obj): RubyExpression = {
     val typeFullName = getBuiltInType(Defines.Integer)

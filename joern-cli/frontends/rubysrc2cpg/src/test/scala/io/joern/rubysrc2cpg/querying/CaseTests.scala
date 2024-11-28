@@ -96,4 +96,52 @@ class CaseTests extends RubyCode2CpgFixture {
 
     ifStmts.last.astChildren.order(3).l shouldBe List()
   }
+
+  "An array pattern match statement" in {
+    val cpg = code("""
+        |def self.class_for(type, location)
+        |        case [type, location]
+        |        in [:value, :path]
+        |          ItemValuePathParsingError
+        |        in [:label, :path]
+        |          ItemLabelPathParsingError
+        |        in [:label, :invalid]
+        |          ItemLabelInvalidTypeParsingError
+        |        else
+        |           SomeOtherError
+        |        end
+        |end""".stripMargin)
+
+    val block @ List(_) = cpg.method.name("class_for").block.astChildren.isBlock.l
+
+    val List(assign)   = block.astChildren.assignment.l;
+    val List(lhs, rhs) = assign.argument.l
+
+    lhs.start.isIdentifier.name.l shouldBe List("<tmp-0>")
+    rhs.start.isCall.code.l shouldBe List("[type, location]")
+
+    val headIf @ List(_)        = block.astChildren.isControlStructure.l
+    val ifStmts @ List(_, _, _) = headIf.repeat(_.astChildren.order(3).astChildren.isControlStructure)(_.emit).l;
+
+    val conds: List[List[String]] = ifStmts.condition.map { cond =>
+      val orConds = List(cond)
+        .repeat(_.isCall.where(_.name(Operators.logicalOr)).argument)(
+          _.emit(_.whereNot(_.isCall.name(Operators.logicalOr)))
+        )
+        .l
+      orConds.map {
+        case mExpr: Call if mExpr.name == "include?" =>
+          val List(_, lhs, rhs) = mExpr.astChildren.l
+          rhs.code shouldBe "<tmp-0>"
+          s"splat:${lhs.code}"
+        case mExpr: Call if mExpr.name == Operators.equals =>
+          val List(lhs: Call, rhs) = mExpr.argument.l: @unchecked
+          rhs.code shouldBe "<tmp-0>"
+          lhs.methodFullName shouldBe Operators.arrayInitializer
+          s"expr:${lhs.code}"
+      }.l
+    }.l
+
+    conds shouldBe List(List("expr:[:value, :path]"), List("expr:[:label, :path]"), List("expr:[:label, :invalid]"))
+  }
 }
