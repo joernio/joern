@@ -61,6 +61,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     case node: ReturnExpression                 => astForReturnExpression(node)
     case node: AccessModifier                   => astForSimpleIdentifier(node.toSimpleIdentifier)
     case node: ArrayPattern                     => astForArrayPattern(node)
+    case node: MatchVariable                    => astForMatchVariable(node)
     case node: DummyNode                        => Ast(node.node)
     case node: Unknown                          => astForUnknown(node)
     case x =>
@@ -616,6 +617,20 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val childrenAst = node.children.map(astForExpression)
 
     callAst(callNode_, childrenAst)
+  }
+
+  protected def astForMatchVariable(node: MatchVariable): Ast = {
+    val nodeCode = shortenCode(s"${RubyOperators.arrayPatternMatch}(${node.span.text})")
+    val callNode_ = callNode(
+      node,
+      nodeCode,
+      RubyOperators.arrayPatternMatch,
+      RubyOperators.arrayPatternMatch,
+      DispatchTypes.STATIC_DISPATCH
+    )
+    val identAst = astForExpression(SimpleIdentifier()(node.span))
+
+    callAst(callNode_, identAst :: Nil)
   }
 
   protected def astForMandatoryParameter(node: RubyExpression): Ast = handleVariableOccurrence(node)

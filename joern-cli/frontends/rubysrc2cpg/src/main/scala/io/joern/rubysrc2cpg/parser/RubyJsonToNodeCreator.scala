@@ -655,7 +655,7 @@ class RubyJsonToNodeCreator(
 
   private def visitMatchRest(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
-  private def visitMatchVariable(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitMatchVariable(obj: Obj): RubyExpression = MatchVariable()(obj.toTextSpan)
 
   private def visitMatchWithLocalVariableAssign(obj: Obj): RubyExpression = {
     val lhs = visit(obj(ParserKeys.Lhs))
