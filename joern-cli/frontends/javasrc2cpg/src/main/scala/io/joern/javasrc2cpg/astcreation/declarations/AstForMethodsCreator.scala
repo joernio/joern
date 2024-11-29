@@ -50,6 +50,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     val methodNode = createPartialMethod(methodDeclaration)
 
     val typeParameters = getIdentifiersForTypeParameters(methodDeclaration)
+    methodDeclaration.getType
 
     val maybeResolved = tryWithSafeStackOverflow(methodDeclaration.resolve())
     val expectedReturnType = tryWithSafeStackOverflow(
@@ -99,7 +100,13 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
       case Success(typ) => (line(typ), column(typ))
       case Failure(_)   => (line(methodDeclaration), column(methodDeclaration))
     }
-    val methodReturn = newMethodReturnNode(returnTypeFullName.getOrElse(TypeConstants.Any), None, lineNr, columnNr)
+    val methodReturn =
+      newMethodReturnNode(
+        returnTypeFullName.getOrElse(defaultTypeFallback(methodDeclaration.getType)),
+        None,
+        lineNr,
+        columnNr
+      )
 
     val annotationAsts = methodDeclaration.getAnnotations.asScala.map(astForAnnotationExpr).toSeq
 
@@ -507,7 +514,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
   }
 
   def thisNodeForMethod(maybeTypeFullName: Option[String], lineNumber: Option[Int]): NewMethodParameterIn = {
-    val typeFullName = typeInfoCalc.registerType(maybeTypeFullName.getOrElse(TypeConstants.Any))
+    val typeFullName = typeInfoCalc.registerType(maybeTypeFullName.getOrElse(defaultTypeFallback()))
     NodeBuilders.newThisParameterNode(
       typeFullName = typeFullName,
       dynamicTypeHintFullName = maybeTypeFullName.toSeq,

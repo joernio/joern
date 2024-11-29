@@ -39,7 +39,7 @@ trait AstForNameExpressionsCreator { this: AstCreator =>
   private[expressions] def astForNameExpr(nameExpr: NameExpr, expectedType: ExpectedType): Ast = {
     val name = nameExpr.getName.toString
     val typeFullName = expressionReturnTypeFullName(nameExpr)
-      .orElse(expectedType.fullName)
+      .orElse(getTypeFullName(expectedType))
       .map(typeInfoCalc.registerType)
 
     scope.lookupVariable(name) match {
@@ -67,7 +67,7 @@ trait AstForNameExpressionsCreator { this: AstCreator =>
         }
 
       case SimpleVariable(variable) =>
-        val identifier = identifierNode(nameExpr, name, name, typeFullName.getOrElse(TypeConstants.Any))
+        val identifier = identifierNode(nameExpr, name, name, typeFullName.getOrElse(defaultTypeFallback()))
         val captured = variable.node match {
           case param: NewMethodParameterIn => Some(param)
           case local: NewLocal             => Some(local)
@@ -117,15 +117,15 @@ trait AstForNameExpressionsCreator { this: AstCreator =>
         // TODO using the enclosingTypeDecl is wrong if the field was imported via a static import.
         createImplicitBaseFieldAccess(
           value.asField().isStatic,
-          typeInfoCalc.name(value.declaringType()).getOrElse(TypeConstants.Any),
-          typeInfoCalc.fullName(value.declaringType()).getOrElse(TypeConstants.Any),
+          typeInfoCalc.name(value.declaringType()).getOrElse(defaultTypeFallback()),
+          typeInfoCalc.fullName(value.declaringType()).getOrElse(defaultTypeFallback()),
           nameExpr,
           name,
-          typeFullName.getOrElse(TypeConstants.Any)
+          typeFullName.getOrElse(defaultTypeFallback())
         )
 
       case _ =>
-        Ast(identifierNode(nameExpr, name, name, typeFullName.getOrElse(TypeConstants.Any)))
+        Ast(identifierNode(nameExpr, name, name, typeFullName.getOrElse(defaultTypeFallback())))
     }
   }
 
