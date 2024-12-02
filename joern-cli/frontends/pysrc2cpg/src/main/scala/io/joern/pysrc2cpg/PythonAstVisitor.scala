@@ -473,7 +473,11 @@ class PythonAstVisitor(
     val (_, methodRefNode) = createMethodAndMethodRef(
       classBodyFunctionName,
       scopeName = None,
-      parameterProvider = () => MethodParameters.empty(),
+      parameterProvider = () =>
+        MethodParameters(
+          0,
+          nodeBuilder.methodParameterNode("cls", isVariadic = false, lineAndColOf(classDef), Option(0)) :: Nil
+        ),
       bodyProvider = () => classDef.body.map(convert),
       None,
       isAsync = false,
@@ -547,15 +551,17 @@ class PythonAstVisitor(
 
     contextStack.pop()
 
-    // Create call to <body> function and assignment of the meta class object to a identifier named
-    // like the class.
-    val callToClassBodyFunction = createCall(methodRefNode, "", lineAndColOf(classDef), Nil, Nil)
     val metaTypeRefNode =
       createTypeRef(metaTypeDeclName, metaTypeDeclFullName, lineAndColOf(classDef))
     val classIdentifierAssignNode =
       createAssignmentToIdentifier(classDef.name, metaTypeRefNode, lineAndColOf(classDef))
+    // Create call to <body> function and assignment of the meta class object to a identifier named
+    // like the class.
+    val classIdentifierForCall = createIdentifierNode(classDef.name, Load, lineAndColOf(classDef))
+    val callToClassBodyFunction =
+      createInstanceCall(methodRefNode, classIdentifierForCall, "", lineAndColOf(classDef), Nil, Nil)
 
-    val classBlock = createBlock(callToClassBodyFunction :: classIdentifierAssignNode :: Nil, lineAndColOf(classDef))
+    val classBlock = createBlock(classIdentifierAssignNode :: callToClassBodyFunction :: Nil, lineAndColOf(classDef))
 
     classBlock
   }
@@ -812,11 +818,30 @@ class PythonAstVisitor(
     val loweredNodes =
       createValueToTargetsDecomposition(assign.targets, convert(assign.value), lineAndColOf(assign))
 
-    if (loweredNodes.size == 1) {
+    val assignmentsToMembers =
+      if (contextStack.isClassContext) {
+        // In addition to the left hand side identifier(s) created by createValueToTargetsDecomposition
+        // we here create `cls.<targetName> = <targetName>` if we are in a class body function to
+        // represent the assignment into a member of the same name in the meta class.
+        assign.targets.collect { case nameTarget: ast.Name =>
+          assert(memOpMap.get(nameTarget).get == Store)
+          val lineAndColumn     = lineAndColOf(nameTarget)
+          val classIdentifier   = createIdentifierNode("cls", Load, lineAndColumn)
+          val targetFieldAccess = createFieldAccess(classIdentifier, nameTarget.id, lineAndColumn)
+          val targetIdentifier  = createIdentifierNode(nameTarget.id, Load, lineAndColumn)
+          createAssignment(targetFieldAccess, targetIdentifier, lineAndColumn)
+        }
+      } else {
+        Nil
+      }
+
+    val combinedLoweredNodes = loweredNodes ++ assignmentsToMembers
+
+    if (combinedLoweredNodes.size == 1) {
       // Simple assignment can be returned directly.
-      loweredNodes.head
+      combinedLoweredNodes.head
     } else {
-      createBlock(loweredNodes, lineAndColOf(assign))
+      createBlock(combinedLoweredNodes, lineAndColOf(assign))
     }
   }
 

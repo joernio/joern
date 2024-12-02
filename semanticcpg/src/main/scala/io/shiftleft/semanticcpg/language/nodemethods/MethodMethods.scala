@@ -14,6 +14,13 @@ class MethodMethods(val method: Method) extends AnyVal with NodeExtension with H
   def local: Iterator[Local] =
     method._blockViaContainsOut.local
 
+  def topLevelExpressions: Iterator[Expression] =
+    method._astOut
+      .collectAll[Block]
+      ._astOut
+      .not(_.collectAll[Local])
+      .cast[Expression]
+
   /** All control structures of this method
     */
   def controlStructure: Iterator[ControlStructure] =

@@ -1187,7 +1187,7 @@ class RegexDefinedFlowsDataFlowTests
     "be found" in {
       val src = cpg.identifier("Foo").l
       val snk = cpg.call("print").l
-      snk.reachableByFlows(src).size shouldBe 2
+      snk.reachableByFlows(src).size shouldBe 3
     }
   }
   "Import statement with method ref sample four" in {
