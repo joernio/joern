@@ -66,9 +66,14 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
 
     val patternTypeFullName = {
       tryWithSafeStackOverflow(pattern.getType).toOption
-        .flatMap(typ => scope.lookupScopeType(typ.asString()).map(_.typeFullName).orElse(typeInfoCalc.fullName(typ)))
-        .getOrElse(TypeConstants.Any)
-    }
+        .map(typ =>
+          scope
+            .lookupScopeType(typ.asString())
+            .map(_.typeFullName)
+            .orElse(typeInfoCalc.fullName(typ))
+            .getOrElse(defaultTypeFallback(typ))
+        )
+    }.getOrElse(defaultTypeFallback())
 
     val patternTypeRef = typeRefNode(pattern.getType, code(pattern.getType), patternTypeFullName)
 
@@ -78,8 +83,14 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
       val variableName = typePatternExpr.getNameAsString
       val variableType = {
         tryWithSafeStackOverflow(typePatternExpr.getType).toOption
-          .flatMap(typ => scope.lookupScopeType(typ.asString()).map(_.typeFullName).orElse(typeInfoCalc.fullName(typ)))
-          .getOrElse(TypeConstants.Any)
+          .map(typ =>
+            scope
+              .lookupScopeType(typ.asString())
+              .map(_.typeFullName)
+              .orElse(typeInfoCalc.fullName(typ))
+              .getOrElse(defaultTypeFallback(typ))
+          )
+          .getOrElse(defaultTypeFallback())
       }
       val variableTypeCode = tryWithSafeStackOverflow(code(typePatternExpr.getType)).getOrElse(variableType)
 

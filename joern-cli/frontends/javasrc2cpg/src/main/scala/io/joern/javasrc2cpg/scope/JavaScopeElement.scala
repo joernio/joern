@@ -18,7 +18,7 @@ import io.joern.x2cpg.{Ast, ValidationMode}
 import java.util
 import scala.jdk.CollectionConverters.*
 
-trait JavaScopeElement {
+trait JavaScopeElement(disableTypeFallback: Boolean) {
   private val variables                        = mutable.Map[String, ScopeVariable]()
   private val types                            = mutable.Map[String, ScopeType]()
   private var wildcardImports: WildcardImports = NoWildcard
@@ -39,8 +39,8 @@ trait JavaScopeElement {
 
   def lookupType(name: String, includeWildcards: Boolean): Option[ScopeType] = {
     types.get(name) match {
-      case None if includeWildcards => getNameWithWildcardPrefix(name)
-      case result                   => result
+      case None if includeWildcards && !disableTypeFallback => getNameWithWildcardPrefix(name)
+      case result                                           => result
     }
   }
 
@@ -85,11 +85,13 @@ object JavaScopeElement {
     def getNextAnonymousClassIndex(): Long = anonymousClassKeyPool.next
   }
 
-  class NamespaceScope(val namespace: NewNamespaceBlock) extends JavaScopeElement with TypeDeclContainer {
+  class NamespaceScope(val namespace: NewNamespaceBlock)(implicit disableTypeFallback: Boolean)
+      extends JavaScopeElement(disableTypeFallback)
+      with TypeDeclContainer {
     val isStatic = false
   }
 
-  class BlockScope extends JavaScopeElement {
+  class BlockScope(implicit disableTypeFallback: Boolean) extends JavaScopeElement(disableTypeFallback) {
     val isStatic = false
 
     def addLocal(local: NewLocal): Unit = {
@@ -102,8 +104,9 @@ object JavaScopeElement {
   }
 
   class MethodScope(val method: NewMethod, val returnType: ExpectedType, override val isStatic: Boolean)(implicit
-    val withSchemaValidation: ValidationMode
-  ) extends JavaScopeElement
+    val withSchemaValidation: ValidationMode,
+    disableTypeFallback: Boolean
+  ) extends JavaScopeElement(disableTypeFallback)
       with AnonymousClassCounter {
 
     private val temporaryLocals = mutable.ListBuffer[NewLocal]()
@@ -164,7 +167,8 @@ object JavaScopeElement {
     }
   }
 
-  class FieldDeclScope(override val isStatic: Boolean, val name: String) extends JavaScopeElement
+  class FieldDeclScope(override val isStatic: Boolean, val name: String)(implicit disableTypeFallback: Boolean)
+      extends JavaScopeElement(disableTypeFallback)
 
   class TypeDeclScope(
     val typeDecl: NewTypeDecl,
@@ -172,7 +176,8 @@ object JavaScopeElement {
     private[scope] val capturedVariables: Map[String, CapturedVariable],
     outerClassType: Option[String],
     val declaredMethodNames: Set[String]
-  ) extends JavaScopeElement
+  )(implicit disableTypeFallback: Boolean)
+      extends JavaScopeElement(disableTypeFallback)
       with TypeDeclContainer
       with AnonymousClassCounter {
     private val bindingTableEntries            = mutable.ListBuffer[BindingTableEntry]()

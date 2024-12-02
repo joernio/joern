@@ -119,15 +119,16 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
       case None      => (None, None)
     }
 
-    val typeFullName = tryWithSafeStackOverflow(
+    val typeFullNameWithoutArgs = tryWithSafeStackOverflow(
       variableTypeString
         .flatMap(scope.lookupType(_, includeWildcards = false))
         .orElse(declaratorType.flatMap(typeInfoCalc.fullName))
-    ).toOption.flatten.map { typ =>
-      maybeTypeArgs match {
-        case Some(typeArgs) if keepTypeArguments => s"$typ<${typeArgs.mkString(",")}>"
-        case _                                   => typ
-      }
+        .orElse(declaratorType.map(typ => defaultTypeFallback(typ)))
+    ).toOption.flatten.getOrElse(defaultTypeFallback())
+
+    val typeFullName = maybeTypeArgs match {
+      case Some(typeArgs) if keepTypeArguments => s"$typeFullNameWithoutArgs<${typeArgs.mkString(",")}>"
+      case _                                   => typeFullNameWithoutArgs
     }
 
     val variableName = variableDeclarator.getNameAsString
@@ -138,7 +139,7 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
       val localCode = s"${declaratorType.map(_.toString).getOrElse("")} ${variableDeclarator.getNameAsString}"
 
       val local =
-        localNode(originNode, variableDeclarator.getNameAsString, localCode, typeFullName.getOrElse(TypeConstants.Any))
+        localNode(originNode, variableDeclarator.getNameAsString, localCode, typeFullName)
 
       scope.enclosingBlock.foreach(_.addLocal(local))
 
@@ -182,7 +183,7 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
             initializer,
             Operators.assignment,
             "=",
-            ExpectedType(typeFullName, expectedType),
+            ExpectedType(Option(typeFullName), expectedType),
             strippedType
           )
         }

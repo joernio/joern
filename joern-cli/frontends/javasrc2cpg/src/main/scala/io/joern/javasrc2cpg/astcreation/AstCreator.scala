@@ -1,5 +1,6 @@
 package io.joern.javasrc2cpg.astcreation
 
+import com.github.javaparser.ast.`type`.Type
 import com.github.javaparser.ast.expr.{
   AnnotationExpr,
   BooleanLiteralExpr,
@@ -44,11 +45,12 @@ import io.joern.javasrc2cpg.util.{
   BindingTableAdapterForJavaparser,
   MultiBindingTableAdapterForJavaparser,
   NameConstants,
-  TemporaryNameProvider
+  TemporaryNameProvider,
+  Util
 }
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.utils.OffsetUtils
-import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode}
+import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{NewClosureBinding, NewFile, NewImport, NewNamespaceBlock}
 import org.slf4j.LoggerFactory
@@ -91,7 +93,7 @@ class AstCreator(
   val symbolSolver: JavaSymbolSolver,
   protected val keepTypeArguments: Boolean,
   val loggedExceptionCounts: scala.collection.concurrent.Map[Class[?], Int]
-)(implicit val withSchemaValidation: ValidationMode)
+)(implicit val withSchemaValidation: ValidationMode, val disableTypeFallback: Boolean)
     extends AstCreatorBase(filename)
     with AstNodeBuilder[Node, AstCreator]
     with AstForDeclarationsCreator
@@ -131,6 +133,21 @@ class AstCreator(
       case (Some(acc), Some(value)) => Some(acc :+ value)
       case _                        => None
     }
+  }
+
+  private[astcreation] def getTypeFullName(expectedType: ExpectedType): Option[String] = {
+    Option.unless(disableTypeFallback)(expectedType.fullName).flatten
+  }
+
+  private[astcreation] def defaultTypeFallback(typ: Type): String = {
+    if (disableTypeFallback) {
+      s"${Defines.UnresolvedNamespace}.${Util.stripGenericTypes(code(typ))}"
+    } else
+      TypeConstants.Any
+  }
+
+  private[astcreation] def defaultTypeFallback(): String = {
+    TypeConstants.Any
   }
 
   /** Custom printer that omits comments. To be used by [[code]] */

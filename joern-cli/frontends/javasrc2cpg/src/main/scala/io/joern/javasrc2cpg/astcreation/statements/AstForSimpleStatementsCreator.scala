@@ -102,20 +102,16 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
     val args          = argAstsForCall(stmt, maybeResolved, stmt.getArguments)
     val argTypes      = argumentTypesForMethodLike(maybeResolved)
 
+    // TODO: We can do better than defaultTypeFallback() for the fallback type by looking at the enclosing
+    //  type decl name or `extends X` name for `this` and `super` calls respectively.
     val typeFullName = maybeResolved.toOption
       .map(_.declaringType())
       .flatMap(typ => scope.lookupType(typ.getName).orElse(typeInfoCalc.fullName(typ)))
+      .getOrElse(defaultTypeFallback())
 
-    val callRoot = initNode(
-      typeFullName.orElse(Some(TypeConstants.Any)),
-      argTypes,
-      args.size,
-      stmt.toString,
-      line(stmt),
-      column(stmt)
-    )
+    val callRoot = initNode(Option(typeFullName), argTypes, args.size, stmt.toString, line(stmt), column(stmt))
 
-    val thisNode = newIdentifierNode(NameConstants.This, typeFullName.getOrElse(TypeConstants.Any))
+    val thisNode = newIdentifierNode(NameConstants.This, typeFullName)
     scope.lookupVariable(NameConstants.This).variableNode.foreach { thisParam =>
       diffGraph.addEdge(thisNode, thisParam, EdgeTypes.REF)
     }
@@ -125,9 +121,7 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
 
     // callAst(callRoot, args, Some(thisAst))
     scope.enclosingTypeDecl.foreach(
-      _.registerInitToComplete(
-        PartialInit(typeFullName.getOrElse(TypeConstants.Any), initAst, thisAst, args.toList, None)
-      )
+      _.registerInitToComplete(PartialInit(typeFullName, initAst, thisAst, args.toList, None))
     )
     initAst
   }
