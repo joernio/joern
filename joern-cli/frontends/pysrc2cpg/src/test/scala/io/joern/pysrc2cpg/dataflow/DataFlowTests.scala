@@ -1186,7 +1186,7 @@ class RegexDefinedFlowsDataFlowTests
         |""".stripMargin)
     "be found" in {
       val src = cpg.identifier("Foo").l
-      val snk = cpg.call("print").l
+      val snk = cpg.call("print").argument(1).l
       snk.reachableByFlows(src).size shouldBe 3
     }
   }
