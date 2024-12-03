@@ -1,6 +1,6 @@
 package io.joern.rubysrc2cpg.astcreation
 
-import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
+import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{TypeDeclaration, *}
 import io.joern.rubysrc2cpg.datastructures.{BlockScope, MethodScope, ModuleScope, NamespaceScope, TypeScope}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
@@ -143,8 +143,21 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val classBody =
       node.body.asInstanceOf[StatementList] // for now (bodyStatement is a superset of stmtList)
 
+    val statementsToForwardUpTheAst = mutable.ArrayBuffer.empty[Ast]
+    def separateStatementsFromBody(ss: List[RubyExpression]) = {
+      // There may be additional expression nodes introduced from nodes such as type decls, so we must
+      // re-distribute these back into the <body> method
+      ss.flatMap {
+        case t: TypeDeclaration =>
+          val (typeDeclAsts, other) = astsForStatement(t).partition(_.root.exists(_.isInstanceOf[NewTypeDecl]))
+          statementsToForwardUpTheAst.addAll(other)
+          typeDeclAsts
+        case n => astsForStatement(n)
+      }
+    }
+
     val classBodyAsts = {
-      val bodyAsts = classBody.statements.flatMap(astsForStatement)
+      val bodyAsts = separateStatementsFromBody(classBody.statements)
       if (scope.shouldGenerateDefaultConstructor && this.parseLevel == AstParseLevel.FULL_AST) {
         val bodyStart  = classBody.span.spanStart()
         val initBody   = StatementList(List())(bodyStart)
@@ -200,7 +213,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     if shouldPopAdditionalScope then scope.popScope()
     popAccessModifier()
-    prefixAst :: bodyMemberCallAst :: Nil
+    prefixAst :: bodyMemberCallAst :: statementsToForwardUpTheAst.toList
   }
 
   private def astForTypeDeclBodyCall(node: TypeDeclBodyCall, typeFullName: String): Ast = {
