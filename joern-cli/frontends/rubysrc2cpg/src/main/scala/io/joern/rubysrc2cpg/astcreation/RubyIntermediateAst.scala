@@ -489,6 +489,7 @@ object RubyIntermediateAst {
   }
 
   sealed trait MethodAccessModifier extends AllowedTypeDeclarationChild {
+    def toSimpleIdentifier: SimpleIdentifier
     def method: RubyExpression
   }
 
@@ -506,11 +507,15 @@ object RubyIntermediateAst {
 
   final case class PrivateMethodModifier(method: RubyExpression)(span: TextSpan)
       extends RubyExpression(span)
-      with MethodAccessModifier
+      with MethodAccessModifier {
+    override def toSimpleIdentifier: SimpleIdentifier = SimpleIdentifier(None)(span.spanStart("private_class_method"))
+  }
 
   final case class PublicMethodModifier(method: RubyExpression)(span: TextSpan)
       extends RubyExpression(span)
-      with MethodAccessModifier
+      with MethodAccessModifier {
+    override def toSimpleIdentifier: SimpleIdentifier = SimpleIdentifier(None)(span.spanStart("public_class_method"))
+  }
 
   /** Represents standalone `proc { ... }` or `lambda { ... }` expressions
     */
