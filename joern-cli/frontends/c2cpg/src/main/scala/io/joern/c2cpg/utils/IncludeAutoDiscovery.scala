@@ -1,9 +1,11 @@
 package io.joern.c2cpg.utils
 
+import better.files.File
 import io.joern.c2cpg.Config
 import org.slf4j.LoggerFactory
 
-import java.nio.file.{Path, Paths}
+import java.nio.file.Path
+import java.nio.file.Paths
 import scala.util.Failure
 import scala.util.Success
 
@@ -11,17 +13,25 @@ object IncludeAutoDiscovery {
 
   private val logger = LoggerFactory.getLogger(IncludeAutoDiscovery.getClass)
 
-  private val IS_WIN = scala.util.Properties.isWin
+  private val IsWin = scala.util.Properties.isWin
 
-  val GCC_VERSION_COMMAND = Seq("gcc", "--version")
+  private val GccVersionCommand = Seq("gcc", "--version")
 
-  private val CPP_INCLUDE_COMMAND =
-    if (IS_WIN) Seq("gcc", "-xc++", "-E", "-v", ".", "-o", "nul")
+  private val CppIncludeCommand =
+    if (IsWin) Seq("gcc", "-xc++", "-E", "-v", ".", "-o", "nul")
     else Seq("gcc", "-xc++", "-E", "-v", "/dev/null", "-o", "/dev/null")
 
-  private val C_INCLUDE_COMMAND =
-    if (IS_WIN) Seq("gcc", "-xc", "-E", "-v", ".", "-o", "nul")
+  private val CIncludeCommand =
+    if (IsWin) Seq("gcc", "-xc", "-E", "-v", ".", "-o", "nul")
     else Seq("gcc", "-xc", "-E", "-v", "/dev/null", "-o", "/dev/null")
+
+  private val VsWhereCommand = Seq(
+    "cmd.exe",
+    "/C",
+    "\"%ProgramFiles(x86)%\\Microsoft Visual Studio\\Installer\\vswhere.exe\" -property installationPath"
+  )
+
+  private val VcVarsCommand = Seq("cmd.exe", "/C", "VC\\Auxiliary\\Build\\vcvars64.bat")
 
   // Only check once
   private var isGccAvailable: Option[Boolean] = None
@@ -31,8 +41,7 @@ object IncludeAutoDiscovery {
   private var systemIncludePathsCPP: Set[Path] = Set.empty
 
   private def checkForGcc(): Boolean = {
-    logger.debug("Checking gcc ...")
-    ExternalCommand.run(GCC_VERSION_COMMAND, ".") match {
+    ExternalCommand.run(GccVersionCommand, ".") match {
       case Success(result) =>
         logger.debug(s"GCC is available: ${result.mkString(System.lineSeparator())}")
         true
@@ -54,7 +63,7 @@ object IncludeAutoDiscovery {
     val startIndex =
       output.indexWhere(_.contains("#include")) + 2
     val endIndex =
-      if (IS_WIN) output.indexWhere(_.startsWith("End of search list.")) - 1
+      if (IsWin) output.indexWhere(_.startsWith("End of search list.")) - 1
       else output.indexWhere(_.startsWith("COMPILER_PATH")) - 1
     output.slice(startIndex, endIndex).map(p => Paths.get(p.trim).toRealPath()).toSet
   }
@@ -66,36 +75,78 @@ object IncludeAutoDiscovery {
       Set.empty
   }
 
-  def discoverIncludePathsC(config: Config): Set[Path] = {
-    if (config.includePathsAutoDiscovery && systemIncludePathsC.nonEmpty) {
-      systemIncludePathsC
-    } else if (config.includePathsAutoDiscovery && systemIncludePathsC.isEmpty && gccAvailable()) {
-      val includePathsC = discoverPaths(C_INCLUDE_COMMAND)
-      if (includePathsC.nonEmpty) {
-        logger.info(s"Using the following C system include paths:${includePathsC
-            .mkString(s"${System.lineSeparator()}- ", s"${System.lineSeparator()}- ", System.lineSeparator())}")
-      }
-      systemIncludePathsC = includePathsC
-      includePathsC
-    } else {
-      Set.empty
+  private def discoverMSVCInstallPath(): Option[String] = {
+    ExternalCommand.run(VsWhereCommand, ".") match {
+      case Success(output) =>
+        output.headOption
+      case Failure(exception) =>
+        logger.warn(s"Unable to discover MSVC installation path.", exception)
+        None
     }
   }
 
-  def discoverIncludePathsCPP(config: Config): Set[Path] = {
-    if (config.includePathsAutoDiscovery && systemIncludePathsCPP.nonEmpty) {
-      systemIncludePathsCPP
-    } else if (config.includePathsAutoDiscovery && systemIncludePathsCPP.isEmpty && gccAvailable()) {
-      val includePathsCPP = discoverPaths(CPP_INCLUDE_COMMAND)
-      if (includePathsCPP.nonEmpty) {
-        logger.info(s"Using the following CPP system include paths:${includePathsCPP
-            .mkString(s"${System.lineSeparator()}- ", s"${System.lineSeparator()}- ", System.lineSeparator())}")
-      }
-      systemIncludePathsCPP = includePathsCPP
-      includePathsCPP
-    } else {
-      Set.empty
+  private def extractMSVCIncludePaths(resolvedInstallationPath: String): Set[Path] = {
+    ExternalCommand.run(VcVarsCommand, resolvedInstallationPath, Map("VSCMD_DEBUG" -> "3")) match {
+      case Success(results) =>
+        val includesLine = results.find(_.startsWith("INCLUDE="))
+        val includesString =
+          includesLine.find(_.startsWith("INCLUDE=")).map(include => include.replaceFirst("INCLUDE=", ""))
+        val includes = includesString.map(line => line.split(";").toSet.map(p => Paths.get(p.trim).toRealPath()))
+        includes.getOrElse(Set.empty)
+      case Failure(exception) =>
+        logger.warn(s"Unable to discover MSVC system include paths.", exception)
+        Set.empty
     }
+  }
+
+  private def discoverMSVCPaths(): Set[Path] = {
+    discoverMSVCInstallPath().map(extractMSVCIncludePaths).getOrElse(Set.empty)
+  }
+
+  private def reportIncludePaths(paths: Set[Path], lang: String): Unit = {
+    if (paths.nonEmpty) {
+      val ls = System.lineSeparator()
+      logger.info(s"Using the following $lang system include paths:${paths.mkString(s"$ls- ", s"$ls- ", ls)}")
+    }
+  }
+
+  def discoverIncludePathsC(config: Config): Set[Path] = {
+    if (!config.includePathsAutoDiscovery) return Set.empty
+    if (systemIncludePathsC.nonEmpty) return systemIncludePathsC
+
+    if (isMSVCProject(config)) {
+      systemIncludePathsCPP = discoverMSVCPaths() // discovers paths for both languages
+      systemIncludePathsC = systemIncludePathsCPP
+      reportIncludePaths(systemIncludePathsC, "MSVC")
+    }
+    if (systemIncludePathsC.isEmpty && gccAvailable()) {
+      systemIncludePathsC = discoverPaths(CIncludeCommand)
+      reportIncludePaths(systemIncludePathsC, "C")
+    }
+    systemIncludePathsC
+  }
+
+  private def isMSVCProject(config: Config): Boolean = {
+    if (!IsWin) return false
+    val projectDir = File(config.inputPath)
+    List(projectDir / ".vs", projectDir / ".vscode").exists(_.exists) ||
+    projectDir.list.exists(_.`extension`(includeDot = false).exists(ext => ext == "sln" || ext == "vcxproj"))
+  }
+
+  def discoverIncludePathsCPP(config: Config): Set[Path] = {
+    if (!config.includePathsAutoDiscovery) return Set.empty
+    if (systemIncludePathsCPP.nonEmpty) return systemIncludePathsCPP
+
+    if (isMSVCProject(config)) {
+      systemIncludePathsCPP = discoverMSVCPaths() // discovers paths for both languages
+      systemIncludePathsC = systemIncludePathsCPP
+      reportIncludePaths(systemIncludePathsCPP, "MSVC")
+    }
+    if (systemIncludePathsCPP.isEmpty && gccAvailable()) {
+      systemIncludePathsCPP = discoverPaths(CppIncludeCommand)
+      reportIncludePaths(systemIncludePathsCPP, "CPP")
+    }
+    systemIncludePathsCPP
   }
 
 }
