@@ -1,6 +1,7 @@
 package io.joern.pysrc2cpg.cpg
 
 import io.joern.pysrc2cpg.testfixtures.PySrc2CpgFixture
+import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.semanticcpg.language.*
 
 class ClassCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
@@ -107,6 +108,17 @@ class ClassCpgTests extends PySrc2CpgFixture(withOssDataflow = false) {
                        |""".stripMargin)
       cpg.method.name("method").parameter.name("x").index.head shouldBe 1
     }
+  }
+
+  "assignment in class body should result into member write on meta class object" in {
+    val cpg = code("""class Foo:
+        |   AAA = 111
+        |""".stripMargin)
+
+    val List(bodyMethod)          = cpg.method.name("<body>").l
+    val List(block)               = bodyMethod.topLevelExpressions.l
+    val List(_, memberAssignment) = block.astChildren.collectAll[Call].l
+    memberAssignment.code shouldBe "cls.AAA = AAA"
   }
 
 }
