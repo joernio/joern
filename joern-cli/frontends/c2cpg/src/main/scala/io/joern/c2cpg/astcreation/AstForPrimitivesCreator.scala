@@ -132,7 +132,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     val variableOption = scope.lookupVariable(identifierName)
     variableOption match {
       case Some((_, variableTypeName)) => variableTypeName
-      case None if ident.isInstanceOf[IASTName] && ident.asInstanceOf[IASTName].resolveBinding() != null =>
+      case None if ident.isInstanceOf[IASTName] && ident.asInstanceOf[IASTName].getBinding != null =>
         val id = ident.asInstanceOf[IASTName]
         id.getBinding match {
           case v: IVariable =>
