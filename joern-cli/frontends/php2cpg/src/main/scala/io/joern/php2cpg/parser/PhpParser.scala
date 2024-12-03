@@ -93,6 +93,12 @@ class PhpParser private (phpParserPath: String, phpIniPath: String, disableFileC
     result
   }
 
+  private def logWarning(lines: collection.Seq[String]): Unit = {
+    if (lines.exists(_.nonEmpty)) {
+      logger.warn(s"Found warning in PHP-Parser JSON output:\n${lines.mkString("\n")}")
+    }
+  }
+
   private def linesToJsonValues(
     lines: collection.Seq[String]
   ): collection.Seq[(String, Option[ujson.Value], String)] = {
@@ -100,9 +106,10 @@ class PhpParser private (phpParserPath: String, phpIniPath: String, disableFileC
     val filenameRegex = Pattern.compile(s"$filePrefix(.*):")
     val result        = mutable.ArrayBuffer.empty[(String, Option[ujson.Value], String)]
 
-    var filename  = ""
-    val infoLines = mutable.ArrayBuffer.empty[String]
-    val jsonLines = mutable.ArrayBuffer.empty[String]
+    var filename     = ""
+    val infoLines    = mutable.ArrayBuffer.empty[String]
+    val jsonLines    = mutable.ArrayBuffer.empty[String]
+    val warningLines = mutable.ArrayBuffer.empty[String]
 
     var mode    = PARSE_MODE.SKIP_TRAILER
     val linesIt = lines.iterator
@@ -117,14 +124,16 @@ class PhpParser private (phpParserPath: String, phpIniPath: String, disableFileC
           }
         case PARSE_MODE.SKIP_WARNING =>
           if (line == "[]") {
+            logWarning(warningLines)
             jsonLines.append(line)
             result.appendAll(getJsonResult(filename, jsonLines.toArray, infoLines.toArray))
             mode = PARSE_MODE.SKIP_TRAILER
           } else if (line.startsWith("[")) {
+            logWarning(warningLines)
             jsonLines.append(line)
             mode = PARSE_MODE.PARSE_JSON
           } else {
-            infoLines.append(line)
+            warningLines.append(line)
           }
         case PARSE_MODE.PARSE_JSON =>
           jsonLines.append(line)
