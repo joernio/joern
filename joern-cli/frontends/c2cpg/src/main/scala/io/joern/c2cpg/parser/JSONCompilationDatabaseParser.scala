@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory
 import ujson.Value
 
 import java.nio.file.Paths
+import scala.collection.mutable
 import scala.util.Try
 
 object JSONCompilationDatabaseParser {
@@ -29,7 +30,12 @@ object JSONCompilationDatabaseParser {
     */
   private val includeInCommandPattern = """-I(\S+)""".r
 
-  case class CommandObject(directory: String, arguments: List[String], command: List[String], file: String) {
+  case class CommandObject(
+    directory: String,
+    arguments: mutable.LinkedHashSet[String],
+    command: mutable.LinkedHashSet[String],
+    file: String
+  ) {
 
     /** @return
       *   the file path (guaranteed to be absolute)
@@ -48,7 +54,7 @@ object JSONCompilationDatabaseParser {
 
     private def pathFromInclude(include: String): String = include.stripPrefix("-I")
 
-    def includes(): List[String] = {
+    def includes(): mutable.LinkedHashSet[String] = {
       val includesFromArguments = arguments.filter(a => a.startsWith("-I")).map(pathFromInclude)
       val includesFromCommand = command.flatMap { c =>
         val includes = includeInCommandPattern.findAllIn(c).toList
@@ -57,7 +63,7 @@ object JSONCompilationDatabaseParser {
       includesFromArguments ++ includesFromCommand
     }
 
-    def defines(): List[(String, String)] = {
+    def defines(): mutable.LinkedHashSet[(String, String)] = {
       val definesFromArguments = arguments.filter(a => a.startsWith("-D")).map(nameValuePairFromDefine)
       val definesFromCommand = command.flatMap { c =>
         val defines = defineInCommandPattern.findAllIn(c).toList
@@ -69,28 +75,31 @@ object JSONCompilationDatabaseParser {
 
   private def hasKey(node: Value, key: String): Boolean = Try(node(key)).isSuccess
 
-  private def safeArguments(obj: Value): List[String] = {
-    if (hasKey(obj, "arguments")) obj("arguments").arrOpt.map(_.toList.map(_.str)).getOrElse(List.empty)
-    else List.empty
+  private def safeArguments(obj: Value): mutable.LinkedHashSet[String] = {
+    if (hasKey(obj, "arguments"))
+      obj("arguments").arrOpt
+        .map(arr => mutable.LinkedHashSet.from(arr).map(_.str))
+        .getOrElse(mutable.LinkedHashSet.empty)
+    else mutable.LinkedHashSet.empty
   }
 
-  private def safeCommand(obj: Value): List[String] = {
-    if (hasKey(obj, "command")) List(obj("command").str)
-    else List.empty
+  private def safeCommand(obj: Value): mutable.LinkedHashSet[String] = {
+    if (hasKey(obj, "command")) mutable.LinkedHashSet.empty.addOne(obj("command").str)
+    else mutable.LinkedHashSet.empty
   }
 
-  def parse(compileCommandsJson: String): List[CommandObject] = {
+  def parse(compileCommandsJson: String): mutable.LinkedHashSet[CommandObject] = {
     try {
       val jsonContent       = IOUtils.readEntireFile(Paths.get(compileCommandsJson))
       val json              = ujson.read(jsonContent)
-      val allCommandObjects = json.arr.toList
+      val allCommandObjects = mutable.LinkedHashSet.from(json.arr)
       allCommandObjects.map { obj =>
         CommandObject(obj("directory").str, safeArguments(obj), safeCommand(obj), obj("file").str)
       }
     } catch {
       case t: Throwable =>
         logger.warn(s"Could not parse '$compileCommandsJson'", t)
-        List.empty
+        mutable.LinkedHashSet.empty
     }
   }
 

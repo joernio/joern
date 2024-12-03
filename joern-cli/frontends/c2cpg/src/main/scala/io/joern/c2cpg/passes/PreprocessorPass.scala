@@ -14,6 +14,7 @@ import org.eclipse.cdt.core.dom.ast.{
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths
+import scala.collection.mutable
 import scala.collection.parallel.CollectionConverters.ImmutableIterableIsParallelizable
 import scala.collection.parallel.immutable.ParIterable
 
@@ -21,8 +22,8 @@ class PreprocessorPass(config: Config) {
 
   private val logger = LoggerFactory.getLogger(classOf[PreprocessorPass])
 
-  private val compilationDatabase: List[CommandObject] =
-    config.compilationDatabase.map(JSONCompilationDatabaseParser.parse).getOrElse(List.empty)
+  private val compilationDatabase: mutable.LinkedHashSet[CommandObject] =
+    config.compilationDatabase.map(JSONCompilationDatabaseParser.parse).getOrElse(mutable.LinkedHashSet.empty)
 
   private val parser = new CdtParser(config, compilationDatabase)
 
@@ -45,7 +46,7 @@ class PreprocessorPass(config: Config) {
     }
     SourceFiles
       .filterFiles(
-        compilationDatabase.map(_.compiledFile()),
+        compilationDatabase.map(_.compiledFile()).toList,
         config.inputPath,
         ignoredDefaultRegex = Option(DefaultIgnoredFolders),
         ignoredFilesRegex = Option(config.ignoredFilesRegex),

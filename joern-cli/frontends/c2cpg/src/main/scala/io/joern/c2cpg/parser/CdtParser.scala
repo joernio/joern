@@ -15,6 +15,7 @@ import org.eclipse.cdt.internal.core.parser.scanner.InternalFileContent
 import org.slf4j.LoggerFactory
 
 import java.nio.file.{NoSuchFileException, Path}
+import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 import scala.util.Failure
 import scala.util.Success
@@ -42,7 +43,7 @@ object CdtParser {
 
 }
 
-class CdtParser(config: Config, compilationDatabase: List[CommandObject])
+class CdtParser(config: Config, compilationDatabase: mutable.LinkedHashSet[CommandObject])
     extends ParseProblemsLogger
     with PreprocessorStatementsLogger {
 
@@ -85,7 +86,7 @@ class CdtParser(config: Config, compilationDatabase: List[CommandObject])
       if (FileDefaults.isCPPFile(file.toString)) parserConfig.systemIncludePathsCPP
       else parserConfig.systemIncludePathsC
     val fileSpecificDefines  = parserConfig.definedSymbolsPerFile.getOrElse(file.toString, Map.empty)
-    val fileSpecificIncludes = parserConfig.includesPerFile.getOrElse(file.toString, List.empty)
+    val fileSpecificIncludes = parserConfig.includesPerFile.getOrElse(file.toString, mutable.LinkedHashSet.empty)
     new ScannerInfo(
       (definedSymbols ++ fileSpecificDefines).asJava,
       fileSpecificIncludes.toArray ++ (includePaths ++ additionalIncludes).map(_.toString).toArray

@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory
 
 import java.nio.file.Path
 import java.nio.file.Paths
+import scala.collection.mutable
 import scala.util.Failure
 import scala.util.Success
 
@@ -37,8 +38,8 @@ object IncludeAutoDiscovery {
   private var isGccAvailable: Option[Boolean] = None
 
   // Only discover them once
-  private var systemIncludePathsC: Set[Path]   = Set.empty
-  private var systemIncludePathsCPP: Set[Path] = Set.empty
+  private var systemIncludePathsC: mutable.LinkedHashSet[Path]   = mutable.LinkedHashSet.empty
+  private var systemIncludePathsCPP: mutable.LinkedHashSet[Path] = mutable.LinkedHashSet.empty
 
   private def checkForGcc(): Boolean = {
     ExternalCommand.run(GccVersionCommand, ".") match {
@@ -59,21 +60,22 @@ object IncludeAutoDiscovery {
       isGccAvailable.get
   }
 
-  private def extractPaths(output: Seq[String]): Set[Path] = {
+  private def extractPaths(output: Seq[String]): mutable.LinkedHashSet[Path] = {
     val startIndex =
       output.indexWhere(_.contains("#include")) + 2
     val endIndex =
       if (IsWin) output.indexWhere(_.startsWith("End of search list.")) - 1
       else output.indexWhere(_.startsWith("COMPILER_PATH")) - 1
-    output.slice(startIndex, endIndex).map(p => Paths.get(p.trim).toRealPath()).toSet
+    mutable.LinkedHashSet.from(output.slice(startIndex, endIndex).map(p => Paths.get(p.trim).toRealPath()))
   }
 
-  private def discoverPaths(command: Seq[String]): Set[Path] = ExternalCommand.run(command, ".") match {
-    case Success(output) => extractPaths(output)
-    case Failure(exception) =>
-      logger.warn(s"Unable to discover system include paths. Running '$command' failed.", exception)
-      Set.empty
-  }
+  private def discoverPaths(command: Seq[String]): mutable.LinkedHashSet[Path] =
+    ExternalCommand.run(command, ".") match {
+      case Success(output) => extractPaths(output)
+      case Failure(exception) =>
+        logger.warn(s"Unable to discover system include paths. Running '$command' failed.", exception)
+        mutable.LinkedHashSet.empty
+    }
 
   private def discoverMSVCInstallPath(): Option[String] = {
     ExternalCommand.run(VsWhereCommand, ".") match {
@@ -85,32 +87,34 @@ object IncludeAutoDiscovery {
     }
   }
 
-  private def extractMSVCIncludePaths(resolvedInstallationPath: String): Set[Path] = {
+  private def extractMSVCIncludePaths(resolvedInstallationPath: String): mutable.LinkedHashSet[Path] = {
     ExternalCommand.run(VcVarsCommand, resolvedInstallationPath, Map("VSCMD_DEBUG" -> "3")) match {
       case Success(results) =>
-        val includesLine   = results.find(_.startsWith("INCLUDE="))
-        val includesString = includesLine.map(_.replaceFirst("INCLUDE=", ""))
-        val includes       = includesString.map(_.split(";").toSet.map(p => Paths.get(p.trim).toRealPath()))
-        includes.getOrElse(Set.empty)
+        results.find(_.startsWith("INCLUDE=")) match {
+          case Some(includesLine) =>
+            val includesString = includesLine.replaceFirst("INCLUDE=", "")
+            mutable.LinkedHashSet.from(includesString.split(";").map(p => Paths.get(p.trim).toRealPath()))
+          case None => mutable.LinkedHashSet.empty
+        }
       case Failure(exception) =>
         logger.warn(s"Unable to discover MSVC system include paths.", exception)
-        Set.empty
+        mutable.LinkedHashSet.empty
     }
   }
 
-  private def discoverMSVCPaths(): Set[Path] = {
-    discoverMSVCInstallPath().map(extractMSVCIncludePaths).getOrElse(Set.empty)
+  private def discoverMSVCPaths(): mutable.LinkedHashSet[Path] = {
+    discoverMSVCInstallPath().map(extractMSVCIncludePaths).getOrElse(mutable.LinkedHashSet.empty)
   }
 
-  private def reportIncludePaths(paths: Set[Path], lang: String): Unit = {
+  private def reportIncludePaths(paths: mutable.LinkedHashSet[Path], lang: String): Unit = {
     if (paths.nonEmpty) {
       val ls = System.lineSeparator()
       logger.info(s"Using the following $lang system include paths:${paths.mkString(s"$ls- ", s"$ls- ", ls)}")
     }
   }
 
-  def discoverIncludePathsC(config: Config): Set[Path] = {
-    if (!config.includePathsAutoDiscovery) return Set.empty
+  def discoverIncludePathsC(config: Config): mutable.LinkedHashSet[Path] = {
+    if (!config.includePathsAutoDiscovery) return mutable.LinkedHashSet.empty
     if (systemIncludePathsC.nonEmpty) return systemIncludePathsC
 
     if (isMSVCProject(config)) {
@@ -132,8 +136,8 @@ object IncludeAutoDiscovery {
     projectDir.list.exists(_.`extension`(includeDot = false).exists(ext => ext == "sln" || ext == "vcxproj"))
   }
 
-  def discoverIncludePathsCPP(config: Config): Set[Path] = {
-    if (!config.includePathsAutoDiscovery) return Set.empty
+  def discoverIncludePathsCPP(config: Config): mutable.LinkedHashSet[Path] = {
+    if (!config.includePathsAutoDiscovery) return mutable.LinkedHashSet.empty
     if (systemIncludePathsCPP.nonEmpty) return systemIncludePathsCPP
 
     if (isMSVCProject(config)) {
