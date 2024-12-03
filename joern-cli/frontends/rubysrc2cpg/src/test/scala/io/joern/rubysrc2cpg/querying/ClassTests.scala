@@ -1243,4 +1243,31 @@ class ClassTests extends RubyCode2CpgFixture {
       case xs => fail(s"Expected 5 methods, got [${xs.code.mkString(",")}]")
     }
   }
+
+  "Implicit return of SingletonClassDeclaration" in {
+    val cpg = code("""
+        |module Taskbar::List
+        |
+        | included do
+        |    class << self
+        |      def trigger_list_update(user, app)
+        |      end
+        |    end
+        |  end
+        |end
+        |""".stripMargin)
+    inside(cpg.typeDecl.name("List").l) {
+      case listTypeDecl :: Nil =>
+        val List(lambdaMethod) = listTypeDecl.astChildren.isMethod.isLambda.l
+
+        val List(lambdaReturn) = lambdaMethod.astChildren.isBlock.astChildren.isReturn.l
+        lambdaReturn.code shouldBe "return nil"
+
+        val List(lambdaTypeDecl, lambdaTypeDeclClass) = lambdaMethod.astChildren.isTypeDecl.l
+        lambdaTypeDecl.name shouldBe "<anon-class-0>"
+        lambdaTypeDeclClass.name shouldBe "<anon-class-0><class>"
+
+      case xs => fail(s"expected 1 type, got ${xs.size}: [${xs.code.mkString(", ")}]")
+    }
+  }
 }

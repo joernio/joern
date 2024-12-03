@@ -261,6 +261,11 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         val nilReturnSpan    = node.span.spanStart("return nil")
         val nilReturnLiteral = StaticLiteral(Defines.NilClass)(nilReturnSpan)
         astsForFieldDeclarations(node) ++ astsForImplicitReturnStatement(nilReturnLiteral)
+      case node: SingletonClassDeclaration =>
+        astForAnonymousTypeDeclaration(node)
+        val nilReturnSpan    = node.span.spanStart("return nil")
+        val nilReturnLiteral = StaticLiteral(Defines.NilClass)(nilReturnSpan)
+        astsForImplicitReturnStatement(nilReturnLiteral)
       case node =>
         logger.warn(
           s" not supported yet: ${node.text} (${node.getClass.getSimpleName}), only generating statement (${this.relativeFileName})"
