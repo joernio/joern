@@ -5,14 +5,15 @@ import io.joern.c2cpg.parser.JSONCompilationDatabaseParser.CommandObject
 import io.joern.c2cpg.utils.IncludeAutoDiscovery
 
 import java.nio.file.{Path, Paths}
+import scala.collection.mutable
 
 object ParserConfig {
 
   def empty: ParserConfig =
     ParserConfig(
-      Set.empty,
-      Set.empty,
-      Set.empty,
+      mutable.LinkedHashSet.empty,
+      mutable.LinkedHashSet.empty,
+      mutable.LinkedHashSet.empty,
       Map.empty,
       Map.empty,
       Map.empty,
@@ -20,7 +21,7 @@ object ParserConfig {
       logPreprocessor = false
     )
 
-  def fromConfig(config: Config, compilationDatabase: List[CommandObject]): ParserConfig = {
+  def fromConfig(config: Config, compilationDatabase: mutable.LinkedHashSet[CommandObject]): ParserConfig = {
     val compilationDatabaseDefines = compilationDatabase.map { c =>
       c.compiledFile() -> c.defines().toMap
     }.toMap
@@ -28,7 +29,7 @@ object ParserConfig {
       c.compiledFile() -> c.includes()
     }.toMap
     ParserConfig(
-      config.includePaths.map(Paths.get(_).toAbsolutePath),
+      mutable.LinkedHashSet.from(config.includePaths.map(Paths.get(_).toAbsolutePath)),
       IncludeAutoDiscovery.discoverIncludePathsC(config),
       IncludeAutoDiscovery.discoverIncludePathsCPP(config),
       config.defines.map { define =>
@@ -49,12 +50,12 @@ object ParserConfig {
 }
 
 case class ParserConfig(
-  userIncludePaths: Set[Path],
-  systemIncludePathsC: Set[Path],
-  systemIncludePathsCPP: Set[Path],
+  userIncludePaths: mutable.LinkedHashSet[Path],
+  systemIncludePathsC: mutable.LinkedHashSet[Path],
+  systemIncludePathsCPP: mutable.LinkedHashSet[Path],
   definedSymbols: Map[String, String],
   definedSymbolsPerFile: Map[String, Map[String, String]],
-  includesPerFile: Map[String, List[String]],
+  includesPerFile: Map[String, mutable.LinkedHashSet[String]],
   logProblems: Boolean,
   logPreprocessor: Boolean
 )

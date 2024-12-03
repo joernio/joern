@@ -110,16 +110,16 @@ class JSONCompilationDatabaseParserTests extends AnyWordSpec with Matchers {
         commandJsonFile.writeText(content)
 
         val commandObjects = JSONCompilationDatabaseParser.parse(commandJsonFile.pathAsString)
-        commandObjects.map(_.compiledFile()) shouldBe List(
+        commandObjects.map(_.compiledFile()) shouldBe Set(
           Paths.get("/home/user/llvm/build/file.cc").toString,
           Paths.get("/home/user/llvm/build/file2.cc").toString
         )
-        commandObjects.flatMap(_.defines()) shouldBe List(
+        commandObjects.flatMap(_.defines()) shouldBe Set(
           ("SOMEDEFA", "With spaces, quotes and \\-es."),
           ("SOMEDEFB", "\"With spaces, quotes and \\-es.\""),
           ("SOMEDEFC", "")
         )
-        commandObjects.flatMap(_.includes()) shouldBe List("/usr/include", "./include", "/home/user/project/includes")
+        commandObjects.flatMap(_.includes()) shouldBe Set("/usr/include", "./include", "/home/user/project/includes")
       }
     }
   }

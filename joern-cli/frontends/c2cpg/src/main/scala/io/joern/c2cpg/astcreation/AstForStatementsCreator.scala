@@ -16,6 +16,7 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTNamespaceAlias
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import java.nio.file.Paths
+import scala.collection.mutable
 
 trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -191,7 +192,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     // We only handle un-parsable macros here for now
     val isFromMacroExpansion = statement.getProblem.getNodeLocations.exists(_.isInstanceOf[IASTMacroExpansionLocation])
     val asts = if (isFromMacroExpansion) {
-      new CdtParser(config, List.empty)
+      new CdtParser(config, mutable.LinkedHashSet.empty)
         .parse(statement.getRawSignature, Paths.get(statement.getContainingFilename)) match
         case Some(node) => node.getDeclarations.toIndexedSeq.flatMap(astsForDeclaration)
         case None       => Seq.empty
