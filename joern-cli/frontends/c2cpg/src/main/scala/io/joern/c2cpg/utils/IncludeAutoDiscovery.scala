@@ -88,10 +88,9 @@ object IncludeAutoDiscovery {
   private def extractMSVCIncludePaths(resolvedInstallationPath: String): Set[Path] = {
     ExternalCommand.run(VcVarsCommand, resolvedInstallationPath, Map("VSCMD_DEBUG" -> "3")) match {
       case Success(results) =>
-        val includesLine = results.find(_.startsWith("INCLUDE="))
-        val includesString =
-          includesLine.find(_.startsWith("INCLUDE=")).map(include => include.replaceFirst("INCLUDE=", ""))
-        val includes = includesString.map(line => line.split(";").toSet.map(p => Paths.get(p.trim).toRealPath()))
+        val includesLine   = results.find(_.startsWith("INCLUDE="))
+        val includesString = includesLine.map(_.replaceFirst("INCLUDE=", ""))
+        val includes       = includesString.map(_.split(";").toSet.map(p => Paths.get(p.trim).toRealPath()))
         includes.getOrElse(Set.empty)
       case Failure(exception) =>
         logger.warn(s"Unable to discover MSVC system include paths.", exception)
