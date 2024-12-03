@@ -1215,4 +1215,32 @@ class ClassTests extends RubyCode2CpgFixture {
       }
     }
   }
+
+  "Implicit return for call to `private_class_method`" in {
+    val cpg = code("""
+        |class Foo
+        |  def case_sensitive_find_by()
+        |  end
+        |
+        |  included do
+        |    private_class_method :case_sensitive_find_by
+        |  end
+        |end
+        |""".stripMargin)
+
+    inside(cpg.typeDecl.name("Foo").astChildren.isMethod.l) {
+      case lambdaMethod :: _ :: _ :: _ :: Nil =>
+        val List(lambdaReturn) = lambdaMethod.body.astChildren.isReturn.l
+
+        lambdaReturn.code shouldBe "private_class_method :case_sensitive_find_by"
+
+        val List(returnCall) = lambdaReturn.astChildren.isCall.l
+        returnCall.code shouldBe "private_class_method :case_sensitive_find_by"
+
+        val List(_, methodNameArg) = returnCall.argument.l
+        methodNameArg.code shouldBe "self.:case_sensitive_find_by"
+
+      case xs => fail(s"Expected 5 methods, got [${xs.code.mkString(",")}]")
+    }
+  }
 }
