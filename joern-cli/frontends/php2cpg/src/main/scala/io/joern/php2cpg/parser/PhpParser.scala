@@ -67,7 +67,36 @@ class PhpParser private (phpParserPath: String, phpIniPath: String, disableFileC
   }
 
   enum PARSE_MODE {
-    case PARSE_INFO, PARSE_JSON, SKIP_TRAILER
+    case PARSE_INFO, PARSE_JSON, SKIP_TRAILER, SKIP_WARNING
+  }
+
+  private def getJsonResult(
+    filename: String,
+    jsonLines: Array[String],
+    infoLines: Array[String]
+  ): collection.Seq[(String, Option[ujson.Value], String)] = {
+    val result = mutable.ArrayBuffer.empty[(String, Option[ujson.Value], String)]
+
+    val jsonString = jsonLines.mkString
+
+    Try(Option(ujson.read(jsonString))) match {
+      case Success(option) =>
+        result.append((filename, option, infoLines.mkString))
+        if (option.isEmpty) {
+          logger.error(s"Parsing json string for $filename resulted in null return value")
+        }
+      case Failure(exception) =>
+        result.append((filename, None, infoLines.mkString))
+        logger.error(s"Parsing json string for $filename failed with exception", exception)
+    }
+
+    result
+  }
+
+  private def logWarning(lines: collection.Seq[String]): Unit = {
+    if (lines.exists(_.nonEmpty)) {
+      logger.warn(s"Found warning in PHP-Parser JSON output:\n${lines.mkString("\n")}")
+    }
   }
 
   private def linesToJsonValues(
@@ -77,9 +106,10 @@ class PhpParser private (phpParserPath: String, phpIniPath: String, disableFileC
     val filenameRegex = Pattern.compile(s"$filePrefix(.*):")
     val result        = mutable.ArrayBuffer.empty[(String, Option[ujson.Value], String)]
 
-    var filename  = ""
-    val infoLines = mutable.ArrayBuffer.empty[String]
-    val jsonLines = mutable.ArrayBuffer.empty[String]
+    var filename     = ""
+    val infoLines    = mutable.ArrayBuffer.empty[String]
+    val jsonLines    = mutable.ArrayBuffer.empty[String]
+    val warningLines = mutable.ArrayBuffer.empty[String]
 
     var mode    = PARSE_MODE.SKIP_TRAILER
     val linesIt = lines.iterator
@@ -90,24 +120,25 @@ class PhpParser private (phpParserPath: String, phpIniPath: String, disableFileC
           if (line != "==> JSON dump:") {
             infoLines.append(line)
           } else {
+            mode = PARSE_MODE.SKIP_WARNING
+          }
+        case PARSE_MODE.SKIP_WARNING =>
+          if (line == "[]") {
+            logWarning(warningLines)
+            jsonLines.append(line)
+            result.appendAll(getJsonResult(filename, jsonLines.toArray, infoLines.toArray))
+            mode = PARSE_MODE.SKIP_TRAILER
+          } else if (line.startsWith("[")) {
+            logWarning(warningLines)
+            jsonLines.append(line)
             mode = PARSE_MODE.PARSE_JSON
+          } else {
+            warningLines.append(line)
           }
         case PARSE_MODE.PARSE_JSON =>
           jsonLines.append(line)
           if (line.startsWith("]") || line == "[]") {
-            val jsonString = jsonLines.mkString
-
-            Try(Option(ujson.read(jsonString))) match {
-              case Success(option) =>
-                result.append((filename, option, infoLines.mkString))
-                if (option.isEmpty) {
-                  logger.error(s"Parsing json string for $filename resulted in null return value")
-                }
-              case Failure(exception) =>
-                result.append((filename, None, infoLines.mkString))
-                logger.error(s"Parsing json string for $filename failed with exception", exception)
-            }
-
+            result.appendAll(getJsonResult(filename, jsonLines.toArray, infoLines.toArray))
             mode = PARSE_MODE.SKIP_TRAILER
           }
         case _ =>

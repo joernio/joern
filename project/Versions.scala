@@ -25,6 +25,7 @@ object Versions {
   val json4s                 = "4.0.7"
   val lombok                 = "1.18.32"
   val mavenArcheologist      = "0.0.10"
+  val phpParser              = "4.15.9"
   val pPrint                 = "0.8.1"
   val reflection             = "0.10.2"
   val requests               = "0.8.0"
