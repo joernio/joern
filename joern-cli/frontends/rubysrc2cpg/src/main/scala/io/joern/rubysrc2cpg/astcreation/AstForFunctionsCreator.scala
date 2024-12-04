@@ -203,7 +203,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         pushAccessModifier(ModifierTypes.PUBLIC)
     }
 
-    val methodAst = astsForStatement(node.method)
+    val methodAst = node.method match {
+      case m: ProcedureDeclaration => astsForStatement(m)
+      case x                       => logger.warn(s"Unhandled method reference from AST type ${x.getClass}"); Nil
+    }
 
     popAccessModifier()
     pushAccessModifier(originalAccessModifier)

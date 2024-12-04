@@ -1293,4 +1293,22 @@ class ClassTests extends RubyCode2CpgFixture {
       case xs => fail(s"expected 1 type, got ${xs.size}: [${xs.code.mkString(", ")}]")
     }
   }
+
+  "`private_class_method` with unhandled argument types should not render these under the type decl" in {
+    val cpg = code("""
+        |class Foo
+        |
+        |  private_class_method %i[
+        |    filter_ignore_usable
+        |    filter_key
+        |    filter_usage
+        |    parts
+        |  ]
+        |
+        |end
+        |
+        |""".stripMargin)
+
+    cpg.typeDecl("Foo").astChildren.whereNot(_.or(_.isMethod, _.isModifier, _.isTypeDecl, _.isMember)).size shouldBe 0
+  }
 }
