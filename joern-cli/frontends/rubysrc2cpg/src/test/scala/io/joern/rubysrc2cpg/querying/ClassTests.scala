@@ -191,6 +191,29 @@ class ClassTests extends RubyCode2CpgFixture {
     aMember.lineNumber shouldBe Some(3)
   }
 
+  "`attr_reader` in a nested class should generate the correct member for the correct class" in {
+    val cpg = code("""
+        |class Foo
+        |
+        |  class Bar
+        |    attr_reader :a
+        |  end
+        |
+        |end
+        |
+        |""".stripMargin)
+
+    val List(bar)     = cpg.typeDecl.name("Bar").l
+    val List(aMember) = bar.member.name("@a").l
+
+    aMember.code shouldBe "attr_reader :a"
+    aMember.lineNumber shouldBe Some(5)
+
+    // <body> calls are pushed all the way up to the <module>
+    cpg.typeDecl.astOut.isCall.size shouldBe 0
+    cpg.call(RubyDefines.TypeDeclBody).method.dedup.name.l shouldBe List(RubyDefines.Main)
+  }
+
   "`def f(x) ... end` is represented by a METHOD inside the TYPE_DECL node" in {
     val cpg = code("""
                      |class C
@@ -1269,5 +1292,23 @@ class ClassTests extends RubyCode2CpgFixture {
 
       case xs => fail(s"expected 1 type, got ${xs.size}: [${xs.code.mkString(", ")}]")
     }
+  }
+
+  "`private_class_method` with unhandled argument types should not render these under the type decl" in {
+    val cpg = code("""
+        |class Foo
+        |
+        |  private_class_method %i[
+        |    filter_ignore_usable
+        |    filter_key
+        |    filter_usage
+        |    parts
+        |  ]
+        |
+        |end
+        |
+        |""".stripMargin)
+
+    cpg.typeDecl("Foo").astChildren.whereNot(_.or(_.isMethod, _.isModifier, _.isTypeDecl, _.isMember)).size shouldBe 0
   }
 }
