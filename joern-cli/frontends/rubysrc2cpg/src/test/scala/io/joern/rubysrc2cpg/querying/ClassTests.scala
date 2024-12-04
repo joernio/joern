@@ -1311,4 +1311,27 @@ class ClassTests extends RubyCode2CpgFixture {
 
     cpg.typeDecl("Foo").astChildren.whereNot(_.or(_.isMethod, _.isModifier, _.isTypeDecl, _.isMember)).size shouldBe 0
   }
+
+  "Proc-param in method with instance field assignment and instance field argument" in {
+    val cpg = code("""
+        |class Batches
+        |  def as_batches(query, &)
+        |     records.each(&)
+        |     @limit -= 100
+        |     return if @limit.zero?
+        |  end
+        |end
+        |""".stripMargin)
+
+    inside(cpg.method.name("as_batches").l) {
+      case batchesMethod :: Nil =>
+        inside(batchesMethod.parameter.l) {
+          case _ :: _ :: procParam :: Nil =>
+            procParam.code shouldBe "&"
+            procParam.name shouldBe "<proc-param-0>"
+          case xs => fail(s"Expected three parameters, got (${xs.size}) [${xs.code.mkString(",")}]")
+        }
+      case xs =>
+    }
+  }
 }
