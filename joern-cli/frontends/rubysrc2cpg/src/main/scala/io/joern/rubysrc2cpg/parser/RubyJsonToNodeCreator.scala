@@ -1045,8 +1045,12 @@ class RubyJsonToNodeCreator(
       case Some(rhs) =>
         SingleAssignment(lhs, "=", rhs)(obj.toTextSpan)
       case None =>
-        // `lvasgn` is used in exec_var for rescueExpr, which only has LHS
-        MandatoryParameter(lhs.span.text)(lhs.span)
+        if (AstType.fromString(obj(ParserKeys.Type).str) == AstType.LocalVariableAssign) {
+          // `lvasgn` is used in exec_var for rescueExpr, which only has LHS
+          MandatoryParameter(lhs.span.text)(lhs.span)
+        } else {
+          lhs
+        }
     }
   }
 
