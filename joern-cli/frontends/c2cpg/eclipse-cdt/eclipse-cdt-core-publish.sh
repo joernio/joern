@@ -17,14 +17,11 @@ set -o pipefail
 # https://github.com/digimead/sbt-osgi-manager/blob/master/src/main/scala/sbt/osgi/manager/tycho/ResolveP2.scala
 
 # adapt for every release
-JAR_URL='https://ci.eclipse.org/cdt/job/cdt/job/main/353/artifact/releng/org.eclipse.cdt.repo/target/repository/plugins/org.eclipse.cdt.core_8.4.0.202401242025.jar'
-CUSTOM_RELEASE_VERSION='8.4.0.202401242025'
+JAR_URL='https://ci.eclipse.org/cdt/job/cdt/job/main/452/artifact/releng/org.eclipse.cdt.repo/target/repository/plugins/org.eclipse.cdt.core_8.5.0.202410191453.jar'
+CUSTOM_RELEASE_VERSION='8.5.0.202410191453'
 
 # adapt when releasing from a different machine: the server id from your local ~/.m2/settings.xml
 REPO_ID=sonatype-nexus-staging-joern
-
-
-
 
 LOCAL_JAR="org.eclipse.cdt.core-$CUSTOM_RELEASE_VERSION.jar"
 echo "downloading jar from $JAR_URL to $LOCAL_JAR"
@@ -54,4 +51,3 @@ rm $LOCAL_JAR pom.xml empty.jar *.asc
 echo "artifacts are now published to sonatype staging. next step: log into https://s01.oss.sonatype.org -> staging repositories -> select the right one -> close -> release"
 echo "you can monitor the maven sync status on https://s01.oss.sonatype.org/content/groups/public/io/joern/eclipse-cdt-core/ and https://repo1.maven.org/maven2/io/joern/eclipse-cdt-core/"
 echo "once it's synchronised to maven central (repo1), update the cdt-core version in 'joern/joern-cli/frontends/c2cpg/build.sbt'"
-
