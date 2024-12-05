@@ -62,13 +62,32 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
     new JsFrontend("jssrc", Languages.JSSRC, "Javascript/Typescript Source Frontend based on astgen", "js")
   def swiftsrc: SourceBasedFrontend =
     new SwiftSrcFrontend("swiftsrc", Languages.SWIFTSRC, "Swift Source Frontend based on swiftastgen", "swift")
-  def csharp: Frontend          = new BinaryFrontend("csharp", Languages.CSHARP, "C# Source Frontend (Roslyn)")
+  def csharp: Frontend = new BinaryFrontend("csharp", Languages.CSHARP, "C# Source Frontend (Roslyn)")
+  def csharpsrc: SourceBasedFrontend =
+    new SourceBasedFrontend("csharpsrc", Languages.CSHARPSRC, "C# Source Frontend based on DotNetAstGen", "cs")
   def llvm: Frontend            = new BinaryFrontend("llvm", Languages.LLVM, "LLVM Bitcode Frontend")
   def php: SourceBasedFrontend  = new SourceBasedFrontend("php", Languages.PHP, "PHP source frontend", "php")
   def ruby: SourceBasedFrontend = SourceBasedFrontend("ruby", Languages.RUBYSRC, "Ruby source frontend", "rb")
 
   private def allFrontends: List[Frontend] =
-    List(c, cpp, ghidra, kotlin, java, jvm, javascript, jssrc, swiftsrc, golang, llvm, php, python, csharp, ruby)
+    List(
+      c,
+      cpp,
+      ghidra,
+      kotlin,
+      java,
+      jvm,
+      javascript,
+      jssrc,
+      swiftsrc,
+      golang,
+      llvm,
+      php,
+      python,
+      csharp,
+      ruby,
+      csharpsrc
+    )
 
   // this is only abstract to force people adding frontends to make a decision whether the frontend consumes binaries or source
   abstract class Frontend(val name: String, val language: String, val description: String = "")(implicit
