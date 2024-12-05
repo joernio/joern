@@ -14,6 +14,7 @@ case class Config(
   command: Option[String] = None,
   params: Map[String, String] = Map.empty,
   predefFiles: Seq[Path] = Nil,
+  runBefore: Seq[String] = Nil,
   additionalClasspathEntries: Seq[String] = Seq.empty,
   addPlugin: Option[String] = None,
   rmPlugin: Option[String] = None,
@@ -72,6 +73,13 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
         .optional()
         .action((x, c) => c.copy(predefFiles = c.predefFiles :+ x))
         .text("given source files will be compiled and added to classpath - this may be passed multiple times")
+
+      opt[String]("runBefore")
+        .valueName("'import Int.MaxValue'")
+        .unbounded()
+        .optional()
+        .action((x, c) => c.copy(runBefore = c.runBefore :+ x))
+        .text("given code will be executed on startup - this may be passed multiple times")
 
       opt[String]("classpathEntry")
         .valueName("path/to/classpath")
@@ -223,6 +231,7 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
     config.forInputPath.foreach { name =>
       builder += s"""openForInputPath("$name")""".stripMargin
     }
+    builder ++= config.runBefore
     builder.result()
   }
 
