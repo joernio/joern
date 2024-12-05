@@ -59,7 +59,7 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
     val expressionTypeFullName =
       expressionReturnTypeFullName(call).orElse(getTypeFullName(expectedReturnType)).map(typeInfoCalc.registerType)
 
-    val argumentTypes = argumentTypesForMethodLike(maybeResolvedCall)
+    val argumentTypes = argumentTypesForMethodLike(maybeResolvedCall.toOption)
     val returnType = maybeResolvedCall
       .map { resolvedCall =>
         typeInfoCalc.fullName(resolvedCall.getReturnType, ResolvedTypeParametersMap.empty())
@@ -232,7 +232,7 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
       scope.addLocalDecl(anonymousClassDecl)
     }
 
-    val argumentTypes = argumentTypesForMethodLike(maybeResolvedExpr)
+    val argumentTypes = argumentTypesForMethodLike(maybeResolvedExpr.toOption)
 
     val allocNode = newOperatorCallNode(
       Operators.alloc,

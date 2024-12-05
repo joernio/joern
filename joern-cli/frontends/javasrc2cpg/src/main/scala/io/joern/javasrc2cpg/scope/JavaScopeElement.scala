@@ -1,5 +1,6 @@
 package io.joern.javasrc2cpg.scope
 
+import com.github.javaparser.ast.body.Parameter
 import com.github.javaparser.ast.expr.TypePatternExpr
 import io.joern.javasrc2cpg.scope.Scope.*
 import io.joern.javasrc2cpg.scope.JavaScopeElement.*
@@ -175,7 +176,8 @@ object JavaScopeElement {
     override val isStatic: Boolean,
     private[scope] val capturedVariables: Map[String, CapturedVariable],
     outerClassType: Option[String],
-    val declaredMethodNames: Set[String]
+    val declaredMethodNames: Set[String],
+    val recordParameters: List[Parameter]
   )(implicit disableTypeFallback: Boolean)
       extends JavaScopeElement(disableTypeFallback)
       with TypeDeclContainer
