@@ -1,5 +1,6 @@
 package io.joern.javasrc2cpg.scope
 
+import com.github.javaparser.ast.body.Parameter
 import com.github.javaparser.ast.expr.TypePatternExpr
 import io.joern.javasrc2cpg.astcreation.ExpectedType
 import io.joern.javasrc2cpg.scope.Scope.*
@@ -40,7 +41,12 @@ class Scope(implicit val withSchemaValidation: ValidationMode, val disableTypeFa
     scopeStack = new FieldDeclScope(isStatic, name) :: scopeStack
   }
 
-  def pushTypeDeclScope(typeDecl: NewTypeDecl, isStatic: Boolean, methodNames: Set[String] = Set.empty): Unit = {
+  def pushTypeDeclScope(
+    typeDecl: NewTypeDecl,
+    isStatic: Boolean,
+    methodNames: Set[String] = Set.empty,
+    recordParameters: List[Parameter] = Nil
+  ): Unit = {
     val captures = getCapturesForNewScope(isStatic)
     val outerClassType = scopeStack.takeUntil(_.isInstanceOf[TypeDeclScope]) match {
       case Nil => None
@@ -58,7 +64,8 @@ class Scope(implicit val withSchemaValidation: ValidationMode, val disableTypeFa
           }
           .flatten
     }
-    scopeStack = new TypeDeclScope(typeDecl, isStatic, captures, outerClassType, methodNames) :: scopeStack
+    scopeStack =
+      new TypeDeclScope(typeDecl, isStatic, captures, outerClassType, methodNames, recordParameters) :: scopeStack
   }
 
   def pushNamespaceScope(namespace: NewNamespaceBlock): Unit = {

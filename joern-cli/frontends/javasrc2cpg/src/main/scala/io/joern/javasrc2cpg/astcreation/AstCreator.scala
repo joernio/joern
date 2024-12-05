@@ -150,6 +150,10 @@ class AstCreator(
     TypeConstants.Any
   }
 
+  private[astcreation] def isResolvedTypeFullName(typeFullName: String): Boolean = {
+    typeFullName != TypeConstants.Any && !typeFullName.startsWith(Defines.UnresolvedNamespace)
+  }
+
   /** Custom printer that omits comments. To be used by [[code]] */
   private val codePrinterOptions = new DefaultPrinterConfiguration()
     .removeOption(new DefaultConfigurationOption(ConfigOption.PRINT_COMMENTS))

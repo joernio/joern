@@ -21,24 +21,30 @@ import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.utils.NodeBuilders.*
 import io.joern.x2cpg.{Ast, Defines}
 import io.shiftleft.codepropertygraph.generated.nodes.{
+  AstNodeNew,
   NewBlock,
+  NewCall,
+  NewFieldIdentifier,
   NewIdentifier,
   NewMethod,
   NewMethodParameterIn,
   NewMethodReturn,
   NewModifier
 }
-import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, ModifierTypes}
+import io.shiftleft.codepropertygraph.generated.{
+  DispatchTypes,
+  EdgeTypes,
+  EvaluationStrategies,
+  ModifierTypes,
+  NodeTypes,
+  Operators,
+  nodes
+}
 import io.joern.javasrc2cpg.scope.JavaScopeElement.fullName
 
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
 import scala.util.{Failure, Success, Try}
-import io.shiftleft.codepropertygraph.generated.nodes.AstNodeNew
-import io.shiftleft.codepropertygraph.generated.nodes.NewCall
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import com.github.javaparser.ast.Node
 import com.github.javaparser.ast.`type`.ClassOrInterfaceType
 import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserParameterDeclaration
@@ -85,7 +91,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
 
     val thisNode = Option.when(!methodDeclaration.isStatic) {
       val typeFullName = scope.enclosingTypeDecl.fullName
-      thisNodeForMethod(typeFullName, line(methodDeclaration))
+      thisNodeForMethod(typeFullName, line(methodDeclaration), column(methodDeclaration))
     }
     val thisAst = thisNode.map(Ast(_)).toList
 
@@ -115,6 +121,58 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     scope.popMethodScope()
 
     methodAstWithAnnotations(methodNode, thisAst ++ parameterAsts, bodyAst, methodReturn, modifiers, annotationAsts)
+  }
+
+  private[declarations] def astForRecordParameterAccessor(
+    parameter: Parameter,
+    recordTypeFullName: String,
+    parameterName: String,
+    parameterTypeFullName: String
+  ): Ast = {
+    val signature =
+      if (isResolvedTypeFullName(parameterTypeFullName))
+        composeSignature(Option(parameterTypeFullName), Option(Nil), 0)
+      else
+        composeSignature(None, Option(Nil), 0)
+
+    val methodFullName = composeMethodFullName(recordTypeFullName, parameterName, signature)
+
+    val methodReturn = newMethodReturnNode(parameterTypeFullName, line = line(parameter), column = column(parameter))
+
+    val methodRoot = methodNode(
+      parameter,
+      parameterName,
+      s"public ${code(parameter.getType)} ${parameterName}()",
+      methodFullName,
+      Option(signature),
+      filename,
+      Option(NodeTypes.TYPE_DECL),
+      Option(recordTypeFullName)
+    )
+
+    val modifier = newModifierNode(ModifierTypes.PUBLIC)
+
+    val thisParameter = thisNodeForMethod(Option(recordTypeFullName), line(parameter), column(parameter))
+
+    val thisIdentifier    = identifierNode(parameter, thisParameter.name, thisParameter.code, recordTypeFullName)
+    val thisIdentifierAst = Ast(thisIdentifier).withRefEdge(thisIdentifier, thisParameter)
+    val fieldIdentifier   = fieldIdentifierNode(parameter, parameterName, parameterName)
+
+    val fieldAccessNode = newOperatorCallNode(
+      Operators.fieldAccess,
+      s"${thisIdentifier.code}.${fieldIdentifier.code}",
+      Option(parameterTypeFullName),
+      line(parameter),
+      column(parameter)
+    )
+    val fieldAccessCall = callAst(fieldAccessNode, thisIdentifierAst :: Ast(fieldIdentifier) :: Nil)
+
+    val returnStmt = returnNode(parameter, s"return ${fieldAccessNode.code}")
+    val returnAst  = Ast(returnStmt).withChild(fieldAccessCall)
+
+    val methodBodyAst = blockAst(blockNode(parameter), returnAst :: Nil)
+
+    methodAst(methodRoot, Ast(thisParameter) :: Nil, methodBodyAst, methodReturn, modifier :: Nil)
   }
 
   private def abstractModifierForCallable(
@@ -190,25 +248,38 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
   }
 
   def astForDefaultConstructor(originNode: Node, instanceFieldDeclarations: List[FieldDeclaration]): Ast = {
+    val constructorNode = NewMethod()
+      .name(io.joern.x2cpg.Defines.ConstructorMethodName)
+      .filename(filename)
+      .isExternal(false)
+    scope.pushMethodScope(constructorNode, ExpectedType.Void, isStatic = false)
+
+    val parameters = scope.enclosingTypeDecl.get.recordParameters
+    val parameterAsts = parameters.zipWithIndex.map { case (param, idx) =>
+      astForParameter(param, idx + 1)
+    }
+    val parameterTypes         = parameterAsts.map(_.rootType.getOrElse(defaultTypeFallback()))
+    val resolvedParameterTypes = Option.when(parameterTypes.forall(isResolvedTypeFullName))(parameterTypes)
+
     val typeFullName = scope.enclosingTypeDecl.fullName
-    val signature    = s"${TypeConstants.Void}()"
+    val signature    = composeSignature(Option(TypeConstants.Void), resolvedParameterTypes, parameterAsts.size)
     val fullName = composeMethodFullName(
       typeFullName.getOrElse(Defines.UnresolvedNamespace),
       Defines.ConstructorMethodName,
       signature
     )
-    val constructorNode = NewMethod()
-      .name(io.joern.x2cpg.Defines.ConstructorMethodName)
-      .fullName(fullName)
-      .signature(signature)
-      .filename(filename)
-      .isExternal(false)
 
-    scope.pushMethodScope(constructorNode, ExpectedType.Void, isStatic = false)
+    constructorNode.fullName(fullName)
+    constructorNode.signature(signature)
 
-    val thisNode = thisNodeForMethod(typeFullName, lineNumber = None)
+    val thisNode = thisNodeForMethod(typeFullName, lineNumber = None, columnNumber = None)
     scope.enclosingMethod.foreach(_.addParameter(thisNode))
-    val bodyStatementAsts  = astsForFieldInitializers(instanceFieldDeclarations)
+    val recordParameterAssignments = parameterAsts
+      .flatMap(_.nodes)
+      .collect { case param: nodes.NewMethodParameterIn => param }
+      .map(astForEponymousFieldAssignment(thisNode, _))
+    val bodyStatementAsts =
+      astsForFieldInitializers(instanceFieldDeclarations) ++ recordParameterAssignments
     val temporaryLocalAsts = scope.enclosingMethod.map(_.getTemporaryLocals).getOrElse(Nil).map(Ast(_))
 
     val returnNode = newMethodReturnNode(TypeConstants.Void, line = None, column = None)
@@ -219,7 +290,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
         originNode,
         constructorNode,
         thisNode,
-        explicitParameterAsts = Nil,
+        explicitParameterAsts = parameterAsts,
         bodyStatementAsts = temporaryLocalAsts ++ bodyStatementAsts,
         methodReturn = returnNode,
         annotationAsts = Nil,
@@ -230,6 +301,52 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     val constructorAst = completePartialConstructor(partialConstructor)
     scope.popMethodScope()
     constructorAst
+  }
+
+  private def astForEponymousFieldAssignment(
+    thisParam: NewMethodParameterIn,
+    recordParameter: NewMethodParameterIn
+  ): Ast = {
+    val thisIdentifier = NewIdentifier()
+      .name(thisParam.name)
+      .code(thisParam.name)
+      .typeFullName(thisParam.typeFullName)
+      .lineNumber(recordParameter.lineNumber)
+      .columnNumber(recordParameter.columnNumber)
+      .dynamicTypeHintFullName(thisParam.dynamicTypeHintFullName)
+    val thisIdentifierAst = Ast(thisIdentifier).withRefEdge(thisIdentifier, thisParam)
+
+    val fieldIdentifier = NewFieldIdentifier()
+      .canonicalName(recordParameter.name)
+      .code(recordParameter.name)
+
+    val fieldAccessNode = newOperatorCallNode(
+      Operators.fieldAccess,
+      s"${thisIdentifier.code}.${fieldIdentifier.code}",
+      Option(recordParameter.typeFullName),
+      recordParameter.lineNumber,
+      recordParameter.columnNumber
+    )
+    val fieldAccessAst = callAst(fieldAccessNode, thisIdentifierAst :: Ast(fieldIdentifier) :: Nil)
+
+    val recordParamIdentifier = NewIdentifier()
+      .name(recordParameter.name)
+      .code(recordParameter.name)
+      .typeFullName(recordParameter.typeFullName)
+      .lineNumber(recordParameter.lineNumber)
+      .columnNumber(recordParameter.columnNumber)
+      .dynamicTypeHintFullName(recordParameter.dynamicTypeHintFullName)
+    val recordParamIdentifierAst = Ast(recordParamIdentifier).withRefEdge(recordParamIdentifier, recordParameter)
+
+    val assignmentNode = newOperatorCallNode(
+      Operators.assignment,
+      s"${fieldAccessNode.code} = ${recordParamIdentifier.code}",
+      Option(recordParameter.typeFullName),
+      recordParameter.lineNumber,
+      recordParameter.columnNumber
+    )
+
+    callAst(assignmentNode, fieldAccessAst :: recordParamIdentifierAst :: Nil)
   }
 
   private def astForParameter(parameter: Parameter, childNum: Int): Ast = {
@@ -351,7 +468,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
         }
       }
 
-      val thisNode = thisNodeForMethod(typeFullName, line(constructorDeclaration))
+      val thisNode = thisNodeForMethod(typeFullName, line(constructorDeclaration), column(constructorDeclaration))
       scope.enclosingMethod.get.addParameter(thisNode)
 
       scope.pushBlockScope()
@@ -513,12 +630,17 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     methodNode(declaration, declaration.getNameAsString(), code, placeholderFullName, None, filename)
   }
 
-  def thisNodeForMethod(maybeTypeFullName: Option[String], lineNumber: Option[Int]): NewMethodParameterIn = {
+  def thisNodeForMethod(
+    maybeTypeFullName: Option[String],
+    lineNumber: Option[Int],
+    columnNumber: Option[Int]
+  ): NewMethodParameterIn = {
     val typeFullName = typeInfoCalc.registerType(maybeTypeFullName.getOrElse(defaultTypeFallback()))
     NodeBuilders.newThisParameterNode(
       typeFullName = typeFullName,
       dynamicTypeHintFullName = maybeTypeFullName.toSeq,
-      line = lineNumber
+      line = lineNumber,
+      column = columnNumber
     )
   }
 }
