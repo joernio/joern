@@ -140,8 +140,12 @@ class AstCreator(
   }
 
   private[astcreation] def defaultTypeFallback(typ: Type): String = {
+    defaultTypeFallback(code(typ))
+  }
+
+  private[astcreation] def defaultTypeFallback(typ: String): String = {
     if (disableTypeFallback) {
-      s"${Defines.UnresolvedNamespace}.${Util.stripGenericTypes(code(typ))}"
+      s"${Defines.UnresolvedNamespace}.${Util.stripGenericTypes(typ)}"
     } else
       TypeConstants.Any
   }

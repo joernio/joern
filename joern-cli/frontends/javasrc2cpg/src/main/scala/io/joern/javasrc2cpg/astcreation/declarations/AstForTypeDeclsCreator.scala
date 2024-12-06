@@ -458,8 +458,10 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
   }
 
   private[declarations] def astForAnnotationExpr(annotationExpr: AnnotationExpr): Ast = {
-    val fallbackType = s"${Defines.UnresolvedNamespace}.${annotationExpr.getNameAsString}"
-    val fullName     = expressionReturnTypeFullName(annotationExpr).getOrElse(fallbackType)
+    val fullName = scope
+      .lookupType(annotationExpr.getNameAsString)
+      .orElse(tryWithSafeStackOverflow(annotationExpr.resolve()).toOption.flatMap(typeInfoCalc.fullName))
+      .getOrElse(defaultTypeFallback(annotationExpr.getNameAsString))
     typeInfoCalc.registerType(fullName)
     val code = annotationExpr.toString
     val name = annotationExpr.getName.getIdentifier
