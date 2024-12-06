@@ -459,7 +459,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
 
   private[declarations] def astForAnnotationExpr(annotationExpr: AnnotationExpr): Ast = {
     val fullName = scope
-      .lookupType(annotationExpr.getNameAsString, false)
+      .lookupType(annotationExpr.getNameAsString)
       .orElse(tryWithSafeStackOverflow(annotationExpr.resolve()).toOption.flatMap(typeInfoCalc.fullName))
       .getOrElse(defaultTypeFallback(annotationExpr.getNameAsString))
     typeInfoCalc.registerType(fullName)
