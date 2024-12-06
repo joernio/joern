@@ -80,3 +80,5 @@ flake.lock
 **/.bsp
 
 
+/joern-cli/frontends/c2cpg/eclipse-cdt/build/
+/joern-cli/frontends/c2cpg/eclipse-cdt/org.eclipse.cdt.core-*.jar
