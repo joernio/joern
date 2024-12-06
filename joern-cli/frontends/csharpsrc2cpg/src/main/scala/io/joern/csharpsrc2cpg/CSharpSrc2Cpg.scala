@@ -44,11 +44,15 @@ class CSharpSrc2Cpg extends X2CpgFrontend[Config] {
           }
           .foldLeft(CSharpProgramSummary(imports = CSharpProgramSummary.initialImports))(_ ++= _)
 
-        val builtinSummary = CSharpProgramSummary(
-          mutable.Map
-            .fromSpecific(CSharpProgramSummary.BuiltinTypes.view.filterKeys(internalProgramSummary.imports(_)))
-            .result()
-        )
+        val builtinSummary = if (config.useBuiltinSummaries) {
+          CSharpProgramSummary(
+            mutable.Map
+              .fromSpecific(CSharpProgramSummary.BuiltinTypes.view.filterKeys(internalProgramSummary.imports(_)))
+              .result()
+          )
+        } else {
+          CSharpProgramSummary()
+        }
 
         val internalAndBuiltinSummary = internalProgramSummary ++= builtinSummary
 

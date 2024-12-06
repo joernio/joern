@@ -101,7 +101,51 @@ class DependencyTests extends CSharpCode2CpgFixture {
           fail("Expected a call node for `Entity`")
       }
     }
+  }
 
+  "a `csproj` file specifying a built-in dependency but built-in type summaries are disabled" when {
+    val csCode = """
+                   |using Microsoft.EntityFrameworkCore;
+                   |
+                   |public class Foo
+                   |{
+                   | static void bar(ModelBuilder modelBuilder)
+                   | {
+                   |   modelBuilder.Entity("test");
+                   | }
+                   |}""".stripMargin
+    val csProj = """
+                   |<Project Sdk="Microsoft.NET.Sdk">
+                   | <ItemGroup>
+                   |   <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.36" />
+                   | </ItemGroup>
+                   |</Project>
+                   |""".stripMargin
+
+    "the ability to download dependencies is also turned off" should {
+      val cpg = code(csCode)
+        .moreCode(csProj, "Foo.csproj")
+        .withConfig(Config().withUseBuiltinSummaries(false).withDownloadDependencies(false))
+      "not resolve the call since there are no type summaries available for it" in {
+        inside(cpg.call("Entity").headOption) {
+          case Some(entity) => entity.methodFullName shouldBe "ModelBuilder.Entity:<unresolvedSignature>"
+          case None         => fail("Expected call node for `Entity`")
+        }
+      }
+    }
+
+    "the ability to download dependencies is turned on" should {
+      val cpg = code(csCode)
+        .moreCode(csProj, "Foo.csproj")
+        .withConfig(Config().withUseBuiltinSummaries(false).withDownloadDependencies(true))
+      "resolve the call since the dependency shall be downloaded and a type summary for it be built" in {
+        inside(cpg.call("Entity").headOption) {
+          case Some(entity) =>
+            entity.methodFullName shouldBe "Microsoft.EntityFrameworkCore.ModelBuilder.Entity:Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder(System.String)"
+          case None => fail("Expected call node for `Entity`")
+        }
+      }
+    }
   }
 
   "a `csproj` file specifying a dependency with the `Update` attribute" should {
