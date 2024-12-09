@@ -100,7 +100,7 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
     // TODO Handle super
     val maybeResolved = tryWithSafeStackOverflow(stmt.resolve())
     val args          = argAstsForCall(stmt, maybeResolved, stmt.getArguments)
-    val argTypes      = argumentTypesForMethodLike(maybeResolved)
+    val argTypes      = argumentTypesForMethodLike(maybeResolved.toOption)
 
     // TODO: We can do better than defaultTypeFallback() for the fallback type by looking at the enclosing
     //  type decl name or `extends X` name for `this` and `super` calls respectively.
