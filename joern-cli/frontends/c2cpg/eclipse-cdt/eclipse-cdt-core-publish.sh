@@ -17,7 +17,7 @@ set -o pipefail
 
 # adapt for every release
 JAR_URL='https://ci.eclipse.org/cdt/job/cdt/job/main/452/artifact/releng/org.eclipse.cdt.repo/target/repository/plugins/org.eclipse.cdt.core_8.5.0.202410191453.jar'
-CUSTOM_RELEASE_VERSION='8.5.0.202410191453'
+CUSTOM_RELEASE_VERSION='8.5.0.202410191453+2'
 
 LOCAL_JAR="org.eclipse.cdt.core-$CUSTOM_RELEASE_VERSION.jar"
 echo "downloading jar from $JAR_URL to $LOCAL_JAR"
@@ -28,7 +28,8 @@ rm -rf build
 mkdir build
 sed s/__VERSION__/$CUSTOM_RELEASE_VERSION/ pom.xml.template > build/pom.xml
 mkdir -p build/src/main/resources
-unzip -d build/src/main/resources $LOCAL_JAR
+unzip -d build/src/main/resources $LOCAL_JAR \
+      -x 'META-INF/*.RSA' 'META-INF/*.SF' # remove original signing information, otherwise the jar is unusable because the signature doesn't match
 
 # add an empty dummy class in order to generate sources and javadoc jars
 mkdir -p build/src/main/java
