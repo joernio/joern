@@ -110,12 +110,14 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     fixedTypeName
   }
 
-  protected def registerMethodDeclaration(fullName: String, methodInfo: CGlobal.MethodInfo): Unit = {
-    global.methodDeclarations.putIfAbsent(fullName, methodInfo)
+  protected def registerMethodDeclaration(fullName: String, signature: String, methodInfo: CGlobal.MethodInfo): Unit = {
+    val methodKey = if (fullName.endsWith(signature)) fullName else s"$fullName:$signature"
+    global.methodDeclarations.putIfAbsent(methodKey, methodInfo)
   }
 
-  protected def registerMethodDefinition(fullName: String): Unit = {
-    global.methodDefinitions.putIfAbsent(fullName, true)
+  protected def registerMethodDefinition(fullName: String, signature: String): Unit = {
+    val methodKey = if (fullName.endsWith(signature)) fullName else s"$fullName:$signature"
+    global.methodDefinitions.putIfAbsent(methodKey, true)
   }
 
   // Sadly, there is no predefined List / Enum of this within Eclipse CDT:
