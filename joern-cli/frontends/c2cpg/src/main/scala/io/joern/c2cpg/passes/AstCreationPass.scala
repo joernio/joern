@@ -45,9 +45,9 @@ class AstCreationPass(cpg: Cpg, config: Config, report: Report = new Report())
   }
 
   private def sourceFilesFromDirectory(): Array[String] = {
-    val sourceFileExtensions = FileDefaults.SOURCE_FILE_EXTENSIONS
-      ++ FileDefaults.HEADER_FILE_EXTENSIONS
-      ++ Option.when(config.withPreprocessedFiles)(FileDefaults.PREPROCESSED_EXT).toList
+    val sourceFileExtensions = FileDefaults.SourceFileExtensions
+      ++ FileDefaults.HeaderFileExtensions
+      ++ Option.when(config.withPreprocessedFiles)(FileDefaults.PreprocessedExt).toList
     val allSourceFiles = SourceFiles
       .determine(
         config.inputPath,
@@ -60,7 +60,7 @@ class AstCreationPass(cpg: Cpg, config: Config, report: Report = new Report())
     if (config.withPreprocessedFiles) {
       allSourceFiles.filter {
         case f if !FileDefaults.hasPreprocessedFileExtension(f) =>
-          val fAsPreprocessedFile = s"${f.substring(0, f.lastIndexOf("."))}${FileDefaults.PREPROCESSED_EXT}"
+          val fAsPreprocessedFile = s"${f.substring(0, f.lastIndexOf("."))}${FileDefaults.PreprocessedExt}"
           !allSourceFiles.exists { sourceFile => f != sourceFile && sourceFile == fAsPreprocessedFile }
         case _ => true
       }

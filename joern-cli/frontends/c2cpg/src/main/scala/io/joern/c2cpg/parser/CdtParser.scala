@@ -64,7 +64,7 @@ class CdtParser(config: Config, compilationDatabase: mutable.LinkedHashSet[Comma
   private def preprocessedFileIsFromCPPFile(file: Path, code: String): Boolean = {
     if (config.withPreprocessedFiles && FileDefaults.hasPreprocessedFileExtension(file.toString)) {
       val fileWithoutExt  = file.toString.substring(0, file.toString.lastIndexOf("."))
-      val filesWithCPPExt = FileDefaults.CPP_FILE_EXTENSIONS.map(ext => File(s"$fileWithoutExt$ext").name)
+      val filesWithCPPExt = FileDefaults.CppFileExtensions.map(ext => File(s"$fileWithoutExt$ext").name)
       code.linesIterator.exists(line => filesWithCPPExt.exists(f => line.contains(s"\"$f\"")))
     } else {
       false

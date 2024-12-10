@@ -1,6 +1,7 @@
 package io.joern.c2cpg.parser
 
 import better.files.*
+import io.joern.c2cpg.C2Cpg.DefaultIgnoredFolders
 import io.joern.x2cpg.SourceFiles
 import org.jline.utils.Levenshtein
 
@@ -9,7 +10,7 @@ import java.nio.file.Path
 class HeaderFileFinder(root: String) {
 
   private val nameToPathMap: Map[String, List[Path]] = SourceFiles
-    .determine(root, FileDefaults.HEADER_FILE_EXTENSIONS)
+    .determine(root, FileDefaults.HeaderFileExtensions, ignoredDefaultRegex = Option(DefaultIgnoredFolders))
     .map { p =>
       val file = File(p)
       (file.name, file.path)
