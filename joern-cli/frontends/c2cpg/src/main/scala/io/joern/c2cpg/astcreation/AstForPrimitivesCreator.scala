@@ -87,7 +87,8 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def isInCurrentScope(ident: CPPASTIdExpression, owner: String): Boolean = {
-    val isInMethodScope = CPPVisitor.getContainingScope(ident).getScopeName.toString.contains(s"::$owner::")
+    val isInMethodScope =
+      Try(CPPVisitor.getContainingScope(ident).getScopeName.toString).toOption.exists(_.contains(s"::$owner::"))
     isInMethodScope || methodAstParentStack.collectFirst {
       case typeDecl: NewTypeDecl if typeDecl.fullName == owner    => typeDecl
       case method: NewMethod if method.fullName.startsWith(owner) => method

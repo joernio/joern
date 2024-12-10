@@ -227,7 +227,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     }
   }
 
-  protected def typeForCPPASTIdExpression(s: CPPASTIdExpression, stripKeywords: Boolean = true): String = {
+  private def typeForCPPASTIdExpression(s: CPPASTIdExpression, stripKeywords: Boolean = true): String = {
     safeGetEvaluation(s) match {
       case Some(evaluation: EvalMemberAccess) =>
         val deref = if (evaluation.isPointerDeref) "*" else ""
