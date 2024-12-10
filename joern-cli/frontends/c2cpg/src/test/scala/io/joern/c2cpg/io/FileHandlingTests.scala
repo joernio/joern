@@ -19,7 +19,7 @@ object FileHandlingTests {
 
 class FileHandlingTests
     extends Code2CpgFixture(() =>
-      new CDefaultTestCpg(FileDefaults.C_EXT) {
+      new CDefaultTestCpg(FileDefaults.CExt) {
         override def codeFilePreProcessing(codeFile: Path): Unit = {
           if (codeFile.toString.endsWith(FileHandlingTests.brokenLinkedFile)) {
             File(codeFile).delete().symbolicLinkTo(File("does/not/exist.c"))

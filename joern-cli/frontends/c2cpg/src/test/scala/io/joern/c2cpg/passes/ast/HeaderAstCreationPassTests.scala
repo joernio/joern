@@ -40,9 +40,9 @@ class HeaderAstCreationPassTests extends C2CpgSuite {
         case Seq(bar, foo, m, printf) =>
           // note that we don't see bar twice even so it is contained
           // in main.h and included in main.c and we do scan both
-          bar.fullName shouldBe "bar"
+          bar.fullName shouldBe "bar:void()"
           bar.filename shouldBe "main.h"
-          foo.fullName shouldBe "foo"
+          foo.fullName shouldBe "foo:int()"
           foo.filename shouldBe "other.h"
           // main is also deduplicated. It is defined within the header file,
           // and has an actual implementation in the source file

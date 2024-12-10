@@ -5,7 +5,7 @@ import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.semanticcpg.language.*
 
-class ControlStructureTests extends C2CpgSuite(FileDefaults.CPP_EXT) {
+class ControlStructureTests extends C2CpgSuite(FileDefaults.CppExt) {
 
   "ControlStructureTest1" should {
     val cpg = code("""

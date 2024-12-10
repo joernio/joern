@@ -557,7 +557,7 @@ class CfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg) {
   }
 }
 
-class CppCfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg(FileDefaults.CPP_EXT)) {
+class CppCfgCreationPassTests extends CfgTestFixture(() => new CCfgTestCpg(FileDefaults.CppExt)) {
   override def code(code: String): CCfgTestCpg = {
     super.code(s"RET func() { $code }")
   }
