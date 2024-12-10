@@ -7,6 +7,7 @@ object CGlobal {
 
   final case class MethodInfo(
     name: String,
+    fullName: String,
     code: String,
     fileName: String,
     returnType: String,

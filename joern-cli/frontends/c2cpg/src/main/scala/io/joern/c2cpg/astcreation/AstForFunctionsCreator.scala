@@ -149,6 +149,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
         val methodInfo = CGlobal.MethodInfo(
           name,
+          fullName,
           code = codeString,
           fileName = filename,
           returnType = registerType(returnType),
@@ -163,7 +164,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           parameter = parameterNodeInfos,
           modifier = modifierFor(funcDecl).map(_.modifierType)
         )
-        registerMethodDeclaration(fullName, methodInfo)
+        registerMethodDeclaration(fullName, signature, methodInfo)
         Ast()
       case cVariable: CVariable =>
         val name       = shortName(funcDecl)
@@ -246,7 +247,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   protected def astForFunctionDefinition(funcDef: IASTFunctionDefinition): Ast = {
     val filename                                                  = fileName(funcDef)
     val MethodFullNameInfo(name, fullName, signature, returnType) = this.methodFullNameInfo(funcDef)
-    registerMethodDefinition(fullName)
+    registerMethodDefinition(fullName, signature)
 
     val codeString  = code(funcDef)
     val methodNode_ = methodNode(funcDef, name, codeString, fullName, Some(signature), filename)
