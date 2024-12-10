@@ -36,7 +36,7 @@ object CdtParser {
 
   private def readFileAsFileContent(file: File, lines: Option[Array[Char]] = None): FileContent = {
     val codeLines = lines.getOrElse(IOUtils.readLinesInFile(file.path).mkString("\n").toArray)
-    val isSource  = FileDefaults.isSourceFile(file.pathAsString)
+    val isSource  = FileDefaults.hasSourceFileExtension(file.pathAsString)
     FileContent.create(file.pathAsString, isSource, codeLines)
   }
 
@@ -62,8 +62,8 @@ class CdtParser(config: Config, compilationDatabase: mutable.LinkedHashSet[Comma
   if (config.noImageLocations) opts |= ILanguage.OPTION_NO_IMAGE_LOCATIONS
 
   private def preprocessedFileIsFromCPPFile(file: Path, code: String): Boolean = {
-    if (config.withPreprocessedFiles && file.toString.endsWith(FileDefaults.PREPROCESSED_EXT)) {
-      val fileWithoutExt  = file.toString.stripSuffix(FileDefaults.PREPROCESSED_EXT)
+    if (config.withPreprocessedFiles && FileDefaults.hasPreprocessedFileExtension(file.toString)) {
+      val fileWithoutExt  = file.toString.substring(0, file.toString.lastIndexOf("."))
       val filesWithCPPExt = FileDefaults.CPP_FILE_EXTENSIONS.map(ext => File(s"$fileWithoutExt$ext").name)
       code.linesIterator.exists(line => filesWithCPPExt.exists(f => line.contains(s"\"$f\"")))
     } else {
@@ -72,7 +72,7 @@ class CdtParser(config: Config, compilationDatabase: mutable.LinkedHashSet[Comma
   }
 
   private def createParseLanguage(file: Path, code: String): ILanguage = {
-    if (FileDefaults.isCPPFile(file.toString) || preprocessedFileIsFromCPPFile(file, code)) {
+    if (FileDefaults.hasCppFileExtension(file.toString) || preprocessedFileIsFromCPPFile(file, code)) {
       GPPLanguage.getDefault
     } else {
       GCCLanguage.getDefault
@@ -81,7 +81,7 @@ class CdtParser(config: Config, compilationDatabase: mutable.LinkedHashSet[Comma
 
   private def createScannerInfo(file: Path): ScannerInfo = {
     val additionalIncludes =
-      if (FileDefaults.isCPPFile(file.toString)) parserConfig.systemIncludePathsCPP
+      if (FileDefaults.hasCppFileExtension(file.toString)) parserConfig.systemIncludePathsCPP
       else parserConfig.systemIncludePathsC
     val fileSpecificDefines  = parserConfig.definedSymbolsPerFile.getOrElse(file.toString, Map.empty)
     val fileSpecificIncludes = parserConfig.includesPerFile.getOrElse(file.toString, mutable.LinkedHashSet.empty)

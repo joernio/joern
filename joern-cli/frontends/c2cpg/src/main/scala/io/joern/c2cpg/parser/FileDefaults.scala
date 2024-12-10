@@ -1,5 +1,7 @@
 package io.joern.c2cpg.parser
 
+import org.apache.commons.lang3.StringUtils
+
 object FileDefaults {
 
   val C_EXT: String            = ".c"
@@ -16,10 +18,12 @@ object FileDefaults {
     Set(".cc", ".cxx", ".cpp", ".cp", ".ccm", ".cxxm", ".c++m") ++
       Set(".h", ".hpp", ".hh", ".hp", ".hxx", ".h++", ".tcc")
 
-  def isCPPFile(filePath: String): Boolean =
-    CPP_FILE_EXTENSIONS.exists(filePath.endsWith)
+  def hasCppFileExtension(filePath: String): Boolean =
+    CPP_FILE_EXTENSIONS.exists(ext => StringUtils.endsWithIgnoreCase(filePath, ext))
 
-  def isSourceFile(filePath: String): Boolean =
-    SOURCE_FILE_EXTENSIONS.exists(filePath.endsWith)
+  def hasSourceFileExtension(filePath: String): Boolean =
+    SOURCE_FILE_EXTENSIONS.exists(ext => StringUtils.endsWithIgnoreCase(filePath, ext))
 
+  def hasPreprocessedFileExtension(filePath: String): Boolean =
+    StringUtils.endsWithIgnoreCase(filePath, PREPROCESSED_EXT)
 }

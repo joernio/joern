@@ -59,7 +59,7 @@ class AstCreationPass(cpg: Cpg, config: Config, report: Report = new Report())
       .toArray
     if (config.withPreprocessedFiles) {
       allSourceFiles.filter {
-        case f if !f.endsWith(FileDefaults.PREPROCESSED_EXT) =>
+        case f if !FileDefaults.hasPreprocessedFileExtension(f) =>
           val fAsPreprocessedFile = s"${f.substring(0, f.lastIndexOf("."))}${FileDefaults.PREPROCESSED_EXT}"
           !allSourceFiles.exists { sourceFile => f != sourceFile && sourceFile == fAsPreprocessedFile }
         case _ => true
