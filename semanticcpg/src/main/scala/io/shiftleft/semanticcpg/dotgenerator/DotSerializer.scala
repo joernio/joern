@@ -1,13 +1,11 @@
 package io.shiftleft.semanticcpg.dotgenerator
 
-import flatgraph.Accessors
-import io.shiftleft.codepropertygraph.generated.PropertyNames
+import io.shiftleft.codepropertygraph.generated.Properties
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.utils.MemberAccess
 import org.apache.commons.text.StringEscapeUtils
 
-import java.util.Optional
 import scala.collection.immutable.HashMap
 import scala.collection.mutable
 import scala.language.postfixOps
@@ -17,8 +15,8 @@ object DotSerializer {
   private val charLimit = 50
 
   case class Graph(
-    vertices: List[StoredNode],
-    edges: List[Edge],
+    vertices: IterableOnce[StoredNode],
+    edges: IterableOnce[Edge],
     subgraph: Map[String, Seq[StoredNode]] = HashMap.empty[String, Seq[StoredNode]]
   ) {
 
@@ -26,6 +24,16 @@ object DotSerializer {
       Graph((this.vertices ++ other.vertices).distinct, (this.edges ++ other.edges).distinct)
     }
 
+  }
+
+  object Edge {
+    def apply(edge: flatgraph.Edge): Edge =
+      Edge(
+        src = edge.src.asInstanceOf[StoredNode],
+        dst = edge.dst.asInstanceOf[StoredNode],
+        label = edge.label,
+        edgeType = edge.label
+      )
   }
   case class Edge(
     src: StoredNode,
@@ -71,9 +79,7 @@ object DotSerializer {
   }
 
   private def stringRepr(vertex: StoredNode): String = {
-    // TODO MP after the initial flatgraph migration (where we want to maintain semantics as far as
-    // possible) this might become `vertex.property(Properties.LineNumber)` which derives to `Option[Int]`
-    val lineNoMaybe = vertex.propertyOption[Int](PropertyNames.LINE_NUMBER)
+    val lineNoMaybe = vertex.property(Properties.LineNumber)
 
     StringEscapeUtils.escapeHtml4(vertex match {
       case call: Call                            => (call.name, limit(call.code)).toString
@@ -90,7 +96,7 @@ object DotSerializer {
       case typ: Type                             => (typ.label, typ.name).toString()
       case typeDecl: TypeDecl                    => (typeDecl.label, typeDecl.name).toString()
       case member: Member                        => (member.label, member.name).toString()
-      case _                                     => ""
+      case otherNode                             => otherNode.label()
     }) + lineNoMaybe.map(lineNo => s"<SUB>$lineNo</SUB>").getOrElse("")
   }
 
