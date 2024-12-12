@@ -343,6 +343,18 @@ class MacroHandlingTests extends C2CpgSuite {
       val List(baz) = cpg.local.nameExact("baz").l
       baz._astIn.size shouldBe 1
     }
+
+    "only have local for declaration and not from assignment from broken macro" in {
+      val cpg = code("""
+          |#define FOO() (long)va_arg(ap, int)
+          |void func(void) {
+          |  int foo;
+          |  foo = FOO();
+          |  foo = FOO();
+          |}
+          |""".stripMargin)
+      cpg.local.nameExact("foo").size shouldBe 1
+    }
   }
 }
 
