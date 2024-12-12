@@ -64,17 +64,14 @@ class ExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropertyChe
 
   "Using case sensitive excludes" should {
     "exclude the given files correctly" in {
-      if (scala.util.Properties.isWin) {
-        // both are written uppercase and are ignored nevertheless
+      if (scala.util.Properties.isWin || scala.util.Properties.isMac) {
+        // both are written uppercase and are ignored nevertheless because
+        // the file systems are case-insensitive by default
         testWithArguments(Seq("Folder", "Index.c"), "", Set("a.c", "foo.bar/d.c"))
       }
-      if (scala.util.Properties.isMac) {
-        // Folder written uppercase and it is not ignored while Index.c is.
-        // This might be an issue within Files.isSameFile but we take it for now.
-        testWithArguments(Seq("Folder", "Index.c"), "", Set("a.c", "folder/b.c", "folder/c.c", "foo.bar/d.c"))
-      }
       if (scala.util.Properties.isLinux) {
-        // both are written uppercase and are not ignored
+        // both are written uppercase and are not ignored because
+        // ext3/ext4 and many other Linux filesystems are case-sensitive by default
         testWithArguments(
           Seq("Folder", "Index.c"),
           "",
