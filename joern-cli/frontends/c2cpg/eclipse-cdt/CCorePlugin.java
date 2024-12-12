@@ -92,9 +92,11 @@ public class CCorePlugin extends Plugin {
     }
 
     public static void log(IStatus status) {
-        Throwable t = status.getException();
-        String msg = t.getMessage();
-        logger.debug(msg, t);
+        Throwable throwable;
+        if ((throwable = status.getException()) != null) {
+            String msg = throwable.getMessage();
+            logger.debug(msg, throwable);
+        }
     }
 
 }
