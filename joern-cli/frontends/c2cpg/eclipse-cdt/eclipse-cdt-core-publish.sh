@@ -4,20 +4,22 @@ set -o pipefail
 
 # this script downloads a cdt-core release from a configurable location
 # (e.g. an eclipse release mirror, or their jenkins CI) and publishes it to
-# sonatype, so that we can promote it to maven central:
+# sonatype, so that we can promote it to maven central.
+# note: we also swap the original CCorePlugin.java for a simplified one
 # context: eclipse uses their own repository format called p2 tycho,
 # but tooling is limited
 # Some related links:
 # https://ci.eclipse.org/cdt/job/cdt/job/main
 # https://ci.eclipse.org/cdt/job/cdt/job/main/353/artifact/releng/org.eclipse.cdt.repo/target/repository/plugins/org.eclipse.cdt.core_8.4.0.202401242025.jar
 # https://ftp.fau.de/eclipse/tools/cdt/releases/11.4/cdt-11.4.0/plugins/
+# https://github.com/joernio/joern/pull/5178
 # 
 # https://repo1.maven.org/maven2/io/joern/eclise-cdt-core/
 # https://github.com/digimead/sbt-osgi-manager/blob/master/src/main/scala/sbt/osgi/manager/tycho/ResolveP2.scala
 
 # adapt for every release
 JAR_URL='https://ci.eclipse.org/cdt/job/cdt/job/main/452/artifact/releng/org.eclipse.cdt.repo/target/repository/plugins/org.eclipse.cdt.core_8.5.0.202410191453.jar'
-CUSTOM_RELEASE_VERSION='8.5.0.202410191453+2'
+CUSTOM_RELEASE_VERSION='8.5.0.202410191453+3'
 
 LOCAL_JAR="org.eclipse.cdt.core-$CUSTOM_RELEASE_VERSION.jar"
 echo "downloading jar from $JAR_URL to $LOCAL_JAR"
