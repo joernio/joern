@@ -64,8 +64,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   }
 
   private def isAssignmentFromBrokenMacro(declaration: IASTSimpleDeclaration, declarator: IASTDeclarator): Boolean =
-    declaration.getParent.isInstanceOf[IASTTranslationUnit] && declarator.getInitializer
-      .isInstanceOf[IASTEqualsInitializer]
+    declaration.getParent.isInstanceOf[IASTTranslationUnit] &&
+      declarator.getInitializer.isInstanceOf[IASTEqualsInitializer]
 
   protected def astForDeclarator(declaration: IASTSimpleDeclaration, declarator: IASTDeclarator, index: Int): Ast = {
     val name = shortName(declarator)
@@ -94,30 +94,21 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
           case _                      => registerType(typeForDeclSpecifier(declaration.getDeclSpecifier))
         }
         Ast(memberNode(declarator, name, code(declarator), tpe))
+      case d if isAssignmentFromBrokenMacro(d, declarator) && scope.lookupVariable(name).nonEmpty =>
+        Ast()
       case _ if declarator.isInstanceOf[IASTArrayDeclarator] =>
-        if (isAssignmentFromBrokenMacro(declaration, declarator) && scope.lookupVariable(name).nonEmpty) {
-          Ast()
-        } else {
-          val tpe     = registerType(typeFor(declarator))
-          val codeTpe = typeFor(declarator, stripKeywords = false)
-          val node    = localNode(declarator, name, s"$codeTpe $name", tpe)
-          scope.addToScope(name, (node, tpe))
-          Ast(node)
-        }
+        val tpe     = registerType(typeFor(declarator))
+        val codeTpe = typeFor(declarator, stripKeywords = false)
+        val node    = localNode(declarator, name, s"$codeTpe $name", tpe)
+        scope.addToScope(name, (node, tpe))
+        Ast(node)
       case _ =>
-        if (isAssignmentFromBrokenMacro(declaration, declarator) && scope.lookupVariable(name).nonEmpty) {
-          Ast()
-        } else {
-          val tpe = registerType(
-            cleanType(typeForDeclSpecifier(declaration.getDeclSpecifier, stripKeywords = true, index))
-          )
-          val codeTpe = typeForDeclSpecifier(declaration.getDeclSpecifier, stripKeywords = false, index)
-          val node    = localNode(declarator, name, s"$codeTpe $name", tpe)
-          scope.addToScope(name, (node, tpe))
-          Ast(node)
-        }
+        val tpe     = registerType(cleanType(typeForDeclSpecifier(declaration.getDeclSpecifier, index = index)))
+        val codeTpe = typeForDeclSpecifier(declaration.getDeclSpecifier, stripKeywords = false, index = index)
+        val node    = localNode(declarator, name, s"$codeTpe $name", tpe)
+        scope.addToScope(name, (node, tpe))
+        Ast(node)
     }
-
   }
 
   protected def astForInitializer(declarator: IASTDeclarator, init: IASTInitializer): Ast = init match {
