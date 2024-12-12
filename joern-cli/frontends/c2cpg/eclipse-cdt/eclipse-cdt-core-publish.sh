@@ -28,25 +28,21 @@ wget $JAR_URL -O $LOCAL_JAR
 # create custom-made maven build just for deploying to maven central
 rm -rf build
 mkdir build
-sed s/__VERSION__/$CUSTOM_RELEASE_VERSION/ pom.xml.template > build/pom.xml
-mkdir -p build/src/main/resources
-unzip -d build/src/main/resources $LOCAL_JAR \
+pushd build
+sed s/__VERSION__/$CUSTOM_RELEASE_VERSION/ ../pom.xml.template > pom.xml
+mkdir -p src/main/resources
+unzip -d src/main/resources ../$LOCAL_JAR \
       -x 'META-INF/*.RSA' 'META-INF/*.SF' \
          'org/eclipse/cdt/core/CCorePlugin*.class'
 # passing -x option to exclude some files:
 # 1) original signing information, otherwise the jar is unusable because the signature doesn't match
 # 2) original CCorePlugin.class because we want to replace it with our simplified version
 
-mkdir -p build/src/main/java/org/eclipse/cdt/core
-cp CCorePlugin.java build/src/main/java/org/eclipse/cdt/core
-
-# add an empty dummy class in order to generate sources and javadoc jars
-mkdir -p build/src/main/java
-echo '/** just an empty placeholder to trigger javadoc generation */
-public interface Empty {}' > build/src/main/java/Empty.java
+# add our custom CCorePlugin.java
+mkdir -p src/main/java/org/eclipse/cdt/core
+cp ../CCorePlugin.java src/main/java/org/eclipse/cdt/core
 
 # deploy to sonatype central
-pushd build
 mvn javadoc:jar source:jar package gpg:sign deploy
 popd
 
