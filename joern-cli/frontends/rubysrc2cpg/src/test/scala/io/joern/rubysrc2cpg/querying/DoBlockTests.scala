@@ -7,6 +7,7 @@ import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
+import io.joern.rubysrc2cpg.passes.Defines as RubyDefines
 
 class DoBlockTests extends RubyCode2CpgFixture {
 
@@ -528,5 +529,20 @@ class DoBlockTests extends RubyCode2CpgFixture {
         }
       case xs => fail(s"Expected three assignment calls, got [${xs.code.mkString(",")}]")
     }
+  }
+
+  "a back reference in a do block should be a field access from `self`" in {
+    val cpg = code("""
+        |def bar()
+        |  foo("something") { urls << $& }
+        |end
+        |""".stripMargin)
+    val backRefCall = cpg.method.isLambda.ast.fieldAccess
+      .and(_.fieldIdentifier.canonicalNameExact("$&"), _.argument(1).isIdentifier.nameExact(RubyDefines.Self))
+      .head
+    backRefCall.name shouldBe Operators.fieldAccess
+    backRefCall.code shouldBe "self.$&"
+    backRefCall.lineNumber shouldBe Option(3)
+    backRefCall.columnNumber shouldBe Option(29)
   }
 }
