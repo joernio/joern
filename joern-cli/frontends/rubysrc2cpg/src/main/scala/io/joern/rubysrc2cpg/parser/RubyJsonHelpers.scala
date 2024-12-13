@@ -1,21 +1,14 @@
 package io.joern.rubysrc2cpg.parser
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
-  AliasStatement,
   AllowedTypeDeclarationChild,
   ArrayLiteral,
-  ArrayParameter,
   ClassFieldIdentifier,
-  ControlFlowStatement,
   DefaultMultipleAssignment,
   FieldsDeclaration,
-  ForExpression,
-  IfExpression,
   MemberAccess,
   MethodDeclaration,
-  ProcParameter,
   ProcedureDeclaration,
-  RubyCall,
   RubyExpression,
   RubyFieldIdentifier,
   SelfIdentifier,
@@ -31,10 +24,8 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   TypeDeclBodyCall,
   UnaryExpression
 }
-import io.joern.rubysrc2cpg.parser.RubyJsonHelpers.nilLiteral
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
-import io.shiftleft.codepropertygraph.generated.nodes.Unknown
 import org.slf4j.LoggerFactory
 import upickle.core.*
 import upickle.default.*
