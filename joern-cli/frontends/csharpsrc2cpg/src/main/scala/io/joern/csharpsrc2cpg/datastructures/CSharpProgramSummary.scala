@@ -68,7 +68,7 @@ object CSharpProgramSummary {
   }
 
   def fromExternalJsons(paths: Set[String]): NamespaceToTypeMap = {
-    val jsonFiles = SourceFiles.determine(paths, Set(".json"))(VisitOptions.default)
+    val jsonFiles = paths.flatMap(SourceFiles.determine(_, Set(".json"))(VisitOptions.default)).toList
     val inputStreams = jsonFiles.flatMap { path =>
       Try(java.io.FileInputStream(path)) match {
         case Success(stream) => Some(stream)
