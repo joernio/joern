@@ -27,12 +27,12 @@ object TwigTemplateInjection extends QueryBundle {
       withStrRep({ cpg =>
 
         def source =
-          cpg.call.name(Operators.assignment).argument.code("(?i).*request.*").l
+          cpg.call.name(Operators.assignment).argument.code("(?i).*request.*")
 
         def sink =
-          cpg.call.name("createTemplate").l.filter(call => call.methodFullName.toLowerCase.contains("twig")).argument
+          cpg.call.name("createTemplate").methodFullName("(?i).*twig.*")
 
-        sink.reachableBy(source).l.iterator
+        sink.reachableBy(source).iterator
 
       }),
       tags = List(QueryTags.remoteCodeExecution, QueryTags.default),
