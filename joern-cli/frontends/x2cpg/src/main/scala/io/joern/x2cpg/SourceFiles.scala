@@ -171,7 +171,7 @@ object SourceFiles {
   ): List[String] = files.filter(filterFile(_, inputPath, ignoredDefaultRegex, ignoredFilesRegex, ignoredFilesPath))
 
   private def hasSourceFileExtension(file: File, sourceFileExtensions: Set[String]): Boolean =
-    file.extension.exists(sourceFileExtensions.contains)
+    sourceFileExtensions.exists(ext => file.pathAsString.endsWith(ext))
 
   /** Determines a sorted list of file paths in a directory that match the specified criteria.
     *
