@@ -148,8 +148,8 @@ class FunctionDeclNodePass(cpg: Cpg, methodDeclarations: Map[String, CGlobal.Met
   }
 
   override def run(dstGraph: DiffGraphBuilder): Unit = {
-    methodDeclarations.foreach { case (_, methodNodeInfo) =>
-      val methodNode_    = methodNode(methodNodeInfo.fullName, methodNodeInfo)
+    methodDeclarations.foreach { case (fullName, methodNodeInfo) =>
+      val methodNode_    = methodNode(fullName, methodNodeInfo)
       val parameterNodes = methodNodeInfo.parameter.map(p => Ast(parameterInNode(p)))
       val stubAst =
         methodStubAst(
@@ -162,7 +162,7 @@ class FunctionDeclNodePass(cpg: Cpg, methodDeclarations: Map[String, CGlobal.Met
         methodNodeInfo,
         methodNode_,
         methodNodeInfo.name,
-        methodNodeInfo.fullName,
+        fullName,
         methodNodeInfo.signature,
         dstGraph
       )

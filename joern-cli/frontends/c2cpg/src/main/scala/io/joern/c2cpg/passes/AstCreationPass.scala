@@ -45,9 +45,10 @@ class AstCreationPass(cpg: Cpg, config: Config, report: Report = new Report())
   }
 
   private def sourceFilesFromDirectory(): Array[String] = {
-    val sourceFileExtensions = FileDefaults.SourceFileExtensions
-      ++ FileDefaults.HeaderFileExtensions
-      ++ Option.when(config.withPreprocessedFiles)(FileDefaults.PreprocessedExt).toList
+    val sourceFileExtensions =
+      FileDefaults.SourceFileExtensions ++
+        FileDefaults.HeaderFileExtensions ++
+        Option.when(config.withPreprocessedFiles)(FileDefaults.PreprocessedExt).toList
     val allSourceFiles = SourceFiles
       .determine(
         config.inputPath,
