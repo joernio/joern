@@ -29,8 +29,7 @@ type NamespaceToTypeMap = mutable.Map[String, mutable.Set[CSharpType]]
 case class CSharpProgramSummary(namespaceToType: NamespaceToTypeMap, imports: Set[String], globalImports: Set[String])
     extends ProgramSummary[CSharpType, CSharpMethod, CSharpField] {
 
-  def findGlobalTypes: Set[CSharpType] =
-    (globalImports ++ Set(Constants.Global)).flatMap(namespaceToType.getOrElse(_, Set.empty))
+  def findGlobalTypes: Set[CSharpType] = namespaceToType.getOrElse(Constants.Global, Set.empty).toSet
 
   @targetName("appendAll")
   def ++=(other: CSharpProgramSummary): CSharpProgramSummary = {

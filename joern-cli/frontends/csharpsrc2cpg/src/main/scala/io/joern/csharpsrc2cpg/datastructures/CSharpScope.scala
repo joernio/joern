@@ -11,7 +11,10 @@ class CSharpScope(summary: CSharpProgramSummary)
     with TypedScope[CSharpMethod, CSharpField, CSharpType](summary)
     with OverloadableScope[CSharpMethod] {
 
-  override val typesInScope: mutable.Set[CSharpType] = mutable.Set.empty[CSharpType].addAll(summary.findGlobalTypes)
+  override val typesInScope: mutable.Set[CSharpType] = mutable.Set
+    .empty[CSharpType]
+    .addAll(summary.findGlobalTypes)
+    .addAll(summary.globalImports.flatMap(summary.namespaceToType.getOrElse(_, Set.empty)))
 
   /** @return
     *   the surrounding type declaration if one exists.
