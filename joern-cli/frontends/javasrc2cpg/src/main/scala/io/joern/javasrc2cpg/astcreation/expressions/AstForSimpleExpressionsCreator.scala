@@ -346,7 +346,7 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
     val lhsAst = astsForExpression(expr.getExpression, ExpectedType.empty).head
     expr.getPattern.toScala
       .map { patternExpression =>
-        typeCheckAstForPattern(patternExpression, lhsAst)
+        instanceOfAstForPattern(patternExpression, lhsAst)
       }
       .getOrElse {
         val booleanTypeFullName = Some(TypeConstants.Boolean)

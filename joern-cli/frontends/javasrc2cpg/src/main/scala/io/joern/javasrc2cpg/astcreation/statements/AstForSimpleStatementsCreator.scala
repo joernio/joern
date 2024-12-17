@@ -299,9 +299,8 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
       stmt.getEntries.asScala.flatMap(_.getLabels.asScala).exists(_.isPatternExpr)
 
     val (initializerAst, referenceAst) = if (selectorMustBeIdentifierOrFieldAccess) {
-      val (initializerAst, referenceAst) =
-        initializerAndReferenceAstsForPatternInitializer(stmt.getSelector, selectorAst)
-      (initializerAst, Option(referenceAst))
+      val initAndRefAsts =  initAndRefAstsForPatternInitializer(stmt.getSelector, selectorAst)
+      (initAndRefAsts.get, Option(initAndRefAsts.get))
     } else {
       (selectorAst, None)
     }
@@ -367,7 +366,7 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
 
     val instanceOfAst = labels.lastOption.collect { case patternExpr: PatternExpr =>
       selectorReferenceAst.map { selectorAst =>
-        typeCheckAstForPattern(patternExpr, selectorAst)
+        instanceOfAstForPattern(patternExpr, selectorAst)
       }
     }.flatten
 

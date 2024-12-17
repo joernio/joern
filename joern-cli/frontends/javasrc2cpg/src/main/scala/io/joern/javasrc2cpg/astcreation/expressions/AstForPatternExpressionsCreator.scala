@@ -15,7 +15,29 @@ import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
 
+class PatternInitAndRefAsts(private val initAst: Ast, private val refAst: Ast) {
+  private var getCount: Int = -1
+  def get: Ast = {
+    getCount += 1
+    getCount match {
+      case 0 => initAst
+      case 1 => refAst
+      case _ => refAst.subTreeCopy(refAst.root.get.asInstanceOf[AstNodeNew])
+    }
+  }
+
+  def rootType: Option[String] = initAst.rootType
+
+  def asTuple: (Ast, Ast) = (initAst, refAst)
+}
+
+object PatternInitAndRefAsts {
+  def apply(initAst: Ast, refAst: Ast): PatternInitAndRefAsts = new PatternInitAndRefAsts(initAst, refAst)
+}
+
 trait AstForPatternExpressionsCreator { this: AstCreator =>
+
+
 
   /** In the lowering for instanceof expressions with patterns like `X instanceof Foo f`, the first argument to
     * `instanceof` (in this case `X`) appears in the CPG at least 2 times:
@@ -25,26 +47,23 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
     * If X is an identifier or field access, then this is fine. If X is a call which could have side-effects, however,
     * then this representation could lead to incorrect behaviour.
     *
-    * This method solves this problem by taking the CPG lowering for X as input and returning a tuple (initializerAst,
-    * referenceAst) where initializerAst should be used as the LHS arg for the first instanceof call, while referenceAst
-    * should be used for any future references to X (for example in the variable assignment or nested instanceof calls
-    * for records).
-    *
-    * If X is an identifier or field access, then initializerAst is simply the input and referenceAst is a copy of it.
-    *
-    * If X is not an identifier or field access, then a temporary variable `$objN` is created. initializerAst is then an
-    * assignment AST `$objN = X` and referenceAst is the identifier ast `$objN`.
+    * This method solves this problem by taking the CPG lowering for X as input and returning a PatternInitAndRefAsts
+    * object. The first time `get` is called on one of these, the init AST is return. Every future get call returns the
+    * reference AST, ensuring that the variable is initialized exactly once
     */
-  private[astcreation] def initializerAndReferenceAstsForPatternInitializer(
+  private[astcreation] def initAndRefAstsForPatternInitializer(
     rootNode: Node,
     patternInitAst: Ast
-  ): (Ast, Ast) = {
+  ): PatternInitAndRefAsts = {
     patternInitAst.root match {
       case Some(identifier: NewIdentifier) =>
-        (patternInitAst, patternInitAst.subTreeCopy(identifier))
+        PatternInitAndRefAsts(patternInitAst, patternInitAst.subTreeCopy(identifier))
 
       case Some(fieldAccess: NewCall) if fieldAccess.name == Operators.fieldAccess =>
-        (patternInitAst, patternInitAst.subTreeCopy(patternInitAst.root.get.asInstanceOf[AstNodeNew]))
+        PatternInitAndRefAsts(
+          patternInitAst,
+          patternInitAst.subTreeCopy(patternInitAst.root.get.asInstanceOf[AstNodeNew])
+        )
 
       case _ =>
         val tmpName       = tempNameProvider.next
@@ -71,7 +90,7 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
         val tmpIdentifierCopy = tmpIdentifier.copy
         val referenceAst      = Ast(tmpIdentifierCopy).withRefEdge(tmpIdentifierCopy, tmpLocal)
 
-        (initAst, referenceAst)
+        PatternInitAndRefAsts(initAst, referenceAst)
     }
   }
 
@@ -93,7 +112,7 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
 
   private def createAndPushAssignmentForTypePattern(
     typePatternExpr: TypePatternExpr,
-    parentInitializerAst: Ast
+    parentInitializerAst: PatternInitAndRefAsts
   ): Unit = {
     val variableName = typePatternExpr.getNameAsString
     val variableType = {
@@ -111,7 +130,7 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
     val patternLocal      = localNode(typePatternExpr, variableName, code(typePatternExpr), variableType)
     val patternIdentifier = identifierNode(typePatternExpr, variableName, variableName, variableType)
 
-    val initializerAst = castAstIfNecessary(typePatternExpr, variableType, parentInitializerAst)
+    val initializerAst = castAstIfNecessary(typePatternExpr, variableType, parentInitializerAst.get)
 
     val initializerAssignmentCall = newOperatorCallNode(
       Operators.assignment,
@@ -131,7 +150,7 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
   private def accessorAstsForPatternList(
     recordPatternExpr: RecordPatternExpr,
     recordTypeFullName: String,
-    accessorReceiverAst: Ast
+    accessorReceiverAst: PatternInitAndRefAsts
   ): List[(PatternExpr, Ast)] = {
     val resolvedRecordType = tryWithSafeStackOverflow(recordPatternExpr.getType().resolve().asReferenceType()).toOption
 
@@ -157,6 +176,8 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
         .flatMap(typeDecl => tryWithSafeStackOverflow(typeDecl.getField(fieldName).getType).toOption)
         .flatMap(typeInfoCalc.fullName)
 
+      val lhsAst    = castAstIfNecessary(recordPatternExpr, recordTypeFullName, accessorReceiverAst.get)
+      
       val signature = composeSignature(fieldTypeFullName, Option(Nil), 0)
       val typeDeclFullName =
         if (isResolvedTypeFullName(recordTypeFullName))
@@ -164,7 +185,7 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
         else
           s"${Defines.UnresolvedNamespace}.${code(recordPatternExpr.getType)}"
       val methodFullName = Util.composeMethodFullName(typeDeclFullName, fieldName, signature)
-      val methodCodePrefix = accessorReceiverAst.root match {
+      val methodCodePrefix = lhsAst.root match {
         case Some(call: NewCall) if call.name.startsWith("<operator") => s"(${call.code})"
         case Some(root: AstNodeNew)                                   => root.code
         case _                                                        => ""
@@ -182,12 +203,6 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
         fieldTypeFullName.orElse(Option(defaultTypeFallback()))
       )
 
-      val lhsAst =
-        if (idx == 0)
-          accessorReceiverAst
-        else
-          accessorReceiverAst.subTreeCopy(accessorReceiverAst.root.get.asInstanceOf[AstNodeNew])
-
       val fieldAccessorAst = callAst(fieldAccessorCall, lhsAst :: Nil)
 
       (patternExpr, fieldAccessorAst)
@@ -195,7 +210,16 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
 
   }
 
-  private[astcreation] def typeCheckAstForPattern(patternExpr: PatternExpr, lhsAst: Ast): Ast = {
+  private[astcreation] def instanceOfAstForPattern(patternExpr: PatternExpr, lhsAst: Ast): Ast = {
+    val initAst = initAndRefAstsForPatternInitializer(patternExpr, lhsAst)
+    typeCheckAstForPattern(patternExpr, initAst, isTopLevelPattern = true).get
+  }
+
+  private def typeCheckAstForPattern(
+    patternExpr: PatternExpr,
+    initAndRefAsts: PatternInitAndRefAsts,
+    isTopLevelPattern: Boolean = false
+  ): Option[Ast] = {
     val patternTypeFullName = {
       tryWithSafeStackOverflow(patternExpr.getType).toOption
         .map(typ =>
@@ -209,75 +233,64 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
 
     val patternTypeRef = typeRefNode(patternExpr.getType, code(patternExpr.getType), patternTypeFullName)
 
+    // val initAndRefAsts = initAndRefAstsForPatternInitializer(patternExpr, lhsAst)
+
+    val initializerType   = initAndRefAsts.rootType
+    val canSkipInstanceOf = isResolvedTypeFullName(patternTypeFullName) && initializerType.contains(patternTypeFullName)
+
+    val topLevelInstanceOfAst = Option.when(isTopLevelPattern || !canSkipInstanceOf) {
+      val initializerAst = initAndRefAsts.get
+
+      val lhsCode = initializerAst.root match {
+        case Some(identifier: NewIdentifier)                           => identifier.code
+        case Some(call: NewCall) if call.name == Operators.fieldAccess => call.code
+        case Some(astNodeNew: AstNodeNew)                              => s"(${astNodeNew.code})"
+        case _                                                         => ""
+      }
+      val instanceOfCall = newOperatorCallNode(
+        Operators.instanceOf,
+        s"$lhsCode instanceof ${code(patternExpr.getType)}",
+        Option(TypeConstants.Boolean)
+      )
+      callAst(instanceOfCall, initializerAst :: Ast(patternTypeRef) :: Nil)
+    }
+
     patternExpr match {
       case typePatternExpr: TypePatternExpr =>
-        val (initializerAst, referenceAst) = initializerAndReferenceAstsForPatternInitializer(typePatternExpr, lhsAst)
-
-        val lhsCode = initializerAst.root match {
-          case Some(identifier: NewIdentifier)                           => identifier.code
-          case Some(call: NewCall) if call.name == Operators.fieldAccess => call.code
-          case Some(astNodeNew: AstNodeNew)                              => s"(${astNodeNew.code})"
-          case _                                                         => ""
-        }
-        val instanceOfCall = newOperatorCallNode(
-          Operators.instanceOf,
-          s"$lhsCode instanceof ${code(patternExpr.getType)}",
-          Option(TypeConstants.Boolean)
-        )
-
-        createAndPushAssignmentForTypePattern(typePatternExpr, referenceAst)
-
-        callAst(instanceOfCall, initializerAst :: Ast(patternTypeRef) :: Nil)
+        createAndPushAssignmentForTypePattern(typePatternExpr, initAndRefAsts)
+        topLevelInstanceOfAst
 
       case recordPatternExpr: RecordPatternExpr =>
-        val (initializerAst, referenceAst) = initializerAndReferenceAstsForPatternInitializer(patternExpr, lhsAst)
-        val lhsCode = initializerAst.root match {
-          case Some(identifier: NewIdentifier)                           => identifier.code
-          case Some(call: NewCall) if call.name == Operators.fieldAccess => call.code
-          case Some(astNode: AstNodeNew)                                 => s"(${astNode.code})"
-          case _                                                         => ""
+        // val recordLhsAst = castAstIfNecessary(recordPatternExpr, patternTypeFullName, initAndRefAsts.get)
+
+        val accessorAsts = accessorAstsForPatternList(recordPatternExpr, patternTypeFullName, initAndRefAsts)
+
+        val accessorAstsWithInit =
+          (topLevelInstanceOfAst.map(ast => (recordPatternExpr, ast)).toList ++ accessorAsts).reverse
+
+        val typeCheckAsts = accessorAstsWithInit.flatMap { case (childPattern, childFieldAccessor) =>
+          if (childPattern.eq(recordPatternExpr))
+            Option((childPattern, childFieldAccessor))
+          else
+            val childFieldWithRef = initAndRefAstsForPatternInitializer(childPattern, childFieldAccessor)
+            typeCheckAstForPattern(childPattern, childFieldWithRef).map((childPattern, _))
         }
-        val instanceOfCall = newOperatorCallNode(
-          Operators.instanceOf,
-          s"$lhsCode instanceof ${code(patternExpr.getType)}",
-          Option(TypeConstants.Boolean)
-        )
-        val topLevelInstanceOfAst = callAst(instanceOfCall, initializerAst :: Ast(patternTypeRef) :: Nil)
 
-        val recordTypeFullName = tryWithSafeStackOverflow(recordPatternExpr.getType)
-          .map(typ =>
-            scope.lookupType(code(typ)).orElse(typeInfoCalc.fullName(typ)).getOrElse(defaultTypeFallback(typ))
-          )
-          .getOrElse(defaultTypeFallback())
+        typeCheckAsts match {
+          case Nil => None
+          case accumulator :: rest =>
+            val result = rest.foldLeft(accumulator._2) { case (accumulatorAst, (childPattern, astToAdd)) =>
+              val andNode = newOperatorCallNode(
+                Operators.logicalAnd,
+                s"(${astToAdd.rootCodeOrEmpty}) && (${accumulatorAst.rootCodeOrEmpty})",
+                Option(TypeConstants.Boolean),
+                line(childPattern),
+                column(childPattern)
+              )
 
-        val recordLhsAst = castAstIfNecessary(
-          recordPatternExpr,
-          recordTypeFullName,
-          referenceAst.subTreeCopy(referenceAst.root.get.asInstanceOf[AstNodeNew])
-        )
-
-        val accessorAsts = accessorAstsForPatternList(recordPatternExpr, recordTypeFullName, recordLhsAst)
-
-        val accessorAstsWithInit = ((recordPatternExpr, topLevelInstanceOfAst) :: accessorAsts).reverse
-
-        val accumulator = typeCheckAstForPattern(accessorAstsWithInit.head._1, accessorAstsWithInit.head._2)
-
-        accessorAstsWithInit.tail.foldLeft(accumulator) { case (accumulatorAst, (childPattern, childFieldAccessor)) =>
-          val astToAdd =
-            if (childPattern.eq(recordPatternExpr))
-              childFieldAccessor
-            else
-              typeCheckAstForPattern(childPattern, childFieldAccessor)
-
-          val andNode = newOperatorCallNode(
-            Operators.logicalAnd,
-            s"(${astToAdd.rootCodeOrEmpty}) && (${accumulatorAst.rootCodeOrEmpty})",
-            Option(TypeConstants.Boolean),
-            line(childPattern),
-            column(childPattern)
-          )
-
-          callAst(andNode, astToAdd :: accumulatorAst :: Nil)
+              callAst(andNode, astToAdd :: accumulatorAst :: Nil)
+            }
+            Option(result)
         }
     }
   }
