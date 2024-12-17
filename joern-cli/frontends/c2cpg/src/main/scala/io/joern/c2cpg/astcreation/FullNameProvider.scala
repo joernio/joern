@@ -327,23 +327,23 @@ trait FullNameProvider { this: AstCreator =>
         Some(fullName(definition.getDeclarator))
       case namespace: ICPPASTNamespaceDefinition =>
         namespace.getName.resolveBinding() match {
-          case b: ICPPBinding => Option(b.getQualifiedName.mkString("."))
-          case _              => None
+          case b: ICPPBinding if b.getName.nonEmpty => Option(b.getQualifiedName.mkString("."))
+          case _                                    => None
         }
       case compType: IASTCompositeTypeSpecifier =>
         compType.getName.resolveBinding() match {
-          case b: ICPPBinding => Option(b.getQualifiedName.mkString("."))
-          case _              => None
+          case b: ICPPBinding if b.getName.nonEmpty => Option(b.getQualifiedName.mkString("."))
+          case _                                    => None
         }
       case enumSpecifier: IASTEnumerationSpecifier =>
         enumSpecifier.getName.resolveBinding() match {
-          case b: ICPPBinding => Option(b.getQualifiedName.mkString("."))
-          case _              => None
+          case b: ICPPBinding if b.getName.nonEmpty => Option(b.getQualifiedName.mkString("."))
+          case _                                    => None
         }
       case e: IASTElaboratedTypeSpecifier =>
         e.getName.resolveBinding() match {
-          case b: ICPPBinding => Option(b.getQualifiedName.mkString("."))
-          case _              => None
+          case b: ICPPBinding if b.getName.nonEmpty => Option(b.getQualifiedName.mkString("."))
+          case _                                    => None
         }
       case _ => None
     }
