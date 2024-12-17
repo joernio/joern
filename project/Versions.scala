@@ -4,7 +4,7 @@ object Versions {
   // Dont upgrade antlr to 4.10 or above since those versions require java 11 or higher which
   // causes problems upstreams.
   val antlr                  = "4.7.2"
-  val cask                   = "0.9.2"
+  val cask                   = "0.10.2"
   val catsCore               = "2.12.0"
   val catsEffect             = "3.5.4"
   val cfr                    = "0.152"
@@ -13,7 +13,7 @@ object Versions {
   val commonsIo              = "2.16.0"
   val commonsLang            = "3.14.0"
   val commonsText            = "1.12.0"
-  val eclipseCdt             = "8.5.0.202410191453+2"
+  val eclipseCdt             = "8.5.0.202410191453+3"
   val eclipseCore            = "3.22.0"
   val eclipseText            = "3.14.200"
   val ghidra                 = "11.2.1_PUBLIC_20241105-7"
@@ -31,14 +31,14 @@ object Versions {
   val requests               = "0.8.0"
   val scalaParallel          = "1.0.4"
   val scalaParserCombinators = "2.4.0"
-  val scalaReplPP            = "0.3.6"
+  val scalaReplPP            = "0.3.8"
   val scalatest              = "3.2.18"
   val scopt                  = "4.1.0"
   val semverParser           = "0.0.6"
   val soot                   = "4.5.0"
   val slf4j                  = "2.0.7"
   val log4j                  = "2.20.0"
-  val upickle                = "3.3.1"
+  val upickle                = "4.0.2"
   val zeroTurnaround         = "1.17"
 
   // Shared with `projects/meta-build.sbt`, which needs to be updated there directly

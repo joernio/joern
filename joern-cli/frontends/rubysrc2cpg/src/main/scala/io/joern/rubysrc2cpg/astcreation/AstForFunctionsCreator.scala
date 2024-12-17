@@ -205,7 +205,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     val methodAst = node.method match {
       case m: ProcedureDeclaration => astsForStatement(m)
-      case x                       => logger.warn(s"Unhandled method reference from AST type ${x.getClass}"); Nil
+      case x                       =>
+        // Not sure how we should represent dynamically setting access modifiers based on method refs
+        logger.debug(s"Unhandled method reference from AST type ${x.getClass}")
+        Nil
     }
 
     popAccessModifier()

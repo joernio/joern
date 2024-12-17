@@ -63,6 +63,10 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     Ast(cpgNamespace)
   }
 
+  private def isAssignmentFromBrokenMacro(declaration: IASTSimpleDeclaration, declarator: IASTDeclarator): Boolean =
+    declaration.getParent.isInstanceOf[IASTTranslationUnit] &&
+      declarator.getInitializer.isInstanceOf[IASTEqualsInitializer]
+
   protected def astForDeclarator(declaration: IASTSimpleDeclaration, declarator: IASTDeclarator, index: Int): Ast = {
     val name = shortName(declarator)
     declaration match {
@@ -90,6 +94,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
           case _                      => registerType(typeForDeclSpecifier(declaration.getDeclSpecifier))
         }
         Ast(memberNode(declarator, name, code(declarator), tpe))
+      case d if isAssignmentFromBrokenMacro(d, declarator) && scope.lookupVariable(name).nonEmpty =>
+        Ast()
       case _ if declarator.isInstanceOf[IASTArrayDeclarator] =>
         val tpe     = registerType(typeFor(declarator))
         val codeTpe = typeFor(declarator, stripKeywords = false)
@@ -97,15 +103,12 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         scope.addToScope(name, (node, tpe))
         Ast(node)
       case _ =>
-        val tpe = registerType(
-          cleanType(typeForDeclSpecifier(declaration.getDeclSpecifier, stripKeywords = true, index))
-        )
-        val codeTpe = typeForDeclSpecifier(declaration.getDeclSpecifier, stripKeywords = false, index)
+        val tpe     = registerType(cleanType(typeForDeclSpecifier(declaration.getDeclSpecifier, index = index)))
+        val codeTpe = typeForDeclSpecifier(declaration.getDeclSpecifier, stripKeywords = false, index = index)
         val node    = localNode(declarator, name, s"$codeTpe $name", tpe)
         scope.addToScope(name, (node, tpe))
         Ast(node)
     }
-
   }
 
   protected def astForInitializer(declarator: IASTDeclarator, init: IASTInitializer): Ast = init match {

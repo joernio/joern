@@ -19,7 +19,7 @@ class MethodParameterTests2 extends JavaSrcCode2CpgFixture {
       param.order shouldBe 0
       param.index shouldBe 0
       param.lineNumber shouldBe Some(3)
-      param.columnNumber shouldBe None
+      param.columnNumber shouldBe Some(3)
       param.typeFullName shouldBe "Foo"
       param.evaluationStrategy shouldBe EvaluationStrategies.BY_SHARING
     }

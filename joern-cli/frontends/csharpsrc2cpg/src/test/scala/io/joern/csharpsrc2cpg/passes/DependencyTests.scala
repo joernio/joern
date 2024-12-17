@@ -3,6 +3,7 @@ package io.joern.csharpsrc2cpg.passes
 import io.joern.csharpsrc2cpg.Config
 import io.joern.csharpsrc2cpg.testfixtures.CSharpCode2CpgFixture
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.utils.ProjectRoot
 
 class DependencyTests extends CSharpCode2CpgFixture {
 
@@ -145,6 +146,28 @@ class DependencyTests extends CSharpCode2CpgFixture {
           case None => fail("Expected call node for `Entity`")
         }
       }
+    }
+
+    "download dependencies is disabled but external-summary-paths is pointing to the built-in directory" should {
+      val externalSummaryPaths =
+        Set(ProjectRoot.relativise("joern-cli/frontends/csharpsrc2cpg/src/main/resources/builtin_types"))
+      val cpg = code(csCode)
+        .moreCode(csProj, "Foo.csproj")
+        .withConfig(
+          Config()
+            .withDownloadDependencies(false)
+            .withUseBuiltinSummaries(false)
+            .withExternalSummaryPaths(externalSummaryPaths)
+        )
+
+      "resolve the call since its summary can be found in the provided directory" in {
+        inside(cpg.call("Entity").headOption) {
+          case Some(entity) =>
+            entity.methodFullName shouldBe "Microsoft.EntityFrameworkCore.ModelBuilder.Entity:Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder(System.String)"
+          case None => fail("Expected call node for `Entity`")
+        }
+      }
+
     }
   }
 
