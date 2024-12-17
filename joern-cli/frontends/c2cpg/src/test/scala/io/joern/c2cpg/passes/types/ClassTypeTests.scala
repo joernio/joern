@@ -5,7 +5,7 @@ import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
-class ClassTypeTests extends C2CpgSuite(FileDefaults.CPP_EXT) {
+class ClassTypeTests extends C2CpgSuite(FileDefaults.CppExt) {
 
   "handling C++ classes (code example 1)" should {
     val cpg = code("""
@@ -79,7 +79,7 @@ class ClassTypeTests extends C2CpgSuite(FileDefaults.CPP_EXT) {
       x.aliasTypeFullName shouldBe None
       x.order shouldBe 1
       x.filename shouldBe "Test0.cpp"
-      x.filename.endsWith(FileDefaults.CPP_EXT) shouldBe true
+      x.filename.endsWith(FileDefaults.CppExt) shouldBe true
     }
 
     "should contain type decl for alias `mytype` of `int`" in {
@@ -91,7 +91,7 @@ class ClassTypeTests extends C2CpgSuite(FileDefaults.CPP_EXT) {
       x.code shouldBe "typedef int mytype;"
       x.order shouldBe 2
       x.filename shouldBe "Test0.cpp"
-      x.filename.endsWith(FileDefaults.CPP_EXT) shouldBe true
+      x.filename.endsWith(FileDefaults.CppExt) shouldBe true
     }
 
     "should contain type decl for external type `int`" in {
@@ -126,7 +126,7 @@ class ClassTypeTests extends C2CpgSuite(FileDefaults.CPP_EXT) {
     }
 
     "should allow traversing from type to enclosing file" in {
-      cpg.typeDecl.file.filter(_.name.endsWith(FileDefaults.CPP_EXT)).l should not be empty
+      cpg.typeDecl.file.filter(_.name.endsWith(FileDefaults.CppExt)).l should not be empty
     }
   }
 

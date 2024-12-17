@@ -5,7 +5,7 @@ import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
-class TemplateTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
+class TemplateTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
 
   "Templates" should {
 

@@ -1,18 +1,17 @@
 package io.joern.c2cpg.parser
 
 import better.files.*
+import io.joern.c2cpg.C2Cpg.DefaultIgnoredFolders
 import io.joern.x2cpg.SourceFiles
 import org.jline.utils.Levenshtein
 
-import java.nio.file.Path
-
 class HeaderFileFinder(root: String) {
 
-  private val nameToPathMap: Map[String, List[Path]] = SourceFiles
-    .determine(root, FileDefaults.HEADER_FILE_EXTENSIONS)
+  private val nameToPathMap: Map[String, List[String]] = SourceFiles
+    .determine(root, FileDefaults.HeaderFileExtensions, ignoredDefaultRegex = Option(DefaultIgnoredFolders))
     .map { p =>
       val file = File(p)
-      (file.name, file.path)
+      (file.name, file.pathAsString)
     }
     .groupBy(_._1)
     .map(x => (x._1, x._2.map(_._2)))
@@ -22,7 +21,7 @@ class HeaderFileFinder(root: String) {
     */
   def find(path: String): Option[String] = File(path).nameOption.flatMap { name =>
     val matches = nameToPathMap.getOrElse(name, List())
-    matches.map(_.toString).sortBy(x => Levenshtein.distance(x, path)).headOption
+    matches.sortBy(x => Levenshtein.distance(x, path)).headOption
   }
 
 }
