@@ -80,10 +80,11 @@ class AstCreator(
   }
 
   private def astForTopLevelStatements(topLevelStmts: Seq[DotNetNodeInfo]): Seq[Ast] = {
-    val className     = "Program"
-    val mainName      = "<Main>$"
-    val classFullName = s"$className"
-    val mainFullName  = s"$classFullName.$mainName"
+    val sanitizedFileName = relativeFileName.replace(java.io.File.separator, "_").replace(".", "_")
+    val className         = s"${sanitizedFileName}_Program"
+    val mainName          = "<Main>$"
+    val classFullName     = s"$className"
+    val mainFullName      = s"$classFullName.$mainName"
 
     val classNode = NewTypeDecl()
       .name(className)

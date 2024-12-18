@@ -13,9 +13,25 @@ class TopLevelStatementTests extends CSharpCode2CpgFixture {
 
     inside(cpg.call("WriteLine").method.l) {
       case method :: Nil =>
-        method.fullName shouldBe "Program.<Main>$"
+        method.fullName shouldBe "Test0_cs_Program.<Main>$"
         method.signature shouldBe "System.Void(System.String[])"
-        method.typeDecl.l shouldBe cpg.typeDecl("Program").l
+        method.typeDecl.l shouldBe cpg.typeDecl("Test0_cs_Program").l
+      case xs => fail(s"Expected a method above WriteLine, but found $xs")
+    }
+  }
+
+  "fictitious class name when found inside a directory" in {
+    val cpg = code(
+      """
+        |System.Console.WriteLine(args);
+        |""".stripMargin,
+      "MyProject/Main.cs"
+    )
+    inside(cpg.call("WriteLine").method.l) {
+      case method :: Nil =>
+        method.fullName shouldBe "MyProject_Main_cs_Program.<Main>$"
+        method.signature shouldBe "System.Void(System.String[])"
+        method.typeDecl.l shouldBe cpg.typeDecl("MyProject_Main_cs_Program").l
       case xs => fail(s"Expected a method above WriteLine, but found $xs")
     }
   }
@@ -27,7 +43,7 @@ class TopLevelStatementTests extends CSharpCode2CpgFixture {
     inside(cpg.parameter("args").l) {
       case args :: Nil =>
         args.typeFullName shouldBe "System.String[]"
-        args.method.fullName shouldBe "Program.<Main>$"
+        args.method.fullName shouldBe "Test0_cs_Program.<Main>$"
       case xs => fail(s"Expected single parameter named `args`, but found $xs")
     }
   }
@@ -43,4 +59,5 @@ class TopLevelStatementTests extends CSharpCode2CpgFixture {
       case xs         => fail(s"Expected single TYPE_DECL named `XYZ`, but found $xs")
     }
   }
+
 }
