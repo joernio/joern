@@ -355,6 +355,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
             expr
           }
           .getOrElse(defaultBehaviour)
+      case None if node.indices.isEmpty =>
+        astForExpression(MemberCall(node.target, ".", "[]", node.indices)(node.span))
       case None => defaultBehaviour
     }
   }
