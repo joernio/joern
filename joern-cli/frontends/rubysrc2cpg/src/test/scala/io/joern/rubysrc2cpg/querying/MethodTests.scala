@@ -409,6 +409,21 @@ class MethodTests extends RubyCode2CpgFixture {
     }
   }
 
+  "Singleton methods binding to an unresolvable variable/type should bind to the next AST parent" in {
+    val cpg = code("""
+        |class C
+        | def something.foo
+        | end
+        |end
+        |""".stripMargin)
+
+    val foo = cpg.method.nameExact("foo").head
+
+    foo.definingTypeDecl.map(_.name) shouldBe Option("C")
+    foo.astParent shouldBe cpg.typeDecl("C").head
+    cpg.method.isModule.dotAst.foreach(println)
+  }
+
   "A Boolean method" should {
     val cpg = code("""
         |def exists?

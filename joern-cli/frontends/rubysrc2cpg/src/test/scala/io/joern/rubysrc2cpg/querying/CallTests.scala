@@ -567,4 +567,13 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
       case xs => fail(s"Expected two params, got [${xs.code.mkString(",")}]")
     }
   }
+
+  "A Set instantiated with a 'brackets' call" should {
+    val cpg = code("x = Set[]")
+
+    "not be interpreted as an index access" in {
+      cpg.call.nameExact("[]").size shouldBe 1
+      cpg.call.nameExact(Operators.indexAccess).size shouldBe 0
+    }
+  }
 }
