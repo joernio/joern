@@ -568,12 +568,19 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
     }
   }
 
-  "A Set instantiated with a 'brackets' call" should {
-    val cpg = code("x = Set[]")
+  "A Set instantiation with a 'brackets' call" should {
+    val cpg = code("Set[]")
 
-    "not be interpreted as an index access" in {
-      cpg.call.nameExact("[]").size shouldBe 1
-      cpg.call.nameExact(Operators.indexAccess).size shouldBe 0
+    "be a call with name '[]'" in {
+      inside(cpg.call.nameExact("[]").l) { case bracketCall :: Nil =>
+        bracketCall.code shouldBe "(<tmp-0> = Set).[]()"
+        bracketCall.name shouldBe "[]"
+        inside(bracketCall.argument.l) { case (tmpBase: Identifier) :: Nil =>
+          tmpBase.name shouldBe "<tmp-0>"
+          tmpBase.code shouldBe "<tmp-0>"
+          tmpBase.argumentIndex shouldBe 0
+        }
+      }
     }
   }
 }
