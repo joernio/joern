@@ -1072,6 +1072,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
     "be correct for anonymous typedef struct" in {
       val cpg     = code("typedef struct { int m; } t;", "t.cpp")
       val List(t) = cpg.typeDecl.nameExact("t").l
+      cpg.typeDecl.nameExact("ANY").size shouldBe 0
       t.aliasTypeFullName.size shouldBe 0 // no alias for named anonymous typedefs
     }
 
