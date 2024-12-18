@@ -421,7 +421,6 @@ class MethodTests extends RubyCode2CpgFixture {
 
     foo.definingTypeDecl.map(_.name) shouldBe Option("C")
     foo.astParent shouldBe cpg.typeDecl("C").head
-    cpg.method.isModule.dotAst.foreach(println)
   }
 
   "A Boolean method" should {
