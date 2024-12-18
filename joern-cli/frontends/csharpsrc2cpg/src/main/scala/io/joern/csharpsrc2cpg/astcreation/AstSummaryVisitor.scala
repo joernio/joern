@@ -58,6 +58,8 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
 
     def imports = cpg.imports.importedEntity.toSet
 
+    def globalImports = cpg.imports.filter(_.code.startsWith("global")).importedEntity.toSet
+
     def toMethod(m: Method): CSharpMethod = {
       CSharpMethod(
         m.name,
@@ -78,7 +80,7 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
         })
       })
       .asInstanceOf[NamespaceToTypeMap]
-    CSharpProgramSummary(mapping, imports)
+    CSharpProgramSummary(mapping, imports, globalImports)
   }
 
 }

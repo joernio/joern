@@ -10,7 +10,6 @@ import upickle.default.*
 
 import java.io.{ByteArrayInputStream, InputStream}
 import scala.annotation.targetName
-import scala.collection.mutable.ListBuffer
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 import java.net.JarURLConnection
@@ -27,14 +26,18 @@ type NamespaceToTypeMap = mutable.Map[String, mutable.Set[CSharpType]]
   * @see
   *   [[CSharpProgramSummary.jsonToInitialMapping]] for generating initial mappings.
   */
-case class CSharpProgramSummary(namespaceToType: NamespaceToTypeMap, imports: Set[String])
+case class CSharpProgramSummary(namespaceToType: NamespaceToTypeMap, imports: Set[String], globalImports: Set[String])
     extends ProgramSummary[CSharpType, CSharpMethod, CSharpField] {
 
   def findGlobalTypes: Set[CSharpType] = namespaceToType.getOrElse(Constants.Global, Set.empty).toSet
 
   @targetName("appendAll")
   def ++=(other: CSharpProgramSummary): CSharpProgramSummary = {
-    new CSharpProgramSummary(ProgramSummary.merge(namespaceToType, other.namespaceToType), imports ++ other.imports)
+    new CSharpProgramSummary(
+      ProgramSummary.merge(namespaceToType, other.namespaceToType),
+      imports ++ other.imports,
+      globalImports ++ other.globalImports
+    )
   }
 
 }
@@ -47,9 +50,10 @@ object CSharpProgramSummary {
 
   def apply(
     namespaceToType: NamespaceToTypeMap = mutable.Map.empty,
-    imports: Set[String] = Set.empty
+    imports: Set[String] = Set.empty,
+    globalImports: Set[String] = Set.empty
   ): CSharpProgramSummary =
-    new CSharpProgramSummary(namespaceToType, imports)
+    new CSharpProgramSummary(namespaceToType, imports, globalImports)
 
   def apply(summaries: Iterable[CSharpProgramSummary]): CSharpProgramSummary =
     summaries.foldLeft(CSharpProgramSummary())(_ ++= _)
