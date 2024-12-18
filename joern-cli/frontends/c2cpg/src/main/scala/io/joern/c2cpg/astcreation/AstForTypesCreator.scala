@@ -263,6 +263,14 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       astsForDeclaration(d)
     }
 
+  private def filterNameAlias(
+    nameAlias: Option[String],
+    nameWithTemplateParams: Option[String],
+    fullName: String
+  ): Option[String] = {
+    (nameAlias.toList ++ nameWithTemplateParams.toList).filter(n => n != fullName).distinct.headOption
+  }
+
   private def astsForCompositeType(typeSpecifier: IASTCompositeTypeSpecifier, decls: List[IASTDeclarator]): Seq[Ast] = {
     val filename = fileName(typeSpecifier)
     val declAsts = decls.zipWithIndex.map { case (d, i) =>
@@ -275,7 +283,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val codeString                       = code(typeSpecifier)
     val nameAlias                        = decls.headOption.map(d => registerType(shortName(d))).filter(_.nonEmpty)
     val nameWithTemplateParams           = templateParameters(typeSpecifier).map(t => registerType(s"$fullName$t"))
-    val alias = ((nameAlias.toList ++ nameWithTemplateParams.toList).toSet -- Set(fullName)).headOption
+    val alias                            = filterNameAlias(nameAlias, nameWithTemplateParams, fullName)
 
     val typeDecl = typeSpecifier match {
       case cppClass: ICPPASTCompositeTypeSpecifier =>
@@ -322,7 +330,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val TypeFullNameInfo(name, fullName) = typeFullNameInfo(typeSpecifier)
     val nameAlias                        = decls.headOption.map(d => registerType(shortName(d))).filter(_.nonEmpty)
     val nameWithTemplateParams           = templateParameters(typeSpecifier).map(t => registerType(s"$fullName$t"))
-    val alias    = ((nameAlias.toList ++ nameWithTemplateParams.toList).toSet -- Set(fullName)).headOption
+    val alias                            = filterNameAlias(nameAlias, nameWithTemplateParams, fullName)
     val typeDecl = typeDeclNode(typeSpecifier, name, fullName, filename, code(typeSpecifier), alias = alias)
     Ast(typeDecl) +: declAsts
   }
@@ -371,7 +379,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val columnNumber                     = column(typeSpecifier)
     val TypeFullNameInfo(name, fullName) = typeFullNameInfo(typeSpecifier)
     val nameAlias                        = decls.headOption.map(d => registerType(shortName(d))).filter(_.nonEmpty)
-    val alias                            = (nameAlias.toSet -- Set(fullName)).headOption
+    val alias                            = filterNameAlias(nameAlias, None, fullName)
 
     val (deAliasedName, deAliasedFullName, newAlias) = if (name.contains("anonymous_enum") && alias.isDefined) {
       (alias.get, fullName.substring(0, fullName.indexOf("anonymous_enum")) + alias.get, None)
