@@ -333,27 +333,16 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     val identifier = newIdentifierNode(identifierName, typeFullName)
 
-    val fieldIdentifier = NewFieldIdentifier()
-      .code(fieldIdentifierName)
-      .canonicalName(fieldIdentifierName)
-      .lineNumber(accessExpr.lineNumber)
-      .columnNumber(accessExpr.columnNumber)
-
-    val fieldAccessCode = s"$identifierName.$fieldIdentifierName"
-
-    val fieldAccess =
-      newOperatorCallNode(
-        Operators.fieldAccess,
-        fieldAccessCode,
-        Some(typeFullName).orElse(Some(Defines.Any)),
-        accessExpr.lineNumber,
-        accessExpr.columnNumber
-      )
-
-    val identifierAst = Ast(identifier)
-    val fieldIdentAst = Ast(fieldIdentifier)
-
-    Seq(callAst(fieldAccess, Seq(identifierAst, fieldIdentAst)))
+    fieldAccessAst(
+      Ast(identifier),
+      s"$identifierName.$fieldIdentifierName",
+      line(accessExpr),
+      column(accessExpr),
+      fieldIdentifierName,
+      typeFullName,
+      line(accessExpr),
+      column(accessExpr)
+    ) :: Nil
   }
 
   protected def astForElementAccessExpression(elementAccessExpression: DotNetNodeInfo): Seq[Ast] = {
