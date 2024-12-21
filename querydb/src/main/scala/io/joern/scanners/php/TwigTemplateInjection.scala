@@ -30,7 +30,7 @@ object TwigTemplateInjection extends QueryBundle {
           cpg.call.name(Operators.assignment).argument.code("(?i).*request.*")
 
         def sink =
-          cpg.call.name("createTemplate").methodFullName("(?i).*twig.*")
+          cpg.call.name("createTemplate").methodFullName("(?i).*twig.*").argument
 
         sink.reachableBy(source).iterator
 
