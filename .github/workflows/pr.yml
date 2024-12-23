@@ -13,11 +13,10 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '21'
-      - name: Install sbt
-        if: matrix.os == 'macos-latest'
-        run: brew install sbt
+          distribution: temurin
+          java-version: 21
+          cache: sbt
+      - uses: sbt/setup-sbt@v1
       - name: Install php
         if: matrix.os == 'macos-latest'
         run: brew install php
