@@ -99,9 +99,9 @@ trait AstForNameExpressionsCreator { this: AstCreator =>
       } else {
         newIdentifierNode(NameConstants.This, baseTypeDeclFullName)
       }
-    createFieldAccessAst(
+    fieldAccessAst(
       Ast(base),
-      s"${base.code}.${fieldName}",
+      s"${base.code}.$fieldName",
       line(node),
       column(node),
       fieldName,
