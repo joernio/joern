@@ -158,7 +158,7 @@ object JavaScopeElement {
 
     def getUnaddedPatternVariableAstsAndMarkAdded(): List[Ast] = {
       val result = mutable.ListBuffer[Ast]()
-      patternVariableInfoIdentityMap.values.toArray.sortBy(_.index).reverseIterator.foreach { patternInfo =>
+      patternVariableInfoIdentityMap.values.toArray.sortBy(_.index).foreach { patternInfo =>
         if (!patternInfo.localAddedToAst) {
           result.addOne(Ast(patternInfo.typeVariableLocal))
           registerPatternVariableLocalToBeAddedToGraph(patternInfo.typePatternExpr)

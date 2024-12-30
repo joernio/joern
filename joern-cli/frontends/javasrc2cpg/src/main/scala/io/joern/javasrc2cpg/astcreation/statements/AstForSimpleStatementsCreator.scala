@@ -299,7 +299,7 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
       stmt.getEntries.asScala.flatMap(_.getLabels.asScala).exists(_.isPatternExpr)
 
     val (initializerAst, referenceAst) = if (selectorMustBeIdentifierOrFieldAccess) {
-      val initAndRefAsts =  initAndRefAstsForPatternInitializer(stmt.getSelector, selectorAst)
+      val initAndRefAsts = initAndRefAstsForPatternInitializer(stmt.getSelector, selectorAst)
       (initAndRefAsts.get, Option(initAndRefAsts.get))
     } else {
       (selectorAst, None)

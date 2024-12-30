@@ -1278,10 +1278,6 @@ class PatternExprTests extends JavaSrcCode2CpgFixture {
         cpg.call.name("sink").isEmpty shouldBe false
       }
 
-      "have exactly one temporary local" in {
-        cpg.local.name(".*obj.*").name.l shouldBe List("$obj0")
-      }
-
       "have the correct lowering for the type check" in {
         inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).condition.l) {
           case List(instanceOfBox: Call) =>
@@ -1312,38 +1308,30 @@ class PatternExprTests extends JavaSrcCode2CpgFixture {
             sAssignment.name shouldBe Operators.assignment
             sAssignment.methodFullName shouldBe Operators.assignment
             sAssignment.typeFullName shouldBe "java.lang.String"
-            sAssignment.code shouldBe "s = $obj0 = ((Box) o).value()"
+            sAssignment.code shouldBe "s = ((Box) o).value()"
 
-            inside(sAssignment.argument.l) { case List(sIdentifier: Identifier, tmpAssign: Call) =>
+            inside(sAssignment.argument.l) { case List(sIdentifier: Identifier, valueCall: Call) =>
               sIdentifier.name shouldBe "s"
               sIdentifier.typeFullName shouldBe "java.lang.String"
               sIdentifier.code shouldBe "s"
               sIdentifier.refsTo.l shouldBe List(sLocal)
 
-              inside(tmpAssign.argument.l) { case List(tmpIdentifier0: Identifier, valueCall: Call) =>
-                tmpIdentifier0.name shouldBe "$obj0"
-                tmpIdentifier0.code shouldBe "$obj0"
-                tmpIdentifier0.typeFullName shouldBe "java.lang.String"
-                tmpIdentifier0.refsTo.l shouldBe cpg.local.nameExact("$obj0").l
+              valueCall.name shouldBe "value"
+              valueCall.methodFullName shouldBe "box.Box.value:java.lang.String()"
+              valueCall.code shouldBe "((Box) o).value()"
+              valueCall.typeFullName shouldBe "java.lang.String"
 
-                valueCall.name shouldBe "value"
-                valueCall.methodFullName shouldBe "box.Box.value:java.lang.String()"
-                valueCall.code shouldBe "((Box) o).value()"
-                valueCall.typeFullName shouldBe "java.lang.String"
+              inside(valueCall.argument.l) { case List(boxCast: Call) =>
+                boxCast.name shouldBe Operators.cast
+                boxCast.code shouldBe "(Box) o"
+                boxCast.typeFullName shouldBe "box.Box"
 
-                inside(valueCall.argument.l) { case List(boxCast: Call) =>
-                  boxCast.name shouldBe Operators.cast
-                  boxCast.code shouldBe "(Box) o"
-                  boxCast.typeFullName shouldBe "box.Box"
+                inside(boxCast.argument.l) { case List(boxType: TypeRef, oIdentifier: Identifier) =>
+                  boxType.typeFullName shouldBe "box.Box"
 
-                  inside(boxCast.argument.l) {
-                    case List(boxType: TypeRef, oIdentifier: Identifier) =>
-                      boxType.typeFullName shouldBe "box.Box"
-
-                      oIdentifier.name shouldBe "o"
-                      oIdentifier.typeFullName shouldBe "java.lang.Object"
-                      oIdentifier.refsTo.l shouldBe cpg.parameter.name("o").l
-                  }
+                  oIdentifier.name shouldBe "o"
+                  oIdentifier.typeFullName shouldBe "java.lang.Object"
+                  oIdentifier.refsTo.l shouldBe cpg.parameter.name("o").l
                 }
               }
             }
@@ -1533,52 +1521,45 @@ class PatternExprTests extends JavaSrcCode2CpgFixture {
             sAssign.name shouldBe Operators.assignment
             sAssign.methodFullName shouldBe Operators.assignment
             sAssign.typeFullName shouldBe "java.lang.String"
-            sAssign.code shouldBe "s = $obj2 = ($obj0 = ((PairBox) o).value()).first()"
+            sAssign.code shouldBe "s = ($obj0 = ((PairBox) o).value()).first()"
 
-            inside(sAssign.argument.l) { case List(sIdentifier: Identifier, tmpAssign2: Call) =>
+            inside(sAssign.argument.l) { case List(sIdentifier: Identifier, firstCall: Call) =>
               sIdentifier.name shouldBe "s"
               sIdentifier.code shouldBe "s"
               sIdentifier.typeFullName shouldBe "java.lang.String"
               sIdentifier.refsTo.l shouldBe List(sLocal)
 
-              inside(tmpAssign2.argument.l) { case List(tmpIdentifier2: Identifier, firstCall: Call) =>
-                tmpIdentifier2.name shouldBe "$obj2"
-                tmpIdentifier2.code shouldBe "$obj2"
-                tmpIdentifier2.typeFullName shouldBe "java.lang.String"
-                tmpIdentifier2.refsTo.l shouldBe cpg.method("foo").local.nameExact("$obj2").l
+              firstCall.name shouldBe "first"
+              firstCall.methodFullName shouldBe "box.Pair.first:java.lang.String()"
+              firstCall.typeFullName shouldBe "java.lang.String"
+              firstCall.code shouldBe "($obj0 = ((PairBox) o).value()).first()"
 
-                firstCall.name shouldBe "first"
-                firstCall.methodFullName shouldBe "box.Pair.first:java.lang.String()"
-                firstCall.typeFullName shouldBe "java.lang.String"
-                firstCall.code shouldBe "($obj0 = ((PairBox) o).value()).first()"
+              inside(firstCall.argument.l) { case List(tmpAssign0: Call) =>
+                tmpAssign0.name shouldBe Operators.assignment
+                tmpAssign0.code shouldBe "$obj0 = ((PairBox) o).value()"
+                tmpAssign0.typeFullName shouldBe "box.Pair"
 
-                inside(firstCall.argument.l) { case List(tmpAssign0: Call) =>
-                  tmpAssign0.name shouldBe Operators.assignment
-                  tmpAssign0.code shouldBe "$obj0 = ((PairBox) o).value()"
-                  tmpAssign0.typeFullName shouldBe "box.Pair"
+                inside(tmpAssign0.argument.l) { case List(tmpIdentifier0: Identifier, valueCall: Call) =>
+                  tmpIdentifier0.name shouldBe "$obj0"
+                  tmpIdentifier0.code shouldBe "$obj0"
+                  tmpIdentifier0.typeFullName shouldBe "box.Pair"
+                  tmpIdentifier0.refsTo.l shouldBe cpg.method("foo").local.nameExact("$obj0").l
 
-                  inside(tmpAssign0.argument.l) { case List(tmpIdentifier0: Identifier, valueCall: Call) =>
-                    tmpIdentifier0.name shouldBe "$obj0"
-                    tmpIdentifier0.code shouldBe "$obj0"
-                    tmpIdentifier0.typeFullName shouldBe "box.Pair"
-                    tmpIdentifier0.refsTo.l shouldBe cpg.method("foo").local.nameExact("$obj0").l
+                  valueCall.name shouldBe "value"
+                  valueCall.typeFullName shouldBe "box.Pair"
+                  valueCall.methodFullName shouldBe "box.PairBox.value:box.Pair()"
 
-                    valueCall.name shouldBe "value"
-                    valueCall.typeFullName shouldBe "box.Pair"
-                    valueCall.methodFullName shouldBe "box.PairBox.value:box.Pair()"
+                  inside(valueCall.argument.l) { case List(pairBoxCast: Call) =>
+                    pairBoxCast.name shouldBe Operators.cast
+                    pairBoxCast.code shouldBe "(PairBox) o"
+                    pairBoxCast.typeFullName shouldBe "box.PairBox"
 
-                    inside(valueCall.argument.l) { case List(pairBoxCast: Call) =>
-                      pairBoxCast.name shouldBe Operators.cast
-                      pairBoxCast.code shouldBe "(PairBox) o"
-                      pairBoxCast.typeFullName shouldBe "box.PairBox"
+                    inside(pairBoxCast.argument.l) { case List(pairBoxType: TypeRef, oIdentifier: Identifier) =>
+                      pairBoxType.typeFullName shouldBe "box.PairBox"
 
-                      inside(pairBoxCast.argument.l) { case List(pairBoxType: TypeRef, oIdentifier: Identifier) =>
-                        pairBoxType.typeFullName shouldBe "box.PairBox"
-
-                        oIdentifier.name shouldBe "o"
-                        oIdentifier.typeFullName shouldBe "java.lang.Object"
-                        oIdentifier.refsTo.l shouldBe cpg.parameter.name("o").l
-                      }
+                      oIdentifier.name shouldBe "o"
+                      oIdentifier.typeFullName shouldBe "java.lang.Object"
+                      oIdentifier.refsTo.l shouldBe cpg.parameter.name("o").l
                     }
                   }
                 }
@@ -1588,30 +1569,23 @@ class PatternExprTests extends JavaSrcCode2CpgFixture {
             iAssign.name shouldBe Operators.assignment
             iAssign.methodFullName shouldBe Operators.assignment
             iAssign.typeFullName shouldBe "java.lang.Integer"
-            iAssign.code shouldBe "i = $obj1 = $obj0.second()"
+            iAssign.code shouldBe "i = $obj0.second()"
 
-            inside(iAssign.argument.l) { case List(iIdentifier: Identifier, tmpAssign1: Call) =>
+            inside(iAssign.argument.l) { case List(iIdentifier: Identifier, secondCall: Call) =>
               iIdentifier.name shouldBe "i"
               iIdentifier.code shouldBe "i"
               iIdentifier.typeFullName shouldBe "java.lang.Integer"
               iIdentifier.refsTo.l shouldBe List(iLocal)
 
-              inside(tmpAssign1.argument.l) { case List(tmpIdentifier1: Identifier, secondCall: Call) =>
-                tmpIdentifier1.name shouldBe "$obj1"
-                tmpIdentifier1.code shouldBe "$obj1"
-                tmpIdentifier1.typeFullName shouldBe "java.lang.Integer"
-                tmpIdentifier1.refsTo.l shouldBe cpg.method("foo").local.nameExact("$obj1").l
+              secondCall.name shouldBe "second"
+              secondCall.methodFullName shouldBe "box.Pair.second:java.lang.Integer()"
+              secondCall.code shouldBe "$obj0.second()"
+              secondCall.typeFullName shouldBe "java.lang.Integer"
 
-                secondCall.name shouldBe "second"
-                secondCall.methodFullName shouldBe "box.Pair.second:java.lang.Integer()"
-                secondCall.code shouldBe "$obj0.second()"
-                secondCall.typeFullName shouldBe "java.lang.Integer"
-
-                inside (secondCall.argument.l) { case List(tmpIdentifier0: Identifier) =>
-                  tmpIdentifier0.name shouldBe "$obj0"
-                  tmpIdentifier0.typeFullName shouldBe  "box.Pair"
-                  tmpIdentifier0.refsTo.l shouldBe cpg.local.nameExact("$obj0").l
-                }
+              inside(secondCall.argument.l) { case List(tmpIdentifier0: Identifier) =>
+                tmpIdentifier0.name shouldBe "$obj0"
+                tmpIdentifier0.typeFullName shouldBe "box.Pair"
+                tmpIdentifier0.refsTo.l shouldBe cpg.local.nameExact("$obj0").l
               }
             }
 
@@ -1632,9 +1606,62 @@ class PatternExprTests extends JavaSrcCode2CpgFixture {
       }
     }
 
+    "a complex mixed record pattern" should {
+      val cpg = code("""
+                       |record A(B a0, C a1) {}
+                       |record B(String b0) {}
+                       |record C(D c0, F c1) {}
+                       |record D(String d0, E d1) {}
+                       |record E(String e0) {}
+                       |record F(G f0) {}
+                       |record G<T>(String g0, T g1) {}
+                       |
+                       |class Test {
+                       |  void test(Object o) {
+                       |    if (o instanceof A(B(String b0), C(D(String d0, E(String e0)), F(G(String g0, Integer g1))))) { }
+                       |  }
+                       |}
+                       |""".stripMargin)
+
+      "have the correct lowering for the type check" in {
+        inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).condition.l) {
+          case List(firstAnd: Call) =>
+            firstAnd.name shouldBe Operators.logicalAnd
+            firstAnd.code shouldBe "(o instanceof A) && (($obj2 = ($obj1 = ($obj0 = ((A) o).a1()).c1().f0()).g1()) instanceof Integer)"
+        }
+      }
+
+      "have the correct lowering for the assignments" in {
+        inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).astChildren.isBlock.astChildren.l) {
+          case List(
+                b0Local: Local,
+                b0Assign: Call,
+                d0Local: Local,
+                d0Assign: Call,
+                e0Local: Local,
+                e0Assign: Call,
+                g0Local: Local,
+                g0Assign: Call,
+                g1Local: Local,
+                g1Assign: Call
+              ) =>
+            b0Local.name shouldBe "b0"
+            d0Local.name shouldBe "d0"
+            e0Local.name shouldBe "e0"
+            g0Local.name shouldBe "g0"
+            g1Local.name shouldBe "g1"
+
+            b0Assign.code shouldBe "b0 = ((A) o).a0().b0()"
+            d0Assign.code shouldBe "d0 = ($obj3 = $obj0.c0()).d0()"
+            e0Assign.code shouldBe "e0 = $obj3.d1().e0()"
+            g0Assign.code shouldBe "g0 = $obj1.g0()"
+            g1Assign.code shouldBe "g1 = (Integer) $obj2"
+        }
+      }
+    }
+
     "a mixed record pattern where nested first child and second child needs instanceof" should {
-      val cpg = code(
-        """
+      val cpg = code("""
           |record Foo<T>(T value) {}
           |record Bar<T>(Foo left, T right) {}
           |
@@ -1650,25 +1677,26 @@ class PatternExprTests extends JavaSrcCode2CpgFixture {
       }
 
       "have the correct lowering for the type check" in {
-        inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).condition.l) { case List(firstAnd: Call) =>
-          firstAnd.name shouldBe Operators.logicalAnd
-          firstAnd.code shouldBe "(o instanceof Foo) && ((($obj0 = ((Foo) o).value()) instanceof Bar) && ((($obj3 = ($obj2 = ((Bar) $obj0).left()).value()) instanceof String) && (($obj1 = ((Bar) $obj0).right()) instanceof Integer)))"
+        inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).condition.l) {
+          case List(firstAnd: Call) =>
+            firstAnd.name shouldBe Operators.logicalAnd
+            firstAnd.code shouldBe "(o instanceof Foo) && ((($obj0 = ((Foo) o).value()) instanceof Bar) && ((($obj1 = ((Bar) $obj0).left().value()) instanceof String) && (($obj2 = ((Bar) $obj0).right()) instanceof Integer)))"
         }
       }
 
       "have the correct lowering for the assignments" in {
-        inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).astChildren.isBlock.astChildren.l) { case List(sLocal: Local, sAssign: Call, iLocal: Local, iAssign: Call) =>
-          sLocal.name shouldBe "s"
-          sAssign.code shouldBe "s = (String) $obj3"
-          iLocal.name shouldBe "i"
-          iAssign.code shouldBe "i = (Integer) $obj1"
+        inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).astChildren.isBlock.astChildren.l) {
+          case List(sLocal: Local, sAssign: Call, iLocal: Local, iAssign: Call) =>
+            sLocal.name shouldBe "s"
+            sAssign.code shouldBe "s = (String) $obj1"
+            iLocal.name shouldBe "i"
+            iAssign.code shouldBe "i = (Integer) $obj2"
         }
       }
     }
 
     "a mixed record pattern where only the second child needs instanceof" should {
-      val cpg = code(
-        """
+      val cpg = code("""
           |record Foo<T>(T value) {}
           |record Bar<T>(String left, T right) {}
           |
@@ -1684,18 +1712,20 @@ class PatternExprTests extends JavaSrcCode2CpgFixture {
       }
 
       "have the correct lowering for the type check" in {
-        inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).condition.l) { case List(firstAnd: Call) =>
-          firstAnd.name shouldBe Operators.logicalAnd
-          firstAnd.code shouldBe "(o instanceof Foo) && ((($obj0 = ((Foo) o).value()) instanceof Bar) && (($obj1 = ((Bar) $obj0).right()) instanceof Integer))"
+        inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).condition.l) {
+          case List(firstAnd: Call) =>
+            firstAnd.name shouldBe Operators.logicalAnd
+            firstAnd.code shouldBe "(o instanceof Foo) && ((($obj0 = ((Foo) o).value()) instanceof Bar) && (($obj1 = ((Bar) $obj0).right()) instanceof Integer))"
         }
       }
 
       "have the correct lowering for the assignments" in {
-        inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).astChildren.isBlock.astChildren.l) { case List(sLocal: Local, sAssign: Call, iLocal: Local, iAssign: Call) =>
-          sLocal.name shouldBe "s"
-          sAssign.code shouldBe "s = $obj2 = ((Bar) $obj0).left()"
-          iLocal.name shouldBe "i"
-          iAssign.code shouldBe "i = (Integer) $obj1"
+        inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).astChildren.isBlock.astChildren.l) {
+          case List(sLocal: Local, sAssign: Call, iLocal: Local, iAssign: Call) =>
+            sLocal.name shouldBe "s"
+            sAssign.code shouldBe "s = ((Bar) $obj0).left()"
+            iLocal.name shouldBe "i"
+            iAssign.code shouldBe "i = (Integer) $obj1"
         }
       }
     }
@@ -1757,7 +1787,7 @@ class PatternExprTests extends JavaSrcCode2CpgFixture {
             firstAnd.name shouldBe Operators.logicalAnd
             firstAnd.methodFullName shouldBe Operators.logicalAnd
             firstAnd.typeFullName shouldBe "boolean"
-            firstAnd.code shouldBe "(o instanceof Box) && ((($obj0 = ((Box) o).value()) instanceof Pair) && ((($obj2 = ((Pair) $obj0).first()) instanceof String) && (($obj1 = ((Pair) $obj0).second()) instanceof Integer)))"
+            firstAnd.code shouldBe "(o instanceof Box) && ((($obj0 = ((Box) o).value()) instanceof Pair) && ((($obj1 = ((Pair) $obj0).first()) instanceof String) && (($obj2 = ((Pair) $obj0).second()) instanceof Integer)))"
 
             inside(firstAnd.argument.l) { case List(oInstanceOfBox: Call, secondAnd: Call) =>
               oInstanceOfBox.name shouldBe Operators.instanceOf
@@ -1778,7 +1808,7 @@ class PatternExprTests extends JavaSrcCode2CpgFixture {
               secondAnd.name shouldBe Operators.logicalAnd
               secondAnd.methodFullName shouldBe Operators.logicalAnd
               secondAnd.typeFullName shouldBe "boolean"
-              secondAnd.code shouldBe "(($obj0 = ((Box) o).value()) instanceof Pair) && ((($obj2 = ((Pair) $obj0).first()) instanceof String) && (($obj1 = ((Pair) $obj0).second()) instanceof Integer))"
+              secondAnd.code shouldBe "(($obj0 = ((Box) o).value()) instanceof Pair) && ((($obj1 = ((Pair) $obj0).first()) instanceof String) && (($obj2 = ((Pair) $obj0).second()) instanceof Integer))"
 
               inside(secondAnd.argument.l) { case List(oValueInstanceOfPair: Call, thirdAnd: Call) =>
                 oValueInstanceOfPair.name shouldBe Operators.instanceOf
@@ -1818,25 +1848,25 @@ class PatternExprTests extends JavaSrcCode2CpgFixture {
                 thirdAnd.name shouldBe Operators.logicalAnd
                 thirdAnd.methodFullName shouldBe Operators.logicalAnd
                 thirdAnd.typeFullName shouldBe "boolean"
-                thirdAnd.code shouldBe "(($obj2 = ((Pair) $obj0).first()) instanceof String) && (($obj1 = ((Pair) $obj0).second()) instanceof Integer)"
+                thirdAnd.code shouldBe "(($obj1 = ((Pair) $obj0).first()) instanceof String) && (($obj2 = ((Pair) $obj0).second()) instanceof Integer)"
 
                 inside(thirdAnd.argument.l) { case List(firstInstanceOfString: Call, secondInstanceOfInteger: Call) =>
                   firstInstanceOfString.name shouldBe Operators.instanceOf
                   firstInstanceOfString.methodFullName shouldBe Operators.instanceOf
                   firstInstanceOfString.typeFullName shouldBe "boolean"
-                  firstInstanceOfString.code shouldBe "($obj2 = ((Pair) $obj0).first()) instanceof String"
+                  firstInstanceOfString.code shouldBe "($obj1 = ((Pair) $obj0).first()) instanceof String"
 
-                  inside(firstInstanceOfString.argument.l) { case List(tmp2Assign: Call, stringType: TypeRef) =>
-                    tmp2Assign.name shouldBe Operators.assignment
-                    tmp2Assign.methodFullName shouldBe Operators.assignment
-                    tmp2Assign.code shouldBe "$obj2 = ((Pair) $obj0).first()"
-                    tmp2Assign.typeFullName shouldBe "java.lang.Object"
+                  inside(firstInstanceOfString.argument.l) { case List(tmp1Assign: Call, stringType: TypeRef) =>
+                    tmp1Assign.name shouldBe Operators.assignment
+                    tmp1Assign.methodFullName shouldBe Operators.assignment
+                    tmp1Assign.code shouldBe "$obj1 = ((Pair) $obj0).first()"
+                    tmp1Assign.typeFullName shouldBe "java.lang.Object"
 
-                    inside(tmp2Assign.argument.l) { case List(tmpIdentifier2: Identifier, firstCall: Call) =>
-                      tmpIdentifier2.name shouldBe "$obj2"
-                      tmpIdentifier2.code shouldBe "$obj2"
-                      tmpIdentifier2.typeFullName shouldBe "java.lang.Object"
-                      tmpIdentifier2.refsTo.l shouldBe cpg.local.nameExact("$obj2").l
+                    inside(tmp1Assign.argument.l) { case List(tmpIdentifier1: Identifier, firstCall: Call) =>
+                      tmpIdentifier1.name shouldBe "$obj1"
+                      tmpIdentifier1.code shouldBe "$obj1"
+                      tmpIdentifier1.typeFullName shouldBe "java.lang.Object"
+                      tmpIdentifier1.refsTo.l shouldBe cpg.local.nameExact("$obj1").l
 
                       firstCall.name shouldBe "first"
                       firstCall.methodFullName shouldBe "box.Pair.first:java.lang.Object()"
@@ -1867,19 +1897,19 @@ class PatternExprTests extends JavaSrcCode2CpgFixture {
                   secondInstanceOfInteger.name shouldBe Operators.instanceOf
                   secondInstanceOfInteger.methodFullName shouldBe Operators.instanceOf
                   secondInstanceOfInteger.typeFullName shouldBe "boolean"
-                  secondInstanceOfInteger.code shouldBe "($obj1 = ((Pair) $obj0).second()) instanceof Integer"
+                  secondInstanceOfInteger.code shouldBe "($obj2 = ((Pair) $obj0).second()) instanceof Integer"
 
-                  inside(secondInstanceOfInteger.argument.l) { case List(tmp1Assign: Call, integerType: TypeRef) =>
-                    tmp1Assign.name shouldBe Operators.assignment
-                    tmp1Assign.methodFullName shouldBe Operators.assignment
-                    tmp1Assign.code shouldBe "$obj1 = ((Pair) $obj0).second()"
-                    tmp1Assign.typeFullName shouldBe "java.lang.Object"
+                  inside(secondInstanceOfInteger.argument.l) { case List(tmp2Assign: Call, integerType: TypeRef) =>
+                    tmp2Assign.name shouldBe Operators.assignment
+                    tmp2Assign.methodFullName shouldBe Operators.assignment
+                    tmp2Assign.code shouldBe "$obj2 = ((Pair) $obj0).second()"
+                    tmp2Assign.typeFullName shouldBe "java.lang.Object"
 
-                    inside(tmp1Assign.argument.l) { case List(tmpIdentifier1: Identifier, secondCall: Call) =>
-                      tmpIdentifier1.name shouldBe "$obj1"
-                      tmpIdentifier1.code shouldBe "$obj1"
-                      tmpIdentifier1.typeFullName shouldBe "java.lang.Object"
-                      tmpIdentifier1.refsTo.l shouldBe cpg.local.nameExact("$obj1").l
+                    inside(tmp2Assign.argument.l) { case List(tmpIdentifier2: Identifier, secondCall: Call) =>
+                      tmpIdentifier2.name shouldBe "$obj2"
+                      tmpIdentifier2.code shouldBe "$obj2"
+                      tmpIdentifier2.typeFullName shouldBe "java.lang.Object"
+                      tmpIdentifier2.refsTo.l shouldBe cpg.local.nameExact("$obj2").l
 
                       secondCall.name shouldBe "second"
                       secondCall.methodFullName shouldBe "box.Pair.second:java.lang.Object()"
@@ -1927,7 +1957,7 @@ class PatternExprTests extends JavaSrcCode2CpgFixture {
             sAssign.name shouldBe Operators.assignment
             sAssign.methodFullName shouldBe Operators.assignment
             sAssign.typeFullName shouldBe "java.lang.String"
-            sAssign.code shouldBe "s = (String) $obj2"
+            sAssign.code shouldBe "s = (String) $obj1"
 
             inside(sAssign.argument.l) { case List(sIdentifier: Identifier, stringCast: Call) =>
               sIdentifier.name shouldBe "s"
@@ -1938,22 +1968,22 @@ class PatternExprTests extends JavaSrcCode2CpgFixture {
               stringCast.name shouldBe Operators.cast
               stringCast.methodFullName shouldBe Operators.cast
               stringCast.typeFullName shouldBe "java.lang.String"
-              stringCast.code shouldBe "(String) $obj2"
+              stringCast.code shouldBe "(String) $obj1"
 
-              inside(stringCast.argument.l) { case List(stringType: TypeRef, tmpIdentifier2: Identifier) =>
+              inside(stringCast.argument.l) { case List(stringType: TypeRef, tmpIdentifier1: Identifier) =>
                 stringType.typeFullName shouldBe "java.lang.String"
                 stringType.code shouldBe "String"
 
-                tmpIdentifier2.name shouldBe "$obj2"
-                tmpIdentifier2.code shouldBe "$obj2"
-                tmpIdentifier2.typeFullName shouldBe "java.lang.Object"
-                tmpIdentifier2.refsTo.l shouldBe cpg.local.nameExact("$obj2").l
+                tmpIdentifier1.name shouldBe "$obj1"
+                tmpIdentifier1.code shouldBe "$obj1"
+                tmpIdentifier1.typeFullName shouldBe "java.lang.Object"
+                tmpIdentifier1.refsTo.l shouldBe cpg.local.nameExact("$obj1").l
               }
 
               iAssign.name shouldBe Operators.assignment
               iAssign.methodFullName shouldBe Operators.assignment
               iAssign.typeFullName shouldBe "java.lang.Integer"
-              iAssign.code shouldBe "i = (Integer) $obj1"
+              iAssign.code shouldBe "i = (Integer) $obj2"
 
               inside(iAssign.argument.l) { case List(iIdentifier: Identifier, integerCast: Call) =>
                 iIdentifier.name shouldBe "i"
@@ -1964,16 +1994,16 @@ class PatternExprTests extends JavaSrcCode2CpgFixture {
                 integerCast.name shouldBe Operators.cast
                 integerCast.methodFullName shouldBe Operators.cast
                 integerCast.typeFullName shouldBe "java.lang.Integer"
-                integerCast.code shouldBe "(Integer) $obj1"
+                integerCast.code shouldBe "(Integer) $obj2"
 
-                inside(integerCast.argument.l) { case List(integerType: TypeRef, tmpIdentifier1: Identifier) =>
+                inside(integerCast.argument.l) { case List(integerType: TypeRef, tmpIdentifier2: Identifier) =>
                   integerType.typeFullName shouldBe "java.lang.Integer"
                   integerType.code shouldBe "Integer"
 
-                  tmpIdentifier1.name shouldBe "$obj1"
-                  tmpIdentifier1.code shouldBe "$obj1"
-                  tmpIdentifier1.typeFullName shouldBe "java.lang.Object"
-                  tmpIdentifier1.refsTo.l shouldBe cpg.local.nameExact("$obj1").l
+                  tmpIdentifier2.name shouldBe "$obj2"
+                  tmpIdentifier2.code shouldBe "$obj2"
+                  tmpIdentifier2.typeFullName shouldBe "java.lang.Object"
+                  tmpIdentifier2.refsTo.l shouldBe cpg.local.nameExact("$obj2").l
                 }
               }
             }
@@ -2110,37 +2140,30 @@ class PatternExprTests extends JavaSrcCode2CpgFixture {
           sAssignment.name shouldBe Operators.assignment
           sAssignment.methodFullName shouldBe Operators.assignment
           sAssignment.typeFullName shouldBe "java.lang.String"
-          sAssignment.code shouldBe "s = $obj0 = ((Box) o).value()"
+          sAssignment.code shouldBe "s = ((Box) o).value()"
 
-          inside(sAssignment.argument.l) { case List(sIdentifier: Identifier, tmpAssign0: Call) =>
+          inside(sAssignment.argument.l) { case List(sIdentifier: Identifier, valueCall: Call) =>
             sIdentifier.name shouldBe "s"
             sIdentifier.typeFullName shouldBe "java.lang.String"
             sIdentifier.code shouldBe "s"
             sIdentifier.refsTo.l shouldBe List(sLocal)
 
-            inside (tmpAssign0.argument.l) { case List(tmpIdentifier0: Identifier, valueCall: Call) =>
-              tmpIdentifier0.name shouldBe "$obj0"
-              tmpIdentifier0.code shouldBe "$obj0"
-              tmpIdentifier0.typeFullName shouldBe "java.lang.String"
-              tmpIdentifier0.refsTo.l shouldBe cpg.local.nameExact("$obj0").l
+            valueCall.name shouldBe "value"
+            valueCall.methodFullName shouldBe "box.Box.value:java.lang.String()"
+            valueCall.typeFullName shouldBe "java.lang.String"
+            valueCall.code shouldBe "((Box) o).value()"
 
-              valueCall.name shouldBe "value"
-              valueCall.methodFullName shouldBe "box.Box.value:java.lang.String()"
-              valueCall.typeFullName shouldBe "java.lang.String"
-              valueCall.code shouldBe "((Box) o).value()"
+            inside(valueCall.argument.l) { case List(oCast: Call) =>
+              oCast.name shouldBe Operators.cast
+              oCast.code shouldBe "(Box) o"
+              oCast.typeFullName shouldBe "box.Box"
 
-              inside(valueCall.argument.l) { case List(oCast: Call) =>
-                oCast.name shouldBe Operators.cast
-                oCast.code shouldBe "(Box) o"
-                oCast.typeFullName shouldBe "box.Box"
+              inside(oCast.argument.l) { case List(boxType: TypeRef, oIdentifier: Identifier) =>
+                boxType.typeFullName shouldBe "box.Box"
 
-                inside(oCast.argument.l) { case List(boxType: TypeRef, oIdentifier: Identifier) =>
-                  boxType.typeFullName shouldBe "box.Box"
-
-                  oIdentifier.name shouldBe "o"
-                  oIdentifier.typeFullName shouldBe "java.lang.Object"
-                  oIdentifier.refsTo.l shouldBe cpg.method.name("foo").parameter.name("o").l
-                }
+                oIdentifier.name shouldBe "o"
+                oIdentifier.typeFullName shouldBe "java.lang.Object"
+                oIdentifier.refsTo.l shouldBe cpg.method.name("foo").parameter.name("o").l
               }
             }
           }
@@ -2336,55 +2359,44 @@ class PatternExprTests extends JavaSrcCode2CpgFixture {
             sAssign.name shouldBe Operators.assignment
             sAssign.methodFullName shouldBe Operators.assignment
             sAssign.typeFullName shouldBe "java.lang.String"
-            sAssign.code shouldBe "s = $obj2 = ($obj0 = ((PairBox) o).value()).first()"
+            sAssign.code shouldBe "s = ($obj0 = ((PairBox) o).value()).first()"
 
-            inside(sAssign.argument.l) { case List(sIdentifier: Identifier, tmpAssign2: Call) =>
+            inside(sAssign.argument.l) { case List(sIdentifier: Identifier, firstCall: Call) =>
               sIdentifier.name shouldBe "s"
               sIdentifier.code shouldBe "s"
               sIdentifier.typeFullName shouldBe "java.lang.String"
               sIdentifier.refsTo.l shouldBe List(sLocal)
 
-              tmpAssign2.name shouldBe Operators.assignment
-              tmpAssign2.code shouldBe "$obj2 = ($obj0 = ((PairBox) o).value()).first()"
-              tmpAssign2.typeFullName shouldBe "java.lang.String"
+              firstCall.name shouldBe "first"
+              firstCall.methodFullName shouldBe "box.Pair.first:java.lang.String()"
+              firstCall.code shouldBe "($obj0 = ((PairBox) o).value()).first()"
+              firstCall.typeFullName shouldBe "java.lang.String"
 
-              inside(tmpAssign2.argument.l) { case List(tmpIdentifier2: Identifier, firstCall: Call) =>
-                tmpIdentifier2.name shouldBe "$obj2"
-                tmpIdentifier2.code shouldBe "$obj2"
-                tmpIdentifier2.typeFullName shouldBe "java.lang.String"
-                tmpIdentifier2.refsTo.l shouldBe cpg.local.nameExact("$obj2").l
+              inside(firstCall.argument.l) { case List(tmpAssign0: Call) =>
+                tmpAssign0.name shouldBe Operators.assignment
+                tmpAssign0.code shouldBe "$obj0 = ((PairBox) o).value()"
+                tmpAssign0.typeFullName shouldBe "box.Pair"
 
-                firstCall.name shouldBe "first"
-                firstCall.methodFullName shouldBe "box.Pair.first:java.lang.String()"
-                firstCall.code shouldBe "($obj0 = ((PairBox) o).value()).first()"
-                firstCall.typeFullName shouldBe "java.lang.String"
+                inside(tmpAssign0.argument.l) { case List(tmpIdentifier0: Identifier, valueCall: Call) =>
+                  tmpIdentifier0.name shouldBe "$obj0"
+                  tmpIdentifier0.typeFullName shouldBe "box.Pair"
+                  tmpIdentifier0.refsTo.l shouldBe cpg.local.nameExact("$obj0").l
 
-                inside(firstCall.argument.l) { case List(tmpAssign0: Call) =>
-                  tmpAssign0.name shouldBe Operators.assignment
-                  tmpAssign0.code shouldBe "$obj0 = ((PairBox) o).value()"
-                  tmpAssign0.typeFullName shouldBe "box.Pair"
+                  valueCall.name shouldBe "value"
+                  valueCall.methodFullName shouldBe "box.PairBox.value:box.Pair()"
+                  valueCall.code shouldBe "((PairBox) o).value()"
 
-                  inside(tmpAssign0.argument.l) { case List(tmpIdentifier0: Identifier, valueCall: Call) =>
-                    tmpIdentifier0.name shouldBe "$obj0"
-                    tmpIdentifier0.typeFullName shouldBe "box.Pair"
-                    tmpIdentifier0.refsTo.l shouldBe cpg.local.nameExact("$obj0").l
+                  inside(valueCall.argument.l) { case List(pairBoxCast: Call) =>
+                    pairBoxCast.name shouldBe Operators.cast
+                    pairBoxCast.code shouldBe "(PairBox) o"
+                    pairBoxCast.typeFullName shouldBe "box.PairBox"
 
-                    valueCall.name shouldBe "value"
-                    valueCall.methodFullName shouldBe "box.PairBox.value:box.Pair()"
-                    valueCall.code shouldBe "((PairBox) o).value()"
+                    inside(pairBoxCast.argument.l) { case List(pairBoxType: TypeRef, oIdentifier: Identifier) =>
+                      pairBoxType.typeFullName shouldBe "box.PairBox"
 
-                    inside(valueCall.argument.l) { case List(pairBoxCast: Call) =>
-                      pairBoxCast.name shouldBe Operators.cast
-                      pairBoxCast.code shouldBe "(PairBox) o"
-                      pairBoxCast.typeFullName shouldBe "box.PairBox"
-
-                      inside(pairBoxCast.argument.l) { case List(pairBoxType: TypeRef, oIdentifier: Identifier) =>
-                        pairBoxType.typeFullName shouldBe "box.PairBox"
-
-                        oIdentifier.name shouldBe "o"
-                        oIdentifier.typeFullName shouldBe "java.lang.Object"
-                        oIdentifier.refsTo.l shouldBe cpg.parameter.name("o").l
-                      }
+                      oIdentifier.name shouldBe "o"
+                      oIdentifier.typeFullName shouldBe "java.lang.Object"
+                      oIdentifier.refsTo.l shouldBe cpg.parameter.name("o").l
                     }
                   }
 
@@ -2395,32 +2407,22 @@ class PatternExprTests extends JavaSrcCode2CpgFixture {
             iAssign.name shouldBe Operators.assignment
             iAssign.methodFullName shouldBe Operators.assignment
             iAssign.typeFullName shouldBe "java.lang.Integer"
-            iAssign.code shouldBe "i = $obj1 = $obj0.second()"
+            iAssign.code shouldBe "i = $obj0.second()"
 
-            inside(iAssign.argument.l) { case List(iIdentifier: Identifier, tmpAssign1: Call) =>
+            inside(iAssign.argument.l) { case List(iIdentifier: Identifier, secondCall: Call) =>
               iIdentifier.name shouldBe "i"
               iIdentifier.code shouldBe "i"
               iIdentifier.typeFullName shouldBe "java.lang.Integer"
               iIdentifier.refsTo.l shouldBe List(iLocal)
 
-              tmpAssign1.name shouldBe Operators.assignment
-              tmpAssign1.code shouldBe "$obj1 = $obj0.second()"
-              tmpAssign1.typeFullName shouldBe "java.lang.Integer"
+              secondCall.name shouldBe "second"
+              secondCall.methodFullName shouldBe "box.Pair.second:java.lang.Integer()"
+              secondCall.code shouldBe "$obj0.second()"
 
-              inside(tmpAssign1.argument.l) { case List(tmpIdentifier1: Identifier, secondCall: Call) =>
-                tmpIdentifier1.name shouldBe "$obj1"
-                tmpIdentifier1.typeFullName shouldBe "java.lang.Integer"
-                tmpIdentifier1.refsTo.l shouldBe cpg.local.nameExact("$obj1").l
-
-                secondCall.name shouldBe "second"
-                secondCall.methodFullName shouldBe "box.Pair.second:java.lang.Integer()"
-                secondCall.code shouldBe "$obj0.second()"
-
-                inside(secondCall.argument.l) { case List(tmpIdentifier0: Identifier) =>
-                  tmpIdentifier0.name shouldBe "$obj0"
-                  tmpIdentifier0.typeFullName shouldBe "box.Pair"
-                  tmpIdentifier0.refsTo.l shouldBe cpg.local.nameExact("$obj0").l
-                }
+              inside(secondCall.argument.l) { case List(tmpIdentifier0: Identifier) =>
+                tmpIdentifier0.name shouldBe "$obj0"
+                tmpIdentifier0.typeFullName shouldBe "box.Pair"
+                tmpIdentifier0.refsTo.l shouldBe cpg.local.nameExact("$obj0").l
               }
             }
 
@@ -2488,7 +2490,7 @@ class PatternExprTests extends JavaSrcCode2CpgFixture {
           sAssign.name shouldBe Operators.assignment
           sAssign.methodFullName shouldBe Operators.assignment
           sAssign.typeFullName shouldBe "java.lang.String"
-          sAssign.code shouldBe "s = (String) $obj2"
+          sAssign.code shouldBe "s = (String) $obj1"
 
           inside(sAssign.argument.l) { case List(sIdentifier: Identifier, stringCast: Call) =>
             sIdentifier.name shouldBe "s"
@@ -2499,23 +2501,23 @@ class PatternExprTests extends JavaSrcCode2CpgFixture {
             stringCast.name shouldBe Operators.cast
             stringCast.methodFullName shouldBe Operators.cast
             stringCast.typeFullName shouldBe "java.lang.String"
-            stringCast.code shouldBe "(String) $obj2"
+            stringCast.code shouldBe "(String) $obj1"
 
-            inside(stringCast.argument.l) { case List(stringType: TypeRef, tmpIdentifier2: Identifier) =>
+            inside(stringCast.argument.l) { case List(stringType: TypeRef, tmpIdentifier1: Identifier) =>
               stringType.typeFullName shouldBe "java.lang.String"
               stringType.code shouldBe "String"
 
-              tmpIdentifier2.name shouldBe "$obj2"
-              tmpIdentifier2.code shouldBe "$obj2"
-              tmpIdentifier2.typeFullName shouldBe "java.lang.Object"
-              tmpIdentifier2.refsTo.l shouldBe cpg.local.nameExact("$obj2").l
+              tmpIdentifier1.name shouldBe "$obj1"
+              tmpIdentifier1.code shouldBe "$obj1"
+              tmpIdentifier1.typeFullName shouldBe "java.lang.Object"
+              tmpIdentifier1.refsTo.l shouldBe cpg.local.nameExact("$obj1").l
             }
           }
 
           iAssign.name shouldBe Operators.assignment
           iAssign.methodFullName shouldBe Operators.assignment
           iAssign.typeFullName shouldBe "java.lang.Integer"
-          iAssign.code shouldBe "i = (Integer) $obj1"
+          iAssign.code shouldBe "i = (Integer) $obj2"
 
           inside(iAssign.argument.l) { case List(iIdentifier: Identifier, integerCast: Call) =>
             iIdentifier.name shouldBe "i"
@@ -2526,16 +2528,16 @@ class PatternExprTests extends JavaSrcCode2CpgFixture {
             integerCast.name shouldBe Operators.cast
             integerCast.methodFullName shouldBe Operators.cast
             integerCast.typeFullName shouldBe "java.lang.Integer"
-            integerCast.code shouldBe "(Integer) $obj1"
+            integerCast.code shouldBe "(Integer) $obj2"
 
-            inside(integerCast.argument.l) { case List(integerType: TypeRef, tmpIdentifier1: Identifier) =>
+            inside(integerCast.argument.l) { case List(integerType: TypeRef, tmpIdentifier2: Identifier) =>
               integerType.typeFullName shouldBe "java.lang.Integer"
               integerType.code shouldBe "Integer"
 
-              tmpIdentifier1.name shouldBe "$obj1"
-              tmpIdentifier1.code shouldBe "$obj1"
-              tmpIdentifier1.typeFullName shouldBe "java.lang.Object"
-              tmpIdentifier1.refsTo.l shouldBe cpg.local.nameExact("$obj1").l
+              tmpIdentifier2.name shouldBe "$obj2"
+              tmpIdentifier2.code shouldBe "$obj2"
+              tmpIdentifier2.typeFullName shouldBe "java.lang.Object"
+              tmpIdentifier2.refsTo.l shouldBe cpg.local.nameExact("$obj2").l
             }
           }
 

@@ -134,7 +134,6 @@ trait AstForStatementsCreator extends AstForSimpleStatementsCreator with AstForF
       .flatMap(patternExpr => scope.enclosingMethod.flatMap(_.getPatternVariableInfo(patternExpr)))
       .toArray
       .sortBy(_.index)
-      .reverseIterator
       .foreach {
         case PatternVariableInfo(pattern, variableLocal, _, _, true, _) =>
           scope.enclosingMethod.foreach(_.registerPatternVariableLocalToBeAddedToGraph(pattern))
