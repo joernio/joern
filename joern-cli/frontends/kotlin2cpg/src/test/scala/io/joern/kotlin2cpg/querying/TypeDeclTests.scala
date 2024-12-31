@@ -8,13 +8,16 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   FieldIdentifier,
   Identifier,
   Method,
-  MethodParameterIn
+  MethodParameterIn,
+  MethodReturn,
+  StoredNode
 }
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
+import io.joern.dataflowengineoss.language._
 
-class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
+class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = true) {
   "CPG for code with class declaration using unresolved types which are available in imports" should {
     val cpg = code("""
       |package no.such.pkg
@@ -198,7 +201,7 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     val cpg = code("""
         |package mypkg
         |
-        |import java.lang.Object
+        |import java.lang.x
         |
         |class Foo: Object {
         |  val z: Int = 1
@@ -449,6 +452,45 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       val List(firstCallOfSecondaryCtor: Call) =
         secondaryCtor.block.astChildren.collectAll[Call].take(1).l
       firstCallOfSecondaryCtor.methodFullName shouldBe "mypkg.QClass.<init>:void()"
+    }
+  }
+  "CPG for code with an anonymous object and an inner class nested inside" should {
+    val cpg = code("""
+                     |package au.gov.health.covidsafe.bluetooth.gatt
+                     |class GattServer constructor(val context: Context, serviceUUIDString: String) {
+                     |    private val gattServerCallback = object : BluetoothGattServerCallback() {
+                     |        inner class ReadRequestEncryptedPayload(val timestamp: Long, val modelP: String, val msg: String)
+                     |}}
+                     |""".stripMargin)
+
+    "have correct ast structure for anonymous object" in {
+      val List(anonymousObjTypeDecl) = cpg.typeDecl("anonymous_obj").l
+
+      anonymousObjTypeDecl.name shouldBe "anonymous_obj"
+      anonymousObjTypeDecl.fullName shouldBe "au.gov.health.covidsafe.bluetooth.gatt.GattServer.gattServerCallback$object$1"
+
+      val constructorMethod = anonymousObjTypeDecl.astChildren.isMethod.l
+      constructorMethod.fullName.l shouldBe List(
+        "au.gov.health.covidsafe.bluetooth.gatt.GattServer.gattServerCallback$object$1.<init>:void()"
+      )
+      constructorMethod.ast.isParameter.size shouldBe 1
+      constructorMethod.ast.count(_.isInstanceOf[MethodReturn]) shouldBe 1
+
+    }
+
+    "have correct ast structure for the inner class" in {
+      val List(innerClassTypeDecl) = cpg.typeDecl("ReadRequestEncryptedPayload").l
+
+      innerClassTypeDecl.name shouldBe "ReadRequestEncryptedPayload"
+      innerClassTypeDecl.fullName shouldBe "au.gov.health.covidsafe.bluetooth.gatt.GattServer.gattServerCallback$object$1.ReadRequestEncryptedPayload"
+
+      val constructorMethod = innerClassTypeDecl.astChildren.isMethod.l
+      constructorMethod.fullName.l shouldBe List(
+        "au.gov.health.covidsafe.bluetooth.gatt.GattServer.gattServerCallback.<init>:void(long,java.lang.String,java.lang.String)"
+      )
+      constructorMethod.ast.isParameter.size shouldBe 4
+      constructorMethod.ast.count(_.isInstanceOf[MethodReturn]) shouldBe 1
+
     }
   }
 }
