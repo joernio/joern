@@ -1,0 +1,353 @@
+package io.joern.c2cpg.cpp.features17
+
+import io.joern.c2cpg.parser.FileDefaults
+import io.joern.c2cpg.testfixtures.AstC2CpgSuite
+import io.shiftleft.semanticcpg.language.*
+
+class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt) {
+
+  "C++17 feature support" should {
+
+    "handle template argument deduction for class templates" ignore {
+      val cpg = code("""
+          |template <typename T = float>
+          |struct MyContainer {
+          |  T val;
+          |  MyContainer() : val{} {}
+          |  MyContainer(T val) : val{val} {}
+          |  // ...
+          |};
+          |MyContainer c1 {1}; // OK MyContainer<int>
+          |MyContainer c2; // OK MyContainer<float>
+          |""".stripMargin)
+      cpg
+      ???
+    }
+
+    "handle declaring non-type template parameters with auto" ignore {
+      val cpg = code("""
+          |template <auto... seq>
+          |struct my_integer_sequence {
+          |  // Implementation here ...
+          |};
+          |
+          |// Explicitly pass type `int` as template argument.
+          |auto seq = std::integer_sequence<int, 0, 1, 2>();
+          |// Type is deduced to be `int`.
+          |auto seq2 = my_integer_sequence<0, 1, 2>();
+          |""".stripMargin)
+      cpg
+      ???
+    }
+
+    "handle folding expressions (binary)" ignore {
+      val cpg = code("""
+          |template <typename... Args>
+          |bool logicalAnd(Args... args) {
+          |    // Binary folding.
+          |    return (true && ... && args);
+          |}
+          |bool b = true;
+          |bool& b2 = b;
+          |logicalAnd(b, b2, true); // == true
+          |""".stripMargin)
+      cpg
+      ???
+    }
+
+    "handle folding expressions (unary)" ignore {
+      val cpg = code("""
+          |template <typename... Args>
+          |auto sum(Args... args) {
+          |    // Unary folding.
+          |    return (... + args);
+          |}
+          |sum(1.0, 2.0f, 3); // == 6.0
+          |""".stripMargin)
+      cpg
+      ???
+    }
+
+    "handle new rules for auto deduction from braced-init-list" ignore {
+      val cpg = code("""
+          |auto x2 = {1, 2, 3}; // x2 is std::initializer_list<int>
+          |auto x3 {3}; // x3 is int
+          |auto x4 {3.0}; // x4 is double
+          |""".stripMargin)
+      cpg
+      ???
+    }
+
+    "handle constexpr lambda" ignore {
+      val cpg = code("""
+          |auto identity = [](int n) constexpr { return n; };
+          |static_assert(identity(123) == 123);
+          |
+          |constexpr auto add = [](int x, int y) {
+          |  auto L = [=] { return x; };
+          |  auto R = [=] { return y; };
+          |  return [=] { return L() + R(); };
+          |};
+          |
+          |static_assert(add(1, 2)() == 3);
+          |
+          |constexpr int addOne(int n) {
+          |  return [n] { return n + 1; }();
+          |}
+          |
+          |static_assert(addOne(1) == 2);
+          |""".stripMargin)
+      cpg
+      ???
+    }
+
+    "handle lambda capture `this` by value" ignore {
+      val cpg = code("""
+          |struct MyObj {
+          |  int value {123};
+          |  auto getValueCopy() {
+          |    return [*this] { return value; };
+          |  }
+          |  auto getValueRef() {
+          |    return [this] { return value; };
+          |  }
+          |};
+          |MyObj mo;
+          |auto valueCopy = mo.getValueCopy();
+          |auto valueRef = mo.getValueRef();
+          |mo.value = 321;
+          |valueCopy(); // 123
+          |valueRef(); // 321
+          |""".stripMargin)
+      cpg
+      ???
+    }
+
+    "handle inline variables" ignore {
+      val cpg = code("""
+          |// Disassembly example using compiler explorer.
+          |struct S1 { int x; };
+          |inline S1 x1 = S{321}; // mov esi, dword ptr [x1]
+          |                       // x1: .long 321
+          |
+          |S1 x2 = S1{123};      // mov eax, dword ptr [.L_ZZ4mainE2x2]
+          |                      // mov dword ptr [rbp - 8], eax
+          |                      // .L_ZZ4mainE2x2: .long 123
+          |
+          |struct S2 {
+          |  S2() : id{count++} {}
+          |  ~S2() { count--; }
+          |  int id;
+          |  static inline int count{0}; // declare and initialize count to 0 within the class
+          |};
+          |""".stripMargin)
+      cpg
+      ???
+    }
+
+    "handle nested namespaces" ignore {
+      val cpg = code("""
+          |namespace A1 { // old
+          |  namespace B1 {
+          |    namespace C1 {
+          |      int i;
+          |    }
+          |  }
+          |}
+          |
+          |namespace A2::B2::C2 { // new
+          |  int i;
+          |}
+          |""".stripMargin)
+      cpg
+      ???
+    }
+
+    "handle structured bindings" ignore {
+      val cpg = code("""
+          |using Coordinate = std::pair<int, int>;
+          |Coordinate origin() {
+          |  return Coordinate{0, 0};
+          |}
+          |
+          |const auto [ x, y ] = origin();
+          |x; // == 0
+          |y; // == 0
+          |
+          |std::unordered_map<std::string, int> mapping {
+          |  {"a", 1},
+          |  {"b", 2},
+          |  {"c", 3}
+          |};
+          |
+          |// Destructure by reference.
+          |for (const auto& [key, value] : mapping) {
+          |  // Do something with key and value
+          |}
+          |""".stripMargin)
+      cpg
+      ???
+    }
+
+    "handle selection statements with initializer" ignore {
+      val cpg = code("""
+          |{
+          |  std::lock_guard<std::mutex> lk(mx);
+          |  if (v.empty()) v.push_back(val);
+          |}
+          |// vs.
+          |if (std::lock_guard<std::mutex> lk(mx); v.empty()) {
+          |  v.push_back(val);
+          |}
+          |
+          |Foo gadget(args);
+          |switch (auto s = gadget.status()) {
+          |  case OK: gadget.zip(); break;
+          |  case Bad: throw BadFoo(s.message());
+          |}
+          |// vs.
+          |switch (Foo gadget(args); auto s = gadget.status()) {
+          |  case OK: gadget.zip(); break;
+          |  case Bad: throw BadFoo(s.message());
+          |}
+          |""".stripMargin)
+      cpg
+      ???
+    }
+
+    "handle constexpr if" ignore {
+      val cpg = code("""
+          |template <typename T>
+          |constexpr bool isIntegral() {
+          |  if constexpr (std::is_integral<T>::value) {
+          |    return true;
+          |  } else {
+          |    return false;
+          |  }
+          |}
+          |static_assert(isIntegral<int>() == true);
+          |static_assert(isIntegral<char>() == true);
+          |static_assert(isIntegral<double>() == false);
+          |struct S {};
+          |static_assert(isIntegral<S>() == false);
+          |""".stripMargin)
+      cpg
+      ???
+    }
+
+    "handle UTF-8 character literals" ignore {
+      val cpg = code("""
+          |char x = u8'x';
+          |""".stripMargin)
+      cpg
+      ???
+    }
+
+    "handle direct list initialization of enums" ignore {
+      val cpg = code("""
+          |enum byte : unsigned char {};
+          |byte b {0}; // OK
+          |byte c {-1}; // ERROR
+          |byte d = byte{1}; // OK
+          |byte e = byte{256}; // ERROR
+          |""".stripMargin)
+      cpg
+      ???
+    }
+
+    "handle fallthrough, nodiscard, maybe_unused attributes" ignore {
+      val cpg = code("""
+          |switch (n) {
+          |  case 1:
+          |    // ...
+          |    [[fallthrough]];
+          |  case 2:
+          |    // ...
+          |    break;
+          |  case 3:
+          |    // ...
+          |    [[fallthrough]];
+          |  default:
+          |    // ...
+          |}
+          |
+          |[[nodiscard]] bool do_something() {
+          |  return is_success; // true for success, false for failure
+          |}
+          |struct [[nodiscard]] error_info {
+          |  // ...
+          |};
+          |
+          |void my_callback(std::string msg, [[maybe_unused]] bool error) {
+          |  // Don't care if `msg` is an error message, just log it.
+          |  log(msg);
+          |}
+          |""".stripMargin)
+      cpg
+      ???
+    }
+
+    "handle _has_include" ignore {
+      val cpg = code("""
+          |#ifdef __has_include
+          |#  if __has_include(<optional>)
+          |#    include <optional>
+          |#    define have_optional 1
+          |#  elif __has_include(<experimental/optional>)
+          |#    include <experimental/optional>
+          |#    define have_optional 1
+          |#    define experimental_optional
+          |#  else
+          |#    define have_optional 0
+          |#  endif
+          |#endif
+          |
+          |#ifdef __has_include
+          |#  if __has_include(<OpenGL/gl.h>)
+          |#    include <OpenGL/gl.h>
+          |#    include <OpenGL/glu.h>
+          |#  elif __has_include(<GL/gl.h>)
+          |#    include <GL/gl.h>
+          |#    include <GL/glu.h>
+          |#  else
+          |#    error No suitable OpenGL headers found.
+          |# endif
+          |#endif
+          |""".stripMargin)
+      cpg
+      ???
+    }
+
+    "handle class template argument deduction" ignore {
+      val cpg = code("""
+          |// example 1
+          |std::vector v{ 1, 2, 3 }; // deduces std::vector<int>
+          |std::mutex mtx;
+          |auto lck = std::lock_guard{ mtx }; // deduces to std::lock_guard<std::mutex>
+          |auto p = new std::pair{ 1.0, 2.0 }; // deduces to std::pair<double, double>*
+          |
+          |// example 2
+          |template <typename T>
+          |struct container {
+          |  container(T t) {}
+          |  template <typename Iter>
+          |  container(Iter beg, Iter end);
+          |};
+          |
+          |// deduction guide
+          |template <typename Iter>
+          |container(Iter b, Iter e) -> container<typename std::iterator_traits<Iter>::value_type>;
+          |
+          |container a{ 7 }; // OK: deduces container<int>
+          |
+          |std::vector<double> v{ 1.0, 2.0, 3.0 };
+          |auto b = container{ v.begin(), v.end() }; // OK: deduces container<double>
+          |
+          |container c{ 5, 6 }; // ERROR: std::iterator_traits<int>::value_type is not a type
+          |""".stripMargin)
+      cpg
+      ???
+    }
+
+  }
+}
