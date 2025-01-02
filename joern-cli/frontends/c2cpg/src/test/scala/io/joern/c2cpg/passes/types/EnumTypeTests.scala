@@ -9,7 +9,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
-class EnumTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
+class EnumTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
 
   "Enums" should {
 

@@ -19,12 +19,13 @@ package object cpgcreation {
   ): Option[CpgGenerator] = {
     lazy val conf = config.withArgs(args)
     language match {
-      case Languages.CSHARP | Languages.CSHARPSRC => Some(CSharpCpgGenerator(conf, rootPath))
-      case Languages.C | Languages.NEWC           => Some(CCpgGenerator(conf, rootPath))
-      case Languages.LLVM                         => Some(LlvmCpgGenerator(conf, rootPath))
-      case Languages.GOLANG                       => Some(GoCpgGenerator(conf, rootPath))
-      case Languages.JAVA                         => Some(JavaCpgGenerator(conf, rootPath))
-      case Languages.JAVASRC                      => Some(JavaSrcCpgGenerator(conf, rootPath))
+      case Languages.CSHARP             => Some(CSharpCpgGenerator(conf, rootPath))
+      case Languages.CSHARPSRC          => Some(CSharpSrcCpgGenerator(conf, rootPath))
+      case Languages.C | Languages.NEWC => Some(CCpgGenerator(conf, rootPath))
+      case Languages.LLVM               => Some(LlvmCpgGenerator(conf, rootPath))
+      case Languages.GOLANG             => Some(GoCpgGenerator(conf, rootPath))
+      case Languages.JAVA               => Some(JavaCpgGenerator(conf, rootPath))
+      case Languages.JAVASRC            => Some(JavaSrcCpgGenerator(conf, rootPath))
       case Languages.JSSRC | Languages.JAVASCRIPT =>
         val jssrc = JsSrcCpgGenerator(conf, rootPath)
         if (jssrc.isAvailable) Some(jssrc)

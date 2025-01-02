@@ -44,9 +44,9 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
   private[expressions] def astForArrayAccessExpr(expr: ArrayAccessExpr, expectedType: ExpectedType): Ast = {
     val typeFullName =
       expressionReturnTypeFullName(expr)
-        .orElse(expectedType.fullName)
+        .orElse(getTypeFullName(expectedType))
         .map(typeInfoCalc.registerType)
-        .getOrElse(TypeConstants.Any)
+        .getOrElse(defaultTypeFallback())
     val callNode = newOperatorCallNode(
       Operators.indexAccess,
       code = expr.toString,
@@ -76,9 +76,9 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
 
     maybeInitializerAst.getOrElse {
       val typeFullName = expressionReturnTypeFullName(expr)
-        .orElse(expectedType.fullName)
+        .orElse(getTypeFullName(expectedType))
         .map(typeInfoCalc.registerType)
-        .getOrElse(TypeConstants.Any)
+        .getOrElse(defaultTypeFallback(expr.getElementType))
       val callNode = newOperatorCallNode(Operators.alloc, code = expr.toString, typeFullName = Some(typeFullName))
       val levelAsts = expr.getLevels.asScala.flatMap { lvl =>
         lvl.getDimension.toScala match {
@@ -94,9 +94,9 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
   private[expressions] def astForArrayInitializerExpr(expr: ArrayInitializerExpr, expectedType: ExpectedType): Ast = {
     // In the expression `new int[] { 1, 2 }`, the ArrayInitializerExpr is only the `{ 1, 2 }` part and does not have
     // a type itself. We need to use the expected type from the parent expr here.
-    val typeFullName = expectedType.fullName
+    val typeFullName = getTypeFullName(expectedType)
       .map(typeInfoCalc.registerType)
-      .getOrElse(TypeConstants.Any)
+      .getOrElse(defaultTypeFallback())
 
     val callNode = newOperatorCallNode(
       Operators.arrayInitializer,
@@ -126,7 +126,7 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
 
     if (expr.getValues.size() > MAX_INITIALIZERS) {
       val placeholder = NewLiteral()
-        .typeFullName(TypeConstants.Any)
+        .typeFullName(defaultTypeFallback())
         .code("<too-many-initializers>")
         .lineNumber(line(expr))
         .columnNumber(column(expr))
@@ -170,7 +170,7 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
       .typePatternExprsExposedToChild(expr.getRight)
       .asScala
       .flatMap(pattern => scope.enclosingMethod.flatMap(_.getPatternVariableInfo(pattern)))
-      .foreach { case PatternVariableInfo(pattern, local, _, _, _) =>
+      .foreach { case PatternVariableInfo(pattern, local, _, _, _, _) =>
         scope.enclosingBlock.foreach(_.addPatternLocal(local, pattern))
       }
 
@@ -185,9 +185,9 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
       expressionReturnTypeFullName(expr)
         .orElse(args.headOption.flatMap(_.rootType))
         .orElse(args.lastOption.flatMap(_.rootType))
-        .orElse(expectedType.fullName)
+        .orElse(getTypeFullName(expectedType))
         .map(typeInfoCalc.registerType)
-        .getOrElse(TypeConstants.Any)
+        .getOrElse(defaultTypeFallback())
 
     val callNode = newOperatorCallNode(
       operatorName,
@@ -204,14 +204,18 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
   private[expressions] def astForCastExpr(expr: CastExpr, expectedType: ExpectedType): Ast = {
     val typeFullName =
       tryWithSafeStackOverflow(expr.getType).toOption
-        .flatMap(typeInfoCalc.fullName)
-        .orElse(expectedType.fullName)
-        .getOrElse(TypeConstants.Any)
+        .map { typ =>
+          typeInfoCalc
+            .fullName(typ)
+            .orElse(getTypeFullName(expectedType))
+            .getOrElse(defaultTypeFallback(typ))
+        }
+        .getOrElse(defaultTypeFallback())
 
     val callNode = newOperatorCallNode(
       Operators.cast,
       code = expr.toString,
-      typeFullName = Some(typeFullName),
+      typeFullName = Option(typeFullName),
       line = line(expr),
       column = column(expr)
     )
@@ -273,9 +277,9 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
       expressionReturnTypeFullName(expr)
         .orElse(thenAst.headOption.flatMap(_.rootType))
         .orElse(elseAst.headOption.flatMap(_.rootType))
-        .orElse(expectedType.fullName)
+        .orElse(getTypeFullName(expectedType))
         .map(typeInfoCalc.registerType)
-        .getOrElse(TypeConstants.Any)
+        .getOrElse(defaultTypeFallback())
 
     val callNode =
       newOperatorCallNode(Operators.conditional, expr.toString, Some(typeFullName), line(expr), column(expr))
@@ -287,45 +291,17 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
     astsForExpression(expr.getInner, expectedType)
   }
 
-  private[expressions] def createFieldAccessAst(
-    base: Ast,
-    fieldAccessCode: String,
-    fieldAccessLineNo: Option[Int],
-    fieldAccessColumnNo: Option[Int],
-    fieldName: String,
-    fieldTypeFullName: String,
-    fieldLineNo: Option[Int],
-    fieldColumnNo: Option[Int]
-  ): Ast = {
-    val callNode =
-      newOperatorCallNode(
-        Operators.fieldAccess,
-        fieldAccessCode,
-        Some(fieldTypeFullName),
-        fieldAccessLineNo,
-        fieldAccessColumnNo
-      )
-
-    val fieldIdentifierNode = NewFieldIdentifier()
-      .code(fieldName)
-      .canonicalName(fieldName)
-      .lineNumber(fieldLineNo)
-      .columnNumber(fieldColumnNo)
-
-    callAst(callNode, Seq(base, Ast(fieldIdentifierNode)))
-  }
-
   private[expressions] def astForFieldAccessExpr(expr: FieldAccessExpr, expectedType: ExpectedType): Ast = {
     val typeFullName =
       expressionReturnTypeFullName(expr)
-        .orElse(expectedType.fullName)
+        .orElse(getTypeFullName(expectedType))
         .map(typeInfoCalc.registerType)
-        .getOrElse(TypeConstants.Any)
+        .getOrElse(defaultTypeFallback())
 
     val fieldIdentifier = expr.getName
     val identifierAsts  = astsForExpression(expr.getScope, ExpectedType.empty)
 
-    createFieldAccessAst(
+    fieldAccessAst(
       identifierAsts.head,
       expr.toString,
       line(expr),
@@ -342,16 +318,18 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
     val lhsAst = astsForExpression(expr.getExpression, ExpectedType.empty).head
     expr.getPattern.toScala
       .map { patternExpression =>
-        astForInstanceOfWithPattern(expr.getExpression, lhsAst, patternExpression)
+        instanceOfAstForPattern(patternExpression, lhsAst)
       }
       .getOrElse {
         val booleanTypeFullName = Some(TypeConstants.Boolean)
         val callNode =
           newOperatorCallNode(Operators.instanceOf, expr.toString, booleanTypeFullName, line(expr), column(expr))
 
-        val exprAst      = astsForExpression(expr.getExpression, ExpectedType.empty)
-        val exprType     = tryWithSafeStackOverflow(expr.getType).toOption
-        val typeFullName = exprType.flatMap(typeInfoCalc.fullName).getOrElse(TypeConstants.Any)
+        val exprAst  = astsForExpression(expr.getExpression, ExpectedType.empty)
+        val exprType = tryWithSafeStackOverflow(expr.getType).toOption
+        val typeFullName = exprType
+          .map(typ => typeInfoCalc.fullName(typ).getOrElse(defaultTypeFallback(typ)))
+          .getOrElse(defaultTypeFallback())
         val typeNode =
           NewTypeRef()
             .code(exprType.map(_.toString).getOrElse(code(expr).split("instanceof").lastOption.getOrElse("")))
@@ -365,7 +343,8 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
   }
 
   private[expressions] def astForLiteralExpr(expr: LiteralExpr): Ast = {
-    val typeFullName = expressionReturnTypeFullName(expr).map(typeInfoCalc.registerType).getOrElse(TypeConstants.Any)
+    val typeFullName =
+      expressionReturnTypeFullName(expr).map(typeInfoCalc.registerType).getOrElse(defaultTypeFallback())
     val literalNode =
       NewLiteral()
         .code(code(expr))
@@ -378,9 +357,9 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
   private[expressions] def astForSuperExpr(superExpr: SuperExpr, expectedType: ExpectedType): Ast = {
     val typeFullName =
       expressionReturnTypeFullName(superExpr)
-        .orElse(expectedType.fullName)
+        .orElse(getTypeFullName(expectedType))
         .map(typeInfoCalc.registerType)
-        .getOrElse(TypeConstants.Any)
+        .getOrElse(defaultTypeFallback())
 
     val identifier = identifierNode(superExpr, NameConstants.This, NameConstants.Super, typeFullName)
     Ast(identifier)
@@ -389,7 +368,7 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
   private[expressions] def astForThisExpr(expr: ThisExpr, expectedType: ExpectedType): Ast = {
     val typeFullName =
       expressionReturnTypeFullName(expr)
-        .orElse(expectedType.fullName)
+        .orElse(getTypeFullName(expectedType))
         .map(typeInfoCalc.registerType)
 
     val identifier = identifierNode(expr, expr.toString, expr.toString, typeFullName.getOrElse("ANY"))
@@ -419,9 +398,9 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
     val typeFullName =
       expressionReturnTypeFullName(expr)
         .orElse(argsAsts.headOption.flatMap(_.rootType))
-        .orElse(expectedType.fullName)
+        .orElse(getTypeFullName(expectedType))
         .map(typeInfoCalc.registerType)
-        .getOrElse(TypeConstants.Any)
+        .getOrElse(defaultTypeFallback())
 
     // TODO Fix code
     val callNode = newOperatorCallNode(
@@ -452,12 +431,12 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
 
       case Success(resolvedMethod) =>
         val returnType = tryWithSafeStackOverflow(resolvedMethod.getReturnType).toOption.flatMap(typeInfoCalc.fullName)
-        val parameterTypes = argumentTypesForMethodLike(Success(resolvedMethod))
+        val parameterTypes = argumentTypesForMethodLike(Option(resolvedMethod))
         composeSignature(returnType, parameterTypes, resolvedMethod.getNumberOfParams)
     }
 
     val methodFullName = Util.composeMethodFullName(namespacePrefix, methodName, signature)
 
-    Ast(methodRefNode(expr, expr.toString, methodFullName, typeFullName.getOrElse(TypeConstants.Any)))
+    Ast(methodRefNode(expr, expr.toString, methodFullName, typeFullName.getOrElse(defaultTypeFallback())))
   }
 }

@@ -11,7 +11,7 @@ import io.joern.x2cpg.testfixtures.TestCpg
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 class DataFlowTestCpg extends TestCpg with C2CpgFrontend {
-  override val fileSuffix: String = FileDefaults.C_EXT
+  override val fileSuffix: String = FileDefaults.CExt
 
   override def applyPasses(): Unit = {
     X2Cpg.applyDefaultOverlays(this)

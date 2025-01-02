@@ -1,15 +1,22 @@
 package io.joern.csharpsrc2cpg.astcreation
 
-import io.joern.csharpsrc2cpg.{CSharpDefines, Constants}
-import io.joern.csharpsrc2cpg.datastructures.{CSharpProgramSummary, CSharpScope}
+import io.joern.csharpsrc2cpg.Constants
+import io.joern.csharpsrc2cpg.datastructures.{CSharpProgramSummary, CSharpScope, MethodScope, TypeScope}
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.astgen.{AstGenNodeBuilder, ParserResult}
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.NodeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.{DiffGraphBuilder, ModifierTypes, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  NewBlock,
+  NewFile,
+  NewMethod,
+  NewMethodParameterIn,
+  NewMethodReturn,
+  NewModifier,
+  NewTypeDecl
+}
 import org.slf4j.{Logger, LoggerFactory}
-import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 import ujson.Value
 
 import java.math.BigInteger
@@ -48,9 +55,79 @@ class AstCreator(
   }
 
   protected def astForCompilationUnit(cu: DotNetNodeInfo): Seq[Ast] = {
-    val imports    = cu.json(ParserKeys.Usings).arr.flatMap(astForNode).toSeq
-    val memberAsts = astForMembers(cu.json(ParserKeys.Members).arr.map(createDotNetNodeInfo).toSeq)
-    imports ++ memberAsts
+    val importAsts                              = cu.json(ParserKeys.Usings).arr.flatMap(astForNode).toSeq
+    val members                                 = cu.json(ParserKeys.Members).arr.map(createDotNetNodeInfo).toSeq
+    val (globalStatements, nonGlobalStatements) = members.partition(_.node == GlobalStatement)
+    val nonGlobalStatementAsts                  = nonGlobalStatements.flatMap(astForNode)
+
+    // If there are global statements, we should treat this file as an entry-point.
+    // Roslyn implicitly wraps these statements inside the following block:
+    // ```
+    // internal class Program {
+    //   private static void <Main>$(string[] args) {
+    //      <globalStatements>
+    //   }
+    // }
+    // ```
+    // Note: there can only be one such file in a given project, but we are currently
+    // not checking this.
+    if (globalStatements.nonEmpty) {
+      importAsts ++ astForTopLevelStatements(globalStatements) ++ nonGlobalStatementAsts
+    } else {
+      importAsts ++ nonGlobalStatementAsts
+    }
+  }
+
+  private def astForTopLevelStatements(topLevelStmts: Seq[DotNetNodeInfo]): Seq[Ast] = {
+    val sanitizedFileName = relativeFileName.replace(java.io.File.separator, "_").replace(".", "_")
+    val className         = s"${sanitizedFileName}_Program"
+    val mainName          = "<Main>$"
+    val classFullName     = s"$className"
+    val mainFullName      = s"$classFullName.$mainName"
+
+    val classNode = NewTypeDecl()
+      .name(className)
+      .fullName(classFullName)
+      .filename(relativeFileName)
+
+    val classModifiers = Seq(NewModifier().modifierType(ModifierTypes.INTERNAL))
+
+    val methodNode = NewMethod()
+      .name(mainName)
+      .fullName(mainFullName)
+      .filename(relativeFileName)
+      .signature("System.Void(System.String[])")
+
+    val methodModifiers =
+      Seq(NewModifier().modifierType(ModifierTypes.STATIC), NewModifier().modifierType(ModifierTypes.PRIVATE))
+
+    val argsParameter = NewMethodParameterIn().name("args").typeFullName("System.String[]")
+    val methodBlock   = NewBlock().typeFullName("System.Void")
+    val methodReturn  = NewMethodReturn().typeFullName("System.Void")
+
+    val topLevelStmtAsts = {
+      scope.pushNewScope(TypeScope(classFullName))
+      scope.pushNewScope(MethodScope(mainFullName))
+      scope.addToScope("args", argsParameter)
+
+      val asts = topLevelStmts.flatMap(astForNode)
+
+      scope.popScope()
+      scope.popScope()
+      asts
+    }
+
+    val methodAst = Ast(methodNode)
+      .withChildren(methodModifiers.map(Ast(_)))
+      .withChild(Ast(argsParameter))
+      .withChild(Ast(methodBlock).withChildren(topLevelStmtAsts))
+      .withChild(Ast(methodReturn))
+
+    val classAst = Ast(classNode)
+      .withChildren(classModifiers.map(Ast(_)))
+      .withChild(methodAst)
+
+    Seq(classAst)
   }
 
   protected def astForMembers(members: Seq[DotNetNodeInfo]): Seq[Ast] = {

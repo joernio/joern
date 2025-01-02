@@ -240,10 +240,32 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         val simpleIdent = node.toSimpleIdentifier
         val simpleCall  = SimpleCall(simpleIdent, List.empty)(simpleIdent.span)
         astForReturnExpression(ReturnExpression(List(simpleCall))(node.span)) :: Nil
+      case node: MethodAccessModifier =>
+        val simpleIdent = node.toSimpleIdentifier
+
+        val methodIdentName = node.method match {
+          case x: StaticLiteral     => x.span.text
+          case x: MethodDeclaration => x.methodName
+          case x =>
+            logger.warn(s"Unknown node type for method identifier name: ${x.getClass} (${this.relativeFileName})")
+            x.span.text
+        }
+
+        val methodIdent = SimpleIdentifier(None)(simpleIdent.span.spanStart(methodIdentName))
+
+        val simpleCall = SimpleCall(simpleIdent, List(methodIdent))(
+          simpleIdent.span.spanStart(s"${simpleIdent.span.text} ${methodIdent.span.text}")
+        )
+        astForReturnExpression(ReturnExpression(List(simpleCall))(node.span)) :: Nil
       case node: FieldsDeclaration =>
         val nilReturnSpan    = node.span.spanStart("return nil")
         val nilReturnLiteral = StaticLiteral(Defines.NilClass)(nilReturnSpan)
         astsForFieldDeclarations(node) ++ astsForImplicitReturnStatement(nilReturnLiteral)
+      case node: SingletonClassDeclaration =>
+        astForAnonymousTypeDeclaration(node)
+        val nilReturnSpan    = node.span.spanStart("return nil")
+        val nilReturnLiteral = StaticLiteral(Defines.NilClass)(nilReturnSpan)
+        astsForImplicitReturnStatement(nilReturnLiteral)
       case node =>
         logger.warn(
           s" not supported yet: ${node.text} (${node.getClass.getSimpleName}), only generating statement (${this.relativeFileName})"

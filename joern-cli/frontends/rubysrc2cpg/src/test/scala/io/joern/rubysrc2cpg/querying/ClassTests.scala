@@ -191,6 +191,29 @@ class ClassTests extends RubyCode2CpgFixture {
     aMember.lineNumber shouldBe Some(3)
   }
 
+  "`attr_reader` in a nested class should generate the correct member for the correct class" in {
+    val cpg = code("""
+        |class Foo
+        |
+        |  class Bar
+        |    attr_reader :a
+        |  end
+        |
+        |end
+        |
+        |""".stripMargin)
+
+    val List(bar)     = cpg.typeDecl.name("Bar").l
+    val List(aMember) = bar.member.name("@a").l
+
+    aMember.code shouldBe "attr_reader :a"
+    aMember.lineNumber shouldBe Some(5)
+
+    // <body> calls are pushed all the way up to the <module>
+    cpg.typeDecl.astOut.isCall.size shouldBe 0
+    cpg.call(RubyDefines.TypeDeclBody).method.dedup.name.l shouldBe List(RubyDefines.Main)
+  }
+
   "`def f(x) ... end` is represented by a METHOD inside the TYPE_DECL node" in {
     val cpg = code("""
                      |class C
@@ -1213,6 +1236,102 @@ class ClassTests extends RubyCode2CpgFixture {
           }
         case xs => fail(s"Expected two method defs, got ${xs.size}: [${xs.code.mkString(",")}]")
       }
+    }
+  }
+
+  "Implicit return for call to `private_class_method`" in {
+    val cpg = code("""
+        |class Foo
+        |  def case_sensitive_find_by()
+        |  end
+        |
+        |  included do
+        |    private_class_method :case_sensitive_find_by
+        |  end
+        |end
+        |""".stripMargin)
+
+    inside(cpg.typeDecl.name("Foo").astChildren.isMethod.l) {
+      case lambdaMethod :: _ :: _ :: _ :: Nil =>
+        val List(lambdaReturn) = lambdaMethod.body.astChildren.isReturn.l
+
+        lambdaReturn.code shouldBe "private_class_method :case_sensitive_find_by"
+
+        val List(returnCall) = lambdaReturn.astChildren.isCall.l
+        returnCall.code shouldBe "private_class_method :case_sensitive_find_by"
+
+        val List(_, methodNameArg) = returnCall.argument.l
+        methodNameArg.code shouldBe "self.:case_sensitive_find_by"
+
+      case xs => fail(s"Expected 5 methods, got [${xs.code.mkString(",")}]")
+    }
+  }
+
+  "Implicit return of SingletonClassDeclaration" in {
+    val cpg = code("""
+        |module Taskbar::List
+        |
+        | included do
+        |    class << self
+        |      def trigger_list_update(user, app)
+        |      end
+        |    end
+        |  end
+        |end
+        |""".stripMargin)
+    inside(cpg.typeDecl.name("List").l) {
+      case listTypeDecl :: Nil =>
+        val List(lambdaMethod) = listTypeDecl.astChildren.isMethod.isLambda.l
+
+        val List(lambdaReturn) = lambdaMethod.astChildren.isBlock.astChildren.isReturn.l
+        lambdaReturn.code shouldBe "return nil"
+
+        val List(lambdaTypeDecl, lambdaTypeDeclClass) = lambdaMethod.astChildren.isTypeDecl.l
+        lambdaTypeDecl.name shouldBe "<anon-class-0>"
+        lambdaTypeDeclClass.name shouldBe "<anon-class-0><class>"
+
+      case xs => fail(s"expected 1 type, got ${xs.size}: [${xs.code.mkString(", ")}]")
+    }
+  }
+
+  "`private_class_method` with unhandled argument types should not render these under the type decl" in {
+    val cpg = code("""
+        |class Foo
+        |
+        |  private_class_method %i[
+        |    filter_ignore_usable
+        |    filter_key
+        |    filter_usage
+        |    parts
+        |  ]
+        |
+        |end
+        |
+        |""".stripMargin)
+
+    cpg.typeDecl("Foo").astChildren.whereNot(_.or(_.isMethod, _.isModifier, _.isTypeDecl, _.isMember)).size shouldBe 0
+  }
+
+  "Proc-param in method with instance field assignment and instance field argument" in {
+    val cpg = code("""
+        |class Batches
+        |  def as_batches(query, &)
+        |     records.each(&)
+        |     @limit -= 100
+        |     return if @limit.zero?
+        |  end
+        |end
+        |""".stripMargin)
+
+    inside(cpg.method.name("as_batches").l) {
+      case batchesMethod :: Nil =>
+        inside(batchesMethod.parameter.l) {
+          case _ :: _ :: procParam :: Nil =>
+            procParam.code shouldBe "&"
+            procParam.name shouldBe "<proc-param-0>"
+          case xs => fail(s"Expected three parameters, got (${xs.size}) [${xs.code.mkString(",")}]")
+        }
+      case xs =>
     }
   }
 }

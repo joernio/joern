@@ -18,6 +18,7 @@ import io.joern.x2cpg.ValidationMode
 
 class ScopeTests extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
   private implicit val withSchemaValidation: ValidationMode = ValidationMode.Enabled
+  private implicit val disableTypeFallback: Boolean         = false
 
   behavior of "javasrc2cpg scope"
 

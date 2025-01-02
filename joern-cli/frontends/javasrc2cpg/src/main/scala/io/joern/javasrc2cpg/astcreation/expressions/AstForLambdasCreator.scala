@@ -71,7 +71,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
       .find { identifier => identifier.name == NameConstants.This || identifier.name == NameConstants.Super }
       .map { _ =>
         val typeFullName = scope.enclosingTypeDecl.fullName
-        Ast(thisNodeForMethod(typeFullName, line(expr)))
+        Ast(thisNodeForMethod(typeFullName, line(expr), column(expr)))
       }
       .toList
 
@@ -90,7 +90,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
 
     val lambdaMethodNode = createLambdaMethodNode(expr, lambdaMethodName, parametersWithoutThis, returnType)
 
-    val returnNode      = newMethodReturnNode(returnType.getOrElse(TypeConstants.Any), None, line(expr), column(expr))
+    val returnNode = newMethodReturnNode(returnType.getOrElse(defaultTypeFallback()), None, line(expr), column(expr))
     val virtualModifier = Some(newModifierNode(ModifierTypes.VIRTUAL))
     val staticModifier  = Option.when(thisParam.isEmpty)(newModifierNode(ModifierTypes.STATIC))
     val privateModifier = Some(newModifierNode(ModifierTypes.PRIVATE))
@@ -363,7 +363,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
       .zipWithIndex
       .map { case ((param, maybeType), idx) =>
         val name         = param.getNameAsString
-        val typeFullName = maybeType.getOrElse(TypeConstants.Any)
+        val typeFullName = maybeType.getOrElse(defaultTypeFallback())
         val code         = s"$typeFullName $name"
         val evalStrat =
           if (tryWithSafeStackOverflow(param.getType).toOption.exists(_.isPrimitiveType)) EvaluationStrategies.BY_VALUE

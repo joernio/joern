@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>io.joern</groupId>
+  <artifactId>eclipse-cdt-core</artifactId>
+  <version>__VERSION__</version>
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+  </properties>
+  <packaging>jar</packaging>
+  <description>cdt re-release for joern</description>
+  <url>https://github.com/eclipse-cdt/cdt/</url>
+  <licenses>
+    <license>
+      <name>Eclipse Public License 2.0</name>
+      <comments>
+      This program and the accompanying materials are made
+      available under the terms of the Eclipse Public License 2.0
+      which accompanies this distribution, and is available at
+      https://www.eclipse.org/legal/epl-2.0/
+
+      SPDX-License-Identifier: EPL-2.0
+      </comments>
+    </license>
+  </licenses>
+    <name>cdt</name>
+    <scm>
+      <url>https://github.com/eclipse-cdt/cdt</url>
+      <connection>scm:git@github.com:eclipse-cdt/cdt.git</connection>
+    </scm>
+
+  <developers>
+      <developer>
+          <id>max-leuthaeuser</id>
+          <name>Max Leuthaeuser</name>
+          <url>https://github.com/max-leuthaeuser</url>
+          <email>max@qwiet.ai</email>
+      </developer>
+      <developer>
+          <id>mpollmeier</id>
+          <name>Michael Pollmeier</name>
+          <url>http://www.michaelpollmeier.com</url>
+          <email>michael@michaelpollmeier.com</email>
+      </developer>
+  </developers>
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.platform</groupId>
+      <artifactId>org.eclipse.core.runtime</artifactId>
+      <version>3.32.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>2.0.7</version>
+    </dependency>
+  </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.sonatype.central</groupId>
+        <artifactId>central-publishing-maven-plugin</artifactId>
+        <version>0.6.0</version>
+        <extensions>true</extensions>
+        <configuration>
+          <publishingServerId>sonatype-central-joern</publishingServerId>
+          <deploymentName>cdt-__VERSION__</deploymentName>
+          <autoPublish>true</autoPublish>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-gpg-plugin</artifactId>
+        <version>3.2.7</version>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <version>3.3.1</version>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>3.11.1</version>
+        <configuration>
+          <additionalDependencies>
+            <!-- mvn:javadoc looks up the referenced classes but for some reason doesn't
+                 look in 'resources' - so we're passing it a previous version of cdt-core
+                 with those classes... -->
+            <additionalDependency>
+              <groupId>io.joern</groupId>
+              <artifactId>eclipse-cdt-core</artifactId>
+              <version>8.5.0.202410191453+2</version>
+            </additionalDependency>
+          </additionalDependencies>
+        </configuration>
+      </plugin>
+    </plugins>
+
+  </build>
+</project>

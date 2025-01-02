@@ -11,8 +11,11 @@ import scopt.OParser
 
 import java.nio.file.Paths
 
-final case class Config(downloadDependencies: Boolean = false)
-    extends X2CpgConfig[Config]
+final case class Config(
+  downloadDependencies: Boolean = false,
+  useBuiltinSummaries: Boolean = true,
+  externalSummaryPaths: Set[String] = Set.empty
+) extends X2CpgConfig[Config]
     with DependencyDownloadConfig[Config]
     with TypeRecoveryParserConfig[Config]
     with AstGenConfig[Config] {
@@ -22,6 +25,14 @@ final case class Config(downloadDependencies: Boolean = false)
 
   override def withDownloadDependencies(value: Boolean): Config = {
     copy(downloadDependencies = value).withInheritedFields(this)
+  }
+
+  def withUseBuiltinSummaries(value: Boolean): Config = {
+    copy(useBuiltinSummaries = value).withInheritedFields(this)
+  }
+
+  def withExternalSummaryPaths(paths: Set[String]): Config = {
+    copy(externalSummaryPaths = paths).withInheritedFields(this)
   }
 
 }
@@ -35,7 +46,13 @@ object Frontend {
     OParser.sequence(
       programName("csharpsrc2cpg"),
       DependencyDownloadConfig.parserOptions,
-      XTypeRecoveryConfig.parserOptionsForParserConfig
+      XTypeRecoveryConfig.parserOptionsForParserConfig,
+      opt[Unit]("disable-builtin-summaries")
+        .text("do not use the built-in type summaries")
+        .action((_, c) => c.withUseBuiltinSummaries(false)),
+      opt[Seq[String]]("external-summary-paths")
+        .text("where to look for external type summaries produced by DotNetAstGen (comma-separated list of paths)")
+        .action((paths, c) => c.withExternalSummaryPaths(c.externalSummaryPaths ++ paths))
     )
   }
 

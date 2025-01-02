@@ -170,63 +170,6 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
     flows shouldBe empty
   }
 
-  "no flow from aliased literal to method call return value given argument1-only semantics" ignore {
-    val cpg = code("""
-        |def foo(x):
-        |  return x
-        |
-        |a = 20
-        |print(foo(a))
-        |""".stripMargin)
-      .withSemantics(DefaultSemantics().plus(List(FlowSemantic("Test0.py:<module>.foo", List(FlowMapping(1, 1))))))
-    val source = cpg.literal("20").l
-    val sink   = cpg.call("print").argument(1).l
-    val flows  = sink.reachableByFlows(source).l
-    flows shouldBe empty
-  }
-
-  "no flow from literal to method call return value given empty semantics" ignore {
-    val cpg = code("""
-        |def foo(x):
-        |  return x
-        |
-        |print(foo(20))
-        |""".stripMargin)
-      .withSemantics(DefaultSemantics().plus(List(FlowSemantic("Test0.py:<module>.foo", List()))))
-    val source = cpg.literal("20").l
-    val sink   = cpg.call("print").argument(1).l
-    val flows  = sink.reachableByFlows(source).l
-    flows shouldBe empty
-  }
-
-  "no flow from literal to method call return value given receiver-only semantics" ignore {
-    val cpg = code("""
-        |def foo(x):
-        |  return x
-        |
-        |print(foo(20))
-        |""".stripMargin)
-      .withSemantics(DefaultSemantics().plus(List(FlowSemantic("Test0.py:<module>.foo", List(FlowMapping(0, 0))))))
-    val source = cpg.literal("20").l
-    val sink   = cpg.call("print").argument(1).l
-    val flows  = sink.reachableByFlows(source).l
-    flows shouldBe empty
-  }
-
-  "no flow from literal to method call return value given argument1-only semantics" ignore {
-    val cpg = code("""
-        |def foo(x):
-        |  return x
-        |
-        |print(foo(20))
-        |""".stripMargin)
-      .withSemantics(DefaultSemantics().plus(List(FlowSemantic("Test0.py:<module>.foo", List(FlowMapping(1, 1))))))
-    val source = cpg.literal("20").l
-    val sink   = cpg.call("print").argument(1).l
-    val flows  = sink.reachableByFlows(source).l
-    flows shouldBe empty
-  }
-
   "don't taint the return value when specifying a named argument" in {
     val cpg = code("""
         |import foo
@@ -885,6 +828,42 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
 
 }
 
+// Showcases that, even though `foo` is defined in the source-code, we are still able to override its semantics.
+// Note that using `withSemantics` only updates the query-time semantics.
+class InternalMethodCustomSemanticsDataFlowTest
+    extends PySrc2CpgFixture(
+      withOssDataflow = true,
+      semantics = DefaultSemantics().plus(List(FlowSemantic("Test0.py:<module>.foo", List(FlowMapping(1, 1)))))
+    ) {
+
+  "no flow from literal to method call return value" in {
+    val cpg = code("""
+        |def foo(x):
+        |  return x
+        |
+        |print(foo(20))
+        |""".stripMargin)
+    val source = cpg.literal("20")
+    val sink   = cpg.call("print").argument(1)
+    val flows  = sink.reachableByFlows(source)
+    flows shouldBe empty
+  }
+
+  "no flow from literal (in an assignment) to method call return value" in {
+    val cpg = code("""
+        |def foo(x):
+        |   return x
+        |
+        |a = 20
+        |print(foo(a))
+        |""".stripMargin)
+    val source = cpg.literal("20")
+    val sink   = cpg.call("print").argument(1)
+    val flows  = sink.reachableByFlows(source)
+    flows shouldBe empty
+  }
+}
+
 class DefaultSemanticsDataFlowTest1 extends PySrc2CpgFixture(withOssDataflow = true, semantics = DefaultSemantics()) {
 
   "DefaultSemantics cross-taints arguments to external method calls" in {
@@ -1207,8 +1186,8 @@ class RegexDefinedFlowsDataFlowTests
         |""".stripMargin)
     "be found" in {
       val src = cpg.identifier("Foo").l
-      val snk = cpg.call("print").l
-      snk.reachableByFlows(src).size shouldBe 2
+      val snk = cpg.call("print").argument(1).l
+      snk.reachableByFlows(src).size shouldBe 3
     }
   }
   "Import statement with method ref sample four" in {

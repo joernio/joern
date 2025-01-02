@@ -3,6 +3,7 @@ package io.joern.csharpsrc2cpg.passes
 import io.joern.csharpsrc2cpg.Config
 import io.joern.csharpsrc2cpg.testfixtures.CSharpCode2CpgFixture
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.utils.ProjectRoot
 
 class DependencyTests extends CSharpCode2CpgFixture {
 
@@ -101,7 +102,73 @@ class DependencyTests extends CSharpCode2CpgFixture {
           fail("Expected a call node for `Entity`")
       }
     }
+  }
 
+  "a `csproj` file specifying a built-in dependency but built-in type summaries are disabled" when {
+    val csCode = """
+                   |using Microsoft.EntityFrameworkCore;
+                   |
+                   |public class Foo
+                   |{
+                   | static void bar(ModelBuilder modelBuilder)
+                   | {
+                   |   modelBuilder.Entity("test");
+                   | }
+                   |}""".stripMargin
+    val csProj = """
+                   |<Project Sdk="Microsoft.NET.Sdk">
+                   | <ItemGroup>
+                   |   <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.36" />
+                   | </ItemGroup>
+                   |</Project>
+                   |""".stripMargin
+
+    "the ability to download dependencies is also turned off" should {
+      val cpg = code(csCode)
+        .moreCode(csProj, "Foo.csproj")
+        .withConfig(Config().withUseBuiltinSummaries(false).withDownloadDependencies(false))
+      "not resolve the call since there are no type summaries available for it" in {
+        inside(cpg.call("Entity").headOption) {
+          case Some(entity) => entity.methodFullName shouldBe "ModelBuilder.Entity:<unresolvedSignature>"
+          case None         => fail("Expected call node for `Entity`")
+        }
+      }
+    }
+
+    "the ability to download dependencies is turned on" should {
+      val cpg = code(csCode)
+        .moreCode(csProj, "Foo.csproj")
+        .withConfig(Config().withUseBuiltinSummaries(false).withDownloadDependencies(true))
+      "resolve the call since the dependency shall be downloaded and a type summary for it be built" in {
+        inside(cpg.call("Entity").headOption) {
+          case Some(entity) =>
+            entity.methodFullName shouldBe "Microsoft.EntityFrameworkCore.ModelBuilder.Entity:Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder(System.String)"
+          case None => fail("Expected call node for `Entity`")
+        }
+      }
+    }
+
+    "download dependencies is disabled but external-summary-paths is pointing to the built-in directory" should {
+      val externalSummaryPaths =
+        Set(ProjectRoot.relativise("joern-cli/frontends/csharpsrc2cpg/src/main/resources/builtin_types"))
+      val cpg = code(csCode)
+        .moreCode(csProj, "Foo.csproj")
+        .withConfig(
+          Config()
+            .withDownloadDependencies(false)
+            .withUseBuiltinSummaries(false)
+            .withExternalSummaryPaths(externalSummaryPaths)
+        )
+
+      "resolve the call since its summary can be found in the provided directory" in {
+        inside(cpg.call("Entity").headOption) {
+          case Some(entity) =>
+            entity.methodFullName shouldBe "Microsoft.EntityFrameworkCore.ModelBuilder.Entity:Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder(System.String)"
+          case None => fail("Expected call node for `Entity`")
+        }
+      }
+
+    }
   }
 
   "a `csproj` file specifying a dependency with the `Update` attribute" should {

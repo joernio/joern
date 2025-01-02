@@ -11,6 +11,7 @@ import com.github.javaparser.resolution.logic.InferenceVariableType
 import com.github.javaparser.resolution.model.typesystem.{LazyType, NullType}
 import com.github.javaparser.resolution.types.*
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
+import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserRecordDeclaration
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.{TypeConstants, TypeNameConstants}
 import io.joern.x2cpg.datastructures.Global
 import org.slf4j.LoggerFactory

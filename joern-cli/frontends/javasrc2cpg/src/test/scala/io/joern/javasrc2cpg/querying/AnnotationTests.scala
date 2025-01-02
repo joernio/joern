@@ -5,6 +5,29 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
 class AnnotationTests extends JavaSrcCode2CpgFixture {
+  "annotations that cannot be resolved from imports" should {
+    val cpg = code("""
+        |package foo;
+        |
+        |@interface TestMarker {}
+        |""".stripMargin)
+      .moreCode("""
+          |package bar;
+          |
+          |import foo.*;
+          |import bar.*;
+          |
+          |public class Bar {
+          |  @TestMarker
+          |  public void bar() {}
+          |}
+          |""".stripMargin)
+
+    "have the annotation type be resolved" in {
+      cpg.method.name("bar").annotation.fullName.l shouldBe List("foo.TestMarker")
+    }
+  }
+
   "normal value annotations" should {
     lazy val cpg = code("""
         |import some.NormalAnnotation;

@@ -4,17 +4,20 @@ import better.files.File
 import io.joern.c2cpg.Config
 import io.joern.c2cpg.parser.JSONCompilationDatabaseParser.CommandObject
 import io.shiftleft.utils.IOUtils
+import org.eclipse.cdt.core.dom.ast.IASTPreprocessorStatement
+import org.eclipse.cdt.core.dom.ast.IASTTranslationUnit
 import org.eclipse.cdt.core.dom.ast.gnu.c.GCCLanguage
 import org.eclipse.cdt.core.dom.ast.gnu.cpp.GPPLanguage
-import org.eclipse.cdt.core.dom.ast.{IASTPreprocessorStatement, IASTTranslationUnit}
 import org.eclipse.cdt.core.model.ILanguage
-import org.eclipse.cdt.core.parser.{DefaultLogService, ScannerInfo}
+import org.eclipse.cdt.core.parser.DefaultLogService
 import org.eclipse.cdt.core.parser.FileContent
+import org.eclipse.cdt.core.parser.ScannerInfo
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.CPPVisitor
-import org.eclipse.cdt.internal.core.parser.scanner.InternalFileContent
 import org.slf4j.LoggerFactory
 
-import java.nio.file.{NoSuchFileException, Path}
+import java.nio.file.NoSuchFileException
+import java.nio.file.Path
+import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 import scala.util.Failure
 import scala.util.Success
@@ -31,22 +34,19 @@ object CdtParser {
     failure: Option[Throwable] = None
   )
 
-  def loadLinesAsFileContent(path: Path, lines: Array[Char]): InternalFileContent = {
-    FileContent.create(path.toString, true, lines).asInstanceOf[InternalFileContent]
-  }
-
-  def readFileAsFileContent(path: Path): InternalFileContent = {
-    val lines = IOUtils.readLinesInFile(path).mkString("\n").toArray
-    loadLinesAsFileContent(path, lines)
+  private def readFileAsFileContent(file: File, lines: Option[Array[Char]] = None): FileContent = {
+    val codeLines = lines.getOrElse(IOUtils.readLinesInFile(file.path).mkString("\n").toArray)
+    val isSource  = FileDefaults.hasSourceFileExtension(file.pathAsString)
+    FileContent.create(file.pathAsString, isSource, codeLines)
   }
 
 }
 
-class CdtParser(config: Config, compilationDatabase: List[CommandObject])
+class CdtParser(config: Config, compilationDatabase: mutable.LinkedHashSet[CommandObject])
     extends ParseProblemsLogger
     with PreprocessorStatementsLogger {
 
-  import io.joern.c2cpg.parser.CdtParser._
+  import io.joern.c2cpg.parser.CdtParser.*
 
   private val headerFileFinder = new HeaderFileFinder(config.inputPath)
   private val parserConfig     = ParserConfig.fromConfig(config, compilationDatabase)
@@ -62,9 +62,9 @@ class CdtParser(config: Config, compilationDatabase: List[CommandObject])
   if (config.noImageLocations) opts |= ILanguage.OPTION_NO_IMAGE_LOCATIONS
 
   private def preprocessedFileIsFromCPPFile(file: Path, code: String): Boolean = {
-    if (config.withPreprocessedFiles && file.toString.endsWith(FileDefaults.PREPROCESSED_EXT)) {
-      val fileWithoutExt  = file.toString.stripSuffix(FileDefaults.PREPROCESSED_EXT)
-      val filesWithCPPExt = FileDefaults.CPP_FILE_EXTENSIONS.map(ext => File(s"$fileWithoutExt$ext").name)
+    if (config.withPreprocessedFiles && FileDefaults.hasPreprocessedFileExtension(file.toString)) {
+      val fileWithoutExt  = file.toString.substring(0, file.toString.lastIndexOf("."))
+      val filesWithCPPExt = FileDefaults.CppFileExtensions.map(ext => File(s"$fileWithoutExt$ext").name)
       code.linesIterator.exists(line => filesWithCPPExt.exists(f => line.contains(s"\"$f\"")))
     } else {
       false
@@ -72,7 +72,7 @@ class CdtParser(config: Config, compilationDatabase: List[CommandObject])
   }
 
   private def createParseLanguage(file: Path, code: String): ILanguage = {
-    if (FileDefaults.isCPPFile(file.toString) || preprocessedFileIsFromCPPFile(file, code)) {
+    if (FileDefaults.hasCppFileExtension(file.toString) || preprocessedFileIsFromCPPFile(file, code)) {
       GPPLanguage.getDefault
     } else {
       GCCLanguage.getDefault
@@ -81,10 +81,10 @@ class CdtParser(config: Config, compilationDatabase: List[CommandObject])
 
   private def createScannerInfo(file: Path): ScannerInfo = {
     val additionalIncludes =
-      if (FileDefaults.isCPPFile(file.toString)) parserConfig.systemIncludePathsCPP
+      if (FileDefaults.hasCppFileExtension(file.toString)) parserConfig.systemIncludePathsCPP
       else parserConfig.systemIncludePathsC
     val fileSpecificDefines  = parserConfig.definedSymbolsPerFile.getOrElse(file.toString, Map.empty)
-    val fileSpecificIncludes = parserConfig.includesPerFile.getOrElse(file.toString, List.empty)
+    val fileSpecificIncludes = parserConfig.includesPerFile.getOrElse(file.toString, mutable.LinkedHashSet.empty)
     new ScannerInfo(
       (definedSymbols ++ fileSpecificDefines).asJava,
       fileSpecificIncludes.toArray ++ (includePaths ++ additionalIncludes).map(_.toString).toArray
@@ -103,14 +103,13 @@ class CdtParser(config: Config, compilationDatabase: List[CommandObject])
     translationUnit
   }
 
-  private def parseInternal(file: Path): ParseResult = {
-    val realPath = File(file)
-    if (realPath.isRegularFile) { // handling potentially broken symlinks
+  private def parseInternal(file: File): ParseResult = {
+    if (file.isRegularFile) { // handling potentially broken symlinks
       try {
-        val fileContent         = readFileAsFileContent(realPath.path)
+        val fileContent         = readFileAsFileContent(file.path)
         val fileContentProvider = new CustomFileContentProvider(headerFileFinder)
-        val lang                = createParseLanguage(realPath.path, fileContent.toString)
-        val scannerInfo         = createScannerInfo(realPath.path)
+        val lang                = createParseLanguage(file.path, fileContent.toString)
+        val scannerInfo         = createScannerInfo(file.path)
         val translationUnit = lang.getASTTranslationUnit(fileContent, scannerInfo, fileContentProvider, null, opts, log)
         val problems        = CPPVisitor.getProblems(translationUnit)
         if (parserConfig.logProblems) logProblems(problems.toList)
@@ -131,7 +130,8 @@ class CdtParser(config: Config, compilationDatabase: List[CommandObject])
     } else {
       ParseResult(
         None,
-        failure = Option(new NoSuchFileException(s"File '$realPath' does not exist. Check for broken symlinks!"))
+        failure =
+          Option(new NoSuchFileException(s"File '${file.pathAsString}' does not exist. Check for broken symlinks!"))
       )
     }
   }

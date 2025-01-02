@@ -1,5 +1,6 @@
 package io.joern.javasrc2cpg.scope
 
+import com.github.javaparser.ast.body.Parameter
 import com.github.javaparser.ast.expr.TypePatternExpr
 import io.joern.javasrc2cpg.scope.Scope.*
 import io.joern.javasrc2cpg.scope.JavaScopeElement.*
@@ -18,7 +19,7 @@ import io.joern.x2cpg.{Ast, ValidationMode}
 import java.util
 import scala.jdk.CollectionConverters.*
 
-trait JavaScopeElement {
+trait JavaScopeElement(disableTypeFallback: Boolean) {
   private val variables                        = mutable.Map[String, ScopeVariable]()
   private val types                            = mutable.Map[String, ScopeType]()
   private var wildcardImports: WildcardImports = NoWildcard
@@ -39,8 +40,8 @@ trait JavaScopeElement {
 
   def lookupType(name: String, includeWildcards: Boolean): Option[ScopeType] = {
     types.get(name) match {
-      case None if includeWildcards => getNameWithWildcardPrefix(name)
-      case result                   => result
+      case None if includeWildcards && !disableTypeFallback => getNameWithWildcardPrefix(name)
+      case result                                           => result
     }
   }
 
@@ -70,7 +71,8 @@ case class PatternVariableInfo(
   typeVariableLocal: NewLocal,
   typeVariableInitializer: Ast,
   localAddedToAst: Boolean = false,
-  initializerAddedToAst: Boolean = false
+  initializerAddedToAst: Boolean = false,
+  index: Int
 )
 
 object JavaScopeElement {
@@ -85,11 +87,13 @@ object JavaScopeElement {
     def getNextAnonymousClassIndex(): Long = anonymousClassKeyPool.next
   }
 
-  class NamespaceScope(val namespace: NewNamespaceBlock) extends JavaScopeElement with TypeDeclContainer {
+  class NamespaceScope(val namespace: NewNamespaceBlock)(implicit disableTypeFallback: Boolean)
+      extends JavaScopeElement(disableTypeFallback)
+      with TypeDeclContainer {
     val isStatic = false
   }
 
-  class BlockScope extends JavaScopeElement {
+  class BlockScope(implicit disableTypeFallback: Boolean) extends JavaScopeElement(disableTypeFallback) {
     val isStatic = false
 
     def addLocal(local: NewLocal): Unit = {
@@ -102,13 +106,16 @@ object JavaScopeElement {
   }
 
   class MethodScope(val method: NewMethod, val returnType: ExpectedType, override val isStatic: Boolean)(implicit
-    val withSchemaValidation: ValidationMode
-  ) extends JavaScopeElement
+    val withSchemaValidation: ValidationMode,
+    disableTypeFallback: Boolean
+  ) extends JavaScopeElement(disableTypeFallback)
       with AnonymousClassCounter {
 
     private val temporaryLocals = mutable.ListBuffer[NewLocal]()
     private val patternVariableInfoIdentityMap: mutable.Map[TypePatternExpr, PatternVariableInfo] =
       new util.IdentityHashMap[TypePatternExpr, PatternVariableInfo]().asScala
+    // The insertion order should be preserved to ensure stable results when getting unadded variable asts
+    private var patternVariableIndex = 0
 
     def addParameter(parameter: NewMethodParameterIn): Unit = {
       addVariableToScope(ScopeParameter(parameter))
@@ -127,8 +134,9 @@ object JavaScopeElement {
     ): Unit = {
       patternVariableInfoIdentityMap.put(
         typePatternExpr,
-        PatternVariableInfo(typePatternExpr, typeVariableLocal, typeVariableInitializer)
+        PatternVariableInfo(typePatternExpr, typeVariableLocal, typeVariableInitializer, index = patternVariableIndex)
       )
+      patternVariableIndex += 1
     }
 
     def getPatternVariableInfo(typePatternExpr: TypePatternExpr): Option[PatternVariableInfo] = {
@@ -136,20 +144,21 @@ object JavaScopeElement {
     }
 
     def registerPatternVariableInitializerToBeAddedToGraph(typePatternExpr: TypePatternExpr): Unit = {
-      patternVariableInfoIdentityMap.get(typePatternExpr).foreach { case patternVariableInfo =>
-        patternVariableInfoIdentityMap.put(typePatternExpr, patternVariableInfo.copy(initializerAddedToAst = true))
+      patternVariableInfoIdentityMap.get(typePatternExpr).foreach { patternVariableInfo =>
+        patternVariableInfoIdentityMap
+          .put(typePatternExpr, patternVariableInfo.copy(initializerAddedToAst = true))
       }
     }
 
     def registerPatternVariableLocalToBeAddedToGraph(typePatternExpr: TypePatternExpr): Unit = {
-      patternVariableInfoIdentityMap.get(typePatternExpr).foreach { case patternVariableInfo =>
+      patternVariableInfoIdentityMap.get(typePatternExpr).foreach { patternVariableInfo =>
         patternVariableInfoIdentityMap.put(typePatternExpr, patternVariableInfo.copy(localAddedToAst = true))
       }
     }
 
     def getUnaddedPatternVariableAstsAndMarkAdded(): List[Ast] = {
       val result = mutable.ListBuffer[Ast]()
-      patternVariableInfoIdentityMap.values.foreach { patternInfo =>
+      patternVariableInfoIdentityMap.values.toArray.sortBy(_.index).foreach { patternInfo =>
         if (!patternInfo.localAddedToAst) {
           result.addOne(Ast(patternInfo.typeVariableLocal))
           registerPatternVariableLocalToBeAddedToGraph(patternInfo.typePatternExpr)
@@ -164,15 +173,18 @@ object JavaScopeElement {
     }
   }
 
-  class FieldDeclScope(override val isStatic: Boolean, val name: String) extends JavaScopeElement
+  class FieldDeclScope(override val isStatic: Boolean, val name: String)(implicit disableTypeFallback: Boolean)
+      extends JavaScopeElement(disableTypeFallback)
 
   class TypeDeclScope(
     val typeDecl: NewTypeDecl,
     override val isStatic: Boolean,
     private[scope] val capturedVariables: Map[String, CapturedVariable],
     outerClassType: Option[String],
-    val declaredMethodNames: Set[String]
-  ) extends JavaScopeElement
+    val declaredMethodNames: Set[String],
+    val recordParameters: List[Parameter]
+  )(implicit disableTypeFallback: Boolean)
+      extends JavaScopeElement(disableTypeFallback)
       with TypeDeclContainer
       with AnonymousClassCounter {
     private val bindingTableEntries            = mutable.ListBuffer[BindingTableEntry]()

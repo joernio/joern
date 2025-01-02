@@ -430,5 +430,26 @@ class MethodTests extends C2CpgSuite {
       varFieldIdent.code shouldBe "var"
       varFieldIdent.isFieldIdentifier shouldBe true
     }
+
+    "be correct for class method in nested class" in {
+      val cpg = code(
+        """class Outer {
+          |  class Inner {
+          |    void Method();
+          |    int member;
+          | };
+          |};
+          |void Outer::Inner::Method() {
+          |  member;
+          |}""".stripMargin,
+        "test.cpp"
+      )
+      cpg.identifier.name("member").size shouldBe 0
+      val List(memberCall) = cpg.call.codeExact("this->member").l
+      memberCall.typeFullName shouldBe "int"
+      memberCall.name shouldBe Operators.indirectFieldAccess
+      memberCall.argument.isIdentifier.typeFullName.l shouldBe List("Outer.Inner*")
+      memberCall.argument.isFieldIdentifier.code.l shouldBe List("member")
+    }
   }
 }

@@ -128,11 +128,7 @@ class MethodTraversal(val traversal: Iterator[Method]) extends AnyVal {
 
   @Doc(info = "Top level expressions (\"Statements\")")
   def topLevelExpressions: Iterator[Expression] =
-    traversal._astOut
-      .collectAll[Block]
-      ._astOut
-      .not(_.collectAll[Local])
-      .cast[Expression]
+    traversal.flatMap(_.topLevelExpressions)
 
   @Doc(info = "Control flow graph nodes")
   def cfgNode: Iterator[CfgNode] =

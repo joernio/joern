@@ -51,7 +51,7 @@ object C2Cpg {
   private val EscapedFileSeparator = Pattern.quote(java.io.File.separator)
 
   val DefaultIgnoredFolders: List[Regex] = List(
-    "\\..*".r,
+    s"(.*[$EscapedFileSeparator])?\\..*".r,
     s"(.*[$EscapedFileSeparator])?tests?[$EscapedFileSeparator].*".r,
     s"(.*[$EscapedFileSeparator])?CMakeFiles[$EscapedFileSeparator].*".r
   )

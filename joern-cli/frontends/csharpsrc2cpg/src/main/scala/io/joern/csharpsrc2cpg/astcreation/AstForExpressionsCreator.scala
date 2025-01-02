@@ -1,6 +1,6 @@
 package io.joern.csharpsrc2cpg.astcreation
 
-import io.joern.csharpsrc2cpg.datastructures.CSharpMethod
+import io.joern.csharpsrc2cpg.datastructures.{CSharpMethod, FieldDecl}
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.csharpsrc2cpg.{CSharpOperators, Constants}
@@ -61,12 +61,32 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   protected def astForOperand(operandNode: DotNetNodeInfo): Seq[Ast] = {
     operandNode.node match {
       case IdentifierName =>
-        List(scope.findFieldInScope(nameFromNode(operandNode)), scope.lookupVariable(nameFromNode(operandNode))) match {
-          case List(Some(_), None) => astForSimpleMemberAccessExpression(operandNode)
+        (scope.findFieldInScope(nameFromNode(operandNode)), scope.lookupVariable(nameFromNode(operandNode))) match {
+          case (Some(field), None) => createImplicitBaseFieldAccess(operandNode, field)
           case _                   => astForNode(operandNode)
         }
       case _ => astForNode(operandNode)
     }
+  }
+
+  private def createImplicitBaseFieldAccess(fieldNode: DotNetNodeInfo, field: FieldDecl): Seq[Ast] = {
+    // TODO: Maybe this should be a TypeRef, like we recently started doing for javasrc?
+    val baseNode = if (field.isStatic) {
+      newIdentifierNode(scope.surroundingTypeDeclFullName.getOrElse(Defines.Any), field.typeFullName)
+    } else {
+      newIdentifierNode(Constants.This, field.typeFullName)
+    }
+
+    fieldAccessAst(
+      base = Ast(baseNode),
+      code = s"${baseNode.code}.${field.name}",
+      lineNo = fieldNode.lineNumber,
+      columnNo = fieldNode.columnNumber,
+      fieldName = field.name,
+      fieldTypeFullName = field.typeFullName,
+      fieldLineNo = fieldNode.lineNumber,
+      fieldColumnNo = fieldNode.columnNumber
+    ) :: Nil
   }
 
   protected def astForUnaryExpression(unaryExpr: DotNetNodeInfo): Seq[Ast] = {
@@ -294,66 +314,44 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   protected def astForSimpleMemberAccessExpression(accessExpr: DotNetNodeInfo): Seq[Ast] = {
     val fieldIdentifierName = nameFromNode(accessExpr)
 
-    val (identifierName, typeFullName) = accessExpr.node match {
-      case SimpleMemberAccessExpression => {
-        createDotNetNodeInfo(accessExpr.json(ParserKeys.Expression)).node match
-          case SuppressNullableWarningExpression =>
-            val baseNode         = createDotNetNodeInfo(accessExpr.json(ParserKeys.Expression)(ParserKeys.Operand))
-            val baseAst          = astForNode(baseNode)
-            val baseTypeFullName = getTypeFullNameFromAstNode(baseAst)
+    val (identifierName, typeFullName) = {
+      createDotNetNodeInfo(accessExpr.json(ParserKeys.Expression)).node match
+        case SuppressNullableWarningExpression =>
+          val baseNode         = createDotNetNodeInfo(accessExpr.json(ParserKeys.Expression)(ParserKeys.Operand))
+          val baseAst          = astForNode(baseNode)
+          val baseTypeFullName = getTypeFullNameFromAstNode(baseAst)
 
-            val fieldInScope = scope.tryResolveFieldAccess(fieldIdentifierName, typeFullName = Option(baseTypeFullName))
+          val fieldInScope = scope.tryResolveFieldAccess(fieldIdentifierName, typeFullName = Option(baseTypeFullName))
 
-            (
-              nameFromNode(baseNode),
-              fieldInScope
-                .map(_.typeName)
-                .getOrElse(Defines.Any)
-            )
-          case _ => {
-            val fieldInScope = scope.findFieldInScope(fieldIdentifierName)
-            val _identifierName =
-              if (fieldInScope.nonEmpty && fieldInScope.map(_.isStatic).contains(true))
-                scope.surroundingTypeDeclFullName.getOrElse(Defines.Any)
-              else Constants.This
-            val _typeFullName = fieldInScope.map(_.typeFullName).getOrElse(Defines.Any)
-            (_identifierName, _typeFullName)
-          }
-      }
-      case _ => {
-        val fieldInScope = scope.findFieldInScope(fieldIdentifierName)
-        val _identifierName =
-          if (fieldInScope.nonEmpty && fieldInScope.map(_.isStatic).contains(true))
-            scope.surroundingTypeDeclFullName.getOrElse(Defines.Any)
-          else Constants.This
-        val _typeFullName = fieldInScope.map(_.typeFullName).getOrElse(Defines.Any)
-        (_identifierName, _typeFullName)
-      }
+          (
+            nameFromNode(baseNode),
+            fieldInScope
+              .map(_.typeName)
+              .getOrElse(Defines.Any)
+          )
+        case _ => {
+          val fieldInScope = scope.findFieldInScope(fieldIdentifierName)
+          val _identifierName =
+            if (fieldInScope.nonEmpty && fieldInScope.exists(_.isStatic))
+              scope.surroundingTypeDeclFullName.getOrElse(Defines.Any)
+            else Constants.This
+          val _typeFullName = fieldInScope.map(_.typeFullName).getOrElse(Defines.Any)
+          (_identifierName, _typeFullName)
+        }
     }
 
     val identifier = newIdentifierNode(identifierName, typeFullName)
 
-    val fieldIdentifier = NewFieldIdentifier()
-      .code(fieldIdentifierName)
-      .canonicalName(fieldIdentifierName)
-      .lineNumber(accessExpr.lineNumber)
-      .columnNumber(accessExpr.columnNumber)
-
-    val fieldAccessCode = s"$identifierName.$fieldIdentifierName"
-
-    val fieldAccess =
-      newOperatorCallNode(
-        Operators.fieldAccess,
-        fieldAccessCode,
-        Some(typeFullName).orElse(Some(Defines.Any)),
-        accessExpr.lineNumber,
-        accessExpr.columnNumber
-      )
-
-    val identifierAst = Ast(identifier)
-    val fieldIdentAst = Ast(fieldIdentifier)
-
-    Seq(callAst(fieldAccess, Seq(identifierAst, fieldIdentAst)))
+    fieldAccessAst(
+      Ast(identifier),
+      s"$identifierName.$fieldIdentifierName",
+      line(accessExpr),
+      column(accessExpr),
+      fieldIdentifierName,
+      typeFullName,
+      line(accessExpr),
+      column(accessExpr)
+    ) :: Nil
   }
 
   protected def astForElementAccessExpression(elementAccessExpression: DotNetNodeInfo): Seq[Ast] = {

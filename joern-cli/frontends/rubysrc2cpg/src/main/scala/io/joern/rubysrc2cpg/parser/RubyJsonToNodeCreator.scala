@@ -232,7 +232,7 @@ class RubyJsonToNodeCreator(
 
   private def visitArrayPatternWithTail(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
 
-  private def visitBackRef(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitBackRef(obj: Obj): RubyExpression = SimpleIdentifier()(obj.toTextSpan)
 
   private def visitBegin(obj: Obj): RubyExpression = {
     StatementList(obj.visitArray(ParserKeys.Body))(obj.toTextSpan)
@@ -495,7 +495,10 @@ class RubyJsonToNodeCreator(
     ForExpression(forVariable, iterableVariable, doBlock)(obj.toTextSpan)
   }
 
-  private def visitForwardArg(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitForwardArg(obj: Obj): RubyExpression = {
+    logger.warn("Forward arg unhandled")
+    defaultResult(Option(obj.toTextSpan))
+  }
 
   // Note: Forward args should probably be handled more explicitly, but this should preserve flows if the same
   // identifier is used in latter forwarding
@@ -1045,8 +1048,12 @@ class RubyJsonToNodeCreator(
       case Some(rhs) =>
         SingleAssignment(lhs, "=", rhs)(obj.toTextSpan)
       case None =>
-        // `lvasgn` is used in exec_var for rescueExpr, which only has LHS
-        MandatoryParameter(lhs.span.text)(lhs.span)
+        if (AstType.fromString(obj(ParserKeys.Type).str) == AstType.LocalVariableAssign) {
+          // `lvasgn` is used in exec_var for rescueExpr, which only has LHS
+          MandatoryParameter(lhs.span.text)(lhs.span)
+        } else {
+          lhs
+        }
     }
   }
 
@@ -1098,7 +1105,9 @@ class RubyJsonToNodeCreator(
 
   private def visitTrue(obj: Obj): RubyExpression = StaticLiteral(getBuiltInType(Defines.TrueClass))(obj.toTextSpan)
 
-  private def visitUnDefine(obj: Obj): RubyExpression = defaultResult(Option(obj.toTextSpan))
+  private def visitUnDefine(obj: Obj): RubyExpression = {
+    defaultResult(Option(obj.toTextSpan))
+  }
 
   private def visitUnlessExpression(obj: Obj): RubyExpression = {
     defaultResult(Option(obj.toTextSpan))

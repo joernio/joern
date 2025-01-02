@@ -132,12 +132,14 @@ trait AstForStatementsCreator extends AstForSimpleStatementsCreator with AstForF
 
     patternSet.asScala
       .flatMap(patternExpr => scope.enclosingMethod.flatMap(_.getPatternVariableInfo(patternExpr)))
+      .toArray
+      .sortBy(_.index)
       .foreach {
-        case PatternVariableInfo(pattern, variableLocal, _, _, true) =>
+        case PatternVariableInfo(pattern, variableLocal, _, _, true, _) =>
           scope.enclosingMethod.foreach(_.registerPatternVariableLocalToBeAddedToGraph(pattern))
           astsAddedBeforeStmt.addOne(Ast(variableLocal))
 
-        case PatternVariableInfo(pattern, variableLocal, initializer, _, false) =>
+        case PatternVariableInfo(pattern, variableLocal, initializer, _, false, _) =>
           if (patternsIntroducedByStmt.contains(pattern)) {
             if (patternsIntroducedToBody.contains(pattern) || patternsIntroducedToElse.contains(pattern)) {
               astsAddedBeforeStmt.addOne(Ast(variableLocal))

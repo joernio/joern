@@ -15,6 +15,7 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.ICPPInternalBinding
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTIdExpression
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPField
+import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.CPPVisitor
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalMemberAccess
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
@@ -85,8 +86,12 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     }
   }
 
-  private def isInCurrentScope(owner: String): Boolean = {
-    methodAstParentStack.collectFirst {
+  private def isInCurrentScope(ident: CPPASTIdExpression, owner: String): Boolean = {
+    val isInMethodScope =
+      Try(CPPVisitor.getContainingScope(ident).getScopeName.toString).toOption.exists(s =>
+        s.startsWith(s"$owner::") || s.contains(s"::$owner::")
+      )
+    isInMethodScope || methodAstParentStack.collectFirst {
       case typeDecl: NewTypeDecl if typeDecl.fullName == owner    => typeDecl
       case method: NewMethod if method.fullName.startsWith(owner) => method
     }.nonEmpty
@@ -110,16 +115,17 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     }
     Try(ident.getEvaluation).toOption match {
       case Some(e: EvalMemberAccess) =>
-        val tpe       = registerType(typeFor(ident))
-        val ownerType = registerType(cleanType(e.getOwnerType.toString))
-        if (isInCurrentScope(ownerType)) {
+        val ownerTypeRaw = cleanType(safeGetType(e.getOwnerType))
+        val deref        = if (e.isPointerDeref) "*" else ""
+        val ownerType    = registerType(s"$ownerTypeRaw$deref")
+        if (isInCurrentScope(ident, ownerTypeRaw)) {
           scope.lookupVariable("this") match {
             case Some((variable, _)) =>
               val op             = Operators.indirectFieldAccess
               val code           = s"this->$identifierName"
-              val thisIdentifier = identifierNode(ident, "this", "this", tpe)
+              val thisIdentifier = identifierNode(ident, "this", "this", ownerType)
               val member         = fieldIdentifierNode(ident, identifierName, identifierName)
-              val ma = callNode(ident, code, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(X2CpgDefines.Any))
+              val ma             = callNode(ident, code, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
               callAst(ma, Seq(Ast(thisIdentifier).withRefEdge(thisIdentifier, variable), Ast(member)))
             case None => tpe
           }

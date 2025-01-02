@@ -2,13 +2,17 @@ package io.joern.javasrc2cpg.astcreation.declarations
 
 import com.github.javaparser.ast.body.{
   AnnotationDeclaration,
+  AnnotationMemberDeclaration,
   BodyDeclaration,
   ClassOrInterfaceDeclaration,
+  CompactConstructorDeclaration,
   ConstructorDeclaration,
   EnumConstantDeclaration,
+  EnumDeclaration,
   FieldDeclaration,
   InitializerDeclaration,
   MethodDeclaration,
+  RecordDeclaration,
   TypeDeclaration,
   VariableDeclarator
 }
@@ -57,9 +61,6 @@ import scala.jdk.CollectionConverters.*
 import scala.util.{Success, Try}
 import com.github.javaparser.ast.expr.ObjectCreationExpr
 import com.github.javaparser.ast.stmt.LocalClassDeclarationStmt
-import com.github.javaparser.ast.body.AnnotationMemberDeclaration
-import com.github.javaparser.ast.body.CompactConstructorDeclaration
-import com.github.javaparser.ast.body.EnumDeclaration
 import io.joern.javasrc2cpg.scope.Scope.ScopeVariable
 import com.github.javaparser.ast.Node
 import com.github.javaparser.resolution.types.ResolvedReferenceType
@@ -117,7 +118,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
       methodDeclaration.getNameAsString
     }.toSet
 
-    scope.pushTypeDeclScope(typeDeclRoot, scope.isEnclosingScopeStatic, declaredMethodNames)
+    scope.pushTypeDeclScope(typeDeclRoot, scope.isEnclosingScopeStatic, declaredMethodNames, Nil)
     val memberAsts = astsForTypeDeclMembers(expr, body, isInterface = false, typeFullName)
 
     val localDecls    = scope.localDeclsInScope
@@ -173,7 +174,16 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
       createTypeDeclNode(typeDeclaration, astParentType, astParentFullName, isInterface, fullNameOverride)
 
     val declaredMethodNames = typeDeclaration.getMethods.asScala.map(_.getNameAsString).toSet
-    scope.pushTypeDeclScope(typeDeclRoot, typeDeclaration.isStatic, declaredMethodNames)
+
+    val (recordParameters, recordParameterAsts) = typeDeclaration match {
+      case recordDeclaration: RecordDeclaration =>
+        val parameters = recordDeclaration.getParameters.asScala.toList
+        val asts       = astsForRecordParameters(recordDeclaration, typeDeclRoot.fullName)
+        (parameters, asts)
+      case _ => (Nil, Nil)
+    }
+
+    scope.pushTypeDeclScope(typeDeclRoot, typeDeclaration.isStatic, declaredMethodNames, recordParameters)
     addTypeDeclTypeParamsToScope(typeDeclaration)
 
     val annotationAsts = typeDeclaration.getAnnotations.asScala.map(astForAnnotationExpr)
@@ -182,6 +192,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
       case enumDeclaration: EnumDeclaration => enumDeclaration.getEntries.asScala.toList
       case _                                => Nil
     }
+
     val memberAsts =
       astsForTypeDeclMembers(
         typeDeclaration,
@@ -194,6 +205,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     val lambdaMethods = scope.lambdaMethodsInScope
 
     val typeDeclAst = Ast(typeDeclRoot)
+      .withChildren(recordParameterAsts)
       .withChildren(memberAsts)
       .withChildren(annotationAsts)
       .withChildren(localDecls)
@@ -226,6 +238,32 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     }
 
     typeDeclAst
+  }
+
+  private def astsForRecordParameters(recordDeclaration: RecordDeclaration, recordTypeFullName: String): List[Ast] = {
+    val explicitMethodNames = recordDeclaration.getMethods.asScala.map(_.getNameAsString).toSet
+
+    recordDeclaration.getParameters.asScala.toList.flatMap { parameter =>
+      val parameterName = parameter.getNameAsString
+      val parameterTypeFullName = tryWithSafeStackOverflow {
+        val typ = parameter.getType
+        scope
+          .lookupScopeType(typ.asString())
+          .map(_.typeFullName)
+          .orElse(typeInfoCalc.fullName(typ))
+          .getOrElse(defaultTypeFallback(typ))
+      }.toOption.getOrElse(defaultTypeFallback())
+
+      val parameterMember = memberNode(parameter, parameterName, code(parameter), parameterTypeFullName)
+      val privateModifier = newModifierNode(ModifierTypes.PRIVATE)
+      val memberAst       = Ast(parameterMember).withChild(Ast(privateModifier))
+
+      val accessorMethodAst = Option.unless(explicitMethodNames.contains(parameterName))(
+        astForRecordParameterAccessor(parameter, recordTypeFullName, parameterName, parameterTypeFullName)
+      )
+
+      memberAst :: accessorMethodAst.toList
+    }
   }
 
   private def bindingTypeForReferenceType(typ: ResolvedReferenceType): Option[JavaparserBindingDeclType] = {
@@ -343,19 +381,35 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     }
 
     val constructorAstMap = astsForConstructors(
-      members.collect { case constructor: ConstructorDeclaration =>
-        constructor
+      members.collect {
+        case constructor: ConstructorDeclaration        => constructor
+        case constructor: CompactConstructorDeclaration => constructor
       },
       instanceFields
     )
 
     val membersAsts = membersAstPairs.flatMap {
-      case (constructor: ConstructorDeclaration, _) =>
-        constructorAstMap.get(constructor)
-      case (_, asts) => asts
+      case (constructor: ConstructorDeclaration, _)        => constructorAstMap.get(constructor)
+      case (constructor: CompactConstructorDeclaration, _) => constructorAstMap.get(constructor)
+      case (_, asts)                                       => asts
     }
 
-    val defaultConstructorAst = Option.when(!(isInterface || members.exists(_.isInstanceOf[ConstructorDeclaration]))) {
+    val hasCanonicalConstructor = scope.enclosingTypeDecl.get.recordParameters match {
+      case Nil => members.exists(member => member.isConstructorDeclaration || member.isCompactConstructorDeclaration)
+
+      case recordParameters =>
+        members.collect {
+          case compactConstructorDeclaration: CompactConstructorDeclaration => compactConstructorDeclaration
+
+          case constructorDeclaration: ConstructorDeclaration
+              if constructorDeclaration.getParameters.asScala
+                .map(_.getType)
+                .toList
+                .equals(recordParameters.map(_.getType)) =>
+            constructorDeclaration
+        }.nonEmpty
+    }
+    val defaultConstructorAst = Option.when(!(isInterface || hasCanonicalConstructor)) {
       astForDefaultConstructor(originNode, instanceFields)
     }
 
@@ -458,8 +512,10 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
   }
 
   private[declarations] def astForAnnotationExpr(annotationExpr: AnnotationExpr): Ast = {
-    val fallbackType = s"${Defines.UnresolvedNamespace}.${annotationExpr.getNameAsString}"
-    val fullName     = expressionReturnTypeFullName(annotationExpr).getOrElse(fallbackType)
+    val fullName = scope
+      .lookupType(annotationExpr.getNameAsString)
+      .orElse(tryWithSafeStackOverflow(annotationExpr.resolve()).toOption.flatMap(typeInfoCalc.fullName))
+      .getOrElse(defaultTypeFallback(annotationExpr.getNameAsString))
     typeInfoCalc.registerType(fullName)
     val code = annotationExpr.toString
     val name = annotationExpr.getName.getIdentifier

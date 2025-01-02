@@ -1,6 +1,8 @@
 package io.joern.csharpsrc2cpg.datastructures
 
+import better.files.File.VisitOptions
 import io.joern.csharpsrc2cpg.Constants
+import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.datastructures.{FieldLike, MethodLike, OverloadableMethod, ProgramSummary, TypeLike}
 import org.slf4j.LoggerFactory
 import upickle.core.LinkedHashMap
@@ -8,7 +10,6 @@ import upickle.default.*
 
 import java.io.{ByteArrayInputStream, InputStream}
 import scala.annotation.targetName
-import scala.collection.mutable.ListBuffer
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 import java.net.JarURLConnection
@@ -25,14 +26,18 @@ type NamespaceToTypeMap = mutable.Map[String, mutable.Set[CSharpType]]
   * @see
   *   [[CSharpProgramSummary.jsonToInitialMapping]] for generating initial mappings.
   */
-case class CSharpProgramSummary(namespaceToType: NamespaceToTypeMap, imports: Set[String])
+case class CSharpProgramSummary(namespaceToType: NamespaceToTypeMap, imports: Set[String], globalImports: Set[String])
     extends ProgramSummary[CSharpType, CSharpMethod, CSharpField] {
 
   def findGlobalTypes: Set[CSharpType] = namespaceToType.getOrElse(Constants.Global, Set.empty).toSet
 
   @targetName("appendAll")
   def ++=(other: CSharpProgramSummary): CSharpProgramSummary = {
-    new CSharpProgramSummary(ProgramSummary.merge(namespaceToType, other.namespaceToType), imports ++ other.imports)
+    new CSharpProgramSummary(
+      ProgramSummary.merge(namespaceToType, other.namespaceToType),
+      imports ++ other.imports,
+      globalImports ++ other.globalImports
+    )
   }
 
 }
@@ -45,9 +50,10 @@ object CSharpProgramSummary {
 
   def apply(
     namespaceToType: NamespaceToTypeMap = mutable.Map.empty,
-    imports: Set[String] = Set.empty
+    imports: Set[String] = Set.empty,
+    globalImports: Set[String] = Set.empty
   ): CSharpProgramSummary =
-    new CSharpProgramSummary(namespaceToType, imports)
+    new CSharpProgramSummary(namespaceToType, imports, globalImports)
 
   def apply(summaries: Iterable[CSharpProgramSummary]): CSharpProgramSummary =
     summaries.foldLeft(CSharpProgramSummary())(_ ++= _)
@@ -65,6 +71,30 @@ object CSharpProgramSummary {
     }
   }
 
+  def fromExternalJsons(paths: Set[String]): NamespaceToTypeMap = {
+    val jsonFiles = paths.flatMap(SourceFiles.determine(_, Set(".json"))(VisitOptions.default)).toList
+    val inputStreams = jsonFiles.flatMap { path =>
+      Try(java.io.FileInputStream(path)) match {
+        case Success(stream) => Some(stream)
+        case Failure(exc) =>
+          logger.warn(s"Unable to open file: $path", exc)
+          None
+      }
+    }
+
+    if (inputStreams.isEmpty) {
+      logger.warn("No JSON files found in the provided paths.")
+      mutable.Map.empty
+    } else {
+      jsonToInitialMapping(loadAndMergeJsonStreams(inputStreams)) match {
+        case Success(mapping) => mapping
+        case Failure(exception) =>
+          logger.warn("Failed to parsed merged JSON streams", exception)
+          mutable.Map.empty
+      }
+    }
+  }
+
   /** Converts a JSON type mapping to a NamespaceToTypeMap entry.
     * @param jsonInputStream
     *   a JSON file as an input stream.
@@ -73,6 +103,30 @@ object CSharpProgramSummary {
     */
   def jsonToInitialMapping(jsonInputStream: InputStream): Try[NamespaceToTypeMap] =
     Try(read[NamespaceToTypeMap](ujson.Readable.fromByteArray(jsonInputStream.readAllBytes())))
+
+  private def loadAndMergeJsonStreams(jsonInputStreams: List[InputStream]): InputStream = {
+    val jsonObjects = for {
+      inputStream <- jsonInputStreams
+      jsonString = Source.fromInputStream(inputStream).mkString
+      jsonObject = ujson.read(jsonString).obj
+    } yield jsonObject
+
+    val mergedJson = jsonObjects
+      .reduceOption((prev, curr) => {
+        curr.keys.foreach(key => {
+          prev.updateWith(key) {
+            case Some(x) =>
+              Option(x.arr.addAll(curr.get(key).get.arr))
+            case None =>
+              Option(curr.get(key).get.arr)
+          }
+        })
+        prev
+      })
+      .getOrElse(LinkedHashMap[String, ujson.Value]())
+
+    new ByteArrayInputStream(writeToByteArray(ujson.read(mergedJson)))
+  }
 
   private def mergeBuiltInTypesJson: InputStream = {
     val classLoader      = getClass.getClassLoader
@@ -117,30 +171,7 @@ object CSharpProgramSummary {
       logger.warn("No JSON files found.")
       InputStream.nullInputStream()
     } else {
-      val mergedJsonObjects = ListBuffer[LinkedHashMap[String, ujson.Value]]()
-      for (resourcePath <- resourcePaths) {
-        val inputStream = classLoader.getResourceAsStream(resourcePath)
-        val jsonString  = Source.fromInputStream(inputStream).mkString
-        val jsonObject  = ujson.read(jsonString).obj
-        mergedJsonObjects.addOne(jsonObject)
-      }
-
-      val mergedJson: LinkedHashMap[String, ujson.Value] =
-        mergedJsonObjects
-          .reduceOption((prev, curr) => {
-            curr.keys.foreach(key => {
-              prev.updateWith(key) {
-                case Some(x) =>
-                  Option(x.arr.addAll(curr.get(key).get.arr))
-                case None =>
-                  Option(curr.get(key).get.arr)
-              }
-            })
-            prev
-          })
-          .getOrElse(LinkedHashMap[String, ujson.Value]())
-
-      new ByteArrayInputStream(writeToByteArray(ujson.read(mergedJson)))
+      loadAndMergeJsonStreams(resourcePaths.map(classLoader.getResourceAsStream))
     }
   }
 
