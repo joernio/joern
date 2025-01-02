@@ -170,7 +170,7 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
       .typePatternExprsExposedToChild(expr.getRight)
       .asScala
       .flatMap(pattern => scope.enclosingMethod.flatMap(_.getPatternVariableInfo(pattern)))
-      .foreach { case PatternVariableInfo(pattern, local, _, _, _) =>
+      .foreach { case PatternVariableInfo(pattern, local, _, _, _, _) =>
         scope.enclosingBlock.foreach(_.addPatternLocal(local, pattern))
       }
 
@@ -318,7 +318,7 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
     val lhsAst = astsForExpression(expr.getExpression, ExpectedType.empty).head
     expr.getPattern.toScala
       .map { patternExpression =>
-        astForInstanceOfWithPattern(expr.getExpression, lhsAst, patternExpression)
+        instanceOfAstForPattern(patternExpression, lhsAst)
       }
       .getOrElse {
         val booleanTypeFullName = Some(TypeConstants.Boolean)

@@ -36,4 +36,9 @@ object Defines {
 
   val LeftAngularBracket = "<"
   val Unknown            = "<unknown>"
+
+  // Used for field access calls in the lowering of pattern extractors where the field name
+  // may not be known. As an example in javasrc2cpg, the assignment for `o instanceof Foo(Bar b))` could
+  // be lowered to `Bar b = (Bar) (((Foo) o).<unknownField>)`
+  val UnknownField = "<unknownField>"
 }

@@ -295,21 +295,22 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
 
     val selectorNode = selectorAst.root.get
 
-    val selectorMustBeIdentifier = stmt.getEntries.asScala.flatMap(_.getLabels.asScala).exists(_.isPatternExpr)
+    val selectorMustBeIdentifierOrFieldAccess =
+      stmt.getEntries.asScala.flatMap(_.getLabels.asScala).exists(_.isPatternExpr)
 
-    val (selectorInitializer, selectorIdentifier, selectorRefsTo) = if (selectorMustBeIdentifier) {
-      val (init, ident, refs) = astIdentifierAndRefsForPatternLhs(stmt.getSelector, selectorAst)
-      (init, Option(ident), refs)
+    val (initializerAst, referenceAst) = if (selectorMustBeIdentifierOrFieldAccess) {
+      val initAndRefAsts = initAndRefAstsForPatternInitializer(stmt.getSelector, selectorAst)
+      (initAndRefAsts.get, Option(initAndRefAsts.get))
     } else {
-      (selectorAst, None, None)
+      (selectorAst, None)
     }
 
-    val entryAsts = stmt.getEntries.asScala.flatMap(astForSwitchEntry(_, selectorIdentifier, selectorRefsTo))
+    val entryAsts = stmt.getEntries.asScala.flatMap(astForSwitchEntry(_, referenceAst))
 
     val switchBodyAst = Ast(NewBlock()).withChildren(entryAsts)
 
     Ast(switchNode)
-      .withChild(selectorInitializer)
+      .withChild(initializerAst)
       .withChild(switchBodyAst)
       .withConditionEdge(switchNode, selectorNode)
   }
@@ -355,11 +356,7 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
     (defaultAst ++ explicitLabelAsts).toList
   }
 
-  private def astForSwitchEntry(
-    entry: SwitchEntry,
-    selectorIdentifier: Option[NewIdentifier],
-    selectorRefsTo: Option[NewVariableNode]
-  ): Seq[Ast] = {
+  private def astForSwitchEntry(entry: SwitchEntry, selectorReferenceAst: Option[Ast]): Seq[Ast] = {
     // Fallthrough to/from a pattern is a compile error, so an entry can only have a pattern label if that is
     // the only label
     val labels    = entry.getLabels.asScala.toList
@@ -368,8 +365,8 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
     val entryContext = new SwitchEntryContext(entry, new CombinedTypeSolver())
 
     val instanceOfAst = labels.lastOption.collect { case patternExpr: PatternExpr =>
-      selectorIdentifier.map { selector =>
-        astForInstanceOfWithPattern(patternExpr, Ast(selector), patternExpr)
+      selectorReferenceAst.map { selectorAst =>
+        instanceOfAstForPattern(patternExpr, selectorAst)
       }
     }.flatten
 
@@ -382,7 +379,7 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
       scope.addLocalsForPatternsToEnclosingBlock(patternsExposedToBody)
       val patternAstsToAdd = patternsExposedToBody
         .flatMap(typePattern => scope.enclosingMethod.get.getPatternVariableInfo(typePattern))
-        .flatMap { case PatternVariableInfo(typePatternExpr, patternLocal, initializerAst, _, _) =>
+        .flatMap { case PatternVariableInfo(typePatternExpr, patternLocal, initializerAst, _, _, _) =>
           scope.enclosingMethod.get.registerPatternVariableInitializerToBeAddedToGraph(typePatternExpr)
           scope.enclosingMethod.get.registerPatternVariableLocalToBeAddedToGraph(typePatternExpr)
           Ast(patternLocal) :: initializerAst :: Nil
@@ -413,7 +410,7 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
       instanceOfAst
         .map { instanceOfAst =>
           val ifNode = controlStructureNode(entry, ControlStructureTypes.IF, s"if (${instanceOfAst.rootCodeOrEmpty})")
-          labelAsts :+ Ast(ifNode).withChild(instanceOfAst).withChild(statementsAst)
+          labelAsts :+ controlStructureAst(ifNode, Option(instanceOfAst), statementsAst :: Nil)
         }
         .getOrElse(labelAsts :+ statementsAst)
     }

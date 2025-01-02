@@ -71,7 +71,8 @@ case class PatternVariableInfo(
   typeVariableLocal: NewLocal,
   typeVariableInitializer: Ast,
   localAddedToAst: Boolean = false,
-  initializerAddedToAst: Boolean = false
+  initializerAddedToAst: Boolean = false,
+  index: Int
 )
 
 object JavaScopeElement {
@@ -113,6 +114,8 @@ object JavaScopeElement {
     private val temporaryLocals = mutable.ListBuffer[NewLocal]()
     private val patternVariableInfoIdentityMap: mutable.Map[TypePatternExpr, PatternVariableInfo] =
       new util.IdentityHashMap[TypePatternExpr, PatternVariableInfo]().asScala
+    // The insertion order should be preserved to ensure stable results when getting unadded variable asts
+    private var patternVariableIndex = 0
 
     def addParameter(parameter: NewMethodParameterIn): Unit = {
       addVariableToScope(ScopeParameter(parameter))
@@ -131,8 +134,9 @@ object JavaScopeElement {
     ): Unit = {
       patternVariableInfoIdentityMap.put(
         typePatternExpr,
-        PatternVariableInfo(typePatternExpr, typeVariableLocal, typeVariableInitializer)
+        PatternVariableInfo(typePatternExpr, typeVariableLocal, typeVariableInitializer, index = patternVariableIndex)
       )
+      patternVariableIndex += 1
     }
 
     def getPatternVariableInfo(typePatternExpr: TypePatternExpr): Option[PatternVariableInfo] = {
@@ -140,20 +144,21 @@ object JavaScopeElement {
     }
 
     def registerPatternVariableInitializerToBeAddedToGraph(typePatternExpr: TypePatternExpr): Unit = {
-      patternVariableInfoIdentityMap.get(typePatternExpr).foreach { case patternVariableInfo =>
-        patternVariableInfoIdentityMap.put(typePatternExpr, patternVariableInfo.copy(initializerAddedToAst = true))
+      patternVariableInfoIdentityMap.get(typePatternExpr).foreach { patternVariableInfo =>
+        patternVariableInfoIdentityMap
+          .put(typePatternExpr, patternVariableInfo.copy(initializerAddedToAst = true))
       }
     }
 
     def registerPatternVariableLocalToBeAddedToGraph(typePatternExpr: TypePatternExpr): Unit = {
-      patternVariableInfoIdentityMap.get(typePatternExpr).foreach { case patternVariableInfo =>
+      patternVariableInfoIdentityMap.get(typePatternExpr).foreach { patternVariableInfo =>
         patternVariableInfoIdentityMap.put(typePatternExpr, patternVariableInfo.copy(localAddedToAst = true))
       }
     }
 
     def getUnaddedPatternVariableAstsAndMarkAdded(): List[Ast] = {
       val result = mutable.ListBuffer[Ast]()
-      patternVariableInfoIdentityMap.values.foreach { patternInfo =>
+      patternVariableInfoIdentityMap.values.toArray.sortBy(_.index).foreach { patternInfo =>
         if (!patternInfo.localAddedToAst) {
           result.addOne(Ast(patternInfo.typeVariableLocal))
           registerPatternVariableLocalToBeAddedToGraph(patternInfo.typePatternExpr)
