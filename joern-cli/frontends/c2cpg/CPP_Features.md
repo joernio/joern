@@ -2,8 +2,9 @@
 
 * adapted from https://github.com/AnthonyCalandra/modern-cpp-features/tree/master)
 * Table legend:
+  * `[?]` not yet checked
   * `[ ]` not supported at all / can not even be parsed
-  * `[-]` can be parsed but is not fully represented in the CPG
+  * `[~]` can be parsed but is not fully represented in the CPG
   * `[x]` full support including the CPG representation
 
 ## C++17 New Language Features Overview
@@ -11,22 +12,22 @@
 
 | Feature                                                                                                                   | Supported |
 |---------------------------------------------------------------------------------------------------------------------------|-----------|
-| [template argument deduction for class templates](#template-argument-deduction-for-class-templates)                       | [-]       |
-| [declaring non-type template parameters with auto](#declaring-non-type-template-parameters-with-auto)                     | [-]       |
-| [folding expressions](#folding-expressions)                                                                               | [ ]       |
-| [new rules for auto deduction from braced-init-list](#new-rules-for-auto-deduction-from-braced-init-list)                 | [ ]       |
-| [constexpr lambda](#constexpr-lambda)                                                                                     | [ ]       |
-| [lambda capture this by value](#lambda-capture-this-by-value)                                                             | [ ]       |
-| [inline variables](#inline-variables)                                                                                     | [ ]       |
-| [nested namespaces](#nested-namespaces)                                                                                   | [ ]       |
-| [structured bindings](#structured-bindings)                                                                               | [ ]       |
-| [selection statements with initializer](#selection-statements-with-initializer)                                           | [ ]       |
-| [constexpr if](#constexpr-if)                                                                                             | [ ]       |
-| [utf-8 character literals](#utf-8-character-literals)                                                                     | [ ]       |
-| [direct-list-initialization of enums](#direct-list-initialization-of-enums)                                               | [ ]       |
-| [\[\[fallthrough\]\], \[\[nodiscard\]\], \[\[maybe_unused\]\] attributes](#fallthrough-nodiscard-maybe_unused-attributes) | [ ]       |
-| [\_\_has\_include](#\_\_has\_include)                                                                                     | [ ]       |
-| [class template argument deduction](#class-template-argument-deduction)                                                   | [ ]       |
+| [template argument deduction for class templates](#template-argument-deduction-for-class-templates)                       | [~]       |
+| [declaring non-type template parameters with auto](#declaring-non-type-template-parameters-with-auto)                     | [~]       |
+| [folding expressions](#folding-expressions)                                                                               | [x]       |
+| [new rules for auto deduction from braced-init-list](#new-rules-for-auto-deduction-from-braced-init-list)                 | [x]       |
+| [constexpr lambda](#constexpr-lambda)                                                                                     | [?]       |
+| [lambda capture this by value](#lambda-capture-this-by-value)                                                             | [?]       |
+| [inline variables](#inline-variables)                                                                                     | [?]       |
+| [nested namespaces](#nested-namespaces)                                                                                   | [?]       |
+| [structured bindings](#structured-bindings)                                                                               | [?]       |
+| [selection statements with initializer](#selection-statements-with-initializer)                                           | [?]       |
+| [constexpr if](#constexpr-if)                                                                                             | [?]       |
+| [utf-8 character literals](#utf-8-character-literals)                                                                     | [?]       |
+| [direct-list-initialization of enums](#direct-list-initialization-of-enums)                                               | [?]       |
+| [\[\[fallthrough\]\], \[\[nodiscard\]\], \[\[maybe_unused\]\] attributes](#fallthrough-nodiscard-maybe_unused-attributes) | [?]       |
+| [\_\_has\_include](#\_\_has\_include)                                                                                     | [?]       |
+| [class template argument deduction](#class-template-argument-deduction)                                                   | [?]       |
 
 
 ### Template argument deduction for class templates
@@ -386,23 +387,23 @@ container c{ 5, 6 }; // ERROR: std::iterator_traits<int>::value_type is not a ty
 
 | Feature                                                                                     |       Supported        |
 |---------------------------------------------------------------------------------------------|------------------------|
-| [coroutines](#coroutines)                                                                   |          [ ]           |
-| [concepts](#concepts)                                                                       |          [ ]           |
-| [three-way comparison](#three-way-comparison)                                               |          [ ]           |
-| [designated initializers](#designated-initializers)                                         |          [ ]           |
-| [template syntax for lambdas](#template-syntax-for-lambdas)                                 |          [ ]           |
-| [range-based for loop with initializer](#range-based-for-loop-with-initializer)             |          [ ]           |
-| [\[\[likely\]\] and \[\[unlikely\]\] attributes](#likely-and-unlikely-attributes)           |          [ ]           |
-| [deprecate implicit capture of this](#deprecate-implicit-capture-of-this)                   |          [ ]           |
-| [class types in non-type template parameters](#class-types-in-non-type-template-parameters) |          [ ]           |
-| [constexpr virtual functions](#constexpr-virtual-functions)                                 |          [ ]           |
-| [explicit(bool)](#explicitbool)                                                             |          [ ]           |
-| [immediate functions](#immediate-functions)                                                 |          [ ]           |
-| [using enum](#using-enum)                                                                   |          [ ]           |
-| [lambda capture of parameter pack](#lambda-capture-of-parameter-pack)                       |          [ ]           |
-| [char8_t](#char8_t)                                                                         |          [ ]           |
-| [constinit](#constinit)                                                                     |          [ ]           |
-| [\_\_VA\_OPT\_\_](#__VA_OPT__)                                                              |          [ ]           |
+| [coroutines](#coroutines)                                                                   |          [?]           |
+| [concepts](#concepts)                                                                       |          [?]           |
+| [three-way comparison](#three-way-comparison)                                               |          [?]           |
+| [designated initializers](#designated-initializers)                                         |          [?]           |
+| [template syntax for lambdas](#template-syntax-for-lambdas)                                 |          [?]           |
+| [range-based for loop with initializer](#range-based-for-loop-with-initializer)             |          [?]           |
+| [\[\[likely\]\] and \[\[unlikely\]\] attributes](#likely-and-unlikely-attributes)           |          [?]           |
+| [deprecate implicit capture of this](#deprecate-implicit-capture-of-this)                   |          [?]           |
+| [class types in non-type template parameters](#class-types-in-non-type-template-parameters) |          [?]           |
+| [constexpr virtual functions](#constexpr-virtual-functions)                                 |          [?]           |
+| [explicit(bool)](#explicitbool)                                                             |          [?]           |
+| [immediate functions](#immediate-functions)                                                 |          [?]           |
+| [using enum](#using-enum)                                                                   |          [?]           |
+| [lambda capture of parameter pack](#lambda-capture-of-parameter-pack)                       |          [?]           |
+| [char8_t](#char8_t)                                                                         |          [?]           |
+| [constinit](#constinit)                                                                     |          [?]           |
+| [\_\_VA\_OPT\_\_](#__VA_OPT__)                                                              |          [?]           |
 
 
 ### Coroutines
