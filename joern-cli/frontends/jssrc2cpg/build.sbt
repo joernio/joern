@@ -92,3 +92,7 @@ stage := Def
 
 Universal / packageName       := name.value
 Universal / topLevelDirectory := None
+
+/** write the astgen version to the manifest for downstream usage */
+Compile / packageBin / packageOptions +=
+  Package.ManifestAttributes(new java.util.jar.Attributes.Name("JS-AstGen-Version") -> astGenVersion.value)
