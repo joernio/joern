@@ -34,7 +34,6 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |  // co_return;
           |}
           |""".stripMargin)
-      cpg
       ???
     }
 
@@ -125,7 +124,6 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |  requires std::same_as<sizeof(x), size_t>;
           |};
           |""".stripMargin)
-      cpg
       ???
     }
 
@@ -133,7 +131,6 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       val cpg = code("""
           |bool x = 1 <=> 2;
           |""".stripMargin)
-      cpg
       ???
     }
 
@@ -147,7 +144,6 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |
           |A a {.x = 1, .z = 2}; // a.x == 1, a.y == 0, a.z == 2
           |""".stripMargin)
-      cpg
       ???
     }
 
@@ -157,7 +153,6 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |  // ...
           |};
           |""".stripMargin)
-      cpg
       ???
     }
 
@@ -168,7 +163,6 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |}
           |// prints "123"
           |""".stripMargin)
-      cpg
       ???
     }
 
@@ -195,7 +189,6 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |  // ...
           |}
           |""".stripMargin)
-      cpg
       ???
     }
 
@@ -212,7 +205,6 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |  }
           |};
           |""".stripMargin)
-      cpg
       ???
     }
 
@@ -231,7 +223,6 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |get_foo(); // uses implicit constructor
           |get_foo<foo{123}>();
           |""".stripMargin)
-      cpg
       ???
     }
 
@@ -256,7 +247,6 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |constexpr X4 x4;
           |x4.f(); // == 4
           |""".stripMargin)
-      cpg
       ???
     }
 
@@ -271,7 +261,6 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |foo a = 123;
           |foo c {"123"};
           |""".stripMargin)
-      cpg
       ???
     }
 
@@ -286,7 +275,6 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |int r2 = sqr(x); // ERROR: the value of 'x' is not usable in a constant expression
           |                 // OK if `sqr` were a `constexpr` function
           |""".stripMargin)
-      cpg
       ???
     }
 
@@ -304,7 +292,6 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |  }
           |}
           |""".stripMargin)
-      cpg
       ???
     }
 
@@ -326,7 +313,6 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |    };
           |}
           |""".stripMargin)
-      cpg
       ???
     }
 
@@ -334,7 +320,6 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       val cpg = code("""
           |char8_t utf8_str[] = u8"\\u0123";
           |""".stripMargin)
-      cpg
       ???
     }
 
@@ -346,7 +331,6 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |constinit const char* c = f(true); // OK
           |constinit const char* d = g(false); // ERROR: `g` is not constexpr, so `d` cannot be evaluated at compile-time.
           |""".stripMargin)
-      cpg
       ???
     }
 
@@ -356,7 +340,6 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |F(a, b, c) // replaced by f(0, a, b, c)
           |F()        // replaced by f(0)
           |""".stripMargin)
-      cpg
       ???
     }
 

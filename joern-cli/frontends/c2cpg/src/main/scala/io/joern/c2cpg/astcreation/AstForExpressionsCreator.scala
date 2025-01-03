@@ -523,20 +523,22 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     astForExpression(packExpansionExpression.getPattern)
 
   private def astForFoldExpression(foldExpression: CPPASTFoldExpression): Ast = {
+    def valueFromField[T](obj: Any, fieldName: String): Option[T] = {
+      // we need this hack because fields are all private at CPPASTExpression
+      Try {
+        val field = obj.getClass.getDeclaredField(fieldName)
+        field.setAccessible(true)
+        field.get(obj).asInstanceOf[T]
+      }.toOption
+    }
+
     val op  = "<operator>.fold"
     val tpe = typeFor(foldExpression)
     val callNode_ =
       callNode(foldExpression, code(foldExpression), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
 
-    val lhsField = foldExpression.getClass.getDeclaredField("fLhs")
-    lhsField.setAccessible(true)
-    val lhsValue = lhsField.get(foldExpression).asInstanceOf[ICPPASTExpression]
-    val left     = nullSafeAst(lhsValue)
-
-    val rhsField = foldExpression.getClass.getDeclaredField("fRhs")
-    rhsField.setAccessible(true)
-    val rhsValue = rhsField.get(foldExpression).asInstanceOf[ICPPASTExpression]
-    val right    = nullSafeAst(rhsValue)
+    val left  = valueFromField[ICPPASTExpression](foldExpression, "fLhs").map(nullSafeAst).getOrElse(Ast())
+    val right = valueFromField[ICPPASTExpression](foldExpression, "fRhs").map(nullSafeAst).getOrElse(Ast())
     callAst(callNode_, List(left, right))
   }
 

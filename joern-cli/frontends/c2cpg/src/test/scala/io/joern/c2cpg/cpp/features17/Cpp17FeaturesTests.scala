@@ -136,7 +136,6 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |
           |static_assert(addOne(1) == 2);
           |""".stripMargin)
-      cpg
       ???
     }
 
@@ -158,7 +157,6 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |valueCopy(); // 123
           |valueRef(); // 321
           |""".stripMargin)
-      cpg
       ???
     }
 
@@ -180,7 +178,6 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |  static inline int count{0}; // declare and initialize count to 0 within the class
           |};
           |""".stripMargin)
-      cpg
       ???
     }
 
@@ -198,7 +195,6 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |  int i;
           |}
           |""".stripMargin)
-      cpg
       ???
     }
 
@@ -224,7 +220,6 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |  // Do something with key and value
           |}
           |""".stripMargin)
-      cpg
       ???
     }
 
@@ -250,7 +245,6 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |  case Bad: throw BadFoo(s.message());
           |}
           |""".stripMargin)
-      cpg
       ???
     }
 
@@ -270,7 +264,6 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |struct S {};
           |static_assert(isIntegral<S>() == false);
           |""".stripMargin)
-      cpg
       ???
     }
 
@@ -278,7 +271,6 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       val cpg = code("""
           |char x = u8'x';
           |""".stripMargin)
-      cpg
       ???
     }
 
@@ -290,7 +282,6 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |byte d = byte{1}; // OK
           |byte e = byte{256}; // ERROR
           |""".stripMargin)
-      cpg
       ???
     }
 
@@ -322,7 +313,6 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |  log(msg);
           |}
           |""".stripMargin)
-      cpg
       ???
     }
 
@@ -353,7 +343,6 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |# endif
           |#endif
           |""".stripMargin)
-      cpg
       ???
     }
 
@@ -384,7 +373,6 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |
           |container c{ 5, 6 }; // ERROR: std::iterator_traits<int>::value_type is not a type
           |""".stripMargin)
-      cpg
       ???
     }
 
