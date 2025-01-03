@@ -1,5 +1,6 @@
 package io.joern.c2cpg.cpp.features17
 
+import io.joern.c2cpg.astcreation.Defines
 import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.testfixtures.AstC2CpgSuite
 import io.shiftleft.semanticcpg.language.*
@@ -55,7 +56,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       seq2.typeFullName shouldBe "my_integer_sequence<int0,int1,int2>"
     }
 
-    "handle folding expressions (binary)" ignore {
+    "handle folding expressions (binary)" in {
       val cpg = code("""
           |template <typename... Args>
           |bool logicalAnd(Args... args) {
@@ -66,11 +67,18 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |bool& b2 = b;
           |logicalAnd(b, b2, true); // == true
           |""".stripMargin)
-      cpg
-      ???
+      val List(argsParam) = cpg.method.nameExact("logicalAnd").parameter.l
+      argsParam.name shouldBe "args"
+      argsParam.typeFullName shouldBe "Args"
+      argsParam.isVariadic shouldBe true
+      val List(retExpr) = cpg.method.nameExact("logicalAnd").ast.isReturn.astChildren.isCall.l
+      retExpr.name shouldBe "<operator>.fold"
+      retExpr.typeFullName shouldBe "bool"
+      retExpr.code shouldBe "(true && ... && args)"
+      retExpr.argument.code.l shouldBe List("true", "args")
     }
 
-    "handle folding expressions (unary)" ignore {
+    "handle folding expressions (unary)" in {
       val cpg = code("""
           |template <typename... Args>
           |auto sum(Args... args) {
@@ -79,18 +87,34 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |}
           |sum(1.0, 2.0f, 3); // == 6.0
           |""".stripMargin)
-      cpg
-      ???
+      val List(argsParam) = cpg.method.nameExact("sum").parameter.l
+      argsParam.name shouldBe "args"
+      argsParam.typeFullName shouldBe "Args"
+      argsParam.isVariadic shouldBe true
+      val List(retExpr) = cpg.method.nameExact("sum").ast.isReturn.astChildren.isCall.l
+      retExpr.name shouldBe "<operator>.fold"
+      retExpr.typeFullName shouldBe "Args"
+      retExpr.code shouldBe "(... + args)"
+      retExpr.argument.code.l shouldBe List("args")
     }
 
-    "handle new rules for auto deduction from braced-init-list" ignore {
+    "handle new rules for auto deduction from braced-init-list" in {
       val cpg = code("""
-          |auto x2 = {1, 2, 3}; // x2 is std::initializer_list<int>
-          |auto x3 {3}; // x3 is int
-          |auto x4 {3.0}; // x4 is double
+          |auto x1 = {1, 2, 3}; // x1 is std::initializer_list<int>
+          |auto x2 {3}; // x2 is int
+          |auto x3 {3.0}; // x3 is double
           |""".stripMargin)
-      cpg
-      ???
+      val List(x1, x2, x3) = cpg.local.l
+      x1.name shouldBe "x1"
+      x1.typeFullName shouldBe Defines.Any
+      pendingUntilFixed {
+        // TODO: can not be determined without type information from includes
+        x1.typeFullName shouldBe "std::initializer_list<int>"
+      }
+      x2.name shouldBe "x2"
+      x2.typeFullName shouldBe "int"
+      x3.name shouldBe "x3"
+      x3.typeFullName shouldBe "double"
     }
 
     "handle constexpr lambda" ignore {

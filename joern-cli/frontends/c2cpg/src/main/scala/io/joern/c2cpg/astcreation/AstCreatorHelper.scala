@@ -27,6 +27,9 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPMethod
 import org.eclipse.cdt.internal.core.dom.parser.cpp.ICPPEvaluation
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalBinding
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalMemberAccess
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFoldExpression
+import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalBinary
+import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalFoldExpression
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import java.nio.file.Path
@@ -210,6 +213,22 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     }
   }
 
+  private def typeForCPPASTFoldExpression(f: CPPASTFoldExpression, stripKeywords: Boolean = true): String = {
+    safeGetEvaluation(f) match {
+      case Some(evaluation: EvalFoldExpression) =>
+        Try(evaluation.getValue.getEvaluation).toOption match {
+          case Some(value: EvalBinary) =>
+            val s = value.toString
+            cleanType(s.substring(0, s.indexOf(": ")), stripKeywords)
+          case Some(value: EvalBinding) if value.getType.isInstanceOf[ICPPParameterPackType] =>
+            val s = value.getType.asInstanceOf[ICPPParameterPackType].getType.toString
+            cleanType(s, stripKeywords)
+          case _ => Defines.Any
+        }
+      case _ => Defines.Any
+    }
+  }
+
   @nowarn
   private def typeForIASTArrayDeclarator(a: IASTArrayDeclarator, stripKeywords: Boolean = true): String = {
     import org.eclipse.cdt.core.dom.ast.ASTSignatureUtil.getNodeSignature
@@ -267,6 +286,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def typeFor(node: IASTNode, stripKeywords: Boolean = true): String = {
     import org.eclipse.cdt.core.dom.ast.ASTSignatureUtil.getNodeSignature
     node match {
+      case f: CPPASTFoldExpression          => typeForCPPASTFoldExpression(f, stripKeywords)
       case f: CPPASTFieldReference          => typeForCPPASTFieldReference(f, stripKeywords)
       case s: CPPASTIdExpression            => typeForCPPASTIdExpression(s, stripKeywords)
       case s: ICPPASTNamedTypeSpecifier     => typeForCPPAstNamedTypeSpecifier(s, stripKeywords)

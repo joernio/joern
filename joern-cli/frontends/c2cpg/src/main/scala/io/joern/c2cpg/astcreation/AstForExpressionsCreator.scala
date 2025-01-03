@@ -17,6 +17,7 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTIdExpression
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTQualifiedName
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPClosureType
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalFunctionCall
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFoldExpression
 
 import scala.util.Try
 
@@ -521,6 +522,24 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   private def astForPackExpansionExpression(packExpansionExpression: ICPPASTPackExpansionExpression): Ast =
     astForExpression(packExpansionExpression.getPattern)
 
+  private def astForFoldExpression(foldExpression: CPPASTFoldExpression): Ast = {
+    val op  = "<operator>.fold"
+    val tpe = typeFor(foldExpression)
+    val callNode_ =
+      callNode(foldExpression, code(foldExpression), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
+
+    val lhsField = foldExpression.getClass.getDeclaredField("fLhs")
+    lhsField.setAccessible(true)
+    val lhsValue = lhsField.get(foldExpression).asInstanceOf[ICPPASTExpression]
+    val left     = nullSafeAst(lhsValue)
+
+    val rhsField = foldExpression.getClass.getDeclaredField("fRhs")
+    rhsField.setAccessible(true)
+    val rhsValue = rhsField.get(foldExpression).asInstanceOf[ICPPASTExpression]
+    val right    = nullSafeAst(rhsValue)
+    callAst(callNode_, List(left, right))
+  }
+
   protected def astForExpression(expression: IASTExpression): Ast = {
     val r = expression match {
       case lit: IASTLiteralExpression                                                => astForLiteral(lit)
@@ -542,6 +561,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case lambdaExpression: ICPPASTLambdaExpression   => astForMethodRefForLambda(lambdaExpression)
       case cExpr: IGNUASTCompoundStatementExpression   => astForCompoundStatementExpression(cExpr)
       case pExpr: ICPPASTPackExpansionExpression       => astForPackExpansionExpression(pExpr)
+      case foldExpression: CPPASTFoldExpression        => astForFoldExpression(foldExpression)
       case _                                           => notHandledYet(expression)
     }
     asChildOfMacroCall(expression, r)
