@@ -197,7 +197,6 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
   }
 
   private def createAndPushAssignmentForTypePattern(patternNode: PatternInitTreeNode): Unit = {
-    println(s"Pushing assignment for pattern ${code(patternNode.patternExpr)}")
     patternNode.patternExpr match {
       case recordPatternExpr: RecordPatternExpr =>
         logger.warn(s"Attempting to create assignment for record pattern expr ${code(recordPatternExpr)}")
