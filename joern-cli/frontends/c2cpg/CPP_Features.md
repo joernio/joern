@@ -3,30 +3,30 @@
 * adapted from https://github.com/AnthonyCalandra/modern-cpp-features/tree/master)
 * Table legend:
   * `[ ]` not supported at all / can not even be parsed
-  * `[-]` can be parsed but is not represented in the CPG
+  * `[-]` can be parsed but is not fully represented in the CPG
   * `[x]` full support including the CPG representation
 
 ## C++17 New Language Features Overview
 
 
-| Feature                                                                                                                   |       Supported       |
-|---------------------------------------------------------------------------------------------------------------------------|-----------------------|
-| [template argument deduction for class templates](#template-argument-deduction-for-class-templates)                       |          [ ]          |
-| [declaring non-type template parameters with auto](#declaring-non-type-template-parameters-with-auto)                     |          [ ]          |
-| [folding expressions](#folding-expressions)                                                                               |          [ ]          |
-| [new rules for auto deduction from braced-init-list](#new-rules-for-auto-deduction-from-braced-init-list)                 |          [ ]          |
-| [constexpr lambda](#constexpr-lambda)                                                                                     |          [ ]          |
-| [lambda capture this by value](#lambda-capture-this-by-value)                                                             |          [ ]          |
-| [inline variables](#inline-variables)                                                                                     |          [ ]          |
-| [nested namespaces](#nested-namespaces)                                                                                   |          [ ]          |
-| [structured bindings](#structured-bindings)                                                                               |          [ ]          |
-| [selection statements with initializer](#selection-statements-with-initializer)                                           |          [ ]          |
-| [constexpr if](#constexpr-if)                                                                                             |          [ ]          |
-| [utf-8 character literals](#utf-8-character-literals)                                                                     |          [ ]          |
-| [direct-list-initialization of enums](#direct-list-initialization-of-enums)                                               |          [ ]          |
-| [\[\[fallthrough\]\], \[\[nodiscard\]\], \[\[maybe_unused\]\] attributes](#fallthrough-nodiscard-maybe_unused-attributes) |          [ ]          |
-| [\_\_has\_include](#\_\_has\_include)                                                                                     |          [ ]          |
-| [class template argument deduction](#class-template-argument-deduction)                                                   |          [ ]          |
+| Feature                                                                                                                   | Supported |
+|---------------------------------------------------------------------------------------------------------------------------|-----------|
+| [template argument deduction for class templates](#template-argument-deduction-for-class-templates)                       | [-]       |
+| [declaring non-type template parameters with auto](#declaring-non-type-template-parameters-with-auto)                     | [-]       |
+| [folding expressions](#folding-expressions)                                                                               | [ ]       |
+| [new rules for auto deduction from braced-init-list](#new-rules-for-auto-deduction-from-braced-init-list)                 | [ ]       |
+| [constexpr lambda](#constexpr-lambda)                                                                                     | [ ]       |
+| [lambda capture this by value](#lambda-capture-this-by-value)                                                             | [ ]       |
+| [inline variables](#inline-variables)                                                                                     | [ ]       |
+| [nested namespaces](#nested-namespaces)                                                                                   | [ ]       |
+| [structured bindings](#structured-bindings)                                                                               | [ ]       |
+| [selection statements with initializer](#selection-statements-with-initializer)                                           | [ ]       |
+| [constexpr if](#constexpr-if)                                                                                             | [ ]       |
+| [utf-8 character literals](#utf-8-character-literals)                                                                     | [ ]       |
+| [direct-list-initialization of enums](#direct-list-initialization-of-enums)                                               | [ ]       |
+| [\[\[fallthrough\]\], \[\[nodiscard\]\], \[\[maybe_unused\]\] attributes](#fallthrough-nodiscard-maybe_unused-attributes) | [ ]       |
+| [\_\_has\_include](#\_\_has\_include)                                                                                     | [ ]       |
+| [class template argument deduction](#class-template-argument-deduction)                                                   | [ ]       |
 
 
 ### Template argument deduction for class templates

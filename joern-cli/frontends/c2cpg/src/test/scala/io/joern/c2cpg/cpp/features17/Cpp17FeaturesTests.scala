@@ -8,7 +8,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
 
   "C++17 feature support" should {
 
-    "handle template argument deduction for class templates" ignore {
+    "handle template argument deduction for class templates" in {
       val cpg = code("""
           |template <typename T = float>
           |struct MyContainer {
@@ -20,24 +20,39 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |MyContainer c1 {1}; // OK MyContainer<int>
           |MyContainer c2; // OK MyContainer<float>
           |""".stripMargin)
-      cpg
-      ???
+      val List(c1, c2) = cpg.local.l
+      c1.name shouldBe "c1"
+      c1.typeFullName shouldBe "MyContainer<int>"
+      c2.name shouldBe "c2"
+      c2.typeFullName shouldBe "MyContainer<float>"
+      // We are unable to express this template argument deduction in the current schema
+      cpg.typeDecl.member.nameExact("val").typeFullName.l shouldBe List("T")
     }
 
-    "handle declaring non-type template parameters with auto" ignore {
+    "handle declaring non-type template parameters with auto" in {
       val cpg = code("""
+          |template <typename T, T... Ints>
+          |struct integer_sequence {
+          |    using value_type = T;
+          |    static constexpr std::size_t size() noexcept { return sizeof...(Ints); }
+          |};
+          |
           |template <auto... seq>
           |struct my_integer_sequence {
           |  // Implementation here ...
           |};
           |
           |// Explicitly pass type `int` as template argument.
-          |auto seq = std::integer_sequence<int, 0, 1, 2>();
+          |auto seq = integer_sequence<int, 0, 1, 2>();
           |// Type is deduced to be `int`.
           |auto seq2 = my_integer_sequence<0, 1, 2>();
           |""".stripMargin)
-      cpg
-      ???
+      val List(seq, seq2) = cpg.local.l
+      seq.name shouldBe "seq"
+      // CDT is unable to deduce the type of the template argument
+      seq.typeFullName shouldBe "integer_sequence<int,int0,int1,int2>"
+      seq2.name shouldBe "seq2"
+      seq2.typeFullName shouldBe "my_integer_sequence<int0,int1,int2>"
     }
 
     "handle folding expressions (binary)" ignore {
