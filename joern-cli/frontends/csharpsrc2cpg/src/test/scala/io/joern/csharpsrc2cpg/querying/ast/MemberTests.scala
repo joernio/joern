@@ -328,7 +328,7 @@ class MemberTests extends CSharpCode2CpgFixture {
         |  int b;
         |
         |  static Car() { // static constructor
-        |     this.nonInitMaxSpeed = 2000;
+        |     nonInitMaxSpeed = 2000;
         |  }
         |
         |  public Car() {
@@ -347,7 +347,7 @@ class MemberTests extends CSharpCode2CpgFixture {
           inside(m.body.astChildren.isCall.l) {
             case staticImplicit :: staticExplicit :: Nil =>
               staticExplicit.methodFullName shouldBe Operators.assignment
-              staticExplicit.code shouldBe "this.nonInitMaxSpeed = 2000"
+              staticExplicit.code shouldBe "nonInitMaxSpeed = 2000"
 
               inside(staticExplicit.argument.fieldAccess.l) {
                 case fieldAccess :: Nil =>

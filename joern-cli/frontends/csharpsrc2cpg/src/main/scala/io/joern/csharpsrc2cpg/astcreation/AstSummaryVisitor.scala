@@ -73,13 +73,22 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
       CSharpField(f.name, f.typeFullName)
     }
 
-    val mapping = mutable.Map
-      .from(cpg.namespaceBlock.map { namespace =>
-        namespace.fullName -> mutable.Set.from(namespace.typeDecl.map { typ =>
-          CSharpType(typ.fullName, typ.method.map(toMethod).l, typ.member.map(toField).l)
-        })
-      })
-      .asInstanceOf[NamespaceToTypeMap]
+    def toType(t: TypeDecl): CSharpType = {
+      CSharpType(t.fullName, t.method.map(toMethod).l, t.member.map(toField).l)
+    }
+
+    val mapping = {
+      // TypeDecls found inside explicit namespace blocks
+      val withExplicitNamespace = cpg.namespaceBlock.map { namespace =>
+        namespace.fullName -> mutable.Set.from(namespace.typeDecl.map(toType))
+      }
+
+      // TypeDecls found outside explicit namespace blocks
+      val withoutExplicitNamespace = Set("" -> mutable.Set.from(cpg.typeDecl.whereNot(_.namespaceBlock).map(toType)))
+
+      mutable.Map.from(withExplicitNamespace ++ withoutExplicitNamespace)
+    }
+
     CSharpProgramSummary(mapping, imports, globalImports)
   }
 
