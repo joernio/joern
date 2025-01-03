@@ -748,4 +748,33 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       binding2.bindingTypeDecl shouldBe lambdaTypeDecl
     }
   }
+
+  "CPG for code with lambda wrapped in label" should {
+    val cpg = code("""
+                     |package mypkg
+                     |fun outer() {
+                     |  listOf(1).forEach someLabel@{x: Int -> x}
+                     |}
+                     |""".stripMargin)
+
+    "contain correct lambda, bindings and type decl nodes" in {
+      val List(lambdaMethod) = cpg.method.fullName(".*lambda.*").l
+      lambdaMethod.fullName shouldBe s"mypkg.outer.${Defines.ClosurePrefix}0:void(int)"
+      lambdaMethod.signature shouldBe "void(int)"
+
+      val List(lambdaTypeDecl) = lambdaMethod.bindingTypeDecl.dedup.l
+      lambdaTypeDecl.fullName shouldBe s"mypkg.outer.${Defines.ClosurePrefix}0"
+      lambdaTypeDecl.inheritsFromTypeFullName should contain theSameElementsAs (List("kotlin.Function1"))
+
+      val List(binding1, binding2) = lambdaMethod.referencingBinding.l
+      binding1.name shouldBe "invoke"
+      binding1.signature shouldBe "void(int)"
+      binding1.methodFullName shouldBe s"mypkg.outer.${Defines.ClosurePrefix}0:void(int)"
+      binding1.bindingTypeDecl shouldBe lambdaTypeDecl
+      binding2.name shouldBe "invoke"
+      binding2.signature shouldBe "java.lang.Object(java.lang.Object)"
+      binding2.methodFullName shouldBe s"mypkg.outer.${Defines.ClosurePrefix}0:void(int)"
+      binding2.bindingTypeDecl shouldBe lambdaTypeDecl
+    }
+  }
 }

@@ -25,4 +25,20 @@ class LocalTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       l2.typeFullName shouldBe "int"
     }
   }
+
+  "CPG for local declaration without initialization" should {
+    val cpg = code("""
+                     |fun main() {
+                     |  var x: Int
+                     |}
+                     |""".stripMargin)
+
+    "contain LOCAL node for `x`" in {
+      val List(l1) = cpg.local("x").l
+      l1.code shouldBe "x"
+      l1.name shouldBe "x"
+      l1.typeFullName shouldBe "int"
+    }
+  }
+
 }

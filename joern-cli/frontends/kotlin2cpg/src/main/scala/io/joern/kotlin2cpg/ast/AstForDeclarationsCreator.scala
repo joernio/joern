@@ -713,15 +713,19 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       scope.addToScope(expr.getName, node)
       val localAst = Ast(node)
 
-      val rhsAsts       = astsForExpression(expr.getDelegateExpressionOrInitializer, Some(2))
-      val identifier    = identifierNode(elem, elem.getText, elem.getText, typeFullName)
-      val identifierAst = astWithRefEdgeMaybe(identifier.name, identifier)
-      val assignmentNode =
-        NodeBuilders.newOperatorCallNode(Operators.assignment, expr.getText, None, line(expr), column(expr))
-      val call =
-        callAst(assignmentNode, List(identifierAst) ++ rhsAsts)
-          .withChildren(annotations.map(astForAnnotationEntry))
-      Seq(localAst, call)
+      if (expr.getDelegateExpressionOrInitializer != null) {
+        val rhsAsts       = astsForExpression(expr.getDelegateExpressionOrInitializer, Some(2))
+        val identifier    = identifierNode(elem, elem.getText, elem.getText, typeFullName)
+        val identifierAst = astWithRefEdgeMaybe(identifier.name, identifier)
+        val assignmentNode =
+          NodeBuilders.newOperatorCallNode(Operators.assignment, expr.getText, None, line(expr), column(expr))
+        val call =
+          callAst(assignmentNode, List(identifierAst) ++ rhsAsts)
+            .withChildren(annotations.map(astForAnnotationEntry))
+        Seq(localAst, call)
+      } else {
+        Seq(localAst)
+      }
     }
   }
 

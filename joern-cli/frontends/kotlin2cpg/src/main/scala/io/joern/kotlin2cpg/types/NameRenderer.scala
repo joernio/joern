@@ -1,6 +1,6 @@
 package io.joern.kotlin2cpg.types
 
-import io.joern.kotlin2cpg.types.NameRenderer.BuiltinTypeTranslationTable
+import io.joern.kotlin2cpg.types.NameRenderer.{BuiltinTypeTranslationTable, logger}
 import io.joern.x2cpg.Defines
 import org.jetbrains.kotlin.builtins.jvm.JavaToKotlinClassMap
 import org.jetbrains.kotlin.descriptors.impl.TypeAliasConstructorDescriptor
@@ -16,11 +16,14 @@ import org.jetbrains.kotlin.descriptors.{
 import org.jetbrains.kotlin.name.FqNameUnsafe
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.error.ErrorClassDescriptor
+import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 
 object NameRenderer {
+  private val logger = LoggerFactory.getLogger(getClass)
+
   private val BuiltinTypeTranslationTable = mutable.HashMap(
     "kotlin.Unit"         -> "void",
     "kotlin.Boolean"      -> "boolean",
@@ -111,6 +114,13 @@ class NameRenderer {
           } else {
             Some(upperBoundTypeFns.flatten.mkString("&"))
           }
+        case null =>
+          // We do not expect this because to my understanding a typ should always have a constructor
+          // descriptor.
+          logger.warn(
+            s"Found type without constructor descriptor. Typ: $typ Constructor class: ${typ.getConstructor.getClass}"
+          )
+          None
       }
 
     javaFullName

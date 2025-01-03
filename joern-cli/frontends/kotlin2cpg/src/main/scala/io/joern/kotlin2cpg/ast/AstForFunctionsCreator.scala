@@ -556,9 +556,19 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
               // Lambda is wrapped e.g. `SomeInterface { obj -> obj }`
               samConstructorDesc.getBaseDescriptorForSynthetic
             case _ =>
-              // Lambda/anan function is directly used as call argument e.g. `someCall(obj -> obj)`
+              // Lambda/anon function is directly used as call argument e.g. `someCall(obj -> obj)`
+              val directCallArgumentForLookup =
+                expr match {
+                  case _: KtNamedFunction =>
+                    // This is the anonymous function case.
+                    // So far it does not seem like those could be wrapped so they are always the direct argument.
+                    expr
+                  case _ =>
+                    // The lambda function case.
+                    getDirectLambdaArgument(expr).get
+                }
               callAtom.getArgumentMappingByOriginal.asScala.collectFirst {
-                case (paramDesc, resolvedArgument) if isExprIncluded(resolvedArgument, expr) =>
+                case (paramDesc, resolvedArgument) if isExprIncluded(resolvedArgument, directCallArgumentForLookup) =>
                   paramDesc.getType.getConstructor.getDeclarationDescriptor.asInstanceOf[ClassDescriptor]
               }.get
           }
@@ -568,6 +578,28 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
         // E.g. `val l = { i: Int -> i }`
         val lambdaExprType = bindingUtils.getExprType(expr)
         lambdaExprType.map(_.getConstructor.getDeclarationDescriptor.asInstanceOf[ClassDescriptor])
+    }
+  }
+
+  private def getDirectLambdaArgument(element: KtElement): Option[KtExpression] = {
+    var context: PsiElement       = element
+    var parentContext: PsiElement = null
+
+    // KtCallExpression wrap their arguments in KtValueArgument which is why we look for those.
+    // KtBinaryExpressions do not do such a wrapping.
+    while ({
+      parentContext = context.getContext
+      parentContext != null &&
+      !parentContext.isInstanceOf[KtValueArgument] &&
+      !parentContext.isInstanceOf[KtBinaryExpression]
+    }) {
+      context = parentContext
+    }
+
+    if (parentContext != null) {
+      Some(context.asInstanceOf[KtExpression])
+    } else {
+      None
     }
   }
 
@@ -591,6 +623,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def isExprIncluded(resolvedArgument: ResolvedCallArgument, expr: KtExpression): Boolean = {
+    // getArguments returns multiple arguments in case of varargs
     resolvedArgument.getArguments.asScala.exists {
       case psi: PSIFunctionKotlinCallArgument =>
         psi.getExpression == expr
