@@ -1,6 +1,6 @@
 # Support For New Language Features
 
-* adapted from https://github.com/AnthonyCalandra/modern-cpp-features/tree/master)
+* Copied gratefully from https://github.com/AnthonyCalandra/modern-cpp-features/tree/master)
 * Table legend:
   * `[?]` not yet checked
   * `[ ]` not supported at all / can not even be parsed
