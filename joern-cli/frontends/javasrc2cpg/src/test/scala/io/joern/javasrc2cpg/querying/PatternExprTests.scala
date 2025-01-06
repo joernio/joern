@@ -18,6 +18,22 @@ import io.shiftleft.semanticcpg.language.*
 
 class PatternExprTests extends JavaSrcCode2CpgFixture {
 
+  "a pattern initializer in a lambda method" should {
+    val cpg = code("""
+        |import java.util.function.Function;
+        |
+        |class Foo {
+        |  Function test() {
+        |    return o -> foo() instanceof String s ? s : null;
+        |  }
+        |}
+        |""".stripMargin)
+
+    "not create any orphan locals" in {
+      cpg.local.exists(_._astIn.isEmpty) shouldBe false
+    }
+  }
+
   "a type pattern in an expression in an explicit constructor" should {
     val cpg = code("""
         |class Test {

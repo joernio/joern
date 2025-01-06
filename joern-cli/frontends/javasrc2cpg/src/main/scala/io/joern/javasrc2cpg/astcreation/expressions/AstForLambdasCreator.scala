@@ -302,19 +302,13 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
     val bindingsToLocals      = defineCapturedVariables(lambdaMethodName, capturedVariables)
     val capturedLocalAsts     = bindingsToLocals.map(_._2).map(Ast(_))
     val closureBindingEntries = bindingsToLocals.map(_._1)
+    val temporaryLocalAsts    = scope.enclosingMethod.map(_.getTemporaryLocals).getOrElse(Nil).map(Ast(_))
 
-    body match {
-      case block: BlockStmt =>
-        val blockAst = Ast(blockNode(block))
-          .withChildren(capturedLocalAsts)
-          .withChildren(stmts)
-        LambdaBody(blockAst, closureBindingEntries)
-      case stmt =>
-        val blockAst = Ast(blockNode(stmt))
-          .withChildren(capturedLocalAsts)
-          .withChildren(stmts)
-        LambdaBody(blockAst, closureBindingEntries)
-    }
+    val blockAst = Ast(blockNode(body))
+      .withChildren(temporaryLocalAsts)
+      .withChildren(capturedLocalAsts)
+      .withChildren(stmts)
+    LambdaBody(blockAst, closureBindingEntries)
   }
 
   private def genericParamTypeMapForLambda(expectedType: ExpectedType): ResolvedTypeParametersMap = {
