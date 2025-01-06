@@ -117,26 +117,27 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       x3.typeFullName shouldBe "double"
     }
 
-    "handle constexpr lambda" ignore {
+    "handle constexpr lambda" in {
       val cpg = code("""
           |auto identity = [](int n) constexpr { return n; };
-          |static_assert(identity(123) == 123);
-          |
           |constexpr auto add = [](int x, int y) {
           |  auto L = [=] { return x; };
           |  auto R = [=] { return y; };
           |  return [=] { return L() + R(); };
           |};
-          |
-          |static_assert(add(1, 2)() == 3);
-          |
           |constexpr int addOne(int n) {
           |  return [n] { return n + 1; }();
           |}
-          |
-          |static_assert(addOne(1) == 2);
           |""".stripMargin)
-      ???
+      cpg.method.nameNot("<global>").fullName.sorted shouldBe List(
+        "<lambda>0",
+        "<lambda>1",
+        "<lambda>2",
+        "<lambda>3",
+        "<lambda>4",
+        "addOne:int(int)",
+        "addOne:int(int).<lambda>5"
+      )
     }
 
     "handle lambda capture `this` by value" ignore {

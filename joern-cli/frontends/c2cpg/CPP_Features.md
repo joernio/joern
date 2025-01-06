@@ -16,7 +16,7 @@
 | [declaring non-type template parameters with auto](#declaring-non-type-template-parameters-with-auto)                     | [~]       |
 | [folding expressions](#folding-expressions)                                                                               | [x]       |
 | [new rules for auto deduction from braced-init-list](#new-rules-for-auto-deduction-from-braced-init-list)                 | [x]       |
-| [constexpr lambda](#constexpr-lambda)                                                                                     | [?]       |
+| [constexpr lambda](#constexpr-lambda)                                                                                     | [~]       |
 | [lambda capture this by value](#lambda-capture-this-by-value)                                                             | [?]       |
 | [inline variables](#inline-variables)                                                                                     | [?]       |
 | [nested namespaces](#nested-namespaces)                                                                                   | [?]       |
