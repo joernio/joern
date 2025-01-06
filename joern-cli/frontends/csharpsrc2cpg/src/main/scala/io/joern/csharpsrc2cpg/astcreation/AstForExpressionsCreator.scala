@@ -311,40 +311,18 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     Seq(_callAst)
   }
 
-  protected def astForSimpleMemberAccessExpression(accessExpr: DotNetNodeInfo): Seq[Ast] = {
+  private def astForSimpleMemberAccessExpression(accessExpr: DotNetNodeInfo): Seq[Ast] = {
     val fieldIdentifierName = nameFromNode(accessExpr)
-
-    val (identifierName, typeFullName) = {
-      createDotNetNodeInfo(accessExpr.json(ParserKeys.Expression)).node match
-        case SuppressNullableWarningExpression =>
-          val baseNode         = createDotNetNodeInfo(accessExpr.json(ParserKeys.Expression)(ParserKeys.Operand))
-          val baseAst          = astForNode(baseNode)
-          val baseTypeFullName = getTypeFullNameFromAstNode(baseAst)
-
-          val fieldInScope = scope.tryResolveFieldAccess(fieldIdentifierName, typeFullName = Option(baseTypeFullName))
-
-          (
-            nameFromNode(baseNode),
-            fieldInScope
-              .map(_.typeName)
-              .getOrElse(Defines.Any)
-          )
-        case _ => {
-          val fieldInScope = scope.findFieldInScope(fieldIdentifierName)
-          val _identifierName =
-            if (fieldInScope.nonEmpty && fieldInScope.exists(_.isStatic))
-              scope.surroundingTypeDeclFullName.getOrElse(Defines.Any)
-            else Constants.This
-          val _typeFullName = fieldInScope.map(_.typeFullName).getOrElse(Defines.Any)
-          (_identifierName, _typeFullName)
-        }
-    }
-
-    val identifier = newIdentifierNode(identifierName, typeFullName)
+    val baseAst             = astForNode(createDotNetNodeInfo(accessExpr.json(ParserKeys.Expression))).head
+    val baseTypeFullName    = getTypeFullNameFromAstNode(baseAst)
+    val typeFullName = scope
+      .tryResolveFieldAccess(fieldIdentifierName, Some(baseTypeFullName))
+      .map(_.typeName)
+      .getOrElse(Defines.Any)
 
     fieldAccessAst(
-      Ast(identifier),
-      s"$identifierName.$fieldIdentifierName",
+      baseAst,
+      accessExpr.code,
       line(accessExpr),
       column(accessExpr),
       fieldIdentifierName,
