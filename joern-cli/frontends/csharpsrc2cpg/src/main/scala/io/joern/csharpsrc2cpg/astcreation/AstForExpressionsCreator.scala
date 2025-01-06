@@ -315,10 +315,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val fieldIdentifierName = nameFromNode(accessExpr)
     val baseAst             = astForNode(createDotNetNodeInfo(accessExpr.json(ParserKeys.Expression))).head
     val baseTypeFullName    = getTypeFullNameFromAstNode(baseAst)
-    val typeFullName = scope
-      .tryResolveFieldAccess(fieldIdentifierName, Some(baseTypeFullName))
-      .map(_.typeName)
-      .getOrElse(Defines.Any)
+    val typeFullName =
+      scope
+        .tryResolveFieldAccess(fieldIdentifierName, Some(baseTypeFullName))
+        .map(_.typeName)
+        // it may happen that accessExpr is a type name e.g. `System.Console`, in which case `System` (baseAst) is not
+        // a type but a namespace. As a fallback, we also look up the full expression.
+        .getOrElse(scope.tryResolveTypeReference(accessExpr.code).map(_.name).getOrElse(Defines.Any))
 
     fieldAccessAst(
       baseAst,
