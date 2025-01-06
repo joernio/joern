@@ -140,7 +140,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       )
     }
 
-    "handle lambda capture `this` by value" ignore {
+    "handle lambda capture `this` by value" in {
       val cpg = code("""
           |struct MyObj {
           |  int value {123};
@@ -158,7 +158,10 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |valueCopy(); // 123
           |valueRef(); // 321
           |""".stripMargin)
-      ???
+      // TODO: we can not express these lambda types in the current schema
+      // We would need to add a new type for lambdas that capture `this` by value copy/ref.
+      cpg.method.nameExact("getValueCopy").methodReturn.typeFullName.l shouldBe List("[*this] { return value; }")
+      cpg.method.nameExact("getValueRef").methodReturn.typeFullName.l shouldBe List("[this] { return value; }")
     }
 
     "handle inline variables" ignore {

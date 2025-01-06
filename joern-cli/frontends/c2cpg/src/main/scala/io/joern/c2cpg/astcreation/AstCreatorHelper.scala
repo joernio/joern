@@ -153,6 +153,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       }
     StringUtils.normalizeSpace(tpe) match {
       case ""                                                                      => Defines.Any
+      case t if t.startsWith("[*this]") || t.startsWith("[this]")                  => t
       case t if t.startsWith("[") && t.endsWith("]")                               => Defines.Array
       case t if t.contains("->")                                                   => Defines.Function
       case t if t.contains("?")                                                    => Defines.Any

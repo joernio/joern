@@ -2208,7 +2208,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
       method.name shouldBe "x"
       method.fullName shouldBe "Foo.x:char(*(*)[5])()()"
       method.code shouldBe "char (*(*x())[5])()"
-      method.signature shouldBe "char()"
+      method.signature shouldBe "char(*(*)[5])()()"
     }
 
     "be consistent with pointer types" in {
