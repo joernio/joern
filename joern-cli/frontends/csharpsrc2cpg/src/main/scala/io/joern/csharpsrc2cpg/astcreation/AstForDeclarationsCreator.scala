@@ -1,6 +1,7 @@
 package io.joern.csharpsrc2cpg.astcreation
 
-import io.joern.csharpsrc2cpg.CSharpModifiers
+import io.joern.csharpsrc2cpg.{CSharpModifiers, Constants}
+import io.joern.csharpsrc2cpg.astcreation.AstParseLevel.FULL_AST
 import io.joern.csharpsrc2cpg.astcreation.BuiltinTypes.DotNetTypeMap
 import io.joern.csharpsrc2cpg.datastructures.*
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
@@ -70,11 +71,9 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       typeDeclNode(classDecl, name, fullName, relativeFileName, code(classDecl), inherits = inheritsFromTypeFullName)
     scope.pushNewScope(TypeScope(fullName))
     val modifiers = astForModifiers(classDecl)
-    val members   = astForMembers(classDecl.json(ParserKeys.Members).arr.map(createDotNetNodeInfo).toSeq)
-
-    // TODO: Check if any explicit constructor / static constructor decls exists,
-    //  if it doesn't, need to add in default constructor and static constructor and
-    //  pull all field initializations into them.
+    val members = astForMembers(classDecl.json(ParserKeys.Members).arr.map(createDotNetNodeInfo).toSeq)
+      ++ addConstructorWithFieldInitializationsIfNeeded(fullName)
+    // TODO: do the same for static fields
 
     scope.popScope()
     val typeDeclAst = Ast(typeDecl)
@@ -82,6 +81,50 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       .withChildren(members)
       .withChildren(annotationAsts)
     Seq(typeDeclAst)
+  }
+
+  private def addConstructorWithFieldInitializationsIfNeeded(typeDeclFullName: String): Seq[Ast] = {
+    val dynamicFields = scope.getFieldsInScope.filter(f => !f.isStatic && f.isInitialized)
+    val hasExplicitCtor =
+      scope.tryResolveTypeReference(typeDeclFullName).exists(_.methods.exists(_.name == Defines.ConstructorMethodName))
+    // We should only create the constructor when we are the FULL_AST parseLevel. Otherwise, hasExplicitCtor will
+    // not be accurate.
+    val shouldBuildCtor = dynamicFields.nonEmpty && !hasExplicitCtor && parseLevel == FULL_AST
+
+    if (shouldBuildCtor) {
+      val methodReturn = newMethodReturnNode(BuiltinTypes.Void, None, None, None)
+      val signature    = composeMethodLikeSignature(BuiltinTypes.Void, Seq.empty)
+      val modifiers    = Seq(newModifierNode(ModifierTypes.CONSTRUCTOR), newModifierNode(ModifierTypes.INTERNAL))
+      val name         = Defines.ConstructorMethodName
+      val fullName     = composeMethodFullName(typeDeclFullName, name, signature)
+
+      val body = {
+        scope.pushNewScope(MethodScope(fullName))
+        val fieldInitAssignmentAsts = astVariableDeclarationForInitializedFields(dynamicFields)
+        scope.popScope()
+        Ast(NewBlock().typeFullName(Defines.Any)).withChildren(fieldInitAssignmentAsts)
+      }
+
+      val methodNode_ = NewMethod()
+        .name(name)
+        .fullName(fullName)
+        .signature(signature)
+        .filename(relativeFileName)
+
+      val parameterNodes = Seq(
+        NewMethodParameterIn()
+          .name(Constants.This)
+          .code(Constants.This)
+          .typeFullName(typeDeclFullName)
+          .evaluationStrategy(EvaluationStrategies.BY_SHARING.name)
+          .isVariadic(false)
+          .index(0)
+      )
+
+      methodAst(methodNode_, parameterNodes.map(Ast(_)), body, methodReturn, modifiers) :: Nil
+    } else {
+      Seq.empty
+    }
   }
 
   protected def astForRecordDeclaration(recordDecl: DotNetNodeInfo): Seq[Ast] = {
