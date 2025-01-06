@@ -1,6 +1,6 @@
 package io.joern.csharpsrc2cpg.astcreation
 
-import io.joern.csharpsrc2cpg.CSharpModifiers
+import io.joern.csharpsrc2cpg.{CSharpModifiers, Constants}
 import io.joern.csharpsrc2cpg.astcreation.AstParseLevel.FULL_AST
 import io.joern.csharpsrc2cpg.astcreation.BuiltinTypes.DotNetTypeMap
 import io.joern.csharpsrc2cpg.datastructures.*
@@ -113,8 +113,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
       val parameterNodes = Seq(
         NewMethodParameterIn()
-          .name("this")
-          .code("this")
+          .name(Constants.This)
+          .code(Constants.This)
           .typeFullName(typeDeclFullName)
           .evaluationStrategy(EvaluationStrategies.BY_SHARING.name)
           .isVariadic(false)
