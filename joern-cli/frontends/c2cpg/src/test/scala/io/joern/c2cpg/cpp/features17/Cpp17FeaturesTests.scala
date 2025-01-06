@@ -164,7 +164,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       cpg.method.nameExact("getValueRef").methodReturn.typeFullName.l shouldBe List("[this] { return value; }")
     }
 
-    "handle inline variables" ignore {
+    "handle inline variables" in {
       val cpg = code("""
           |// Disassembly example using compiler explorer.
           |struct S1 { int x; };
@@ -182,10 +182,11 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |  static inline int count{0}; // declare and initialize count to 0 within the class
           |};
           |""".stripMargin)
-      ???
+      cpg.local.map(l => (l.name, l.typeFullName)).toMap shouldBe Map("x1" -> "S1", "x2" -> "S1")
+      cpg.typeDecl.member.nameExact("count").typeFullName.l shouldBe List("int")
     }
 
-    "handle nested namespaces" ignore {
+    "handle nested namespaces" in {
       val cpg = code("""
           |namespace A1 { // old
           |  namespace B1 {
@@ -199,7 +200,15 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |  int i;
           |}
           |""".stripMargin)
-      ???
+      cpg.namespaceBlock.nameNot("<global>").name.sorted shouldBe List("A1", "A2", "B1", "B2", "C1", "C2")
+      cpg.namespaceBlock.nameNot("<global>").fullName.sorted shouldBe List(
+        "A1",
+        "A1.B1",
+        "A1.B1.C1",
+        "A2",
+        "A2.B2",
+        "A2.B2.C2"
+      )
     }
 
     "handle structured bindings" ignore {
@@ -252,7 +261,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       ???
     }
 
-    "handle constexpr if" ignore {
+    "handle constexpr if" in {
       val cpg = code("""
           |template <typename T>
           |constexpr bool isIntegral() {
@@ -268,25 +277,37 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |struct S {};
           |static_assert(isIntegral<S>() == false);
           |""".stripMargin)
-      ???
+      cpg.method.nameExact("isIntegral").controlStructure.code.l shouldBe List(
+        "if (std::is_integral<T>::value)",
+        "else"
+      )
     }
 
-    "handle UTF-8 character literals" ignore {
+    "handle UTF-8 character literals" in {
       val cpg = code("""
-          |char x = u8'x';
+          |void foo() {
+          |  char x = u8'x';
+          |}
           |""".stripMargin)
-      ???
+      pendingUntilFixed {
+        // TODO: not supported  by the CDT parser at the moment
+        cpg.assignment.code.l shouldBe List("char x = u8'x'")
+        cpg.assignment.argument(2).isLiteral.code.l shouldBe List("u8'x'")
+        cpg.local.nameExact("x").typeFullName.l shouldBe List("char")
+        cpg.identifier.nameExact("x").typeFullName.l shouldBe List("char")
+      }
     }
 
-    "handle direct list initialization of enums" ignore {
+    "handle direct list initialization of enums" in {
       val cpg = code("""
           |enum byte : unsigned char {};
-          |byte b {0}; // OK
-          |byte c {-1}; // ERROR
-          |byte d = byte{1}; // OK
-          |byte e = byte{256}; // ERROR
+          |byte b {0};
+          |byte d = byte{1};
           |""".stripMargin)
-      ???
+      cpg.local.nameExact("b").typeFullName.l shouldBe List("byte")
+      cpg.identifier.nameExact("b").typeFullName.l shouldBe List("byte")
+      cpg.local.nameExact("d").typeFullName.l shouldBe List("byte")
+      cpg.identifier.nameExact("d").typeFullName.l shouldBe List("byte")
     }
 
     "handle fallthrough, nodiscard, maybe_unused attributes" ignore {
