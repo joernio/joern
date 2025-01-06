@@ -316,7 +316,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         }
         val parameterIn = parameterInNode(
           node = node,
-          name = node.name,
+          name = node.name.stripPrefix("*"),
           code = code(node),
           index = index,
           isVariadic = true,

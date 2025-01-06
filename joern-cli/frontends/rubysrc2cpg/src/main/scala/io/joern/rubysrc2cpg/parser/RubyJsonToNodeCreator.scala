@@ -1,6 +1,7 @@
 package io.joern.rubysrc2cpg.parser
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{RubyExpression, *}
+import io.joern.rubysrc2cpg.parser.AstType.Send
 import io.joern.rubysrc2cpg.parser.RubyJsonHelpers.*
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.{NilClass, RubyOperators, getBuiltInType}
@@ -191,9 +192,18 @@ class RubyJsonToNodeCreator(
   }
 
   private def visitAlias(obj: Obj): RubyExpression = {
-    val name  = visit(obj(ParserKeys.Name)).text.stripPrefix(":")
-    val alias = visit(obj(ParserKeys.Alias)).text.stripPrefix(":")
-    AliasStatement(alias, name)(obj.toTextSpan)
+    if (AstType.fromString(obj(ParserKeys.Type).str).contains(AstType.Send)) {
+      obj.visitArray(ParserKeys.Arguments) match {
+        case name :: alias :: _ => // different order than the normal `alias` kw
+          AliasStatement(alias.text.stripPrefix(":"), name.text.stripPrefix(":"))(obj.toTextSpan)
+        case _ => defaultResult(Option(obj.toTextSpan))
+      }
+    } else {
+      val name  = visit(obj(ParserKeys.Name)).text.stripPrefix(":")
+      val alias = visit(obj(ParserKeys.Alias)).text.stripPrefix(":")
+      AliasStatement(alias, name)(obj.toTextSpan)
+    }
+
   }
 
   private def visitAnd(obj: Obj): RubyExpression = {
@@ -936,6 +946,7 @@ class RubyJsonToNodeCreator(
       case "[]="                                                                => visitBracketAssignmentAsSend(obj)
       case "raise"                                                              => visitRaise(obj)
       case "include"                                                            => visitInclude(obj)
+      case "alias_method"                                                       => visitAlias(obj)
       case "attr_reader" | "attr_writer" | "attr_accessor"                      => visitFieldDeclaration(obj)
       case "private" | "public" | "protected"                                   => visitAccessModifier(obj)
       case "private_class_method" | "public_class_method"                       => visitMethodAccessModifier(obj)
