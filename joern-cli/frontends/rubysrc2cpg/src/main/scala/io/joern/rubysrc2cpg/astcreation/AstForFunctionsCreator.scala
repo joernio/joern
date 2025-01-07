@@ -314,16 +314,17 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           case ArrayParameter(_) => prefixAsKernelDefined("Array")
           case HashParameter(_)  => prefixAsKernelDefined("Hash")
         }
+        val name = node.name.stripPrefix("*")
         val parameterIn = parameterInNode(
           node = node,
-          name = node.name,
+          name = name,
           code = code(node),
           index = index,
           isVariadic = true,
           evaluationStrategy = EvaluationStrategies.BY_REFERENCE,
           typeFullName = Option(typeFullName)
         )
-        scope.addToScope(node.name, parameterIn)
+        scope.addToScope(name, parameterIn)
         Ast(parameterIn)
       case node: GroupedParameter =>
         val parameterIn = parameterInNode(
