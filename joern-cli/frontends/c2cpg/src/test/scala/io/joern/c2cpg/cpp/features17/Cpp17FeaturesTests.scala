@@ -109,14 +109,15 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       val List(x1, x2, x3) = cpg.local.l
       x1.name shouldBe "x1"
       x1.typeFullName shouldBe Defines.Any
-      pendingUntilFixed {
-        // TODO: can not be determined without type information from includes
-        x1.typeFullName shouldBe "std::initializer_list<int>"
-      }
       x2.name shouldBe "x2"
       x2.typeFullName shouldBe "int"
       x3.name shouldBe "x3"
       x3.typeFullName shouldBe "double"
+
+      pendingUntilFixed {
+        // TODO: can not be determined without type information from includes
+        x1.typeFullName shouldBe "std::initializer_list<int>"
+      }
     }
 
     "handle constexpr lambda" in {
@@ -361,7 +362,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       cpg.method.nameExact("my_callback").parameter.name.l shouldBe List("msg", "error")
     }
 
-    "handle _has_include" ignore {
+    "handle _has_include" in {
       val cpg = code("""
           |#ifdef __has_include
           |#  if __has_include(<optional>)
@@ -377,29 +378,38 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |#endif
           |
           |#ifdef __has_include
-          |#  if __has_include(<OpenGL/gl.h>)
-          |#    include <OpenGL/gl.h>
-          |#    include <OpenGL/glu.h>
-          |#  elif __has_include(<GL/gl.h>)
-          |#    include <GL/gl.h>
-          |#    include <GL/glu.h>
+          |#  if __has_include(<x.h>)
+          |#    include <x.h>
+          |#  elif __has_include(<y.h>)
+          |#    include <y.h>
           |#  else
-          |#    error No suitable OpenGL headers found.
+          |#    error No suitable headers found.
           |# endif
           |#endif
           |""".stripMargin)
-      ???
+        .moreCode(
+          """
+          |int x = 1;
+          |""".stripMargin,
+          "x.h"
+        )
+        .moreCode(
+          """
+          |int y = 1;
+          |""".stripMargin,
+          "y.h"
+        )
+      cpg.imports.code.l shouldBe List(
+        "#    include <optional>",
+        "#    include <experimental/optional>",
+        "#    include <x.h>",
+        "#    include <y.h>"
+      )
+      cpg.local.name.l shouldBe List("x", "y")
     }
 
-    "handle class template argument deduction" ignore {
+    "handle class template argument deduction" in {
       val cpg = code("""
-          |// example 1
-          |std::vector v{ 1, 2, 3 }; // deduces std::vector<int>
-          |std::mutex mtx;
-          |auto lck = std::lock_guard{ mtx }; // deduces to std::lock_guard<std::mutex>
-          |auto p = new std::pair{ 1.0, 2.0 }; // deduces to std::pair<double, double>*
-          |
-          |// example 2
           |template <typename T>
           |struct container {
           |  container(T t) {}
@@ -407,18 +417,31 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |  container(Iter beg, Iter end);
           |};
           |
-          |// deduction guide
           |template <typename Iter>
           |container(Iter b, Iter e) -> container<typename std::iterator_traits<Iter>::value_type>;
           |
-          |container a{ 7 }; // OK: deduces container<int>
+          |void foo() {
+          |  std::vector v{ 1, 2, 3 }; // deduces std::vector<int>
+          |  std::mutex mtx;
+          |  auto lck = std::lock_guard{ mtx }; // deduces to std::lock_guard<std::mutex>
+          |  auto p = new std::pair{ 1.0, 2.0 }; // deduces to std::pair<double, double>*
           |
-          |std::vector<double> v{ 1.0, 2.0, 3.0 };
-          |auto b = container{ v.begin(), v.end() }; // OK: deduces container<double>
-          |
-          |container c{ 5, 6 }; // ERROR: std::iterator_traits<int>::value_type is not a type
+          |  container a{ 7 }; // OK: deduces container<int>
+          |  std::vector<double> v{ 1.0, 2.0, 3.0 };
+          |  auto b = container{ v.begin(), v.end() }; // OK: deduces container<double>
+          |}
           |""".stripMargin)
-      ???
+      cpg.local.nameExact("a").typeFullName.l shouldBe List("container<int>")
+      cpg.local.nameExact("v").typeFullName.l shouldBe List(
+        "std.vector", // generic types are not deduced
+        "std.vector<double>"
+      )
+      pendingUntilFixed {
+        // CDT deduces them to ProblemType as there are no includes for std::
+        cpg.local.nameExact("p").typeFullName.l shouldBe List("std.pair<double,double>*")
+        cpg.local.nameExact("lck").typeFullName.l shouldBe List("std.lock_guard<std.mutex>")
+        cpg.local.nameExact("b").typeFullName.l shouldBe List("container<double>")
+      }
     }
 
   }

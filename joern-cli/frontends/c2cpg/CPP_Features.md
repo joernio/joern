@@ -7,10 +7,10 @@
   - `[~]` can be parsed but is not fully represented in the CPG
   - `[x]` full support including the CPG representation
 
-## C++17 New Language Features
+## C++17 Language Features
 
 | Feature                                                                 | Supported |
-| ----------------------------------------------------------------------- | --------- |
+|-------------------------------------------------------------------------|-----------|
 | template argument deduction for class templates                         | [~]       |
 | declaring non-type template parameters with auto                        | [~]       |
 | folding expressions                                                     | [x]       |
@@ -25,13 +25,13 @@
 | utf-8 character literals                                                | [ ]       |
 | direct-list-initialization of enums                                     | [x]       |
 | \[\[fallthrough\]\], \[\[nodiscard\]\], \[\[maybe_unused\]\] attributes | [~]       |
-| \_\_has_include                                                         | [?]       |
-| class template argument deduction                                       | [?]       |
+| \_\_has_include                                                         | [~]       |
+| class template argument deduction                                       | [~]       |
 
-## C++20 New Language Features
+## C++20 Language Features
 
 | Feature                                        | Supported |
-| ---------------------------------------------- | --------- |
+|------------------------------------------------|-----------|
 | coroutines                                     | [?]       |
 | concepts                                       | [?]       |
 | three-way comparison                           | [?]       |
