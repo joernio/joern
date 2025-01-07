@@ -567,7 +567,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       case EnsureClause(thenClause) => EnsureClause(reassign(lhs, op, thenClause, transform))(x.span)
       case ElsIfClause(condition, thenClause) =>
         ElsIfClause(condition, reassign(lhs, op, thenClause, transform))(x.span)
-      case ElseClause(thenClause) => ElseClause(reassign(lhs, op, thenClause, transform))(x.span)
+      case ElseClause(thenClause)  => ElseClause(reassign(lhs, op, thenClause, transform))(x.span)
+      case InClause(pattern, body) => InClause(pattern, reassign(lhs, op, body, transform))(x.span)
       case WhenClause(matchExpressions, matchSplatExpression, thenClause) =>
         WhenClause(matchExpressions, matchSplatExpression, reassign(lhs, op, thenClause, transform))(x.span)
     }

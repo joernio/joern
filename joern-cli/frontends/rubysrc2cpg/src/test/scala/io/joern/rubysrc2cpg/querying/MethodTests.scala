@@ -323,7 +323,7 @@ class MethodTests extends RubyCode2CpgFixture {
               x.name shouldBe "x"
               bar.name shouldBe "bar="
 
-              bar.parameter.name.l shouldBe List("self", "*args", "&block")
+              bar.parameter.name.l shouldBe List("self", "args", "&block")
               // bar forwards parameters to a call to the aliased method
               inside(bar.call.name("x=").l) {
                 case barCall :: Nil =>
@@ -347,6 +347,60 @@ class MethodTests extends RubyCode2CpgFixture {
         case xs => fail(s"Expected a single type decl for `Foo`, instead got [${xs.code.mkString(",")}]")
       }
     }
+  }
+
+  "aliased methods with `alias_method`" should {
+    val cpg = code("""
+        |class Foo
+        |  def aliasable(bbb)
+        |    puts bbb
+        |  end
+        |
+        |  alias_method :print_something, :aliasable
+        |
+        |  def someMethod(aaa)
+        |    print_something(aaa)
+        |  end
+        |end
+        |
+        |""".stripMargin)
+
+    "similarly alias the method as if it were calling `alias`" in {
+      inside(cpg.typeDecl("Foo").l) {
+        case foo :: Nil =>
+          inside(foo.method.nameNot(RDefines.Initialize, RDefines.TypeDeclBody).l) {
+            case a :: p :: s :: Nil =>
+              a.name shouldBe "aliasable"
+              p.name shouldBe "print_something"
+              s.name shouldBe "someMethod"
+
+              p.parameter.name.l shouldBe List("self", "args", "&block")
+              // bar forwards parameters to a call to the aliased method
+              inside(p.call.name("aliasable").l) {
+                case aliasableCall :: Nil =>
+                  inside(aliasableCall.argument.l) {
+                    case _ :: (args: Call) :: (blockId: Identifier) :: Nil =>
+                      args.name shouldBe RubyOperators.splat
+                      args.code shouldBe "*args"
+                      args.argumentIndex shouldBe 1
+
+                      blockId.name shouldBe "&block"
+                      blockId.code shouldBe "&block"
+                      blockId.argumentIndex shouldBe 2
+                    case xs =>
+                      fail(
+                        s"Expected a two arguments for the call `aliasable`,  instead got [${xs.code.mkString(",")}]"
+                      )
+                  }
+                  aliasableCall.code shouldBe "aliasable(*args, &block)"
+                case xs => fail(s"Expected a single call to `aliasable`,  instead got [${xs.code.mkString(",")}]")
+              }
+            case xs => fail(s"Expected a three virtual methods under `Foo`, instead got [${xs.code.mkString(",")}]")
+          }
+        case xs => fail(s"Expected a single type decl for `Foo`, instead got [${xs.code.mkString(",")}]")
+      }
+    }
+
   }
 
   "Singleton Methods for module scope" should {
