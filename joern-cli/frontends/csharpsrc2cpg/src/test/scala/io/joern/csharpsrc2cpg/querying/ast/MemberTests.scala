@@ -101,8 +101,7 @@ class MemberTests extends CSharpCode2CpgFixture {
       }
     }
 
-    // TODO: Not supported yet.
-    "have a constructor" ignore {
+    "have a constructor" in {
       inside(cpg.typeDecl.nameExact("Car").method.nameExact(Defines.ConstructorMethodName).l) {
         case ctor :: Nil =>
           ctor.fullName shouldBe s"Car.${Defines.ConstructorMethodName}:void()"
@@ -113,12 +112,11 @@ class MemberTests extends CSharpCode2CpgFixture {
       }
     }
 
-    // TODO: Not supported yet.
-    "have the member initialization inside the constructor" ignore {
+    "have the member initialization inside the constructor" in {
       inside(cpg.method.fullNameExact(s"Car.${Defines.ConstructorMethodName}:void()").body.assignment.l) {
         case assignment :: Nil =>
-          assignment.target.code shouldBe "Car.nonInitMaxSpeed"
-          assignment.source.code shouldBe "200"
+          assignment.target.code shouldBe "color"
+          assignment.source.code shouldBe "\"red\""
         case xs =>
           fail(s"Expected single assignment inside the constructor, but got $xs")
       }

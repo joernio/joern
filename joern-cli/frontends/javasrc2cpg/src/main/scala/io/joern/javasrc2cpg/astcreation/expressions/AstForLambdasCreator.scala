@@ -54,6 +54,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
     variablesInScope: Seq[ScopeVariable],
     expectedLambdaType: ExpectedType
   ): (NewMethod, LambdaBody) = {
+
     val implementedMethod    = implementedInfo.implementedMethod
     val implementedInterface = implementedInfo.implementedInterface
 
@@ -61,8 +62,12 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
     // symbol solver returns the erased types when resolving the lambda itself.
     val expectedTypeParamTypes = genericParamTypeMapForLambda(expectedLambdaType)
     val parametersWithoutThis  = buildParamListForLambda(expr, implementedMethod, expectedTypeParamTypes)
+    val returnType             = getLambdaReturnType(implementedInterface, implementedMethod, expectedTypeParamTypes)
 
-    val returnType = getLambdaReturnType(implementedInterface, implementedMethod, expectedTypeParamTypes)
+    val lambdaMethodNode = createLambdaMethodNode(expr, lambdaMethodName, parametersWithoutThis, returnType)
+
+    // TODO: lambda method scope can be static if no non-static captures are used
+    scope.pushMethodScope(lambdaMethodNode, expectedLambdaType, isStatic = false)
 
     val lambdaBody = astForLambdaBody(lambdaMethodName, expr.getBody, variablesInScope, returnType)
 
@@ -88,8 +93,6 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
       .collect { case identifier: NewIdentifier => identifier }
       .filter { identifier => lambdaParameterNamesToNodes.contains(identifier.name) }
 
-    val lambdaMethodNode = createLambdaMethodNode(expr, lambdaMethodName, parametersWithoutThis, returnType)
-
     val returnNode = newMethodReturnNode(returnType.getOrElse(defaultTypeFallback()), None, line(expr), column(expr))
     val virtualModifier = Some(newModifierNode(ModifierTypes.VIRTUAL))
     val staticModifier  = Option.when(thisParam.isEmpty)(newModifierNode(ModifierTypes.STATIC))
@@ -109,6 +112,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
       ast.withRefEdge(identifier, lambdaParameterNamesToNodes(identifier.name))
     )
 
+    scope.popMethodScope()
     scope.addLambdaMethod(lambdaMethodAst)
 
     lambdaMethodNode -> lambdaBody
@@ -119,8 +123,8 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
     val containsEmptyType   = maybeParameterTypes.exists(_.contains(ParameterDefaults.TypeFullName))
 
     (returnType, maybeParameterTypes) match {
-      case (Some(returnTpe), Some(parameterTpes)) if !containsEmptyType =>
-        composeMethodLikeSignature(returnTpe, parameterTpes)
+      case (Some(returnType), Some(parameterTypes)) if !containsEmptyType =>
+        composeMethodLikeSignature(returnType, parameterTypes)
 
       case _ => composeUnresolvedSignature(parameters.size)
     }
@@ -207,8 +211,6 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
   }
 
   def astForLambdaExpr(expr: LambdaExpr, expectedType: ExpectedType): Ast = {
-    // TODO: lambda method scope can be static if no non-static captures are used
-    scope.pushMethodScope(NewMethod(), expectedType, isStatic = false)
 
     val lambdaMethodName = nextClosureName()
 
@@ -237,7 +239,6 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
     val lambdaTypeDeclNode = createAndPushLambdaTypeDecl(lambdaMethodNode, implementedInfo)
     BindingTable.createBindingNodes(diffGraph, lambdaTypeDeclNode, bindingTable)
 
-    scope.popMethodScope()
     Ast(methodRef)
   }
 
