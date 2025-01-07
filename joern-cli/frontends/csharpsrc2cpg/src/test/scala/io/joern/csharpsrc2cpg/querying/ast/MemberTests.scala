@@ -58,23 +58,25 @@ class MemberTests extends CSharpCode2CpgFixture {
       }
     }
 
-    // TODO: Not supported yet.
-    "have a static constructor" ignore {
+    "have a static constructor" in {
       inside(cpg.typeDecl.nameExact("Car").method.nameExact(Defines.StaticInitMethodName).l) {
         case cctor :: Nil =>
           cctor.fullName shouldBe s"Car.${Defines.StaticInitMethodName}:void()"
-          cctor.modifier.modifierType.toSet shouldBe Set(ModifierTypes.STATIC, ModifierTypes.CONSTRUCTOR)
+          cctor.modifier.modifierType.toSet shouldBe Set(
+            ModifierTypes.STATIC,
+            ModifierTypes.CONSTRUCTOR,
+            ModifierTypes.INTERNAL
+          )
           cctor.methodReturn.typeFullName shouldBe "void"
         case xs =>
           fail(s"Expected single static constructor, but got $xs")
       }
     }
 
-    // TODO: Not supported yet.
-    "have the static member initialization inside the static constructor" ignore {
+    "have the static member initialization inside the static constructor" in {
       inside(cpg.method.fullNameExact(s"Car.${Defines.StaticInitMethodName}:void()").body.assignment.l) {
         case assignment :: Nil =>
-          assignment.target.code shouldBe "Car.nonInitMaxSpeed"
+          assignment.target.code shouldBe "nonInitMaxSpeed"
           assignment.source.code shouldBe "200"
         case xs =>
           fail(s"Expected single assignment inside the static constructor, but got $xs")
