@@ -3,6 +3,7 @@ package io.joern.c2cpg.cpp.features17
 import io.joern.c2cpg.astcreation.Defines
 import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.testfixtures.AstC2CpgSuite
+import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.semanticcpg.language.*
 import org.apache.commons.lang3.StringUtils
 
@@ -316,20 +317,22 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       cpg.identifier.nameExact("d").typeFullName.l shouldBe List("byte")
     }
 
-    "handle fallthrough, nodiscard, maybe_unused attributes" ignore {
+    "handle fallthrough, nodiscard, maybe_unused attributes" in {
       val cpg = code("""
-          |switch (n) {
-          |  case 1:
-          |    // ...
-          |    [[fallthrough]];
-          |  case 2:
-          |    // ...
-          |    break;
-          |  case 3:
-          |    // ...
-          |    [[fallthrough]];
-          |  default:
-          |    // ...
+          |void foo() {
+          |  switch (n) {
+          |    case 1:
+          |      // ...
+          |      [[fallthrough]];
+          |    case 2:
+          |      // ...
+          |      break;
+          |    case 3:
+          |      // ...
+          |      [[fallthrough]];
+          |    default:
+          |      // ...
+          |  }
           |}
           |
           |[[nodiscard]] bool do_something() {
@@ -344,7 +347,18 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |  log(msg);
           |}
           |""".stripMargin)
-      ???
+      cpg.method
+        .nameExact("foo")
+        .controlStructure
+        .controlStructureTypeExact(ControlStructureTypes.SWITCH)
+        .astChildren
+        .isBlock
+        ._jumpTargetViaAstOut
+        .code
+        .l shouldBe List("case 1:", "case 2:", "case 3:", "default:")
+      cpg.method.nameExact("do_something").size shouldBe 1
+      cpg.typeDecl.nameExact("error_info").size shouldBe 1
+      cpg.method.nameExact("my_callback").parameter.name.l shouldBe List("msg", "error")
     }
 
     "handle _has_include" ignore {

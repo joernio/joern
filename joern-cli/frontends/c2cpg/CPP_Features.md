@@ -25,7 +25,7 @@
 | [constexpr if](#constexpr-if)                                                                                             | [x]       |
 | [utf-8 character literals](#utf-8-character-literals)                                                                     | [ ]       |
 | [direct-list-initialization of enums](#direct-list-initialization-of-enums)                                               | [x]       |
-| [\[\[fallthrough\]\], \[\[nodiscard\]\], \[\[maybe_unused\]\] attributes](#fallthrough-nodiscard-maybe_unused-attributes) | [?]       |
+| [\[\[fallthrough\]\], \[\[nodiscard\]\], \[\[maybe_unused\]\] attributes](#fallthrough-nodiscard-maybe_unused-attributes) | [~]       |
 | [\_\_has\_include](#\_\_has\_include)                                                                                     | [?]       |
 | [class template argument deduction](#class-template-argument-deduction)                                                   | [?]       |
 
