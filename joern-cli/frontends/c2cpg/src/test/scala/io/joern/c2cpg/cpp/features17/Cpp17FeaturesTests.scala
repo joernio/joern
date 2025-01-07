@@ -4,6 +4,7 @@ import io.joern.c2cpg.astcreation.Defines
 import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.testfixtures.AstC2CpgSuite
 import io.shiftleft.semanticcpg.language.*
+import org.apache.commons.lang3.StringUtils
 
 class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt) {
 
@@ -236,29 +237,34 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       ???
     }
 
-    "handle selection statements with initializer" ignore {
+    "handle selection statements with initializer" in {
       val cpg = code("""
-          |{
-          |  std::lock_guard<std::mutex> lk(mx);
-          |  if (v.empty()) v.push_back(val);
-          |}
-          |// vs.
-          |if (std::lock_guard<std::mutex> lk(mx); v.empty()) {
-          |  v.push_back(val);
-          |}
+          |void foo() {
+          |  if (std::lock_guard<std::mutex> lk(mx); v.empty()) {
+          |    v.push_back(val);
+          |  }
           |
-          |Foo gadget(args);
-          |switch (auto s = gadget.status()) {
-          |  case OK: gadget.zip(); break;
-          |  case Bad: throw BadFoo(s.message());
-          |}
-          |// vs.
-          |switch (Foo gadget(args); auto s = gadget.status()) {
-          |  case OK: gadget.zip(); break;
-          |  case Bad: throw BadFoo(s.message());
+          |  switch (Foo gadget(args); auto s = gadget.status()) {
+          |    case OK: gadget.zip(); break;
+          |    case Bad: throw BadFoo(s.message());
+          |  }
           |}
           |""".stripMargin)
-      ???
+      cpg.method
+        .nameExact("foo")
+        .block
+        .astChildren
+        .isExpression
+        .sortBy(_.argumentIndex)
+        .code
+        .map(StringUtils.normalizeSpace)
+        .l shouldBe List(
+        "std::lock_guard<std::mutex> lk(mx)",
+        "if (std::lock_guard<std::mutex> lk(mx); v.empty()) { v.push_back(val); }",
+        "s = gadget.status()",
+        "gadget(args)",
+        "switch (Foo gadget(args); auto s = gadget.status()) { case OK: gadget.zip(); break; case Bad: throw BadFoo(s.message()); }"
+      )
     }
 
     "handle constexpr if" in {
@@ -277,8 +283,8 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |struct S {};
           |static_assert(isIntegral<S>() == false);
           |""".stripMargin)
-      cpg.method.nameExact("isIntegral").controlStructure.code.l shouldBe List(
-        "if (std::is_integral<T>::value)",
+      cpg.method.nameExact("isIntegral").controlStructure.code.map(StringUtils.normalizeSpace).l shouldBe List(
+        "if constexpr (std::is_integral<T>::value) { return true; } else { return false; }",
         "else"
       )
     }

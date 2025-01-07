@@ -121,12 +121,21 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     controlStructureAst(doNode, Option(conditionAst), bodyAst, placeConditionLast = true)
   }
 
-  private def astForSwitchStatement(switchStmt: IASTSwitchStatement): Ast = {
-    val code         = s"switch(${nullSafeCode(switchStmt.getControllerExpression)})"
-    val switchNode   = controlStructureNode(switchStmt, ControlStructureTypes.SWITCH, code)
+  private def astForSwitchStatement(switchStmt: IASTSwitchStatement): Seq[Ast] = {
+    val initAsts = switchStmt match {
+      case s: ICPPASTSwitchStatement =>
+        nullSafeAst(s.getControllerDeclaration) ++ nullSafeAst(s.getInitializerStatement)
+      case _ => Seq.empty
+    }
+
+    val codeString   = code(switchStmt)
+    val switchNode   = controlStructureNode(switchStmt, ControlStructureTypes.SWITCH, codeString)
     val conditionAst = astForConditionExpression(switchStmt.getControllerExpression)
     val stmtAsts     = nullSafeAst(switchStmt.getBody)
-    controlStructureAst(switchNode, Option(conditionAst), stmtAsts)
+
+    val finalAsts = initAsts :+ controlStructureAst(switchNode, Option(conditionAst), stmtAsts)
+    setArgumentIndices(finalAsts)
+    finalAsts
   }
 
   private def astsForCaseStatement(caseStmt: IASTCaseStatement): Seq[Ast] = {
@@ -163,12 +172,12 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val r = statement match {
       case expr: IASTExpressionStatement          => Seq(astForExpression(expr.getExpression))
       case block: IASTCompoundStatement           => Seq(astForBlockStatement(block, argIndex))
-      case ifStmt: IASTIfStatement                => Seq(astForIf(ifStmt))
+      case ifStmt: IASTIfStatement                => astForIf(ifStmt)
       case whileStmt: IASTWhileStatement          => Seq(astForWhile(whileStmt))
       case forStmt: IASTForStatement              => Seq(astForFor(forStmt))
       case forStmt: ICPPASTRangeBasedForStatement => Seq(astForRangedFor(forStmt))
       case doStmt: IASTDoStatement                => Seq(astForDoStatement(doStmt))
-      case switchStmt: IASTSwitchStatement        => Seq(astForSwitchStatement(switchStmt))
+      case switchStmt: IASTSwitchStatement        => astForSwitchStatement(switchStmt)
       case ret: IASTReturnStatement               => Seq(astForReturnStatement(ret))
       case br: IASTBreakStatement                 => Seq(astForBreakStatement(br))
       case cont: IASTContinueStatement            => Seq(astForContinueStatement(cont))
@@ -273,23 +282,24 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     )
   }
 
-  private def astForIf(ifStmt: IASTIfStatement): Ast = {
-    val (code, conditionAst) = ifStmt match {
+  private def astForIf(ifStmt: IASTIfStatement): Seq[Ast] = {
+    val initAsts = ifStmt match {
+      case s: ICPPASTIfStatement => nullSafeAst(s.getInitializerStatement)
+      case _                     => Seq.empty
+    }
+    val conditionAst = ifStmt match {
       case s @ (_: CASTIfStatement | _: CPPASTIfStatement) if s.getConditionExpression != null =>
-        val c          = s"if (${nullSafeCode(s.getConditionExpression)})"
-        val compareAst = astForConditionExpression(s.getConditionExpression)
-        (c, compareAst)
+        astForConditionExpression(s.getConditionExpression)
       case s: CPPASTIfStatement if s.getConditionExpression == null =>
-        val c         = s"if (${nullSafeCode(s.getConditionDeclaration)})"
         val exprBlock = blockNode(s.getConditionDeclaration, Defines.Empty, Defines.Void)
         scope.pushNewScope(exprBlock)
         val a = astsForDeclaration(s.getConditionDeclaration)
         setArgumentIndices(a)
         scope.popScope()
-        (c, blockAst(exprBlock, a.toList))
+        blockAst(exprBlock, a.toList)
     }
 
-    val ifNode = controlStructureNode(ifStmt, ControlStructureTypes.IF, code)
+    val ifNode = controlStructureNode(ifStmt, ControlStructureTypes.IF, code(ifStmt))
 
     val thenAst = ifStmt.getThenClause match {
       case block: IASTCompoundStatement => astForBlockStatement(block)
@@ -318,6 +328,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         Ast(elseNode).withChild(blockAst(elseBlock, a.toList))
       case _ => Ast()
     }
-    controlStructureAst(ifNode, Option(conditionAst), Seq(thenAst, elseAst))
+
+    val finalAsts = initAsts :+ controlStructureAst(ifNode, Option(conditionAst), Seq(thenAst, elseAst))
+    setArgumentIndices(finalAsts)
+    finalAsts
   }
 }

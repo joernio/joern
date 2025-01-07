@@ -614,13 +614,11 @@ class AstCreationPassTests extends AstC2CpgSuite {
       val cpg = code("""
         |void method(int x) {
         |  int y;
-        |  if (x > 0) {
-        |    y = 0;
-        |  }
+        |  if (x > 0) { y = 0; }
         |}
       """.stripMargin)
       inside(cpg.method.nameExact("method").controlStructure.l) { case List(controlStruct: ControlStructure) =>
-        controlStruct.code shouldBe "if (x > 0)"
+        controlStruct.code shouldBe "if (x > 0) { y = 0; }"
         controlStruct.controlStructureType shouldBe ControlStructureTypes.IF
         inside(controlStruct.condition.l) { case List(cndNode) =>
           cndNode.code shouldBe "x > 0"
@@ -634,16 +632,12 @@ class AstCreationPassTests extends AstC2CpgSuite {
       val cpg = code("""
         |void method(int x) {
         |  int y;
-        |  if (x > 0) {
-        |    y = 0;
-        |  } else {
-        |    y = 1;
-        |  }
+        |  if (x > 0) { y = 0; } else { y = 1; }
         |}
       """.stripMargin)
       inside(cpg.method.nameExact("method").controlStructure.l) { case List(ifStmt, elseStmt) =>
         ifStmt.controlStructureType shouldBe ControlStructureTypes.IF
-        ifStmt.code shouldBe "if (x > 0)"
+        ifStmt.code shouldBe "if (x > 0) { y = 0; } else { y = 1; }"
         elseStmt.controlStructureType shouldBe ControlStructureTypes.ELSE
         elseStmt.code shouldBe "else"
 

@@ -21,7 +21,7 @@
 | [inline variables](#inline-variables)                                                                                     | [x]       |
 | [nested namespaces](#nested-namespaces)                                                                                   | [x]       |
 | [structured bindings](#structured-bindings)                                                                               | [?]       |
-| [selection statements with initializer](#selection-statements-with-initializer)                                           | [?]       |
+| [selection statements with initializer](#selection-statements-with-initializer)                                           | [x]       |
 | [constexpr if](#constexpr-if)                                                                                             | [x]       |
 | [utf-8 character literals](#utf-8-character-literals)                                                                     | [ ]       |
 | [direct-list-initialization of enums](#direct-list-initialization-of-enums)                                               | [x]       |

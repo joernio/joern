@@ -4,6 +4,7 @@ import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.testfixtures.C2CpgSuite
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.semanticcpg.language.*
+import org.apache.commons.lang3.StringUtils
 
 class ControlStructureTests extends C2CpgSuite(FileDefaults.CppExt) {
 
@@ -50,7 +51,9 @@ class ControlStructureTests extends C2CpgSuite(FileDefaults.CppExt) {
     }
 
     "should identify `switch` block" in {
-      cpg.method("foo").switchBlock.code.l shouldBe List("switch(y)")
+      cpg.method("foo").switchBlock.code.map(StringUtils.normalizeSpace).l shouldBe List(
+        "switch(y) { case 1: printf(\"bar\\n\"); break; default: }"
+      )
     }
 
     "should identify `for` block" in {
