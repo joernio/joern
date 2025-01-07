@@ -299,17 +299,13 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
               case x: ArrayPattern =>
                 val condition = expr.map(e => BinaryExpression(x, "===", e)(x.span)).getOrElse(inClause.pattern)
                 val body      = inClause.body
+                val variables = x.children.collect { case x: MatchVariable => x }
 
-                val variables = x.children.collect { case x: MatchVariable =>
-                  x
-                }
-
-                val conditionBody = if (variables.nonEmpty) {
-                  StatementList(variables.map { x =>
-                    val lhs = SimpleIdentifier()(x.span)
-                    SingleAssignment(lhs, "=", x)(
+                val conditionBody = if (variables.nonEmpty && expr.isDefined) {
+                  StatementList(variables.map { lhs =>
+                    SingleAssignment(lhs, "=", MatchVariable()(expr.get.span))(
                       inClause.span
-                        .spanStart(s"${lhs.span.text} = ${RubyOperators.arrayPatternMatch}(${lhs.span.text})")
+                        .spanStart(s"${lhs.span.text} = ${RubyOperators.arrayPatternMatch}(${expr.get.text})")
                     )
                   } :+ body)(body.span)
                 } else {
@@ -317,7 +313,8 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
                 }
 
                 (condition, conditionBody)
-              case x => (x, inClause.body)
+              case x =>
+                (x, inClause.body)
             }
 
             val conditional = IfExpression(

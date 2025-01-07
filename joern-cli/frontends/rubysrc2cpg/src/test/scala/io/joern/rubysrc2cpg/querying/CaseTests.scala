@@ -202,7 +202,7 @@ class CaseTests extends RubyCode2CpgFixture {
             lhs.name shouldBe "result"
 
             rhs.methodFullName shouldBe RubyOperators.arrayPatternMatch
-            rhs.code shouldBe s"${RubyOperators.arrayPatternMatch}(result)"
+            rhs.code shouldBe s"${RubyOperators.arrayPatternMatch}(<tmp-0>)"
           case xs => fail(s"Expected lhs and rhs, got [${xs.code.mkString(",")}]")
         }
 
@@ -211,7 +211,7 @@ class CaseTests extends RubyCode2CpgFixture {
             lhs.name shouldBe "notResult"
 
             rhs.methodFullName shouldBe RubyOperators.arrayPatternMatch
-            rhs.code shouldBe s"${RubyOperators.arrayPatternMatch}(notResult)"
+            rhs.code shouldBe s"${RubyOperators.arrayPatternMatch}(<tmp-0>)"
           case xs => fail(s"Expected lhs and rhs, got [${xs.code.mkString(",")}]")
         }
       case _ => fail(s"Expected two true branches")
