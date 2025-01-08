@@ -213,29 +213,69 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       )
     }
 
-    "handle structured bindings" ignore {
+    "handle structured bindings" in {
       val cpg = code("""
-          |using Coordinate = std::pair<int, int>;
+          |template<class T1, class T2>
+          |struct pair {
+          |  T1 x;
+          |  T2 y;
+          |};
+          |
+          |using Coordinate = pair<int, int>;
           |Coordinate origin() {
           |  return Coordinate{0, 0};
           |}
           |
-          |const auto [ x, y ] = origin();
-          |x; // == 0
-          |y; // == 0
+          |void foo() {
+          |  const auto [ x, y ] = origin();
+          |  x; // == 0
+          |  y; // == 0
           |
-          |std::unordered_map<std::string, int> mapping {
-          |  {"a", 1},
-          |  {"b", 2},
-          |  {"c", 3}
-          |};
+          |  std::unordered_map<std::string, int> mapping;
+          |  // fill the map ...
           |
-          |// Destructure by reference.
-          |for (const auto& [key, value] : mapping) {
-          |  // Do something with key and value
+          |  // Destructure by reference.
+          |  for (const auto& [key, value] : mapping) {
+          |    // Do something with key and value
+          |  }
           |}
           |""".stripMargin)
-      ???
+      cpg.call.sortBy(_.argumentIndex).code.l shouldBe List(
+        "Coordinate{0, 0}",
+        "anonymous_tmp_0 = = origin()",
+        "x = anonymous_tmp_0.x",
+        "anonymous_tmp_0.x",
+        "y = anonymous_tmp_0.y",
+        "anonymous_tmp_0.y",
+        "anonymous_tmp_1 = mapping",
+        "key = anonymous_tmp_1.key",
+        "anonymous_tmp_1.key",
+        "value = anonymous_tmp_1.value",
+        "anonymous_tmp_1.value",
+        "{0, 0}",
+        "origin()"
+      )
+      cpg.local.map(l => (l.name, l.typeFullName)).toMap shouldBe Map(
+        "x"               -> "int",
+        "y"               -> "int",
+        "anonymous_tmp_0" -> "pair<int,int>",
+        "mapping"         -> "std.unordered_map<std.string,int>",
+        // fails to resolve the type of the structured bindings without C++ header files
+        "key"             -> "ANY",
+        "anonymous_tmp_1" -> "ANY",
+        "value"           -> "ANY"
+      )
+      pendingUntilFixed {
+        cpg.local.map(l => (l.name, l.typeFullName)).toMap shouldBe Map(
+          "x"               -> "int",
+          "y"               -> "int",
+          "anonymous_tmp_0" -> "pair<int,int>",
+          "mapping"         -> "std.unordered_map<std.string,int>",
+          "key"             -> "int",
+          "anonymous_tmp_1" -> "std.unordered_map<std.string,int>",
+          "value"           -> "int"
+        )
+      }
     }
 
     "handle selection statements with initializer" in {

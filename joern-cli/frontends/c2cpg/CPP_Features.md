@@ -19,7 +19,7 @@
 | lambda capture this by value                                            | [~]       |
 | inline variables                                                        | [x]       |
 | nested namespaces                                                       | [x]       |
-| structured bindings                                                     | [?]       |
+| structured bindings                                                     | [x]       |
 | selection statements with initializer                                   | [x]       |
 | constexpr if                                                            | [x]       |
 | utf-8 character literals                                                | [ ]       |

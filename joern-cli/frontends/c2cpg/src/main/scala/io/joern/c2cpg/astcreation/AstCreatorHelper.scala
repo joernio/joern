@@ -30,6 +30,9 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalMemberAccess
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFoldExpression
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalBinary
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalFoldExpression
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTEqualsInitializer
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPFunction
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPVariable
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import java.nio.file.Path
@@ -152,14 +155,15 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         rawType
       }
     StringUtils.normalizeSpace(tpe) match {
-      case ""                                                                      => Defines.Any
-      case t if t.startsWith("[*this]") || t.startsWith("[this]")                  => t
-      case t if t.startsWith("[") && t.endsWith("]")                               => Defines.Array
-      case t if t.contains("->")                                                   => Defines.Function
-      case t if t.contains("?")                                                    => Defines.Any
-      case t if t.contains("#")                                                    => Defines.Any
-      case t if t.contains("::{") || t.contains("}::")                             => Defines.Any
-      case t if t.contains("{") || t.contains("}")                                 => Defines.Any
+      case ""                                                     => Defines.Any
+      case t if t.startsWith("[*this]") || t.startsWith("[this]") => t
+      case t if t.startsWith("[") && t.endsWith("]")              => Defines.Array
+      case t if t.endsWith("()")                       => replaceWhitespaceAfterTypeKeyword(t.stripSuffix("()"))
+      case t if t.contains("->")                       => Defines.Function
+      case t if t.contains("?")                        => Defines.Any
+      case t if t.contains("#")                        => Defines.Any
+      case t if t.contains("::{") || t.contains("}::") => Defines.Any
+      case t if t.contains("{") || t.contains("}")     => Defines.Any
       case t if t.contains("org.eclipse.cdt.internal.core.dom.parser.ProblemType") => Defines.Any
       case t if t.contains("( ") => replaceWhitespaceAfterTypeKeyword(fixQualifiedName(t.substring(0, t.indexOf("( "))))
       case t if t.contains(Defines.QualifiedNameSeparator) => replaceWhitespaceAfterTypeKeyword(fixQualifiedName(t))
@@ -261,8 +265,10 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         cleanType(evaluation.getOwnerType.toString + deref, stripKeywords)
       case Some(evalBinding: EvalBinding) =>
         evalBinding.getBinding match {
-          case m: CPPMethod => cleanType(fullName(m.getDefinition))
-          case _            => cleanType(safeGetNodeType(s), stripKeywords)
+          case m: CPPMethod   => cleanType(safeGetNodeType(m.getPrimaryDeclaration), stripKeywords)
+          case f: CPPFunction => cleanType(safeGetNodeType(f.getDefinition), stripKeywords)
+          case v: CPPVariable => cleanType(v.getType.toString)
+          case _              => cleanType(safeGetNodeType(s), stripKeywords)
         }
       case _ => cleanType(safeGetNodeType(s), stripKeywords)
     }
@@ -283,6 +289,18 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     }
   }
 
+  private def typeForCPPASTEqualsInitializer(c: CPPASTEqualsInitializer, stripKeywords: Boolean = true): String = {
+    import org.eclipse.cdt.core.dom.ast.ASTSignatureUtil.getNodeSignature
+    c.getInitializerClause match {
+      case initializer: ICPPASTFunctionCallExpression
+          if initializer.getFunctionNameExpression.isInstanceOf[CPPASTIdExpression] =>
+        val name = initializer.getFunctionNameExpression.asInstanceOf[CPPASTIdExpression]
+        typeForCPPASTIdExpression(name, stripKeywords)
+      case _ =>
+        cleanType(getNodeSignature(c), stripKeywords)
+    }
+  }
+
   @nowarn
   protected def typeFor(node: IASTNode, stripKeywords: Boolean = true): String = {
     import org.eclipse.cdt.core.dom.ast.ASTSignatureUtil.getNodeSignature
@@ -293,6 +311,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case s: ICPPASTNamedTypeSpecifier     => typeForCPPAstNamedTypeSpecifier(s, stripKeywords)
       case a: IASTArrayDeclarator           => typeForIASTArrayDeclarator(a, stripKeywords)
       case c: ICPPASTConstructorInitializer => typeForICPPASTConstructorInitializer(c, stripKeywords)
+      case c: CPPASTEqualsInitializer       => typeForCPPASTEqualsInitializer(c, stripKeywords)
       case _: IASTIdExpression | _: IASTName | _: IASTDeclarator => cleanType(safeGetNodeType(node), stripKeywords)
       case f: IASTFieldReference          => cleanType(safeGetType(f.getFieldOwner.getExpressionType), stripKeywords)
       case s: IASTNamedTypeSpecifier      => cleanType(ASTStringUtil.getReturnTypeString(s, null), stripKeywords)
@@ -338,6 +357,9 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     }
     r
   }
+
+  protected def nullSafeAst(node: IASTInitializer): Ast =
+    Option(node).map(astForNode).getOrElse(Ast())
 
   protected def nullSafeAst(node: IASTExpression): Ast =
     Option(node).map(astForNode).getOrElse(Ast())
@@ -462,6 +484,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case l: IASTInitializerList           => astForInitializerList(l)
       case c: ICPPASTConstructorInitializer => astForCPPASTConstructorInitializer(c)
       case d: ICASTDesignatedInitializer    => astForCASTDesignatedInitializer(d)
+      case d: IASTEqualsInitializer         => astForNode(d.getInitializerClause)
       case d: ICPPASTDesignatedInitializer  => astForCPPASTDesignatedInitializer(d)
       case d: CASTArrayRangeDesignator      => astForCASTArrayRangeDesignator(d)
       case d: CPPASTArrayRangeDesignator    => astForCPPASTArrayRangeDesignator(d)
