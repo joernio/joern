@@ -124,8 +124,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   private def astForSwitchStatement(switchStmt: IASTSwitchStatement): Seq[Ast] = {
     val initAsts = switchStmt match {
       case s: ICPPASTSwitchStatement =>
-        nullSafeAst(s.getControllerDeclaration) ++ nullSafeAst(s.getInitializerStatement)
-      case _ => Seq.empty
+        nullSafeAst(s.getInitializerStatement) ++ nullSafeAst(s.getControllerDeclaration)
+      case _ =>
+        Seq.empty
     }
 
     val codeString   = code(switchStmt)

@@ -36,8 +36,8 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       val cpg = code("""
           |template <typename T, T... Ints>
           |struct integer_sequence {
-          |    using value_type = T;
-          |    static constexpr std::size_t size() noexcept { return sizeof...(Ints); }
+          |  using value_type = T;
+          |  static constexpr std::size_t size() noexcept { return sizeof...(Ints); }
           |};
           |
           |template <auto... seq>
@@ -62,8 +62,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       val cpg = code("""
           |template <typename... Args>
           |bool logicalAnd(Args... args) {
-          |    // Binary folding.
-          |    return (true && ... && args);
+          |  return (true && ... && args);
           |}
           |bool b = true;
           |bool& b2 = b;
@@ -84,8 +83,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       val cpg = code("""
           |template <typename... Args>
           |auto sum(Args... args) {
-          |    // Unary folding.
-          |    return (... + args);
+          |  return (... + args);
           |}
           |sum(1.0, 2.0f, 3); // == 6.0
           |""".stripMargin)
@@ -134,6 +132,7 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |""".stripMargin)
       cpg.method.nameNot("<global>").fullName.sorted shouldBe List(
         "<lambda>0",
+        // TODO: fix scoping of nested lambdas
         "<lambda>1",
         "<lambda>2",
         "<lambda>3",
@@ -263,8 +262,8 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
         .l shouldBe List(
         "std::lock_guard<std::mutex> lk(mx)",
         "if (std::lock_guard<std::mutex> lk(mx); v.empty()) { v.push_back(val); }",
-        "s = gadget.status()",
         "gadget(args)",
+        "s = gadget.status()",
         "switch (Foo gadget(args); auto s = gadget.status()) { case OK: gadget.zip(); break; case Bad: throw BadFoo(s.message()); }"
       )
     }
