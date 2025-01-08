@@ -348,7 +348,9 @@ object RubyIntermediateAst {
 
   final case class ArrayPattern(children: List[RubyExpression])(span: TextSpan) extends RubyExpression(span)
 
-  final case class MatchVariable()(span: TextSpan) extends RubyExpression(span)
+  final case class MatchVariable()(span: TextSpan) extends RubyExpression(span) {
+    def toSimpleIdentifier: SimpleIdentifier = SimpleIdentifier()(span)
+  }
 
   final case class NextExpression()(span: TextSpan) extends RubyExpression(span) with ControlFlowStatement
 

@@ -520,6 +520,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
                     val asts = astsForStatement(x.multipleAssignment)
                     val call = callNode(node, code(node), op, op, DispatchTypes.STATIC_DISPATCH)
                     return callAst(call, asts :+ rhsAst)
+                  case x: MatchVariable =>
+                    handleVariableOccurrence(x.toSimpleIdentifier) // Create local variable under this scope
+                    val matchIden = astForExpression(x.toSimpleIdentifier)
+                    val call      = callNode(node, code(node), op, op, DispatchTypes.STATIC_DISPATCH)
+                    return callAst(call, matchIden :: rhsAst :: Nil)
                   case _ => astForExpression(node.lhs)
                 }
 
@@ -618,7 +623,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   protected def astForArrayPattern(node: ArrayPattern): Ast = {
     val callNode_ =
       callNode(node, code(node), Operators.arrayInitializer, Operators.arrayInitializer, DispatchTypes.STATIC_DISPATCH)
-    val childrenAst = node.children.map(astForExpression)
+    val childrenAst = node.children.map {
+      case x: MatchVariable => astForExpression(SimpleIdentifier()(x.span))
+      case x                => astForExpression(x)
+    }
 
     callAst(callNode_, childrenAst)
   }
