@@ -154,16 +154,15 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       } else {
         rawType
       }
-    StringUtils.normalizeSpace(tpe) match {
-      case ""                                                     => Defines.Any
-      case t if t.startsWith("[*this]") || t.startsWith("[this]") => t
-      case t if t.startsWith("[") && t.endsWith("]")              => Defines.Array
-      case t if t.endsWith("()")                       => replaceWhitespaceAfterTypeKeyword(t.stripSuffix("()"))
-      case t if t.contains("->")                       => Defines.Function
-      case t if t.contains("?")                        => Defines.Any
-      case t if t.contains("#")                        => Defines.Any
-      case t if t.contains("::{") || t.contains("}::") => Defines.Any
-      case t if t.contains("{") || t.contains("}")     => Defines.Any
+    StringUtils.normalizeSpace(tpe.stripSuffix(" ()")) match {
+      case ""                                                                      => Defines.Any
+      case t if t.startsWith("[*this]") || t.startsWith("[this]")                  => t
+      case t if t.startsWith("[") && t.endsWith("]")                               => Defines.Array
+      case t if t.contains("->")                                                   => Defines.Function
+      case t if t.contains("?")                                                    => Defines.Any
+      case t if t.contains("#")                                                    => Defines.Any
+      case t if t.contains("::{") || t.contains("}::")                             => Defines.Any
+      case t if t.contains("{") || t.contains("}")                                 => Defines.Any
       case t if t.contains("org.eclipse.cdt.internal.core.dom.parser.ProblemType") => Defines.Any
       case t if t.contains("( ") => replaceWhitespaceAfterTypeKeyword(fixQualifiedName(t.substring(0, t.indexOf("( "))))
       case t if t.contains(Defines.QualifiedNameSeparator) => replaceWhitespaceAfterTypeKeyword(fixQualifiedName(t))

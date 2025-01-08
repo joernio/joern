@@ -2208,9 +2208,9 @@ class AstCreationPassTests extends AstC2CpgSuite {
       val cpg          = code("class Foo { char (*(*x())[5])() }", "test.cpp")
       val List(method) = cpg.method.nameNot("<global>").l
       method.name shouldBe "x"
-      method.fullName shouldBe "Foo.x:char(*(*)[5])()"
+      method.fullName shouldBe "Foo.x:char(*(*)[5])()()"
       method.code shouldBe "char (*(*x())[5])()"
-      method.signature shouldBe "char(*(*)[5])()"
+      method.signature shouldBe "char(*(*)[5])()()"
     }
 
     "be consistent with pointer types" in {
