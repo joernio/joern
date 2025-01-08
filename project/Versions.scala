@@ -4,7 +4,7 @@ object Versions {
   // Dont upgrade antlr to 4.10 or above since those versions require java 11 or higher which
   // causes problems upstreams.
   val antlr                  = "4.7.2"
-  val cask                   = "0.10.2"
+  val cask                   = "0.9.5" // 0.9.5 is actually the latest release, not 0.10.2 ¯\_(ツ)_/¯ - check the cask git commits...
   val catsCore               = "2.12.0"
   val catsEffect             = "3.5.4"
   val cfr                    = "0.152"
@@ -31,7 +31,7 @@ object Versions {
   val requests               = "0.8.0"
   val scalaParallel          = "1.0.4"
   val scalaParserCombinators = "2.4.0"
-  val scalaReplPP            = "0.3.8"
+  val scalaReplPP            = "0.3.9"
   val scalatest              = "3.2.18"
   val scopt                  = "4.1.0"
   val semverParser           = "0.0.6"
