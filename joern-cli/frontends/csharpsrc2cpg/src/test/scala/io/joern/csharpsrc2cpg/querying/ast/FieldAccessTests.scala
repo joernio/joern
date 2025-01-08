@@ -6,7 +6,7 @@ import io.shiftleft.semanticcpg.language.*
 
 class FieldAccessTests extends CSharpCode2CpgFixture {
 
-  "Console.WriteLine call" should {
+  "Console.WriteLine call while importing System" should {
     val cpg = code("""
         |using System;
         |Console.WriteLine("foo");
@@ -15,15 +15,32 @@ class FieldAccessTests extends CSharpCode2CpgFixture {
     "have WriteLine call correctly set" in {
       inside(cpg.call.nameExact("WriteLine").l) {
         case writeLine :: Nil =>
+          writeLine.code shouldBe "Console.WriteLine(\"foo\")"
           writeLine.methodFullName shouldBe "System.Console.WriteLine:System.Void(System.String)"
-          writeLine.argument(0).code shouldBe "Console"
-          writeLine.argument(1).code shouldBe "\"foo\""
         case xs => fail(s"Expected single WriteLine call, but got $xs")
+      }
+    }
+
+    "have foo literal correctly set" in {
+      inside(cpg.call.nameExact("WriteLine").argument(1).isLiteral.l) {
+        case foo :: Nil =>
+          foo.typeFullName shouldBe "System.String"
+          foo.code shouldBe "\"foo\""
+        case xs => fail(s"Expected single literal argument to WriteLine, but got $xs")
+      }
+    }
+
+    "have Console correctly set" in {
+      inside(cpg.call.nameExact("WriteLine").argument(0).isIdentifier.l) {
+        case console :: Nil =>
+          console.code shouldBe "Console"
+          console.typeFullName shouldBe "System.Console"
+        case xs => fail(s"Expected single Console identifier, but got $xs")
       }
     }
   }
 
-  "System.Console.WriteLine call" should {
+  "System.Console.WriteLine call while importing System" should {
     val cpg = code("""
         |using System;
         |System.Console.WriteLine("foo");
@@ -33,20 +50,63 @@ class FieldAccessTests extends CSharpCode2CpgFixture {
       inside(cpg.call.nameExact("WriteLine").l) {
         case writeLine :: Nil =>
           writeLine.methodFullName shouldBe "System.Console.WriteLine:System.Void(System.String)"
-          inside(writeLine.argument(0).fieldAccess.l) {
-            case sysConsole :: Nil =>
-              sysConsole.typeFullName shouldBe "System.Console"
-              sysConsole.code shouldBe "System.Console"
-              sysConsole.fieldIdentifier.code.l shouldBe List("Console")
-            case xs => fail(s"Expected single fieldAccess to the left of WriteLine, but got $xs")
-          }
-          inside(writeLine.argument(1).start.isLiteral.l) {
-            case foo :: Nil =>
-              foo.typeFullName shouldBe "System.String"
-              foo.code shouldBe "\"foo\""
-            case xs => fail(s"Expected single literal argument to WriteLine, but got $xs")
-          }
+          writeLine.code shouldBe "System.Console.WriteLine(\"foo\")"
         case xs => fail(s"Expected single WriteLine call, but got $xs")
+      }
+    }
+
+    "have foo literal correctly set" in {
+      inside(cpg.call.nameExact("WriteLine").argument(1).isLiteral.l) {
+        case foo :: Nil =>
+          foo.typeFullName shouldBe "System.String"
+          foo.code shouldBe "\"foo\""
+        case xs => fail(s"Expected single literal argument to WriteLine, but got $xs")
+      }
+    }
+
+    "have System.Console correctly set" in {
+      inside(cpg.call.nameExact("WriteLine").argument(0).fieldAccess.l) {
+        case sysConsole :: Nil =>
+          sysConsole.typeFullName shouldBe "System.Console"
+          sysConsole.code shouldBe "System.Console"
+          sysConsole.fieldIdentifier.code.l shouldBe List("Console")
+          sysConsole.fieldIdentifier.canonicalName.l shouldBe List("Console")
+        case xs => fail(s"Expected single fieldAccess to the left of WriteLine, but got $xs")
+      }
+    }
+  }
+
+  "System.Console.WriteLine call without importing System" should {
+    val cpg = code("""
+        |System.Console.WriteLine("foo");
+        |""".stripMargin)
+
+    "have WriteLine call correctly set" in {
+      inside(cpg.call.nameExact("WriteLine").l) {
+        case writeLine :: Nil =>
+          writeLine.methodFullName shouldBe "System.Console.WriteLine:System.Void(System.String)"
+          writeLine.code shouldBe "System.Console.WriteLine(\"foo\")"
+        case xs => fail(s"Expected single WriteLine call, but got $xs")
+      }
+    }
+
+    "have foo literal correctly set" in {
+      inside(cpg.call.nameExact("WriteLine").argument(1).isLiteral.l) {
+        case foo :: Nil =>
+          foo.typeFullName shouldBe "System.String"
+          foo.code shouldBe "\"foo\""
+        case xs => fail(s"Expected single literal argument to WriteLine, but got $xs")
+      }
+    }
+
+    "have System.Console correctly set" in {
+      inside(cpg.call.nameExact("WriteLine").argument(0).fieldAccess.l) {
+        case sysConsole :: Nil =>
+          sysConsole.typeFullName shouldBe "System.Console"
+          sysConsole.code shouldBe "System.Console"
+          sysConsole.fieldIdentifier.code.l shouldBe List("Console")
+          sysConsole.fieldIdentifier.canonicalName.l shouldBe List("Console")
+        case xs => fail(s"Expected single fieldAccess to the left of WriteLine, but got $xs")
       }
     }
   }

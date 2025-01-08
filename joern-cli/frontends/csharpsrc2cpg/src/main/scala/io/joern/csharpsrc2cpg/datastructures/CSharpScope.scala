@@ -2,6 +2,7 @@ package io.joern.csharpsrc2cpg.datastructures
 
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.datastructures.{OverloadableScope, Scope, ScopeElement, TypedScope, TypedScopeElement}
+import io.joern.x2cpg.utils.ListUtils.singleOrNone
 import io.shiftleft.codepropertygraph.generated.nodes.DeclarationNew
 
 import scala.collection.mutable
@@ -62,7 +63,13 @@ class CSharpScope(summary: CSharpProgramSummary)
     if (typeName == "this") {
       surroundingTypeDeclFullName.flatMap(summary.matchingTypes).headOption
     } else {
-      super.tryResolveTypeReference(typeName)
+      super.tryResolveTypeReference(typeName) match
+        case Some(x) => Some(x)
+        case None    =>
+          // typeName might be a fully-qualified name e.g. System.Console, in which case, even if we
+          // don't import System (i.e. System is not in typesInScope), we should still find it if it's
+          // in the type summaries and there's exactly 1 match.
+          Some(typeName).filter(_.contains(".")).flatMap(summary.matchingTypes.andThen(singleOrNone))
     }
   }
 
