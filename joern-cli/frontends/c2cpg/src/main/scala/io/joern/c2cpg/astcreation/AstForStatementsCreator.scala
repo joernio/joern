@@ -7,6 +7,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.AstNodeNew
 import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.cpp.*
 import org.eclipse.cdt.core.dom.ast.gnu.IGNUASTGotoStatement
@@ -42,102 +43,63 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   private def hasValidArrayModifier(arrayDecl: IASTArrayDeclarator): Boolean =
     arrayDecl.getArrayModifiers.nonEmpty && arrayDecl.getArrayModifiers.forall(_.getConstantExpression != null)
 
-  private def astsForStructuredBindingDeclarationByIndex(
+  private def astsForStructuredBindingDeclaration(
     struct: ICPPASTStructuredBindingDeclaration,
     init: Option[IASTInitializerClause] = None
   ): Seq[Ast] = {
-    val initializer = init.getOrElse(struct.getInitializer)
-    val tmpName     = uniqueName("tmp", "", "")._1
-    val tpe         = registerType(typeFor(initializer))
-    val localTmp    = localNode(struct, tmpName, tmpName, tpe)
-    scope.addToScope(tmpName, (localTmp, tpe))
-    val tmpNode = identifierNode(struct, tmpName, tmpName, tpe)
-    val rhsAst  = astForNode(initializer)
-    val op      = Operators.assignment
-    val assignmentCallNode =
-      callNode(struct, s"$tmpName = ${code(initializer)}", op, op, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
-    val assignmentCallAst = callAst(assignmentCallNode, List(Ast(tmpNode).withRefEdge(tmpNode, localTmp), rhsAst))
-
-    val accessAsts = struct.getNames.zipWithIndex.map { case (name, index) =>
-      val tpe        = registerType(typeFor(name))
-      val codeString = s"$tmpName[$index]"
-      val op         = Operators.assignment
-      val localName  = code(name)
-      val assignmentCallNode =
-        callNode(name, s"${code(name)} = $codeString", op, op, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
-
-      val localNameNode = localNode(name, localName, localName, tpe)
+    def leftAst(astName: IASTNode, localName: String, codeString: String, tpe: String): (NewCall, Ast) = {
+      val op                 = Operators.assignment
+      val assignmentCode     = s"$localName = $codeString"
+      val assignmentCallNode = callNode(astName, assignmentCode, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
+      val localNameNode      = localNode(astName, localName, localName, tpe)
       scope.addToScope(localName, (localNameNode, tpe))
-      val localId = identifierNode(name, code(name), code(name), tpe)
+      val localId = identifierNode(astName, code(astName), code(astName), tpe)
       val leftAst = Ast(localId).withRefEdge(localId, localNameNode)
-
-      val arrayIndexCallNode =
-        callNode(
-          name,
-          codeString,
-          Operators.indexAccess,
-          Operators.indexAccess,
-          DispatchTypes.STATIC_DISPATCH,
-          None,
-          Some(tpe)
-        )
-      val expr              = Ast(identifierNode(name, tmpName, tmpName, tpe))
-      val arg               = Ast(literalNode(name, index.toString, registerType("int")))
-      val arrayIndexCallAst = callAst(arrayIndexCallNode, List(expr, arg))
-
-      Ast(assignmentCallNode).withChildren(List(leftAst, arrayIndexCallAst))
+      (assignmentCallNode, leftAst)
     }
 
-    Seq(Ast(localTmp), assignmentCallAst) ++ accessAsts
-  }
+    val initializer  = init.getOrElse(struct.getInitializer)
+    val tmpName      = uniqueName("tmp", "", "")._1
+    val tpe          = registerType(typeFor(initializer))
+    val localTmpNode = localNode(struct, tmpName, tmpName, tpe)
+    scope.addToScope(tmpName, (localTmpNode, tpe))
 
-  private def astsForStructuredBindingDeclarationByName(
-    struct: ICPPASTStructuredBindingDeclaration,
-    init: Option[IASTInitializerClause] = None
-  ): Seq[Ast] = {
-    val initializer = init.getOrElse(struct.getInitializer)
-    val tmpName     = uniqueName("tmp", "", "")._1
-    val tpe         = registerType(typeFor(initializer))
-    val localTmp    = localNode(struct, tmpName, tmpName, tpe)
-    scope.addToScope(tmpName, (localTmp, tpe))
-    val tmpNode = identifierNode(struct, tmpName, tmpName, tpe)
-    val rhsAst  = astForNode(initializer)
-    val op      = Operators.assignment
-    val assignmentCallNode =
-      callNode(struct, s"$tmpName = ${code(initializer)}", op, op, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
-    val assignmentCallAst = callAst(assignmentCallNode, List(Ast(tmpNode).withRefEdge(tmpNode, localTmp), rhsAst))
+    val idNode             = identifierNode(struct, tmpName, tmpName, tpe)
+    val rhsAst             = astForNode(initializer)
+    val op                 = Operators.assignment
+    val assignmentCode     = s"$tmpName = ${code(initializer)}"
+    val assignmentCallNode = callNode(struct, assignmentCode, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
+    val assignmentCallAst  = callAst(assignmentCallNode, List(Ast(idNode).withRefEdge(idNode, localTmpNode), rhsAst))
 
-    val accessAsts = struct.getNames.map { name =>
-      val tpe        = registerType(typeFor(name))
-      val codeString = s"$tmpName.${code(name)}"
-      val op         = Operators.assignment
-      val localName  = code(name)
-      val assignmentCallNode =
-        callNode(name, s"${code(name)} = $codeString", op, op, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
-
-      val localNameNode = localNode(name, localName, localName, tpe)
-      scope.addToScope(localName, (localNameNode, tpe))
-      val localId = identifierNode(name, code(name), code(name), tpe)
-      val leftAst = Ast(localId).withRefEdge(localId, localNameNode)
-
-      val memberAccessCallNode =
-        callNode(
-          name,
-          codeString,
-          Operators.memberAccess,
-          Operators.memberAccess,
-          DispatchTypes.STATIC_DISPATCH,
-          None,
-          Some(tpe)
-        )
-      val expr                = Ast(identifierNode(name, tmpName, tmpName, tpe))
-      val arg                 = Ast(fieldIdentifierNode(name, localName, localName))
-      val memberAccessCallAst = callAst(memberAccessCallNode, List(expr, arg))
-
-      Ast(assignmentCallNode).withChildren(List(leftAst, memberAccessCallAst))
+    val accessAsts = if typeFor(initializer).endsWith("]") then {
+      struct.getNames.zipWithIndex.map { case (astName, index) =>
+        val localName                    = code(astName)
+        val tpe                          = registerType(typeFor(astName))
+        val codeString                   = s"$tmpName[$index]"
+        val (assignmentCallNode, lhsAst) = leftAst(astName, localName, codeString, tpe)
+        val op                           = Operators.indexAccess
+        val arrayIndexCallNode = callNode(astName, codeString, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
+        val idNode             = identifierNode(astName, tmpName, tmpName, tpe)
+        val indexNode          = literalNode(astName, index.toString, registerType("int"))
+        val arrayIndexCallAst  = callAst(arrayIndexCallNode, List(Ast(idNode), Ast(indexNode)))
+        Ast(assignmentCallNode).withChildren(List(lhsAst, arrayIndexCallAst))
+      }
+    } else {
+      struct.getNames.map { astName =>
+        val localName                    = code(astName)
+        val tpe                          = registerType(typeFor(astName))
+        val codeString                   = s"$tmpName.$localName"
+        val (assignmentCallNode, lhsAst) = leftAst(astName, localName, codeString, tpe)
+        val op                           = Operators.memberAccess
+        val memberAccessCallNode = callNode(astName, codeString, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
+        val idNode               = identifierNode(astName, tmpName, tmpName, tpe)
+        val fieldIdNode          = fieldIdentifierNode(astName, localName, localName)
+        val memberAccessCallAst  = callAst(memberAccessCallNode, List(Ast(idNode), Ast(fieldIdNode)))
+        Ast(assignmentCallNode).withChildren(List(lhsAst, memberAccessCallAst))
+      }
     }
 
-    Seq(Ast(localTmp), assignmentCallAst) ++ accessAsts
+    Seq(Ast(localTmpNode), assignmentCallAst) ++ accessAsts
   }
 
   private def astsForDeclarationStatement(decl: IASTDeclarationStatement): Seq[Ast] =
@@ -145,12 +107,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case simpleDecl: IASTSimpleDeclaration
           if simpleDecl.getDeclarators.headOption.exists(_.isInstanceOf[IASTFunctionDeclarator]) =>
         Seq(astForFunctionDeclarator(simpleDecl.getDeclarators.head.asInstanceOf[IASTFunctionDeclarator]))
-      case struct: ICPPASTStructuredBindingDeclaration =>
-        if (typeFor(struct.getInitializer).endsWith("]")) {
-          astsForStructuredBindingDeclarationByIndex(struct)
-        } else {
-          astsForStructuredBindingDeclarationByName(struct)
-        }
+      case struct: ICPPASTStructuredBindingDeclaration => astsForStructuredBindingDeclaration(struct)
       case simpleDecl: IASTSimpleDeclaration =>
         val locals = simpleDecl.getDeclarators.zipWithIndex.map { case (d, i) => astForDeclarator(simpleDecl, d, i) }
         val arrayModCalls = simpleDecl.getDeclarators
@@ -361,41 +318,22 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     forAst(forNode, Seq(), Seq(initAst), Seq(compareAst), Seq(updateAst), bodyAsts)
   }
 
-  private def astForICPPASTStructuredBindingDeclarationInForStmt(
-    forStmt: ICPPASTRangeBasedForStatement,
-    init: ICPPASTStructuredBindingDeclaration
-  ): Ast = {
+  private def astForRangedFor(forStmt: ICPPASTRangeBasedForStatement): Ast = {
     val codeDecl = nullSafeCode(forStmt.getDeclaration)
     val codeInit = nullSafeCode(forStmt.getInitializerClause)
-
-    val code    = s"for ($codeDecl:$codeInit)"
-    val forNode = controlStructureNode(forStmt, ControlStructureTypes.FOR, code)
-
-    val initAsts = if (typeFor(forStmt.getInitializerClause).endsWith("]")) {
-      astsForStructuredBindingDeclarationByIndex(init, Some(forStmt.getInitializerClause))
-    } else {
-      astsForStructuredBindingDeclarationByName(init, Some(forStmt.getInitializerClause))
-    }
-
-    val stmtAst = nullSafeAst(forStmt.getBody)
-    controlStructureAst(forNode, None, initAsts ++ stmtAst)
-  }
-
-  private def astForRangedFor(forStmt: ICPPASTRangeBasedForStatement): Ast = {
-    forStmt.getDeclaration match
+    val code     = s"for ($codeDecl:$codeInit)"
+    val forNode  = controlStructureNode(forStmt, ControlStructureTypes.FOR, code)
+    forStmt.getDeclaration match {
       case declaration: ICPPASTStructuredBindingDeclaration =>
-        astForICPPASTStructuredBindingDeclarationInForStmt(forStmt, declaration)
+        val initAsts = astsForStructuredBindingDeclaration(declaration, Some(forStmt.getInitializerClause))
+        val stmtAst  = nullSafeAst(forStmt.getBody)
+        controlStructureAst(forNode, None, initAsts ++ stmtAst)
       case _ =>
-        val codeDecl = nullSafeCode(forStmt.getDeclaration)
-        val codeInit = nullSafeCode(forStmt.getInitializerClause)
-
-        val code    = s"for ($codeDecl:$codeInit)"
-        val forNode = controlStructureNode(forStmt, ControlStructureTypes.FOR, code)
-
         val initAst = astForNode(forStmt.getInitializerClause)
         val declAst = astsForDeclaration(forStmt.getDeclaration)
         val stmtAst = nullSafeAst(forStmt.getBody)
         controlStructureAst(forNode, None, Seq(initAst) ++ declAst ++ stmtAst)
+    }
   }
 
   private def astForWhile(whileStmt: IASTWhileStatement): Ast = {
