@@ -4,6 +4,7 @@ import com.amazon.ion.IonType
 import com.amazon.ion.system.IonTextWriterBuilder
 
 import java.io.{Closeable, OutputStream}
+import io.shiftleft.libinfo.JavaAccessBits.asInt
 
 class LibInfoWriter(outStream: OutputStream) extends Closeable {
   private val writer = IonTextWriterBuilder.pretty().build(outStream)
@@ -32,7 +33,7 @@ class LibInfoWriter(outStream: OutputStream) extends Closeable {
     writer.writeSymbol(javaClass.signature)
 
     writer.setFieldName("access")
-    writer.writeInt(javaClass.access)
+    writer.writeInt(javaClass.access.asInt)
 
     if (javaClass.fields.nonEmpty) {
       writer.setFieldName("fields")
@@ -65,10 +66,10 @@ class LibInfoWriter(outStream: OutputStream) extends Closeable {
     writer.writeSymbol(javaField.name)
 
     writer.setFieldName("typeRef")
-    writer.writeSymbol(javaField.typeRef)
+    writer.writeSymbol(javaField.signature)
 
     writer.setFieldName("access")
-    writer.writeInt(javaField.access)
+    writer.writeInt(javaField.access.asInt)
 
     writer.stepOut()
   }
@@ -83,7 +84,7 @@ class LibInfoWriter(outStream: OutputStream) extends Closeable {
     writer.writeSymbol(javaMethod.signature)
 
     writer.setFieldName("access")
-    writer.writeInt(javaMethod.access)
+    writer.writeInt(javaMethod.access.asInt)
 
     writer.stepOut()
   }
@@ -95,7 +96,7 @@ class LibInfoWriter(outStream: OutputStream) extends Closeable {
     writer.writeSymbol(javaInnerClassInfo.name)
 
     writer.setFieldName("access")
-    writer.writeInt(javaInnerClassInfo.access)
+    writer.writeInt(javaInnerClassInfo.access.asInt)
 
     writer.stepOut()
   }

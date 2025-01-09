@@ -49,9 +49,9 @@ class LibInfoReader(inStream: InputStream) extends Iterator[LibInfoElement], Clo
   }
 
   private def readJavaClass(): JavaClass = {
-    var name         = Option.empty[Symbol]
-    var signature    = Option.empty[Symbol]
-    var access       = Option.empty[BitField]
+    var name         = Option.empty[String]
+    var signature    = Option.empty[String]
+    var access       = Option.empty[JavaAccessBits]
     var fields       = collection.Seq.empty[JavaField]
     var methods      = collection.Seq.empty[JavaMethod]
     var innerClasses = collection.Seq.empty[JavaInnerClass]
@@ -63,7 +63,7 @@ class LibInfoReader(inStream: InputStream) extends Iterator[LibInfoElement], Clo
         case "signature" =>
           signature = Some(reader.stringValue())
         case "access" =>
-          access = Some(reader.intValue())
+          access = Some(JavaAccessBits(reader.intValue()))
         case "fields" =>
           fields = readJavaFields()
         case "methods" =>
@@ -91,9 +91,9 @@ class LibInfoReader(inStream: InputStream) extends Iterator[LibInfoElement], Clo
   }
 
   private def readJavaField(): JavaField = {
-    var name    = Option.empty[Symbol]
-    var typeRef = Option.empty[Symbol]
-    var access  = Option.empty[BitField]
+    var name    = Option.empty[String]
+    var typeRef = Option.empty[String]
+    var access  = Option.empty[JavaAccessBits]
 
     stepIntoStruct()
 
@@ -104,7 +104,7 @@ class LibInfoReader(inStream: InputStream) extends Iterator[LibInfoElement], Clo
         case "typeRef" =>
           typeRef = Some(reader.stringValue())
         case "access" =>
-          access = Some(reader.intValue())
+          access = Some(JavaAccessBits(reader.intValue()))
       }
     }
 
@@ -128,9 +128,9 @@ class LibInfoReader(inStream: InputStream) extends Iterator[LibInfoElement], Clo
   }
 
   private def readJavaMethod(): JavaMethod = {
-    var name      = Option.empty[Symbol]
-    var signature = Option.empty[Symbol]
-    var access    = Option.empty[BitField]
+    var name      = Option.empty[String]
+    var signature = Option.empty[String]
+    var access    = Option.empty[JavaAccessBits]
 
     stepIntoStruct()
 
@@ -141,7 +141,7 @@ class LibInfoReader(inStream: InputStream) extends Iterator[LibInfoElement], Clo
         case "signature" =>
           signature = Some(reader.stringValue())
         case "access" =>
-          access = Some(reader.intValue())
+          access = Some(JavaAccessBits(reader.intValue()))
       }
     }
 
@@ -165,8 +165,8 @@ class LibInfoReader(inStream: InputStream) extends Iterator[LibInfoElement], Clo
   }
 
   private def readJavaInnerClass(): JavaInnerClass = {
-    var name   = Option.empty[Symbol]
-    var access = Option.empty[BitField]
+    var name   = Option.empty[String]
+    var access = Option.empty[JavaAccessBits]
 
     stepIntoStruct()
 
@@ -175,7 +175,7 @@ class LibInfoReader(inStream: InputStream) extends Iterator[LibInfoElement], Clo
         case "name" =>
           name = Some(reader.stringValue())
         case "access" =>
-          access = Some(reader.intValue())
+          access = Some(JavaAccessBits(reader.intValue()))
       }
     }
 

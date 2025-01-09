@@ -22,8 +22,8 @@ class LibInfoTests extends AnyWordSpec {
 
   "test java class with fields, methods and inner classes" in {
     val fields = List(
-      JavaField(name = "field1", typeRef = "Lsome/package/Class1;", access = JavaAccessBits.JavaPublic),
-      JavaField(name = "field2", typeRef = "Lsome/package/Class2;", access = JavaAccessBits.JavaPublic)
+      JavaField(name = "field1", signature = "Lsome/package/Class1;", access = JavaAccessBits.JavaPublic),
+      JavaField(name = "field2", signature = "Lsome/package/Class2;", access = JavaAccessBits.JavaPublic)
     )
 
     val methods = List(
