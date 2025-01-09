@@ -198,6 +198,13 @@ abstract class AstCreatorBase(filename: String)(implicit withSchemaValidation: V
   ): Ast =
     forAst(forNode, locals, initAsts, conditionAsts, updateAsts, Seq(bodyAst))
 
+  private def setOrderExplicitly(ast: Ast, order: Int): Ast = {
+    ast.root match {
+      case Some(value: ExpressionNew) => value.order(order); ast
+      case _                          => ast
+    }
+  }
+
   def forAst(
     forNode: NewControlStructure,
     locals: Seq[Ast],
@@ -206,12 +213,15 @@ abstract class AstCreatorBase(filename: String)(implicit withSchemaValidation: V
     updateAsts: Seq[Ast],
     bodyAsts: Seq[Ast]
   ): Ast = {
-    val lineNumber = forNode.lineNumber
+    val lineNumber  = forNode.lineNumber
+    val numOfLocals = locals.size
+    // for the expected orders see CfgCreator.cfgForForStatement
+    if (bodyAsts.nonEmpty) setOrderExplicitly(bodyAsts.head, numOfLocals + 4)
     Ast(forNode)
       .withChildren(locals)
-      .withChild(wrapMultipleInBlock(initAsts, lineNumber))
-      .withChild(wrapMultipleInBlock(conditionAsts, lineNumber))
-      .withChild(wrapMultipleInBlock(updateAsts, lineNumber))
+      .withChild(setOrderExplicitly(wrapMultipleInBlock(initAsts, lineNumber), numOfLocals + 1))
+      .withChild(setOrderExplicitly(wrapMultipleInBlock(conditionAsts, lineNumber), numOfLocals + 2))
+      .withChild(setOrderExplicitly(wrapMultipleInBlock(updateAsts, lineNumber), numOfLocals + 3))
       .withChildren(bodyAsts)
       .withConditionEdges(forNode, conditionAsts.flatMap(_.root).toList)
   }

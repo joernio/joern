@@ -29,7 +29,7 @@ class TemplateTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
           typeDeclA.aliasTypeFullName shouldBe Option("X<int>")
           typeDeclB.name shouldBe "B"
           typeDeclB.fullName shouldBe "B"
-          typeDeclB.aliasTypeFullName shouldBe Option("Y<int, char>")
+          typeDeclB.aliasTypeFullName shouldBe Option("Y<int,char>")
       }
     }
 

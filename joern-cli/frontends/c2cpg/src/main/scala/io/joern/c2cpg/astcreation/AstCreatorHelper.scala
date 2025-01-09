@@ -142,14 +142,16 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       "class"
     )
 
-  private val KeepTypeKeywords: List[String] = List("unsigned", "volatile")
+  private val KeepTypeKeywords: List[String] = List("unsigned", "volatile", "const", "static")
 
   protected def cleanType(rawType: String, stripKeywords: Boolean = true): String = {
     if (rawType == Defines.Any) return rawType
     val tpe =
       if (stripKeywords) {
         ReservedTypeKeywords.foldLeft(rawType) { (cur, repl) =>
-          if (cur.contains(s"$repl ")) cur.replace(s"$repl ", "") else cur
+          if (cur.startsWith(s"$repl ") || cur.contains(s" $repl ")) {
+            cur.replace(s" $repl ", " ").replace(s"$repl ", "")
+          } else cur
         }
       } else {
         rawType
@@ -168,17 +170,23 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case t if t.contains(Defines.QualifiedNameSeparator) => replaceWhitespaceAfterTypeKeyword(fixQualifiedName(t))
       case t if KeepTypeKeywords.exists(k => t.startsWith(s"$k ")) => replaceWhitespaceAfterTypeKeyword(t)
       case t if t.contains("[") && t.contains("]")                 => replaceWhitespaceAfterTypeKeyword(t)
+      case t if t.contains("<") && t.contains(">")                 => replaceWhitespaceAfterTypeKeyword(t)
       case t if t.contains("*")                                    => replaceWhitespaceAfterTypeKeyword(t)
       case someType                                                => someType
     }
   }
 
   private def replaceWhitespaceAfterTypeKeyword(tpe: String): String = {
-    if (KeepTypeKeywords.exists(k => tpe.startsWith(s"$k "))) {
+    if (KeepTypeKeywords.exists(k => tpe.startsWith(s"$k ") || tpe.contains(s" $k "))) {
       KeepTypeKeywords.foldLeft(tpe) { (cur, repl) =>
-        val prefix = s"$repl "
-        if (cur.startsWith(prefix)) {
-          prefix + cur.substring(prefix.length).replace(" ", "")
+        val prefixStartsWith = s"$repl "
+        val prefixContains   = s" $repl "
+        if (cur.startsWith(prefixStartsWith)) {
+          prefixStartsWith + replaceWhitespaceAfterTypeKeyword(cur.substring(prefixStartsWith.length))
+        } else if (cur.contains(prefixContains)) {
+          val front = tpe.substring(0, tpe.indexOf(prefixContains))
+          val back  = tpe.substring(tpe.indexOf(prefixContains) + prefixContains.length)
+          s"${replaceWhitespaceAfterTypeKeyword(front)}$prefixContains${replaceWhitespaceAfterTypeKeyword(back)}"
         } else {
           cur
         }
@@ -324,7 +332,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   private def typeForCPPAstNamedTypeSpecifier(s: ICPPASTNamedTypeSpecifier, stripKeywords: Boolean): String = {
-    val tpe = safeGetBinding(s).map(_.toString.replace(" ", "")).getOrElse(ASTStringUtil.getReturnTypeString(s, null))
+    val tpe = safeGetBinding(s).map(_.toString).getOrElse(s.getRawSignature)
     cleanType(tpe, stripKeywords)
   }
 
