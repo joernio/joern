@@ -24,6 +24,10 @@ class EnumTests extends JavaSrcCode2CpgFixture {
       |}
       |""".stripMargin)
 
+  "the enum type should extends java.lang.Enum" in {
+    cpg.typeDecl.name("FuzzyBool").inheritsFromTypeFullName.l shouldBe List("java.lang.Enum")
+  }
+
   "it should parse a basic enum without values" in {
     inside(cpg.typeDecl.name(".*FuzzyBool.*").l) { case List(typeDecl) =>
       typeDecl.code shouldBe "public enum FuzzyBool"

@@ -18,6 +18,10 @@ class RecordTests extends JavaSrcCode2CpgFixture {
                        |}
                        |""".stripMargin)
 
+    "extend java.lang.Record" in {
+      cpg.typeDecl("Foo").inheritsFromTypeFullName.l shouldBe List("java.lang.Record")
+    }
+
     "have the correct representation for the compact constructor" in {
       inside(cpg.method.nameExact("<init>").l) { case List(constructor) =>
         constructor.fullName shouldBe "foo.Foo.<init>:void(java.lang.String)"

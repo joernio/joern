@@ -260,6 +260,8 @@ object TypeInfoCalculator {
     val Object: String   = "java.lang.Object"
     val Class: String    = "java.lang.Class"
     val Iterator: String = "java.util.Iterator"
+    val Enum: String     = "java.lang.Enum"
+    val Record: String   = "java.lang.Record"
     val Void: String     = "void"
     val Any: String      = "ANY"
   }
