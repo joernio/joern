@@ -7,6 +7,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.AstNodeNew
 import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.NewCall
+import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.cpp.*
 import org.eclipse.cdt.core.dom.ast.gnu.IGNUASTGotoStatement
@@ -42,11 +44,71 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   private def hasValidArrayModifier(arrayDecl: IASTArrayDeclarator): Boolean =
     arrayDecl.getArrayModifiers.nonEmpty && arrayDecl.getArrayModifiers.forall(_.getConstantExpression != null)
 
+  private def astsForStructuredBindingDeclaration(
+    struct: ICPPASTStructuredBindingDeclaration,
+    init: Option[IASTInitializerClause] = None
+  ): Seq[Ast] = {
+    def leftAst(astName: IASTNode, localName: String, codeString: String, tpe: String): (NewCall, NewLocal, Ast) = {
+      val op                 = Operators.assignment
+      val assignmentCode     = s"$localName = $codeString"
+      val assignmentCallNode = callNode(astName, assignmentCode, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
+      val localNameNode      = localNode(astName, localName, localName, tpe)
+      scope.addToScope(localName, (localNameNode, tpe))
+      val localId = identifierNode(astName, code(astName), code(astName), tpe)
+      val leftAst = Ast(localId).withRefEdge(localId, localNameNode)
+      (assignmentCallNode, localNameNode, leftAst)
+    }
+
+    val initializer  = init.getOrElse(struct.getInitializer)
+    val tmpName      = uniqueName("tmp", "", "")._1
+    val tpe          = registerType(typeFor(initializer))
+    val localTmpNode = localNode(struct, tmpName, tmpName, tpe)
+    scope.addToScope(tmpName, (localTmpNode, tpe))
+
+    val idNode             = identifierNode(struct, tmpName, tmpName, tpe)
+    val rhsAst             = astForNode(initializer)
+    val op                 = Operators.assignment
+    val assignmentCode     = s"$tmpName = ${code(initializer)}"
+    val assignmentCallNode = callNode(struct, assignmentCode, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
+    val assignmentCallAst  = callAst(assignmentCallNode, List(Ast(idNode).withRefEdge(idNode, localTmpNode), rhsAst))
+
+    val accessAsts = if typeFor(initializer).endsWith("]") then {
+      struct.getNames.zipWithIndex.flatMap { case (astName, index) =>
+        val localName                               = code(astName)
+        val tpe                                     = registerType(typeFor(astName))
+        val codeString                              = s"$tmpName[$index]"
+        val (assignmentCallNode, localNode, lhsAst) = leftAst(astName, localName, codeString, tpe)
+        val op                                      = Operators.indexAccess
+        val arrayIndexCallNode = callNode(astName, codeString, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
+        val idNode             = identifierNode(astName, tmpName, tmpName, tpe)
+        val indexNode          = literalNode(astName, index.toString, registerType("int"))
+        val arrayIndexCallAst  = callAst(arrayIndexCallNode, List(Ast(idNode), Ast(indexNode)))
+        Seq(Ast(localNode), Ast(assignmentCallNode).withChildren(List(lhsAst, arrayIndexCallAst)))
+      }
+    } else {
+      struct.getNames.flatMap { astName =>
+        val localName                               = code(astName)
+        val tpe                                     = registerType(typeFor(astName))
+        val codeString                              = s"$tmpName.$localName"
+        val (assignmentCallNode, localNode, lhsAst) = leftAst(astName, localName, codeString, tpe)
+        val op                                      = Operators.memberAccess
+        val memberAccessCallNode = callNode(astName, codeString, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
+        val idNode               = identifierNode(astName, tmpName, tmpName, tpe)
+        val fieldIdNode          = fieldIdentifierNode(astName, localName, localName)
+        val memberAccessCallAst  = callAst(memberAccessCallNode, List(Ast(idNode), Ast(fieldIdNode)))
+        Seq(Ast(localNode), Ast(assignmentCallNode).withChildren(List(lhsAst, memberAccessCallAst)))
+      }
+    }
+
+    Seq(Ast(localTmpNode), assignmentCallAst) ++ accessAsts
+  }
+
   private def astsForDeclarationStatement(decl: IASTDeclarationStatement): Seq[Ast] =
     decl.getDeclaration match {
       case simpleDecl: IASTSimpleDeclaration
           if simpleDecl.getDeclarators.headOption.exists(_.isInstanceOf[IASTFunctionDeclarator]) =>
         Seq(astForFunctionDeclarator(simpleDecl.getDeclarators.head.asInstanceOf[IASTFunctionDeclarator]))
+      case struct: ICPPASTStructuredBindingDeclaration => astsForStructuredBindingDeclaration(struct)
       case simpleDecl: IASTSimpleDeclaration =>
         val locals = simpleDecl.getDeclarators.zipWithIndex.map { case (d, i) => astForDeclarator(simpleDecl, d, i) }
         val arrayModCalls = simpleDecl.getDeclarators
@@ -121,12 +183,22 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     controlStructureAst(doNode, Option(conditionAst), bodyAst, placeConditionLast = true)
   }
 
-  private def astForSwitchStatement(switchStmt: IASTSwitchStatement): Ast = {
-    val code         = s"switch(${nullSafeCode(switchStmt.getControllerExpression)})"
-    val switchNode   = controlStructureNode(switchStmt, ControlStructureTypes.SWITCH, code)
+  private def astForSwitchStatement(switchStmt: IASTSwitchStatement): Seq[Ast] = {
+    val initAsts = switchStmt match {
+      case s: ICPPASTSwitchStatement =>
+        nullSafeAst(s.getInitializerStatement) ++ nullSafeAst(s.getControllerDeclaration)
+      case _ =>
+        Seq.empty
+    }
+
+    val codeString   = code(switchStmt)
+    val switchNode   = controlStructureNode(switchStmt, ControlStructureTypes.SWITCH, codeString)
     val conditionAst = astForConditionExpression(switchStmt.getControllerExpression)
     val stmtAsts     = nullSafeAst(switchStmt.getBody)
-    controlStructureAst(switchNode, Option(conditionAst), stmtAsts)
+
+    val finalAsts = initAsts :+ controlStructureAst(switchNode, Option(conditionAst), stmtAsts)
+    setArgumentIndices(finalAsts)
+    finalAsts
   }
 
   private def astsForCaseStatement(caseStmt: IASTCaseStatement): Seq[Ast] = {
@@ -163,12 +235,12 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val r = statement match {
       case expr: IASTExpressionStatement          => Seq(astForExpression(expr.getExpression))
       case block: IASTCompoundStatement           => Seq(astForBlockStatement(block, argIndex))
-      case ifStmt: IASTIfStatement                => Seq(astForIf(ifStmt))
+      case ifStmt: IASTIfStatement                => astForIf(ifStmt)
       case whileStmt: IASTWhileStatement          => Seq(astForWhile(whileStmt))
       case forStmt: IASTForStatement              => Seq(astForFor(forStmt))
       case forStmt: ICPPASTRangeBasedForStatement => Seq(astForRangedFor(forStmt))
       case doStmt: IASTDoStatement                => Seq(astForDoStatement(doStmt))
-      case switchStmt: IASTSwitchStatement        => Seq(astForSwitchStatement(switchStmt))
+      case switchStmt: IASTSwitchStatement        => astForSwitchStatement(switchStmt)
       case ret: IASTReturnStatement               => Seq(astForReturnStatement(ret))
       case br: IASTBreakStatement                 => Seq(astForBreakStatement(br))
       case cont: IASTContinueStatement            => Seq(astForContinueStatement(cont))
@@ -236,28 +308,32 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val code    = s"for ($codeInit$codeCond;$codeIter)"
     val forNode = controlStructureNode(forStmt, ControlStructureTypes.FOR, code)
 
-    val initAstBlock = blockNode(forStmt, Defines.Empty, registerType(Defines.Void))
+    val initAstBlock = blockNode(forStmt, Defines.Empty, registerType(Defines.Void)).order(1)
     scope.pushNewScope(initAstBlock)
-    val initAst = blockAst(initAstBlock, nullSafeAst(forStmt.getInitializerStatement, 1).toList)
-    scope.popScope()
-
+    val initAst    = blockAst(initAstBlock, nullSafeAst(forStmt.getInitializerStatement).toList)
     val compareAst = astForConditionExpression(forStmt.getConditionExpression, Option(2))
     val updateAst  = nullSafeAst(forStmt.getIterationExpression, 3)
     val bodyAsts   = nullSafeAst(forStmt.getBody, 4)
-    forAst(forNode, Seq(), Seq(initAst), Seq(compareAst), Seq(updateAst), bodyAsts)
+    scope.popScope()
+    forAst(forNode, Seq.empty, Seq(initAst), Seq(compareAst), Seq(updateAst), bodyAsts)
   }
 
   private def astForRangedFor(forStmt: ICPPASTRangeBasedForStatement): Ast = {
     val codeDecl = nullSafeCode(forStmt.getDeclaration)
     val codeInit = nullSafeCode(forStmt.getInitializerClause)
-
-    val code    = s"for ($codeDecl:$codeInit)"
-    val forNode = controlStructureNode(forStmt, ControlStructureTypes.FOR, code)
-
-    val initAst = astForNode(forStmt.getInitializerClause)
-    val declAst = astsForDeclaration(forStmt.getDeclaration)
-    val stmtAst = nullSafeAst(forStmt.getBody)
-    controlStructureAst(forNode, None, Seq(initAst) ++ declAst ++ stmtAst)
+    val code     = s"for ($codeDecl:$codeInit)"
+    val forNode  = controlStructureNode(forStmt, ControlStructureTypes.FOR, code)
+    forStmt.getDeclaration match {
+      case declaration: ICPPASTStructuredBindingDeclaration =>
+        val initAsts = astsForStructuredBindingDeclaration(declaration, Some(forStmt.getInitializerClause))
+        val bodyAsts = nullSafeAst(forStmt.getBody, 4)
+        controlStructureAst(forNode, None, (initAsts ++ bodyAsts).toList)
+      case _ =>
+        val initAst = astForNode(forStmt.getInitializerClause)
+        val declAst = astsForDeclaration(forStmt.getDeclaration)
+        val stmtAst = nullSafeAst(forStmt.getBody)
+        controlStructureAst(forNode, None, Seq(initAst) ++ declAst ++ stmtAst)
+    }
   }
 
   private def astForWhile(whileStmt: IASTWhileStatement): Ast = {
@@ -273,23 +349,24 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     )
   }
 
-  private def astForIf(ifStmt: IASTIfStatement): Ast = {
-    val (code, conditionAst) = ifStmt match {
+  private def astForIf(ifStmt: IASTIfStatement): Seq[Ast] = {
+    val initAsts = ifStmt match {
+      case s: ICPPASTIfStatement => nullSafeAst(s.getInitializerStatement)
+      case _                     => Seq.empty
+    }
+    val conditionAst = ifStmt match {
       case s @ (_: CASTIfStatement | _: CPPASTIfStatement) if s.getConditionExpression != null =>
-        val c          = s"if (${nullSafeCode(s.getConditionExpression)})"
-        val compareAst = astForConditionExpression(s.getConditionExpression)
-        (c, compareAst)
+        astForConditionExpression(s.getConditionExpression)
       case s: CPPASTIfStatement if s.getConditionExpression == null =>
-        val c         = s"if (${nullSafeCode(s.getConditionDeclaration)})"
         val exprBlock = blockNode(s.getConditionDeclaration, Defines.Empty, Defines.Void)
         scope.pushNewScope(exprBlock)
         val a = astsForDeclaration(s.getConditionDeclaration)
         setArgumentIndices(a)
         scope.popScope()
-        (c, blockAst(exprBlock, a.toList))
+        blockAst(exprBlock, a.toList)
     }
 
-    val ifNode = controlStructureNode(ifStmt, ControlStructureTypes.IF, code)
+    val ifNode = controlStructureNode(ifStmt, ControlStructureTypes.IF, code(ifStmt))
 
     val thenAst = ifStmt.getThenClause match {
       case block: IASTCompoundStatement => astForBlockStatement(block)
@@ -318,6 +395,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         Ast(elseNode).withChild(blockAst(elseBlock, a.toList))
       case _ => Ast()
     }
-    controlStructureAst(ifNode, Option(conditionAst), Seq(thenAst, elseAst))
+
+    val finalAsts = initAsts :+ controlStructureAst(ifNode, Option(conditionAst), Seq(thenAst, elseAst))
+    setArgumentIndices(finalAsts)
+    finalAsts
   }
 }

@@ -70,15 +70,9 @@ class DotCfgGeneratorTests extends C2CpgSuite {
     val cpg = code("""
         |int example(int a, int b, int c) {
         |  int x = 3;
-        |  if(a) {
-        |    foo();
-        |  }
-        |  if(b) {
-        |    foo_2();
-        |  }
-        |  if (c) {
-        |    foo_3();
-        |  }
+        |  if(a) { foo(); }
+        |  if(b) { foo_2(); }
+        |  if (c) { foo_3(); }
         |}
         |""".stripMargin)
 
@@ -86,9 +80,9 @@ class DotCfgGeneratorTests extends C2CpgSuite {
       inside(cpg.method.name("example").dotCfg.l) { case List(dotStr) =>
         dotStr should (
           startWith("digraph \"example\" {") and
-            include("<(IDENTIFIER,a,if (a))<SUB>4</SUB>>") and
-            include("<(IDENTIFIER,b,if (b))<SUB>7</SUB>>") and
-            include("<(IDENTIFIER,c,if (c))<SUB>10</SUB>>") and
+            include("<(IDENTIFIER,a,if(a) { foo(); })<SUB>4</SUB>>") and
+            include("<(IDENTIFIER,b,if(b) { foo_2(); })<SUB>5</SUB>>") and
+            include("<(IDENTIFIER,c,if (c) { foo_3(); })<SUB>6</SUB>>") and
             endWith("}\n")
         )
       }

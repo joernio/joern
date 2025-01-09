@@ -7,6 +7,7 @@ object Defines {
   val Array: String                  = "std.array"
   val QualifiedNameSeparator: String = "::"
   val Empty                          = "<empty>"
+  val Auto                           = "auto"
 
   val OperatorPointerCall            = "<operator>.pointerCall"
   val OperatorConstructorInitializer = "<operator>.constructorInitializer"

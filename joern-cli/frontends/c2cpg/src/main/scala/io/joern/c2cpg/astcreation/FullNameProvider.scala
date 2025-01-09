@@ -164,14 +164,24 @@ trait FullNameProvider { this: AstCreator =>
   }
 
   private def returnTypeForIASTFunctionDeclarator(declarator: IASTFunctionDeclarator): String = {
-    cleanType(typeForDeclSpecifier(declarator.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclSpecifier))
+    Try(declarator.getName.resolveBinding()).toOption match {
+      case Some(value: ICPPMethod) =>
+        cleanType(value.getType.getReturnType.toString)
+      case _ =>
+        cleanType(typeForDeclSpecifier(declarator.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclSpecifier))
+    }
   }
 
   private def returnTypeForIASTFunctionDefinition(definition: IASTFunctionDefinition): String = {
     if (isCppConstructor(definition)) {
       typeFor(definition.asInstanceOf[CPPASTFunctionDefinition].getMemberInitializers.head.getInitializer)
     } else {
-      typeForDeclSpecifier(definition.getDeclSpecifier)
+      Try(definition.getDeclarator.getName.resolveBinding()).toOption match {
+        case Some(value: ICPPMethod) =>
+          cleanType(value.getType.getReturnType.toString)
+        case _ =>
+          typeForDeclSpecifier(definition.getDeclSpecifier)
+      }
     }
   }
 
@@ -181,7 +191,11 @@ trait FullNameProvider { this: AstCreator =>
         Option(declarator.getTrailingReturnType)
           .map(id => typeForDeclSpecifier(id.getDeclSpecifier))
           .getOrElse(Defines.Any)
-      case null => Defines.Any
+      case null =>
+        safeGetEvaluation(lambda) match {
+          case Some(value) => cleanType(value.getType.toString)
+          case None        => Defines.Any
+        }
     }
   }
 
