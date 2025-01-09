@@ -700,15 +700,16 @@ class AstCreationPassTests extends AstC2CpgSuite {
       )
       inside(cpg.method.nameExact("method").controlStructure.l) { case List(forStmt) =>
         forStmt.controlStructureType shouldBe ControlStructureTypes.FOR
-        inside(forStmt.astChildren.order(1).l) { case List(ident: Identifier) =>
-          ident.code shouldBe "list"
-        }
-        inside(forStmt.astChildren.order(2).l) { case List(x: Local) =>
+        inside(forStmt.astChildren.isLocal.l) { case List(x: Local) =>
           x.name shouldBe "x"
           x.typeFullName shouldBe "int"
           x.code shouldBe "int x"
         }
-        inside(forStmt.astChildren.order(3).l) { case List(block: Block) =>
+        // for the expected orders see CfgCreator.cfgForForStatement
+        inside(forStmt.astChildren.order(2).l) { case List(ident: Identifier) =>
+          ident.code shouldBe "list"
+        }
+        inside(forStmt.astChildren.order(5).l) { case List(block: Block) =>
           block.astChildren.isCall.code.l shouldBe List("z = x")
         }
       }
@@ -726,7 +727,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
       )
       inside(cpg.method.nameExact("method").controlStructure.l) { case List(forStmt) =>
         forStmt.controlStructureType shouldBe ControlStructureTypes.FOR
-        forStmt.astChildren.isCall.code.l shouldBe List(
+        forStmt.astChildren.isBlock.astChildren.isCall.code.l shouldBe List(
           "anonymous_tmp_0 = foo",
           "a = anonymous_tmp_0[0]",
           "b = anonymous_tmp_0[1]"
@@ -819,7 +820,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
       """.stripMargin)
       val List(forLoop)        = cpg.controlStructure.l
       val List(conditionBlock) = forLoop.condition.collectAll[Block].l
-      conditionBlock.argumentIndex shouldBe 2
+      conditionBlock.order shouldBe 2
       val List(assignmentCall, greaterCall) = conditionBlock.astChildren.collectAll[Call].l
       assignmentCall.argumentIndex shouldBe 1
       assignmentCall.code shouldBe "b = something()"

@@ -308,14 +308,13 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val code    = s"for ($codeInit$codeCond;$codeIter)"
     val forNode = controlStructureNode(forStmt, ControlStructureTypes.FOR, code)
 
-    val initAstBlock = blockNode(forStmt, Defines.Empty, registerType(Defines.Void)).order(1)
-    scope.pushNewScope(initAstBlock)
-    val initAst    = blockAst(initAstBlock, nullSafeAst(forStmt.getInitializerStatement).toList)
-    val compareAst = astForConditionExpression(forStmt.getConditionExpression, Option(2))
-    val updateAst  = nullSafeAst(forStmt.getIterationExpression, 3)
-    val bodyAsts   = nullSafeAst(forStmt.getBody, 4)
-    scope.popScope()
-    forAst(forNode, Seq.empty, Seq(initAst), Seq(compareAst), Seq(updateAst), bodyAsts)
+    val (localAsts, initAsts) =
+      nullSafeAst(forStmt.getInitializerStatement).partition(_.root.exists(_.isInstanceOf[NewLocal]))
+    setArgumentIndices(initAsts)
+    val compareAst = astForConditionExpression(forStmt.getConditionExpression)
+    val updateAst  = nullSafeAst(forStmt.getIterationExpression)
+    val bodyAsts   = nullSafeAst(forStmt.getBody)
+    forAst(forNode, localAsts, initAsts, Seq(compareAst), Seq(updateAst), bodyAsts)
   }
 
   private def astForRangedFor(forStmt: ICPPASTRangeBasedForStatement): Ast = {
@@ -325,14 +324,18 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val forNode  = controlStructureNode(forStmt, ControlStructureTypes.FOR, code)
     forStmt.getDeclaration match {
       case declaration: ICPPASTStructuredBindingDeclaration =>
-        val initAsts = astsForStructuredBindingDeclaration(declaration, Some(forStmt.getInitializerClause))
-        val bodyAsts = nullSafeAst(forStmt.getBody, 4)
-        controlStructureAst(forNode, None, (initAsts ++ bodyAsts).toList)
+        val (localAsts, initAsts) = astsForStructuredBindingDeclaration(declaration, Some(forStmt.getInitializerClause))
+          .partition(_.root.exists(_.isInstanceOf[NewLocal]))
+        setArgumentIndices(initAsts)
+        val bodyAst = nullSafeAst(forStmt.getBody)
+        forAst(forNode, localAsts, initAsts.filterNot(_.nodes.isEmpty), Seq.empty, Seq.empty, bodyAst)
       case _ =>
-        val initAst = astForNode(forStmt.getInitializerClause)
-        val declAst = astsForDeclaration(forStmt.getDeclaration)
-        val stmtAst = nullSafeAst(forStmt.getBody)
-        controlStructureAst(forNode, None, Seq(initAst) ++ declAst ++ stmtAst)
+        val init     = astForNode(forStmt.getInitializerClause)
+        val declAsts = astsForDeclaration(forStmt.getDeclaration)
+        setArgumentIndices(init +: declAsts)
+        val (localAsts, initAsts) = (init +: declAsts).partition(_.root.exists(_.isInstanceOf[NewLocal]))
+        val bodyAst               = nullSafeAst(forStmt.getBody)
+        forAst(forNode, localAsts, initAsts.filterNot(_.nodes.isEmpty), Seq.empty, Seq.empty, bodyAst)
     }
   }
 
