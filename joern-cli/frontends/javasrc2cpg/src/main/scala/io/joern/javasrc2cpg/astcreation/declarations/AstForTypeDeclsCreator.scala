@@ -453,8 +453,10 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
             receiverAst.root.foreach(receiver => diffGraph.addEdge(initRoot, receiver, EdgeTypes.RECEIVER))
 
             val capturesAsts =
-              usedCaptures.filterNot(outerClassAst.isDefined && _.name == NameConstants.OuterClass).zipWithIndex.map {
-                (usedCapture, index) =>
+              usedCaptures
+                .filterNot(outerClassAst.isDefined && _.name == NameConstants.OuterClass)
+                .zipWithIndex
+                .map { (usedCapture, index) =>
                   val identifier = NewIdentifier()
                     .name(usedCapture.name)
                     .code(usedCapture.name)
@@ -462,10 +464,14 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
                     .lineNumber(initRoot.lineNumber)
                     .columnNumber(initRoot.columnNumber)
 
-                  diffGraph.addEdge(identifier, usedCapture.node, EdgeTypes.REF)
+                  val refsTo = if (usedCapture.name == NameConstants.OuterClass) {
+                    scope.lookupVariable(usedCapture.name).getVariable().map(_.node)
+                  } else {
+                    Option(usedCapture.node)
+                  }
 
-                  Ast(identifier)
-              }
+                  Ast(identifier).withRefEdges(identifier, refsTo.toList)
+                }
 
             (receiverAst :: args ++ outerClassAst.toList ++ capturesAsts)
               .map { argAst =>
