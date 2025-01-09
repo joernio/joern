@@ -11,6 +11,7 @@ lazy val dataflowengineoss = Projects.dataflowengineoss
 lazy val macros            = Projects.macros
 lazy val semanticcpg       = Projects.semanticcpg
 lazy val libinfo           = Projects.libinfo
+lazy val libinfogenjvm     = Projects.libinfogenjvm
 lazy val c2cpg             = Projects.c2cpg
 lazy val ghidra2cpg        = Projects.ghidra2cpg
 lazy val x2cpg             = Projects.x2cpg
