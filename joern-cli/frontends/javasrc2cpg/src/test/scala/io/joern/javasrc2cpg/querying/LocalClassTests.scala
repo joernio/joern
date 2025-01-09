@@ -749,6 +749,12 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
       cpg.parameter.filter(_.astIn.isEmpty).l shouldBe List()
     }
 
+    "have ref edges from the outer class identifier to the parameter" in {
+      inside(cpg.method.nameExact("<init>").filter(_.parameter.name.contains("ctxParam")).l) { case List(constructor) =>
+        constructor.ast.isIdentifier.name("outerClass").refsTo.l shouldBe constructor.parameter.name("outerClass").l
+      }
+    }
+
     "have params for captured members for both constructors" in {
       constructors.head.parameter.name.l shouldBe List("this", "outerClass", "outerParam")
       constructors.last.parameter.name.l shouldBe List("this", "ctxParam", "outerClass", "outerParam")
