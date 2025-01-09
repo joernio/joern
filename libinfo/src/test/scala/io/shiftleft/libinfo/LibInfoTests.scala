@@ -48,6 +48,29 @@ class LibInfoTests extends AnyWordSpec {
     )
   }
 
+  "test multiple java classes" in {
+    test(
+      List(
+        JavaClass(
+          name = "some/package/MyInterface",
+          signature = "<AAA:Ljava/lang/Object;>Ljava/lang/Object;",
+          access = JavaAccessBits.JavaPublic | JavaAccessBits.JavaInterface,
+          fields = Nil,
+          methods = Nil,
+          innerClasses = Nil
+        ),
+        JavaClass(
+          name = "some/package/MyClass",
+          signature = "<AAA:Ljava/lang/Object;>Ljava/lang/Object;",
+          access = JavaAccessBits.JavaPublic | JavaAccessBits.JavaInterface,
+          fields = Nil,
+          methods = Nil,
+          innerClasses = Nil
+        )
+      )
+    )
+  }
+
   def test(libInfoElement: LibInfoElement): Unit = {
     test(libInfoElement :: Nil)
   }
