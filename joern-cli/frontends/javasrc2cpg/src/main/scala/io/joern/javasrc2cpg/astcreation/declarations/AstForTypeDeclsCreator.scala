@@ -464,11 +464,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
                     .lineNumber(initRoot.lineNumber)
                     .columnNumber(initRoot.columnNumber)
 
-                  val refsTo = if (usedCapture.name == NameConstants.OuterClass) {
-                    scope.lookupVariable(usedCapture.name).getVariable().map(_.node)
-                  } else {
-                    Option(usedCapture.node)
-                  }
+                  val refsTo = Option.when(usedCapture.name != NameConstants.OuterClass)(usedCapture.node)
 
                   Ast(identifier).withRefEdges(identifier, refsTo.toList)
                 }
