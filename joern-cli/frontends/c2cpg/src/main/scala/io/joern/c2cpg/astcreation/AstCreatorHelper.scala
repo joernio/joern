@@ -125,7 +125,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   // Sadly, there is no predefined List / Enum of this within Eclipse CDT:
-  private val ReservedTypeKeywords: List[String] =
+  private val ReservedKeywordsAtTypes: List[String] =
     List(
       "const",
       "static",
@@ -142,23 +142,23 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       "class"
     )
 
-  private val KeepTypeKeywords: List[String] = List("unsigned", "volatile", "const", "static")
+  private val KeywordsAtTypesToKeep: List[String] = List("unsigned", "volatile", "static", "const")
 
   protected def cleanType(rawType: String, stripKeywords: Boolean = true): String = {
     if (rawType == Defines.Any) return rawType
-    val tpe =
-      if (stripKeywords) {
-        ReservedTypeKeywords.foldLeft(rawType) { (cur, repl) =>
-          if (cur.startsWith(s"$repl ") || cur.contains(s" $repl ")) {
-            cur.replace(s" $repl ", " ").replace(s"$repl ", "")
-          } else cur
-        }
-      } else {
-        rawType
+    val tpe = if (stripKeywords) {
+      ReservedKeywordsAtTypes.foldLeft(rawType) { (cur, repl) =>
+        if (cur.startsWith(s"$repl ") || cur.contains(s" $repl ")) {
+          cur.replace(s" $repl ", " ").replace(s"$repl ", "")
+        } else cur
       }
-    StringUtils.normalizeSpace(tpe.stripSuffix(" ()")) match {
+    } else {
+      rawType
+    }
+    val normalizedTpe = StringUtils.normalizeSpace(tpe.stripSuffix(" ()"))
+    replaceWhitespaceAfterKeyword(normalizedTpe) match {
       case ""                                                                      => Defines.Any
-      case t if t.startsWith("[*this]") || t.startsWith("[this]")                  => t
+      case t if t.startsWith("[*this]") || t.startsWith("[this]")                  => normalizedTpe
       case t if t.startsWith("[") && t.endsWith("]")                               => Defines.Array
       case t if t.contains("->")                                                   => Defines.Function
       case t if t.contains("?")                                                    => Defines.Any
@@ -166,27 +166,24 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case t if t.contains("::{") || t.contains("}::")                             => Defines.Any
       case t if t.contains("{") || t.contains("}")                                 => Defines.Any
       case t if t.contains("org.eclipse.cdt.internal.core.dom.parser.ProblemType") => Defines.Any
-      case t if t.contains("( ") => replaceWhitespaceAfterTypeKeyword(fixQualifiedName(t.substring(0, t.indexOf("( "))))
-      case t if t.contains(Defines.QualifiedNameSeparator) => replaceWhitespaceAfterTypeKeyword(fixQualifiedName(t))
-      case t if KeepTypeKeywords.exists(k => t.startsWith(s"$k ")) => replaceWhitespaceAfterTypeKeyword(t)
-      case t if t.contains("[") && t.contains("]")                 => replaceWhitespaceAfterTypeKeyword(t)
-      case t if t.contains("<") && t.contains(">")                 => replaceWhitespaceAfterTypeKeyword(t)
-      case t if t.contains("*")                                    => replaceWhitespaceAfterTypeKeyword(t)
-      case someType                                                => someType
+      case t if t.contains("( ")                           => fixQualifiedName(t.substring(0, t.indexOf("( ")))
+      case t if t.contains(Defines.QualifiedNameSeparator) => fixQualifiedName(t)
+      case someType                                        => someType
     }
   }
 
-  private def replaceWhitespaceAfterTypeKeyword(tpe: String): String = {
-    if (KeepTypeKeywords.exists(k => tpe.startsWith(s"$k ") || tpe.contains(s" $k "))) {
-      KeepTypeKeywords.foldLeft(tpe) { (cur, repl) =>
+  private def replaceWhitespaceAfterKeyword(tpe: String): String = {
+    val keywordsToKeep = ReservedKeywordsAtTypes ++ KeywordsAtTypesToKeep
+    if (keywordsToKeep.exists(k => tpe.startsWith(s"$k ") || tpe.contains(s" $k "))) {
+      keywordsToKeep.foldLeft(tpe) { (cur, repl) =>
         val prefixStartsWith = s"$repl "
         val prefixContains   = s" $repl "
         if (cur.startsWith(prefixStartsWith)) {
-          prefixStartsWith + replaceWhitespaceAfterTypeKeyword(cur.substring(prefixStartsWith.length))
+          prefixStartsWith + replaceWhitespaceAfterKeyword(cur.substring(prefixStartsWith.length))
         } else if (cur.contains(prefixContains)) {
           val front = tpe.substring(0, tpe.indexOf(prefixContains))
           val back  = tpe.substring(tpe.indexOf(prefixContains) + prefixContains.length)
-          s"${replaceWhitespaceAfterTypeKeyword(front)}$prefixContains${replaceWhitespaceAfterTypeKeyword(back)}"
+          s"${replaceWhitespaceAfterKeyword(front)}$prefixContains${replaceWhitespaceAfterKeyword(back)}"
         } else {
           cur
         }

@@ -13,14 +13,18 @@ class LocalQueryTests extends C2CpgSuite {
         """
         |void foo() {
         |  static const Foo::Bar bar{};
+        |  static extern std::vector<int> vec;
         |}
         |""".stripMargin,
         "test.cpp"
       )
-      val List(barLocal) = cpg.method.name("foo").local.l
-      barLocal.name shouldBe "bar"
+      val List(barLocal) = cpg.method.name("foo").local.nameExact("bar").l
       barLocal.typeFullName shouldBe "Foo.Bar"
       barLocal.code shouldBe "static const Foo.Bar bar"
+
+      val List(vecLocal) = cpg.method.name("foo").local.nameExact("vec").l
+      vecLocal.typeFullName shouldBe "std.vector<int>"
+      vecLocal.code shouldBe "static extern std.vector<int> vec"
     }
   }
 
