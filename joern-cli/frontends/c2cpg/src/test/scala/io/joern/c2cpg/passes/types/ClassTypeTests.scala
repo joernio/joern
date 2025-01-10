@@ -201,13 +201,13 @@ class ClassTypeTests extends C2CpgSuite(FileDefaults.CppExt) {
       del.name shouldBe "delete"
       del.fullName shouldBe "Foo.delete:void(void*)"
       eq.name shouldBe "=="
-      eq.fullName shouldBe "Foo.==:bool(Foo &,Foo &)"
+      eq.fullName shouldBe "Foo.==:bool(Foo&,Foo&)"
       plus.name shouldBe "+"
-      plus.fullName shouldBe "Foo.+:Foo &(Foo &,Foo &)"
+      plus.fullName shouldBe "Foo.+:Foo&(Foo&,Foo&)"
       apply.name shouldBe "()"
-      apply.fullName shouldBe "Foo.():Foo &(Foo &)"
+      apply.fullName shouldBe "Foo.():Foo&(Foo&)"
       idx.name shouldBe "[]"
-      idx.fullName shouldBe "Foo.[]:Foo &(int)"
+      idx.fullName shouldBe "Foo.[]:Foo&(int)"
     }
 
     "generate correct fullnames in classes with conversions" in {

@@ -110,7 +110,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
 
   private def syntheticThisAccess(ident: CPPASTIdExpression, identifierName: String): String | Ast = {
     val tpe = ident.getName.getBinding match {
-      case f: CPPField => cleanType(f.getType.toString)
+      case f: CPPField => f.getType.toString
       case _           => typeFor(ident)
     }
     Try(ident.getEvaluation).toOption match {
@@ -125,7 +125,8 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
               val code           = s"this->$identifierName"
               val thisIdentifier = identifierNode(ident, "this", "this", ownerType)
               val member         = fieldIdentifierNode(ident, identifierName, identifierName)
-              val ma             = callNode(ident, code, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
+              val ma =
+                callNode(ident, code, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(cleanType(tpe))))
               callAst(ma, Seq(Ast(thisIdentifier).withRefEdge(thisIdentifier, variable), Ast(member)))
             case None => tpe
           }
