@@ -694,6 +694,10 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
         Seq()
       }
       maybeJavaObjectType ++ inheritsFromTypeNames
+    } else if (typ.isEnumDeclaration) {
+      TypeConstants.Enum :: Nil
+    } else if (typ.isRecordDeclaration) {
+      TypeConstants.Record :: Nil
     } else {
       List.empty[String]
     }
