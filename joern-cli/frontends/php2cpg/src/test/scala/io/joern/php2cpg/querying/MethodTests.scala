@@ -146,7 +146,7 @@ class MethodTests extends PhpCode2CpgFixture {
         fooMethod.file.head.content.substring(offsetStart, offsetEnd) shouldBe
           """function foo() {
             |  // ⦝
-            |  $x = "??⨌????????????";
+            |  $x = "🙂⨌🙂𐇐🙂🙂🙂🙂";
             |}""".stripMargin
       }
     }
