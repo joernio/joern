@@ -73,7 +73,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val modifiers = astForModifiers(classDecl)
     val members = astForMembers(classDecl.json(ParserKeys.Members).arr.map(createDotNetNodeInfo).toSeq)
       ++ addConstructorWithFieldInitializationsIfNeeded(fullName)
-    // TODO: do the same for static fields
+      ++ addStaticConstructorWithFieldInitializationsIfNeeded(fullName)
 
     scope.popScope()
     val typeDeclAst = Ast(typeDecl)
@@ -93,7 +93,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
     if (shouldBuildCtor) {
       val methodReturn = newMethodReturnNode(BuiltinTypes.Void, None, None, None)
-      val signature    = composeMethodLikeSignature(BuiltinTypes.Void, Seq.empty)
+      val signature    = composeMethodLikeSignature(methodReturn.typeFullName, Seq.empty)
       val modifiers    = Seq(newModifierNode(ModifierTypes.CONSTRUCTOR), newModifierNode(ModifierTypes.INTERNAL))
       val name         = Defines.ConstructorMethodName
       val fullName     = composeMethodFullName(typeDeclFullName, name, signature)
@@ -124,6 +124,42 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       methodAst(methodNode_, parameterNodes.map(Ast(_)), body, methodReturn, modifiers) :: Nil
     } else {
       Seq.empty
+    }
+  }
+
+  private def addStaticConstructorWithFieldInitializationsIfNeeded(typeDeclFullname: String): Seq[Ast] = {
+    val staticFields = scope.getFieldsInScope.filter(f => f.isStatic && f.isInitialized)
+    val hasExplicitCtor =
+      scope.tryResolveTypeReference(typeDeclFullname).exists(_.methods.exists(_.name == Defines.StaticInitMethodName))
+    val shouldBuildCtor = staticFields.nonEmpty && !hasExplicitCtor && parseLevel == FULL_AST
+
+    if (shouldBuildCtor) {
+      val methodReturn = newMethodReturnNode(BuiltinTypes.Void, None, None, None)
+      val signature    = composeMethodLikeSignature(methodReturn.typeFullName, Nil)
+      val modifiers = Seq(
+        newModifierNode(ModifierTypes.CONSTRUCTOR),
+        newModifierNode(ModifierTypes.INTERNAL),
+        newModifierNode(ModifierTypes.STATIC)
+      )
+      val name     = Defines.StaticInitMethodName
+      val fullName = composeMethodFullName(typeDeclFullname, name, signature)
+
+      val body = {
+        scope.pushNewScope(MethodScope(fullName))
+        val fieldInitAssignmentAsts = astVariableDeclarationForInitializedFields(staticFields)
+        scope.popScope()
+        Ast(NewBlock().typeFullName(Defines.Any)).withChildren(fieldInitAssignmentAsts)
+      }
+
+      val methodNode_ = NewMethod()
+        .name(name)
+        .fullName(fullName)
+        .signature(signature)
+        .filename(relativeFileName)
+
+      methodAst(methodNode_, Nil, body, methodReturn, modifiers) :: Nil
+    } else {
+      Nil
     }
   }
 
