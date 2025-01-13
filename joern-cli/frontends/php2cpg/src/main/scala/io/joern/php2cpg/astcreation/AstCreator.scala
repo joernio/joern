@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path}
 import scala.collection.mutable
+import scala.util.{Success, Try}
 
 class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, disableFileContent: Boolean)(implicit
   withSchemaValidation: ValidationMode
@@ -29,13 +30,33 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
   private val scope           = new Scope()(() => nextClosureName())
   private val tmpKeyPool      = new IntervalKeyPool(first = 0, last = Long.MaxValue)
   private val globalNamespace = globalNamespaceBlock()
-  private var fileContent     = Option.empty[String]
+  private val fileEncodings = List(
+    StandardCharsets.UTF_8,
+    StandardCharsets.UTF_16,
+    StandardCharsets.ISO_8859_1,
+    StandardCharsets.US_ASCII,
+    StandardCharsets.UTF_16LE,
+    StandardCharsets.UTF_16BE
+  )
+  private var fileContent = Option.empty[String]
 
   private def getNewTmpName(prefix: String = "tmp"): String = s"$prefix${tmpKeyPool.next.toString}"
 
   override def createAst(): DiffGraphBuilder = {
     if (!disableFileContent) {
       fileContent = Some(Files.readString(Path.of(fileName)))
+
+      fileContent = fileEncodings.iterator
+        .map { encoding =>
+          Try(Files.readString(Path.of(fileName), encoding))
+        }
+        .collectFirst { case Success(content) =>
+          content
+        }
+
+      if (fileContent.isEmpty) {
+        logger.warn(s"Could not parse file using any standard charsets. File content will be missing for $fileName")
+      }
     }
 
     val ast = astForPhpFile(phpAst)
