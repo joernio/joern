@@ -2,6 +2,7 @@ package io.joern.c2cpg.utils
 
 import better.files.File
 import io.joern.c2cpg.Config
+import io.joern.x2cpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Path
@@ -42,7 +43,7 @@ object IncludeAutoDiscovery {
   private var systemIncludePathsCPP: mutable.LinkedHashSet[Path] = mutable.LinkedHashSet.empty
 
   private def checkForGcc(): Boolean = {
-    ExternalCommand.run(GccVersionCommand, ".") match {
+    ExternalCommand.run(GccVersionCommand, ".").toTry match {
       case Success(result) =>
         logger.debug(s"GCC is available: ${result.mkString(System.lineSeparator())}")
         true
@@ -70,7 +71,7 @@ object IncludeAutoDiscovery {
   }
 
   private def discoverPaths(command: Seq[String]): mutable.LinkedHashSet[Path] =
-    ExternalCommand.run(command, ".") match {
+    GccSpecificExternalCommand.run(command, ".") match {
       case Success(output) => extractPaths(output)
       case Failure(exception) =>
         logger.warn(s"Unable to discover system include paths. Running '$command' failed.", exception)
@@ -78,7 +79,7 @@ object IncludeAutoDiscovery {
     }
 
   private def discoverMSVCInstallPath(): Option[String] = {
-    ExternalCommand.run(VsWhereCommand, ".") match {
+    GccSpecificExternalCommand.run(VsWhereCommand, ".") match {
       case Success(output) =>
         output.headOption
       case Failure(exception) =>
@@ -88,7 +89,7 @@ object IncludeAutoDiscovery {
   }
 
   private def extractMSVCIncludePaths(resolvedInstallationPath: String): mutable.LinkedHashSet[Path] = {
-    ExternalCommand.run(VcVarsCommand, resolvedInstallationPath, Map("VSCMD_DEBUG" -> "3")) match {
+    GccSpecificExternalCommand.run(VcVarsCommand, resolvedInstallationPath, Map("VSCMD_DEBUG" -> "3")) match {
       case Success(results) =>
         results.find(_.startsWith("INCLUDE=")) match {
           case Some(includesLine) =>
