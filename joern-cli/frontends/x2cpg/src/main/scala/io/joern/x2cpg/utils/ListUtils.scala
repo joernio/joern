@@ -16,5 +16,8 @@ object ListUtils {
         case _                   => Nil
       }
     }
+
+    /** Returns the single element, or None if the list is empty or contains more than one element. */
+    def singleOrNone: Option[T] = if list.size == 1 then list.headOption else None
   }
 }
