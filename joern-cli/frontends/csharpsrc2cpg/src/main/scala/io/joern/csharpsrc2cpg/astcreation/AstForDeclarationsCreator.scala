@@ -410,7 +410,10 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     Seq(methodAst(methodNode_, thisNode +: params, body, methodReturn, modifiers))
   }
 
-  protected def astForMethodDeclaration(methodDecl: DotNetNodeInfo): Seq[Ast] = {
+  protected def astForMethodDeclaration(
+    methodDecl: DotNetNodeInfo,
+    extraModifiers: List[NewModifier] = Nil
+  ): Seq[Ast] = {
     val name = nameFromNode(methodDecl)
     val params = methodDecl
       .json(ParserKeys.ParameterList)
@@ -440,7 +443,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       if (!jsonBody.isNull && parseLevel == AstParseLevel.FULL_AST) astForBlock(createDotNetNodeInfo(jsonBody))
       else Ast(blockNode(methodDecl)) // Creates an empty block
     scope.popScope()
-    val modifiers = astForModifiers(methodDecl).flatMap(_.nodes).collect { case x: NewModifier => x }
+    val modifiers = astForModifiers(methodDecl).flatMap(_.nodes).collect { case x: NewModifier => x } ++ extraModifiers
     val thisNode =
       if (!modifiers.exists(_.modifierType == ModifierTypes.STATIC)) astForThisParameter(methodDecl)
       else Ast()

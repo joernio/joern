@@ -1,6 +1,7 @@
 package io.joern.csharpsrc2cpg.querying.ast
 
 import io.joern.csharpsrc2cpg.testfixtures.CSharpCode2CpgFixture
+import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.semanticcpg.language.*
 
 class TopLevelStatementTests extends CSharpCode2CpgFixture {
@@ -60,4 +61,18 @@ class TopLevelStatementTests extends CSharpCode2CpgFixture {
     }
   }
 
+  "top-level method becomes an inner static local method to the fictitious main" in {
+    val cpg = code("""
+        |void Run() {}
+        |""".stripMargin)
+    inside(cpg.method.nameExact("Run").l) {
+      case run :: Nil =>
+        run.methodReturn.typeFullName shouldBe "void"
+        run.fullName shouldBe "Test0_cs_Program.<Main>$.Run:void()"
+        run.modifier.modifierType.toSet shouldBe Set(ModifierTypes.STATIC, ModifierTypes.INTERNAL)
+        run.parentBlock.method.l shouldBe cpg.method.fullNameExact("Test0_cs_Program.<Main>$").l
+      case xs =>
+        fail(s"Expected single METHOD named Run, but found $xs")
+    }
+  }
 }

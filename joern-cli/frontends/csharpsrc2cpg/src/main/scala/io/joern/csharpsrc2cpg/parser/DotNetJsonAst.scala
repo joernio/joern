@@ -226,6 +226,8 @@ object DotNetJsonAst {
 
   object ReturnStatement extends JumpStatement
 
+  object LocalFunctionStatement extends DeclarationExpr with BaseStmt
+
   object AwaitExpression extends BaseExpr
 
   object PropertyDeclaration extends DeclarationExpr

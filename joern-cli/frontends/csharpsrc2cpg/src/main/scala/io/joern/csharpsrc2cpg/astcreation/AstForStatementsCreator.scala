@@ -6,7 +6,8 @@ import io.joern.csharpsrc2cpg.parser.ParserKeys
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
+import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, ModifierTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewControlStructure,
   NewFieldIdentifier,
@@ -279,8 +280,14 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   }
 
-  protected def astForGlobalStatement(globalStatement: DotNetNodeInfo): Seq[Ast] = {
-    astForNode(globalStatement.json(ParserKeys.Statement))
+  private def astForGlobalStatement(globalStatement: DotNetNodeInfo): Seq[Ast] = {
+    val stmtNodeInfo = createDotNetNodeInfo(globalStatement.json(ParserKeys.Statement))
+    stmtNodeInfo.node match
+      // Denotes a top-level method declaration. These shall be added to the fictitious "main" created
+      // by `astForTopLevelStatements`.
+      case LocalFunctionStatement =>
+        astForMethodDeclaration(stmtNodeInfo, extraModifiers = newModifierNode(ModifierTypes.STATIC) :: Nil)
+      case _ => astForNode(stmtNodeInfo)
   }
 
   private def astForJumpStatement(jumpStmt: DotNetNodeInfo): Seq[Ast] = {
