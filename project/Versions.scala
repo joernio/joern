@@ -48,6 +48,7 @@ object Versions {
   val typeSafeConfig = "1.4.3"
   val versionSort    = "1.0.11"
   val zip4j          = "2.11.5"
+  val asm            = "9.7.1"
 
   private def parseVersion(key: String): String = {
     val versionRegexp = s""".*val $key[ ]+=[ ]?"(.*?)"""".r
