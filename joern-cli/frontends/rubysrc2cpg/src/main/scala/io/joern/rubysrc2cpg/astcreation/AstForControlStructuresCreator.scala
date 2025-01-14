@@ -11,6 +11,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   ForExpression,
   IfExpression,
   InClause,
+  IndexAccess,
   MatchVariable,
   MemberCall,
   NextExpression,
@@ -23,6 +24,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   SingleAssignment,
   SplattingRubyNode,
   StatementList,
+  StaticLiteral,
   UnaryExpression,
   Unknown,
   UnlessExpression,
@@ -299,18 +301,22 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
               case x: ArrayPattern =>
                 val condition = expr.map(e => BinaryExpression(x, "===", e)(x.span)).getOrElse(inClause.pattern)
                 val body      = inClause.body
-                val variables = x.children.collect { case x: MatchVariable => x }
 
-                val conditionBody = if (variables.nonEmpty && expr.isDefined) {
-                  StatementList(variables.map { lhs =>
-                    SingleAssignment(lhs, "=", MatchVariable()(expr.get.span))(
-                      inClause.span
-                        .spanStart(s"${lhs.span.text} = ${RubyOperators.arrayPatternMatch}(${expr.get.text})")
+                val stmts = x.children.zipWithIndex.flatMap {
+                  case (lhs: MatchVariable, idx) if expr.isDefined =>
+                    val arrAccess = {
+                      val code    = s"${expr.get.text}[$idx]"
+                      val base    = expr.get.copy()(expr.get.span.spanStart(expr.get.text))
+                      val indices = StaticLiteral(idx.toString)(expr.get.span.spanStart(idx.toString)) :: Nil
+                      IndexAccess(base, indices)(lhs.span.spanStart(code))
+                    }
+                    val asgn = SingleAssignment(lhs, "=", arrAccess)(
+                      inClause.span.spanStart(s"${lhs.span.text} = ${expr.get.text}[$idx]")
                     )
-                  } :+ body)(body.span)
-                } else {
-                  body
-                }
+                    Option(asgn)
+                  case _ => None
+                } :+ body
+                val conditionBody = StatementList(stmts)(body.span)
 
                 (condition, conditionBody)
               case x =>
