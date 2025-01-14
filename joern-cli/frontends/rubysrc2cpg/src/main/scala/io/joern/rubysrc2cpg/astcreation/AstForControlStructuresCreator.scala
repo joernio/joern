@@ -1,12 +1,49 @@
 package io.joern.rubysrc2cpg.astcreation
 
-import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{ArrayPattern, BinaryExpression, BreakExpression, CaseExpression, ControlFlowStatement, DoWhileExpression, ElseClause, ForExpression, IfExpression, InClause, IndexAccess, MatchVariable, MemberCall, NextExpression, OperatorAssignment, RescueExpression, ReturnExpression, RubyExpression, SimpleCall, SimpleIdentifier, SingleAssignment, SplattingRubyNode, StatementList, StaticLiteral, UnaryExpression, Unknown, UnlessExpression, UntilExpression, WhenClause, WhileExpression}
+import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
+  ArrayPattern,
+  BinaryExpression,
+  BreakExpression,
+  CaseExpression,
+  ControlFlowStatement,
+  DoWhileExpression,
+  ElseClause,
+  ForExpression,
+  IfExpression,
+  InClause,
+  IndexAccess,
+  MatchVariable,
+  MemberCall,
+  NextExpression,
+  OperatorAssignment,
+  RescueExpression,
+  ReturnExpression,
+  RubyExpression,
+  SimpleCall,
+  SimpleIdentifier,
+  SingleAssignment,
+  SplattingRubyNode,
+  StatementList,
+  StaticLiteral,
+  UnaryExpression,
+  Unknown,
+  UnlessExpression,
+  UntilExpression,
+  WhenClause,
+  WhileExpression
+}
 import io.joern.rubysrc2cpg.parser.RubyJsonHelpers
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewFieldIdentifier, NewIdentifier, NewLiteral, NewLocal}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  NewBlock,
+  NewFieldIdentifier,
+  NewIdentifier,
+  NewLiteral,
+  NewLocal
+}
 
 trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -268,8 +305,8 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
                 val stmts = x.children.zipWithIndex.flatMap {
                   case (lhs: MatchVariable, idx) if expr.isDefined =>
                     val arrAccess = {
-                      val code = s"${expr.get.text}[$idx]"
-                      val base = expr.get.copy()(expr.get.span.spanStart(expr.get.text))
+                      val code    = s"${expr.get.text}[$idx]"
+                      val base    = expr.get.copy()(expr.get.span.spanStart(expr.get.text))
                       val indices = StaticLiteral(idx.toString)(expr.get.span.spanStart(idx.toString)) :: Nil
                       IndexAccess(base, indices)(lhs.span.spanStart(code))
                     }

@@ -623,14 +623,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val callNode_ =
       callNode(node, code(node), Operators.arrayInitializer, Operators.arrayInitializer, DispatchTypes.STATIC_DISPATCH)
     val childrenAst = node.children.map {
-      case x: MatchVariable if scope.lookupVariable(x.text).isEmpty => handleVariableOccurrence( x.toSimpleIdentifier)
-      case x: MatchVariable => astForExpression(x.toSimpleIdentifier)
-      case x                => astForExpression(x)
+      case x: MatchVariable if scope.lookupVariable(x.text).isEmpty => handleVariableOccurrence(x.toSimpleIdentifier)
+      case x: MatchVariable                                         => astForExpression(x.toSimpleIdentifier)
+      case x                                                        => astForExpression(x)
     }
 
     callAst(callNode_, childrenAst)
   }
-  
+
   protected def astForMandatoryParameter(node: RubyExpression): Ast = handleVariableOccurrence(node)
 
   protected def astForSimpleCall(node: SimpleCall): Ast = {
