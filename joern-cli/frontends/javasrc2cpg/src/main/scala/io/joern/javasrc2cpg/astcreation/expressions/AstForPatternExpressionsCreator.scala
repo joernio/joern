@@ -190,7 +190,9 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
         newOperatorCallNode(
           Operators.cast,
           s"(${castType.code}) ${initializerAst.rootCodeOrEmpty}",
-          Option(patternType)
+          Option(patternType),
+          line(patternExpr),
+          column(patternExpr)
         )
       callAst(castNode, Ast(castType) :: initializerAst :: Nil)
     }
