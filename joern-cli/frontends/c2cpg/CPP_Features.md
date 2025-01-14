@@ -32,7 +32,7 @@
 
 | Feature                                        | Supported |
 |------------------------------------------------|-----------|
-| coroutines                                     | [?]       |
+| coroutines                                     | [~]       |
 | concepts                                       | [?]       |
 | three-way comparison                           | [?]       |
 | designated initializers                        | [?]       |

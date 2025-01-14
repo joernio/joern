@@ -8,20 +8,13 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
 
   "C++20 feature support" should {
 
-    "handle coroutines" ignore {
+    "handle coroutines" in {
       val cpg = code("""
           |generator<int> range(int start, int end) {
           |  while (start < end) {
           |    co_yield start;
           |    start++;
           |  }
-          |
-          |  // Implicit co_return at the end of this function:
-          |  // co_return;
-          |}
-          |
-          |for (int n : range(0, 10)) {
-          |  std::cout << n << std::endl;
           |}
           |
           |task<void> echo(socket s) {
@@ -29,12 +22,31 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |    auto data = co_await s.async_read();
           |    co_await async_write(s, data);
           |  }
-          |
-          |  // Implicit co_return at the end of this function:
-          |  // co_return;
           |}
           |""".stripMargin)
-      ???
+      cpg.method
+        .nameExact("range")
+        .controlStructure
+        .astChildren
+        .isBlock
+        .astChildren
+        .isCall
+        .nameExact("<operator>.yield")
+        .size shouldBe 1
+
+      pendingUntilFixed {
+        // `auto data = co_await s.async_read();` can not be parsed yet.
+        // Hence, this co_await call is missing.
+        cpg.method
+          .nameExact("echo")
+          .controlStructure
+          .astChildren
+          .isBlock
+          .astChildren
+          .isCall
+          .nameExact("<operator>.await")
+          .size shouldBe 2
+      }
     }
 
     "handle concepts" ignore {
