@@ -14,10 +14,11 @@ import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, Defines, ValidationM
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
+import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.{Files, Path}
+import java.nio.file.Path
 import scala.collection.mutable
 
 class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, disableFileContent: Boolean)(implicit
@@ -35,7 +36,7 @@ class AstCreator(relativeFileName: String, fileName: String, phpAst: PhpFile, di
 
   override def createAst(): DiffGraphBuilder = {
     if (!disableFileContent) {
-      fileContent = Some(Files.readString(Path.of(fileName)))
+      fileContent = Option(IOUtils.readEntireFile(Path.of(fileName)))
     }
 
     val ast = astForPhpFile(phpAst)
