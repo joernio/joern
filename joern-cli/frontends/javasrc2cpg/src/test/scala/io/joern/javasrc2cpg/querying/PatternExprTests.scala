@@ -2173,6 +2173,8 @@ class PatternExprTests extends JavaSrcCode2CpgFixture {
               oCast.name shouldBe Operators.cast
               oCast.code shouldBe "(Box) o"
               oCast.typeFullName shouldBe "box.Box"
+              oCast.lineNumber shouldBe Some(9)
+              oCast.columnNumber shouldBe Some(12)
 
               inside(oCast.argument.l) { case List(boxType: TypeRef, oIdentifier: Identifier) =>
                 boxType.typeFullName shouldBe "box.Box"
