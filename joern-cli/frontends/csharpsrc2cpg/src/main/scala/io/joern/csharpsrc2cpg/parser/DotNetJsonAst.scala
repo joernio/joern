@@ -272,6 +272,8 @@ object DotNetJsonAst {
 
   object Attribute extends BaseExpr
 
+  object CoalesceExpression extends BaseExpr
+
   object Unknown extends DotNetParserNode
 
 }
