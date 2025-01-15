@@ -1,6 +1,7 @@
 package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.passes.{Defines, GlobalTypes}
+import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 
 import java.util.Objects
@@ -620,6 +621,10 @@ object RubyIntermediateAst {
   /** A dummy class for wrapping around `NewNode` and allowing it to integrate with RubyNode classes.
     */
   final case class DummyNode(node: NewNode)(span: TextSpan) extends RubyExpression(span)
+
+  /** A dummy class for wrapping around `Ast` and allowing it to integrate with RubyNode classes.
+    */
+  final case class DummyAst(ast: Ast)(span: TextSpan) extends RubyExpression(span)
 
   final case class UnaryExpression(op: String, expression: RubyExpression)(span: TextSpan) extends RubyExpression(span)
 
