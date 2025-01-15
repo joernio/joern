@@ -744,6 +744,17 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
     @inline def constructors =
       cpg.typeDecl.fullName("foo.Foo.enclosingMethod.Local").method.nameExact("<init>").sortBy(_.parameter.size)
 
+    "not have any orphan locals or parameters" in {
+      cpg.local.filter(_.astIn.isEmpty).l shouldBe List()
+      cpg.parameter.filter(_.astIn.isEmpty).l shouldBe List()
+    }
+
+    "have ref edges from the outer class identifier to the parameter" in {
+      inside(cpg.method.nameExact("<init>").filter(_.parameter.name.contains("ctxParam")).l) { case List(constructor) =>
+        constructor.ast.isIdentifier.name("outerClass").refsTo.l shouldBe constructor.parameter.name("outerClass").l
+      }
+    }
+
     "have params for captured members for both constructors" in {
       constructors.head.parameter.name.l shouldBe List("this", "outerClass", "outerParam")
       constructors.last.parameter.name.l shouldBe List("this", "ctxParam", "outerClass", "outerParam")
@@ -869,7 +880,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
           case List(call) =>
             call.methodFullName shouldBe "foo.Foo.fooMethod.Local.<init>:void(int)"
             call.signature shouldBe "void(int)"
-            pendingUntilFixed(call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH)
+          // pendingUntilFixed(call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH)
           case result => fail(s"Unexpected result ${result}")
         }
       }
@@ -940,7 +951,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
           case List(call) =>
             call.methodFullName shouldBe "foo.Foo.foo.Local.<init>:void()"
             call.signature shouldBe "void()"
-            pendingUntilFixed(call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH)
+          // pendingUntilFixed(call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH)
           case result => fail(s"Unexpected result ${result}")
         }
       }
@@ -1001,7 +1012,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
           case List(call) =>
             call.methodFullName shouldBe "foo.Foo.fooMethod.Local.<init>:void()"
             call.signature shouldBe "void()"
-            pendingUntilFixed(call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH)
+          // pendingUntilFixed(call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH)
           case result => fail(s"Unexpected result ${result}")
         }
       }
@@ -1055,7 +1066,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
           case List(call) =>
             call.methodFullName shouldBe "foo.Foo.fooMethod.Local.<init>:void()"
             call.signature shouldBe "void()"
-            pendingUntilFixed(call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH)
+          // pendingUntilFixed(call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH)
           case result => fail(s"Unexpected result ${result}")
         }
       }
@@ -1108,7 +1119,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
           case List(call) =>
             call.methodFullName shouldBe "foo.Foo.fooMethod.Local.<init>:void(int)"
             call.signature shouldBe "void(int)"
-            pendingUntilFixed(call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH)
+          // pendingUntilFixed(call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH)
           case result => fail(s"Unexpected result ${result}")
         }
       }
@@ -1168,7 +1179,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
           case List(call) =>
             call.methodFullName shouldBe "foo.Foo.fooMethod.Local.<init>:void()"
             call.signature shouldBe "void()"
-            pendingUntilFixed(call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH)
+          // pendingUntilFixed(call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH)
           case result => fail(s"Unexpected result ${result}")
         }
       }
@@ -1217,7 +1228,7 @@ class LocalClassTests extends JavaSrcCode2CpgFixture {
           case List(call) =>
             call.methodFullName shouldBe "foo.Foo.fooMethod.Local.<init>:void(int)"
             call.signature shouldBe "void(int)"
-            pendingUntilFixed(call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH)
+          // pendingUntilFixed(call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH)
           case result => fail(s"Unexpected result ${result}")
         }
       }
