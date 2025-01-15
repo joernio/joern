@@ -363,11 +363,18 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       ???
     }
 
-    "handle char8_t" ignore {
+    "handle char8_t" in {
       val cpg = code("""
-          |char8_t utf8_str[] = u8"\\u0123";
+          |char8_t utf8_str[] = u8"\u0123";
           |""".stripMargin)
-      ???
+      val List(assignmentCall) = cpg.call.l
+      assignmentCall.code shouldBe """utf8_str[] = u8"\u0123""""
+      val List(utf8_str) = assignmentCall.argument.isIdentifier.l
+      utf8_str.name shouldBe "utf8_str"
+      utf8_str.typeFullName shouldBe "char8_t[6]"
+      val List(u8) = assignmentCall.argument.isLiteral.l
+      u8.code shouldBe """u8"\u0123""""
+      u8.typeFullName shouldBe "char[6]"
     }
 
     "handle constinit" ignore {

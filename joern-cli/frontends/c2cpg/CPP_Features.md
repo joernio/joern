@@ -22,7 +22,7 @@
 | structured bindings                                                     | [x]       |
 | selection statements with initializer                                   | [x]       |
 | constexpr if                                                            | [x]       |
-| utf-8 character literals                                                | [ ]       |
+| utf-8 character literals                                                | [x]       |
 | direct-list-initialization of enums                                     | [x]       |
 | \[\[fallthrough\]\], \[\[nodiscard\]\], \[\[maybe_unused\]\] attributes | [~]       |
 | \_\_has_include                                                         | [~]       |
@@ -46,6 +46,6 @@
 | immediate functions                            | [?]       |
 | using enum                                     | [?]       |
 | lambda capture of parameter pack               | [?]       |
-| char8_t                                        | [?]       |
+| char8_t                                        | [x]       |
 | constinit                                      | [?]       |
 | \_\_VA_OPT\_\_                                 | [?]       |
