@@ -1,6 +1,5 @@
 package io.joern.rubysrc2cpg.querying
 
-import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -115,11 +114,11 @@ class CaseTests extends RubyCode2CpgFixture {
 
     val block @ List(_) = cpg.method.name("class_for").block.astChildren.isBlock.l
 
-    val List(assign)   = block.astChildren.assignment.l;
+    val assign         = block.astChildren.assignment.head
     val List(lhs, rhs) = assign.argument.l
 
     lhs.start.isIdentifier.name.l shouldBe List("<tmp-0>")
-    rhs.start.isCall.code.l shouldBe List("[type, location]")
+    rhs.start.isBlock.code.l shouldBe List("[type, location]") // array lowering
 
     val headIf @ List(_)        = block.astChildren.isControlStructure.l
     val ifStmts @ List(_, _, _) = headIf.repeat(_.astChildren.order(3).astChildren.isControlStructure)(_.emit).l;
@@ -165,11 +164,11 @@ class CaseTests extends RubyCode2CpgFixture {
 
     val block @ List(_) = cpg.method.name("class_for").block.astChildren.isBlock.l
 
-    val List(assign, _, _) = block.astChildren.assignment.l;
-    val List(lhs, rhs)     = assign.argument.l
+    val assign         = block.astChildren.assignment.head
+    val List(lhs, rhs) = assign.argument.l
 
     lhs.start.isIdentifier.name.l shouldBe List("<tmp-0>")
-    rhs.start.isCall.code.l shouldBe List("[type, location]")
+    rhs.start.isBlock.code.l shouldBe List("[type, location]") // where the array lowering happens
 
     val headIf @ List(_)     = block.astChildren.isControlStructure.l
     val ifStmts @ List(_, _) = headIf.repeat(_.astChildren.order(3).astChildren.isControlStructure)(_.emit).l;
