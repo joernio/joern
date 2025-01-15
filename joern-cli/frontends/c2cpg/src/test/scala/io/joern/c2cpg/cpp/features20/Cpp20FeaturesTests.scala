@@ -49,7 +49,7 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       }
     }
 
-    "handle concepts" ignore {
+    "handle concepts" in {
       val cpg = code("""
           |// `T` is not limited by any constraints.
           |template <typename T>
@@ -67,53 +67,51 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |// Forms for function parameters:
           |// `T` is a constrained type template parameter.
           |template <my_concept T>
-          |void f(T v);
+          |void f1(T v);
           |
           |// `T` is a constrained type template parameter.
           |template <typename T>
           |  requires my_concept<T>
-          |void f(T v);
+          |void f2(T v);
           |
           |// `T` is a constrained type template parameter.
           |template <typename T>
-          |void f(T v) requires my_concept<T>;
+          |void f3(T v) requires my_concept<T>;
           |
           |// `v` is a constrained deduced parameter.
-          |void f(my_concept auto v);
+          |void f4(my_concept auto v);
           |
           |// `v` is a constrained non-type template parameter.
           |template <my_concept auto v>
-          |void g();
+          |void f5();
           |
-          |// Forms for auto-deduced variables:
-          |// `foo` is a constrained auto-deduced value.
-          |my_concept auto foo = ...;
-          |
-          |// Forms for lambdas:
-          |// `T` is a constrained type template parameter.
-          |auto f = []<my_concept T> (T v) {
-          |  // ...
-          |};
-          |// `T` is a constrained type template parameter.
-          |auto f = []<typename T> requires my_concept<T> (T v) {
-          |  // ...
-          |};
-          |// `T` is a constrained type template parameter.
-          |auto f = []<typename T> (T v) requires my_concept<T> {
-          |  // ...
-          |};
-          |// `v` is a constrained deduced parameter.
-          |auto f = [](my_concept auto v) {
-          |  // ...
-          |};
-          |// `v` is a constrained non-type template parameter.
-          |auto g = []<my_concept auto v> () {
-          |  // ...
-          |};
+          |void foo() {
+          |  // Forms for lambdas:
+          |  // `T` is a constrained type template parameter.
+          |  auto l1 = []<my_concept T> (T v) {
+          |    // ...
+          |  };
+          |  // `T` is a constrained type template parameter.
+          |  auto l2 = []<typename T> requires my_concept<T> (T v) {
+          |    // ...
+          |  };
+          |  // `T` is a constrained type template parameter.
+          |  auto l3 = []<typename T> (T v) requires my_concept<T> {
+          |    // ...
+          |  };
+          |  // `v` is a constrained deduced parameter.
+          |  auto l4 = [](my_concept auto v) {
+          |    // ...
+          |  };
+          |  // `v` is a constrained non-type template parameter.
+          |  auto l5 = []<my_concept auto v> () {
+          |    // ...
+          |  };
+          |}
           |
           |template <typename T>
           |  requires my_concept<T> // `requires` clause.
-          |void f(T);
+          |void f6(T);
           |
           |template <typename T>
           |concept callable = requires (T f) { f(); }; // `requires` expression.
@@ -125,28 +123,58 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |}
           |
           |template <typename T>
-          |concept C = requires(T x) {
+          |concept C1 = requires(T x) {
           |  {*x} -> std::convertible_to<typename T::inner>; // the type of the expression `*x` is convertible to `T::inner`
           |  {x + 1} -> std::same_as<int>; // the expression `x + 1` satisfies `std::same_as<decltype((x + 1))>`
           |  {x * 1} -> std::convertible_to<T>; // the type of the expression `x * 1` is convertible to `T`
           |};
           |
           |template <typename T>
-          |concept C = requires(T x) {
+          |concept C2 = requires(T x) {
           |  requires std::same_as<sizeof(x), size_t>;
           |};
           |""".stripMargin)
-      ???
+      // we can't express concepts withing the CPG but parsing constructs using them should not be hindered
+      // sadly, at some places (e.g., for parameters) it fails parsing
+      cpg.method.nameNot("<global>").fullName.sorted.l shouldBe List(
+        "add:ANY(ANY,ANY)",
+        "f1:void(ANY)",
+        "f2:void(ANY)",
+        "f3:void(ANY)",
+        "f6:void(ANY)",
+        "foo:void()",
+        "requires:ANY(ANY)"
+      )
+      pendingUntilFixed {
+        cpg.method.nameNot("<global>").fullName.sorted.l shouldBe List(
+          "add:ANY(ANY,ANY)",
+          "f1:void(ANY)",
+          "f2:void(ANY)",
+          "f3:void(ANY)",
+          "f4:void(ANY)",
+          "f5:void(ANY)",
+          "f6:void(ANY)",
+          // remaining lambdas ...
+          "foo:void()"
+        )
+      }
     }
 
-    "handle three-way comparison" ignore {
+    "handle three-way comparison" in {
       val cpg = code("""
-          |bool x = 1 <=> 2;
+          |bool foo() {
+          |  bool x = 1 <=> 2;
+          |  return x;
+          |}
           |""".stripMargin)
-      ???
+      // three-way comparison operator can not be parsed at the moment
+      pendingUntilFixed {
+        cpg.assignment.code.l shouldBe List("bool x = 1 <=> 2")
+        // TODO: test for children AST elements
+      }
     }
 
-    "handle designated initializers" ignore {
+    "handle designated initializers" in {
       val cpg = code("""
           |struct A {
           |  int x;
@@ -154,9 +182,16 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |  int z = 123;
           |};
           |
-          |A a {.x = 1, .z = 2}; // a.x == 1, a.y == 0, a.z == 2
+          |void foo() {
+          |  A a {.x = 1, .z = 2}; // a.x == 1, a.y == 0, a.z == 2
+          |}
           |""".stripMargin)
-      ???
+      cpg.assignment.code.sorted.l shouldBe List("a.x = 1", "a.z = 2", "z = 123")
+      pendingUntilFixed {
+        // CDT failed to assign the type A to a here so we are not
+        // able to identify all struct fields. Hence, no a.y = 0 assignment yet.
+        cpg.assignment.code.sorted.l shouldBe List("a.x = 1", "a.y = 0", "a.z = 2", "z = 123")
+      }
     }
 
     "handle template syntax for lambdas" ignore {

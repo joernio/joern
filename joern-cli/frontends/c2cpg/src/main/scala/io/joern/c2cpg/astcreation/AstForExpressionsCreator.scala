@@ -510,10 +510,47 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astForConstructorExpression(c: ICPPASTSimpleTypeConstructorExpression): Ast = {
-    val name      = c.getDeclSpecifier.toString
-    val callNode_ = callNode(c, code(c), name, name, DispatchTypes.STATIC_DISPATCH, None, Some(X2CpgDefines.Any))
-    val arg       = astForNode(c.getInitializer)
-    callAst(callNode_, List(arg))
+    val name = c.getDeclSpecifier.toString
+    c.getInitializer match {
+      case l: ICPPASTInitializerList if l.getClauses.forall(_.isInstanceOf[ICPPASTDesignatedInitializer]) =>
+        val node = blockNode(c, Defines.Empty, Defines.Void)
+        scope.pushNewScope(node)
+
+        val inits = l.getClauses.collect { case i: ICPPASTDesignatedInitializer => i }.toSeq
+        val calls = inits.flatMap { init =>
+          val designatorIds = init.getDesignators.collect { case d: ICPPASTFieldDesignator =>
+            val name = code(d.getName)
+            fieldIdentifierNode(d, name, name)
+          }
+          designatorIds.map { memberId =>
+            val rhsAst = astForNode(init.getOperand)
+            val specifierId =
+              identifierNode(c.getDeclSpecifier, name, name, registerType(cleanType(typeFor(c.getDeclSpecifier))))
+            val op         = Operators.fieldAccess
+            val accessCode = s"$name.${memberId.code}"
+            val ma    = callNode(init, accessCode, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(X2CpgDefines.Any))
+            val maAst = callAst(ma, List(Ast(specifierId), Ast(memberId)))
+            val assignmentCallNode =
+              callNode(
+                c,
+                s"$accessCode = ${code(init.getOperand)}",
+                Operators.assignment,
+                Operators.assignment,
+                DispatchTypes.STATIC_DISPATCH,
+                None,
+                Some(X2CpgDefines.Any)
+              )
+            callAst(assignmentCallNode, List(maAst, rhsAst))
+          }
+        }
+
+        scope.popScope()
+        blockAst(node, calls.toList)
+      case other =>
+        val callNode_ = callNode(c, code(c), name, name, DispatchTypes.STATIC_DISPATCH, None, Some(X2CpgDefines.Any))
+        val arg       = astForNode(other)
+        callAst(callNode_, List(arg))
+    }
   }
 
   private def astForCompoundStatementExpression(compoundExpression: IGNUASTCompoundStatementExpression): Ast =

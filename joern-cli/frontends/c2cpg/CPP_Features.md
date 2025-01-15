@@ -33,9 +33,9 @@
 | Feature                                        | Supported |
 |------------------------------------------------|-----------|
 | coroutines                                     | [~]       |
-| concepts                                       | [?]       |
-| three-way comparison                           | [?]       |
-| designated initializers                        | [?]       |
+| concepts                                       | [ ]       |
+| three-way comparison                           | [ ]       |
+| designated initializers                        | [~]       |
 | template syntax for lambdas                    | [?]       |
 | range-based for loop with initializer          | [?]       |
 | \[\[likely\]\] and \[\[unlikely\]\] attributes | [?]       |
