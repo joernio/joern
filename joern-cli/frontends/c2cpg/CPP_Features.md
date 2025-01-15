@@ -46,6 +46,6 @@
 | immediate functions                            | [?]       |
 | using enum                                     | [?]       |
 | lambda capture of parameter pack               | [?]       |
-| char8_t                                        | [?]       |
+| char8_t                                        | [x]       |
 | constinit                                      | [?]       |
 | \_\_VA_OPT\_\_                                 | [?]       |
