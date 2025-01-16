@@ -100,6 +100,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
   ): Ast = {
     val (astParentType, astParentFullName) = getAstParentInfo()
 
+    // TODO: Generic signature
     val typeDeclRoot =
       typeDeclNode(
         expr,
@@ -254,6 +255,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
           .getOrElse(defaultTypeFallback(typ))
       }.toOption.getOrElse(defaultTypeFallback())
 
+      // TODO: Generic signature
       val parameterMember = memberNode(parameter, parameterName, code(parameter), parameterTypeFullName)
       val privateModifier = newModifierNode(ModifierTypes.PRIVATE)
       val memberAst       = Ast(parameterMember).withChild(Ast(privateModifier))
@@ -491,6 +493,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
 
   private def membersForCapturedVariables(originNode: Node, captures: List[ScopeVariable]): List[Ast] = {
     captures.map { variable =>
+      // TODO: Generic signature
       val node = memberNode(originNode, variable.name, variable.name, variable.typeFullName)
       Ast(node)
     }
@@ -640,9 +643,11 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     val name = v.getName.toString
     // Use type name without generics stripped in code
     val variableTypeString = tryWithSafeStackOverflow(v.getTypeAsString).getOrElse("")
-    val node               = memberNode(v, name, s"$variableTypeString $name", typeFullName)
-    val memberAst          = Ast(node)
-    val annotationAsts     = annotations.asScala.map(astForAnnotationExpr)
+    val genericSignature   = binarySignatureCalculator.fieldBinarySignature(v)
+    val node =
+      memberNode(v, name, s"$variableTypeString $name", typeFullName, genericSignature = Option(genericSignature))
+    val memberAst      = Ast(node)
+    val annotationAsts = annotations.asScala.map(astForAnnotationExpr)
 
     val fieldDeclModifiers = modifiersForFieldDeclaration(fieldDeclaration)
 
@@ -706,7 +711,18 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
 
     val code = codeForTypeDecl(typ, isInterface)
 
-    typeDeclNode(typ, name, fullName, filename, code, astParentType, astParentFullName, baseTypeFullNames)
+    val genericSignature = binarySignatureCalculator.typeDeclBinarySignature(typ)
+    typeDeclNode(
+      typ,
+      name,
+      fullName,
+      filename,
+      code,
+      astParentType,
+      astParentFullName,
+      baseTypeFullNames,
+      genericSignature = Option(genericSignature)
+    )
   }
 
   private def codeForTypeDecl(typ: TypeDeclaration[?], isInterface: Boolean): String = {
@@ -763,6 +779,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     val typeFullName =
       tryWithSafeStackOverflow(entry.resolve().getType).toOption.flatMap(typeInfoCalc.fullName)
 
+    // TODO: Generic signature
     val entryNode = memberNode(entry, entry.getNameAsString, entry.toString, typeFullName.getOrElse("ANY"))
 
     val name = s"${typeFullName.getOrElse(Defines.UnresolvedNamespace)}.${Defines.ConstructorMethodName}"

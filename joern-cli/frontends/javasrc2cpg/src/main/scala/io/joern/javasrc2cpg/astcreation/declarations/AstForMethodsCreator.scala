@@ -145,6 +145,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     val methodReturn =
       newMethodReturnNode(parameterTypeFullName, line = line(parameter), column = column(parameter))
 
+    // TODO Generic signature
     val methodRoot = methodNode(
       parameter,
       parameterName,
@@ -264,6 +265,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
   }
 
   def astForDefaultConstructor(originNode: Node, instanceFieldDeclarations: List[FieldDeclaration]): Ast = {
+    // TODO: Generic signature
     val constructorNode = NewMethod()
       .name(io.joern.x2cpg.Defines.ConstructorMethodName)
       .filename(filename)
@@ -677,7 +679,16 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     val endColumn    = declaration.getEnd.map(x => Integer.valueOf(x.column)).toScala
 
     val placeholderFullName = ""
-    methodNode(declaration, declaration.getNameAsString(), methodCode, placeholderFullName, None, filename)
+    val genericSignature    = binarySignatureCalculator.callableDeclarationBinarySignature(declaration)
+    methodNode(
+      declaration,
+      declaration.getNameAsString(),
+      methodCode,
+      placeholderFullName,
+      None,
+      filename,
+      genericSignature = Option(genericSignature)
+    )
   }
 
   def thisNodeForMethod(

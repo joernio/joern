@@ -140,6 +140,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
     val signature         = lambdaMethodSignature(returnType, parameters)
     val lambdaFullName    = composeMethodFullName(enclosingTypeName, lambdaName, signature)
 
+    // TODO: Generic signature
     methodNode(lambdaExpr, lambdaName, "<lambda>", lambdaFullName, Some(signature), filename)
   }
 
@@ -154,6 +155,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
         .toList
 
     typeInfoCalc.registerType(lambdaMethodNode.fullName)
+    // TODO: Generic signature
     val lambdaTypeDeclNode =
       NewTypeDecl()
         .fullName(lambdaMethodNode.fullName)
@@ -267,6 +269,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
         val closureBindingNode = newClosureBindingNode(closureBindingId, name, EvaluationStrategies.BY_SHARING)
 
         val scopeVariable = variables.head
+        // TODO: Generic signature
         val capturedLocal = newLocalNode(scopeVariable.name, scopeVariable.typeFullName, Option(closureBindingId))
         scope.enclosingBlock.foreach(_.addLocal(capturedLocal))
 

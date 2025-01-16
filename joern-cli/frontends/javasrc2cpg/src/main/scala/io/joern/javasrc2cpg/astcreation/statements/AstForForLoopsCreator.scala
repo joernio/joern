@@ -194,6 +194,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
 
     val lineNo = line(stmt)
 
+    // TODO: Generic signature
     val idxLocal          = nativeForEachIdxLocalNode(lineNo)
     val idxInitializerAst = nativeForEachIdxInitializerAst(lineNo, idxLocal)
     // TODO next: pass NodeTypeInfo around
@@ -231,7 +232,8 @@ trait AstForForLoopsCreator { this: AstCreator =>
         iterableAsts.head
     }
 
-    val iterableName      = nextIterableName()
+    val iterableName = nextIterableName()
+    // TODO: Generic signature
     val iterableLocalNode = localNode(iterableExpression, iterableName, iterableName, iterableType.getOrElse("ANY"))
     val iterableLocalAst  = Ast(iterableLocalNode)
 
@@ -253,6 +255,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
   private def nativeForEachIdxLocalNode(lineNo: Option[Int]): NewLocal = {
     val idxName      = nextIndexName()
     val typeFullName = TypeConstants.Int
+    // TODO: Generic signature
     val idxLocal =
       NewLocal()
         .name(idxName)
@@ -338,6 +341,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
         Some(variable)
     }
 
+    // TODO: Generic signature
     val partialLocalNode = NewLocal().lineNumber(lineNo)
 
     maybeVariable match {
@@ -360,6 +364,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
   }
 
   private def iteratorLocalForForEach(lineNumber: Option[Int]): NewLocal = {
+    // TODO: Generic signature
     val iteratorLocalName = nextIterableName()
     NewLocal()
       .name(iteratorLocalName)

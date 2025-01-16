@@ -6,15 +6,20 @@ import com.github.javaparser.ast.`type`.{
   PrimitiveType,
   Type,
   TypeParameter,
+  VarType,
   VoidType,
   WildcardType
 }
 import com.github.javaparser.ast.body.{
   AnnotationDeclaration,
+  CallableDeclaration,
   ClassOrInterfaceDeclaration,
+  CompactConstructorDeclaration,
+  ConstructorDeclaration,
   EnumDeclaration,
   MethodDeclaration,
   RecordDeclaration,
+  TypeDeclaration,
   VariableDeclarator
 }
 import io.joern.javasrc2cpg.astcreation.declarations.BinarySignatureCalculator.{
@@ -22,18 +27,49 @@ import io.joern.javasrc2cpg.astcreation.declarations.BinarySignatureCalculator.{
   javaObjectName,
   javaRecordName
 }
+import io.joern.x2cpg.Defines
 import org.objectweb.asm.signature.SignatureWriter
+import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
 
 object BinarySignatureCalculator {
-  private val javaObjectName = "java/lang/Object"
-  private val javaEnumName   = "java/lang/Enum"
-  private val javaRecordName = "java/lang/Record"
+  private val javaObjectName        = "java/lang/Object"
+  private val javaEnumName          = "java/lang/Enum"
+  private val javaRecordName        = "java/lang/Record"
+  private val unresolvedPlaceholder = "__unresolved_namespace_placeholder__"
 }
 
 class BinarySignatureCalculator {
+
+  private val logger = LoggerFactory.getLogger(this.getClass)
+
+  def typeDeclBinarySignature(typeDeclaration: TypeDeclaration[?]): String = {
+    typeDeclaration match {
+      case decl: AnnotationDeclaration       => annotationDecBinarySignature(decl)
+      case decl: RecordDeclaration           => recordDeclBinarySignature(decl)
+      case decl: ClassOrInterfaceDeclaration => classDeclBinarySignature(decl)
+      case decl: EnumDeclaration             => enumDeclBinarySignature(decl)
+      case decl =>
+        logger.warn(s"Attempting to get binary signature for unhandled type declaration $typeDeclaration")
+        Defines.Unknown
+    }
+  }
+
+  def callableDeclarationBinarySignature(
+    declaration: CallableDeclaration[?] | CompactConstructorDeclaration
+  ): String = {
+    declaration match {
+      case decl: MethodDeclaration      => methodBinarySignature(decl)
+      case decl: ConstructorDeclaration =>
+        // TODO: Generic signature
+        Defines.Unknown
+      case decl: CompactConstructorDeclaration =>
+        // TODO: Generic signature
+        Defines.Unknown
+    }
+  }
 
   def annotationDecBinarySignature(annotationDecl: AnnotationDeclaration): String = {
     val writer = SignatureWriter()
@@ -163,6 +199,9 @@ class BinarySignatureCalculator {
         writer.visitTypeVariable(typeParam.getNameAsString)
       case primitiveType: PrimitiveType =>
         writer.visitBaseType(primitiveType.getType.toDescriptor.charAt(0))
+      case varType: VarType =>
+        // TODO Solve the type?
+        writer.visitTypeVariable(Defines.Unknown)
       case _: VoidType =>
         writer.visitBaseType('V')
     }

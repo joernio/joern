@@ -152,8 +152,9 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
         )
 
       case _ =>
-        val tmpName       = tempNameProvider.next
-        val tmpType       = patternInitAst.rootType.getOrElse(TypeConstants.Object)
+        val tmpName = tempNameProvider.next
+        val tmpType = patternInitAst.rootType.getOrElse(TypeConstants.Object)
+        // TODO: Generic signature
         val tmpLocal      = localNode(rootNode, tmpName, tmpName, tmpType)
         val tmpIdentifier = identifierNode(rootNode, tmpName, tmpName, tmpType)
 
@@ -214,7 +215,8 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
             )
             .getOrElse(defaultTypeFallback())
         }
-        val variableTypeCode  = tryWithSafeStackOverflow(code(typePatternExpr.getType)).getOrElse(variableType)
+        val variableTypeCode = tryWithSafeStackOverflow(code(typePatternExpr.getType)).getOrElse(variableType)
+        // TODO: Generic signature
         val patternLocal      = localNode(typePatternExpr, variableName, code(typePatternExpr), variableType)
         val patternIdentifier = identifierNode(typePatternExpr, variableName, variableName, variableType)
 
