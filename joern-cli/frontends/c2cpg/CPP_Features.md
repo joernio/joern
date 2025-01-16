@@ -43,9 +43,9 @@
 | class types in non-type template parameters    | [?]       |
 | constexpr virtual functions                    | [?]       |
 | explicit(bool)                                 | [?]       |
-| immediate functions                            | [?]       |
+| immediate functions                            | [x]       |
 | using enum                                     | [?]       |
 | lambda capture of parameter pack               | [?]       |
 | char8_t                                        | [x]       |
-| constinit                                      | [?]       |
-| \_\_VA_OPT\_\_                                 | [?]       |
+| constinit                                      | [+]       |
+| \_\_VA_OPT\_\_                                 | [ ]       |

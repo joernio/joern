@@ -311,18 +311,20 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       ???
     }
 
-    "handle immediate functions" ignore {
+    "handle immediate functions" in {
       val cpg = code("""
           |consteval int sqr(int n) {
           |  return n * n;
           |}
           |
-          |constexpr int r = sqr(100); // OK
-          |int x = 100;
-          |int r2 = sqr(x); // ERROR: the value of 'x' is not usable in a constant expression
-          |                 // OK if `sqr` were a `constexpr` function
+          |void foo() {
+          |  constexpr int r = sqr(100);
+          |}
           |""".stripMargin)
-      ???
+      cpg.method.nameNot("<global>").fullName.sorted.l shouldBe List("foo:void()", "sqr:int(int)")
+      val List(rLocal) = cpg.method.nameExact("foo").local.l
+      rLocal.typeFullName shouldBe "int"
+      rLocal.code shouldBe "constexpr int r"
     }
 
     "handle using enum" ignore {
@@ -377,24 +379,32 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       u8.typeFullName shouldBe "char[6]"
     }
 
-    "handle constinit" ignore {
+    "handle constinit" in {
       val cpg = code("""
-          |const char* g() { return "dynamic initialization"; }
           |constexpr const char* f(bool p) { return p ? "constant initializer" : g(); }
           |
-          |constinit const char* c = f(true); // OK
-          |constinit const char* d = g(false); // ERROR: `g` is not constexpr, so `d` cannot be evaluated at compile-time.
+          |void foo() {
+          |  constinit const char* c = f(true);
+          |}
           |""".stripMargin)
-      ???
+      cpg.method.nameNot("<global>").fullName.sorted.l shouldBe List("f:char*(bool)", "foo:void()")
+      val List(cLocal) = cpg.method.nameExact("foo").local.l
+      cLocal.typeFullName shouldBe "char*"
+      cLocal.code shouldBe "const char* c" // constinit keyword is not parsed by CDT
     }
 
-    "handle __VA_OPT__" ignore {
+    "handle __VA_OPT__" in {
       val cpg = code("""
           |#define F(...) f(0 __VA_OPT__(,) __VA_ARGS__)
-          |F(a, b, c) // replaced by f(0, a, b, c)
-          |F()        // replaced by f(0)
+          |void foo() {
+          |  F(a, b, c); // replaced by f(0, a, b, c)
+          |  F();        // replaced by f(0)
+          |}
           |""".stripMargin)
-      ???
+      pendingUntilFixed {
+        // Impossible to test without C++ system headers for __VA_OPT__ and __VA_ARGS__ definitions
+        cpg.call.code.l shouldBe List("f(a, b, c)", "f()")
+      }
     }
 
   }

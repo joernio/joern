@@ -607,8 +607,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astForIdExpression(idExpression: IASTIdExpression): Ast = idExpression.getName match {
-    case name: CPPASTQualifiedName => astForQualifiedName(name)
-    case _                         => astForIdentifier(idExpression)
+    case name: CPPASTQualifiedName                                => astForQualifiedName(name)
+    case name: ICPPASTName if name.getRawSignature == "constinit" => Ast()
+    case _                                                        => astForIdentifier(idExpression)
   }
 
   protected def astForStaticAssert(a: ICPPASTStaticAssertDeclaration): Ast = {
