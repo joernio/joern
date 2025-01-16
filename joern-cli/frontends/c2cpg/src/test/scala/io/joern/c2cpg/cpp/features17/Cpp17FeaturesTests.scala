@@ -356,13 +356,16 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
     "handle UTF-8 character literals" in {
       val cpg = code("""
           |void foo() {
-          |  char x = u8"x";
+          |  char x = u8'x';
           |}
           |""".stripMargin)
-      cpg.assignment.code.l shouldBe List("""x = u8"x"""")
-      cpg.assignment.argument(2).isLiteral.code.l shouldBe List("""u8"x"""")
-      cpg.local.nameExact("x").typeFullName.l shouldBe List("char")
-      cpg.identifier.nameExact("x").typeFullName.l shouldBe List("char")
+      pendingUntilFixed {
+        // TODO: not supported  by the CDT parser at the moment
+        cpg.assignment.code.l shouldBe List("char x = u8'x'")
+        cpg.assignment.argument(2).isLiteral.code.l shouldBe List("u8'x'")
+        cpg.local.nameExact("x").typeFullName.l shouldBe List("char")
+        cpg.identifier.nameExact("x").typeFullName.l shouldBe List("char")
+      }
     }
 
     "handle direct list initialization of enums" in {

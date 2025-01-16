@@ -22,7 +22,7 @@
 | structured bindings                                                     | [x]       |
 | selection statements with initializer                                   | [x]       |
 | constexpr if                                                            | [x]       |
-| utf-8 character literals                                                | [x]       |
+| utf-8 character literals                                                | [ ]       |
 | direct-list-initialization of enums                                     | [x]       |
 | \[\[fallthrough\]\], \[\[nodiscard\]\], \[\[maybe_unused\]\] attributes | [~]       |
 | \_\_has_include                                                         | [~]       |
