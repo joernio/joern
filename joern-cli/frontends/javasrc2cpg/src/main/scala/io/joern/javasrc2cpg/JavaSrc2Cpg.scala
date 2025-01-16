@@ -1,6 +1,6 @@
 package io.joern.javasrc2cpg
 
-import io.joern.javasrc2cpg.passes.{AstCreationPass, TypeInferencePass}
+import io.joern.javasrc2cpg.passes.{AstCreationPass, OuterClassRefPass, TypeInferencePass}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.passes.frontend.{JavaConfigFileCreationPass, MetaDataPass, TypeNodePass}
 import io.joern.x2cpg.X2CpgFrontend
@@ -22,6 +22,7 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
       astCreationPass.createAndApply()
       astCreationPass.sourceParser.cleanupDelombokOutput()
       astCreationPass.clearJavaParserCaches()
+      new OuterClassRefPass(cpg).createAndApply()
       JavaConfigFileCreationPass(cpg).createAndApply()
       if (!config.skipTypeInfPass) {
         TypeNodePass.withRegisteredTypes(astCreationPass.global.usedTypes.keys().asScala.toList, cpg).createAndApply()
