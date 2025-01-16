@@ -137,24 +137,24 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |""".stripMargin)
       // we can't express concepts withing the CPG but parsing constructs using them should not be hindered
       // sadly, at some places (e.g., for parameters) it fails parsing
-      List(
-        "add:ANY(ANY,ANY)",
-        "f1:ANY((T))",
-        "f2:void(ANY)",
-        "f3:void(ANY)",
-        "f6:void(ANY)",
+      cpg.method.nameNot("<global>").fullName.sorted.l shouldBe List(
+        "add:T(T,T)",
+        "f1:void(T)",
+        "f2:void(T)",
+        "f3:void(T)",
+        "f6:void(T)",
         "foo:void()",
-        "requires:ANY((T))"
+        "requires:requires(T)"
       )
       pendingUntilFixed {
         cpg.method.nameNot("<global>").fullName.sorted.l shouldBe List(
-          "add:ANY(ANY,ANY)",
-          "f1:void(ANY)",
-          "f2:void(ANY)",
-          "f3:void(ANY)",
+          "add:T(T,T)",
+          "f1:void(T)",
+          "f2:void(T)",
+          "f3:void(T)",
           "f4:void(ANY)",
-          "f5:void(ANY)",
-          "f6:void(ANY)",
+          "f5:void()",
+          "f6:void(T)",
           // remaining lambdas ...
           "foo:void()"
         )

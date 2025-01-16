@@ -306,7 +306,7 @@ trait FullNameProvider { this: AstCreator =>
               s"$fullNameNoSig.$tpe:${functionTypeToSignature(function.getType)}"
             }
             Option(fn)
-          case function: ICPPFunctionTemplate =>
+          case function: ICPPFunction =>
             val fullNameNoSig = fixQualifiedName(replaceOperator(function.getQualifiedName.mkString(".")))
             val fn = if (function.isExternC) {
               replaceOperator(function.getName)
@@ -317,14 +317,6 @@ trait FullNameProvider { this: AstCreator =>
               }
               val sig = StringUtils.normalizeSpace(s"${cleanType(returnTpe)}${parameterListSignature(declarator)}")
               s"$fullNameNoSig:$sig"
-            }
-            Option(fn)
-          case function: ICPPFunction =>
-            val fullNameNoSig = fixQualifiedName(replaceOperator(function.getQualifiedName.mkString(".")))
-            val fn = if (function.isExternC) {
-              replaceOperator(function.getName)
-            } else {
-              s"$fullNameNoSig:${functionTypeToSignature(function.getType)}"
             }
             Option(fn)
           case x @ (_: ICPPField | _: CPPVariable) =>
