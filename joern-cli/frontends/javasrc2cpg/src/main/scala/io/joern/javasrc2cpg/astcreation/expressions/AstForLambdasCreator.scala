@@ -69,7 +69,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
     // TODO: lambda method scope can be static if no non-static captures are used
     scope.pushMethodScope(lambdaMethodNode, expectedLambdaType, isStatic = false)
 
-    val lambdaBody = astForLambdaBody(lambdaMethodName, expr.getBody, variablesInScope, returnType)
+    val lambdaBody = astForLambdaBody(expr, lambdaMethodName, expr.getBody, variablesInScope, returnType)
 
     val thisParam = lambdaBody.nodes
       .collect { case identifier: NewIdentifier => identifier }
@@ -140,7 +140,16 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
     val signature         = lambdaMethodSignature(returnType, parameters)
     val lambdaFullName    = composeMethodFullName(enclosingTypeName, lambdaName, signature)
 
-    methodNode(lambdaExpr, lambdaName, "<lambda>", lambdaFullName, Some(signature), filename)
+    val genericSignature = binarySignatureCalculator.lambdaMethodBinarySignature(lambdaExpr)
+    methodNode(
+      lambdaExpr,
+      lambdaName,
+      "<lambda>",
+      lambdaFullName,
+      Some(signature),
+      filename,
+      genericSignature = Option(genericSignature)
+    )
   }
 
   private def createAndPushLambdaTypeDecl(
@@ -257,6 +266,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
   }
 
   private def defineCapturedVariables(
+    lambdaNode: LambdaExpr,
     lambdaMethodName: String,
     capturedVariables: Seq[ScopeVariable]
   ): Seq[(ClosureBindingEntry, NewLocal)] = {
@@ -267,7 +277,14 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
         val closureBindingNode = newClosureBindingNode(closureBindingId, name, EvaluationStrategies.BY_SHARING)
 
         val scopeVariable = variables.head
-        val capturedLocal = newLocalNode(scopeVariable.name, scopeVariable.typeFullName, Option(closureBindingId))
+        val capturedLocal = localNode(
+          lambdaNode,
+          scopeVariable.name,
+          scopeVariable.name,
+          scopeVariable.typeFullName,
+          Option(closureBindingId),
+          Option(scopeVariable.genericSignature)
+        )
         scope.enclosingBlock.foreach(_.addLocal(capturedLocal))
 
         ClosureBindingEntry(scopeVariable, closureBindingNode) -> capturedLocal
@@ -276,6 +293,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
   }
 
   private def astForLambdaBody(
+    lambdaExpr: LambdaExpr,
     lambdaMethodName: String,
     body: Statement,
     variablesInScope: Seq[ScopeVariable],
@@ -300,7 +318,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
       stmts.flatMap(_.nodes).collect {
         case i: NewIdentifier if outerScopeVariableNames.contains(i.name) => outerScopeVariableNames(i.name)
       }
-    val bindingsToLocals      = defineCapturedVariables(lambdaMethodName, capturedVariables)
+    val bindingsToLocals      = defineCapturedVariables(lambdaExpr, lambdaMethodName, capturedVariables)
     val capturedLocalAsts     = bindingsToLocals.map(_._2).map(Ast(_))
     val closureBindingEntries = bindingsToLocals.map(_._1)
     val temporaryLocalAsts    = scope.enclosingMethod.map(_.getTemporaryLocals).getOrElse(Nil).map(Ast(_))
@@ -376,8 +394,10 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
         paramNode
       }
 
+    // TODO: Use simple name for the generic signature? We need to rely on JavaParser for any information for now anyways.
     parameterNodes.foreach { paramNode =>
-      scope.enclosingMethod.get.addParameter(paramNode)
+      scope.enclosingMethod.get
+        .addParameter(paramNode, binarySignatureCalculator.variableBinarySignature(paramNode.typeFullName))
     }
 
     parameterNodes.map(Ast(_))

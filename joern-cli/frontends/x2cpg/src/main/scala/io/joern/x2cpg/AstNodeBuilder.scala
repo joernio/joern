@@ -79,15 +79,18 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
     name: String,
     code: String,
     typeFullName: String,
-    dynamicTypeHints: Seq[String] = Seq()
+    dynamicTypeHints: Seq[String] = Seq(),
+    genericSignature: Option[String] = None
   ): NewMember = {
-    NewMember()
+    val member = NewMember()
       .code(code)
       .name(name)
       .typeFullName(typeFullName)
       .dynamicTypeHintFullName(dynamicTypeHints)
       .lineNumber(line(node))
       .columnNumber(column(node))
+    genericSignature.foreach(member.genericSignature(_))
+    member
   }
 
   protected def newImportNode(code: String, importedEntity: String, importedAs: String, include: Node): NewImport = {
@@ -140,7 +143,8 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
     astParentType: String = "",
     astParentFullName: String = "",
     inherits: Seq[String] = Seq.empty,
-    alias: Option[String] = None
+    alias: Option[String] = None,
+    genericSignature: Option[String] = None
   ): NewTypeDecl = {
     val node_ = NewTypeDecl()
       .name(name)
@@ -157,6 +161,7 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
     offset(node).foreach { case (offset, offsetEnd) =>
       node_.offset(offset).offsetEnd(offsetEnd)
     }
+    genericSignature.foreach(node_.genericSignature(_))
     node_
   }
 
@@ -258,15 +263,19 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
     name: String,
     code: String,
     typeFullName: String,
-    closureBindingId: Option[String] = None
-  ): NewLocal =
-    NewLocal()
+    closureBindingId: Option[String] = None,
+    genericSignature: Option[String] = None
+  ): NewLocal = {
+    val local = NewLocal()
       .name(name)
       .code(code)
       .typeFullName(typeFullName)
       .closureBindingId(closureBindingId)
       .lineNumber(line(node))
       .columnNumber(column(node))
+    genericSignature.foreach(local.genericSignature(_))
+    local
+  }
 
   protected def identifierNode(
     node: Node,
@@ -296,7 +305,8 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
     signature: Option[String],
     fileName: String,
     astParentType: Option[String] = None,
-    astParentFullName: Option[String] = None
+    astParentFullName: Option[String] = None,
+    genericSignature: Option[String] = None
   ): NewMethod = {
     val node_ =
       NewMethod()
@@ -312,6 +322,7 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
         .lineNumberEnd(lineEnd(node))
         .columnNumberEnd(columnEnd(node))
     signature.foreach { s => node_.signature(StringUtils.normalizeSpace(s)) }
+    genericSignature.foreach(node_.genericSignature(_))
     offset(node).foreach { case (offset, offsetEnd) =>
       node_.offset(offset).offsetEnd(offsetEnd)
     }

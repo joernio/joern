@@ -91,6 +91,10 @@ object AstForTypeDeclsCreator {
 private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
   private val logger = LoggerFactory.getLogger(this.getClass)
 
+  private def outerClassGenericSignature: Option[String] = {
+    scope.enclosingTypeDecl.map(decl => binarySignatureCalculator.variableBinarySignature(decl.typeDecl.name))
+  }
+
   def astForAnonymousClassDecl(
     expr: ObjectCreationExpr,
     body: List[BodyDeclaration[?]],
@@ -100,6 +104,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
   ): Ast = {
     val (astParentType, astParentFullName) = getAstParentInfo()
 
+    val genericSignature = binarySignatureCalculator.variableBinarySignature(expr.getType)
     val typeDeclRoot =
       typeDeclNode(
         expr,
@@ -109,16 +114,23 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
         expr.toString(),
         astParentType,
         astParentFullName,
-        baseTypeFullName.getOrElse(TypeConstants.Object) :: Nil
+        baseTypeFullName.getOrElse(TypeConstants.Object) :: Nil,
+        genericSignature = Option(genericSignature)
       )
 
-    typeFullName.foreach(scope.addInnerType(typeName, _))
+    typeFullName.foreach(typeFullName => scope.addInnerType(typeName, typeFullName, typeFullName))
 
     val declaredMethodNames = body.collect { case methodDeclaration: MethodDeclaration =>
       methodDeclaration.getNameAsString
     }.toSet
 
-    scope.pushTypeDeclScope(typeDeclRoot, scope.isEnclosingScopeStatic, declaredMethodNames, Nil)
+    scope.pushTypeDeclScope(
+      typeDeclRoot,
+      scope.isEnclosingScopeStatic,
+      outerClassGenericSignature,
+      declaredMethodNames,
+      Nil
+    )
     val memberAsts = astsForTypeDeclMembers(expr, body, isInterface = false, typeFullName)
 
     val localDecls    = scope.localDeclsInScope
@@ -158,11 +170,16 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     val name                  = localClassDecl.getClassDeclaration.getNameAsString
     val enclosingMethodPrefix = scope.enclosingMethod.getMethodFullName.takeWhile(_ != ':')
     val fullName              = s"$enclosingMethodPrefix.$name"
-    scope.addInnerType(name, fullName)
-    astForTypeDeclaration(localClassDecl.getClassDeclaration, fullNameOverride = Some(fullName))
+    scope.addInnerType(name, fullName, fullName)
+    astForTypeDeclaration(localClassDecl.getClassDeclaration, fullNameOverride = Some(fullName), isLocalClass = true)
   }
 
-  def astForTypeDeclaration(typeDeclaration: TypeDeclaration[?], fullNameOverride: Option[String] = None): Ast = {
+  def astForTypeDeclaration(
+    typeDeclaration: TypeDeclaration[?],
+    fullNameOverride: Option[String] = None,
+    isLocalClass: Boolean = false
+  ): Ast = {
+
     val isInterface = typeDeclaration match {
       case classDeclaration: ClassOrInterfaceDeclaration => classDeclaration.isInterface
       case _                                             => false
@@ -173,18 +190,33 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     val typeDeclRoot =
       createTypeDeclNode(typeDeclaration, astParentType, astParentFullName, isInterface, fullNameOverride)
 
-    val declaredMethodNames = typeDeclaration.getMethods.asScala.map(_.getNameAsString).toSet
-
-    val (recordParameters, recordParameterAsts) = typeDeclaration match {
-      case recordDeclaration: RecordDeclaration =>
-        val parameters = recordDeclaration.getParameters.asScala.toList
-        val asts       = astsForRecordParameters(recordDeclaration, typeDeclRoot.fullName)
-        (parameters, asts)
-      case _ => (Nil, Nil)
+    // If this is a nested type (which must be true if an enclosing decl exists at this point), then the internal name
+    // of the class, e.g. Foo$Bar must be added to the scope to make lookups for type Bar possible.
+    scope.enclosingTypeDecl.foreach { _ =>
+      if (!isLocalClass)
+        scope.addInnerType(typeDeclaration.getNameAsString, typeDeclRoot.fullName, typeDeclRoot.name)
     }
 
-    scope.pushTypeDeclScope(typeDeclRoot, typeDeclaration.isStatic, declaredMethodNames, recordParameters)
+    val declaredMethodNames = typeDeclaration.getMethods.asScala.map(_.getNameAsString).toSet
+
+    val recordParameters = typeDeclaration match {
+      case recordDeclaration: RecordDeclaration => recordDeclaration.getParameters.asScala.toList
+      case _                                    => Nil
+    }
+
+    scope.pushTypeDeclScope(
+      typeDeclRoot,
+      typeDeclaration.isStatic,
+      outerClassGenericSignature,
+      declaredMethodNames,
+      recordParameters
+    )
     addTypeDeclTypeParamsToScope(typeDeclaration)
+
+    val recordParameterAsts = typeDeclaration match {
+      case recordDeclaration: RecordDeclaration => astsForRecordParameters(recordDeclaration, typeDeclRoot.fullName)
+      case _                                    => Nil
+    }
 
     val annotationAsts = typeDeclaration.getAnnotations.asScala.map(astForAnnotationExpr)
     val modifiers      = modifiersForTypeDecl(typeDeclaration, isInterface)
@@ -254,7 +286,14 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
           .getOrElse(defaultTypeFallback(typ))
       }.toOption.getOrElse(defaultTypeFallback())
 
-      val parameterMember = memberNode(parameter, parameterName, code(parameter), parameterTypeFullName)
+      val genericSignature = binarySignatureCalculator.variableBinarySignature(parameter.getType)
+      val parameterMember = memberNode(
+        parameter,
+        parameterName,
+        code(parameter),
+        parameterTypeFullName,
+        genericSignature = Option(genericSignature)
+      )
       val privateModifier = newModifierNode(ModifierTypes.PRIVATE)
       val memberAst       = Ast(parameterMember).withChild(Ast(privateModifier))
 
@@ -328,7 +367,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     members.collect { case typeDeclaration: TypeDeclaration[_] =>
       val (name, fullName) = getTypeDeclNameAndFullName(typeDeclaration, fullNameOverride)
 
-      scope.addInnerType(name, fullName)
+      scope.addInnerType(name, fullName, fullName)
     }
 
     val fields = members.collect { case fieldDeclaration: FieldDeclaration => fieldDeclaration }
@@ -493,7 +532,13 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
 
   private def membersForCapturedVariables(originNode: Node, captures: List[ScopeVariable]): List[Ast] = {
     captures.map { variable =>
-      val node = memberNode(originNode, variable.name, variable.name, variable.typeFullName)
+      val node = memberNode(
+        originNode,
+        variable.name,
+        variable.name,
+        variable.typeFullName,
+        genericSignature = Option(variable.genericSignature)
+      )
       Ast(node)
     }
   }
@@ -642,9 +687,11 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     val name = v.getName.toString
     // Use type name without generics stripped in code
     val variableTypeString = tryWithSafeStackOverflow(v.getTypeAsString).getOrElse("")
-    val node               = memberNode(v, name, s"$variableTypeString $name", typeFullName)
-    val memberAst          = Ast(node)
-    val annotationAsts     = annotations.asScala.map(astForAnnotationExpr)
+    val genericSignature   = binarySignatureCalculator.variableBinarySignature(v.getType)
+    val node =
+      memberNode(v, name, s"$variableTypeString $name", typeFullName, genericSignature = Option(genericSignature))
+    val memberAst      = Ast(node)
+    val annotationAsts = annotations.asScala.map(astForAnnotationExpr)
 
     val fieldDeclModifiers = modifiersForFieldDeclaration(fieldDeclaration)
 
@@ -708,7 +755,18 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
 
     val code = codeForTypeDecl(typ, isInterface)
 
-    typeDeclNode(typ, name, fullName, filename, code, astParentType, astParentFullName, baseTypeFullNames)
+    val genericSignature = binarySignatureCalculator.typeDeclBinarySignature(typ)
+    typeDeclNode(
+      typ,
+      name,
+      fullName,
+      filename,
+      code,
+      astParentType,
+      astParentFullName,
+      baseTypeFullNames,
+      genericSignature = Option(genericSignature)
+    )
   }
 
   private def codeForTypeDecl(typ: TypeDeclaration[?], isInterface: Boolean): String = {
@@ -748,15 +806,21 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
   }
 
   private def addTypeDeclTypeParamsToScope(typ: TypeDeclaration[?]): Unit = {
-    tryWithSafeStackOverflow(typ.resolve()).map(_.getTypeParameters.asScala) match {
-      case Success(resolvedTypeParams) =>
-        resolvedTypeParams
-          .map(identifierForResolvedTypeParameter)
-          .foreach { typeParamIdentifier =>
-            scope.addTopLevelType(typeParamIdentifier.name, typeParamIdentifier.typeFullName)
-          }
+    val typeParameters = typ match {
+      case classOrInterfaceDeclaration: ClassOrInterfaceDeclaration =>
+        classOrInterfaceDeclaration.getTypeParameters.asScala
+      case recordDeclaration: RecordDeclaration => recordDeclaration.getTypeParameters.asScala
+      case _                                    => Nil
+    }
 
-      case _ => // Nothing to do here
+    typeParameters.foreach { case typeParam =>
+      // TODO: Use typeParam.getTypeBound list to calculate this instead to allow better fallback.
+      val typeFullName = tryWithSafeStackOverflow(typeParam.resolve().asTypeParameter().getUpperBound).toOption
+        .flatMap(typeInfoCalc.fullName)
+        .getOrElse(TypeConstants.Object)
+      typeInfoCalc.registerType(typeFullName)
+
+      scope.addTypeParameter(typeParam.getNameAsString, typeFullName)
     }
   }
 
@@ -765,7 +829,14 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     val typeFullName =
       tryWithSafeStackOverflow(entry.resolve().getType).toOption.flatMap(typeInfoCalc.fullName)
 
-    val entryNode = memberNode(entry, entry.getNameAsString, entry.toString, typeFullName.getOrElse("ANY"))
+    val genericSignature = binarySignatureCalculator.enumEntryBinarySignature(entry)
+    val entryNode = memberNode(
+      entry,
+      entry.getNameAsString,
+      entry.toString,
+      typeFullName.getOrElse("ANY"),
+      genericSignature = Some(genericSignature)
+    )
 
     val name = s"${typeFullName.getOrElse(Defines.UnresolvedNamespace)}.${Defines.ConstructorMethodName}"
 

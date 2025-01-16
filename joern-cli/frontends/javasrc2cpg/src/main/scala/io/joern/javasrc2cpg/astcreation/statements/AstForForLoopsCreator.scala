@@ -231,7 +231,8 @@ trait AstForForLoopsCreator { this: AstCreator =>
         iterableAsts.head
     }
 
-    val iterableName      = nextIterableName()
+    val iterableName = nextIterableName()
+    // TODO: Generic signature
     val iterableLocalNode = localNode(iterableExpression, iterableName, iterableName, iterableType.getOrElse("ANY"))
     val iterableLocalAst  = Ast(iterableLocalNode)
 
@@ -251,14 +252,16 @@ trait AstForForLoopsCreator { this: AstCreator =>
   }
 
   private def nativeForEachIdxLocalNode(lineNo: Option[Int]): NewLocal = {
-    val idxName      = nextIndexName()
-    val typeFullName = TypeConstants.Int
+    val idxName          = nextIndexName()
+    val typeFullName     = TypeConstants.Int
+    val genericSignature = binarySignatureCalculator.variableBinarySignature(TypeConstants.Int)
     val idxLocal =
       NewLocal()
         .name(idxName)
         .typeFullName(typeFullName)
         .code(idxName)
         .lineNumber(lineNo)
+        .genericSignature(genericSignature)
     scope.enclosingBlock.get.addLocal(idxLocal)
     idxLocal
   }
@@ -338,7 +341,10 @@ trait AstForForLoopsCreator { this: AstCreator =>
         Some(variable)
     }
 
+    val genericSignature =
+      maybeVariable.map(variable => binarySignatureCalculator.variableBinarySignature(variable.getType))
     val partialLocalNode = NewLocal().lineNumber(lineNo)
+    genericSignature.foreach(partialLocalNode.genericSignature(_))
 
     maybeVariable match {
       case Some(variable) =>
@@ -361,11 +367,13 @@ trait AstForForLoopsCreator { this: AstCreator =>
 
   private def iteratorLocalForForEach(lineNumber: Option[Int]): NewLocal = {
     val iteratorLocalName = nextIterableName()
+    val genericSignature  = binarySignatureCalculator.variableBinarySignature(TypeConstants.Iterator)
     NewLocal()
       .name(iteratorLocalName)
       .code(iteratorLocalName)
       .typeFullName(TypeConstants.Iterator)
       .lineNumber(lineNumber)
+      .genericSignature(genericSignature)
   }
 
   private def iteratorAssignAstForForEach(
