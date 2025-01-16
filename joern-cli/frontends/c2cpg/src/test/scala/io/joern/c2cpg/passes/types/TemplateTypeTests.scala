@@ -72,10 +72,10 @@ class TemplateTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
        |""".stripMargin)
       inside(cpg.method.nameNot("<global>").internal.l) { case List(x, y) =>
         x.name shouldBe "x"
-        x.fullName shouldBe "x:void(ANY,ANY)"
+        x.fullName shouldBe "x:void(T,U)"
         x.signature shouldBe "void(T,U)"
         y.name shouldBe "y"
-        y.fullName shouldBe "y:void(ANY,ANY)"
+        y.fullName shouldBe "y:void(T,U)"
         y.signature shouldBe "void(T,U)"
       }
     }

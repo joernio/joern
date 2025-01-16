@@ -306,6 +306,19 @@ trait FullNameProvider { this: AstCreator =>
               s"$fullNameNoSig.$tpe:${functionTypeToSignature(function.getType)}"
             }
             Option(fn)
+          case function: ICPPFunctionTemplate =>
+            val fullNameNoSig = fixQualifiedName(replaceOperator(function.getQualifiedName.mkString(".")))
+            val fn = if (function.isExternC) {
+              replaceOperator(function.getName)
+            } else {
+              val returnTpe = declarator.getParent match {
+                case definition: ICPPASTFunctionDefinition if !isCppConstructor(definition) => returnType(definition)
+                case _ => safeGetType(function.getType.getReturnType)
+              }
+              val sig = StringUtils.normalizeSpace(s"${cleanType(returnTpe)}${parameterListSignature(declarator)}")
+              s"$fullNameNoSig:$sig"
+            }
+            Option(fn)
           case function: ICPPFunction =>
             val fullNameNoSig = fixQualifiedName(replaceOperator(function.getQualifiedName.mkString(".")))
             val fn = if (function.isExternC) {
