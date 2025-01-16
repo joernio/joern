@@ -4,6 +4,8 @@ import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.Assignment
+
 class CaseTests extends RubyCode2CpgFixture {
 
   "`case x ... end` should be represented with if-else chain and multiple match expressions should be or-ed together" in {
@@ -21,14 +23,16 @@ class CaseTests extends RubyCode2CpgFixture {
 
     val block @ List(_) = cpg.method.isModule.block.astChildren.isBlock.l
 
-    val List(assign)   = block.astChildren.assignment.l;
+    val List(assign) = block.astChildren.collect {
+      case x: Call if x.name == Operators.assignment => x.asInstanceOf[Assignment]
+    }.l
     val List(lhs, rhs) = assign.argument.l
 
     List(lhs).isIdentifier.name.l shouldBe List("<tmp-0>")
     List(rhs).isLiteral.code.l shouldBe List("0")
 
     val headIf @ List(_)           = block.astChildren.isControlStructure.l
-    val ifStmts @ List(_, _, _, _) = headIf.repeat(_.astChildren.order(3).astChildren.isControlStructure)(_.emit).l;
+    val ifStmts @ List(_, _, _, _) = headIf.repeat(_.astChildren.order(3).astChildren.isControlStructure)(_.emit).l
     val conds: List[List[String]] = ifStmts.condition.map { cond =>
       val orConds = List(cond)
         .repeat(_.isCall.where(_.name(Operators.logicalOr)).argument)(

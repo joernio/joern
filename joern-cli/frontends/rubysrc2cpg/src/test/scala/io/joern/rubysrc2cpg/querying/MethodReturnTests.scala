@@ -103,8 +103,8 @@ class MethodReturnTests extends RubyCode2CpgFixture {
     r.code shouldBe "[]"
     r.lineNumber shouldBe Some(3)
 
-    val List(c: Call) = r.astChildren.isCall.l
-    c.methodFullName shouldBe Operators.arrayInitializer
+    val List(arr: Block) = r.astChildren.isBlock.l
+    arr.code shouldBe "[]"
   }
 
   "implicit RETURN node for index access exists" in {

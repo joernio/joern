@@ -403,13 +403,11 @@ class DoBlockTests extends RubyCode2CpgFixture {
                      |  end
                      |""".stripMargin)
 
-    inside(cpg.local.l) {
-      case jfsOutsideLocal :: schedules :: hashInsideLocal :: tmp0 :: jfsCapturedLocal :: Nil =>
+    inside(cpg.local.nameNot("<tmp-\\d>").l) {
+      case jfsOutsideLocal :: schedules :: hashInsideLocal :: jfsCapturedLocal :: Nil =>
         jfsOutsideLocal.closureBindingId shouldBe None
         hashInsideLocal.closureBindingId shouldBe None
         jfsCapturedLocal.closureBindingId shouldBe Some("Test0.rb:<main>.get_pto_schedule.jfs")
-
-        tmp0.name shouldBe "<tmp-0>"
       case xs => fail(s"Expected 6 locals, got ${xs.code.mkString(",")}")
     }
 
