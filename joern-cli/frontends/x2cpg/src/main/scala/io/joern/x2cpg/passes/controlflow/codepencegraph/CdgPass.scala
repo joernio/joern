@@ -41,6 +41,7 @@ class CdgPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg) {
         case postDomFrontierNode =>
           val nodeLabel  = postDomFrontierNode.label
           val containsIn = postDomFrontierNode._containsIn
+          // duplicate check looks (and is) superfluous, but it's a fastpath micro optimization
           if(hasLogged.get() > 0 && hasLogged.decrementAndGet() > 0) {
             val method = containsIn.nextOption().map{_.toString}.getOrElse("NA")
             logger.warn(
