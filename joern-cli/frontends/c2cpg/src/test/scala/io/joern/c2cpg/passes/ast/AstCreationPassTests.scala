@@ -511,7 +511,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
       )
       val List(barLocal) = cpg.method.nameExact("addrOfLocalRef").local.l
       barLocal.name shouldBe "bar"
-      barLocal.code shouldBe "struct x& bar"
+      barLocal.code shouldBe "struct x &bar"
     }
 
     "be correct for decl assignment of multiple locals" in {
@@ -1094,7 +1094,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
       inside(cpg.local.l) { case List(localA, localB) =>
         localA.name shouldBe "a"
         localA.typeFullName shouldBe "A"
-        localA.code shouldBe "struct A a"
+        localA.code shouldBe "struct A { int x; } a"
         localB.name shouldBe "b"
         localB.typeFullName shouldBe "B"
         localB.code shouldBe "struct B b"
@@ -1564,11 +1564,11 @@ class AstCreationPassTests extends AstC2CpgSuite {
       inside(cpg.local.l) { case List(bufA: Local, bufB: Local) =>
         bufA.typeFullName shouldBe "char[256]"
         bufA.name shouldBe "bufA"
-        bufA.code shouldBe "char[256] bufA"
+        bufA.code shouldBe "char bufA[256]"
 
         bufB.typeFullName shouldBe "char[1+2]"
         bufB.name shouldBe "bufB"
-        bufB.code shouldBe "char[1+2] bufB"
+        bufB.code shouldBe "char bufB[1+2]"
       }
     }
 
@@ -2249,7 +2249,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
         |""".stripMargin)
       val List(bufLocal) = cpg.local.nameExact("buf").l
       bufLocal.typeFullName shouldBe "char[0x111111111111111]"
-      bufLocal.code shouldBe "char[0x111111111111111] buf"
+      bufLocal.code shouldBe "char buf[BUFSIZE]"
       val List(bufAllocCall) = cpg.call.nameExact(Operators.alloc).l
       bufAllocCall.code shouldBe "buf[BUFSIZE]"
       bufAllocCall.argument.ast.isLiteral.code.l shouldBe List("0x111111111111111")

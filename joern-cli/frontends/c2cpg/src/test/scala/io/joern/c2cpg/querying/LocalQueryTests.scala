@@ -20,11 +20,11 @@ class LocalQueryTests extends C2CpgSuite {
       )
       val List(barLocal) = cpg.method.name("foo").local.nameExact("bar").l
       barLocal.typeFullName shouldBe "Foo.Bar"
-      barLocal.code shouldBe "static const Foo.Bar bar"
+      barLocal.code shouldBe "static const Foo::Bar bar"
 
       val List(vecLocal) = cpg.method.name("foo").local.nameExact("vec").l
       vecLocal.typeFullName shouldBe "std.vector<int>"
-      vecLocal.code shouldBe "static extern std.vector<int> vec"
+      vecLocal.code shouldBe "static extern std::vector<int> vec"
     }
   }
 
@@ -87,10 +87,10 @@ class LocalQueryTests extends C2CpgSuite {
       inside(cpg.method.name("free_list").local.l) { case List(q, p) =>
         q.name shouldBe "q"
         q.typeFullName shouldBe "node*"
-        q.code shouldBe "struct node* q"
+        q.code shouldBe "struct node *q"
         p.name shouldBe "p"
         p.typeFullName shouldBe "node*"
-        p.code shouldBe "struct node* p"
+        p.code shouldBe "struct node *p"
       }
     }
 
@@ -107,10 +107,10 @@ class LocalQueryTests extends C2CpgSuite {
         c.code shouldBe "static int c"
         foo.name shouldBe "foo"
         foo.typeFullName shouldBe "wchar_t*"
-        foo.code shouldBe "wchar_t* foo"
+        foo.code shouldBe "wchar_t *foo"
         d.name shouldBe "d"
         d.typeFullName shouldBe "int[10]"
-        d.code shouldBe "int[10] d"
+        d.code shouldBe "int d[10]"
         e.name shouldBe "e"
         e.typeFullName shouldBe "int"
         e.code shouldBe "int e"

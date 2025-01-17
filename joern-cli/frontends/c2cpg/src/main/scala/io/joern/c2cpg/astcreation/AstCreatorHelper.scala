@@ -142,18 +142,14 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       "class"
     )
 
-  private val KeywordsAtTypesToKeep: List[String] = List("unsigned", "volatile", "static", "const")
+  private val KeywordsAtTypesToKeep: List[String] = List("unsigned", "volatile")
 
-  protected def cleanType(rawType: String, stripKeywords: Boolean = true): String = {
+  protected def cleanType(rawType: String): String = {
     if (rawType == Defines.Any) return rawType
-    val tpe = if (stripKeywords) {
-      ReservedKeywordsAtTypes.foldLeft(rawType) { (cur, repl) =>
-        if (cur.startsWith(s"$repl ") || cur.contains(s" $repl ")) {
-          cur.replace(s" $repl ", " ").replace(s"$repl ", "")
-        } else cur
-      }
-    } else {
-      rawType
+    val tpe = ReservedKeywordsAtTypes.foldLeft(rawType) { (cur, repl) =>
+      if (cur.startsWith(s"$repl ") || cur.contains(s" $repl ")) {
+        cur.replace(s" $repl ", " ").replace(s"$repl ", "")
+      } else cur
     }
     val normalizedTpe = StringUtils.normalizeSpace(tpe.stripSuffix(" ()"))
     replaceWhitespaceAfterKeyword(normalizedTpe) match {
@@ -166,16 +162,14 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case t if t.contains("::{") || t.contains("}::")                             => Defines.Any
       case t if t.contains("{") || t.contains("}")                                 => Defines.Any
       case t if t.contains("org.eclipse.cdt.internal.core.dom.parser.ProblemType") => Defines.Any
-      case t if t.contains("( ")                           => fixQualifiedName(t.substring(0, t.indexOf("( ")))
-      case t if t.contains(Defines.QualifiedNameSeparator) => fixQualifiedName(t)
-      case someType                                        => someType
+      case t if t.contains("( ") => fixQualifiedName(t.substring(0, t.indexOf("( ")))
+      case someType              => fixQualifiedName(someType)
     }
   }
 
   private def replaceWhitespaceAfterKeyword(tpe: String): String = {
-    val keywordsToKeep = ReservedKeywordsAtTypes ++ KeywordsAtTypesToKeep
-    if (keywordsToKeep.exists(k => tpe.startsWith(s"$k ") || tpe.contains(s" $k "))) {
-      keywordsToKeep.foldLeft(tpe) { (cur, repl) =>
+    if (KeywordsAtTypesToKeep.exists(k => tpe.startsWith(s"$k ") || tpe.contains(s" $k "))) {
+      KeywordsAtTypesToKeep.foldLeft(tpe) { (cur, repl) =>
         val prefixStartsWith = s"$repl "
         val prefixContains   = s" $repl "
         if (cur.startsWith(prefixStartsWith)) {
@@ -215,23 +209,23 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     Try(ASTTypeUtil.getNodeType(node)).getOrElse(Defines.Any)
   }
 
-  private def typeForCPPASTFieldReference(f: CPPASTFieldReference, stripKeywords: Boolean = true): String = {
+  private def typeForCPPASTFieldReference(f: CPPASTFieldReference): String = {
     safeGetEvaluation(f.getFieldOwner) match {
-      case Some(evaluation: EvalBinding) => cleanType(evaluation.getType.toString, stripKeywords)
-      case _                             => cleanType(safeGetType(f.getFieldOwner.getExpressionType), stripKeywords)
+      case Some(evaluation: EvalBinding) => cleanType(evaluation.getType.toString)
+      case _                             => cleanType(safeGetType(f.getFieldOwner.getExpressionType))
     }
   }
 
-  private def typeForCPPASTFoldExpression(f: CPPASTFoldExpression, stripKeywords: Boolean = true): String = {
+  private def typeForCPPASTFoldExpression(f: CPPASTFoldExpression): String = {
     safeGetEvaluation(f) match {
       case Some(evaluation: EvalFoldExpression) =>
         Try(evaluation.getValue.getEvaluation).toOption match {
           case Some(value: EvalBinary) =>
             val s = value.toString
-            cleanType(s.substring(0, s.indexOf(": ")), stripKeywords)
+            cleanType(s.substring(0, s.indexOf(": ")))
           case Some(value: EvalBinding) if value.getType.isInstanceOf[ICPPParameterPackType] =>
             val s = value.getType.asInstanceOf[ICPPParameterPackType].getType.toString
-            cleanType(s, stripKeywords)
+            cleanType(s)
           case _ => Defines.Any
         }
       case _ => Defines.Any
@@ -239,7 +233,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   @nowarn
-  private def typeForIASTArrayDeclarator(a: IASTArrayDeclarator, stripKeywords: Boolean = true): String = {
+  private def typeForIASTArrayDeclarator(a: IASTArrayDeclarator): String = {
     import org.eclipse.cdt.core.dom.ast.ASTSignatureUtil.getNodeSignature
     if (safeGetNodeType(a).startsWith("? ")) {
       val tpe = getNodeSignature(a).replace("[]", "").strip()
@@ -258,82 +252,76 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       }.mkString
       s"$tpe$arr"
     } else {
-      cleanType(safeGetNodeType(a), stripKeywords)
+      cleanType(safeGetNodeType(a))
     }
   }
 
-  private def typeForCPPASTIdExpression(s: CPPASTIdExpression, stripKeywords: Boolean = true): String = {
+  private def typeForCPPASTIdExpression(s: CPPASTIdExpression): String = {
     safeGetEvaluation(s) match {
       case Some(evaluation: EvalMemberAccess) =>
         val deref = if (evaluation.isPointerDeref) "*" else ""
-        cleanType(evaluation.getOwnerType.toString + deref, stripKeywords)
+        cleanType(evaluation.getOwnerType.toString + deref)
       case Some(evalBinding: EvalBinding) =>
         evalBinding.getBinding match {
-          case m: CPPMethod   => cleanType(safeGetNodeType(m.getPrimaryDeclaration), stripKeywords)
-          case f: CPPFunction => cleanType(safeGetNodeType(f.getDefinition), stripKeywords)
+          case m: CPPMethod   => cleanType(safeGetNodeType(m.getPrimaryDeclaration))
+          case f: CPPFunction => cleanType(safeGetNodeType(f.getDefinition))
           case v: CPPVariable => cleanType(v.getType.toString)
-          case _              => cleanType(safeGetNodeType(s), stripKeywords)
+          case _              => cleanType(safeGetNodeType(s))
         }
-      case _ => cleanType(safeGetNodeType(s), stripKeywords)
+      case _ => cleanType(safeGetNodeType(s))
     }
   }
 
   @nowarn
-  private def typeForICPPASTConstructorInitializer(
-    c: ICPPASTConstructorInitializer,
-    stripKeywords: Boolean = true
-  ): String = {
+  private def typeForICPPASTConstructorInitializer(c: ICPPASTConstructorInitializer): String = {
     import org.eclipse.cdt.core.dom.ast.ASTSignatureUtil.getNodeSignature
     c.getParent match {
       case initializer: ICPPASTConstructorChainInitializer =>
-        val fullName_ = fullName(initializer.getMemberInitializerId)
-        cleanType(fullName_, stripKeywords)
+        val initIdFullName = fullName(initializer.getMemberInitializerId)
+        cleanType(initIdFullName)
       case _ =>
-        cleanType(getNodeSignature(c), stripKeywords)
+        cleanType(getNodeSignature(c))
     }
   }
 
-  private def typeForCPPASTEqualsInitializer(c: CPPASTEqualsInitializer, stripKeywords: Boolean = true): String = {
+  private def typeForCPPASTEqualsInitializer(c: CPPASTEqualsInitializer): String = {
     import org.eclipse.cdt.core.dom.ast.ASTSignatureUtil.getNodeSignature
     c.getInitializerClause match {
       case initializer: ICPPASTFunctionCallExpression
           if initializer.getFunctionNameExpression.isInstanceOf[CPPASTIdExpression] =>
         val name = initializer.getFunctionNameExpression.asInstanceOf[CPPASTIdExpression]
-        typeForCPPASTIdExpression(name, stripKeywords)
+        typeForCPPASTIdExpression(name)
       case _ =>
-        cleanType(getNodeSignature(c), stripKeywords)
+        cleanType(getNodeSignature(c))
     }
   }
 
   @nowarn
-  protected def typeFor(node: IASTNode, stripKeywords: Boolean = true): String = {
+  protected def typeFor(node: IASTNode): String = {
     import org.eclipse.cdt.core.dom.ast.ASTSignatureUtil.getNodeSignature
     node match {
-      case f: CPPASTFoldExpression          => typeForCPPASTFoldExpression(f, stripKeywords)
-      case f: CPPASTFieldReference          => typeForCPPASTFieldReference(f, stripKeywords)
-      case s: CPPASTIdExpression            => typeForCPPASTIdExpression(s, stripKeywords)
-      case s: ICPPASTNamedTypeSpecifier     => typeForCPPAstNamedTypeSpecifier(s, stripKeywords)
-      case a: IASTArrayDeclarator           => typeForIASTArrayDeclarator(a, stripKeywords)
-      case c: ICPPASTConstructorInitializer => typeForICPPASTConstructorInitializer(c, stripKeywords)
-      case c: CPPASTEqualsInitializer       => typeForCPPASTEqualsInitializer(c, stripKeywords)
-      case _: IASTIdExpression | _: IASTName | _: IASTDeclarator => cleanType(safeGetNodeType(node), stripKeywords)
-      case f: IASTFieldReference          => cleanType(safeGetType(f.getFieldOwner.getExpressionType), stripKeywords)
-      case s: IASTNamedTypeSpecifier      => cleanType(ASTStringUtil.getReturnTypeString(s, null), stripKeywords)
-      case s: IASTCompositeTypeSpecifier  => cleanType(ASTStringUtil.getReturnTypeString(s, null), stripKeywords)
-      case s: IASTEnumerationSpecifier    => cleanType(ASTStringUtil.getReturnTypeString(s, null), stripKeywords)
-      case s: IASTElaboratedTypeSpecifier => cleanType(ASTStringUtil.getReturnTypeString(s, null), stripKeywords)
-      case l: IASTLiteralExpression       => cleanType(safeGetType(l.getExpressionType), stripKeywords)
-      case e: IASTExpression              => cleanType(safeGetNodeType(e), stripKeywords)
-      case _                              => cleanType(getNodeSignature(node), stripKeywords)
+      case f: CPPASTFoldExpression                               => typeForCPPASTFoldExpression(f)
+      case f: CPPASTFieldReference                               => typeForCPPASTFieldReference(f)
+      case s: CPPASTIdExpression                                 => typeForCPPASTIdExpression(s)
+      case s: ICPPASTNamedTypeSpecifier                          => typeForCPPAstNamedTypeSpecifier(s)
+      case a: IASTArrayDeclarator                                => typeForIASTArrayDeclarator(a)
+      case c: ICPPASTConstructorInitializer                      => typeForICPPASTConstructorInitializer(c)
+      case c: CPPASTEqualsInitializer                            => typeForCPPASTEqualsInitializer(c)
+      case _: IASTIdExpression | _: IASTName | _: IASTDeclarator => cleanType(safeGetNodeType(node))
+      case f: IASTFieldReference          => cleanType(safeGetType(f.getFieldOwner.getExpressionType))
+      case s: IASTNamedTypeSpecifier      => cleanType(ASTStringUtil.getReturnTypeString(s, null))
+      case s: IASTCompositeTypeSpecifier  => cleanType(ASTStringUtil.getReturnTypeString(s, null))
+      case s: IASTEnumerationSpecifier    => cleanType(ASTStringUtil.getReturnTypeString(s, null))
+      case s: IASTElaboratedTypeSpecifier => cleanType(ASTStringUtil.getReturnTypeString(s, null))
+      case l: IASTLiteralExpression       => cleanType(safeGetType(l.getExpressionType))
+      case e: IASTExpression              => cleanType(safeGetNodeType(e))
+      case _                              => cleanType(getNodeSignature(node))
     }
   }
 
-  private def typeForCPPAstNamedTypeSpecifier(s: ICPPASTNamedTypeSpecifier, stripKeywords: Boolean): String = {
-    val tpe = safeGetBinding(s) match {
-      case Some(binding) if stripKeywords => binding.toString
-      case _                              => s.getRawSignature
-    }
-    cleanType(tpe, stripKeywords)
+  private def typeForCPPAstNamedTypeSpecifier(s: ICPPASTNamedTypeSpecifier): String = {
+    val tpe = safeGetBinding(s).map(_.toString).getOrElse(s.getRawSignature)
+    cleanType(tpe)
   }
 
   private def notHandledText(node: IASTNode): String =
@@ -384,9 +372,9 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     StringUtils.normalizeSpace(s"$returnType(${parameterTypes.mkString(",")})")
   }
 
-  private def pointersAsString(spec: IASTDeclSpecifier, parentDecl: IASTDeclarator, stripKeywords: Boolean): String = {
-    val tpe = typeFor(spec, stripKeywords) match {
-      case Defines.Auto => typeFor(parentDecl, stripKeywords)
+  private def pointersAsString(spec: IASTDeclSpecifier, parentDecl: IASTDeclarator): String = {
+    val tpe = typeFor(spec) match {
+      case Defines.Auto => typeFor(parentDecl)
       case t            => t
     }
     val pointers = parentDecl.getPointerOperators
@@ -505,44 +493,44 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     }
   }
 
-  protected def typeForDeclSpecifier(spec: IASTNode, stripKeywords: Boolean = true, index: Int = 0): String = {
+  protected def typeForDeclSpecifier(spec: IASTNode, index: Int = 0): String = {
     val tpe = spec match {
       case s: IASTSimpleDeclSpecifier if s.getParent.isInstanceOf[IASTParameterDeclaration] =>
         val parentDecl = s.getParent.asInstanceOf[IASTParameterDeclaration].getDeclarator
-        pointersAsString(s, parentDecl, stripKeywords)
+        pointersAsString(s, parentDecl)
       case s: IASTSimpleDeclSpecifier if s.getParent.isInstanceOf[IASTFunctionDefinition] =>
         val parentDecl = s.getParent.asInstanceOf[IASTFunctionDefinition].getDeclarator
         ASTStringUtil.getReturnTypeString(s, parentDecl)
       case s: IASTSimpleDeclaration if s.getParent.isInstanceOf[ICASTKnRFunctionDeclarator] =>
         val decl = s.getDeclarators.toList(index)
-        pointersAsString(s.getDeclSpecifier, decl, stripKeywords)
+        pointersAsString(s.getDeclSpecifier, decl)
       case s: IASTSimpleDeclSpecifier if s.getParent.isInstanceOf[IASTSimpleDeclaration] =>
         val parentDecl = s.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclarators.toList(index)
-        pointersAsString(s, parentDecl, stripKeywords)
+        pointersAsString(s, parentDecl)
       case s: IASTSimpleDeclSpecifier =>
         ASTStringUtil.getReturnTypeString(s, null)
       case s: IASTNamedTypeSpecifier if s.getParent.isInstanceOf[IASTParameterDeclaration] =>
         val parentDecl = s.getParent.asInstanceOf[IASTParameterDeclaration].getDeclarator
-        pointersAsString(s, parentDecl, stripKeywords)
+        pointersAsString(s, parentDecl)
       case s: IASTNamedTypeSpecifier if s.getParent.isInstanceOf[IASTSimpleDeclaration] =>
         val parentDecl = s.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclarators.toList(index)
-        pointersAsString(s, parentDecl, stripKeywords)
+        pointersAsString(s, parentDecl)
       case s: IASTNamedTypeSpecifier =>
         ASTStringUtil.getSimpleName(s.getName)
       case s: IASTCompositeTypeSpecifier if s.getParent.isInstanceOf[IASTSimpleDeclaration] =>
         val parentDecl = s.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclarators.toList(index)
-        pointersAsString(s, parentDecl, stripKeywords)
+        pointersAsString(s, parentDecl)
       case s: IASTCompositeTypeSpecifier => ASTStringUtil.getSimpleName(s.getName)
       case s: IASTEnumerationSpecifier if s.getParent.isInstanceOf[IASTSimpleDeclaration] =>
         val parentDecl = s.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclarators.toList(index)
-        pointersAsString(s, parentDecl, stripKeywords)
+        pointersAsString(s, parentDecl)
       case s: IASTEnumerationSpecifier => ASTStringUtil.getSimpleName(s.getName)
       case s: IASTElaboratedTypeSpecifier if s.getParent.isInstanceOf[IASTParameterDeclaration] =>
         val parentDecl = s.getParent.asInstanceOf[IASTParameterDeclaration].getDeclarator
-        pointersAsString(s, parentDecl, stripKeywords)
+        pointersAsString(s, parentDecl)
       case s: IASTElaboratedTypeSpecifier if s.getParent.isInstanceOf[IASTSimpleDeclaration] =>
         val parentDecl = s.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclarators.toList(index)
-        pointersAsString(s, parentDecl, stripKeywords)
+        pointersAsString(s, parentDecl)
       case s: IASTElaboratedTypeSpecifier => ASTStringUtil.getSignatureString(s, null)
       // TODO: handle other types of IASTDeclSpecifier
       case _ => Defines.Any

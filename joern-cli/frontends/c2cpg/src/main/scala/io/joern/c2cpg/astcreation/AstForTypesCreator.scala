@@ -9,6 +9,7 @@ import org.eclipse.cdt.core.dom.ast.cpp.*
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTAliasDeclaration
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 import io.joern.x2cpg.datastructures.Stack.*
+import org.apache.commons.lang3.StringUtils
 
 import scala.util.Try
 
@@ -19,8 +20,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     case _                                   => false
   }
 
-  private def isTypeDef(decl: IASTSimpleDeclaration): Boolean =
-    code(decl).startsWith("typedef")
+  private def isTypeDef(decl: IASTSimpleDeclaration): Boolean = decl.getRawSignature.startsWith("typedef")
 
   private def templateParameters(e: IASTNode): Option[String] = {
     val templateDeclaration = e match {
@@ -91,24 +91,32 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       case d if parentIsClassDef(d) =>
         val tpe = declarator match {
           case _: IASTArrayDeclarator => registerType(typeFor(declarator))
-          case _                      => registerType(typeForDeclSpecifier(declaration.getDeclSpecifier))
+          case _ => registerType(cleanType(typeForDeclSpecifier(declaration.getDeclSpecifier, index = index)))
         }
         Ast(memberNode(declarator, name, code(declarator), tpe))
       case d if isAssignmentFromBrokenMacro(d, declarator) && scope.lookupVariable(name).nonEmpty =>
         Ast()
-      case _ if declarator.isInstanceOf[IASTArrayDeclarator] =>
-        val tpe     = registerType(typeFor(declarator))
-        val codeTpe = typeFor(declarator, stripKeywords = false)
-        val node    = localNode(declarator, name, s"$codeTpe $name", tpe)
-        scope.addToScope(name, (node, tpe))
-        Ast(node)
       case _ =>
-        val tpe     = registerType(cleanType(typeForDeclSpecifier(declaration.getDeclSpecifier, index = index)))
-        val codeTpe = typeForDeclSpecifier(declaration.getDeclSpecifier, stripKeywords = false, index = index)
-        val node    = localNode(declarator, name, s"$codeTpe $name", tpe)
+        val tpe = declarator match {
+          case arrayDecl: IASTArrayDeclarator => registerType(typeFor(arrayDecl))
+          case _ => registerType(cleanType(typeForDeclSpecifier(declaration.getDeclSpecifier, index = index)))
+        }
+        val code = codeForDeclarator(declaration, declarator)
+        val node = localNode(declarator, name, code, tpe)
         scope.addToScope(name, (node, tpe))
         Ast(node)
     }
+  }
+
+  private def codeForDeclarator(declaration: IASTSimpleDeclaration, declarator: IASTDeclarator): String = {
+    val specCode    = declaration.getDeclSpecifier.getRawSignature
+    val declCodeRaw = declarator.getRawSignature
+    val declCode = declarator.getInitializer match {
+      case null => declCodeRaw
+      case _    => declCodeRaw.replace(declarator.getInitializer.getRawSignature, "")
+    }
+    val normalizedCode = StringUtils.normalizeSpace(s"$specCode $declCode")
+    normalizedCode.strip()
   }
 
   protected def astForInitializer(declarator: IASTDeclarator, init: IASTInitializer): Ast = init match {
