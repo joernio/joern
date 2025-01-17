@@ -29,6 +29,25 @@ class LocalQueryTests extends C2CpgSuite {
   }
 
   "local query example 2" should {
+    "allow to query for the local" in {
+      val cpg = code(
+        """
+          |class Foo {
+          |  static Foo* foo() {
+          |    static Foo bar;
+          |    return &bar;
+          |  }
+          |}
+          |""".stripMargin,
+        "test.cpp"
+      )
+      val List(barLocal) = cpg.method.name("foo").local.nameExact("bar").l
+      barLocal.typeFullName shouldBe "Foo"
+      barLocal.code shouldBe "static Foo bar"
+    }
+  }
+
+  "local query example 3" should {
     val cpg = code("""
         | struct node {
         |   int value;
