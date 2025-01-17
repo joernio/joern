@@ -148,7 +148,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     if (rawType == Defines.Any) return rawType
     val tpe = ReservedKeywordsAtTypes.foldLeft(rawType) { (cur, repl) =>
       if (cur.startsWith(s"$repl ") || cur.contains(s" $repl ")) {
-        cur.replace(s" $repl ", " ").replace(s"$repl ", "")
+        cur.replace(s" $repl ", " ").stripPrefix(s"$repl ")
       } else cur
     }
     val normalizedTpe = StringUtils.normalizeSpace(tpe.stripSuffix(" ()"))
