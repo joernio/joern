@@ -329,7 +329,10 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   private def typeForCPPAstNamedTypeSpecifier(s: ICPPASTNamedTypeSpecifier, stripKeywords: Boolean): String = {
-    val tpe = safeGetBinding(s).map(_.toString).getOrElse(s.getRawSignature)
+    val tpe = safeGetBinding(s) match {
+      case Some(binding) if stripKeywords => binding.toString
+      case _                              => s.getRawSignature
+    }
     cleanType(tpe, stripKeywords)
   }
 
