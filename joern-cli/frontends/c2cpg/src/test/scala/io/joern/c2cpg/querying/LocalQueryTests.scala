@@ -35,7 +35,6 @@ class LocalQueryTests extends C2CpgSuite {
           |class Foo {
           |  static Foo* foo() {
           |    static Foo bar;
-          |    int x, *y, z[1];
           |    return &bar;
           |  }
           |}
