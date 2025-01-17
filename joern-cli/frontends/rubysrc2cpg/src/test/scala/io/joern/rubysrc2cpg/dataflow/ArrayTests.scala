@@ -120,7 +120,7 @@ class ArrayTests extends RubyCode2CpgFixture(withPostProcessing = true, withData
     val source     = cpg.literal.code("b").l
     val sink       = cpg.call.name("puts").argument(1).l
     val List(flow) = sink.reachableByFlows(source).map(flowToResultPairs).distinct.sortBy(_.length).l
-    flow shouldBe List(("%w[b c]", 2), ("a = %w[b c]", 2), ("puts a", 3))
+    flow shouldBe List(("<tmp-1>[0] = b", 2), ("<tmp-1>", 2), ("a = %w[b c]", 2), ("puts a", 3))
   }
 
   "flow through %i array" in {
@@ -134,11 +134,8 @@ class ArrayTests extends RubyCode2CpgFixture(withPostProcessing = true, withData
     val sink       = cpg.call.name("puts").argument(1).l
     val List(flow) = sink.reachableByFlows(source).map(flowToResultPairs).distinct.sortBy(_.length).l
     flow shouldBe List(
-      (
-        """|%i[b
-           |    c]""".stripMargin,
-        2
-      ),
+      ("<tmp-1>[0] = :b", 2),
+      ("<tmp-1>", 2),
       (
         """|a = %i[b
            |    c]""".stripMargin,

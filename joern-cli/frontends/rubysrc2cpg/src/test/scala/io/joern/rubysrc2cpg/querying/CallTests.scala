@@ -436,19 +436,20 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
     inside(cpg.call.name("foo").l) {
       case fooCall :: Nil =>
         inside(fooCall.argument.l) {
-          case _ :: (arrayArg: Call) :: Nil =>
+          case _ :: (arrayArg: Block) :: Nil =>
             arrayArg.code shouldBe "[:b, :c => 1]"
-            arrayArg.methodFullName shouldBe Operators.arrayInitializer
 
-            inside(arrayArg.argument.l) {
-              case (elem1: Literal) :: (elem2: Call) :: Nil =>
-                elem1.code shouldBe ":b"
-                elem2.code shouldBe ":c => 1"
+            inside(arrayArg.astChildren.l) {
+              case (_: Call) :: (elem1: Call) :: (elem2: Call) :: (_: Identifier) :: Nil =>
+                elem1.code shouldBe "<tmp-1>[0] = :b"
+                elem2.code shouldBe "<tmp-1>[1] = :c => 1"
 
-                elem2.methodFullName shouldBe RubyDefines.RubyOperators.association
+                elem1.methodFullName shouldBe Operators.assignment
+                elem2.methodFullName shouldBe Operators.assignment
+                elem2.argument(2).asInstanceOf[Call].methodFullName shouldBe RubyOperators.association
               case xs => fail(s"Expected two args for elements, got ${xs.code.mkString(",")}")
             }
-          case xs => fail(s"Expected two args, got ${xs.code.mkString(",")}")
+          case xs => fail(s"Expected two args, got ${xs.map(x => x.label -> x.code).mkString(",")}")
         }
       case xs => fail(s"Expected one call for foo, got ${xs.code.mkString}")
     }
@@ -508,12 +509,11 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
         |""".stripMargin)
 
     inside(cpg.call.name("permit").argument.l) {
-      case _ :: (strLiteral: Literal) :: (numericLiteral: Literal) :: (issueSplat: Call) :: (sentryAssoc: Call) :: Nil =>
+      case _ :: (strLiteral: Literal) :: (numericLiteral: Literal) :: (issueSplat: Call) :: (sentryAssoc: Block) :: Nil =>
         issueSplat.code shouldBe "*issue_params_attributes"
         issueSplat.methodFullName shouldBe RubyOperators.splat
 
         sentryAssoc.code shouldBe "[:sentry_issue_identifier]"
-        sentryAssoc.methodFullName shouldBe Operators.arrayInitializer
 
         strLiteral.code shouldBe "\"1234\""
         strLiteral.typeFullName shouldBe RubyDefines.getBuiltInType(RubyDefines.String)
