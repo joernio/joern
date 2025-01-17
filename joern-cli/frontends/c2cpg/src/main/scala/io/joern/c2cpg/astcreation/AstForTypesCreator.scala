@@ -90,7 +90,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         )
       case d if parentIsClassDef(d) =>
         val tpe = declarator match {
-          case _: IASTArrayDeclarator => registerType(typeFor(declarator))
+          case _: IASTArrayDeclarator => registerType(cleanType(typeFor(declarator)))
           case _ => registerType(cleanType(typeForDeclSpecifier(declaration.getDeclSpecifier, index = index)))
         }
         Ast(memberNode(declarator, name, code(declarator), tpe))
@@ -98,7 +98,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         Ast()
       case _ =>
         val tpe = declarator match {
-          case arrayDecl: IASTArrayDeclarator => registerType(typeFor(arrayDecl))
+          case arrayDecl: IASTArrayDeclarator => registerType(cleanType(typeFor(arrayDecl)))
           case _ => registerType(cleanType(typeForDeclSpecifier(declaration.getDeclSpecifier, index = index)))
         }
         val code = codeForDeclarator(declaration, declarator)

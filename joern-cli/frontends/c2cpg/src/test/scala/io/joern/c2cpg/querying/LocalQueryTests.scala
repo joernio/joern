@@ -8,7 +8,7 @@ import io.shiftleft.semanticcpg.language.*
 class LocalQueryTests extends C2CpgSuite {
 
   "local query example 1" should {
-    "allow to query for the local" in {
+    "allow to query for the locals" in {
       val cpg = code(
         """
         |void foo() {
@@ -35,6 +35,7 @@ class LocalQueryTests extends C2CpgSuite {
           |class Foo {
           |  static Foo* foo() {
           |    static Foo bar;
+          |    int x, *y, z[1];
           |    return &bar;
           |  }
           |}
@@ -73,7 +74,7 @@ class LocalQueryTests extends C2CpgSuite {
         | }
         |
         | void test() {
-        |   static int a, b, c;
+        |   static int a, *b, c[1];
         |   wchar_t *foo;
         |   int d[10], e = 1;
         | }
@@ -100,11 +101,11 @@ class LocalQueryTests extends C2CpgSuite {
         a.typeFullName shouldBe "int"
         a.code shouldBe "static int a"
         b.name shouldBe "b"
-        b.typeFullName shouldBe "int"
-        b.code shouldBe "static int b"
+        b.typeFullName shouldBe "int*"
+        b.code shouldBe "static int *b"
         c.name shouldBe "c"
-        c.typeFullName shouldBe "int"
-        c.code shouldBe "static int c"
+        c.typeFullName shouldBe "int[1]"
+        c.code shouldBe "static int c[1]"
         foo.name shouldBe "foo"
         foo.typeFullName shouldBe "wchar_t*"
         foo.code shouldBe "wchar_t *foo"
