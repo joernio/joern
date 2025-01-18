@@ -74,32 +74,18 @@ class CSharpSrc2Cpg extends X2CpgFrontend[Config] {
   }
 
   private def createBuiltinSummary(config: Config, internalSummary: CSharpProgramSummary): CSharpProgramSummary = {
-    if (config.useBuiltinSummaries) {
-      CSharpProgramSummary(
-        mutable.Map
-          .fromSpecific(CSharpProgramSummary.BuiltinTypes.view.filterKeys(internalSummary.imports))
-          .result()
-      )
-    } else {
-      CSharpProgramSummary()
-    }
+    Option
+      .when(config.useBuiltinSummaries)(CSharpProgramSummary.builtinTypesSummary)
+      .map(_.filter(namespacePred = (ns, _) => internalSummary.imports.contains(ns)))
+      .getOrElse(CSharpProgramSummary())
   }
 
   private def createExternalSummary(config: Config, internalSummary: CSharpProgramSummary): CSharpProgramSummary = {
-    if (config.externalSummaryPaths.nonEmpty) {
-      CSharpProgramSummary(
-        mutable.Map
-          .fromSpecific(
-            CSharpProgramSummary
-              .fromExternalJsons(config.externalSummaryPaths)
-              .view
-              .filterKeys(internalSummary.imports)
-          )
-          .result()
-      )
-    } else {
-      CSharpProgramSummary()
-    }
+    val jsonFilePaths = config.externalSummaryPaths
+    Option
+      .when(jsonFilePaths.nonEmpty)(CSharpProgramSummary.externalTypesSummary(jsonFilePaths))
+      .map(_.filter(namespacePred = (ns, _) => internalSummary.imports.contains(ns)))
+      .getOrElse(CSharpProgramSummary())
   }
 
   private def buildFiles(config: Config): List[String] = {
