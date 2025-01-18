@@ -147,7 +147,7 @@ class TypeNodePassTests extends C2CpgSuite {
         inside(cpg.local.l) { case List(ptr) =>
           ptr.name shouldBe "ptr"
           ptr.typeFullName shouldBe "test*"
-          ptr.code shouldBe "struct test* ptr"
+          ptr.code shouldBe "struct test *ptr"
         }
         inside(cpg.local.typ.referencedTypeDecl.l) { case List(tpe) =>
           tpe.name shouldBe "test*"
@@ -200,7 +200,7 @@ class TypeNodePassTests extends C2CpgSuite {
         inside(cpg.method("test_func").ast.isLocal.name(badChar.name).code(".*\\*.*").l) { case List(ptr) =>
           ptr.name shouldBe "badChar"
           ptr.typeFullName shouldBe "char*"
-          ptr.code shouldBe "char* badChar"
+          ptr.code shouldBe "char * badChar"
         }
       }
     }

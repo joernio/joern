@@ -335,7 +335,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
       .map {
         case arrayLiteral: ArrayLiteral =>
           val tmp             = SimpleIdentifier(None)(arrayLiteral.span.spanStart(this.tmpGen.fresh))
-          val arrayLiteralAst = DummyAst(astForTempArray(arrayLiteral))(arrayLiteral.span)
+          val arrayLiteralAst = DummyAst(astForArrayLiteral(arrayLiteral))(arrayLiteral.span)
           (tmp, arrayLiteralAst)
         case e =>
           val tmp = SimpleIdentifier(None)(e.span.spanStart(this.tmpGen.fresh))
@@ -345,53 +345,6 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
       .getOrElse(StatementList(goCase(None))(node.span))
 
     astsForStatement(caseExpr)
-  }
-
-  private def astForTempArray(node: ArrayLiteral): Ast = {
-    val tmp = this.tmpGen.fresh
-
-    def tmpRubyNode(tmpNode: Option[RubyExpression] = None) =
-      SimpleIdentifier()(tmpNode.map(_.span).getOrElse(node.span).spanStart(tmp))
-
-    def tmpAst(tmpNode: Option[RubyExpression] = None) = astForSimpleIdentifier(tmpRubyNode(tmpNode))
-
-    val block = blockNode(node, node.text, Defines.Any)
-    scope.pushNewScope(BlockScope(block))
-    val tmpLocal = NewLocal().name(tmp).code(tmp)
-    scope.addToScope(tmp, tmpLocal)
-
-    val arguments = if (node.text.startsWith("%")) {
-      val argumentsType =
-        if (node.isStringArray) getBuiltInType(Defines.String)
-        else getBuiltInType(Defines.Symbol)
-      node.elements.map {
-        case element @ StaticLiteral(_)               => StaticLiteral(argumentsType)(element.span)
-        case element @ DynamicLiteral(_, expressions) => DynamicLiteral(argumentsType, expressions)(element.span)
-        case element                                  => element
-      }
-    } else {
-      node.elements
-    }
-    val argumentAsts = arguments.zipWithIndex.map { case (arg, idx) =>
-      val indices     = StaticLiteral(getBuiltInType(Defines.Integer))(arg.span.spanStart(idx.toString)) :: Nil
-      val base        = tmpRubyNode(Option(arg))
-      val indexAccess = IndexAccess(base, indices)(arg.span.spanStart(s"${base.text}[$idx]"))
-      val assignment = SingleAssignment(indexAccess, "=", arg)(arg.span.spanStart(s"${indexAccess.text} = ${arg.text}"))
-      astForExpression(assignment)
-    }
-
-    val arrayInitCall = {
-      val base = SimpleIdentifier()(node.span.spanStart(Defines.Array))
-      astForExpression(SimpleObjectInstantiation(base, Nil)(node.span))
-    }
-
-    val assignment =
-      callNode(node, code(node), Operators.assignment, Operators.assignment, DispatchTypes.STATIC_DISPATCH)
-    val tmpAssignment = callAst(assignment, tmpAst() :: arrayInitCall :: Nil)
-    val tmpRetAst     = tmpAst(node.elements.lastOption)
-
-    scope.popScope()
-    blockAst(block, tmpAssignment +: argumentAsts :+ tmpRetAst)
   }
 
   private def astForOperatorAssignmentExpression(node: OperatorAssignment): Ast = {

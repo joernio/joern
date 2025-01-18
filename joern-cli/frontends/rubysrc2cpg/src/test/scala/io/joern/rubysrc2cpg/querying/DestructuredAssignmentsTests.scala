@@ -2,8 +2,8 @@ package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
 class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
@@ -77,8 +77,8 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
                 |a, b, *c = 1, 2, 3, 4
                 |""".stripMargin)
 
-      inside(cpg.assignment.l) {
-        case aAssignment :: bAssignment :: cAssignment :: Nil =>
+      inside(cpg.assignment.codeExact("a, b, *c = 1, 2, 3, 4").l) {
+        case aAssignment :: bAssignment :: cAssignment :: _ :: Nil =>
           aAssignment.code shouldBe "a, b, *c = 1, 2, 3, 4"
           bAssignment.code shouldBe "a, b, *c = 1, 2, 3, 4"
           cAssignment.code shouldBe "a, b, *c = 1, 2, 3, 4"
@@ -91,10 +91,12 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
           b.name shouldBe "b"
           two.code shouldBe "2"
 
-          val List(c: Identifier, arr: Call) = cAssignment.argumentOut.toList: @unchecked
+          val List(c: Identifier, arr: Block) = cAssignment.argumentOut.toList: @unchecked
           c.name shouldBe "c"
-          arr.name shouldBe Operators.arrayInitializer
-          inside(arr.argumentOut.l) {
+          arr.code shouldBe "a, b, *c = 1, 2, 3, 4"
+
+          val asgns = arr.astChildren.assignment.where(_.target.isCall.nameExact(Operators.indexAccess)).l
+          inside(asgns.map(_.source)) {
             case (three: Literal) :: (four: Literal) :: Nil =>
               three.code shouldBe "3"
               four.code shouldBe "4"
@@ -111,8 +113,8 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
                 |a, *b, c = 1, 2, 3, 4
                 |""".stripMargin)
 
-      inside(cpg.assignment.l) {
-        case aAssignment :: bAssignment :: cAssignment :: Nil =>
+      inside(cpg.assignment.codeExact("a, *b, c = 1, 2, 3, 4").l) {
+        case aAssignment :: bAssignment :: _ :: cAssignment :: Nil =>
           aAssignment.code shouldBe "a, *b, c = 1, 2, 3, 4"
           bAssignment.code shouldBe "a, *b, c = 1, 2, 3, 4"
           cAssignment.code shouldBe "a, *b, c = 1, 2, 3, 4"
@@ -121,14 +123,16 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
           a.name shouldBe "a"
           one.code shouldBe "1"
 
-          val List(b: Identifier, arr: Call) = bAssignment.argumentOut.toList: @unchecked
+          val List(b: Identifier, arr: Block) = bAssignment.argumentOut.toList: @unchecked
           b.name shouldBe "b"
-          arr.name shouldBe Operators.arrayInitializer
-          inside(arr.argumentOut.l) {
+          arr.code shouldBe "a, *b, c = 1, 2, 3, 4"
+
+          val asgns = arr.astChildren.assignment.where(_.target.isCall.nameExact(Operators.indexAccess)).l
+          inside(asgns.map(_.source)) {
             case (two: Literal) :: (three: Literal) :: Nil =>
               two.code shouldBe "2"
               three.code shouldBe "3"
-            case _ => fail("Unexpected number of array elements in `b`'s assignment")
+            case _ => fail("Unexpected number of array elements in `c`'s assignment")
           }
 
           val List(c: Identifier, four: Literal) = cAssignment.argumentOut.toList: @unchecked
@@ -145,20 +149,22 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
                 |*a, b, c = 1, 2, 3, 4
                 |""".stripMargin)
 
-      inside(cpg.assignment.l) {
-        case aAssignment :: bAssignment :: cAssignment :: Nil =>
+      inside(cpg.assignment.codeExact("*a, b, c = 1, 2, 3, 4").l) {
+        case aAssignment :: _ :: bAssignment :: cAssignment :: Nil =>
           aAssignment.code shouldBe "*a, b, c = 1, 2, 3, 4"
           bAssignment.code shouldBe "*a, b, c = 1, 2, 3, 4"
           cAssignment.code shouldBe "*a, b, c = 1, 2, 3, 4"
 
-          val List(a: Identifier, arr: Call) = aAssignment.argumentOut.toList: @unchecked
+          val List(a: Identifier, arr: Block) = aAssignment.argumentOut.toList: @unchecked
           a.name shouldBe "a"
-          arr.name shouldBe Operators.arrayInitializer
-          inside(arr.argumentOut.l) {
+          arr.code shouldBe "*a, b, c = 1, 2, 3, 4"
+
+          val asgns = arr.astChildren.assignment.where(_.target.isCall.nameExact(Operators.indexAccess)).l
+          inside(asgns.map(_.source)) {
             case (one: Literal) :: (two: Literal) :: Nil =>
               one.code shouldBe "1"
               two.code shouldBe "2"
-            case _ => fail("Unexpected number of array elements in `a`'s assignment")
+            case _ => fail("Unexpected number of array elements in `c`'s assignment")
           }
 
           val List(b: Identifier, three: Literal) = bAssignment.argumentOut.toList: @unchecked
@@ -179,14 +185,15 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
                 |a = 1, 2, 3, 4
                 |""".stripMargin)
 
-      inside(cpg.assignment.l) {
+      inside(cpg.assignment.codeExact("a = 1, 2, 3, 4").l) {
         case aAssignment :: Nil =>
           aAssignment.code shouldBe "a = 1, 2, 3, 4"
 
-          val List(a: Identifier, arr: Call) = aAssignment.argumentOut.toList: @unchecked
+          val List(a: Identifier, arr: Block) = aAssignment.argumentOut.toList: @unchecked
           a.name shouldBe "a"
-          arr.name shouldBe Operators.arrayInitializer
-          inside(arr.argumentOut.l) {
+          arr.code shouldBe "1, 2, 3, 4"
+          val asgns = arr.astChildren.assignment.where(_.target.isCall.nameExact(Operators.indexAccess)).l
+          inside(asgns.map(_.source)) {
             case (one: Literal) :: (two: Literal) :: (three: Literal) :: (four: Literal) :: Nil =>
               one.code shouldBe "1"
               two.code shouldBe "2"
@@ -210,7 +217,7 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
                 |a, b, c = 1, 2, *list
                 |""".stripMargin)
 
-      inside(cpg.assignment.l) {
+      inside(cpg.assignment.codeExact("a, b, c = 1, 2, *list", "list = [3, 4]").l) {
         case listAssignment :: aAssignment :: bAssignment :: cAssignment :: Nil =>
           listAssignment.code shouldBe "list = [3, 4]"
           aAssignment.code shouldBe "a, b, c = 1, 2, *list"
@@ -245,7 +252,7 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
           |a, b, c = 1, *list
           |""".stripMargin)
 
-      inside(cpg.assignment.l) {
+      inside(cpg.assignment.codeExact("list = [3, 4]", "a, b, c = 1, *list").l) {
         case listAssignment :: aAssignment :: bAssignment :: cAssignment :: Nil =>
           listAssignment.code shouldBe "list = [3, 4]"
           aAssignment.code shouldBe "a, b, c = 1, *list"
@@ -281,13 +288,13 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
 
   }
 
-  "Destructered Assignment with splat in the middle" in {
+  "Destructured Assignment with splat in the middle" in {
     val cpg = code("""
         |a, *b, c = 1, 2, 3, 4, 5, 6
         |""".stripMargin)
 
-    inside(cpg.call.name(Operators.assignment).l) {
-      case aAssignment :: bAssignment :: cAssignment :: Nil =>
+    inside(cpg.assignment.codeExact("a, *b, c = 1, 2, 3, 4, 5, 6").l) {
+      case aAssignment :: bAssignment :: _ :: cAssignment :: Nil =>
         aAssignment.code shouldBe "a, *b, c = 1, 2, 3, 4, 5, 6"
         bAssignment.code shouldBe "a, *b, c = 1, 2, 3, 4, 5, 6"
         cAssignment.code shouldBe "a, *b, c = 1, 2, 3, 4, 5, 6"
@@ -296,11 +303,11 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
         a.name shouldBe "a"
         lit.code shouldBe "1"
 
-        val List(splat: Identifier, arr: Call) = bAssignment.argumentOut.toList: @unchecked
+        val List(splat: Identifier, arr: Block) = bAssignment.argumentOut.toList: @unchecked
         splat.name shouldBe "b"
-        arr.name shouldBe Operators.arrayInitializer
-
-        inside(arr.argumentOut.l) {
+        arr.code shouldBe "a, *b, c = 1, 2, 3, 4, 5, 6"
+        val asgns = arr.astChildren.assignment.where(_.target.isCall.nameExact(Operators.indexAccess)).l
+        inside(asgns.map(_.source)) {
           case (two: Literal) :: (three: Literal) :: (four: Literal) :: (five: Literal) :: Nil =>
             two.code shouldBe "2"
             three.code shouldBe "3"
@@ -321,8 +328,8 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
         |*, a = 1, 2, 3
         |""".stripMargin)
 
-    inside(cpg.assignment.l) {
-      case splatAssignment :: aAssignment :: Nil =>
+    inside(cpg.assignment.codeExact("*, a = 1, 2, 3").l) {
+      case splatAssignment :: _ :: aAssignment :: Nil =>
         aAssignment.code shouldBe "*, a = 1, 2, 3"
         splatAssignment.code shouldBe "*, a = 1, 2, 3"
 
@@ -330,10 +337,11 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
         a.name shouldBe "a"
         lit.code shouldBe "3"
 
-        val List(splat: Identifier, arr: Call) = splatAssignment.argumentOut.toList: @unchecked
+        val List(splat: Identifier, arr: Block) = splatAssignment.argumentOut.toList: @unchecked
         splat.name shouldBe "_"
-        arr.name shouldBe Operators.arrayInitializer
-        inside(arr.argumentOut.l) {
+        arr.code shouldBe "*, a = 1, 2, 3"
+        val asgns = arr.astChildren.assignment.where(_.target.isCall.nameExact(Operators.indexAccess)).l
+        inside(asgns.map(_.source)) {
           case (one: Literal) :: (two: Literal) :: Nil =>
             one.code shouldBe "1"
             two.code shouldBe "2"
@@ -348,8 +356,8 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
         |a, *b, c = 1, 2, *d, *f, 4
         |""".stripMargin)
 
-    inside(cpg.call.name(Operators.assignment).l) {
-      case aAssignment :: bAssignment :: cAssignment :: Nil =>
+    inside(cpg.assignment.codeExact("a, *b, c = 1, 2, *d, *f, 4").l) {
+      case aAssignment :: bAssignment :: _ :: cAssignment :: Nil =>
         aAssignment.code shouldBe "a, *b, c = 1, 2, *d, *f, 4"
         bAssignment.code shouldBe "a, *b, c = 1, 2, *d, *f, 4"
         cAssignment.code shouldBe "a, *b, c = 1, 2, *d, *f, 4"
@@ -358,11 +366,12 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
         a.name shouldBe "a"
         aLiteral.code shouldBe "1"
 
-        val List(splat: Identifier, arr: Call) = bAssignment.argumentOut.toList: @unchecked
+        val List(splat: Identifier, arr: Block) = bAssignment.argumentOut.toList: @unchecked
         splat.name shouldBe "b"
-        arr.name shouldBe Operators.arrayInitializer
+        arr.code shouldBe "a, *b, c = 1, 2, *d, *f, 4"
 
-        inside(arr.argumentOut.l) {
+        val asgns = arr.astChildren.assignment.where(_.target.isCall.nameExact(Operators.indexAccess)).l
+        inside(asgns.map(_.source)) {
           case (two: Literal) :: (d: Call) :: (f: Call) :: Nil =>
             two.code shouldBe "2"
 
@@ -392,13 +401,15 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "create an explicit return of the LHS values as an array" in {
-      val arrayLiteral = cpg.method.name("f").methodReturn.toReturn.astChildren.isCall.head
+      val arrayLiteral = cpg.method.name("f").methodReturn.toReturn.astChildren.isBlock.head
 
-      arrayLiteral.name shouldBe Operators.arrayInitializer
-      arrayLiteral.methodFullName shouldBe Operators.arrayInitializer
       arrayLiteral.code shouldBe "a, b = 1, 2"
 
-      arrayLiteral.astChildren.isIdentifier.code.l shouldBe List("a", "b")
+      val asgns = arrayLiteral.astChildren.assignment.where(_.target.isCall.nameExact(Operators.indexAccess)).l
+      inside(asgns.map(_.source)) { case (a: Identifier) :: (b: Identifier) :: Nil =>
+        a.code shouldBe "a"
+        b.code shouldBe "b"
+      }
     }
 
   }
