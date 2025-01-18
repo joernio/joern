@@ -428,13 +428,13 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |constexpr const char* f(bool p) { return p ? "constant initializer" : g(); }
           |
           |void foo() {
-          |  constinit const char* c = f(true);
+          |  constinit const char *c = f(true);
           |}
           |""".stripMargin)
       cpg.method.nameNot("<global>").fullName.sorted.l shouldBe List("f:char*(bool)", "foo:void()")
       val List(cLocal) = cpg.method.nameExact("foo").local.l
       cLocal.typeFullName shouldBe "char*"
-      cLocal.code shouldBe "const char* c" // constinit keyword is not parsed by CDT
+      cLocal.code shouldBe "const char *c" // constinit keyword is not parsed by CDT
     }
 
     "handle __VA_OPT__" in {
