@@ -40,6 +40,28 @@ case class CSharpProgramSummary(namespaceToType: NamespaceToTypeMap, imports: Se
     )
   }
 
+  /** Builds a new `CSharpProgramSummary` by filtering the current one's fields.
+    *
+    * @param namespacePred
+    *   filtering predicate for `namespaceToType`
+    *
+    * @param importsPred
+    *   filtering predicate for `imports`
+    *
+    * @param globalImportsPred
+    *   filtering predicate for `globalImports`
+    */
+  def filter(
+    namespacePred: (String, mutable.Set[CSharpType]) => Boolean = (_, _) => true,
+    importsPred: String => Boolean = _ => true,
+    globalImportsPred: String => Boolean = _ => true
+  ): CSharpProgramSummary =
+    copy(
+      namespaceToType = mutable.Map.fromSpecific(namespaceToType.view.filter(namespacePred(_, _))),
+      imports = imports.filter(importsPred),
+      globalImports = globalImports.filter(globalImportsPred)
+    )
+
 }
 
 object CSharpProgramSummary {
@@ -63,7 +85,7 @@ object CSharpProgramSummary {
   /** @return
     *   a mapping of the `System` package types.
     */
-  def BuiltinTypes: NamespaceToTypeMap = {
+  private def BuiltinTypes: NamespaceToTypeMap = {
     jsonToInitialMapping(mergeBuiltInTypesJson) match {
       case Failure(exception) =>
         logger.warn("Unable to parse JSON type entry from builtin types", exception); mutable.Map.empty
@@ -71,7 +93,20 @@ object CSharpProgramSummary {
     }
   }
 
-  def fromExternalJsons(paths: Set[String]): NamespaceToTypeMap = {
+  /** Returns the `CSharpProgramSummary` for the builtin types bundle.
+    */
+  def builtinTypesSummary: CSharpProgramSummary =
+    CSharpProgramSummary(BuiltinTypes)
+
+  /** Returns the `CSharpProgramSummary` for the given JSON file paths.
+    *
+    * @param paths
+    *   the JSON file paths to load types from
+    */
+  def externalTypesSummary(paths: Set[String]): CSharpProgramSummary =
+    CSharpProgramSummary(fromExternalJsons(paths))
+
+  private def fromExternalJsons(paths: Set[String]): NamespaceToTypeMap = {
     val jsonFiles = paths.flatMap(SourceFiles.determine(_, Set(".json"))(VisitOptions.default)).toList
     val inputStreams = jsonFiles.flatMap { path =>
       Try(java.io.FileInputStream(path)) match {
