@@ -5,7 +5,7 @@ import io.joern.csharpsrc2cpg.astcreation.AstCreator
 import io.joern.csharpsrc2cpg.datastructures.CSharpProgramSummary
 import io.joern.csharpsrc2cpg.parser.DotNetJsonParser
 import io.joern.csharpsrc2cpg.passes.{AstCreationPass, DependencyPass}
-import io.joern.csharpsrc2cpg.utils.{DependencyDownloader, DotNetAstGenRunner}
+import io.joern.csharpsrc2cpg.utils.{DependencyDownloader, DotNetAstGenRunner, ProgramSummaryCreator}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.astgen.AstGenRunner.AstGenRunnerResult
 import io.joern.x2cpg.astgen.ParserResult
@@ -35,13 +35,7 @@ class CSharpSrc2Cpg extends X2CpgFrontend[Config] {
       File.usingTemporaryDirectory("csharpsrc2cpgOut") { tmpDir =>
         val astGenResult = new DotNetAstGenRunner(config).execute(tmpDir)
         val astCreators  = CSharpSrc2Cpg.processAstGenRunnerResults(astGenResult.parsedFiles, config)
-        // Pre-parse the AST creators for high level structures
-        val internalProgramSummary = summarizeAstCreators(astCreators)
-        // Load built-in and/or external summaries for missing imports
-        val builtinSummary            = createBuiltinSummary(config, internalProgramSummary)
-        val internalAndBuiltinSummary = internalProgramSummary ++= builtinSummary
-        val externalSummary           = createExternalSummary(config, internalAndBuiltinSummary)
-        val localSummary              = internalAndBuiltinSummary ++= externalSummary
+        val localSummary = ProgramSummaryCreator.from(astCreators, config)
 
         val hash = HashUtil.sha256(astCreators.map(_.parserResult).map(x => Paths.get(x.fullPath)))
         new MetaDataPass(cpg, Languages.CSHARPSRC, config.inputPath, Option(hash)).createAndApply()
@@ -59,33 +53,6 @@ class CSharpSrc2Cpg extends X2CpgFrontend[Config] {
         report.print()
       }
     }
-  }
-
-  private def summarizeAstCreators(astCreators: Seq[AstCreator]): CSharpProgramSummary = {
-    ConcurrentTaskUtil
-      .runUsingThreadPool(astCreators.map(x => () => x.summarize()).iterator)
-      .flatMap {
-        case Failure(exception) =>
-          logger.warn(s"Unable to pre-parse C# file, skipping - ", exception)
-          None
-        case Success(summary) => Option(summary)
-      }
-      .foldLeft(CSharpProgramSummary(imports = CSharpProgramSummary.initialImports))(_ ++= _)
-  }
-
-  private def createBuiltinSummary(config: Config, internalSummary: CSharpProgramSummary): CSharpProgramSummary = {
-    Option
-      .when(config.useBuiltinSummaries)(CSharpProgramSummary.builtinTypesSummary)
-      .map(_.filter(namespacePred = (ns, _) => internalSummary.imports.contains(ns)))
-      .getOrElse(CSharpProgramSummary())
-  }
-
-  private def createExternalSummary(config: Config, internalSummary: CSharpProgramSummary): CSharpProgramSummary = {
-    val jsonFilePaths = config.externalSummaryPaths
-    Option
-      .when(jsonFilePaths.nonEmpty)(CSharpProgramSummary.externalTypesSummary(jsonFilePaths))
-      .map(_.filter(namespacePred = (ns, _) => internalSummary.imports.contains(ns)))
-      .getOrElse(CSharpProgramSummary())
   }
 
   private def buildFiles(config: Config): List[String] = {
