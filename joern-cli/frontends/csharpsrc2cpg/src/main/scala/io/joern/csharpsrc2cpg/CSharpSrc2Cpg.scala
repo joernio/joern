@@ -1,11 +1,17 @@
 package io.joern.csharpsrc2cpg
 
 import better.files.File
+import io.joern.csharpsrc2cpg.CSharpSrc2Cpg.findBuildFiles
 import io.joern.csharpsrc2cpg.astcreation.AstCreator
 import io.joern.csharpsrc2cpg.datastructures.CSharpProgramSummary
 import io.joern.csharpsrc2cpg.parser.DotNetJsonParser
 import io.joern.csharpsrc2cpg.passes.{AstCreationPass, DependencyPass}
-import io.joern.csharpsrc2cpg.utils.{DependencyDownloader, DotNetAstGenRunner, ProgramSummaryCreator}
+import io.joern.csharpsrc2cpg.utils.{
+  DependencyDownloader,
+  DotNetAstGenRunner,
+  ImplicitUsingsCollector,
+  ProgramSummaryCreator
+}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.astgen.AstGenRunner.AstGenRunnerResult
 import io.joern.x2cpg.astgen.ParserResult
@@ -35,13 +41,16 @@ class CSharpSrc2Cpg extends X2CpgFrontend[Config] {
       File.usingTemporaryDirectory("csharpsrc2cpgOut") { tmpDir =>
         val astGenResult = new DotNetAstGenRunner(config).execute(tmpDir)
         val astCreators  = CSharpSrc2Cpg.processAstGenRunnerResults(astGenResult.parsedFiles, config)
-        val localSummary = ProgramSummaryCreator.from(astCreators, config)
+        val buildFiles   = findBuildFiles(config)
+        val localSummary = ProgramSummaryCreator
+          .from(astCreators, config)
+          .addGlobalImports(ImplicitUsingsCollector.collect(buildFiles).toSet)
 
         val hash = HashUtil.sha256(astCreators.map(_.parserResult).map(x => Paths.get(x.fullPath)))
         new MetaDataPass(cpg, Languages.CSHARPSRC, config.inputPath, Option(hash)).createAndApply()
 
         val packageIds = mutable.HashSet.empty[String]
-        new DependencyPass(cpg, buildFiles(config), packageIds.add).createAndApply()
+        new DependencyPass(cpg, buildFiles, packageIds.add).createAndApply()
         // If "download dependencies" is enabled, then fetch dependencies and resolve their symbols for additional types
         val programSummary = if (config.downloadDependencies) {
           DependencyDownloader(cpg, config, localSummary, packageIds.toSet).download()
@@ -53,16 +62,6 @@ class CSharpSrc2Cpg extends X2CpgFrontend[Config] {
         report.print()
       }
     }
-  }
-
-  private def buildFiles(config: Config): List[String] = {
-    SourceFiles.determine(
-      config.inputPath,
-      Set(".csproj"),
-      Option(config.defaultIgnoredFilesRegex),
-      Option(config.ignoredFilesRegex),
-      Option(config.ignoredFiles)
-    )
   }
 
 }
@@ -90,6 +89,16 @@ object CSharpSrc2Cpg {
           )
       ),
       Duration.Inf
+    )
+  }
+
+  def findBuildFiles(config: Config): List[String] = {
+    SourceFiles.determine(
+      config.inputPath,
+      Set(".csproj"),
+      Option(config.defaultIgnoredFilesRegex),
+      Option(config.ignoredFilesRegex),
+      Option(config.ignoredFiles)
     )
   }
 

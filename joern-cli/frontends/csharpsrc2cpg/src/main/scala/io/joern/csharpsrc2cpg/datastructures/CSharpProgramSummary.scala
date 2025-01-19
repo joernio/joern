@@ -40,6 +40,11 @@ case class CSharpProgramSummary(namespaceToType: NamespaceToTypeMap, imports: Se
     )
   }
 
+  private def allImports: Set[String] = imports ++ globalImports
+
+  def appendImported(other: CSharpProgramSummary): CSharpProgramSummary =
+    this ++= other.filter(namespacePred = (ns, _) => allImports.contains(ns))
+
   /** Builds a new `CSharpProgramSummary` by filtering the current one's fields.
     *
     * @param namespacePred
@@ -61,6 +66,9 @@ case class CSharpProgramSummary(namespaceToType: NamespaceToTypeMap, imports: Se
       imports = imports.filter(importsPred),
       globalImports = globalImports.filter(globalImportsPred)
     )
+
+  def addGlobalImports(imports: Set[String]): CSharpProgramSummary =
+    copy(globalImports = globalImports ++ imports)
 
 }
 
