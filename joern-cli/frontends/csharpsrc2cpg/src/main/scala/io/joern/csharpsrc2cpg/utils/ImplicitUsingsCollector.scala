@@ -63,6 +63,8 @@ object ImplicitUsingsCollector {
     )
   }
 
+  /** Extracts implicit usings based on the project type, i.e. based on the `<Project Sdk="XXX">` tag.
+    */
   private def from(rootElem: Elem): List[String] = {
     val projectType = rootElem.label match
       case "Project" => rootElem.attribute("Sdk").flatMap(_.headOption.map(_.text))
@@ -74,8 +76,18 @@ object ImplicitUsingsCollector {
       .collect { case x if x.label == "ImplicitUsings" => x.text }
       .exists(x => x == "true" || x == "enable")
 
+    val exclusions = rootElem.child
+      .collect { case x if x.label == "ItemGroup" => x.child }
+      .flatten
+      .collect {
+        case x if x.label == "Using" && x.attribute("Remove").isDefined =>
+          x.attribute("Remove").flatMap(_.headOption.map(_.text))
+      }
+      .flatten
+      .toList
+
     if (projectType.isDefined && implicitUsingsEnabled) {
-      projectTypeMapping.getOrElse(projectType.get, Nil)
+      projectTypeMapping.getOrElse(projectType.get, Nil).diff(exclusions)
     } else {
       Nil
     }
