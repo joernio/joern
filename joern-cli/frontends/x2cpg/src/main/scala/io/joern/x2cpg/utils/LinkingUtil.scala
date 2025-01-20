@@ -28,7 +28,6 @@ trait LinkingUtil {
 
   def namespaceBlockFullNameToNode(cpg: Cpg, x: String): Option[NamespaceBlock] =
     cpg.namespaceBlock.fullNameExact(x).headOption
-  
 
   /** For all nodes `n` with a label in `srcLabels`, determine the value of `n.\$dstFullNameKey`, use that to lookup the
     * destination node in `dstNodeMap`, and create an edge of type `edgeType` between `n` and the destination node.
