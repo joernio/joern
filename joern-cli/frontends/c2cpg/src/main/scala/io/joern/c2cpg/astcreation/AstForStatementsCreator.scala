@@ -1,8 +1,9 @@
 package io.joern.c2cpg.astcreation
 
 import io.joern.c2cpg.parser.CdtParser
+import io.joern.x2cpg.Ast
+import io.joern.x2cpg.ValidationMode
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
-import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.AstNodeNew
 import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
@@ -15,6 +16,7 @@ import org.eclipse.cdt.core.dom.ast.gnu.IGNUASTGotoStatement
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTIfStatement
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTIfStatement
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTNamespaceAlias
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTSimpleDeclaration
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import java.nio.file.Paths
@@ -103,40 +105,63 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     Seq(Ast(localTmpNode), assignmentCallAst) ++ accessAsts
   }
 
+  private def isCoroutineCall(decl: IASTDeclaration): Boolean = {
+    decl.getRawSignature.startsWith("co_yield ") || decl.getRawSignature.startsWith("co_await ")
+  }
+
+  /** CDT is unable to parse co_yield or co_await calls into actual AST elements. Hence, this hack to recover the
+    * structure from CPPASTSimpleDeclaration.
+    */
+  private def astForCoroutineCall(decl: CPPASTSimpleDeclaration): Ast = {
+    val op = decl.getRawSignature match {
+      case s if s.startsWith("co_yield ") => "<operator>.yield"
+      case _                              => "<operator>.await"
+    }
+    val node    = callNode(decl, code(decl), op, op, DispatchTypes.STATIC_DISPATCH)
+    val argAsts = decl.getDeclarators.zipWithIndex.map { case (d, i) => astForDeclarator(decl, d, i) }
+    callAst(node, argAsts.toSeq)
+  }
+
+  private def astsForIASTSimpleDeclaration(simpleDecl: IASTSimpleDeclaration): Seq[Ast] = {
+    val declAsts = simpleDecl.getDeclarators.zipWithIndex.map {
+      case (d: IASTFunctionDeclarator, _) => astForFunctionDeclarator(d)
+      case (d, i)                         => astForDeclarator(simpleDecl, d, i)
+    }
+    val arrayModCallsAsts = simpleDecl.getDeclarators
+      .collect { case d: IASTArrayDeclarator if hasValidArrayModifier(d) => d }
+      .map { d =>
+        val name          = Operators.alloc
+        val tpe           = registerType(typeFor(d))
+        val codeString    = code(d)
+        val allocCallNode = callNode(d, codeString, name, name, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
+        val allocCallAst  = callAst(allocCallNode, d.getArrayModifiers.toIndexedSeq.map(astForNode))
+        val operatorName  = Operators.assignment
+        val assignmentCallNode =
+          callNode(d, codeString, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
+        val left = astForNode(d.getName)
+        callAst(assignmentCallNode, List(left, allocCallAst))
+      }
+    val initCallsAsts = simpleDecl.getDeclarators.filter(_.getInitializer != null).map { d =>
+      astForInitializer(d, d.getInitializer)
+    }
+    val asts = Seq.from(declAsts ++ arrayModCallsAsts ++ initCallsAsts)
+    setArgumentIndices(asts)
+    asts
+  }
+
   private def astsForDeclarationStatement(decl: IASTDeclarationStatement): Seq[Ast] =
     decl.getDeclaration match {
-      case simpleDecl: IASTSimpleDeclaration
-          if simpleDecl.getDeclarators.headOption.exists(_.isInstanceOf[IASTFunctionDeclarator]) =>
-        Seq(astForFunctionDeclarator(simpleDecl.getDeclarators.head.asInstanceOf[IASTFunctionDeclarator]))
-      case struct: ICPPASTStructuredBindingDeclaration => astsForStructuredBindingDeclaration(struct)
-      case simpleDecl: IASTSimpleDeclaration =>
-        val locals = simpleDecl.getDeclarators.zipWithIndex.map { case (d, i) => astForDeclarator(simpleDecl, d, i) }
-        val arrayModCalls = simpleDecl.getDeclarators
-          .collect { case d: IASTArrayDeclarator if hasValidArrayModifier(d) => d }
-          .map { d =>
-            val name          = Operators.alloc
-            val tpe           = registerType(typeFor(d))
-            val codeString    = code(d)
-            val allocCallNode = callNode(d, codeString, name, name, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
-            val allocCallAst  = callAst(allocCallNode, d.getArrayModifiers.toIndexedSeq.map(astForNode))
-            val operatorName  = Operators.assignment
-            val assignmentCallNode =
-              callNode(d, codeString, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
-            val left = astForNode(d.getName)
-            callAst(assignmentCallNode, List(left, allocCallAst))
-          }
-        val initCalls = simpleDecl.getDeclarators.filter(_.getInitializer != null).map { d =>
-          astForInitializer(d, d.getInitializer)
-        }
-        Seq.from(locals ++ arrayModCalls ++ initCalls)
-      case s: ICPPASTStaticAssertDeclaration         => Seq(astForStaticAssert(s))
-      case usingDeclaration: ICPPASTUsingDeclaration => handleUsingDeclaration(usingDeclaration)
-      case alias: ICPPASTAliasDeclaration            => Seq(astForAliasDeclaration(alias))
-      case func: IASTFunctionDefinition              => Seq(astForFunctionDefinition(func))
-      case alias: CPPASTNamespaceAlias               => Seq(astForNamespaceAlias(alias))
-      case asm: IASTASMDeclaration                   => Seq(astForASMDeclaration(asm))
-      case _: ICPPASTUsingDirective                  => Seq.empty
-      case declaration                               => Seq(astForNode(declaration))
+      case struct: ICPPASTStructuredBindingDeclaration                    => astsForStructuredBindingDeclaration(struct)
+      case declStmt: CPPASTSimpleDeclaration if isCoroutineCall(declStmt) => Seq(astForCoroutineCall(declStmt))
+      case simpleDecl: IASTSimpleDeclaration                              => astsForIASTSimpleDeclaration(simpleDecl)
+      case s: ICPPASTStaticAssertDeclaration                              => Seq(astForStaticAssert(s))
+      case usingDeclaration: ICPPASTUsingDeclaration                      => handleUsingDeclaration(usingDeclaration)
+      case alias: ICPPASTAliasDeclaration                                 => Seq(astForAliasDeclaration(alias))
+      case func: IASTFunctionDefinition                                   => Seq(astForFunctionDefinition(func))
+      case alias: CPPASTNamespaceAlias                                    => Seq(astForNamespaceAlias(alias))
+      case asm: IASTASMDeclaration                                        => Seq(astForASMDeclaration(asm))
+      case _: ICPPASTUsingDirective                                       => Seq.empty
+      case declaration                                                    => Seq(astForNode(declaration))
     }
 
   private def astForReturnStatement(ret: IASTReturnStatement): Ast = {

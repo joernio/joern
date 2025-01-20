@@ -2013,10 +2013,10 @@ class AstCreationPassTests extends AstC2CpgSuite {
       val cpg = code(
         """
         |class Point3D {
-        | public:
-        |  int x;
-        |  int y;
-        |  int z;
+        |  public:
+        |    int x;
+        |    int y;
+        |    int z;
         |};
         |
         |void foo() {
@@ -2025,32 +2025,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
       """.stripMargin,
         "test.cpp"
       )
-      inside(cpg.call.code("point3D \\{ .x = 1, .y = 2, .z = 3 \\}").l) { case List(call: Call) =>
-        call.name shouldBe "point3D"
-        call.methodFullName shouldBe "point3D"
-        inside(call.astChildren.l) { case List(initCall: Call) =>
-          initCall.code shouldBe "{ .x = 1, .y = 2, .z = 3 }"
-          initCall.name shouldBe Operators.arrayInitializer
-          initCall.methodFullName shouldBe Operators.arrayInitializer
-          val children = initCall.astMinusRoot.isCall.l
-          val args     = initCall.argument.astChildren.l
-          inside(children) { case List(call1, call2, call3) =>
-            call1.code shouldBe ".x = 1"
-            call1.name shouldBe Operators.assignment
-            call1.astMinusRoot.code.l shouldBe List("x", "1")
-            call1.argument.code.l shouldBe List("x", "1")
-            call2.code shouldBe ".y = 2"
-            call2.name shouldBe Operators.assignment
-            call2.astMinusRoot.code.l shouldBe List("y", "2")
-            call2.argument.code.l shouldBe List("y", "2")
-            call3.code shouldBe ".z = 3"
-            call3.name shouldBe Operators.assignment
-            call3.astMinusRoot.code.l shouldBe List("z", "3")
-            call3.argument.code.l shouldBe List("z", "3")
-          }
-          children shouldBe args
-        }
-      }
+      cpg.assignment.code.sorted.l shouldBe List("point3D.x = 1", "point3D.y = 2", "point3D.z = 3")
     }
 
     "be correct for call with pack expansion" in {
