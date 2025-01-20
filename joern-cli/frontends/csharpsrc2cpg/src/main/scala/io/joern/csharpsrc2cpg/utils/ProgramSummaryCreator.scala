@@ -18,7 +18,7 @@ object ProgramSummaryCreator {
   def from(astCreators: Seq[AstCreator], config: Config): CSharpProgramSummary = {
     val internalSummary = summarizeAstCreators(astCreators)
     val externalSummary = buildExternalSummary(config.useBuiltinSummaries, config.externalSummaryPaths)
-    internalSummary ++= externalSummary.filter(namespacePred = (ns, _) => internalSummary.imports.contains(ns))
+    internalSummary.appendImported(externalSummary)
   }
 
   private def summarizeAstCreators(astCreators: Seq[AstCreator]): CSharpProgramSummary = {
