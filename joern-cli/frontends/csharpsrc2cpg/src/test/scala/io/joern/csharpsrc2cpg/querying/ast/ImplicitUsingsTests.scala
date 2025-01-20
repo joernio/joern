@@ -147,6 +147,86 @@ class ImplicitUsingsTests extends CSharpCode2CpgFixture {
         )
       }
     }
+
+    "accompanied by a NET.Sdk csproj with ImplicitUsings disabled but including `System`" should {
+      val cpg = code("""
+          |Console.WriteLine("Foo");
+          |""".stripMargin)
+        .moreCode(
+          """
+            |<Project Sdk="Microsoft.NET.Sdk">
+            | <PropertyGroup>
+            |   <OutputType>Exe</OutputType>
+            |   <ImplicitUsings>false</ImplicitUsings>
+            | </PropertyGroup>
+            | <ItemGroup>
+            |   <Using Include="System" />
+            | </ItemGroup>
+            |</Project>
+            |""".stripMargin,
+          fileName = "App.csproj"
+        )
+
+      "resolve WriteLine call" in {
+        cpg.call.nameExact("WriteLine").methodFullName.l shouldBe List(
+          "System.Console.WriteLine:System.Void(System.String)"
+        )
+      }
+    }
+
+    "accompanied by a NET.Sdk csproj with ImplicitUsings enabled but including and excluding `System`" should {
+      val cpg = code("""
+          |Console.WriteLine("Foo");
+          |""".stripMargin)
+        .moreCode(
+          """
+            |<Project Sdk="Microsoft.NET.Sdk">
+            | <PropertyGroup>
+            |   <OutputType>Exe</OutputType>
+            |   <ImplicitUsings>true</ImplicitUsings>
+            | </PropertyGroup>
+            | <ItemGroup>
+            |   <Using Include="System" />
+            |   <Using Remove="System" />
+            | </ItemGroup>
+            |</Project>
+            |""".stripMargin,
+          fileName = "App.csproj"
+        )
+
+      "not resolve WriteLine call" in {
+        cpg.call.nameExact("WriteLine").methodFullName.l shouldBe List(
+          "<unresolvedNamespace>.WriteLine:<unresolvedSignature>"
+        )
+      }
+    }
+
+    "accompanied by a NET.Sdk csproj with ImplicitUsings enabled but excluding and including `System`" should {
+      val cpg = code("""
+          |Console.WriteLine("Foo");
+          |""".stripMargin)
+        .moreCode(
+          """
+            |<Project Sdk="Microsoft.NET.Sdk">
+            | <PropertyGroup>
+            |   <OutputType>Exe</OutputType>
+            |   <ImplicitUsings>true</ImplicitUsings>
+            | </PropertyGroup>
+            | <ItemGroup>
+            |   <Using Remove="System" />
+            |   <Using Include="System" />
+            | </ItemGroup>
+            |</Project>
+            |""".stripMargin,
+          fileName = "App.csproj"
+        )
+
+      "resolve WriteLine call" in {
+        cpg.call.nameExact("WriteLine").methodFullName.l shouldBe List(
+          "System.Console.WriteLine:System.Void(System.String)"
+        )
+      }
+    }
   }
 
 }
