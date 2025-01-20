@@ -76,21 +76,40 @@ object ImplicitUsingsCollector {
       .collect { case x if x.label == "ImplicitUsings" => x.text }
       .exists(x => x == "true" || x == "enable")
 
-    val exclusions = rootElem.child
-      .collect { case x if x.label == "ItemGroup" => x.child }
-      .flatten
-      .collect {
-        case x if x.label == "Using" && x.attribute("Remove").isDefined =>
-          x.attribute("Remove").flatMap(_.headOption.map(_.text))
-      }
-      .flatten
-      .toList
-
-    if (projectType.isDefined && implicitUsingsEnabled) {
-      projectTypeMapping.getOrElse(projectType.get, Nil).diff(exclusions)
+    val usingsFromProjectType = if (projectType.isDefined && implicitUsingsEnabled) {
+      projectTypeMapping.getOrElse(projectType.get, Nil)
     } else {
       Nil
     }
+
+    // Once we gather the initial set of implicit usings (if any) based on the project type, we
+    // process ItemGroup.Using tags. The order in which we process these matters, e.g.
+    //    <Using Include="System"/>
+    //    <Using Remove="System"/>
+    // removes "System", whereas
+    //    <Using Remove="System"/>
+    //    <Using Include="System"/>
+    // adds "System".
+
+    rootElem.child
+      .collect { case x if x.label == "ItemGroup" => x.child }
+      .flatten
+      .collect { case x if x.label == "Using" => x }
+      .flatten
+      .foldLeft(usingsFromProjectType.toSet) { case (acc, node) =>
+        if (node.attribute("Remove").isDefined) {
+          node.attribute("Remove").flatMap(_.headOption.map(_.text)) match
+            case None           => acc
+            case Some(toRemove) => acc.excl(toRemove)
+        } else if (node.attribute("Include").isDefined) {
+          node.attribute("Include").flatMap(_.headOption.map(_.text)) match
+            case None            => acc
+            case Some(toInclude) => acc + toInclude
+        } else {
+          acc
+        }
+      }
+      .toList
   }
 
 }
