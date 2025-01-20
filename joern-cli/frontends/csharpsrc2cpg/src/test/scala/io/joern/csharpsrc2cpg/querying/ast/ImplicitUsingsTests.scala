@@ -122,6 +122,31 @@ class ImplicitUsingsTests extends CSharpCode2CpgFixture {
       }
     }
 
+    "accompanied by a NET.Sdk csproj with ImplicitUsings enabled but excluding `System`" should {
+      val cpg = code("""
+          |Console.WriteLine("Foo");
+          |""".stripMargin)
+        .moreCode(
+          """
+            |<Project Sdk="Microsoft.NET.Sdk">
+            | <PropertyGroup>
+            |   <OutputType>Exe</OutputType>
+            |   <ImplicitUsings>enable</ImplicitUsings>
+            | </PropertyGroup>
+            | <ItemGroup>
+            |  <Using Remove="System" />
+            | </ItemGroup>
+            |</Project>
+            |""".stripMargin,
+          fileName = "App.csproj"
+        )
+
+      "not resolve WriteLine call" in {
+        cpg.call.nameExact("WriteLine").methodFullName.l shouldBe List(
+          "<unresolvedNamespace>.WriteLine:<unresolvedSignature>"
+        )
+      }
+    }
   }
 
 }
