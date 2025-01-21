@@ -311,7 +311,12 @@ trait FullNameProvider { this: AstCreator =>
             val fn = if (function.isExternC) {
               replaceOperator(function.getName)
             } else {
-              s"$fullNameNoSig:${functionTypeToSignature(function.getType)}"
+              val returnTpe = declarator.getParent match {
+                case definition: ICPPASTFunctionDefinition if !isCppConstructor(definition) => returnType(definition)
+                case _ => safeGetType(function.getType.getReturnType)
+              }
+              val sig = StringUtils.normalizeSpace(s"${cleanType(returnTpe)}${parameterListSignature(declarator)}")
+              s"$fullNameNoSig:$sig"
             }
             Option(fn)
           case x @ (_: ICPPField | _: CPPVariable) =>
