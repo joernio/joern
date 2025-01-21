@@ -154,7 +154,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     val normalizedTpe = StringUtils.normalizeSpace(tpe.stripSuffix(" ()"))
     replaceWhitespaceAfterKeyword(normalizedTpe) match {
       case ""                                                                      => Defines.Any
-      case t if t.startsWith("[*this]") || t.startsWith("[this]")                  => normalizedTpe
+      case t if isThisLambdaCapture(t)                                             => normalizedTpe
       case t if t.startsWith("[") && t.endsWith("]")                               => Defines.Array
       case t if t.contains("->")                                                   => Defines.Function
       case t if t.contains("?")                                                    => Defines.Any
@@ -185,6 +185,10 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     } else {
       tpe.replace(" ", "")
     }
+  }
+
+  private def isThisLambdaCapture(tpe: String): Boolean = {
+    tpe.startsWith("[*this]") || tpe.startsWith("[this]") || (tpe.startsWith("[") && tpe.contains("this]"))
   }
 
   protected def safeGetEvaluation(expr: ICPPASTExpression): Option[ICPPEvaluation] = {
