@@ -37,10 +37,10 @@
 | three-way comparison                           | [ ]       |
 | designated initializers                        | [~]       |
 | template syntax for lambdas                    | [ ]       |
-| range-based for loop with initializer          | [?]       |
-| \[\[likely\]\] and \[\[unlikely\]\] attributes | [?]       |
-| deprecate implicit capture of this             | [?]       |
-| class types in non-type template parameters    | [?]       |
+| range-based for loop with initializer          | [ ]       |
+| \[\[likely\]\] and \[\[unlikely\]\] attributes | [x]       |
+| deprecate implicit capture of this             | [~]       |
+| class types in non-type template parameters    | [~]       |
 | constexpr virtual functions                    | [~]       |
 | explicit(bool)                                 | [ ]       |
 | immediate functions                            | [x]       |

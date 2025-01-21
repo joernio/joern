@@ -1,5 +1,6 @@
 package io.joern.c2cpg.cpp.features20
 
+import io.joern.c2cpg.astcreation.Defines
 import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.testfixtures.AstC2CpgSuite
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
@@ -210,59 +211,103 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       }
     }
 
-    "handle range-based for loop with initializer" ignore {
+    "handle range-based for loop with initializer" in {
       val cpg = code("""
-          |for (auto v = std::vector{1, 2, 3}; auto& e : v) {
-          |  std::cout << e;
-          |}
-          |// prints "123"
-          |""".stripMargin)
-      ???
-    }
-
-    "handle likely and unlikely attributes" ignore {
-      val cpg = code("""
-          |switch (n) {
-          |case 1:
-          |  // ...
-          |  break;
-          |
-          |[[likely]] case 2:  // n == 2 is considered to be arbitrarily more
-          |  // ...            // likely than any other value of n
-          |  break;
-          |}
-          |
-          |int random = get_random_number_between_x_and_y(0, 3);
-          |if (random > 0) [[likely]] {
-          |  // body of if statement
-          |  // ...
-          |}
-          |
-          |while (unlikely_truthy_condition) [[unlikely]] {
-          |  // body of while statement
-          |  // ...
+          |void foo() {
+          |  for (auto v = list; auto& e : v) {
+          |    std::cout << e;
+          |  }
           |}
           |""".stripMargin)
-      ???
+      pendingUntilFixed {
+        // range-based for loop with initializer can not be parsed at all by CDT at the moment
+        val List(v, e) = cpg.method.nameExact("foo").controlStructure.astChildren.isLocal.l
+        v.name shouldBe "v"
+        e.name shouldBe "e"
+        val List(vectorInitCall) =
+          cpg.method.nameExact("foo").controlStructure.astChildren.order(2).isCall.argument.isCall.l
+        vectorInitCall.argumentIndex shouldBe 2
+        vectorInitCall.name shouldBe Defines.OperatorConstructorInitializer
+        vectorInitCall.argument.code.l shouldBe List("1", "2", "3")
+      }
     }
 
-    "handle deprecate implicit capture of this" ignore {
+    "handle likely and unlikely attributes" in {
+      val cpg = code("""
+          |void foo() {
+          |  switch (n) {
+          |    case 1:
+          |      case1();
+          |      break;
+          |    [[likely]] case 2:  // n == 2 is considered to be arbitrarily more
+          |      case2()           // likely than any other value of n
+          |      break;
+          |  }
+          |
+          |  int random = get_random_number_between_x_and_y(0, 3);
+          |  if (random > 0) [[likely]] {
+          |    // body of if statement
+          |    likelyIf();
+          |  }
+          |
+          |  while (unlikely_truthy_condition) [[unlikely]] {
+          |    // body of while statement
+          |    unlikelyWhile()
+          |  }
+          |}
+          |""".stripMargin)
+      val cases =
+        cpg.method
+          .nameExact("foo")
+          .controlStructure
+          .controlStructureTypeExact(ControlStructureTypes.SWITCH)
+          .astChildren
+          .isBlock
+          ._jumpTargetViaAstOut
+      cases.code.l shouldBe List("case 1:", "[[likely]] case 2:")
+      cpg.method
+        .nameExact("foo")
+        .controlStructure
+        .controlStructureTypeExact(ControlStructureTypes.SWITCH)
+        .ast
+        .isCall
+        .code
+        .l shouldBe List("case1()", "case2()")
+
+      cpg.method
+        .nameExact("foo")
+        .controlStructure
+        .controlStructureTypeExact(ControlStructureTypes.IF)
+        .ast
+        .isCall
+        .code
+        .l shouldBe List("random > 0", "likelyIf()")
+
+      cpg.method
+        .nameExact("foo")
+        .controlStructure
+        .controlStructureTypeExact(ControlStructureTypes.WHILE)
+        .ast
+        .isCall
+        .code
+        .l shouldBe List("unlikelyWhile()")
+    }
+
+    "handle deprecate implicit capture of this" in {
       val cpg = code("""
           |struct int_value {
           |  int n = 0;
           |  auto getter_fn() {
-          |    // BAD:
-          |    // return [=]() { return n; };
-          |
-          |    // GOOD:
           |    return [=, *this]() { return n; };
           |  }
           |};
           |""".stripMargin)
-      ???
+      // TODO: we can not express these lambda types in the current schema
+      // We would need to add a new type for lambdas that capture `this`
+      cpg.method.nameExact("getter_fn").methodReturn.typeFullName.l shouldBe List(Defines.Function)
     }
 
-    "handle class types in non-type template parameters" ignore {
+    "handle class types in non-type template parameters" in {
       val cpg = code("""
           |struct foo {
           |  foo() = default;
@@ -274,10 +319,23 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |  return f;
           |}
           |
-          |get_foo(); // uses implicit constructor
-          |get_foo<foo{123}>();
+          |void main() {
+          |  get_foo(); // uses implicit constructor
+          |  get_foo<foo{123}>();
+          |}
           |""".stripMargin)
-      ???
+      cpg.typeDecl.nameExact("foo").size shouldBe 1
+      cpg.method.nameExact("get_foo").size shouldBe 1
+      cpg.method.nameExact("main").ast.isCall.typeFullName.l shouldBe List("ANY", "foo")
+      cpg.method.nameExact("main").ast.isCall.methodFullName.l shouldBe List(
+        // we can not resolve the implicit constructor call case:
+        "<unresolvedNamespace>.get_foo:<unresolvedSignature>(0)",
+        "get_foo:foo()"
+      )
+      pendingUntilFixed {
+        cpg.method.nameExact("main").ast.isCall.typeFullName.l shouldBe List("foo", "foo")
+        cpg.method.nameExact("main").ast.isCall.methodFullName.l shouldBe List("get_foo:foo()", "get_foo:foo()")
+      }
     }
 
     "handle constexpr virtual functions" in {
