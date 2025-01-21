@@ -320,7 +320,13 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   private def typeForCPPAstNamedTypeSpecifier(s: ICPPASTNamedTypeSpecifier): String = {
-    val tpe = safeGetBinding(s).map(_.toString).getOrElse(s.getRawSignature)
+    val tpe = safeGetBinding(s)
+      .map {
+        case spec: ICPPSpecialization => spec.toString
+        case n: ICPPBinding           => n.getQualifiedName.mkString(".")
+        case other                    => other.toString
+      }
+      .getOrElse(s.getRawSignature)
     cleanType(tpe)
   }
 
@@ -384,7 +390,13 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     }
     if (pointers.isEmpty) { s"$tpe$arr" }
     else {
-      val refs = pointers.map(_.getRawSignature).mkString("")
+      val refs = pointers
+        .map {
+          case r: ICPPASTReferenceOperator if r.isRValueReference => "&&"
+          case _: ICPPASTReferenceOperator                        => "&"
+          case _: IASTPointer                                     => "*"
+        }
+        .mkString("")
       s"$tpe$arr$refs".strip()
     }
   }

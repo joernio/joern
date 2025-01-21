@@ -296,7 +296,7 @@ trait FullNameProvider { this: AstCreator =>
       case declarator: CPPASTFunctionDeclarator =>
         declarator.getName.resolveBinding() match {
           case function: ICPPFunction if declarator.getName.isInstanceOf[ICPPASTConversionName] =>
-            val tpe = typeFor(declarator.getName.asInstanceOf[ICPPASTConversionName].getTypeId)
+            val tpe = cleanType(typeFor(declarator.getName.asInstanceOf[ICPPASTConversionName].getTypeId))
             val fullNameNoSig = fixQualifiedName(
               function.getQualifiedName.takeWhile(!_.startsWith("operator ")).mkString(".")
             )
@@ -315,7 +315,7 @@ trait FullNameProvider { this: AstCreator =>
                 case definition: ICPPASTFunctionDefinition if !isCppConstructor(definition) => returnType(definition)
                 case _ => safeGetType(function.getType.getReturnType)
               }
-              val sig = StringUtils.normalizeSpace(s"${cleanType(returnTpe)}${parameterListSignature(declarator)}")
+              val sig = signature(cleanType(returnTpe), declarator)
               s"$fullNameNoSig:$sig"
             }
             Option(fn)
