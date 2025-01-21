@@ -146,17 +146,16 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   protected def cleanType(rawType: String): String = {
     if (rawType == Defines.Any) return rawType
-    val tpe = ReservedKeywordsAtTypes.foldLeft(rawType) { (cur, repl) =>
+    val normalizedTpe = StringUtils.normalizeSpace(rawType.stripSuffix(" ()"))
+    val tpe = ReservedKeywordsAtTypes.foldLeft(normalizedTpe) { (cur, repl) =>
       if (cur.startsWith(s"$repl ") || cur.contains(s" $repl ")) {
         cur.replace(s" $repl ", " ").stripPrefix(s"$repl ")
       } else cur
     }
-    val normalizedTpe = StringUtils.normalizeSpace(tpe.stripSuffix(" ()"))
-    replaceWhitespaceAfterKeyword(normalizedTpe) match {
+    replaceWhitespaceAfterKeyword(tpe) match {
       case ""                                                                      => Defines.Any
-      case t if isThisLambdaCapture(t)                                             => normalizedTpe
       case t if t.startsWith("[") && t.endsWith("]")                               => Defines.Array
-      case t if t.contains("->")                                                   => Defines.Function
+      case t if isThisLambdaCapture(t) || t.contains("->")                         => Defines.Function
       case t if t.contains("?")                                                    => Defines.Any
       case t if t.contains("#")                                                    => Defines.Any
       case t if t.contains("::{") || t.contains("}::")                             => Defines.Any

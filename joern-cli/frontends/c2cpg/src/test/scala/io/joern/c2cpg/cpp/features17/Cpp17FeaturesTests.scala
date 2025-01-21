@@ -162,8 +162,8 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |""".stripMargin)
       // TODO: we can not express these lambda types in the current schema
       // We would need to add a new type for lambdas that capture `this` by value copy/ref.
-      cpg.method.nameExact("getValueCopy").methodReturn.typeFullName.l shouldBe List("[*this] { return value; }")
-      cpg.method.nameExact("getValueRef").methodReturn.typeFullName.l shouldBe List("[this] { return value; }")
+      cpg.method.nameExact("getValueCopy").methodReturn.typeFullName.l shouldBe List(Defines.Function)
+      cpg.method.nameExact("getValueRef").methodReturn.typeFullName.l shouldBe List(Defines.Function)
     }
 
     "handle inline variables" in {

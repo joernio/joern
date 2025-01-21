@@ -304,7 +304,7 @@ class Cpp20FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |""".stripMargin)
       // TODO: we can not express these lambda types in the current schema
       // We would need to add a new type for lambdas that capture `this`
-      cpg.method.nameExact("getter_fn").methodReturn.typeFullName.l shouldBe List("[=, *this]() { return n; }")
+      cpg.method.nameExact("getter_fn").methodReturn.typeFullName.l shouldBe List(Defines.Function)
     }
 
     "handle class types in non-type template parameters" in {
