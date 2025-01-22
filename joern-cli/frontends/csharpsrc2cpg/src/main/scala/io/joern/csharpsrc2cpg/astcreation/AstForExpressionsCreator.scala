@@ -507,21 +507,15 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     baseType: Option[String] = None
   ): Seq[Ast] = {
     val baseNode = createDotNetNodeInfo(condAccExpr.json(ParserKeys.Expression))
-    val baseAst  = astForNode(baseNode)
-
     val baseTypeFullName =
-      if (getTypeFullNameFromAstNode(baseAst).equals(Defines.Any)) baseType
-      else Option(getTypeFullNameFromAstNode(baseAst))
+      baseType.orElse(Some(getTypeFullNameFromAstNode(astForNode(baseNode)))).filterNot(_.equals(Defines.Any))
 
     Try(createDotNetNodeInfo(condAccExpr.json(ParserKeys.WhenNotNull))).toOption match {
       case Some(node) =>
         node.node match {
-          case ConditionalAccessExpression =>
-            astForConditionalAccessExpression(node, baseTypeFullName)
-          case MemberBindingExpression => astForMemberBindingExpression(node, baseTypeFullName)
-          case InvocationExpression =>
-            astForInvocationExpression(node)
-          case _ => astForNode(node)
+          case ConditionalAccessExpression => astForConditionalAccessExpression(node, baseTypeFullName)
+          case MemberBindingExpression     => astForMemberBindingExpression(node, baseTypeFullName)
+          case _                           => astForNode(node)
         }
       case None => Seq.empty[Ast]
     }
