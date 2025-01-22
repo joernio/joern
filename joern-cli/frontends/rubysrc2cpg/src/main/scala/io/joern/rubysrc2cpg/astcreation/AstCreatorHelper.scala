@@ -3,6 +3,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   ClassFieldIdentifier,
   ControlFlowStatement,
   DummyNode,
+  ElseClause,
   IfExpression,
   IndexAccess,
   InstanceFieldIdentifier,
@@ -206,7 +207,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       SingleAssignment(tmp, "=", matchCall)(originSpan.spanStart(code))
     }
 
-    def self            = SelfIdentifier()(originSpan.spanStart("self"))
+    def self            = SelfIdentifier()(originSpan.spanStart(Defines.Self))
     def globalTilde     = MemberAccess(self, ".", "$~")(originSpan.spanStart("$~"))
     def globalAmpersand = MemberAccess(self, ".", "$&")(originSpan.spanStart("$&"))
 
@@ -216,13 +217,16 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         val tildeCode   = s"$$~ = $tmpName"
         val tildeAssign = SingleAssignment(globalTilde, "=", tmp)(originSpan.spanStart(tildeCode))
 
-        val index0    = StaticLiteral(getBuiltInType(Defines.Integer))(originSpan.spanStart("0"))
-        val tmpIndex0 = IndexAccess(tmp, index0 :: Nil)(originSpan.spanStart(s"$tmpName[0]"))
+        def zero      = StaticLiteral(getBuiltInType(Defines.Integer))(originSpan.spanStart("0"))
+        val tmpIndex0 = IndexAccess(tmp, zero :: Nil)(originSpan.spanStart(s"$tmpName[0]"))
 
         val ampersandCode   = s"$$& = $tmpName[0]"
         val ampersandAssign = SingleAssignment(globalAmpersand, "=", tmpIndex0)(originSpan.spanStart(ampersandCode))
-        // TODO: Add the begin part
-        StatementList(tildeAssign :: ampersandAssign :: Nil)(originSpan.spanStart(s"$tildeCode; $ampersandCode"))
+        // tmp.begin(0) is the lowered return value of `~=`
+        val beginCall = MemberCall(tmp, ".", "begin", zero :: Nil)(originSpan.spanStart(s"$tmpName.begin(0)"))
+        StatementList(tildeAssign :: ampersandAssign :: beginCall :: Nil)(
+          originSpan.spanStart(s"$tildeCode; $ampersandCode")
+        )
       },
       elseClause = Option {
         def nil         = StaticLiteral(getBuiltInType(Defines.NilClass))(originSpan.spanStart("nil"))
@@ -232,9 +236,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         val ampersandCode   = s"$$& = nil"
         val ampersandAssign = SingleAssignment(globalAmpersand, "=", nil)(originSpan.spanStart(ampersandCode))
 
-        StatementList(tildeAssign :: ampersandAssign :: nil :: Nil)(
-          originSpan.spanStart(s"$tildeCode; $ampersandCode; nil")
-        )
+        val elseSpan = originSpan.spanStart(s"$tildeCode; $ampersandCode; nil")
+        ElseClause(StatementList(tildeAssign :: ampersandAssign :: nil :: Nil)(elseSpan))(elseSpan)
       }
     )(originSpan.spanStart(s"if $tmpName ... else ... end"))
 

@@ -248,9 +248,22 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     }
 
     node.target match {
-      case _: LiteralExpr if node.isRegexMatch =>
-        // TODO: Wrap in regex block
+      case regex @ StaticLiteral(s"${GlobalTypes.kernelPrefix}.Regexp") if node.isRegexMatch =>
+        node.arguments.headOption match {
+          case Some(literal) => lowerRegexMatch(literal, regex, node.span)
+          case None =>
+            val self                = SelfIdentifier()(node.span.spanStart(Defines.Self))
+            val globalDefaultString = MemberAccess(self, ".", "$_")(node.span.spanStart("$_"))
+            lowerRegexMatch(globalDefaultString, regex, node.span)
+        }
         createMemberCall(node)
+      case literal: LiteralExpr if node.isRegexMatch =>
+        node.arguments.headOption match {
+          case Some(regex) => astForExpression(lowerRegexMatch(literal, regex, node.span))
+          case None =>
+            logger.warn("Regex match with empty argument, defaulting to ordinary member call")
+            createMemberCall(node)
+        }
       case _: LiteralExpr =>
         createMemberCall(node)
       case x: SimpleIdentifier if isBundledClass(x.text) =>
