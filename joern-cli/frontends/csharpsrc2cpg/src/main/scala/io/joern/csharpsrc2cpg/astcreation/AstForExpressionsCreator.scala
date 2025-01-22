@@ -245,7 +245,18 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         val arguments      = astForArgumentList(argumentList, baseTypeFullName)
         val argTypes       = arguments.map(getTypeFullNameFromAstNode).toList
         val methodMetaData = scope.tryResolveMethodInvocation(callName, argTypes, baseTypeFullName)
-        (receiverAst.headOption, baseTypeFullName, methodMetaData, arguments)
+
+        // If the instance lookup has failed, we try to look for an extension method.
+        val instanceLookupResult = (receiverAst.headOption, baseTypeFullName, methodMetaData, arguments)
+        if (methodMetaData.isEmpty) {
+          scope.tryResolveExtensionMethodInvocation(baseTypeFullName, callName, argTypes) match {
+            case Some((methodMetaData, methodClassFullName)) =>
+              (receiverAst.headOption, Some(methodClassFullName), Some(methodMetaData), arguments)
+            case None => instanceLookupResult
+          }
+        } else {
+          instanceLookupResult
+        }
       case IdentifierName | MemberBindingExpression =>
         // This is when a call is made directly, which could also be made from a static import
         val argTypes = astForArgumentList(argumentList).map(getTypeFullNameFromAstNode).toList
