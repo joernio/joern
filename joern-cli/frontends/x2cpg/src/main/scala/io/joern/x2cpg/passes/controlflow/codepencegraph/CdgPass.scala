@@ -22,6 +22,7 @@ import org.slf4j.{Logger, LoggerFactory}
 class CdgPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg) {
   import CdgPass.logger
 
+  // 10 is just an arbitrary number - we merely want to log 'a few times' but no more than that
   val hasLogged = java.util.concurrent.atomic.AtomicInteger(10)
 
   override def generateParts(): Array[Method] = cpg.method.toArray
