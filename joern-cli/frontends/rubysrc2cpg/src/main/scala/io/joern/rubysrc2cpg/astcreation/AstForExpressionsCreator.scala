@@ -248,6 +248,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     }
 
     node.target match {
+      case _: LiteralExpr if node.isRegexMatch =>
+        // TODO: Wrap in regex block
+        createMemberCall(node)
       case _: LiteralExpr =>
         createMemberCall(node)
       case x: SimpleIdentifier if isBundledClass(x.text) =>

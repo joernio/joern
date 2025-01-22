@@ -4,19 +4,24 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   ControlFlowStatement,
   DummyNode,
   IfExpression,
+  IndexAccess,
   InstanceFieldIdentifier,
   MemberAccess,
+  MemberCall,
   RubyExpression,
   RubyFieldIdentifier,
   RubyIdentifier,
+  SelfIdentifier,
   SimpleIdentifier,
   SingleAssignment,
   StatementList,
+  StaticLiteral,
   TextSpan,
   UnaryExpression
 }
 import io.joern.rubysrc2cpg.datastructures.{BlockScope, FieldDecl}
 import io.joern.rubysrc2cpg.passes.Defines
+import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import io.joern.rubysrc2cpg.passes.GlobalTypes
 import io.joern.rubysrc2cpg.passes.GlobalTypes.{kernelFunctions, kernelPrefix}
 import io.joern.x2cpg.{Ast, ValidationMode}
@@ -176,6 +181,64 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     IfExpression(condition = condition, thenClause = thenClause, elsifClauses = List.empty, elseClause = None)(
       span.spanStart(s"${thenClause.span.text} if ${condition.span.text}")
     )
+  }
+
+  /** Regex matches implicitly assign values to global variables. Lowering the `=~` operator may look like
+    *
+    * { tmp = 'hello'.match(/h(el)lo/); if tmp; $~ = tmp; $& = tmp[0]; tmp.begin(0); else $~= nil; $& = nil; nil end; }
+    */
+  def lowerRegexMatch(target: RubyExpression, regex: RubyExpression, originSpan: TextSpan): RubyExpression = {
+    // Create tmpName that takes the regex match result
+    val tmpName     = this.tmpGen.fresh
+    val tmpGenLocal = NewLocal().name(tmpName).code(tmpName).typeFullName(Defines.Any)
+    scope.addToScope(tmpName, tmpGenLocal) match {
+      case BlockScope(block) => diffGraph.addEdge(block, tmpGenLocal, EdgeTypes.AST)
+      case _                 =>
+    }
+    def tmp = SimpleIdentifier()(originSpan.spanStart(tmpName))
+
+    val matchCall = {
+      val code = s"${target.text}.match(${regex.text})"
+      MemberCall(target, ".", "match", regex :: Nil)(originSpan.spanStart(code))
+    }
+    val tmpAssignment = {
+      val code = s"$tmpName = ${matchCall.text}"
+      SingleAssignment(tmp, "=", matchCall)(originSpan.spanStart(code))
+    }
+
+    def self            = SelfIdentifier()(originSpan.spanStart("self"))
+    def globalTilde     = MemberAccess(self, ".", "$~")(originSpan.spanStart("$~"))
+    def globalAmpersand = MemberAccess(self, ".", "$&")(originSpan.spanStart("$&"))
+
+    val ifStmt = IfExpression(
+      condition = tmp,
+      thenClause = {
+        val tildeCode   = s"$$~ = $tmpName"
+        val tildeAssign = SingleAssignment(globalTilde, "=", tmp)(originSpan.spanStart(tildeCode))
+
+        val index0    = StaticLiteral(getBuiltInType(Defines.Integer))(originSpan.spanStart("0"))
+        val tmpIndex0 = IndexAccess(tmp, index0 :: Nil)(originSpan.spanStart(s"$tmpName[0]"))
+
+        val ampersandCode   = s"$$& = $tmpName[0]"
+        val ampersandAssign = SingleAssignment(globalAmpersand, "=", tmpIndex0)(originSpan.spanStart(ampersandCode))
+        // TODO: Add the begin part
+        StatementList(tildeAssign :: ampersandAssign :: Nil)(originSpan.spanStart(s"$tildeCode; $ampersandCode"))
+      },
+      elseClause = Option {
+        def nil         = StaticLiteral(getBuiltInType(Defines.NilClass))(originSpan.spanStart("nil"))
+        val tildeCode   = s"$$~ = nil"
+        val tildeAssign = SingleAssignment(globalTilde, "=", nil)(originSpan.spanStart(tildeCode))
+
+        val ampersandCode   = s"$$& = nil"
+        val ampersandAssign = SingleAssignment(globalAmpersand, "=", nil)(originSpan.spanStart(ampersandCode))
+
+        StatementList(tildeAssign :: ampersandAssign :: nil :: Nil)(
+          originSpan.spanStart(s"$tildeCode; $ampersandCode; nil")
+        )
+      }
+    )(originSpan.spanStart(s"if $tmpName ... else ... end"))
+
+    StatementList(tmpAssignment :: ifStmt :: Nil)(originSpan)
   }
 
   protected val UnaryOperatorNames: Map[String, String] = Map(

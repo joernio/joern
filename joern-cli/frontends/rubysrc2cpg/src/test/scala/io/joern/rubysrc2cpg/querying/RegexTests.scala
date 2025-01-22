@@ -48,4 +48,62 @@ class RegexTests extends RubyCode2CpgFixture(withPostProcessing = true) {
       case xs => fail(s"One if statement expected, got [${xs.code.mkString(",")}]")
     }
   }
+
+  "Global regex related variables" should {
+
+    "be assigned to the match by the `~=` operator" in {
+
+      val cpg = code("""
+          |'hello' =~ /h(el)lo/
+          |""".stripMargin)
+
+      cpg.method.isModule.dotAst.foreach(println)
+    }
+
+    "be assigned to the match in a case equality" in {
+      val cpg = code("""
+          |case "hello"
+          |when /h(el)lo/
+          | puts $1
+          |end
+          |""".stripMargin)
+
+      cpg.method.dotAst.foreach(println)
+    }
+
+    "be assigned to the match in a match call (regex lhs)" in {
+      val cpg = code("""
+          |/h(el)lo/.match("hello")
+          |""".stripMargin)
+    }
+
+    "be assigned to the match in a match call (regex rhs)" in {
+      val cpg = code("""
+          |"hello".match(/h(el)lo/)
+          |""".stripMargin)
+    }
+
+    "be assigned to the match of the default global string in a match call (no rhs)" in {
+      val cpg = code("""
+          |$_ = "hello"
+          |/h(el)lo/ =~ # Match, updates $~, $1 = "el"
+          |""".stripMargin)
+    }
+
+    // We can only approximate this if the regex is directly in the index, otherwise it becomes expensive to
+    // perform constant propagation in order to determine all such cases
+    "be assigned to the match using string indexing" in {
+      val cpg = code("""
+          |"hello"[/h(el)lo]
+          |""".stripMargin)
+    }
+
+    "be assigned to the match using `sub` or `gsub` calls" in {
+      val cpg = code("""
+          |"hello".sub(/h(el)lo/)
+          |""".stripMargin)
+    }
+
+  }
+
 }
