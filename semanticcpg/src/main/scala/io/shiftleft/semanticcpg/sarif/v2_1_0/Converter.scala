@@ -1,5 +1,6 @@
 package io.shiftleft.semanticcpg.sarif.v2_1_0
 
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{
   AstNode,
   CfgNode,
@@ -43,8 +44,9 @@ class Converter extends SarifResultConverter {
 
   protected def nodeToLocation(node: StoredNode): Schema.Location = {
     Schema.Location(physicalLocation =
-      Schema.PhysicalLocation(artifactLocation =
-        Schema.ArtifactLocation(uri = nodeToUri(node), region = nodeToRegion(node))
+      Schema.PhysicalLocation(
+        artifactLocation = Schema.ArtifactLocation(uri = nodeToUri(node)),
+        region = nodeToRegion(node)
       )
     )
   }
@@ -61,17 +63,17 @@ class Converter extends SarifResultConverter {
   protected def nodeToRegion(node: StoredNode): Schema.Region = {
     node match {
       case t: TypeDecl =>
-        Schema.Region(startLine = t.lineNumber, startColumn = t.columnNumber, snippet = t.code)
+        Schema.Region(startLine = t.lineNumber, startColumn = t.columnNumber, snippet = Schema.ArtifactContent(t.code))
       case m: Method =>
         Schema.Region(
           startLine = m.lineNumber,
           startColumn = m.columnNumber,
           endLine = m.lineNumberEnd,
           endColumn = m.columnNumberEnd,
-          snippet = m.code
+          snippet = Schema.ArtifactContent(m.code)
         )
       case n: CfgNode =>
-        Schema.Region(startLine = n.lineNumber, startColumn = n.columnNumber, snippet = n.code)
+        Schema.Region(startLine = n.lineNumber, startColumn = n.columnNumber, snippet = Schema.ArtifactContent(n.code))
       case _ => null
     }
   }

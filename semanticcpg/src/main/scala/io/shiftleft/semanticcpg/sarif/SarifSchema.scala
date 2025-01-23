@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.sarif
 
-import io.shiftleft.semanticcpg.sarif.v2_1_0.Schema
+import org.json4s.{CustomSerializer, Extraction, Serializer}
 import org.slf4j.LoggerFactory
 
 import java.net.URI
@@ -22,14 +22,18 @@ object SarifSchema {
   case class Sarif2_1_0(runs: List[Run]) extends Sarif {
     def version: String = "2.1.0"
 
-    def `$schema`: String = "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.4.json"
+    def `$schema`: String = "https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json"
   }
 
   // Minimal properties we want to use across versions:
 
+  trait ArtifactContent private[sarif] {
+    def text: String
+  }
+
   trait ArtifactLocation private[sarif] {
     def uri: URI
-    def region: Region
+    def uriBaseId: String
   }
 
   trait CodeFlow private[sarif] {
@@ -47,6 +51,7 @@ object SarifSchema {
 
   trait PhysicalLocation private[sarif] {
     def artifactLocation: ArtifactLocation
+    def region: Region
   }
 
   trait Region private[sarif] {
@@ -58,7 +63,7 @@ object SarifSchema {
 
     def endColumn: Option[Int]
 
-    def snippet: String
+    def snippet: ArtifactContent
   }
 
   trait Result private[sarif] {
@@ -72,6 +77,7 @@ object SarifSchema {
   trait Run private[sarif] {
     def tool: Tool
     def results: List[Result]
+    def originalUriBaseId: Option[URI] // Unofficial, but useful for setting uriBaseId in a single location
   }
 
   trait ThreadFlow private[sarif] {
@@ -88,8 +94,10 @@ object SarifSchema {
 
   trait ToolComponent private[sarif] {
     def name: String
+    def fullName: String
     def organization: String
     def semanticVersion: String
+    def informationUri: URI
   }
 
   object Level {
@@ -111,5 +119,70 @@ object SarifSchema {
     }
 
   }
+
+  val serializers: List[Serializer[?]] = List(
+    new CustomSerializer[SarifSchema.Sarif](implicit format =>
+      (
+        { case _ =>
+          ???
+        },
+        { case sarif: SarifSchema.Sarif =>
+          Extraction.decompose(Map("version" -> sarif.version, "$schema" -> sarif.`$schema`, "runs" -> sarif.runs))
+        }
+      )
+    ),
+    new CustomSerializer[SarifSchema.ArtifactLocation](implicit format =>
+      (
+        { case _ =>
+          ???
+        },
+        { case location: SarifSchema.ArtifactLocation =>
+          Extraction.decompose(Map("uri" -> location.uri, "uriBaseId" -> location.uriBaseId))
+        }
+      )
+    ),
+    new CustomSerializer[SarifSchema.Region](implicit format =>
+      (
+        { case _ =>
+          ???
+        },
+        { case region: SarifSchema.Region =>
+          val elementMap = Map.newBuilder[String, Any]
+          region.startLine.foreach(x => elementMap.addOne("startLine" -> x))
+          region.startColumn.foreach(x => elementMap.addOne("startColumn" -> x))
+          region.endLine.foreach(x => elementMap.addOne("endLine" -> x))
+          region.endColumn.foreach(x => elementMap.addOne("endColumn" -> x))
+          elementMap.addOne("snippet" -> region.snippet)
+          Extraction.decompose(elementMap.result())
+        }
+      )
+    ),
+    new CustomSerializer[SarifSchema.Run](implicit format =>
+      (
+        { case _ =>
+          ???
+        },
+        { case run: SarifSchema.Run =>
+          val elementMap = Map.newBuilder[String, Any]
+          elementMap.addOne("tool" -> run.tool)
+          run.originalUriBaseId.foreach(x =>
+            elementMap.addOne("originalUriBaseIds" -> Map("PROJECT_ROOT" -> Map("uri" -> x.toString)))
+          )
+          elementMap.addOne("results" -> run.results)
+          Extraction.decompose(elementMap.result())
+        }
+      )
+    ),
+    new CustomSerializer[URI](implicit format =>
+      (
+        { case _ =>
+          ???
+        },
+        { case uri: URI =>
+          Extraction.decompose(uri.toString)
+        }
+      )
+    )
+  )
 
 }
