@@ -3,6 +3,7 @@ package io.joern.csharpsrc2cpg.astcreation
 import io.joern.csharpsrc2cpg.datastructures.{CSharpMethod, FieldDecl}
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
+import io.joern.csharpsrc2cpg.utils.Utils.{composeMethodFullName, composeMethodLikeSignature}
 import io.joern.csharpsrc2cpg.{CSharpOperators, Constants}
 import io.joern.x2cpg.utils.NodeBuilders.{newCallNode, newIdentifierNode, newOperatorCallNode}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
@@ -288,15 +289,16 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         (None, None, None, Seq.empty[Ast])
     }
     val methodSignature = methodMetaData match {
-      case Some(m) => s"${m.returnType}(${m.parameterTypes.filterNot(_._1 == "this").map(_._2).mkString(",")})"
-      case None    => Defines.UnresolvedSignature
+      case Some(m) =>
+        composeMethodLikeSignature(m.returnType, m.parameterTypes.filterNot(_._1 == Constants.This).map(_._2))
+      case None => Defines.UnresolvedSignature
     }
 
     val methodFullName = baseTypeFullName match {
       case Some(typeFullName) =>
-        s"$typeFullName.$callName:$methodSignature"
+        composeMethodFullName(typeFullName, callName, methodSignature)
       case _ =>
-        s"${Defines.UnresolvedNamespace}.$callName:$methodSignature"
+        composeMethodFullName(Defines.UnresolvedNamespace, callName, methodSignature)
     }
     val dispatchType = methodMetaData
       .map(_.isStatic)

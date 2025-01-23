@@ -451,7 +451,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def methodSignature(methodReturn: NewMethodReturn, params: Seq[NewMethodParameterIn]): String = {
-    s"${methodReturn.typeFullName}(${params.map(_.typeFullName).mkString(",")})"
+    composeMethodLikeSignature(methodReturn.typeFullName, params.map(_.typeFullName))
   }
 
   private def astForParameter(paramNode: DotNetNodeInfo, idx: Int, paramTypeHint: Option[String] = None): Ast = {
@@ -466,14 +466,14 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForThisParameter(methodDecl: DotNetNodeInfo): Ast = {
-    val name         = "this"
+    val name         = Constants.This
     val typeFullName = scope.surroundingTypeDeclFullName.getOrElse(Defines.Any)
     val param = parameterInNode(methodDecl, name, name, 0, false, EvaluationStrategies.BY_SHARING.name, typeFullName)
     Ast(param)
   }
 
   protected def astForThisReceiver(invocationExpr: DotNetNodeInfo, typeFullName: Option[String] = None): Ast = {
-    val name = "this"
+    val name = Constants.This
     val param = identifierNode(
       invocationExpr,
       name,

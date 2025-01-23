@@ -1,5 +1,6 @@
 package io.joern.csharpsrc2cpg.datastructures
 
+import io.joern.csharpsrc2cpg.Constants
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.datastructures.{OverloadableScope, Scope, ScopeElement, TypedScope, TypedScopeElement}
 import io.joern.x2cpg.utils.ListUtils.singleOrNone
@@ -38,7 +39,7 @@ class CSharpScope(summary: CSharpProgramSummary)
 
   override def isOverloadedBy(method: CSharpMethod, argTypes: List[String]): Boolean = {
     method.parameterTypes
-      .filterNot(_._1 == "this")
+      .filterNot(_._1 == Constants.This)
       .map(_._2)
       .zip(argTypes)
       .count({ case (x, y) => x != y }) == 0
@@ -62,7 +63,7 @@ class CSharpScope(summary: CSharpProgramSummary)
     .exists(x => x.scopeNode.isInstanceOf[MethodScope] || x.scopeNode.isInstanceOf[TypeLikeScope])
 
   override def tryResolveTypeReference(typeName: String): Option[CSharpType] = {
-    if (typeName == "this") {
+    if (typeName == Constants.This) {
       surroundingTypeDeclFullName.flatMap(summary.matchingTypes).headOption
     } else {
       super.tryResolveTypeReference(typeName) match

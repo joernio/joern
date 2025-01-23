@@ -197,7 +197,7 @@ object AstCreatorHelper {
       case SimpleMemberAccessExpression | MemberBindingExpression | SuppressNullableWarningExpression | Attribute =>
         nameFromIdentifier(createDotNetNodeInfo(node.json(ParserKeys.Name)))
       case ObjectCreationExpression | CastExpression => nameFromNode(createDotNetNodeInfo(node.json(ParserKeys.Type)))
-      case ThisExpression                            => "this"
+      case ThisExpression                            => Constants.This
       case _                                         => "<empty>"
   }
 
