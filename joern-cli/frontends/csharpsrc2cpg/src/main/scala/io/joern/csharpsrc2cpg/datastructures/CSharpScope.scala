@@ -160,11 +160,6 @@ class CSharpScope(summary: CSharpProgramSummary)
     callName: String,
     argTypes: List[String]
   ): Option[(CSharpMethod, String)] = {
-    baseTypeFullName.flatMap { tfn =>
-      extensionsInScopeFor(tfn, callName, argTypes).take(2).toList match {
-        case x :: Nil => Some((x.methods.head, x.name))
-        case _        => None
-      }
-    }
+    baseTypeFullName.flatMap(extensionsInScopeFor(_, callName, argTypes).headOption).map(x => (x.methods.head, x.name))
   }
 }
