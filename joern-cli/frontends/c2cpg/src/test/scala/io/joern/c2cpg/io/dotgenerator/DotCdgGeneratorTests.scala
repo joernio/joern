@@ -19,9 +19,9 @@ class DotCdgGeneratorTests extends DataFlowCodeToCpgSuite {
         inside(cpg.method.name("foo").dotCdg.l) { case List(x) =>
           x should (
             startWith("digraph \"foo\"") and
-              include("""[label = <(&lt;operator&gt;.greaterThan,x &gt; 8)<SUB>3</SUB>> ]""") and
-              include("""[label = <(&lt;operator&gt;.assignment,z = a(x))<SUB>4</SUB>> ]""") and
-              include("""[label = <(a,a(x))<SUB>4</SUB>> ]""") and
+              include("""[label = <&lt;operator&gt;.greaterThan, 3<BR/>x &gt; 8> ]""") and
+              include("""[label = <&lt;operator&gt;.assignment, 4<BR/>z = a(x)> ]""") and
+              include("""[label = <a, 4<BR/>a(x)> ]""") and
               endWith("}\n")
           )
           val lines = x.split("\n")
@@ -46,9 +46,9 @@ class DotCdgGeneratorTests extends DataFlowCodeToCpgSuite {
         inside(cpg.method.name("foo").dotCdg.l) { case List(x) =>
           x should (
             startWith("digraph \"foo\"") and
-              include("""[label = <(&lt;operator&gt;.greaterThan,x &gt; 8)<SUB>3</SUB>> ]""") and
-              include("""[label = <(&lt;operator&gt;.assignment,z = a(x))<SUB>4</SUB>> ]""") and
-              include("""[label = <(a,a(x))<SUB>4</SUB>> ]""") and
+              include("""[label = <&lt;operator&gt;.greaterThan, 3<BR/>x &gt; 8> ]""") and
+              include("""[label = <&lt;operator&gt;.assignment, 4<BR/>z = a(x)> ]""") and
+              include("""[label = <a, 4<BR/>a(x)> ]""") and
               endWith("}\n")
           )
           val lines = x.split("\n")
