@@ -1,7 +1,7 @@
 package io.joern.csharpsrc2cpg.querying.ast
 
 import io.joern.csharpsrc2cpg.testfixtures.CSharpCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, ModifierTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal}
 import io.shiftleft.semanticcpg.language.*
 
@@ -111,6 +111,148 @@ class PropertyGetterTests extends CSharpCode2CpgFixture {
           x.argumentIndex shouldBe 0
         case xs => fail(s"Expected single identifier argument to KeyChar, but got $xs")
       }
+    }
+  }
+
+  "uninitialized get-only property declaration" should {
+    val cpg = code("""
+        |class C
+        |{
+        |  public int MyProperty { get; }
+        |}
+        |""".stripMargin)
+
+    "be lowered into a get_* method" in {
+      inside(cpg.method.nameExact("get_MyProperty").l) {
+        case method :: Nil =>
+          method.fullName shouldBe "C.get_MyProperty:System.Int32(C)"
+          method.signature shouldBe "System.Int32(C)"
+        case xs => fail(s"Expected single get_MyProperty method, but got $xs")
+      }
+    }
+
+    "have correct modifiers" in {
+      cpg.method.nameExact("get_MyProperty").modifier.modifierType.sorted.l shouldBe List(ModifierTypes.PUBLIC)
+    }
+
+    "have correct parameters" in {
+      inside(cpg.method.nameExact("get_MyProperty").parameter.l) {
+        case thisParam :: Nil =>
+          thisParam.typeFullName shouldBe "C"
+          thisParam.name shouldBe "this"
+        case xs => fail(s"Expected this parameter for get_MyProperty, but got $xs")
+      }
+    }
+
+    "have empty body" in {
+      cpg.method.nameExact("get_MyProperty").body.astChildren shouldBe empty
+    }
+  }
+
+  "assignment whose RHS is a get-only property declared in the source-code" should {
+    val cpg = code("""
+        |class C { public int MyProperty {get;} }
+        |class M
+        |{
+        | void Run()
+        | {
+        |   var c = new C();
+        |   var x = c.MyProperty;
+        | }
+        |}
+        |""".stripMargin)
+
+    "have a get_* method call on the RHS" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("x")).source.l) {
+        case (rhs: Call) :: Nil =>
+          rhs.code shouldBe "c.MyProperty"
+          rhs.name shouldBe "get_MyProperty"
+          rhs.methodFullName shouldBe "C.get_MyProperty:System.Int32(C)"
+          rhs.typeFullName shouldBe "System.Int32"
+          rhs.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        case xs => fail(s"Expected single RHS call for the assignment of x, but got $xs")
+      }
+    }
+
+    "have correct arguments to the get_* call" in {
+      inside(cpg.call.codeExact("c.MyProperty").argument.sortBy(_.argumentIndex).l) {
+        case (baseArg: Identifier) :: Nil =>
+          baseArg.argumentIndex shouldBe 0
+          baseArg.code shouldBe "c"
+          baseArg.typeFullName shouldBe "C"
+        case xs => fail(s"Expected single identifier argument to c.MyProperty, but got $xs")
+      }
+    }
+
+    "have correct typeFullName for the assignment" in {
+      cpg.assignment.where(_.target.isIdentifier.nameExact("x")).typeFullName.l shouldBe List("System.Int32")
+    }
+  }
+
+  "assignment whose RHS is a static get-only property declared in the source-code" should {
+    val cpg = code("""
+        |class C { public static int MyProperty {get;} }
+        |class M
+        |{
+        | void Run()
+        | {
+        |   var c = new C();
+        |   var x = c.MyProperty;
+        | }
+        |}
+        |""".stripMargin)
+
+    "have a get_* method call on the RHS" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.nameExact("x")).source.l) {
+        case (rhs: Call) :: Nil =>
+          rhs.code shouldBe "c.MyProperty"
+          rhs.name shouldBe "get_MyProperty"
+          rhs.methodFullName shouldBe "C.get_MyProperty:System.Int32()"
+          rhs.typeFullName shouldBe "System.Int32"
+          rhs.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        case xs => fail(s"Expected single RHS call for the assignment of x, but got $xs")
+      }
+    }
+
+    "have correct arguments to the get_* call" in {
+      cpg.call.codeExact("c.MyProperty").argument shouldBe empty
+    }
+
+    "have correct typeFullName for the assignment" in {
+      cpg.assignment.where(_.target.isIdentifier.nameExact("x")).typeFullName.l shouldBe List("System.Int32")
+    }
+  }
+
+  "uninitialized static get-only property declaration" should {
+    val cpg = code("""
+        |public class C
+        |{
+        | public static string MyProperty { get; }
+        |}
+        |""".stripMargin)
+
+    "be lowered into a get_* method" in {
+      inside(cpg.method.nameExact("get_MyProperty").l) {
+        case method :: Nil =>
+          method.fullName shouldBe "C.get_MyProperty:System.String()"
+          method.signature shouldBe "System.String()"
+        case xs => fail(s"Expected single get_MyProperty method, but got $xs")
+      }
+    }
+
+    "have correct modifiers" in {
+      cpg.method.nameExact("get_MyProperty").modifier.modifierType.sorted.l shouldBe List(
+        ModifierTypes.PUBLIC,
+        ModifierTypes.STATIC
+      )
+    }
+
+    "have no parameters" in {
+      cpg.method.nameExact("get_MyProperty").parameter shouldBe empty
+    }
+
+    "have empty body" in {
+      cpg.method.nameExact("get_MyProperty").body.astChildren shouldBe empty
     }
   }
 }

@@ -547,13 +547,36 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   protected def astForPropertyDeclaration(propertyDecl: DotNetNodeInfo): Seq[Ast] = {
-    val propertyName = nameFromNode(propertyDecl)
-    val modifierAst  = astForModifiers(propertyDecl)
-    val typeFullName = nodeTypeFullName(propertyDecl)
+    val accessorList = createDotNetNodeInfo(propertyDecl.json(ParserKeys.AccessorList))
+    val accessors    = accessorList.json(ParserKeys.Accessors).arr.map(createDotNetNodeInfo)
+    accessors.flatMap(astForPropertyAccessor(_, propertyDecl)).toList
+  }
 
-    val _memberNode = memberNode(propertyDecl, propertyName, propertyDecl.code, typeFullName)
+  private def astForPropertyAccessor(accessorDecl: DotNetNodeInfo, propertyDecl: DotNetNodeInfo): Seq[Ast] = {
+    accessorDecl.node match
+      case GetAccessorDeclaration => astForGetAccessorDeclaration(accessorDecl, propertyDecl)
+      case _ =>
+        logger.warn(s"Unhandled property accessor '${accessorDecl.node}''")
+        Nil
+  }
 
-    Seq(Ast(_memberNode).withChildren(modifierAst))
+  private def astForGetAccessorDeclaration(accessorDecl: DotNetNodeInfo, propertyDecl: DotNetNodeInfo): Seq[Ast] = {
+    val name       = s"get_${nameFromNode(propertyDecl)}"
+    val modifiers  = modifiersForNode(propertyDecl)
+    val returnType = nodeTypeFullName(propertyDecl)
+    val baseType   = scope.surroundingTypeDeclFullName.getOrElse(Defines.UnresolvedNamespace)
+    val isStatic   = modifiers.exists(_.modifierType == ModifierTypes.STATIC)
+    val parameters = if isStatic then Nil else astForThisParameter(propertyDecl) :: Nil
+    val signature = composeMethodLikeSignature(
+      returnType,
+      parameters.flatMap(_.nodes.collectFirst { case x: NewMethodParameterIn => x.typeFullName })
+    )
+    val fullName     = composeMethodFullName(baseType, name, signature)
+    val body         = Ast(blockNode(accessorDecl))
+    val methodReturn = methodReturnNode(accessorDecl, returnType)
+    val methodNode_  = methodNode(accessorDecl, name, fullName, signature, relativeFileName)
+
+    methodAst(methodNode_, parameters, body, methodReturn, modifiers) :: Nil
   }
 
   /** Creates an AST for a simple `x => { ... }` style lambda expression
@@ -606,7 +629,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       Option(NodeTypes.METHOD),
       scope.surroundingScopeFullName
     )
-    val modifiers = modifiersForNode(lambdaExpression)
+    val modifiers = astForModifiers(lambdaExpression).flatMap(_.nodes).collect { case x: NewModifier => x }
     val lambdaReturnType = body.lastOption
       .getOrElse(Ast())
       .nodes

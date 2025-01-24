@@ -280,12 +280,20 @@ object DotNetJsonAst {
 
   object Unknown extends DotNetParserNode
 
+  object AccessorList extends DotNetParserNode
+
+  object GetAccessorDeclaration extends DotNetParserNode
+
+  object SetAccessorDeclaration extends DotNetParserNode
+
 }
 
 /** The JSON key values, in alphabetical order.
   */
 object ParserKeys {
 
+  val AccessorList              = "AccessorList"
+  val Accessors                 = "Accessors"
   val AstRoot                   = "AstRoot"
   val Arguments                 = "Arguments"
   val ArgumentList              = "ArgumentList"
@@ -311,6 +319,7 @@ object ParserKeys {
   val ExpressionBody            = "ExpressionBody"
   val Finally                   = "Finally"
   val FileName                  = "FileName"
+  val GetAccessorDeclaration    = "GetAccessorDeclaration"
   val Identifier                = "Identifier"
   val Incrementors              = "Incrementors"
   val Initializer               = "Initializer"
@@ -333,6 +342,7 @@ object ParserKeys {
   val ParameterList             = "ParameterList"
   val Pattern                   = "Pattern"
   val Sections                  = "Sections"
+  val SetAccessorDeclaration    = "SetAccessorDeclaration"
   val SingleVariableDesignation = "SingleVariableDesignation"
   val Statement                 = "Statement"
   val Statements                = "Statements"
