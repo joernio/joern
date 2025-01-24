@@ -39,8 +39,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case ConditionalAccessExpression       => astForConditionalAccessExpression(expr)
       case SuppressNullableWarningExpression => astForSuppressNullableWarningExpression(expr)
       case _: BaseLambdaExpression           => astForSimpleLambdaExpression(expr)
+      case ParenthesizedExpression           => astForParenthesizedExpression(expr)
       case _                                 => notHandledYet(expr)
     }
+  }
+
+  private def astForParenthesizedExpression(parenExpr: DotNetNodeInfo): Seq[Ast] = {
+    astForNode(parenExpr.json(ParserKeys.Expression))
   }
 
   private def astForAwaitExpression(awaitExpr: DotNetNodeInfo): Seq[Ast] = {
