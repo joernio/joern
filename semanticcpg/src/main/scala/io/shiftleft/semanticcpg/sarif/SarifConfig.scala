@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg.sarif
 
 import io.shiftleft.semanticcpg.sarif.SarifConfig.SarifVersion
-import io.shiftleft.semanticcpg.sarif.v2_1_0.Converter
+import io.shiftleft.semanticcpg.sarif.v2_1_0.JoernScanResultToSarifConverter
 import org.json4s.Serializer
 
 import java.net.URI
@@ -13,7 +13,7 @@ case class SarifConfig(
   organization: String = "Joern.io",
   semanticVersion: String = "4.x.x",
   sarifVersion: SarifVersion = SarifVersion.V2_1_0,
-  resultConverter: SarifResultConverter = Converter(),
+  resultConverter: ScanResultToSarifConverter = JoernScanResultToSarifConverter(),
   customSerializers: List[Serializer[?]] = SarifSchema.serializers
 )
 

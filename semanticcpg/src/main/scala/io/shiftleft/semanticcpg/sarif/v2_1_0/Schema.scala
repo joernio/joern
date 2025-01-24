@@ -17,7 +17,8 @@ object Schema {
     *   A string which indirectly specifies the absolute URI with respect to which a relative URI in the "uri" property
     *   is interpreted.
     */
-  final case class ArtifactLocation(uri: URI, uriBaseId: String = "PROJECT_ROOT") extends SarifSchema.ArtifactLocation
+  final case class ArtifactLocation(uri: Option[URI], uriBaseId: String = "PROJECT_ROOT")
+      extends SarifSchema.ArtifactLocation
 
   final case class CodeFlow(message: Message, threadFlows: List[ThreadFlow]) extends SarifSchema.CodeFlow
 

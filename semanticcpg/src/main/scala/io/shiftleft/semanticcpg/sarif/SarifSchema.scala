@@ -32,7 +32,7 @@ object SarifSchema {
   }
 
   trait ArtifactLocation private[sarif] {
-    def uri: URI
+    def uri: Option[URI]
     def uriBaseId: String
   }
 
@@ -137,7 +137,10 @@ object SarifSchema {
           ???
         },
         { case location: SarifSchema.ArtifactLocation =>
-          Extraction.decompose(Map("uri" -> location.uri, "uriBaseId" -> location.uriBaseId))
+          val elementMap = Map.newBuilder[String, Any]
+          location.uri.foreach(x => elementMap.addOne("uri" -> x))
+          elementMap.addOne("uriBaseId" -> location.uriBaseId)
+          Extraction.decompose(elementMap.result())
         }
       )
     ),
