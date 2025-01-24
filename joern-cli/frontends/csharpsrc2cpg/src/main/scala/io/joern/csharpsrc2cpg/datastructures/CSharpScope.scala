@@ -140,7 +140,10 @@ class CSharpScope(summary: CSharpProgramSummary)
     name: String,
     argTypes: List[String]
   ): CSharpMethod => Boolean = { m =>
-    m.isStatic && m.name == name && m.parameterTypes.map(_._2) == thisType :: argTypes
+    // TODO: we should also compare argTypes, however we first need to account for:
+    //  a) default valued parameters in CSharpMethod, to account for different arities
+    //  b) compatible/sub types, i.e. System.String should unify with System.Object.
+    m.isStatic && m.name == name && m.parameterTypes.map(_._2).headOption.contains(thisType)
   }
 
   /** Tries to find an extension method for [[baseTypeFullName]] with the given [[callName]] and [[argTypes]] in the
