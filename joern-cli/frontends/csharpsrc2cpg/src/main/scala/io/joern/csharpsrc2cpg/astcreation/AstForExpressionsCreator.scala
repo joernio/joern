@@ -328,31 +328,69 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val fieldIdentifierName = nameFromNode(accessExpr)
     val baseAst             = astForNode(createDotNetNodeInfo(accessExpr.json(ParserKeys.Expression))).head
     val baseTypeFullName    = getTypeFullNameFromAstNode(baseAst)
-    val typeFullName = {
-      // The typical resolving mechanism
-      lazy val byFieldAccess = scope.tryResolveFieldAccess(fieldIdentifierName, Some(baseTypeFullName)).map(_.typeName)
 
-      // Getters look like fields, but are underneath `get_`-prefixed methods
-      lazy val byPropertyName =
-        scope.tryResolveMethodInvocation(s"get_$fieldIdentifierName", Nil, Some(baseTypeFullName)).map(_.returnType)
+    // The typical field access resolving mechanism
+    lazy val byFieldAccess = scope.tryResolveFieldAccess(fieldIdentifierName, Some(baseTypeFullName))
 
-      // accessExpr might be a qualified name e.g. `System.Console`, in which case `System` (baseAst) is not a type
-      // but a namespace. In this scenario, we look up the entire expression
-      lazy val byQualifiedName = scope.tryResolveTypeReference(accessExpr.code).map(_.name)
+    // Getters look like fields, but are underneath `get_`-prefixed methods
+    lazy val byPropertyName = scope.tryResolveMethodInvocation(s"get_$fieldIdentifierName", Nil, Some(baseTypeFullName))
 
-      byFieldAccess.orElse(byPropertyName).orElse(byQualifiedName).getOrElse(Defines.Any)
+    // accessExpr might be a qualified name e.g. `System.Console`, in which case `System` (baseAst) is not a type
+    // but a namespace. In this scenario, we look up the entire expression
+    lazy val byQualifiedName = scope.tryResolveTypeReference(accessExpr.code)
+
+    val (typeFullName, isGetter) = byFieldAccess
+      .map(x => (x.typeName, false))
+      .orElse(byPropertyName.map(x => (x.returnType, true)))
+      .orElse(byQualifiedName.map(x => (x.name, false)))
+      .getOrElse((Defines.Any, false))
+
+    if (isGetter) {
+      // Getters are turned into invocations/calls, instead of field accesses.
+      // E.g.
+      //   a) System.Console.Out is turned into System.Console.get_Out(), because it's a static method
+      //   b) x.KeyChar is turned into System.ConsoleKeyInfo.get_KeyChar(x), because it's a dynamic method
+      val getter = byPropertyName.get
+      if (getter.isStatic) {
+        callAst(
+          newCallNode(
+            getter.name,
+            Some(baseTypeFullName),
+            getter.returnType,
+            DispatchTypes.STATIC_DISPATCH,
+            Nil,
+            accessExpr.code,
+            accessExpr.lineNumber,
+            accessExpr.columnNumber
+          )
+        ) :: Nil
+      } else {
+        callAst(
+          newCallNode(
+            getter.name,
+            Some(baseTypeFullName),
+            getter.returnType,
+            DispatchTypes.DYNAMIC_DISPATCH,
+            baseTypeFullName :: Nil,
+            accessExpr.code,
+            accessExpr.lineNumber,
+            accessExpr.columnNumber
+          ),
+          base = Some(baseAst)
+        ) :: Nil
+      }
+    } else {
+      fieldAccessAst(
+        baseAst,
+        accessExpr.code,
+        line(accessExpr),
+        column(accessExpr),
+        fieldIdentifierName,
+        typeFullName,
+        line(accessExpr),
+        column(accessExpr)
+      ) :: Nil
     }
-
-    fieldAccessAst(
-      baseAst,
-      accessExpr.code,
-      line(accessExpr),
-      column(accessExpr),
-      fieldIdentifierName,
-      typeFullName,
-      line(accessExpr),
-      column(accessExpr)
-    ) :: Nil
   }
 
   protected def astForElementAccessExpression(elementAccessExpression: DotNetNodeInfo): Seq[Ast] = {
