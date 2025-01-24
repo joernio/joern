@@ -77,4 +77,19 @@ class MethodTests extends CSharpCode2CpgFixture {
     }
   }
 
+  "empty public abstract method" should {
+    val cpg = code("""
+        |abstract class C
+        |{
+        | public abstract void DoStuff();
+        |}
+        |""".stripMargin)
+
+    "have correct modifiers" in {
+      cpg.method.nameExact("DoStuff").modifier.modifierType.sorted.l shouldBe List(
+        ModifierTypes.ABSTRACT,
+        ModifierTypes.PUBLIC
+      )
+    }
+  }
 }

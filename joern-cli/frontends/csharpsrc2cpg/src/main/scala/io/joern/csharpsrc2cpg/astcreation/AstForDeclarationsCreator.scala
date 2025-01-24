@@ -535,6 +535,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         case "readonly" => newModifierNode(ModifierTypes.READONLY)
         case "virtual"  => newModifierNode(ModifierTypes.VIRTUAL)
         case "const"    => newModifierNode(CSharpModifiers.CONST)
+        case "abstract" => newModifierNode(ModifierTypes.ABSTRACT)
         case x =>
           logger.warn(s"Unhandled modifier name '$x'")
           null
