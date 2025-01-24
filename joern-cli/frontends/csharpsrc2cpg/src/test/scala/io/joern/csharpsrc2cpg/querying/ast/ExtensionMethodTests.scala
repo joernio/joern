@@ -195,6 +195,22 @@ class ExtensionMethodTests extends CSharpCode2CpgFixture {
 
       cpg.call.nameExact("DoStuff").callee.l shouldBe cpg.literal("2").method.l
     }
+
+    "resolve correctly if the extra argument is type-compatible with the extension method's extra parameter" in {
+      val cpg = code("""
+          |using System.Collections.Generic;
+          |
+          |var x = new List<string>();
+          |x.DoStuff(null);
+          |
+          |static class Extensions
+          |{
+          |    public static int DoStuff(this List<string> myList, object x) { return 2; }
+          |}
+          |""".stripMargin)
+
+      cpg.call.nameExact("DoStuff").callee.l shouldBe cpg.literal("2").method.l
+    }
   }
 
   "consecutive unary extension method calls" should {
