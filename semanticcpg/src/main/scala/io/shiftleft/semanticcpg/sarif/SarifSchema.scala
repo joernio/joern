@@ -166,7 +166,7 @@ object SarifSchema {
           val elementMap = Map.newBuilder[String, Any]
           elementMap.addOne("tool" -> run.tool)
           run.originalUriBaseId.foreach(x =>
-            elementMap.addOne("originalUriBaseIds" -> Map("PROJECT_ROOT" -> Map("uri" -> x.toString)))
+            elementMap.addOne("originalUriBaseIds" -> Map("PROJECT_ROOT" -> Map("uriBaseId" -> x.toString)))
           )
           elementMap.addOne("results" -> run.results)
           Extraction.decompose(elementMap.result())
