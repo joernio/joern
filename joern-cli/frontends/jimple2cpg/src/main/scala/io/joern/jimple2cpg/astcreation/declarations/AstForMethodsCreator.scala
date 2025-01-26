@@ -112,8 +112,10 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
             bodyStatementsInfo.unitToAsts.get(unit) match {
               case Some(targetAsts) if targetAsts.nonEmpty =>
                 diffGraph.addEdge(value.root.get, targetAsts.last.root.get, EdgeTypes.CFG)
-              case _ => 
-                logger.error(s"AstForMethodsCreator: Missing unit in unitToAsts: $unit (${unit.getClass.getSimpleName})")
+              case _ =>
+                logger.error(
+                  s"AstForMethodsCreator: Missing unit in unitToAsts: $unit (${unit.getClass.getSimpleName})"
+                )
             }
           case None =>
             logger.error("AstForMethodsCreator: Empty asts list for target")
