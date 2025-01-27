@@ -528,14 +528,15 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForModifier(modifier: ujson.Value): Option[Ast] = {
     Option {
       modifier(ParserKeys.Value).str match
-        case "public"   => newModifierNode(ModifierTypes.PUBLIC)
-        case "private"  => newModifierNode(ModifierTypes.PRIVATE)
-        case "internal" => newModifierNode(ModifierTypes.INTERNAL)
-        case "static"   => newModifierNode(ModifierTypes.STATIC)
-        case "readonly" => newModifierNode(ModifierTypes.READONLY)
-        case "virtual"  => newModifierNode(ModifierTypes.VIRTUAL)
-        case "const"    => newModifierNode(CSharpModifiers.CONST)
-        case "abstract" => newModifierNode(ModifierTypes.ABSTRACT)
+        case "public"    => newModifierNode(ModifierTypes.PUBLIC)
+        case "private"   => newModifierNode(ModifierTypes.PRIVATE)
+        case "internal"  => newModifierNode(ModifierTypes.INTERNAL)
+        case "static"    => newModifierNode(ModifierTypes.STATIC)
+        case "readonly"  => newModifierNode(ModifierTypes.READONLY)
+        case "virtual"   => newModifierNode(ModifierTypes.VIRTUAL)
+        case "const"     => newModifierNode(CSharpModifiers.CONST)
+        case "abstract"  => newModifierNode(ModifierTypes.ABSTRACT)
+        case "protected" => newModifierNode(ModifierTypes.PROTECTED)
         case x =>
           logger.warn(s"Unhandled modifier name '$x'")
           null
