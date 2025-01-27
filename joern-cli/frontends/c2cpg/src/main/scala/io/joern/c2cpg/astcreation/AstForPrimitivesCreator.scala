@@ -62,17 +62,16 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
   private def maybeMethodRefForIdentifier(ident: IASTNode): Option[NewMethodRef] = {
     ident match {
       case id: IASTIdExpression if id.getName != null =>
-        id.getName.resolveBinding()
-        val (mayBeFullName, mayBeTypeFullName) = id.getName.getBinding match {
-          case binding: ICInternalBinding if binding.getDefinition.isInstanceOf[IASTFunctionDeclarator] =>
+        val (mayBeFullName, mayBeTypeFullName) = safeGetBinding(id) match {
+          case Some(binding: ICInternalBinding) if binding.getDefinition.isInstanceOf[IASTFunctionDeclarator] =>
             namesForBinding(binding)
-          case binding: ICInternalBinding
+          case Some(binding: ICInternalBinding)
               if binding.getDeclarations != null &&
                 binding.getDeclarations.exists(_.isInstanceOf[IASTFunctionDeclarator]) =>
             namesForBinding(binding)
-          case binding: ICPPInternalBinding if binding.getDefinition.isInstanceOf[IASTFunctionDeclarator] =>
+          case Some(binding: ICPPInternalBinding) if binding.getDefinition.isInstanceOf[IASTFunctionDeclarator] =>
             namesForBinding(binding)
-          case binding: ICPPInternalBinding
+          case Some(binding: ICPPInternalBinding)
               if binding.getDeclarations != null &&
                 binding.getDeclarations.exists(_.isInstanceOf[CPPASTFunctionDeclarator]) =>
             namesForBinding(binding)
@@ -102,7 +101,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
       case id: IASTIdExpression => ASTStringUtil.getSimpleName(id.getName)
       case id: IASTName =>
         val name = ASTStringUtil.getSimpleName(id)
-        if (name.isEmpty) Try(id.resolveBinding().getName).getOrElse(uniqueName("name", "", "")._1)
+        if (name.isEmpty) safeGetBinding(id).map(_.getName).getOrElse(uniqueName("name", "", "")._1)
         else name
       case _ => code(ident)
     }
@@ -110,7 +109,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
 
   private def syntheticThisAccess(ident: CPPASTIdExpression, identifierName: String): String | Ast = {
     val tpe = ident.getName.getBinding match {
-      case f: CPPField => f.getType.toString
+      case f: CPPField => safeGetType(f.getType)
       case _           => typeFor(ident)
     }
     Try(ident.getEvaluation).toOption match {

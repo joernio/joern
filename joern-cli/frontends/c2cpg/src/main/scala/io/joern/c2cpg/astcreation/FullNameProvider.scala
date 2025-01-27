@@ -164,7 +164,7 @@ trait FullNameProvider { this: AstCreator =>
   }
 
   private def returnTypeForIASTFunctionDeclarator(declarator: IASTFunctionDeclarator): String = {
-    Try(declarator.getName.resolveBinding()).toOption match {
+    safeGetBinding(declarator.getName) match {
       case Some(value: ICPPMethod) =>
         cleanType(value.getType.getReturnType.toString)
       case _ =>
@@ -176,7 +176,7 @@ trait FullNameProvider { this: AstCreator =>
     if (isCppConstructor(definition)) {
       typeFor(definition.asInstanceOf[CPPASTFunctionDefinition].getMemberInitializers.head.getInitializer)
     } else {
-      Try(definition.getDeclarator.getName.resolveBinding()).toOption match {
+      safeGetBinding(definition.getDeclarator.getName) match {
         case Some(value: ICPPMethod) =>
           cleanType(value.getType.getReturnType.toString)
         case _ =>
@@ -221,7 +221,7 @@ trait FullNameProvider { this: AstCreator =>
   }
 
   private def shortNameForIASTDeclarator(declarator: IASTDeclarator): String = {
-    Try(declarator.getName.resolveBinding().getName).getOrElse {
+    safeGetBinding(declarator.getName).map(_.getName).getOrElse {
       if (ASTStringUtil.getSimpleName(declarator.getName).isEmpty && declarator.getNestedDeclarator != null) {
         shortName(declarator.getNestedDeclarator)
       } else {
@@ -294,8 +294,8 @@ trait FullNameProvider { this: AstCreator =>
           case _ => None
         }
       case declarator: CPPASTFunctionDeclarator =>
-        declarator.getName.resolveBinding() match {
-          case function: ICPPFunction if declarator.getName.isInstanceOf[ICPPASTConversionName] =>
+        safeGetBinding(declarator.getName) match {
+          case Some(function: ICPPFunction) if declarator.getName.isInstanceOf[ICPPASTConversionName] =>
             val tpe = cleanType(typeFor(declarator.getName.asInstanceOf[ICPPASTConversionName].getTypeId))
             val fullNameNoSig = fixQualifiedName(
               function.getQualifiedName.takeWhile(!_.startsWith("operator ")).mkString(".")
@@ -306,7 +306,7 @@ trait FullNameProvider { this: AstCreator =>
               s"$fullNameNoSig.$tpe:${functionTypeToSignature(function.getType)}"
             }
             Option(fn)
-          case function: ICPPFunction =>
+          case Some(function: ICPPFunction) =>
             val fullNameNoSig = fixQualifiedName(replaceOperator(function.getQualifiedName.mkString(".")))
             val fn = if (function.isExternC) {
               replaceOperator(function.getName)
@@ -319,7 +319,7 @@ trait FullNameProvider { this: AstCreator =>
               s"$fullNameNoSig:$sig"
             }
             Option(fn)
-          case x @ (_: ICPPField | _: CPPVariable) =>
+          case Some(x @ (_: ICPPField | _: CPPVariable)) =>
             val fullNameNoSig = fixQualifiedName(x.getQualifiedName.mkString("."))
             val fn = if (x.isExternC) {
               x.getName
@@ -327,7 +327,7 @@ trait FullNameProvider { this: AstCreator =>
               s"$fullNameNoSig:${cleanType(safeGetType(x.getType))}"
             }
             Option(fn)
-          case _: IProblemBinding =>
+          case Some(_: IProblemBinding) =>
             val fullNameNoSig = replaceOperator(ASTStringUtil.getQualifiedName(declarator.getName))
             val fixedFullName = fixQualifiedName(fullNameNoSig)
             if (fixedFullName.isEmpty) {
@@ -338,31 +338,32 @@ trait FullNameProvider { this: AstCreator =>
           case _ => None
         }
       case declarator: CASTFunctionDeclarator =>
-        declarator.getName.resolveBinding() match {
-          case cVariable: CVariable => Option(cVariable.getName)
-          case _                    => Option(declarator.getName.toString)
+        safeGetBinding(declarator.getName) match {
+          case Some(cVariable: CVariable)     => Option(cVariable.getName)
+          case Some(cppVariable: CPPVariable) => Option(cppVariable.getName)
+          case _                              => Option(declarator.getName.toString)
         }
       case definition: ICPPASTFunctionDefinition =>
         Some(fullName(definition.getDeclarator))
       case namespace: ICPPASTNamespaceDefinition =>
-        namespace.getName.resolveBinding() match {
-          case b: ICPPBinding if b.getName.nonEmpty => Option(b.getQualifiedName.mkString("."))
-          case _                                    => None
+        safeGetBinding(namespace.getName) match {
+          case Some(b: ICPPBinding) if b.getName.nonEmpty => Option(b.getQualifiedName.mkString("."))
+          case _                                          => None
         }
       case compType: IASTCompositeTypeSpecifier =>
-        compType.getName.resolveBinding() match {
-          case b: ICPPBinding if b.getName.nonEmpty => Option(b.getQualifiedName.mkString("."))
-          case _                                    => None
+        safeGetBinding(compType.getName) match {
+          case Some(b: ICPPBinding) if b.getName.nonEmpty => Option(b.getQualifiedName.mkString("."))
+          case _                                          => None
         }
       case enumSpecifier: IASTEnumerationSpecifier =>
-        enumSpecifier.getName.resolveBinding() match {
-          case b: ICPPBinding if b.getName.nonEmpty => Option(b.getQualifiedName.mkString("."))
-          case _                                    => None
+        safeGetBinding(enumSpecifier.getName) match {
+          case Some(b: ICPPBinding) if b.getName.nonEmpty => Option(b.getQualifiedName.mkString("."))
+          case _                                          => None
         }
       case e: IASTElaboratedTypeSpecifier =>
-        e.getName.resolveBinding() match {
-          case b: ICPPBinding if b.getName.nonEmpty => Option(b.getQualifiedName.mkString("."))
-          case _                                    => None
+        safeGetBinding(e.getName) match {
+          case Some(b: ICPPBinding) if b.getName.nonEmpty => Option(b.getQualifiedName.mkString("."))
+          case _                                          => None
         }
       case _ => None
     }

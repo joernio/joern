@@ -26,8 +26,6 @@ import scala.collection.mutable
   * `setExpandedMacroArgument`, we can intercept arguments and store them in a list for later retrieval. We wrap this
   * rather complicated way of accessing the macro arguments in the single public method `getArguments` of the
   * `MacroArgumentExtractor`.
-  *
-  * This class must be in this package in order to have access to `PreprocessorMacro`.
   */
 class MacroArgumentExtractor(tu: IASTTranslationUnit, loc: IASTFileLocation) {
 

@@ -19,6 +19,5 @@ object Defines {
   val OperatorCall                   = "<operator>()"
   val OperatorExpressionList         = "<operator>.expressionList"
   val OperatorNew                    = "<operator>.new"
-  val OperatorThrow                  = "<operator>.throw"
   val OperatorBracketedPrimary       = "<operator>.bracketedPrimary"
 }
