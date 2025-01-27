@@ -10,6 +10,9 @@ object SarifSchema {
   private val logger = LoggerFactory.getLogger(getClass)
 
   /** Provides a basic Sarif trait under which possibly multiple defined schemata would be defined.
+    *
+    * Note: The names of each property is chosen to conform to the JSON schema specification of SARIF. If a property
+    * name changes it may no longer be compatible with SARIF viewers.
     */
   sealed trait Sarif {
 
@@ -228,18 +231,45 @@ object SarifSchema {
     def location: Location
   }
 
+  /** The analysis tool that was run.
+    */
   trait Tool private[sarif] {
     def driver: ToolComponent
   }
 
+  /** A component, such as a plug-in or the driver, of the analysis tool that was run.
+    */
   trait ToolComponent private[sarif] {
+
+    /** @return
+      *   The name of the tool component.
+      */
     def name: String
+
+    /** @return
+      *   The name of the tool component along with its version and any other useful identifying information, such as
+      *   its locale.
+      */
     def fullName: String
+
+    /** @return
+      *   The organization or company that produced the tool component.
+      */
     def organization: String
+
+    /** @return
+      *   The tool component version in the format specified by Semantic Versioning 2.0.
+      */
     def semanticVersion: String
+
+    /** @return
+      *   The absolute URI at which information about this version of the tool component can be found.
+      */
     def informationUri: URI
   }
 
+  /** A value specifying the severity level of the result.
+    */
   object Level {
     val None    = "none"
     val Note    = "note"
