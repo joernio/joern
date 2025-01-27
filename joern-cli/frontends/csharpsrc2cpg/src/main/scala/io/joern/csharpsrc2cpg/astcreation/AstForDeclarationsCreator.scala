@@ -245,13 +245,9 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   protected def astForFieldDeclaration(fieldDecl: DotNetNodeInfo): Seq[Ast] = {
-    val isStatic = fieldDecl
-      .json(ParserKeys.Modifiers)
-      .arr
-      .flatMap(astForModifier)
-      .flatMap(_.root)
-      .collectFirst { case x: NewModifier => x.modifierType }
-      .contains(ModifierTypes.STATIC)
+    val modifiers    = modifiersForNode(fieldDecl)
+    val isStatic     = modifiers.exists(_.modifierType == ModifierTypes.STATIC)
+    val modifierAsts = modifiers.map(Ast(_))
 
     val declarationNode = createDotNetNodeInfo(fieldDecl.json(ParserKeys.Declaration))
     val declAsts        = astForVariableDeclaration(declarationNode, isStatic)
@@ -264,7 +260,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val memberNodes = declAsts
       .flatMap(_.nodes.collectFirst { case x: NewIdentifier => x })
       .map(x => memberNode(declarationNode, x.name, code(declarationNode), x.typeFullName))
-    memberNodes.map(Ast(_).withChildren(annotationAsts).withChildren(astForModifiers(fieldDecl)))
+    memberNodes.map(Ast(_).withChildren(annotationAsts).withChildren(modifierAsts))
   }
 
   protected def astForLocalDeclarationStatement(localDecl: DotNetNodeInfo): Seq[Ast] = {
@@ -366,13 +362,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     )
     val typeDeclFullName = scope.surroundingTypeDeclFullName.getOrElse(Defines.UnresolvedNamespace);
 
-    val modifiers =
-      (astForModifiers(constructorDecl) :+ Ast(newModifierNode(ModifierTypes.CONSTRUCTOR)))
-        .flatMap(_.nodes)
-        .collect { case x: NewModifier =>
-          x
-        }
-        .filter(_.modifierType != ModifierTypes.INTERNAL)
+    val modifiers = (modifiersForNode(constructorDecl) :+ newModifierNode(ModifierTypes.CONSTRUCTOR))
+      .filter(_.modifierType != ModifierTypes.INTERNAL)
 
     val isStaticConstructor = modifiers.exists(_.modifierType == ModifierTypes.STATIC)
 
@@ -443,7 +434,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       if (!jsonBody.isNull && parseLevel == AstParseLevel.FULL_AST) astForBlock(createDotNetNodeInfo(jsonBody))
       else Ast(blockNode(methodDecl)) // Creates an empty block
     scope.popScope()
-    val modifiers = astForModifiers(methodDecl).flatMap(_.nodes).collect { case x: NewModifier => x } ++ extraModifiers
+    val modifiers = modifiersForNode(methodDecl) ++ extraModifiers
     val thisNode =
       if (!modifiers.exists(_.modifierType == ModifierTypes.STATIC)) astForThisParameter(methodDecl)
       else Ast()
@@ -505,10 +496,12 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     *   https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/classes-and-structs/access-modifiers
     */
   private def astForModifiers(declaration: DotNetNodeInfo): Seq[Ast] = {
-    val explicitModifiers = declaration.json(ParserKeys.Modifiers).arr.flatMap(astForModifier).toList
-    val accessModifiers = explicitModifiers
-      .flatMap(_.nodes)
-      .collect { case x: NewModifier => x.modifierType } intersect List(
+    modifiersForNode(declaration).map(Ast(_))
+  }
+
+  private def modifiersForNode(node: DotNetNodeInfo): Seq[NewModifier] = {
+    val explicitModifiers = node.json(ParserKeys.Modifiers).arr.flatMap(readModifier).toList
+    val accessModifiers = explicitModifiers.map(_.modifierType) intersect List(
       ModifierTypes.PUBLIC,
       ModifierTypes.PRIVATE,
       ModifierTypes.INTERNAL,
@@ -517,15 +510,15 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     )
     val implicitAccessModifier = accessModifiers match
       // Internal is default for top-level definitions
-      case Nil if scope.isTopLevel => Ast(newModifierNode(ModifierTypes.INTERNAL))
+      case Nil if scope.isTopLevel => newModifierNode(ModifierTypes.INTERNAL) :: Nil
       // Private is default for nested definitions
-      case Nil => Ast(newModifierNode(ModifierTypes.PRIVATE))
-      case _   => Ast()
+      case Nil => newModifierNode(ModifierTypes.PRIVATE) :: Nil
+      case _   => Nil
 
-    implicitAccessModifier :: explicitModifiers
+    implicitAccessModifier ++ explicitModifiers
   }
 
-  private def astForModifier(modifier: ujson.Value): Option[Ast] = {
+  private def readModifier(modifier: ujson.Value): Option[NewModifier] = {
     Option {
       modifier(ParserKeys.Value).str match
         case "public"    => newModifierNode(ModifierTypes.PUBLIC)
@@ -540,7 +533,11 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         case x =>
           logger.warn(s"Unhandled modifier name '$x'")
           null
-    }.map(Ast(_))
+    }
+  }
+
+  private def astForModifier(modifier: ujson.Value): Option[Ast] = {
+    readModifier(modifier).map(Ast(_))
   }
 
   protected def astVariableDeclarationForInitializedFields(fieldDecls: Seq[FieldDecl]): Seq[Ast] = {
@@ -609,7 +606,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       Option(NodeTypes.METHOD),
       scope.surroundingScopeFullName
     )
-    val modifiers = astForModifiers(lambdaExpression).flatMap(_.nodes).collect { case x: NewModifier => x }
+    val modifiers = modifiersForNode(lambdaExpression)
     val lambdaReturnType = body.lastOption
       .getOrElse(Ast())
       .nodes
