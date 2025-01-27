@@ -329,6 +329,46 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     Seq(_callAst)
   }
 
+  /** Handles expressions like `foo.MyField`, where `MyField` is known to be a getter property. Getters are lowered into
+    * calls, e.g. (a) System.Console.Out becomes System.Console.get_Out(), because it's a static method; (b) x.KeyChar
+    * becomes System.ConsoleKeyInfo.get_KeyChar(x), because it's a dynamic method.
+    */
+  private def astForMemberAccessGetterExpression(
+    getter: CSharpMethod,
+    baseAst: Ast,
+    baseTypeFullName: String,
+    accessExpr: DotNetNodeInfo
+  ): Seq[Ast] = {
+    if (getter.isStatic) {
+      callAst(
+        newCallNode(
+          getter.name,
+          Some(baseTypeFullName),
+          getter.returnType,
+          DispatchTypes.STATIC_DISPATCH,
+          Nil,
+          code(accessExpr),
+          line(accessExpr),
+          column(accessExpr)
+        )
+      ) :: Nil
+    } else {
+      callAst(
+        newCallNode(
+          getter.name,
+          Some(baseTypeFullName),
+          getter.returnType,
+          DispatchTypes.DYNAMIC_DISPATCH,
+          baseTypeFullName :: Nil,
+          code(accessExpr),
+          line(accessExpr),
+          column(accessExpr)
+        ),
+        base = Some(baseAst)
+      ) :: Nil
+    }
+  }
+
   private def astForSimpleMemberAccessExpression(accessExpr: DotNetNodeInfo): Seq[Ast] = {
     val fieldIdentifierName = nameFromNode(accessExpr)
     val baseAst             = astForNode(createDotNetNodeInfo(accessExpr.json(ParserKeys.Expression))).head
@@ -351,43 +391,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .getOrElse((Defines.Any, false))
 
     if (isGetter) {
-      // Getters are turned into invocations/calls, instead of field accesses.
-      // E.g.
-      //   a) System.Console.Out is turned into System.Console.get_Out(), because it's a static method
-      //   b) x.KeyChar is turned into System.ConsoleKeyInfo.get_KeyChar(x), because it's a dynamic method
-      val getter = byPropertyName.get
-      if (getter.isStatic) {
-        callAst(
-          newCallNode(
-            getter.name,
-            Some(baseTypeFullName),
-            getter.returnType,
-            DispatchTypes.STATIC_DISPATCH,
-            Nil,
-            accessExpr.code,
-            accessExpr.lineNumber,
-            accessExpr.columnNumber
-          )
-        ) :: Nil
-      } else {
-        callAst(
-          newCallNode(
-            getter.name,
-            Some(baseTypeFullName),
-            getter.returnType,
-            DispatchTypes.DYNAMIC_DISPATCH,
-            baseTypeFullName :: Nil,
-            accessExpr.code,
-            accessExpr.lineNumber,
-            accessExpr.columnNumber
-          ),
-          base = Some(baseAst)
-        ) :: Nil
-      }
+      astForMemberAccessGetterExpression(byPropertyName.get, baseAst, baseTypeFullName, accessExpr)
     } else {
       fieldAccessAst(
         baseAst,
-        accessExpr.code,
+        code(accessExpr),
         line(accessExpr),
         column(accessExpr),
         fieldIdentifierName,
