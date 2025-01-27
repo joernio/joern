@@ -24,8 +24,6 @@ import scala.collection.mutable
 
 trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  import io.joern.c2cpg.astcreation.AstCreatorHelper.OptionSafeAst
-
   protected def astForBlockStatement(blockStmt: IASTCompoundStatement, order: Int = -1): Ast = {
     val codeString = code(blockStmt)
     val blockCode  = if (codeString == "{}" || codeString.isEmpty) Defines.Empty else codeString
@@ -161,13 +159,15 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case alias: CPPASTNamespaceAlias                                    => Seq(astForNamespaceAlias(alias))
       case asm: IASTASMDeclaration                                        => Seq(astForASMDeclaration(asm))
       case _: ICPPASTUsingDirective                                       => Seq.empty
-      case declaration                                                    => Seq(astForNode(declaration))
+      case declaration                                                    => astsForDeclaration(declaration)
     }
 
   private def astForReturnStatement(ret: IASTReturnStatement): Ast = {
     val cpgReturn = returnNode(ret, code(ret))
-    val expr      = nullSafeAst(ret.getReturnValue)
-    Ast(cpgReturn).withChild(expr).withArgEdge(cpgReturn, expr.root)
+    nullSafeAst(ret.getReturnValue) match {
+      case retAst if retAst.root.isDefined => Ast(cpgReturn).withChild(retAst).withArgEdge(cpgReturn, retAst.root.get)
+      case _                               => Ast(cpgReturn)
+    }
   }
 
   private def astForBreakStatement(br: IASTBreakStatement): Ast = {

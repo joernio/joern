@@ -41,19 +41,7 @@ import scala.annotation.nowarn
 import scala.collection.mutable
 import scala.util.Try
 
-object AstCreatorHelper {
-
-  implicit class OptionSafeAst(val ast: Ast) extends AnyVal {
-    def withArgEdge(src: NewNode, dst: Option[NewNode]): Ast = dst match {
-      case Some(value) => ast.withArgEdge(src, value)
-      case None        => ast
-    }
-  }
-}
-
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
-
-  import io.joern.c2cpg.astcreation.AstCreatorHelper.*
 
   private var usedVariablePostfix: Int = 0
 
@@ -195,9 +183,21 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     Try(expr.getEvaluation).toOption
   }
 
+  protected def safeGetBinding(name: IASTName): Option[IBinding] = {
+    // In case of unresolved includes etc. this may fail throwing an unrecoverable exception
+    Try(name.resolveBinding()).toOption
+  }
+
+  protected def safeGetBinding(idExpression: IASTIdExpression): Option[IBinding] = {
+    // In case of unresolved includes etc. this may fail throwing an unrecoverable exception
+    safeGetBinding(idExpression.getName).collect {
+      case binding: IBinding if !binding.isInstanceOf[IProblemBinding] => binding
+    }
+  }
+
   protected def safeGetBinding(spec: IASTNamedTypeSpecifier): Option[IBinding] = {
     // In case of unresolved includes etc. this may fail throwing an unrecoverable exception
-    Try(spec.getName.resolveBinding()).toOption.collect {
+    safeGetBinding(spec.getName).collect {
       case binding: IBinding if !binding.isInstanceOf[IProblemBinding] => binding
     }
   }
@@ -335,7 +335,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   private def notHandledText(node: IASTNode): String =
     s"""Node '${node.getClass.getSimpleName}' not handled yet!
-       |  Code: '${node.getRawSignature}'
+       |  Code: '${shortenCode(node.getRawSignature)}'
        |  File: '$filename'
        |  Line: ${line(node).getOrElse(-1)}
        |  """.stripMargin

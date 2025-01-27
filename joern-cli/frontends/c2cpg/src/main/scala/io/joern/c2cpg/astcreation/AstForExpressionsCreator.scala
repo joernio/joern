@@ -19,6 +19,8 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPClosureType
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalFunctionCall
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFoldExpression
 
+import scala.util.Failure
+import scala.util.Success
 import scala.util.Try
 
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -78,7 +80,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   private def astForCppCallExpression(call: ICPPASTFunctionCallExpression): Ast = {
     val functionNameExpr = call.getFunctionNameExpression
-    val typ              = functionNameExpr.getExpressionType
+    val typ = Try(functionNameExpr.getExpressionType) match {
+      case Failure(_)   => return astForCppCallExpressionUntyped(call)
+      case Success(tpe) => tpe
+    }
     typ match {
       case _: IPointerType =>
         createPointerCallAst(call, cleanType(safeGetType(call.getExpressionType)))
@@ -117,7 +122,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
             createCallAst(callCpgNode, args)
           case fieldRefExpr: ICPPASTFieldReference
-              if fieldRefExpr.getFieldName.resolveBinding().isInstanceOf[ICPPMethod] =>
+              if safeGetBinding(fieldRefExpr.getFieldName).exists(_.isInstanceOf[ICPPMethod]) =>
             val instanceAst = astForExpression(fieldRefExpr.getFieldOwner)
             val args        = call.getArguments.toList.map(a => astForNode(a))
 
