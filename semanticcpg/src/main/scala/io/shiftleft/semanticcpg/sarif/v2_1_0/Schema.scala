@@ -1,6 +1,7 @@
 package io.shiftleft.semanticcpg.sarif.v2_1_0
 
 import io.shiftleft.semanticcpg.sarif.SarifSchema
+import io.shiftleft.semanticcpg.sarif.SarifSchema.Location
 import org.json4s.{CustomSerializer, Extraction}
 
 import java.net.URI
@@ -17,7 +18,7 @@ object Schema {
     *   A string which indirectly specifies the absolute URI with respect to which a relative URI in the "uri" property
     *   is interpreted.
     */
-  final case class ArtifactLocation(uri: Option[URI], uriBaseId: String = "PROJECT_ROOT")
+  final case class ArtifactLocation(uri: Option[URI] = None, uriBaseId: Option[String] = Option("PROJECT_ROOT"))
       extends SarifSchema.ArtifactLocation
 
   final case class CodeFlow(message: Message, threadFlows: List[ThreadFlow]) extends SarifSchema.CodeFlow
@@ -31,10 +32,10 @@ object Schema {
 
   final case class Region(
     startLine: Option[Int],
-    startColumn: Option[Int],
+    startColumn: Option[Int] = None,
     endLine: Option[Int] = None,
     endColumn: Option[Int] = None,
-    snippet: ArtifactContent
+    snippet: Option[ArtifactContent] = None
   ) extends SarifSchema.Region
 
   final case class Result(
@@ -42,10 +43,11 @@ object Schema {
     message: Message,
     level: String,
     locations: List[Location],
+    relatedLocations: List[Location],
     codeFlows: List[CodeFlow]
   ) extends SarifSchema.Result
 
-  final case class Run(tool: Tool, results: List[SarifSchema.Result], originalUriBaseId: Option[URI])
+  final case class Run(tool: Tool, results: List[SarifSchema.Result], originalUriBaseIds: Map[String, ArtifactLocation])
       extends SarifSchema.Run
 
   final case class ThreadFlow(locations: List[ThreadFlowLocation]) extends SarifSchema.ThreadFlow

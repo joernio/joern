@@ -12,10 +12,20 @@ object SarifSchema {
   /** Provides a basic Sarif trait under which possibly multiple defined schemata would be defined.
     */
   sealed trait Sarif {
+
+    /** @return
+      *   The SARIF format version of this log file.
+      */
     def version: String
 
+    /** @return
+      *   The URI of the JSON schema corresponding to the version.
+      */
     def `$schema`: String
 
+    /** @return
+      *   The set of runs contained in this log file.
+      */
     def runs: List[Run]
   }
 
@@ -27,64 +37,194 @@ object SarifSchema {
 
   // Minimal properties we want to use across versions:
 
+  /** Represents the contents of an artifact.
+    */
   trait ArtifactContent private[sarif] {
+
+    /** @return
+      *   UTF-8-encoded content from a text artifact.
+      */
     def text: String
   }
 
+  /** Specifies the location of an artifact.
+    */
   trait ArtifactLocation private[sarif] {
+
+    /** @return
+      *   A string containing a valid relative or absolute URI.
+      */
     def uri: Option[URI]
-    def uriBaseId: String
+
+    /** @return
+      *   A string which indirectly specifies the absolute URI with respect to which a relative URI in the "uri"
+      *   property is interpreted.
+      */
+    def uriBaseId: Option[String]
   }
 
+  /** A set of threadFlows which together describe a pattern of code execution relevant to detecting a result.
+    */
   trait CodeFlow private[sarif] {
+
+    /** @return
+      *   A message relevant to the code flow.
+      */
     def message: Message
+
+    /** @return
+      *   An array of one or more unique threadFlow objects, each of which describes the progress of a program through a
+      *   thread of execution.
+      */
     def threadFlows: List[ThreadFlow]
   }
 
+  /** A location within a programming artifact.
+    */
   trait Location private[sarif] {
+
+    /** @return
+      *   Identifies the artifact and region.
+      */
     def physicalLocation: PhysicalLocation
   }
 
+  /** Encapsulates a message intended to be read by the end user.
+    */
   trait Message private[sarif] {
+
+    /** @return
+      *   A plain text message string.
+      */
     def text: String
   }
 
+  /** A physical location relevant to a result. Specifies a reference to a programming artifact together with a range of
+    * bytes or characters within that artifact.
+    */
   trait PhysicalLocation private[sarif] {
+
+    /** @return
+      *   The location of the artifact.
+      */
     def artifactLocation: ArtifactLocation
+
+    /** @return
+      *   Specifies a portion of the artifact.
+      */
     def region: Region
   }
 
+  /** A region within an artifact where a result was detected.
+    */
   trait Region private[sarif] {
+
+    /** @return
+      *   The line number of the first character in the region.
+      */
     def startLine: Option[Int]
 
+    /** @return
+      *   The column number of the first character in the region.
+      */
     def startColumn: Option[Int]
 
+    /** @return
+      *   The line number of the last character in the region.
+      */
     def endLine: Option[Int]
 
+    /** @return
+      *   The column number of the character following the end of the region.
+      */
     def endColumn: Option[Int]
 
-    def snippet: ArtifactContent
+    /** @return
+      *   The portion of the artifact contents within the specified region.
+      */
+    def snippet: Option[ArtifactContent]
   }
 
+  /** A result produced by an analysis tool.
+    */
   trait Result private[sarif] {
+
+    /** @return
+      *   The stable, unique identifier of the rule, if any, to which this result is relevant.
+      */
     def ruleId: String
+
+    /** @return
+      *   A message that describes the result. The first sentence of the message only will be displayed when visible
+      *   space is limited.
+      */
     def message: Message
+
+    /** @return
+      *   A value specifying the severity level of the result.
+      */
     def level: String
+
+    /** @return
+      *   The set of locations where the result was detected. Specify only one location unless the problem indicated by
+      *   the result can only be corrected by making a change at every specified location.
+      */
     def locations: List[Location]
+
+    /** @return
+      *   A set of locations relevant to this result.
+      */
+    def relatedLocations: List[Location]
+
+    /** @return
+      *   An array of 'codeFlow' objects relevant to the result.
+      */
     def codeFlows: List[CodeFlow]
   }
 
+  /** Describes a single run of an analysis tool, and contains the reported output of that run.
+    */
   trait Run private[sarif] {
+
+    /** @return
+      *   Information about the tool or tool pipeline that generated the results in this run. A run can only contain
+      *   results produced by a single tool or tool pipeline. A run can aggregate results from multiple log files, as
+      *   long as context around the tool run (tool command-line arguments and the like) is identical for all aggregated
+      *   files.
+      */
     def tool: Tool
+
+    /** @return
+      *   The set of results contained in an SARIF log. The results array can be omitted when a run is solely exporting
+      *   rules metadata. It must be present (but may be empty) if a log file represents an actual scan.
+      */
     def results: List[Result]
-    def originalUriBaseId: Option[URI] // Unofficial, but useful for setting uriBaseId in a single location
+
+    /** @return
+      *   The artifact location specified by each uriBaseId symbol on the machine where the tool originally ran.
+      */
+    def originalUriBaseIds: Map[String, ArtifactLocation]
   }
 
+  /** Describes a sequence of code locations that specify a path through a single thread of execution such as an
+    * operating system or fiber.
+    */
   trait ThreadFlow private[sarif] {
+
+    /** @return
+      *   A temporally ordered array of 'threadFlowLocation' objects, each of which describes a location visited by the
+      *   tool while producing the result.
+      */
     def locations: List[ThreadFlowLocation]
   }
 
+  /** A location visited by an analysis tool while simulating or monitoring the execution of a program.
+    */
   trait ThreadFlowLocation private[sarif] {
+
+    /** @return
+      *   The code location.
+      */
     def location: Location
   }
 
@@ -113,8 +253,8 @@ object SarifSchema {
         case score if score <= 6.9  => Warning
         case score if score <= 10.0 => Error
         case score =>
-          logger.error(s"Score '$score' is not a valid CVSS score! Defaulting to 'none' SARIF level.")
-          None
+          logger.error(s"Score '$score' is not a valid CVSS score! Defaulting to 'warning' SARIF level.")
+          Warning
       }
     }
 
@@ -155,23 +295,7 @@ object SarifSchema {
           region.startColumn.foreach(x => elementMap.addOne("startColumn" -> x))
           region.endLine.foreach(x => elementMap.addOne("endLine" -> x))
           region.endColumn.foreach(x => elementMap.addOne("endColumn" -> x))
-          elementMap.addOne("snippet" -> region.snippet)
-          Extraction.decompose(elementMap.result())
-        }
-      )
-    ),
-    new CustomSerializer[SarifSchema.Run](implicit format =>
-      (
-        { case _ =>
-          ???
-        },
-        { case run: SarifSchema.Run =>
-          val elementMap = Map.newBuilder[String, Any]
-          elementMap.addOne("tool" -> run.tool)
-          run.originalUriBaseId.foreach(x =>
-            elementMap.addOne("originalUriBaseIds" -> Map("PROJECT_ROOT" -> Map("uriBaseId" -> x.toString)))
-          )
-          elementMap.addOne("results" -> run.results)
+          region.snippet.foreach(x => elementMap.addOne("snippet" -> x))
           Extraction.decompose(elementMap.result())
         }
       )

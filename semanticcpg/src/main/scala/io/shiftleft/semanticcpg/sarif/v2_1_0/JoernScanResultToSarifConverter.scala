@@ -13,11 +13,14 @@ class JoernScanResultToSarifConverter extends ScanResultToSarifConverter {
   import JoernScanResultToSarifConverter.*
 
   override def convertFindingToResult(finding: Finding): SarifSchema.Result = {
+    val locations        = finding.evidence.lastOption.map(nodeToLocation).toList
+    val relatedLocations = finding.evidence.headOption.map(nodeToLocation).toList
     Schema.Result(
       ruleId = finding.name,
       message = Schema.Message(text = finding.title),
       level = SarifSchema.Level.cvssToLevel(finding.score),
-      locations = finding.evidence.lastOption.map(nodeToLocation).toList, // use the sink for this location property
+      locations = locations,
+      relatedLocations = relatedLocations,
       codeFlows = evidenceToCodeFlow(finding) :: Nil
     )
   }
@@ -52,17 +55,25 @@ class JoernScanResultToSarifConverter extends ScanResultToSarifConverter {
   protected def nodeToRegion(node: StoredNode): Schema.Region = {
     node match {
       case t: TypeDecl =>
-        Schema.Region(startLine = t.lineNumber, startColumn = t.columnNumber, snippet = Schema.ArtifactContent(t.code))
+        Schema.Region(
+          startLine = t.lineNumber,
+          startColumn = t.columnNumber,
+          snippet = Option(Schema.ArtifactContent(t.code))
+        )
       case m: Method =>
         Schema.Region(
           startLine = m.lineNumber,
           startColumn = m.columnNumber,
           endLine = m.lineNumberEnd,
           endColumn = m.columnNumberEnd,
-          snippet = Schema.ArtifactContent(m.code)
+          snippet = Option(Schema.ArtifactContent(m.code))
         )
       case n: CfgNode =>
-        Schema.Region(startLine = n.lineNumber, startColumn = n.columnNumber, snippet = Schema.ArtifactContent(n.code))
+        Schema.Region(
+          startLine = n.lineNumber,
+          startColumn = n.columnNumber,
+          snippet = Option(Schema.ArtifactContent(n.code))
+        )
       case _ => null
     }
   }
@@ -88,9 +99,9 @@ object JoernScanResultToSarifConverter {
 
     def description: String = getValue(FindingKeys.description)
 
-    def score: Double = getValue(FindingKeys.score).toDouble
+    def score: Double = getValue(FindingKeys.score).toDoubleOption.getOrElse(0d)
 
-    protected def getValue(key: String, default: String = ""): String =
+    protected def getValue(key: String, default: String = "<empty>"): String =
       node.keyValuePairs.find(_.key == key).map(_.value).getOrElse(default)
 
   }
