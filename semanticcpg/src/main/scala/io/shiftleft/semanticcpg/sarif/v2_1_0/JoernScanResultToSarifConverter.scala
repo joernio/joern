@@ -43,12 +43,12 @@ class JoernScanResultToSarifConverter extends ScanResultToSarifConverter {
     )
   }
 
-  protected def nodeToUri(node: StoredNode): Option[URI] = Option {
+  protected def nodeToUri(node: StoredNode): Option[URI] = {
     node match {
-      case t: TypeDecl if !t.isExternal => URI(t.filename)
-      case m: Method if !m.isExternal   => URI(m.filename)
-      case expr: Expression             => expr.file.map(x => URI(x.name)).headOption.orNull
-      case _                            => null
+      case t: TypeDecl if !t.isExternal => Option(t.filename).filterNot(_ == "<empty>").map(URI(_))
+      case m: Method if !m.isExternal   => Option(m.filename).filterNot(_ == "<empty>").map(URI(_))
+      case expr: Expression             => expr.file.map(x => URI(x.name)).headOption
+      case _                            => None
     }
   }
 
@@ -99,7 +99,7 @@ object JoernScanResultToSarifConverter {
 
     def description: String = getValue(FindingKeys.description)
 
-    def score: Double = getValue(FindingKeys.score).toDoubleOption.getOrElse(0d)
+    def score: Double = getValue(FindingKeys.score).toDoubleOption.getOrElse(-1d)
 
     protected def getValue(key: String, default: String = "<empty>"): String =
       node.keyValuePairs.find(_.key == key).map(_.value).getOrElse(default)

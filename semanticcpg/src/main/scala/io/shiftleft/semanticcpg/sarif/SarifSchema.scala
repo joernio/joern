@@ -275,13 +275,13 @@ object SarifSchema {
 
     def cvssToLevel(cvssScore: Double): String = {
       cvssScore match {
+        case score if score < 0.0 || score > 10.0 =>
+          logger.error(s"Score '$score' is not a valid CVSS score! Defaulting to 'warning' SARIF level.")
+          Warning
         case score if score == 0.0  => None
         case score if score <= 3.9  => Note
         case score if score <= 6.9  => Warning
         case score if score <= 10.0 => Error
-        case score =>
-          logger.error(s"Score '$score' is not a valid CVSS score! Defaulting to 'warning' SARIF level.")
-          Warning
       }
     }
 
