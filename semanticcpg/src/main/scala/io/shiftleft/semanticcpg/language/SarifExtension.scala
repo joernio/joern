@@ -23,33 +23,34 @@ class SarifExtension(val traversal: Iterator[Finding]) extends AnyVal {
   @Doc(info = "execute this traversal and convert findings to SARIF format")
   def toSarif(implicit config: SarifConfig = SarifConfig()): Sarif = {
 
-    def generateSarif(results: List[SarifSchema.Result] = Nil, baseUri: Option[URI] = None): Sarif = {
+    def generateSarif(results: List[SarifSchema.Result], baseUri: Option[URI]): Sarif = {
       config.sarifVersion match {
         case SarifVersion.V2_1_0 =>
-          Sarif2_1_0(runs =
-            v2_1_0.Schema.Run(
-              tool = v2_1_0.Schema.Tool(driver =
-                v2_1_0.Schema.ToolComponent(
-                  name = config.toolName,
-                  fullName = config.toolFullName,
-                  organization = config.organization,
-                  semanticVersion = config.semanticVersion,
-                  informationUri = config.toolInformationUri
-                )
-              ),
-              originalUriBaseIds =
-                Map("PROJECT_ROOT" -> v2_1_0.Schema.ArtifactLocation(uriBaseId = baseUri.map(_.toString))),
-              results = results
-            ) :: Nil
+          val tool = v2_1_0.Schema.ToolComponent(
+            name = config.toolName,
+            fullName = config.toolFullName,
+            organization = config.organization,
+            semanticVersion = config.semanticVersion,
+            informationUri = config.toolInformationUri
           )
+          val projectBaseUri = Map(
+            "PROJECT_ROOT" -> v2_1_0.Schema.ArtifactLocation(uriBaseId = baseUri.map(_.toString))
+          )
+          val runs = v2_1_0.Schema.Run(
+            tool = v2_1_0.Schema.Tool(driver = tool),
+            originalUriBaseIds = projectBaseUri,
+            results = results
+          ) :: Nil
+          Sarif2_1_0(runs = runs)
       }
     }
 
     traversal.l match {
-      case Nil => generateSarif(Nil)
+      case Nil => generateSarif(results = Nil, baseUri = None)
       case findings @ head :: _ =>
         val baseUri = Cpg(head.graph).metaData.root.headOption.map(java.io.File(_).toURI)
-        generateSarif(findings.map(config.resultConverter.convertFindingToResult), baseUri)
+        val results = findings.map(config.resultConverter.convertFindingToResult)
+        generateSarif(results, baseUri)
     }
 
   }

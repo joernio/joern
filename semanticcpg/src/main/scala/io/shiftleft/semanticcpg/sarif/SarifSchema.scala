@@ -10,9 +10,6 @@ object SarifSchema {
   private val logger = LoggerFactory.getLogger(getClass)
 
   /** Provides a basic Sarif trait under which possibly multiple defined schemata would be defined.
-    *
-    * Note: The names of each property is chosen to conform to the JSON schema specification of SARIF. If a property
-    * name changes it may no longer be compatible with SARIF viewers.
     */
   sealed trait Sarif {
 
@@ -24,7 +21,7 @@ object SarifSchema {
     /** @return
       *   The URI of the JSON schema corresponding to the version.
       */
-    def `$schema`: String
+    def schema: String
 
     /** @return
       *   The set of runs contained in this log file.
@@ -35,7 +32,7 @@ object SarifSchema {
   case class Sarif2_1_0(runs: List[Run]) extends Sarif {
     def version: String = "2.1.0"
 
-    def `$schema`: String = "https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json"
+    def schema: String = "https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json"
   }
 
   // Minimal properties we want to use across versions:
@@ -297,7 +294,7 @@ object SarifSchema {
           ???
         },
         { case sarif: SarifSchema.Sarif =>
-          Extraction.decompose(Map("version" -> sarif.version, "$schema" -> sarif.`$schema`, "runs" -> sarif.runs))
+          Extraction.decompose(Map("version" -> sarif.version, "$schema" -> sarif.schema, "runs" -> sarif.runs))
         }
       )
     ),
