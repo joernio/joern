@@ -42,7 +42,7 @@ object MavenDependencies {
         "The compile class path may be missing or partial.\n" +
         "Results will suffer from poor type information.\n" +
         "To fix this issue, please ensure that the below command can be executed successfully from the project root directory:\n" +
-        s"mvn $MavenCliOpts " + fetchArgs.mkString(" ") + "\n\n"
+        s"mvn $$$MavenCliOpts " + fetchArgs.mkString(" ") + "\n\n"
     )
     logger.debug(s"Full maven error output:\n$output")
   }
