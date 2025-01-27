@@ -3,5 +3,6 @@
 
 @main def exec(cpgFile: String, outFile: String) = {
   importCpg(cpgFile)
+  assert(cpg.finding.nonEmpty, "no findings in this cpg - please check the setup")
   cpg.finding.toSarifJson() |> outFile
 }
