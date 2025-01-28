@@ -3,6 +3,7 @@ package io.joern.c2cpg.parser
 import io.joern.c2cpg.Config
 import io.joern.c2cpg.parser.JSONCompilationDatabaseParser.CommandObject
 import io.joern.c2cpg.utils.IncludeAutoDiscovery
+import io.joern.x2cpg.SourceFiles
 
 import java.nio.file.{Path, Paths}
 import scala.collection.mutable
@@ -22,26 +23,22 @@ object ParserConfig {
     )
 
   def fromConfig(config: Config, compilationDatabase: mutable.LinkedHashSet[CommandObject]): ParserConfig = {
-    val compilationDatabaseDefines = compilationDatabase.map { c =>
-      c.compiledFile() -> c.defines().toMap
-    }.toMap
-    val includes = compilationDatabase.map { c =>
-      c.compiledFile() -> c.includes()
+    val compilationDatabaseDefines  = compilationDatabase.map { c => c.compiledFile() -> c.defines().toMap }.toMap
+    val compilationDatabaseIncludes = compilationDatabase.map { c => c.compiledFile() -> c.includes() }.toMap
+    val includePaths = config.includePaths.map(p => Paths.get(SourceFiles.toAbsolutePath(p, config.inputPath)))
+    val defines = config.defines.map {
+      case define if define.contains("=") =>
+        val split = define.split("=")
+        split.head -> split(1)
+      case define => define -> ""
     }.toMap
     ParserConfig(
-      mutable.LinkedHashSet.from(config.includePaths.map(Paths.get(_).toAbsolutePath)),
+      mutable.LinkedHashSet.from(includePaths),
       IncludeAutoDiscovery.discoverIncludePathsC(config),
       IncludeAutoDiscovery.discoverIncludePathsCPP(config),
-      config.defines.map { define =>
-        if (define.contains("=")) {
-          val split = define.split("=")
-          split.head -> split(1)
-        } else {
-          define -> ""
-        }
-      }.toMap ++ DefaultDefines.DEFAULT_CALL_CONVENTIONS,
+      defines ++ DefaultDefines.DEFAULT_CALL_CONVENTIONS,
       compilationDatabaseDefines,
-      includes,
+      compilationDatabaseIncludes,
       config.logProblems,
       config.logPreprocessor
     )
