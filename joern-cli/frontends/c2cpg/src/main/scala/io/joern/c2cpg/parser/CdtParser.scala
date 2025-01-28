@@ -36,23 +36,24 @@ object CdtParser {
 
   private def readFileAsFileContent(file: File, lines: Option[Array[Char]] = None): FileContent = {
     val codeLines = lines.getOrElse(IOUtils.readLinesInFile(file.path).mkString("\n").toArray)
-    val isSource  = FileDefaults.hasSourceFileExtension(file.pathAsString)
-    FileContent.create(file.pathAsString, isSource, codeLines)
+    FileContent.create(file.pathAsString, true, codeLines)
   }
 
 }
 
-class CdtParser(config: Config, compilationDatabase: mutable.LinkedHashSet[CommandObject])
-    extends ParseProblemsLogger
+class CdtParser(
+  config: Config,
+  headerFileFinder: HeaderFileFinder,
+  compilationDatabase: mutable.LinkedHashSet[CommandObject]
+) extends ParseProblemsLogger
     with PreprocessorStatementsLogger {
 
   import io.joern.c2cpg.parser.CdtParser.*
 
-  private val headerFileFinder = new HeaderFileFinder(config.inputPath)
-  private val parserConfig     = ParserConfig.fromConfig(config, compilationDatabase)
-  private val definedSymbols   = parserConfig.definedSymbols
-  private val includePaths     = parserConfig.userIncludePaths
-  private val log              = new DefaultLogService
+  private val parserConfig   = ParserConfig.fromConfig(config, compilationDatabase)
+  private val definedSymbols = parserConfig.definedSymbols
+  private val includePaths   = parserConfig.userIncludePaths
+  private val log            = new DefaultLogService
 
   // enables parsing of code behind disabled preprocessor defines:
   private var opts: Int = ILanguage.OPTION_PARSE_INACTIVE_CODE
