@@ -6,7 +6,7 @@ import io.joern.csharpsrc2cpg.astcreation.BuiltinTypes.DotNetTypeMap
 import io.joern.csharpsrc2cpg.datastructures.*
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
-import io.joern.csharpsrc2cpg.utils.Utils.{composeMethodFullName, composeMethodLikeSignature}
+import io.joern.csharpsrc2cpg.utils.Utils.{composeGetterName, composeMethodFullName, composeMethodLikeSignature}
 import io.joern.x2cpg.utils.NodeBuilders.{newMethodReturnNode, newModifierNode}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
@@ -93,7 +93,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
     if (shouldBuildCtor) {
       val methodReturn = newMethodReturnNode(BuiltinTypes.Void, None, None, None)
-      val signature    = composeMethodLikeSignature(methodReturn.typeFullName, Seq.empty)
+      val signature    = composeMethodLikeSignature(methodReturn.typeFullName)
       val modifiers    = Seq(newModifierNode(ModifierTypes.CONSTRUCTOR), newModifierNode(ModifierTypes.INTERNAL))
       val name         = Defines.ConstructorMethodName
       val fullName     = composeMethodFullName(typeDeclFullName, name, signature)
@@ -135,7 +135,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
     if (shouldBuildCtor) {
       val methodReturn = newMethodReturnNode(BuiltinTypes.Void, None, None, None)
-      val signature    = composeMethodLikeSignature(methodReturn.typeFullName, Nil)
+      val signature    = composeMethodLikeSignature(methodReturn.typeFullName)
       val modifiers = Seq(
         newModifierNode(ModifierTypes.CONSTRUCTOR),
         newModifierNode(ModifierTypes.INTERNAL),
@@ -355,11 +355,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       .toSeq
     // TODO: Decide on proper return type for constructors. No `ReturnType` key in C# JSON for constructors so just
     //  defaulted to void (same as java) for now
-    val methodReturn = newMethodReturnNode(BuiltinTypes.Void, None, None, None)
-    val signature = composeMethodLikeSignature(
-      BuiltinTypes.Void,
-      params.flatMap(_.nodes.collectFirst { case x: NewMethodParameterIn => x.typeFullName })
-    )
+    val methodReturn     = newMethodReturnNode(BuiltinTypes.Void, None, None, None)
+    val signature        = composeMethodLikeSignature(BuiltinTypes.Void, params)
     val typeDeclFullName = scope.surroundingTypeDeclFullName.getOrElse(Defines.UnresolvedNamespace);
 
     val modifiers = (modifiersForNode(constructorDecl) :+ newModifierNode(ModifierTypes.CONSTRUCTOR))
@@ -422,9 +419,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val methodReturnAstNode = createDotNetNodeInfo(methodDecl.json(ParserKeys.ReturnType))
     val methodReturn        = methodReturnNode(methodReturnAstNode, nodeTypeFullName(methodReturnAstNode))
-    val signature =
-      methodSignature(methodReturn, params.flatMap(_.nodes.collectFirst { case x: NewMethodParameterIn => x }))
-    val fullName    = s"${astFullName(methodDecl)}:$signature"
+    val signature           = composeMethodLikeSignature(methodReturn.typeFullName, params)
+    val fullName            = s"${astFullName(methodDecl)}:$signature"
     val methodNode_ = methodNode(methodDecl, name, code(methodDecl), fullName, Option(signature), relativeFileName)
     scope.pushNewScope(MethodScope(fullName))
 
@@ -439,10 +435,6 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       if (!modifiers.exists(_.modifierType == ModifierTypes.STATIC)) astForThisParameter(methodDecl)
       else Ast()
     Seq(methodAstWithAnnotations(methodNode_, thisNode +: params, body, methodReturn, modifiers, annotationAsts))
-  }
-
-  private def methodSignature(methodReturn: NewMethodReturn, params: Seq[NewMethodParameterIn]): String = {
-    composeMethodLikeSignature(methodReturn.typeFullName, params.map(_.typeFullName))
   }
 
   private def astForParameter(paramNode: DotNetNodeInfo, idx: Int, paramTypeHint: Option[String] = None): Ast = {
@@ -561,16 +553,13 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForGetAccessorDeclaration(accessorDecl: DotNetNodeInfo, propertyDecl: DotNetNodeInfo): Seq[Ast] = {
-    val name       = s"get_${nameFromNode(propertyDecl)}"
-    val modifiers  = modifiersForNode(propertyDecl)
-    val returnType = nodeTypeFullName(propertyDecl)
-    val baseType   = scope.surroundingTypeDeclFullName.getOrElse(Defines.UnresolvedNamespace)
-    val isStatic   = modifiers.exists(_.modifierType == ModifierTypes.STATIC)
-    val parameters = if isStatic then Nil else astForThisParameter(propertyDecl) :: Nil
-    val signature = composeMethodLikeSignature(
-      returnType,
-      parameters.flatMap(_.nodes.collectFirst { case x: NewMethodParameterIn => x.typeFullName })
-    )
+    val name         = composeGetterName(nameFromNode(propertyDecl))
+    val modifiers    = modifiersForNode(propertyDecl)
+    val returnType   = nodeTypeFullName(propertyDecl)
+    val baseType     = scope.surroundingTypeDeclFullName.getOrElse(Defines.UnresolvedNamespace)
+    val isStatic     = modifiers.exists(_.modifierType == ModifierTypes.STATIC)
+    val parameters   = if isStatic then Nil else astForThisParameter(propertyDecl) :: Nil
+    val signature    = composeMethodLikeSignature(returnType, parameters)
     val fullName     = composeMethodFullName(baseType, name, signature)
     val body         = Ast(blockNode(accessorDecl))
     val methodReturn = methodReturnNode(accessorDecl, returnType)

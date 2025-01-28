@@ -378,7 +378,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     lazy val byFieldAccess = scope.tryResolveFieldAccess(fieldIdentifierName, Some(baseTypeFullName))
 
     // Getters look like fields, but are underneath `get_`-prefixed methods
-    lazy val byPropertyName = scope.tryResolveMethodInvocation(s"get_$fieldIdentifierName", Nil, Some(baseTypeFullName))
+    lazy val byPropertyName = scope.tryResolveGetterInvocation(fieldIdentifierName, Some(baseTypeFullName))
 
     // accessExpr might be a qualified name e.g. `System.Console`, in which case `System` (baseAst) is not a type
     // but a namespace. In this scenario, we look up the entire expression
