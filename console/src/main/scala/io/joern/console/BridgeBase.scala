@@ -232,6 +232,9 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
       builder += s"""openForInputPath("$name")""".stripMargin
     }
     builder ++= config.runBefore
+    builder ++= "import _root_.io.shiftleft.semanticcpg.sarif.SarifConfig"
+      :: "implicit val sarifConfig: SarifConfig = SarifConfig(semanticVersion = version)"
+      :: Nil
     builder.result()
   }
 
