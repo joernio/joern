@@ -34,7 +34,8 @@ class SarifExtension(val traversal: Iterator[Finding]) extends AnyVal {
             informationUri = config.toolInformationUri
           )
           val projectBaseUri = Map(
-            "PROJECT_ROOT" -> v2_1_0.Schema.ArtifactLocation(uriBaseId = baseUri.map(_.toString))
+            "PROJECT_ROOT" -> v2_1_0.Schema
+              .ArtifactLocation(uriBaseId = baseUri.map(_.toString).orElse(Option("<empty>")))
           )
           val runs = v2_1_0.Schema.Run(
             tool = v2_1_0.Schema.Tool(driver = tool),

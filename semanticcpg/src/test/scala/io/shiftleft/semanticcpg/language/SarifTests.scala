@@ -1,13 +1,14 @@
 package io.shiftleft.semanticcpg.language
 
-import flatgraph.{DiffGraphApplier, DiffGraphBuilder}
+import flatgraph.DiffGraphApplier
+import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.nodes.{NewFinding, NewKeyValuePair, NewMethod}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.codepropertygraph.generated.nodes.{NewFinding, NewKeyValuePair, NewMethod}
 
 class SarifTests extends AnyWordSpec with Matchers {
+
+  import SarifTests.*
 
   "a CPG without finding nodes" should {
     val cpg = Cpg.empty
@@ -30,26 +31,7 @@ class SarifTests extends AnyWordSpec with Matchers {
 
     val cpg = Cpg.empty
 
-    val dg = Cpg.newDiffGraphBuilder
-    val method = NewMethod()
-      .name("Foo")
-      .lineNumber(2)
-      .filename("Bar.java")
-      .code("public foo()")
-    val finding = NewFinding()
-      .evidence(Iterator.single(method))
-      .keyValuePairs(
-        List(
-          NewKeyValuePair().key("name").value("f1"),
-          NewKeyValuePair().key("title").value("Finding 1"),
-          NewKeyValuePair().key("description").value("something bad happened"),
-          NewKeyValuePair().key("score").value("8.0")
-        )
-      )
-    dg.addNode(method)
-      .addNode(finding)
-
-    DiffGraphApplier.applyDiff(cpg.graph, dg)
+    createValidFindingNode(cpg)
 
     "create a valid SARIF result" in {
       val sarif   = cpg.finding.toSarif()
@@ -73,29 +55,110 @@ class SarifTests extends AnyWordSpec with Matchers {
       result.codeFlows.head.message.text shouldBe "something bad happened"
     }
 
+    "create a valid SARIF JSON" in {
+      cpg.finding.toSarifJson(pretty = true) shouldBe
+        """{
+          |  "version":"2.1.0",
+          |  "$schema":"https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json",
+          |  "runs":[
+          |    {
+          |      "tool":{
+          |        "driver":{
+          |          "name":"Joern",
+          |          "fullName":"Joern - The Bug Hunter's Workbench",
+          |          "organization":"Joern.io",
+          |          "semanticVersion":"0.0.1",
+          |          "informationUri":"https://joern.io"
+          |        }
+          |      },
+          |      "results":[
+          |        {
+          |          "ruleId":"f1",
+          |          "message":{
+          |            "text":"Finding 1"
+          |          },
+          |          "level":"error",
+          |          "locations":[
+          |            {
+          |              "physicalLocation":{
+          |                "artifactLocation":{
+          |                  "uri":"Bar.java",
+          |                  "uriBaseId":"PROJECT_ROOT"
+          |                },
+          |                "region":{
+          |                  "startLine":2,
+          |                  "snippet":{
+          |                    "text":"public foo()"
+          |                  }
+          |                }
+          |              }
+          |            }
+          |          ],
+          |          "relatedLocations":[
+          |            {
+          |              "physicalLocation":{
+          |                "artifactLocation":{
+          |                  "uri":"Bar.java",
+          |                  "uriBaseId":"PROJECT_ROOT"
+          |                },
+          |                "region":{
+          |                  "startLine":2,
+          |                  "snippet":{
+          |                    "text":"public foo()"
+          |                  }
+          |                }
+          |              }
+          |            }
+          |          ],
+          |          "codeFlows":[
+          |            {
+          |              "message":{
+          |                "text":"something bad happened"
+          |              },
+          |              "threadFlows":[
+          |                {
+          |                  "locations":[
+          |                    {
+          |                      "location":{
+          |                        "physicalLocation":{
+          |                          "artifactLocation":{
+          |                            "uri":"Bar.java",
+          |                            "uriBaseId":"PROJECT_ROOT"
+          |                          },
+          |                          "region":{
+          |                            "startLine":2,
+          |                            "snippet":{
+          |                              "text":"public foo()"
+          |                            }
+          |                          }
+          |                        }
+          |                      }
+          |                    }
+          |                  ]
+          |                }
+          |              ]
+          |            }
+          |          ]
+          |        }
+          |      ],
+          |      "originalUriBaseIds":{
+          |        "PROJECT_ROOT":{
+          |          "uriBaseId":"<empty>"
+          |        }
+          |      }
+          |    }
+          |  ]
+          |}
+          |""".stripMargin.trim
+    }
+
   }
 
   "an iterable with a single finding node with missing properties" should {
 
     val cpg = Cpg.empty
 
-    val dg = Cpg.newDiffGraphBuilder
-    val method = NewMethod()
-      .name("Foo")
-      .lineNumber(2)
-      .code("public foo()")
-    val finding = NewFinding()
-      .evidence(Iterator.single(method))
-      .keyValuePairs(
-        List(
-          NewKeyValuePair().key("name").value("f1"),
-          NewKeyValuePair().key("description").value("something bad happened")
-        )
-      )
-    dg.addNode(method)
-      .addNode(finding)
-
-    DiffGraphApplier.applyDiff(cpg.graph, dg)
+    createInvalidFindingNode(cpg)
 
     "create a valid SARIF result" in {
       val sarif   = cpg.finding.toSarif()
@@ -119,6 +182,148 @@ class SarifTests extends AnyWordSpec with Matchers {
       result.codeFlows.head.message.text shouldBe "something bad happened"
     }
 
+    "create a valid SARIF JSON" in {
+      cpg.finding.toSarifJson(pretty = true) shouldBe
+        """
+          |{
+          |  "version":"2.1.0",
+          |  "$schema":"https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json",
+          |  "runs":[
+          |    {
+          |      "tool":{
+          |        "driver":{
+          |          "name":"Joern",
+          |          "fullName":"Joern - The Bug Hunter's Workbench",
+          |          "organization":"Joern.io",
+          |          "semanticVersion":"0.0.1",
+          |          "informationUri":"https://joern.io"
+          |        }
+          |      },
+          |      "results":[
+          |        {
+          |          "ruleId":"f1",
+          |          "message":{
+          |            "text":"<empty>"
+          |          },
+          |          "level":"warning",
+          |          "locations":[
+          |            {
+          |              "physicalLocation":{
+          |                "artifactLocation":{
+          |                  "uriBaseId":"PROJECT_ROOT"
+          |                },
+          |                "region":{
+          |                  "startLine":2,
+          |                  "snippet":{
+          |                    "text":"public foo()"
+          |                  }
+          |                }
+          |              }
+          |            }
+          |          ],
+          |          "relatedLocations":[
+          |            {
+          |              "physicalLocation":{
+          |                "artifactLocation":{
+          |                  "uriBaseId":"PROJECT_ROOT"
+          |                },
+          |                "region":{
+          |                  "startLine":2,
+          |                  "snippet":{
+          |                    "text":"public foo()"
+          |                  }
+          |                }
+          |              }
+          |            }
+          |          ],
+          |          "codeFlows":[
+          |            {
+          |              "message":{
+          |                "text":"something bad happened"
+          |              },
+          |              "threadFlows":[
+          |                {
+          |                  "locations":[
+          |                    {
+          |                      "location":{
+          |                        "physicalLocation":{
+          |                          "artifactLocation":{
+          |                            "uriBaseId":"PROJECT_ROOT"
+          |                          },
+          |                          "region":{
+          |                            "startLine":2,
+          |                            "snippet":{
+          |                              "text":"public foo()"
+          |                            }
+          |                          }
+          |                        }
+          |                      }
+          |                    }
+          |                  ]
+          |                }
+          |              ]
+          |            }
+          |          ]
+          |        }
+          |      ],
+          |      "originalUriBaseIds":{
+          |        "PROJECT_ROOT":{
+          |          "uriBaseId":"<empty>"
+          |        }
+          |      }
+          |    }
+          |  ]
+          |}
+          |""".stripMargin.trim
+    }
+
+  }
+
+}
+
+object SarifTests {
+
+  def createValidFindingNode(cpg: Cpg): Unit = {
+    val dg = Cpg.newDiffGraphBuilder
+    val method = NewMethod()
+      .name("Foo")
+      .lineNumber(2)
+      .filename("Bar.java")
+      .code("public foo()")
+    val finding = NewFinding()
+      .evidence(Iterator.single(method))
+      .keyValuePairs(
+        List(
+          NewKeyValuePair().key("name").value("f1"),
+          NewKeyValuePair().key("title").value("Finding 1"),
+          NewKeyValuePair().key("description").value("something bad happened"),
+          NewKeyValuePair().key("score").value("8.0")
+        )
+      )
+    dg.addNode(method)
+      .addNode(finding)
+
+    DiffGraphApplier.applyDiff(cpg.graph, dg)
+  }
+
+  def createInvalidFindingNode(cpg: Cpg): Unit = {
+    val dg = Cpg.newDiffGraphBuilder
+    val method = NewMethod()
+      .name("Foo")
+      .lineNumber(2)
+      .code("public foo()")
+    val finding = NewFinding()
+      .evidence(Iterator.single(method))
+      .keyValuePairs(
+        List(
+          NewKeyValuePair().key("name").value("f1"),
+          NewKeyValuePair().key("description").value("something bad happened")
+        )
+      )
+    dg.addNode(method)
+      .addNode(finding)
+
+    DiffGraphApplier.applyDiff(cpg.graph, dg)
   }
 
 }
