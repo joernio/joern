@@ -4,6 +4,7 @@ import flatgraph.help.DocSearchPackages
 import io.shiftleft.codepropertygraph.generated
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.language.SarifExtension
 import io.shiftleft.semanticcpg.language.bindingextension.{
   MethodTraversal as BindingMethodTraversal,
   TypeDeclTraversal as BindingTypeDeclTraversal
@@ -263,6 +264,9 @@ package object language
       new MethodParameterOutTraversal(Iterator.single(a))
 
   }
+
+  implicit def singleToSarifTraversal[A <: Finding](a: A): SarifExtension = new SarifExtension(Iterator.single(a))
+  implicit def iterOnceToSarifTraversal[A <: Finding](a: IterableOnce[A]): SarifExtension = new SarifExtension(a)
 }
 
 trait LowPrioImplicits {
@@ -290,4 +294,5 @@ trait LowPrioImplicits {
     new DeclarationTraversal[A](Iterator.single(a))
   implicit def iterOnceToDeclarationNodeTraversal[A <: Declaration](a: IterableOnce[A]): DeclarationTraversal[A] =
     new DeclarationTraversal[A](a.iterator)
+
 }
