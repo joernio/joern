@@ -1,6 +1,7 @@
 package io.joern.csharpsrc2cpg.datastructures
 
 import io.joern.csharpsrc2cpg.Constants
+import io.joern.csharpsrc2cpg.utils.Utils
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.datastructures.{OverloadableScope, Scope, ScopeElement, TypedScope, TypedScopeElement}
 import io.joern.x2cpg.utils.ListUtils.singleOrNone
@@ -164,5 +165,13 @@ class CSharpScope(summary: CSharpProgramSummary)
     argTypes: List[String]
   ): Option[(CSharpMethod, String)] = {
     baseTypeFullName.flatMap(extensionsInScopeFor(_, callName, argTypes).headOption).map(x => (x.methods.head, x.name))
+  }
+
+  def tryResolveGetterInvocation(
+    fieldIdentifierName: String,
+    baseTypeFullName: Option[String]
+  ): Option[CSharpMethod] = {
+    val getterMethodName = Utils.composeGetterName(fieldIdentifierName)
+    tryResolveMethodInvocation(getterMethodName, Nil, baseTypeFullName)
   }
 }
