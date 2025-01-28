@@ -272,6 +272,10 @@ object DotNetJsonAst {
 
   object Attribute extends BaseExpr
 
+  object AttributeArgumentList extends BaseExpr
+
+  object AttributeArgument extends BaseExpr
+
   object ParenthesizedExpression extends BaseExpr
 
   object Unknown extends DotNetParserNode
