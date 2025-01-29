@@ -61,20 +61,20 @@ class MemberTests extends CSharpCode2CpgFixture {
     "have a static constructor" in {
       inside(cpg.typeDecl.nameExact("Car").method.nameExact(Defines.StaticInitMethodName).l) {
         case cctor :: Nil =>
-          cctor.fullName shouldBe s"Car.${Defines.StaticInitMethodName}:void()"
+          cctor.fullName shouldBe s"Car.${Defines.StaticInitMethodName}:System.Void()"
           cctor.modifier.modifierType.toSet shouldBe Set(
             ModifierTypes.STATIC,
             ModifierTypes.CONSTRUCTOR,
             ModifierTypes.INTERNAL
           )
-          cctor.methodReturn.typeFullName shouldBe "void"
+          cctor.methodReturn.typeFullName shouldBe "System.Void"
         case xs =>
           fail(s"Expected single static constructor, but got $xs")
       }
     }
 
     "have the static member initialization inside the static constructor" in {
-      inside(cpg.method.fullNameExact(s"Car.${Defines.StaticInitMethodName}:void()").body.assignment.l) {
+      inside(cpg.method.fullNameExact(s"Car.${Defines.StaticInitMethodName}:System.Void()").body.assignment.l) {
         case assignment :: Nil =>
           assignment.target.code shouldBe "nonInitMaxSpeed"
           assignment.source.code shouldBe "200"
@@ -106,16 +106,16 @@ class MemberTests extends CSharpCode2CpgFixture {
     "have a constructor" in {
       inside(cpg.typeDecl.nameExact("Car").method.nameExact(Defines.ConstructorMethodName).l) {
         case ctor :: Nil =>
-          ctor.fullName shouldBe s"Car.${Defines.ConstructorMethodName}:void()"
+          ctor.fullName shouldBe s"Car.${Defines.ConstructorMethodName}:System.Void()"
           ctor.modifier.modifierType.toSet shouldBe Set(ModifierTypes.INTERNAL, ModifierTypes.CONSTRUCTOR)
-          ctor.methodReturn.typeFullName shouldBe "void"
+          ctor.methodReturn.typeFullName shouldBe "System.Void"
         case xs =>
           fail(s"Expected single constructor, but got $xs")
       }
     }
 
     "have the member initialization inside the constructor" in {
-      inside(cpg.method.fullNameExact(s"Car.${Defines.ConstructorMethodName}:void()").body.assignment.l) {
+      inside(cpg.method.fullNameExact(s"Car.${Defines.ConstructorMethodName}:System.Void()").body.assignment.l) {
         case assignment :: Nil =>
           assignment.target.code shouldBe "color"
           assignment.source.code shouldBe "\"red\""
@@ -136,9 +136,9 @@ class MemberTests extends CSharpCode2CpgFixture {
     "have a static constructor correctly set" in {
       inside(cpg.typeDecl.nameExact("Car").method.nameExact(Defines.StaticInitMethodName).l) {
         case cctor :: Nil =>
-          cctor.fullName shouldBe s"Car.${Defines.StaticInitMethodName}:void()"
+          cctor.fullName shouldBe s"Car.${Defines.StaticInitMethodName}:System.Void()"
           cctor.modifier.modifierType.toSet shouldBe Set(ModifierTypes.STATIC, ModifierTypes.CONSTRUCTOR)
-          cctor.methodReturn.typeFullName shouldBe "void"
+          cctor.methodReturn.typeFullName shouldBe "System.Void"
         case xs =>
           fail(s"Expected single static constructor, but got $xs")
       }
@@ -206,16 +206,16 @@ class MemberTests extends CSharpCode2CpgFixture {
     "have a constructor" in {
       inside(cpg.typeDecl.nameExact("Car").method.nameExact(Defines.ConstructorMethodName).l) {
         case ctor :: Nil =>
-          ctor.fullName shouldBe s"Car.${Defines.ConstructorMethodName}:void()"
+          ctor.fullName shouldBe s"Car.${Defines.ConstructorMethodName}:System.Void()"
           ctor.modifier.modifierType.toSet shouldBe Set(ModifierTypes.CONSTRUCTOR)
-          ctor.methodReturn.typeFullName shouldBe "void"
+          ctor.methodReturn.typeFullName shouldBe "System.Void"
         case xs =>
           fail(s"Expected single constructor, but got $xs")
       }
     }
 
     "have the member initialization inside the constructor" in {
-      inside(cpg.method.fullNameExact(s"Car.${Defines.ConstructorMethodName}:void()").body.assignment.l) {
+      inside(cpg.method.fullNameExact(s"Car.${Defines.ConstructorMethodName}:System.Void()").body.assignment.l) {
         case assignment :: Nil =>
           // TODO: test LHS: shouldn't it resemble `this.color`?
           assignment.target.code shouldBe "color"
@@ -252,9 +252,9 @@ class MemberTests extends CSharpCode2CpgFixture {
     "generate one constructor" in {
       inside(cpg.typeDecl.nameExact("Car").method.nameExact(Defines.ConstructorMethodName).l) {
         case m :: Nil =>
-          m.fullName shouldBe s"Car.${Defines.ConstructorMethodName}:void()"
+          m.fullName shouldBe s"Car.${Defines.ConstructorMethodName}:System.Void()"
           m.modifier.modifierType.l shouldBe ModifierTypes.PUBLIC :: ModifierTypes.CONSTRUCTOR :: Nil
-          m.methodReturn.typeFullName shouldBe "void"
+          m.methodReturn.typeFullName shouldBe "System.Void"
 
           inside(m.assignment.l) {
             case color :: initMaxSpeed :: Nil =>
@@ -293,9 +293,9 @@ class MemberTests extends CSharpCode2CpgFixture {
     "generate one constructor with necessary parameters" in {
       inside(cpg.typeDecl.nameExact("Car").method.nameExact(Defines.ConstructorMethodName).l) {
         case m :: Nil =>
-          m.fullName shouldBe s"Car.${Defines.ConstructorMethodName}:void(System.Int32)"
+          m.fullName shouldBe s"Car.${Defines.ConstructorMethodName}:System.Void(System.Int32)"
           m.modifier.modifierType.l shouldBe ModifierTypes.PUBLIC :: ModifierTypes.CONSTRUCTOR :: Nil
-          m.methodReturn.typeFullName shouldBe "void"
+          m.methodReturn.typeFullName shouldBe "System.Void"
 
           inside(m.assignment.l) {
             case color :: initMaxSpeed :: Nil =>

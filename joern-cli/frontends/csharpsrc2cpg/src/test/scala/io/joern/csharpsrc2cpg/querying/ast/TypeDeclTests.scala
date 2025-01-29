@@ -288,16 +288,16 @@ class TypeDeclTests extends CSharpCode2CpgFixture {
     "create a TypeDecl node" in {
       inside(cpg.method("Main").astChildren.isTypeDecl.l) {
         case anonType :: Nil =>
-          anonType.fullName shouldBe "HelloWorld.Program.Main:void(System.String[]).<anon>0"
+          anonType.fullName shouldBe "HelloWorld.Program.Main:System.Void(System.String[]).<anon>0"
           anonType.astParentType shouldBe "METHOD"
-          anonType.astParentFullName shouldBe "HelloWorld.Program.Main:void(System.String[])"
+          anonType.astParentFullName shouldBe "HelloWorld.Program.Main:System.Void(System.String[])"
         case _ => fail("No TypeDecl node for anonymous object found")
       }
     }
 
     "propagate type to the LHS" in {
       inside(cpg.method("Main").astChildren.isBlock.astChildren.isLocal.nameExact("Foo").l) { case loc :: Nil =>
-        loc.typeFullName shouldBe "HelloWorld.Program.Main:void(System.String[]).<anon>0"
+        loc.typeFullName shouldBe "HelloWorld.Program.Main:System.Void(System.String[]).<anon>0"
       }
     }
 
@@ -338,16 +338,16 @@ class TypeDeclTests extends CSharpCode2CpgFixture {
     "create a TypeDecl node" in {
       inside(cpg.method("Main").astChildren.isTypeDecl.l) {
         case anonType :: Nil =>
-          anonType.fullName shouldBe "Foo.Bar.Main:void().<anon>0"
+          anonType.fullName shouldBe "Foo.Bar.Main:System.Void().<anon>0"
           anonType.astParentType shouldBe "METHOD"
-          anonType.astParentFullName shouldBe "Foo.Bar.Main:void()"
+          anonType.astParentFullName shouldBe "Foo.Bar.Main:System.Void()"
         case _ => fail("No TypeDecl node for anonymous object found")
       }
     }
 
     "propagate type to the LHS" in {
       inside(cpg.method("Main").astChildren.isBlock.astChildren.isLocal.nameExact("Fred").l) { case loc :: Nil =>
-        loc.typeFullName shouldBe "Foo.Bar.Main:void().<anon>0"
+        loc.typeFullName shouldBe "Foo.Bar.Main:System.Void().<anon>0"
       }
     }
 
@@ -380,13 +380,13 @@ class TypeDeclTests extends CSharpCode2CpgFixture {
     "have correct attributes" in {
       inside(cpg.method("Main").astChildren.isTypeDecl.l) {
         case anonType :: anonType2 :: Nil =>
-          anonType.fullName shouldBe "HelloWorld.Program.Main:void(System.String[]).<anon>0"
+          anonType.fullName shouldBe "HelloWorld.Program.Main:System.Void(System.String[]).<anon>0"
           anonType.astParentType shouldBe "METHOD"
-          anonType.astParentFullName shouldBe "HelloWorld.Program.Main:void(System.String[])"
+          anonType.astParentFullName shouldBe "HelloWorld.Program.Main:System.Void(System.String[])"
 
-          anonType2.fullName shouldBe "HelloWorld.Program.Main:void(System.String[]).<anon>1"
+          anonType2.fullName shouldBe "HelloWorld.Program.Main:System.Void(System.String[]).<anon>1"
           anonType2.astParentType shouldBe "METHOD"
-          anonType2.astParentFullName shouldBe "HelloWorld.Program.Main:void(System.String[])"
+          anonType2.astParentFullName shouldBe "HelloWorld.Program.Main:System.Void(System.String[])"
         case _ => fail("There should be exactly 2 anonymous types present")
       }
     }
@@ -394,8 +394,8 @@ class TypeDeclTests extends CSharpCode2CpgFixture {
     "propagate type to the LHS" in {
       inside(cpg.method("Main").astChildren.isBlock.astChildren.isLocal.l) {
         case loc :: loc2 :: Nil =>
-          loc.typeFullName shouldBe "HelloWorld.Program.Main:void(System.String[]).<anon>0"
-          loc2.typeFullName shouldBe "HelloWorld.Program.Main:void(System.String[]).<anon>1"
+          loc.typeFullName shouldBe "HelloWorld.Program.Main:System.Void(System.String[]).<anon>0"
+          loc2.typeFullName shouldBe "HelloWorld.Program.Main:System.Void(System.String[]).<anon>1"
         case _ => fail("Exactly two locals should be present")
       }
     }

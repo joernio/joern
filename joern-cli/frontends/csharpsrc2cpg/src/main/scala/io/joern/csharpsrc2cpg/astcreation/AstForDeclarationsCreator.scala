@@ -97,7 +97,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val shouldBuildCtor = dynamicFields.nonEmpty && !hasExplicitCtor && parseLevel == FULL_AST
 
     if (shouldBuildCtor) {
-      val methodReturn = newMethodReturnNode(BuiltinTypes.Void, None, None, None)
+      val methodReturn = newMethodReturnNode(DotNetTypeMap(BuiltinTypes.Void), None, None, None)
       val signature    = composeMethodLikeSignature(methodReturn.typeFullName)
       val modifiers    = Seq(newModifierNode(ModifierTypes.CONSTRUCTOR), newModifierNode(ModifierTypes.INTERNAL))
       val name         = Defines.ConstructorMethodName
@@ -139,7 +139,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val shouldBuildCtor = staticFields.nonEmpty && !hasExplicitCtor && parseLevel == FULL_AST
 
     if (shouldBuildCtor) {
-      val methodReturn = newMethodReturnNode(BuiltinTypes.Void, None, None, None)
+      val methodReturn = newMethodReturnNode(DotNetTypeMap(BuiltinTypes.Void), None, None, None)
       val signature    = composeMethodLikeSignature(methodReturn.typeFullName)
       val modifiers = Seq(
         newModifierNode(ModifierTypes.CONSTRUCTOR),
@@ -360,8 +360,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       .toSeq
     // TODO: Decide on proper return type for constructors. No `ReturnType` key in C# JSON for constructors so just
     //  defaulted to void (same as java) for now
-    val methodReturn     = newMethodReturnNode(BuiltinTypes.Void, None, None, None)
-    val signature        = composeMethodLikeSignature(BuiltinTypes.Void, params)
+    val methodReturn     = newMethodReturnNode(DotNetTypeMap(BuiltinTypes.Void), None, None, None)
+    val signature        = composeMethodLikeSignature(DotNetTypeMap(BuiltinTypes.Void), params)
     val typeDeclFullName = scope.surroundingTypeDeclFullName.getOrElse(Defines.UnresolvedNamespace);
 
     val modifiers = (modifiersForNode(constructorDecl) :+ newModifierNode(ModifierTypes.CONSTRUCTOR))

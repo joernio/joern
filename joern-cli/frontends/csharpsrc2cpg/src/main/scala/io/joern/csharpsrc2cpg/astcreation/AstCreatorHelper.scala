@@ -280,6 +280,6 @@ object BuiltinTypes {
     String  -> "System.String",
     Dynamic -> "System.Object",
     Null    -> Null,
-    Void    -> Void
+    Void    -> "System.Void"
   )
 }
