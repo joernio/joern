@@ -21,4 +21,6 @@ object Utils {
 
   def composeGetterName(fieldIdentifierName: String): String = s"get_$fieldIdentifierName"
 
+  def composeSetterName(fieldIdentifierName: String): String = s"set_$fieldIdentifierName"
+
 }
