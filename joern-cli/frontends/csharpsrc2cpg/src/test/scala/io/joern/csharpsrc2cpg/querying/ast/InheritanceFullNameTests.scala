@@ -62,13 +62,13 @@ class InheritanceFullNameTests extends CSharpCode2CpgFixture {
 
         inside(qux.astChildren.isMethod.l) {
           case bazz :: Nil =>
-            bazz.fullName shouldBe "HelloWorld.Qux.bazz:void()"
+            bazz.fullName shouldBe "HelloWorld.Qux.bazz:System.Void()"
             qux.fullName shouldBe "HelloWorld.Qux"
             qux.inheritsFromTypeFullName shouldBe Seq("HelloWorld.Foo")
 
             inside(qux.astChildren.isMethod.l) {
               case bazz :: Nil =>
-                bazz.fullName shouldBe "HelloWorld.Qux.bazz:void()"
+                bazz.fullName shouldBe "HelloWorld.Qux.bazz:System.Void()"
               case _ => fail("There is no method named `baz` under `Qux` interface,")
             }
           case _ => fail("There is no interface named `Qux`")

@@ -19,7 +19,7 @@ class LambdaTests extends CSharpCode2CpgFixture {
       inside(cpg.method("Main").astChildren.collectAll[Method].l) {
         case anon :: Nil =>
           anon.name shouldBe "<lambda>0"
-          anon.fullName shouldBe "HelloWorld.Program.Main:void(System.String[]).<lambda>0"
+          anon.fullName shouldBe "HelloWorld.Program.Main:System.Void(System.String[]).<lambda>0"
 
           inside(anon.parameter.l) {
             case x :: Nil =>
@@ -37,7 +37,7 @@ class LambdaTests extends CSharpCode2CpgFixture {
       inside(cpg.method("Main").astChildren.collectAll[TypeDecl].l) {
         case anon :: Nil =>
           anon.name shouldBe "<lambda>0"
-          anon.fullName shouldBe "HelloWorld.Program.Main:void(System.String[]).<lambda>0"
+          anon.fullName shouldBe "HelloWorld.Program.Main:System.Void(System.String[]).<lambda>0"
         case xs => fail(s"Expected a single anonymous type declaration, got [${xs.code.mkString(",")}]")
       }
     }
@@ -48,7 +48,7 @@ class LambdaTests extends CSharpCode2CpgFixture {
           numbers.name shouldBe "numbers"
           numbers.typeFullName shouldBe s"${DotNetTypeMap(BuiltinTypes.Int)}[]"
 
-          closure.methodFullName shouldBe "HelloWorld.Program.Main:void(System.String[]).<lambda>0"
+          closure.methodFullName shouldBe "HelloWorld.Program.Main:System.Void(System.String[]).<lambda>0"
           closure.referencedMethod.name shouldBe "<lambda>0"
         case xs => fail(s"Expected two `Select` call argument, got [${xs.code.mkString(",")}]")
       }
@@ -69,7 +69,7 @@ class LambdaTests extends CSharpCode2CpgFixture {
       inside(cpg.method("Main").astChildren.collectAll[Method].l) {
         case anon :: Nil =>
           anon.name shouldBe "<lambda>0"
-          anon.fullName shouldBe "HelloWorld.Program.Main:void(System.String[]).<lambda>0"
+          anon.fullName shouldBe "HelloWorld.Program.Main:System.Void(System.String[]).<lambda>0"
 
           inside(anon.parameter.l) {
             case x :: y :: Nil =>
@@ -91,7 +91,7 @@ class LambdaTests extends CSharpCode2CpgFixture {
       inside(cpg.method("Main").astChildren.collectAll[TypeDecl].l) {
         case anon :: Nil =>
           anon.name shouldBe "<lambda>0"
-          anon.fullName shouldBe "HelloWorld.Program.Main:void(System.String[]).<lambda>0"
+          anon.fullName shouldBe "HelloWorld.Program.Main:System.Void(System.String[]).<lambda>0"
         case xs => fail(s"Expected a single anonymous type declaration, got [${xs.code.mkString(",")}]")
       }
     }
@@ -102,7 +102,7 @@ class LambdaTests extends CSharpCode2CpgFixture {
           numbers.name shouldBe "numbers"
           numbers.typeFullName shouldBe s"${DotNetTypeMap(BuiltinTypes.Int)}[]"
 
-          closure.methodFullName shouldBe "HelloWorld.Program.Main:void(System.String[]).<lambda>0"
+          closure.methodFullName shouldBe "HelloWorld.Program.Main:System.Void(System.String[]).<lambda>0"
           closure.referencedMethod.name shouldBe "<lambda>0"
         case xs => fail(s"Expected two `Select` call argument, got [${xs.code.mkString(",")}]")
       }

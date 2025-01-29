@@ -67,8 +67,8 @@ class TopLevelStatementTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
     inside(cpg.method.nameExact("Run").l) {
       case run :: Nil =>
-        run.methodReturn.typeFullName shouldBe "void"
-        run.fullName shouldBe "Test0_cs_Program.<Main>$.Run:void()"
+        run.methodReturn.typeFullName shouldBe "System.Void"
+        run.fullName shouldBe "Test0_cs_Program.<Main>$.Run:System.Void()"
         run.modifier.modifierType.toSet shouldBe Set(ModifierTypes.STATIC, ModifierTypes.INTERNAL)
         run.parentBlock.method.l shouldBe cpg.method.fullNameExact("Test0_cs_Program.<Main>$").l
       case xs =>

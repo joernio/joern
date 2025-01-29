@@ -19,9 +19,9 @@ class ExtensionMethodTests extends CSharpCode2CpgFixture {
     "have correct properties" in {
       inside(cpg.method.nameExact("DoStuff").l) {
         case doStuff :: Nil =>
-          doStuff.fullName shouldBe "Extensions.DoStuff:void(MyClass)"
-          doStuff.signature shouldBe "void(MyClass)"
-          doStuff.methodReturn.typeFullName shouldBe "void"
+          doStuff.fullName shouldBe "Extensions.DoStuff:System.Void(MyClass)"
+          doStuff.signature shouldBe "System.Void(MyClass)"
+          doStuff.methodReturn.typeFullName shouldBe "System.Void"
           doStuff.modifier.modifierType.toSet shouldBe Set(ModifierTypes.STATIC, ModifierTypes.PUBLIC)
         case xs => fail(s"Expected single DoStuff method, but got $xs")
       }
@@ -54,7 +54,7 @@ class ExtensionMethodTests extends CSharpCode2CpgFixture {
       inside(cpg.call.nameExact("DoStuff").l) {
         case doStuff :: Nil =>
           doStuff.code shouldBe "x.DoStuff()"
-          doStuff.methodFullName shouldBe "Extensions.DoStuff:void(MyClass)"
+          doStuff.methodFullName shouldBe "Extensions.DoStuff:System.Void(MyClass)"
           doStuff.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
         case xs => fail(s"Expected single DoStuff call, but got $xs")
       }
@@ -101,7 +101,7 @@ class ExtensionMethodTests extends CSharpCode2CpgFixture {
       inside(cpg.call.nameExact("DoStuff").l) {
         case doStuff :: Nil =>
           doStuff.code shouldBe "x.DoStuff(0)"
-          doStuff.methodFullName shouldBe "Version1.Extension1.DoStuff:void(MyClass,System.Int32)"
+          doStuff.methodFullName shouldBe "Version1.Extension1.DoStuff:System.Void(MyClass,System.Int32)"
         case xs => fail(s"Expected single DoStuff call, but got $xs")
       }
     }
