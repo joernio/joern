@@ -14,8 +14,10 @@ object RunBeforeCode {
       "import _root_.io.joern.dataflowengineoss.language.*",
       "import _root_.io.shiftleft.semanticcpg.language.*",
       "import scala.jdk.CollectionConverters.*",
+      "import _root_.io.shiftleft.semanticcpg.sarif.SarifConfig",
       "implicit val resolver: ICallResolver = NoResolve",
-      "implicit val finder: NodeExtensionFinder = DefaultNodeExtensionFinder"
+      "implicit val finder: NodeExtensionFinder = DefaultNodeExtensionFinder",
+      "implicit val sarifConfig: SarifConfig = SarifConfig(semanticVersion = Option(version))"
     )
 
   val forInteractiveShell: Seq[String] = {
