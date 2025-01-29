@@ -76,11 +76,10 @@ class SarifTests extends AnyWordSpec with Matchers {
           |    {
           |      "tool":{
           |        "driver":{
-          |          "name":"Joern",
-          |          "fullName":"Joern - The Bug Hunter's Workbench",
           |          "organization":"Joern.io",
-          |          "semanticVersion":"0.0.1",
+          |          "name":"Joern",
           |          "informationUri":"https://joern.io",
+          |          "fullName":"Joern - The Bug Hunter's Workbench",
           |          "rules":[
           |            {
           |              "id":"f1",
@@ -221,11 +220,10 @@ class SarifTests extends AnyWordSpec with Matchers {
           |    {
           |      "tool":{
           |        "driver":{
-          |          "name":"Joern",
-          |          "fullName":"Joern - The Bug Hunter's Workbench",
           |          "organization":"Joern.io",
-          |          "semanticVersion":"0.0.1",
+          |          "name":"Joern",
           |          "informationUri":"https://joern.io",
+          |          "fullName":"Joern - The Bug Hunter's Workbench",
           |          "rules":[
           |            {
           |              "id":"f1",
