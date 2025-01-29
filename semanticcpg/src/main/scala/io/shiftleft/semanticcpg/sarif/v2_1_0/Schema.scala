@@ -21,7 +21,7 @@ object Schema {
   final case class ArtifactLocation(uri: Option[URI] = None, uriBaseId: Option[String] = Option("PROJECT_ROOT"))
       extends SarifSchema.ArtifactLocation
 
-  final case class CodeFlow(message: Option[Message] = None, threadFlows: List[ThreadFlow]) extends SarifSchema.CodeFlow
+  final case class CodeFlow(threadFlows: List[ThreadFlow], message: Option[Message] = None) extends SarifSchema.CodeFlow
 
   final case class Location(physicalLocation: PhysicalLocation) extends SarifSchema.Location
 
