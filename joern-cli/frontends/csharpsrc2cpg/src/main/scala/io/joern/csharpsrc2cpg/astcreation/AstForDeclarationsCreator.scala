@@ -6,7 +6,12 @@ import io.joern.csharpsrc2cpg.astcreation.BuiltinTypes.DotNetTypeMap
 import io.joern.csharpsrc2cpg.datastructures.*
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
-import io.joern.csharpsrc2cpg.utils.Utils.{composeGetterName, composeMethodFullName, composeMethodLikeSignature}
+import io.joern.csharpsrc2cpg.utils.Utils.{
+  composeGetterName,
+  composeMethodFullName,
+  composeMethodLikeSignature,
+  composeSetterName
+}
 import io.joern.x2cpg.utils.NodeBuilders.{newMethodReturnNode, newModifierNode}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
@@ -547,9 +552,28 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForPropertyAccessor(accessorDecl: DotNetNodeInfo, propertyDecl: DotNetNodeInfo): Seq[Ast] = {
     accessorDecl.node match
       case GetAccessorDeclaration => astForGetAccessorDeclaration(accessorDecl, propertyDecl)
+      case SetAccessorDeclaration => astForSetAccessorDeclaration(accessorDecl, propertyDecl)
       case _ =>
-        logger.warn(s"Unhandled property accessor '${accessorDecl.node}''")
+        logger.warn(s"Unhandled property accessor '${accessorDecl.node}'")
         Nil
+  }
+
+  private def astForSetAccessorDeclaration(accessorDecl: DotNetNodeInfo, propertyDecl: DotNetNodeInfo): Seq[Ast] = {
+    val name         = composeSetterName(nameFromNode(propertyDecl))
+    val modifiers    = modifiersForNode(propertyDecl)
+    val returnType   = BuiltinTypes.Void
+    val valueType    = nodeTypeFullName(propertyDecl)
+    val baseType     = scope.surroundingTypeDeclFullName.getOrElse(Defines.UnresolvedNamespace)
+    val isStatic     = modifiers.exists(_.modifierType == ModifierTypes.STATIC)
+    val valueParam   = Ast(NewMethodParameterIn().typeFullName(valueType).name("value").index(1))
+    val parameters   = Option.unless(isStatic)(astForThisParameter(propertyDecl)).toList :+ valueParam
+    val signature    = composeMethodLikeSignature(returnType, parameters)
+    val fullName     = composeMethodFullName(baseType, name, signature)
+    val body         = Try(astForBlock(createDotNetNodeInfo(accessorDecl.json(ParserKeys.Body)))).getOrElse(Ast())
+    val methodReturn = methodReturnNode(accessorDecl, returnType)
+    val methodNode_  = methodNode(accessorDecl, name, fullName, signature, relativeFileName)
+
+    methodAst(methodNode_, parameters, body, methodReturn, modifiers) :: Nil
   }
 
   private def astForGetAccessorDeclaration(accessorDecl: DotNetNodeInfo, propertyDecl: DotNetNodeInfo): Seq[Ast] = {
