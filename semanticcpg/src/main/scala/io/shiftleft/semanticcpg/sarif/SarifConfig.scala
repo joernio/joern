@@ -30,10 +30,10 @@ import java.net.URI
   */
 case class SarifConfig(
   toolName: String = "Joern",
-  toolFullName: String = "Joern - The Bug Hunter's Workbench",
-  toolInformationUri: URI = URI("https://joern.io"),
-  organization: String = "Joern.io",
-  semanticVersion: String = "0.0.1",
+  toolFullName: Option[String] = Option("Joern - The Bug Hunter's Workbench"),
+  toolInformationUri: Option[URI] = Option(URI("https://joern.io")),
+  organization: Option[String] = Option("Joern.io"),
+  semanticVersion: Option[String] = None,
   sarifVersion: SarifVersion = SarifVersion.V2_1_0,
   resultConverter: ScanResultToSarifConverter = JoernScanResultToSarifConverter(),
   customSerializers: List[Serializer[?]] = SarifSchema.serializers

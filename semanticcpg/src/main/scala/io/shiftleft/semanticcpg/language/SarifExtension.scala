@@ -23,7 +23,11 @@ class SarifExtension(val traversal: Iterator[Finding]) extends AnyVal {
   @Doc(info = "execute this traversal and convert findings to SARIF format")
   def toSarif(implicit config: SarifConfig = SarifConfig()): Sarif = {
 
-    def generateSarif(results: List[SarifSchema.Result], baseUri: Option[URI]): Sarif = {
+    def generateSarif(
+      results: List[SarifSchema.Result],
+      reportingDescriptors: List[SarifSchema.ReportingDescriptor],
+      baseUri: Option[URI]
+    ): Sarif = {
       config.sarifVersion match {
         case SarifVersion.V2_1_0 =>
           val tool = v2_1_0.Schema.ToolComponent(
@@ -31,7 +35,8 @@ class SarifExtension(val traversal: Iterator[Finding]) extends AnyVal {
             fullName = config.toolFullName,
             organization = config.organization,
             semanticVersion = config.semanticVersion,
-            informationUri = config.toolInformationUri
+            informationUri = config.toolInformationUri,
+            rules = reportingDescriptors
           )
           val projectBaseUri = Map(
             "PROJECT_ROOT" -> v2_1_0.Schema
@@ -47,11 +52,13 @@ class SarifExtension(val traversal: Iterator[Finding]) extends AnyVal {
     }
 
     traversal.l match {
-      case Nil => generateSarif(results = Nil, baseUri = None)
+      case Nil => generateSarif(results = Nil, reportingDescriptors = Nil, baseUri = None)
       case findings @ head :: _ =>
         val baseUri = Cpg(head.graph).metaData.root.headOption.map(java.io.File(_).toURI)
         val results = findings.map(config.resultConverter.convertFindingToResult)
-        generateSarif(results, baseUri)
+        val reportingDescriptors =
+          findings.flatMap(config.resultConverter.convertFindingToReportingDescriptor).distinctBy(_.id)
+        generateSarif(results, reportingDescriptors, baseUri)
     }
 
   }

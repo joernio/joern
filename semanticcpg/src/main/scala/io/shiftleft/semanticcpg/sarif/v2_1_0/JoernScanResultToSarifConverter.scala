@@ -1,8 +1,8 @@
 package io.shiftleft.semanticcpg.sarif.v2_1_0
 
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.semanticcpg.sarif.{ScanResultToSarifConverter, SarifSchema}
+import io.shiftleft.semanticcpg.language.{NodeExtensionFinder, *}
+import io.shiftleft.semanticcpg.sarif.{SarifSchema, ScanResultToSarifConverter}
 
 import java.net.URI
 
@@ -12,26 +12,40 @@ class JoernScanResultToSarifConverter extends ScanResultToSarifConverter {
 
   import JoernScanResultToSarifConverter.*
 
+  override def convertFindingToReportingDescriptor(finding: Finding): Option[SarifSchema.ReportingDescriptor] = {
+    val description = createMessage(finding.description)
+    Option(Schema.ReportingDescriptor(id = finding.name, name = finding.title, fullDescription = Option(description)))
+  }
+
   override def convertFindingToResult(finding: Finding): SarifSchema.Result = {
     val locations        = finding.evidence.lastOption.map(nodeToLocation).toList
     val relatedLocations = finding.evidence.headOption.map(nodeToLocation).toList
+    val codeFlows = evidenceToCodeFlow(finding) match {
+      case codeFlow if codeFlow.threadFlows.isEmpty => Nil
+      case codeFlow                                 => codeFlow :: Nil
+    }
     Schema.Result(
       ruleId = finding.name,
       message = Schema.Message(text = finding.title),
       level = SarifSchema.Level.cvssToLevel(finding.score),
       locations = locations,
       relatedLocations = relatedLocations,
-      codeFlows = evidenceToCodeFlow(finding) :: Nil
+      codeFlows = codeFlows
     )
   }
 
   protected def evidenceToCodeFlow(finding: Finding): Schema.CodeFlow = {
-    Schema.CodeFlow(
-      message = Schema.Message(text = finding.description),
-      threadFlows = Schema.ThreadFlow(
+    Schema.CodeFlow(threadFlows =
+      Schema.ThreadFlow(
         finding.evidence.map(node => Schema.ThreadFlowLocation(location = nodeToLocation(node))).l
       ) :: Nil
     )
+  }
+
+  protected def createMessage(text: String): Schema.Message = {
+    val plain    = text.replace("`", "")              // todo: use better markdown stripping
+    val markdown = Option(text).filterNot(_ == plain) // if these are equal, ignore
+    Schema.Message(text = plain, markdown = markdown)
   }
 
   protected def nodeToLocation(node: StoredNode): Schema.Location = {
@@ -97,12 +111,12 @@ object JoernScanResultToSarifConverter {
 
     def title: String = getValue(FindingKeys.title)
 
-    def description: String = getValue(FindingKeys.description)
+    def description: String = getValue(FindingKeys.description).trim
 
     def score: Double = getValue(FindingKeys.score).toDoubleOption.getOrElse(-1d)
 
     protected def getValue(key: String, default: String = "<empty>"): String =
-      node.keyValuePairs.find(_.key == key).map(_.value).getOrElse(default)
+      node.keyValuePairs.find(_.key == key).map(_.value).filterNot(_ == "-").getOrElse(default)
 
   }
 }

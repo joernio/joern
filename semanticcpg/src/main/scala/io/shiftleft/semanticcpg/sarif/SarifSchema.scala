@@ -70,7 +70,7 @@ object SarifSchema {
     /** @return
       *   A message relevant to the code flow.
       */
-    def message: Message
+    def message: Option[Message]
 
     /** @return
       *   An array of one or more unique threadFlow objects, each of which describes the progress of a program through a
@@ -97,6 +97,11 @@ object SarifSchema {
       *   A plain text message string.
       */
     def text: String
+
+    /** @return
+      *   A Markdown message string.
+      */
+    def markdown: Option[String]
   }
 
   /** A physical location relevant to a result. Specifies a reference to a programming artifact together with a range of
@@ -143,6 +148,40 @@ object SarifSchema {
       *   The portion of the artifact contents within the specified region.
       */
     def snippet: Option[ArtifactContent]
+  }
+
+  /** Metadata that describes a specific report produced by the tool, as part of the analysis it provides or its runtime
+    * reporting.
+    */
+  trait ReportingDescriptor private[sarif] {
+
+    /** @return
+      *   A stable, opaque identifier for the report.
+      */
+    def id: String
+
+    /** @return
+      *   A report identifier that is understandable to an end user.
+      */
+    def name: String
+
+    /** @return
+      *   A concise description of the report. Should be a single sentence that is understandable when visible space is
+      *   limited to a single line of text.
+      */
+    def shortDescription: Option[Message]
+
+    /** @return
+      *   A description of the report. Should, as far as possible, provide details sufficient to enable resolution of
+      *   any problem indicated by the result.
+      */
+    def fullDescription: Option[Message]
+
+    /** @return
+      *   A URI where the primary documentation for the report can be found.
+      */
+    def helpUri: Option[URI]
+
   }
 
   /** A result produced by an analysis tool.
@@ -247,22 +286,27 @@ object SarifSchema {
       *   The name of the tool component along with its version and any other useful identifying information, such as
       *   its locale.
       */
-    def fullName: String
+    def fullName: Option[String]
 
     /** @return
       *   The organization or company that produced the tool component.
       */
-    def organization: String
+    def organization: Option[String]
 
     /** @return
       *   The tool component version in the format specified by Semantic Versioning 2.0.
       */
-    def semanticVersion: String
+    def semanticVersion: Option[String]
 
     /** @return
       *   The absolute URI at which information about this version of the tool component can be found.
       */
-    def informationUri: URI
+    def informationUri: Option[URI]
+
+    /** @return
+      *   An array of reportingDescriptor objects relevant to the analysis performed by the tool component.
+      */
+    def rules: List[ReportingDescriptor]
   }
 
   /** A value specifying the severity level of the result.
@@ -311,6 +355,19 @@ object SarifSchema {
         }
       )
     ),
+    new CustomSerializer[SarifSchema.CodeFlow](implicit format =>
+      (
+        { case _ =>
+          ???
+        },
+        { case flow: SarifSchema.CodeFlow =>
+          val elementMap = Map.newBuilder[String, Any]
+          flow.message.foreach(x => elementMap.addOne("message" -> x))
+          elementMap.addOne("threadFlows" -> flow.threadFlows)
+          Extraction.decompose(elementMap.result())
+        }
+      )
+    ),
     new CustomSerializer[SarifSchema.Region](implicit format =>
       (
         { case _ =>
@@ -323,6 +380,39 @@ object SarifSchema {
           region.endLine.foreach(x => elementMap.addOne("endLine" -> x))
           region.endColumn.foreach(x => elementMap.addOne("endColumn" -> x))
           region.snippet.foreach(x => elementMap.addOne("snippet" -> x))
+          Extraction.decompose(elementMap.result())
+        }
+      )
+    ),
+    new CustomSerializer[ReportingDescriptor](implicit format =>
+      (
+        { case _ =>
+          ???
+        },
+        { case x: ReportingDescriptor =>
+          val elementMap = Map.newBuilder[String, Any]
+          elementMap.addOne("id"   -> x.id)
+          elementMap.addOne("name" -> x.name)
+          x.shortDescription.foreach(x => elementMap.addOne("shortDescription" -> x))
+          x.fullDescription.foreach(x => elementMap.addOne("fullDescription" -> x))
+          x.helpUri.foreach(x => elementMap.addOne("helpUri" -> x))
+          Extraction.decompose(elementMap.result())
+        }
+      )
+    ),
+    new CustomSerializer[ToolComponent](implicit format =>
+      (
+        { case _ =>
+          ???
+        },
+        { case x: ToolComponent =>
+          val elementMap = Map.newBuilder[String, Any]
+          elementMap.addOne("name" -> x.name)
+          x.fullName.foreach(x => elementMap.addOne("fullName" -> x))
+          x.organization.foreach(x => elementMap.addOne("organization" -> x))
+          x.semanticVersion.foreach(x => elementMap.addOne("semanticVersion" -> x))
+          x.informationUri.foreach(x => elementMap.addOne("informationUri" -> x))
+          elementMap.addOne("rules" -> x.rules)
           Extraction.decompose(elementMap.result())
         }
       )

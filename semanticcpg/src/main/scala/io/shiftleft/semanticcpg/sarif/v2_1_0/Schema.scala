@@ -21,11 +21,11 @@ object Schema {
   final case class ArtifactLocation(uri: Option[URI] = None, uriBaseId: Option[String] = Option("PROJECT_ROOT"))
       extends SarifSchema.ArtifactLocation
 
-  final case class CodeFlow(message: Message, threadFlows: List[ThreadFlow]) extends SarifSchema.CodeFlow
+  final case class CodeFlow(threadFlows: List[ThreadFlow], message: Option[Message] = None) extends SarifSchema.CodeFlow
 
   final case class Location(physicalLocation: PhysicalLocation) extends SarifSchema.Location
 
-  final case class Message(text: String) extends SarifSchema.Message
+  final case class Message(text: String, markdown: Option[String] = None) extends SarifSchema.Message
 
   final case class PhysicalLocation(artifactLocation: ArtifactLocation, region: Region)
       extends SarifSchema.PhysicalLocation
@@ -37,6 +37,14 @@ object Schema {
     endColumn: Option[Int] = None,
     snippet: Option[ArtifactContent] = None
   ) extends SarifSchema.Region
+
+  final case class ReportingDescriptor(
+    id: String,
+    name: String,
+    shortDescription: Option[Message] = None,
+    fullDescription: Option[Message] = None,
+    helpUri: Option[URI] = None
+  ) extends SarifSchema.ReportingDescriptor
 
   final case class Result(
     ruleId: String,
@@ -58,10 +66,11 @@ object Schema {
 
   final case class ToolComponent(
     name: String,
-    fullName: String,
-    organization: String,
-    semanticVersion: String,
-    informationUri: URI
+    fullName: Option[String] = None,
+    organization: Option[String] = None,
+    semanticVersion: Option[String] = None,
+    informationUri: Option[URI] = None,
+    rules: List[SarifSchema.ReportingDescriptor] = Nil
   ) extends SarifSchema.ToolComponent
 
 }
