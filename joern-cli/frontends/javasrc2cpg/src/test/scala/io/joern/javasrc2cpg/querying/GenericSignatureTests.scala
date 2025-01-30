@@ -689,6 +689,31 @@ class GenericSignatureTests extends JavaSrcCode2CpgFixture {
     }
   }
 
+  "the lowering for a native foreach loop with a synthetic iterator local" should {
+    val cpg = code("""
+                     |package test;
+                     |
+                     |class Test {
+                     |  String[] items() { return null; }
+                     |  void test() {
+                     |    for (String item : items()) {}
+                     |  }
+                     |}
+                     |""".stripMargin)
+
+    "have the correct generic signature for the synthetic iterator local" in {
+      cpg.local.nameExact("$iterLocal0").genericSignature.l shouldBe List("L__unspecified_type;")
+    }
+
+    "have the correct generic signature for the synthetic index local" in {
+      cpg.local.nameExact("$idx0").genericSignature.l shouldBe List("I")
+    }
+
+    "have the correct generic signature for the variable local" in {
+      cpg.local.name("item").genericSignature.l shouldBe List("LString;")
+    }
+  }
+
   "the lowering for a native foreach loop" should {
     val cpg = code("""
         |package test;
@@ -700,7 +725,7 @@ class GenericSignatureTests extends JavaSrcCode2CpgFixture {
         |}
         |""".stripMargin)
 
-    "have the correct generic signature for the synthetic iterator local" in {
+    "have the correct generic signature for the synthetic index local" in {
       cpg.local.nameExact("$idx0").genericSignature.l shouldBe List("I")
     }
 

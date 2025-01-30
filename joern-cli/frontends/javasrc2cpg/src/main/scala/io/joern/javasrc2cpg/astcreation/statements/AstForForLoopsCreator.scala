@@ -231,10 +231,16 @@ trait AstForForLoopsCreator { this: AstCreator =>
         iterableAsts.head
     }
 
-    val iterableName = nextIterableName()
-    // TODO: Generic signature
-    val iterableLocalNode = localNode(iterableExpression, iterableName, iterableName, iterableType.getOrElse("ANY"))
-    val iterableLocalAst  = Ast(iterableLocalNode)
+    val iterableName     = nextIterableName()
+    val genericSignature = binarySignatureCalculator.unspecifiedClassType
+    val iterableLocalNode = localNode(
+      iterableExpression,
+      iterableName,
+      iterableName,
+      iterableType.getOrElse("ANY"),
+      genericSignature = Option(genericSignature)
+    )
+    val iterableLocalAst = Ast(iterableLocalNode)
 
     val iterableAssignNode =
       newOperatorCallNode(Operators.assignment, code = "", line = lineNo, typeFullName = iterableType)

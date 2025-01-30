@@ -53,7 +53,6 @@ class Scope(implicit val withSchemaValidation: ValidationMode, val disableTypeFa
       case Nil => None
 
       case (head: TypeDeclScope) :: Nil =>
-        // TODO: Generic signature
         Option.unless(isStatic)(head.typeDecl.fullName)
 
       case head :: Nil =>
