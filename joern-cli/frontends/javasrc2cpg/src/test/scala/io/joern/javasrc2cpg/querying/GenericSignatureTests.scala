@@ -607,6 +607,23 @@ class GenericSignatureTests extends JavaSrcCode2CpgFixture {
     }
   }
 
+  "a type parameter with multiple interface bounds" should {
+    val cpg = code("""
+        |package test;
+        |
+        |interface I1 {}
+        |interface I2 {}
+        |
+        |class Test {
+        |  public <T extends I1 & I2> void test(T t) {}
+        |}
+        |""".stripMargin)
+
+    "have the correct generic signature" in {
+      cpg.method.name("test").genericSignature.l shouldBe List("<T:LI1;:LI2;>(TT;)V")
+    }
+  }
+
   "a generic member" should {
     val cpg = code("""
         |package test;
