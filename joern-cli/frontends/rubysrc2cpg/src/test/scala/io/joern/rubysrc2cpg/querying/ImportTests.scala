@@ -452,7 +452,7 @@ class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with In
         |""".stripMargin)
 
     "also create import nodes" in {
-      inside(cpg.imports.l) {
+      inside(cpg.imports.l.sortBy { impNode => impNode.isCallForImportIn.head.order }) {
         case requireAll :: requireRelative :: load :: Nil =>
           requireAll.importedAs shouldBe Option("./dir")
           requireAll.isWildcard shouldBe Option(true)
