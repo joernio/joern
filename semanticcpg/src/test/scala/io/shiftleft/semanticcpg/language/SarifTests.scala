@@ -93,11 +93,6 @@ class SarifTests extends AnyWordSpec with Matchers {
           |      },
           |      "results":[
           |        {
-          |          "ruleId":"f1",
-          |          "message":{
-          |            "text":"Rule 1"
-          |          },
-          |          "level":"error",
           |          "locations":[
           |            {
           |              "physicalLocation":{
@@ -130,6 +125,9 @@ class SarifTests extends AnyWordSpec with Matchers {
           |              }
           |            }
           |          ],
+          |          "message":{
+          |            "text":"Rule 1"
+          |          },
           |          "codeFlows":[
           |            {
           |              "threadFlows":[
@@ -155,7 +153,9 @@ class SarifTests extends AnyWordSpec with Matchers {
           |                }
           |              ]
           |            }
-          |          ]
+          |          ],
+          |          "ruleId":"f1",
+          |          "level":"error"
           |        }
           |      ],
           |      "originalUriBaseIds":{
@@ -166,6 +166,7 @@ class SarifTests extends AnyWordSpec with Matchers {
           |    }
           |  ]
           |}
+          |
           |""".stripMargin.trim
     }
 
@@ -237,11 +238,6 @@ class SarifTests extends AnyWordSpec with Matchers {
           |      },
           |      "results":[
           |        {
-          |          "ruleId":"f1",
-          |          "message":{
-          |            "text":"<empty>"
-          |          },
-          |          "level":"warning",
           |          "locations":[
           |            {
           |              "physicalLocation":{
@@ -272,6 +268,9 @@ class SarifTests extends AnyWordSpec with Matchers {
           |              }
           |            }
           |          ],
+          |          "message":{
+          |            "text":"<empty>"
+          |          },
           |          "codeFlows":[
           |            {
           |              "threadFlows":[
@@ -296,7 +295,9 @@ class SarifTests extends AnyWordSpec with Matchers {
           |                }
           |              ]
           |            }
-          |          ]
+          |          ],
+          |          "ruleId":"f1",
+          |          "level":"warning"
           |        }
           |      ],
           |      "originalUriBaseIds":{

@@ -52,7 +52,8 @@ object Schema {
     level: String,
     locations: List[Location],
     relatedLocations: List[Location],
-    codeFlows: List[CodeFlow]
+    codeFlows: List[CodeFlow],
+    partialFingerprints: Map[String, String] = Map.empty
   ) extends SarifSchema.Result
 
   final case class Run(tool: Tool, results: List[SarifSchema.Result], originalUriBaseIds: Map[String, ArtifactLocation])

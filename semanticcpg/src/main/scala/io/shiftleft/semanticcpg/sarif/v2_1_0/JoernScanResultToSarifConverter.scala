@@ -35,11 +35,12 @@ class JoernScanResultToSarifConverter extends ScanResultToSarifConverter {
   }
 
   protected def evidenceToCodeFlow(finding: Finding): Schema.CodeFlow = {
-    Schema.CodeFlow(threadFlows =
-      Schema.ThreadFlow(
-        finding.evidence.map(node => Schema.ThreadFlowLocation(location = nodeToLocation(node))).l
-      ) :: Nil
-    )
+    val locations = finding.evidence.map(node => Schema.ThreadFlowLocation(location = nodeToLocation(node))).l
+    if (locations.isEmpty) {
+      Schema.CodeFlow(threadFlows = Nil)
+    } else {
+      Schema.CodeFlow(threadFlows = Schema.ThreadFlow(locations) :: Nil)
+    }
   }
 
   protected def createMessage(text: String): Schema.Message = {
@@ -88,7 +89,7 @@ class JoernScanResultToSarifConverter extends ScanResultToSarifConverter {
           startColumn = n.columnNumber,
           snippet = Option(Schema.ArtifactContent(n.code))
         )
-      case _ => null
+      case _ => Schema.Region(None, None, None)
     }
   }
 
