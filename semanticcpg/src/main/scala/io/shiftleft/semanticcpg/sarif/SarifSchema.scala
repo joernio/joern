@@ -148,6 +148,11 @@ object SarifSchema {
       *   The portion of the artifact contents within the specified region.
       */
     def snippet: Option[ArtifactContent]
+
+    /** @return
+      *   true if startLine is empty and larger than 0, as this is the main required property.
+      */
+    def isEmpty: Boolean = startLine.forall(_ <= 0)
   }
 
   /** Metadata that describes a specific report produced by the tool, as part of the analysis it provides or its runtime
@@ -219,6 +224,12 @@ object SarifSchema {
       *   An array of 'codeFlow' objects relevant to the result.
       */
     def codeFlows: List[CodeFlow]
+
+    /** GitHub makes use of this property to track effectively the same finding across files between versions.
+      * @return
+      *   A set of strings that contribute to the stable, unique identity of the result.
+      */
+    def partialFingerprints: Map[String, String]
   }
 
   /** Describes a single run of an analysis tool, and contains the reported output of that run.
@@ -368,6 +379,19 @@ object SarifSchema {
         }
       )
     ),
+    new CustomSerializer[SarifSchema.PhysicalLocation](implicit format =>
+      (
+        { case _ =>
+          ???
+        },
+        { case location: SarifSchema.PhysicalLocation =>
+          val elementMap = Map.newBuilder[String, Any]
+          elementMap.addOne("artifactLocation" -> location.artifactLocation)
+          if !location.region.isEmpty then elementMap.addOne("region" -> Extraction.decompose(location.region))
+          Extraction.decompose(elementMap.result())
+        }
+      )
+    ),
     new CustomSerializer[SarifSchema.Region](implicit format =>
       (
         { case _ =>
@@ -375,10 +399,10 @@ object SarifSchema {
         },
         { case region: SarifSchema.Region =>
           val elementMap = Map.newBuilder[String, Any]
-          region.startLine.foreach(x => elementMap.addOne("startLine" -> x))
-          region.startColumn.foreach(x => elementMap.addOne("startColumn" -> x))
-          region.endLine.foreach(x => elementMap.addOne("endLine" -> x))
-          region.endColumn.foreach(x => elementMap.addOne("endColumn" -> x))
+          region.startLine.filterNot(x => x <= 0).foreach(x => elementMap.addOne("startLine" -> x))
+          region.startColumn.filterNot(x => x <= 0).foreach(x => elementMap.addOne("startColumn" -> x))
+          region.endLine.filterNot(x => x <= 0).foreach(x => elementMap.addOne("endLine" -> x))
+          region.endColumn.filterNot(x => x <= 0).foreach(x => elementMap.addOne("endColumn" -> x))
           region.snippet.foreach(x => elementMap.addOne("snippet" -> x))
           Extraction.decompose(elementMap.result())
         }
@@ -396,6 +420,29 @@ object SarifSchema {
           x.shortDescription.foreach(x => elementMap.addOne("shortDescription" -> x))
           x.fullDescription.foreach(x => elementMap.addOne("fullDescription" -> x))
           x.helpUri.foreach(x => elementMap.addOne("helpUri" -> x))
+          Extraction.decompose(elementMap.result())
+        }
+      )
+    ),
+    new CustomSerializer[SarifSchema.Result](implicit format =>
+      (
+        { case _ =>
+          ???
+        },
+        { case result: SarifSchema.Result =>
+          val elementMap = Map.newBuilder[String, Any]
+          elementMap.addOne("ruleId"  -> result.ruleId)
+          elementMap.addOne("message" -> result.message)
+          elementMap.addOne("level"   -> result.level)
+          // Locations & related locations have no minimum, but do not allow duplicates
+          elementMap.addOne("locations"        -> result.locations.distinct)
+          elementMap.addOne("relatedLocations" -> result.relatedLocations.distinct)
+          // codeFlows may be empty, but thread flows may not have empty arrays
+          elementMap.addOne("codeFlows" -> result.codeFlows.filterNot(_.threadFlows.isEmpty))
+
+          if result.partialFingerprints.nonEmpty then
+            elementMap.addOne("partialFingerprints" -> result.partialFingerprints)
+
           Extraction.decompose(elementMap.result())
         }
       )
