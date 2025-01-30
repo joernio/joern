@@ -15,20 +15,17 @@ import com.github.javaparser.ast.body.{
   AnnotationDeclaration,
   CallableDeclaration,
   ClassOrInterfaceDeclaration,
-  CompactConstructorDeclaration,
   ConstructorDeclaration,
   EnumConstantDeclaration,
   EnumDeclaration,
   MethodDeclaration,
   Parameter,
   RecordDeclaration,
-  TypeDeclaration,
-  VariableDeclarator
+  TypeDeclaration
 }
-import com.github.javaparser.ast.expr.{LambdaExpr, ObjectCreationExpr, PatternExpr, TypePatternExpr}
+import com.github.javaparser.ast.expr.{LambdaExpr, TypePatternExpr}
 import com.github.javaparser.printer.configuration.DefaultPrinterConfiguration.ConfigOption
 import com.github.javaparser.printer.configuration.{DefaultConfigurationOption, DefaultPrinterConfiguration}
-import io.joern.javasrc2cpg.astcreation.AstCreator
 import io.joern.javasrc2cpg.astcreation.declarations.BinarySignatureCalculator.{
   BaseTypeMap,
   javaEnumName,

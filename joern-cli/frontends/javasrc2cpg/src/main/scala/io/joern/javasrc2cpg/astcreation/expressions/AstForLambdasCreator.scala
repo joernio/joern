@@ -394,10 +394,9 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
         paramNode
       }
 
-    // TODO: Use simple name for the generic signature? We need to rely on JavaParser for any information for now anyways.
     parameterNodes.foreach { paramNode =>
       scope.enclosingMethod.get
-        .addParameter(paramNode, binarySignatureCalculator.variableBinarySignature(paramNode.typeFullName))
+        .addParameter(paramNode, binarySignatureCalculator.unspecifiedClassType)
     }
 
     parameterNodes.map(Ast(_))
