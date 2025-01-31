@@ -168,6 +168,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
         .fullName(lambdaMethodNode.fullName)
         .name(lambdaMethodNode.name)
         .inheritsFromTypeFullName(inheritsFromTypeFullName)
+        .genericSignature(binarySignatureCalculator.unspecifiedClassType)
     scope.addLocalDecl(Ast(lambdaTypeDeclNode))
 
     lambdaTypeDeclNode
