@@ -27,7 +27,7 @@ import com.github.javaparser.resolution.declarations.{
 import com.github.javaparser.resolution.types.ResolvedType
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
 import com.github.javaparser.symbolsolver.JavaSymbolSolver
-import io.joern.javasrc2cpg.astcreation.declarations.AstForDeclarationsCreator
+import io.joern.javasrc2cpg.astcreation.declarations.{AstForDeclarationsCreator, BinarySignatureCalculator}
 import io.joern.javasrc2cpg.astcreation.expressions.AstForExpressionsCreator
 import io.joern.javasrc2cpg.astcreation.statements.AstForStatementsCreator
 import io.joern.javasrc2cpg.scope.Scope
@@ -107,6 +107,7 @@ class AstCreator(
   private[astcreation] val typeInfoCalc: TypeInfoCalculator =
     TypeInfoCalculator(global, symbolSolver, keepTypeArguments)
   private[astcreation] val bindingTableCache = mutable.HashMap.empty[String, BindingTable]
+  private[astcreation] val binarySignatureCalculator: BinarySignatureCalculator = new BinarySignatureCalculator(scope)
 
   private[astcreation] val tempNameProvider: TemporaryNameProvider = new TemporaryNameProvider
 

@@ -82,7 +82,10 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
       ExpectedType(returnTypeFullName, expectedReturnType),
       methodDeclaration.isStatic()
     )
-    typeParameters.foreach { typeParameter => scope.addTopLevelType(typeParameter.name, typeParameter.typeFullName) }
+    typeParameters.foreach { typeParameter => scope.addTypeParameter(typeParameter.name, typeParameter.typeFullName) }
+
+    val genericSignature = binarySignatureCalculator.methodBinarySignature(methodDeclaration)
+    methodNode.genericSignature(genericSignature)
 
     val parameterAsts  = astsForParameterList(methodDeclaration.getParameters.asScala.toList)
     val parameterTypes = argumentTypesForMethodLike(maybeResolved)
@@ -101,7 +104,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     val thisAst = thisNode.map(Ast(_)).toList
 
     thisNode.foreach { node =>
-      scope.enclosingMethod.get.addParameter(node)
+      scope.enclosingMethod.get.addParameter(node, scope.enclosingTypeDecl.get.typeDecl.genericSignature)
     }
 
     val bodyAst = methodDeclaration.getBody.toScala
@@ -145,6 +148,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     val methodReturn =
       newMethodReturnNode(parameterTypeFullName, line = line(parameter), column = column(parameter))
 
+    val genericSignature = binarySignatureCalculator.recordParameterAccessorBinarySignature(parameter)
     val methodRoot = methodNode(
       parameter,
       parameterName,
@@ -153,7 +157,8 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
       Option(signature),
       filename,
       Option(NodeTypes.TYPE_DECL),
-      Option(recordTypeFullName)
+      Option(recordTypeFullName),
+      genericSignature = Option(genericSignature)
     )
 
     val modifier = newModifierNode(ModifierTypes.PUBLIC)
@@ -230,7 +235,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     List(accessModifier, abstractModifier, staticVirtualModifier).flatten
   }
 
-  private def getIdentifiersForTypeParameters(methodDeclaration: MethodDeclaration): List[NewIdentifier] = {
+  private def getIdentifiersForTypeParameters(methodDeclaration: CallableDeclaration[?]): List[NewIdentifier] = {
     methodDeclaration.getTypeParameters.asScala.map { typeParameter =>
       val name = typeParameter.getNameAsString
       val typeFullName = tryWithSafeStackOverflow(typeParameter.getTypeBound.asScala.headOption).toOption.flatten
@@ -264,13 +269,17 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
   }
 
   def astForDefaultConstructor(originNode: Node, instanceFieldDeclarations: List[FieldDeclaration]): Ast = {
+    val parameters       = scope.enclosingTypeDecl.get.recordParameters
+    val genericSignature = binarySignatureCalculator.defaultConstructorSignature(parameters)
     val constructorNode = NewMethod()
       .name(io.joern.x2cpg.Defines.ConstructorMethodName)
       .filename(filename)
       .isExternal(false)
+      .genericSignature(genericSignature)
+      .lineNumber(line(originNode))
+      .columnNumber(column(originNode))
     scope.pushMethodScope(constructorNode, ExpectedType.Void, isStatic = false)
 
-    val parameters = scope.enclosingTypeDecl.get.recordParameters
     val parameterAsts = parameters.zipWithIndex.map { case (param, idx) =>
       astForParameter(param, idx + 1)
     }
@@ -289,7 +298,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     constructorNode.signature(signature)
 
     val thisNode = thisNodeForMethod(typeFullName, lineNumber = None, columnNumber = None)
-    scope.enclosingMethod.foreach(_.addParameter(thisNode))
+    scope.enclosingMethod.foreach(_.addParameter(thisNode, scope.enclosingTypeDecl.get.typeDecl.genericSignature))
     val recordParameterAssignments = parameterAsts
       .flatMap(_.nodes)
       .collect { case param: nodes.NewMethodParameterIn => param }
@@ -392,7 +401,8 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     val annotationAsts = parameter.getAnnotations.asScala.map(astForAnnotationExpr)
     val ast            = Ast(parameterNode)
 
-    scope.enclosingMethod.get.addParameter(parameterNode)
+    scope.enclosingMethod.get
+      .addParameter(parameterNode, binarySignatureCalculator.variableBinarySignature(parameter.getType))
 
     ast.withChildren(annotationAsts)
   }
@@ -463,15 +473,21 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     instanceFieldDeclarations: List[FieldDeclaration]
   ): List[PartialConstructorDeclaration] = {
     constructorDeclarations.map { constructorDeclaration =>
-      val constructorNode = createPartialMethod(constructorDeclaration)
-        .name(io.joern.x2cpg.Defines.ConstructorMethodName)
-
-      scope.pushMethodScope(constructorNode, ExpectedType.Void, isStatic = false)
       val maybeResolved = Option
         .when(constructorDeclaration.isConstructorDeclaration)(
           tryWithSafeStackOverflow(constructorDeclaration.resolve()).toOption
         )
         .flatten
+      val constructorNode = createPartialMethod(constructorDeclaration)
+        .name(io.joern.x2cpg.Defines.ConstructorMethodName)
+
+      scope.pushMethodScope(constructorNode, ExpectedType.Void, isStatic = false)
+      constructorDeclaration match {
+        case regularConstructor: ConstructorDeclaration =>
+          val typeParameters = getIdentifiersForTypeParameters(regularConstructor)
+          typeParameters.foreach(typeParam => scope.addTypeParameter(typeParam.name, typeParam.typeFullName))
+        case _ => // Compact constructor cannot have type parameters
+      }
 
       val parameters = constructorDeclaration match {
         case regularConstructor: ConstructorDeclaration        => regularConstructor.getParameters.asScala.toList
@@ -497,15 +513,17 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
         .fullName(fullName)
         .signature(signature)
 
-      parameterAsts.foreach { ast =>
+      parameterAsts.zip(parameters).foreach { (ast, parameterNode) =>
         ast.root match {
-          case Some(parameter: NewMethodParameterIn) => scope.enclosingMethod.get.addParameter(parameter)
-          case _                                     => // This should never happen
+          case Some(parameter: NewMethodParameterIn) =>
+            val genericType = binarySignatureCalculator.variableBinarySignature(parameterNode.getType)
+            scope.enclosingMethod.get.addParameter(parameter, genericType)
+          case _ => // This should never happen
         }
       }
 
       val thisNode = thisNodeForMethod(typeFullName, line(constructorDeclaration), column(constructorDeclaration))
-      scope.enclosingMethod.get.addParameter(thisNode)
+      scope.enclosingMethod.get.addParameter(thisNode, scope.enclosingTypeDecl.get.typeDecl.genericSignature)
 
       scope.pushBlockScope()
       val recordParameterAssignments = constructorDeclaration match {
@@ -677,7 +695,22 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     val endColumn    = declaration.getEnd.map(x => Integer.valueOf(x.column)).toScala
 
     val placeholderFullName = ""
-    methodNode(declaration, declaration.getNameAsString(), methodCode, placeholderFullName, None, filename)
+
+    val genericSignature = declaration match {
+      case callableDeclaration: CallableDeclaration[_] =>
+        binarySignatureCalculator.methodBinarySignature(callableDeclaration)
+      case compactConstructor: CompactConstructorDeclaration =>
+        binarySignatureCalculator.defaultConstructorSignature(scope.enclosingTypeDecl.get.recordParameters)
+    }
+    methodNode(
+      declaration,
+      declaration.getNameAsString(),
+      methodCode,
+      placeholderFullName,
+      None,
+      filename,
+      genericSignature = Option(genericSignature)
+    )
   }
 
   def thisNodeForMethod(
