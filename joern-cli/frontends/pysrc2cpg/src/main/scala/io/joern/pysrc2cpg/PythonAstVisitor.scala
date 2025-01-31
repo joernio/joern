@@ -35,6 +35,8 @@ class PythonAstVisitor(
     extends AstCreatorBase(relFileName)
     with PythonAstVisitorHelpers {
 
+  private val redefintionSuffix = "$redefinition"
+
   private val diffGraph     = Cpg.newDiffGraphBuilder
   protected val nodeBuilder = new NodeBuilder(diffGraph)
   protected val edgeBuilder = new EdgeBuilder(diffGraph)
@@ -336,7 +338,14 @@ class PythonAstVisitor(
     lineAndColumn: LineAndColumn,
     additionalModifiers: List[String] = List.empty
   ): (nodes.NewMethod, nodes.NewMethodRef) = {
-    val methodFullName = calculateFullNameFromContext(methodName)
+    val suffix =
+      contextStack.methodCounter.get(methodName) match {
+        case Some(counter) =>
+          redefintionSuffix + counter.toString
+        case None =>
+          ""
+      }
+    val methodFullName = calculateFullNameFromContext(methodName) + suffix
 
     val methodRefNode =
       nodeBuilder.methodRefNode("def " + methodName + "(...)", methodFullName, lineAndColumn)
@@ -355,6 +364,11 @@ class PythonAstVisitor(
         returnTypeHint = None,
         lineAndColumn
       )
+
+    contextStack.methodCounter.updateWith(methodName) {
+      case None => Some(1)
+      case Some(counter) => Some(counter + 1)
+    }
 
     (methodNode, methodRefNode)
   }
@@ -537,28 +551,43 @@ class PythonAstVisitor(
     // For non static methods we create an adapter method which basically only shifts the parameters
     // one to the left and makes sure that the meta class object is not passed to func as instance
     // parameter.
-    classDef.body.foreach {
-      case func: ast.FunctionDef =>
-        createMemberBindingsAndAdapter(
-          func,
-          func.name,
-          func.args,
-          func.decorator_list,
-          instanceTypeDecl,
-          metaTypeDeclNode
-        )
-      case func: ast.AsyncFunctionDef =>
-        createMemberBindingsAndAdapter(
-          func,
-          func.name,
-          func.args,
-          func.decorator_list,
-          instanceTypeDecl,
-          metaTypeDeclNode
-        )
-      case _ =>
-      // All other body statements are currently ignored.
-    }
+    classDef.body
+      // Filter for functions and build tuples with their name
+      .flatMap {
+        case func: ast.FunctionDef =>
+          Some((func.name, func))
+        case func: ast.AsyncFunctionDef =>
+          Some((func.name, func))
+        case _ =>
+          None
+      }
+      // Group by name and remove name from value
+      .groupMap(_._1)(_._2)
+      // Sort by name to get a stable output
+      .toBuffer.sortBy(_._1)
+      // Take the last function. We only create member/binding
+      // for the last definition as it overwrites the previous ones.
+      .map { case (_, functions) => functions.last }
+      .foreach {
+        case func: ast.FunctionDef =>
+          createMemberBindingsAndAdapter(
+            func,
+            func.name,
+            func.args,
+            func.decorator_list,
+            instanceTypeDecl,
+            metaTypeDeclNode
+          )
+        case func: ast.AsyncFunctionDef =>
+          createMemberBindingsAndAdapter(
+            func,
+            func.name,
+            func.args,
+            func.decorator_list,
+            instanceTypeDecl,
+            metaTypeDeclNode
+          )
+      }
 
     contextStack.pop()
 
