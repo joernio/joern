@@ -4,6 +4,7 @@ import PythonAstVisitor.{logger, metaClassSuffix, noLineAndColumn}
 import io.joern.pysrc2cpg.memop.*
 import io.joern.x2cpg.frontendspecific.pysrc2cpg.Constants.builtinPrefix
 import io.joern.pythonparser.ast
+import io.joern.pythonparser.ast.{Arguments, iexpr, istmt}
 import io.joern.x2cpg.frontendspecific.pysrc2cpg.Constants
 import io.joern.x2cpg.{AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
@@ -224,26 +225,6 @@ class PythonAstVisitor(
     }
   }
 
-  def convert(functionDef: ast.FunctionDef): NewNode = {
-    val methodIdentifierNode =
-      createIdentifierNode(functionDef.name, Store, lineAndColOf(functionDef))
-    val (methodNode, methodRefNode) = createMethodAndMethodRef(
-      functionDef.name,
-      Some(functionDef.name),
-      createParameterProcessingFunction(functionDef.args, isStaticMethod(functionDef.decorator_list)),
-      () => functionDef.body.map(convert),
-      functionDef.returns,
-      isAsync = false,
-      lineAndColOf(functionDef)
-    )
-    functionDefToMethod.put(functionDef, methodNode)
-
-    val wrappedMethodRefNode =
-      wrapMethodRefWithDecorators(methodRefNode, functionDef.decorator_list)
-
-    createAssignment(methodIdentifierNode, wrappedMethodRefNode, lineAndColOf(functionDef))
-  }
-
   /*
    * For a decorated function like:
    * @f1(arg)
@@ -267,24 +248,54 @@ class PythonAstVisitor(
     )
   }
 
-  def convert(functionDef: ast.AsyncFunctionDef): NewNode = {
+  private def convertFunctionInternal(name: String,
+                                      args: Arguments,
+                                      decoratorList: ast.CollType[iexpr],
+                                      body: ast.CollType[istmt],
+                                      returns: Option[iexpr],
+                                      isAsync: Boolean,
+                                      functionDef: istmt): NewNode = {
     val methodIdentifierNode =
-      createIdentifierNode(functionDef.name, Store, lineAndColOf(functionDef))
+      createIdentifierNode(name, Store, lineAndColOf(functionDef))
     val (methodNode, methodRefNode) = createMethodAndMethodRef(
-      functionDef.name,
-      Some(functionDef.name),
-      createParameterProcessingFunction(functionDef.args, isStaticMethod(functionDef.decorator_list)),
-      () => functionDef.body.map(convert),
-      functionDef.returns,
-      isAsync = true,
+      name,
+      Some(name),
+      createParameterProcessingFunction(args, isStaticMethod(decoratorList)),
+      () => body.map(convert),
+      returns,
+      isAsync,
       lineAndColOf(functionDef)
     )
     functionDefToMethod.put(functionDef, methodNode)
 
     val wrappedMethodRefNode =
-      wrapMethodRefWithDecorators(methodRefNode, functionDef.decorator_list)
+      wrapMethodRefWithDecorators(methodRefNode, decoratorList)
 
     createAssignment(methodIdentifierNode, wrappedMethodRefNode, lineAndColOf(functionDef))
+  }
+
+  def convert(functionDef: ast.FunctionDef): NewNode = {
+    convertFunctionInternal(
+      functionDef.name,
+      functionDef.args,
+      functionDef.decorator_list,
+      functionDef.body,
+      functionDef.returns,
+      isAsync = false,
+      functionDef
+    )
+  }
+
+  def convert(functionDef: ast.AsyncFunctionDef): NewNode = {
+    convertFunctionInternal(
+      functionDef.name,
+      functionDef.args,
+      functionDef.decorator_list,
+      functionDef.body,
+      functionDef.returns,
+      isAsync = true,
+      functionDef
+    )
   }
 
   private def isStaticMethod(decoratorList: Iterable[ast.iexpr]): Boolean = {
