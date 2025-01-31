@@ -250,13 +250,15 @@ class PythonAstVisitor(
     )
   }
 
-  private def convertFunctionInternal(name: String,
-                                      args: Arguments,
-                                      decoratorList: ast.CollType[iexpr],
-                                      body: ast.CollType[istmt],
-                                      returns: Option[iexpr],
-                                      isAsync: Boolean,
-                                      functionDef: istmt): NewNode = {
+  private def convertFunctionInternal(
+    name: String,
+    args: Arguments,
+    decoratorList: ast.CollType[iexpr],
+    body: ast.CollType[istmt],
+    returns: Option[iexpr],
+    isAsync: Boolean,
+    functionDef: istmt
+  ): NewNode = {
     val methodIdentifierNode =
       createIdentifierNode(name, Store, lineAndColOf(functionDef))
     val (methodNode, methodRefNode) = createMethodAndMethodRef(
@@ -366,7 +368,7 @@ class PythonAstVisitor(
       )
 
     contextStack.methodCounter.updateWith(methodName) {
-      case None => Some(1)
+      case None          => Some(1)
       case Some(counter) => Some(counter + 1)
     }
 
@@ -564,7 +566,8 @@ class PythonAstVisitor(
       // Group by name and remove name from value
       .groupMap(_._1)(_._2)
       // Sort by name to get a stable output
-      .toBuffer.sortBy(_._1)
+      .toBuffer
+      .sortBy(_._1)
       // Take the last function. We only create member/binding
       // for the last definition as it overwrites the previous ones.
       .map { case (_, functions) => functions.last }

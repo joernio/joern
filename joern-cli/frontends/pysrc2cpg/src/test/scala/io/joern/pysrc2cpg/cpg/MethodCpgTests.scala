@@ -36,19 +36,19 @@ class MethodCpgTests extends AnyFreeSpec with Matchers {
       "a/b.py"
     )
 
-    cpg.method.name("method").map(m => (m.name, m.fullName)).l should contain theSameElementsAs(
-      List(("method", "a/b.py:<module>.Foo.method"),
-        ("method", "a/b.py:<module>.Foo.method$redefinition1"),
-        ("method", "a/b.py:<module>.Foo.method$redefinition2"),
+    cpg.method.name("method").map(m => (m.name, m.fullName)).l should contain theSameElementsAs (List(
+      ("method", "a/b.py:<module>.Foo.method"),
+      ("method", "a/b.py:<module>.Foo.method$redefinition1"),
+      ("method", "a/b.py:<module>.Foo.method$redefinition2")
     ))
 
-    cpg.typeDecl.name("Foo").member.name("method").dynamicTypeHintFullName.l should contain theSameElementsAs(
+    cpg.typeDecl.name("Foo").member.name("method").dynamicTypeHintFullName.l should contain theSameElementsAs (
       List("a/b.py:<module>.Foo.method$redefinition2")
     )
 
-    cpg.typeDecl.name("Foo<meta>").member.name("method").dynamicTypeHintFullName.l should contain theSameElementsAs(
+    cpg.typeDecl.name("Foo<meta>").member.name("method").dynamicTypeHintFullName.l should contain theSameElementsAs (
       List("a/b.py:<module>.Foo.method<metaClassAdapter>")
-      )
+    )
   }
 
 }

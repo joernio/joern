@@ -45,7 +45,7 @@ class ContextStack {
     val globalVariables: mutable.Set[String] = mutable.Set.empty,
     val nonLocalVariables: mutable.Set[String] = mutable.Set.empty,
     var lambdaCounter: Int = 0,
-    val methodCounter: mutable.Map[String, Int]  = mutable.Map.empty,
+    val methodCounter: mutable.Map[String, Int] = mutable.Map.empty
   ) extends Context {}
 
   private class ClassContext(
@@ -54,7 +54,7 @@ class ContextStack {
     val order: AutoIncIndex,
     val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty,
     var lambdaCounter: Int = 0,
-    val methodCounter: mutable.Map[String, Int]  = mutable.Map.empty,
+    val methodCounter: mutable.Map[String, Int] = mutable.Map.empty
   ) extends Context {}
 
   // Used to represent comprehension variable and exception
@@ -72,7 +72,7 @@ class ContextStack {
     val order: AutoIncIndex,
     val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty,
     var lambdaCounter: Int = 0,
-    val methodCounter: mutable.Map[String, Int]  = mutable.Map.empty,
+    val methodCounter: mutable.Map[String, Int] = mutable.Map.empty
   ) extends Context {}
 
   private case class VariableReference(
