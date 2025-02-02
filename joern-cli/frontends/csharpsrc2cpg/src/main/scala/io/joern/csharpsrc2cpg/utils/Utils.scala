@@ -23,4 +23,19 @@ object Utils {
 
   def composeSetterName(fieldIdentifierName: String): String = s"set_$fieldIdentifierName"
 
+  /** Generates the fictitious class name that holds top-level statements.
+    */
+  def composeTopLevelClassName(fileName: String): String = {
+    val sanitizedFileName = fileName.replace(java.io.File.separator, "_").replace(".", "_")
+    s"${sanitizedFileName}_Program"
+  }
+
+  /** Strips the signature part from [[methodFullName]].
+    *
+    * Useful when handling nested methods, as method full names include signatures. To avoid a nested method's full name
+    * containing both its parent's signature and its own, we remove the parent's signature when entering its scope.
+    */
+  def composeMethodScopeName(methodFullName: String): String =
+    methodFullName.split(':').head
+
 }
