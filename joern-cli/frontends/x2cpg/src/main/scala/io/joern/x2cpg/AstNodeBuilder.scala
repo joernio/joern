@@ -1,7 +1,7 @@
 package io.joern.x2cpg
 
-import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
-import io.shiftleft.codepropertygraph.generated.nodes.Block.{PropertyDefaults => BlockDefaults}
+import io.joern.x2cpg.utils.NodeBuilders.{newMethodReturnNode, newOperatorCallNode}
+import io.shiftleft.codepropertygraph.generated.nodes.Block.PropertyDefaults as BlockDefaults
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewAnnotation,
   NewBlock,
@@ -220,6 +220,10 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
     signature.foreach { s => out.signature(s) }
     typeFullName.foreach { t => out.typeFullName(t) }
     out
+  }
+
+  protected def operatorCallNode(node: Node, name: String, typeFullName: Option[String]): NewCall = {
+    newOperatorCallNode(name, code(node), typeFullName, line(node), column(node))
   }
 
   protected def returnNode(node: Node, code: String): NewReturn = {
