@@ -156,6 +156,10 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case NullableType =>
         val elementTypeNode = createDotNetNodeInfo(node.json(ParserKeys.ElementType))
         nodeTypeFullName(elementTypeNode)
+      case QualifiedName =>
+        val left  = nameFromNode(createDotNetNodeInfo(node.json(ParserKeys.Left)))
+        val right = nameFromNode(createDotNetNodeInfo(node.json(ParserKeys.Right)))
+        s"$left.$right"
       case IdentifierName =>
         val typeString = nameFromNode(node)
         scope
