@@ -30,12 +30,13 @@ object Utils {
     s"${sanitizedFileName}_Program"
   }
 
-  /** Strips the signature part from [[methodFullName]].
+  /** Strips the signature part from [[fullName]].
     *
     * Useful when handling nested methods, as method full names include signatures. To avoid a nested method's full name
     * containing both its parent's signature and its own, we remove the parent's signature when entering its scope.
     */
-  def composeMethodScopeName(methodFullName: String): String =
-    methodFullName.split(':').head
+  def withoutSignature(fullName: String): String = fullName.split(':').toList match
+    case fn :: sig :: Nil => fn
+    case _                => fullName
 
 }
