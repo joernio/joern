@@ -134,27 +134,29 @@ object DotNetJsonAst {
   object LogicalNotExpression    extends UnaryExpr
   object AddressOfExpression     extends UnaryExpr
 
-  sealed trait BinaryExpr                extends BaseExpr
-  object AddExpression                   extends BinaryExpr
-  object SubtractExpression              extends BinaryExpr
-  object MultiplyExpression              extends BinaryExpr
-  object DivideExpression                extends BinaryExpr
-  object ModuloExpression                extends BinaryExpr
-  object EqualsExpression                extends BinaryExpr
-  object NotEqualsExpression             extends BinaryExpr
-  object LogicalAndExpression            extends BinaryExpr
-  object LogicalOrExpression             extends BinaryExpr
-  object AddAssignmentExpression         extends BinaryExpr
-  object SubtractAssignmentExpression    extends BinaryExpr
-  object MultiplyAssignmentExpression    extends BinaryExpr
-  object DivideAssignmentExpression      extends BinaryExpr
-  object ModuloAssignmentExpression      extends BinaryExpr
-  object AndAssignmentExpression         extends BinaryExpr
-  object OrAssignmentExpression          extends BinaryExpr
-  object ExclusiveOrAssignmentExpression extends BinaryExpr
-  object RightShiftAssignmentExpression  extends BinaryExpr
-  object LeftShiftAssignmentExpression   extends BinaryExpr
-  object SimpleAssignmentExpression      extends BinaryExpr
+  sealed trait BinaryExpr     extends BaseExpr
+  object AddExpression        extends BinaryExpr
+  object SubtractExpression   extends BinaryExpr
+  object MultiplyExpression   extends BinaryExpr
+  object DivideExpression     extends BinaryExpr
+  object ModuloExpression     extends BinaryExpr
+  object EqualsExpression     extends BinaryExpr
+  object NotEqualsExpression  extends BinaryExpr
+  object LogicalAndExpression extends BinaryExpr
+  object LogicalOrExpression  extends BinaryExpr
+
+  sealed trait AssignmentExpr            extends BinaryExpr
+  object AddAssignmentExpression         extends AssignmentExpr
+  object SubtractAssignmentExpression    extends AssignmentExpr
+  object MultiplyAssignmentExpression    extends AssignmentExpr
+  object DivideAssignmentExpression      extends AssignmentExpr
+  object ModuloAssignmentExpression      extends AssignmentExpr
+  object AndAssignmentExpression         extends AssignmentExpr
+  object OrAssignmentExpression          extends AssignmentExpr
+  object ExclusiveOrAssignmentExpression extends AssignmentExpr
+  object RightShiftAssignmentExpression  extends AssignmentExpr
+  object LeftShiftAssignmentExpression   extends AssignmentExpr
+  object SimpleAssignmentExpression      extends AssignmentExpr
 
   object GreaterThanExpression        extends BinaryExpr
   object LessThanExpression           extends BinaryExpr
@@ -272,7 +274,19 @@ object DotNetJsonAst {
 
   object Attribute extends BaseExpr
 
+  object AttributeArgumentList extends BaseExpr
+
+  object AttributeArgument extends BaseExpr
+
+  object ParenthesizedExpression extends BaseExpr
+
   object Unknown extends DotNetParserNode
+
+  object AccessorList extends DotNetParserNode
+
+  object GetAccessorDeclaration extends DotNetParserNode
+
+  object SetAccessorDeclaration extends DotNetParserNode
 
 }
 
@@ -280,6 +294,8 @@ object DotNetJsonAst {
   */
 object ParserKeys {
 
+  val AccessorList              = "AccessorList"
+  val Accessors                 = "Accessors"
   val AstRoot                   = "AstRoot"
   val Arguments                 = "Arguments"
   val ArgumentList              = "ArgumentList"
@@ -305,6 +321,7 @@ object ParserKeys {
   val ExpressionBody            = "ExpressionBody"
   val Finally                   = "Finally"
   val FileName                  = "FileName"
+  val GetAccessorDeclaration    = "GetAccessorDeclaration"
   val Identifier                = "Identifier"
   val Incrementors              = "Incrementors"
   val Initializer               = "Initializer"
@@ -327,6 +344,7 @@ object ParserKeys {
   val ParameterList             = "ParameterList"
   val Pattern                   = "Pattern"
   val Sections                  = "Sections"
+  val SetAccessorDeclaration    = "SetAccessorDeclaration"
   val SingleVariableDesignation = "SingleVariableDesignation"
   val Statement                 = "Statement"
   val Statements                = "Statements"

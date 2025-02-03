@@ -18,19 +18,16 @@ trait LinkingUtil {
   val logger: Logger = LoggerFactory.getLogger(classOf[LinkingUtil])
 
   def typeDeclFullNameToNode(cpg: Cpg, x: String): Option[TypeDecl] =
-    nodesWithFullName(cpg, x).collectFirst { case x: TypeDecl => x }
+    cpg.typeDecl.fullNameExact(x).headOption
 
   def typeFullNameToNode(cpg: Cpg, x: String): Option[Type] =
-    nodesWithFullName(cpg, x).collectFirst { case x: Type => x }
+    cpg.typ.fullNameExact(x).headOption
 
   def methodFullNameToNode(cpg: Cpg, x: String): Option[Method] =
-    nodesWithFullName(cpg, x).collectFirst { case x: Method => x }
+    cpg.method.fullNameExact(x).headOption
 
   def namespaceBlockFullNameToNode(cpg: Cpg, x: String): Option[NamespaceBlock] =
-    nodesWithFullName(cpg, x).collectFirst { case x: NamespaceBlock => x }
-
-  def nodesWithFullName(cpg: Cpg, x: String): Iterator[StoredNode] =
-    cpg.graph.nodesWithProperty(propertyName = PropertyNames.FULL_NAME, value = x).cast[StoredNode]
+    cpg.namespaceBlock.fullNameExact(x).headOption
 
   /** For all nodes `n` with a label in `srcLabels`, determine the value of `n.\$dstFullNameKey`, use that to lookup the
     * destination node in `dstNodeMap`, and create an edge of type `edgeType` between `n` and the destination node.

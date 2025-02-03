@@ -22,6 +22,7 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTParameterDeclaration
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPClassType
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPEnumeration
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPStructuredBindingComposite
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPVariable
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import scala.annotation.tailrec
@@ -134,8 +135,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   protected def astForFunctionDeclarator(funcDecl: IASTFunctionDeclarator): Ast = {
-    funcDecl.getName.resolveBinding() match {
-      case _: IFunction =>
+    safeGetBinding(funcDecl.getName) match {
+      case Some(_: IFunction) =>
         val MethodFullNameInfo(name, fullName, signature, returnType) = this.methodFullNameInfo(funcDecl)
         val codeString                                                = code(funcDecl.getParent)
         val filename                                                  = fileName(funcDecl)
@@ -165,14 +166,21 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         )
         registerMethodDeclaration(fullName, methodInfo)
         Ast()
-      case cVariable: CVariable =>
+      case Some(cVariable: CVariable) =>
         val name       = shortName(funcDecl)
-        val tpe        = cleanType(ASTTypeUtil.getType(cVariable.getType))
+        val tpe        = cleanType(safeGetType(cVariable.getType))
         val codeString = code(funcDecl.getParent)
         val node       = localNode(funcDecl, name, codeString, registerType(tpe))
         scope.addToScope(name, (node, tpe))
         Ast(node)
-      case field: IField =>
+      case Some(cppVariable: CPPVariable) =>
+        val name       = shortName(funcDecl)
+        val tpe        = cleanType(safeGetType(cppVariable.getType))
+        val codeString = code(funcDecl.getParent)
+        val node       = localNode(funcDecl, name, codeString, registerType(tpe))
+        scope.addToScope(name, (node, tpe))
+        Ast(node)
+      case Some(field: IField) =>
         // TODO create a member for the field
         // We get here a least for function pointer member declarations in classes like:
         // class A {
@@ -180,10 +188,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         //     void (*foo)(int);
         // };
         Ast()
-      case typeDef: ITypedef =>
+      case Some(typeDef: ITypedef) =>
         // TODO handle typeDecl for now we just ignore this.
         Ast()
-      case other =>
+      case _ =>
         notHandledYet(funcDecl)
     }
 

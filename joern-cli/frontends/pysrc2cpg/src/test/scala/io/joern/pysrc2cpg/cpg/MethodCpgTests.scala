@@ -22,4 +22,33 @@ class MethodCpgTests extends AnyFreeSpec with Matchers {
     }
   }
 
+  "test method redefinition" in {
+    val cpg = Py2CpgTestContext.buildCpg(
+      """
+        |class Foo():
+        |  def method():
+        |    pass
+        |  def method():
+        |    pass
+        |  def method():
+        |    pass
+        |""".stripMargin,
+      "a/b.py"
+    )
+
+    cpg.method.name("method").map(m => (m.name, m.fullName)).l should contain theSameElementsAs (List(
+      ("method", "a/b.py:<module>.Foo.method"),
+      ("method", "a/b.py:<module>.Foo.method$redefinition1"),
+      ("method", "a/b.py:<module>.Foo.method$redefinition2")
+    ))
+
+    cpg.typeDecl.name("Foo").member.name("method").dynamicTypeHintFullName.l should contain theSameElementsAs (
+      List("a/b.py:<module>.Foo.method$redefinition2")
+    )
+
+    cpg.typeDecl.name("Foo<meta>").member.name("method").dynamicTypeHintFullName.l should contain theSameElementsAs (
+      List("a/b.py:<module>.Foo.method<metaClassAdapter>")
+    )
+  }
+
 }

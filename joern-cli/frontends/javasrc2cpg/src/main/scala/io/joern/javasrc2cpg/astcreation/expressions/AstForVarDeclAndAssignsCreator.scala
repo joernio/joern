@@ -138,8 +138,15 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
       // Use type name with generics for code
       val localCode = s"${declaratorType.map(_.toString).getOrElse("")} ${variableDeclarator.getNameAsString}"
 
+      val genericSignature = binarySignatureCalculator.variableBinarySignature(variableDeclarator.getType)
       val local =
-        localNode(originNode, variableDeclarator.getNameAsString, localCode, typeFullName)
+        localNode(
+          originNode,
+          variableDeclarator.getNameAsString,
+          localCode,
+          typeFullName,
+          genericSignature = Option(genericSignature)
+        )
 
       scope.enclosingBlock.foreach(_.addLocal(local))
 

@@ -1,11 +1,15 @@
 package io.joern.csharpsrc2cpg.datastructures
 
+import io.joern.csharpsrc2cpg.Constants
+import io.joern.csharpsrc2cpg.utils.Utils
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.datastructures.{OverloadableScope, Scope, ScopeElement, TypedScope, TypedScopeElement}
 import io.joern.x2cpg.utils.ListUtils.singleOrNone
 import io.shiftleft.codepropertygraph.generated.nodes.DeclarationNew
+import io.joern.x2cpg.utils.ListUtils.singleOrNone
 
 import scala.collection.mutable
+import scala.reflect.ClassTag
 
 class CSharpScope(summary: CSharpProgramSummary)
     extends Scope[String, DeclarationNew, TypedScopeElement]
@@ -36,7 +40,7 @@ class CSharpScope(summary: CSharpProgramSummary)
 
   override def isOverloadedBy(method: CSharpMethod, argTypes: List[String]): Boolean = {
     method.parameterTypes
-      .filterNot(_._1 == "this")
+      .filterNot(_._1 == Constants.This)
       .map(_._2)
       .zip(argTypes)
       .count({ case (x, y) => x != y }) == 0
@@ -60,7 +64,7 @@ class CSharpScope(summary: CSharpProgramSummary)
     .exists(x => x.scopeNode.isInstanceOf[MethodScope] || x.scopeNode.isInstanceOf[TypeLikeScope])
 
   override def tryResolveTypeReference(typeName: String): Option[CSharpType] = {
-    if (typeName == "this") {
+    if (typeName == Constants.This) {
       surroundingTypeDeclFullName.flatMap(summary.matchingTypes).headOption
     } else {
       super.tryResolveTypeReference(typeName) match
@@ -118,4 +122,56 @@ class CSharpScope(summary: CSharpProgramSummary)
         Option(top)
   }
 
+  /** Reduces [[typesInScope]] to contain only those types holding an extension method with the desired signature.
+    */
+  private def extensionsInScopeFor(
+    extendedType: String,
+    callName: String,
+    argTypes: List[String]
+  ): mutable.Set[CSharpType] = {
+    typesInScope
+      .map(t => t.copy(methods = t.methods.filter(matchingExtensionMethod(extendedType, callName, argTypes))))
+      .filter(_.methods.nonEmpty)
+  }
+
+  /** Builds a predicate for matching [[CSharpMethod]] with an ad-hoc description of theirs.
+    */
+  private def matchingExtensionMethod(
+    thisType: String,
+    name: String,
+    argTypes: List[String]
+  ): CSharpMethod => Boolean = { m =>
+    // TODO: we should also compare argTypes, however we first need to account for:
+    //  a) default valued parameters in CSharpMethod, to account for different arities
+    //  b) compatible/sub types, i.e. System.String should unify with System.Object.
+    m.isStatic && m.name == name && m.parameterTypes.map(_._2).headOption.contains(thisType)
+  }
+
+  /** Tries to find an extension method for [[baseTypeFullName]] with the given [[callName]] and [[argTypes]] in the
+    * types currently in scope.
+    *
+    * @param baseTypeFullName
+    *   the extension method's `this` argument.
+    * @param callName
+    *   the method name
+    * @param argTypes
+    *   the method's argument types, excluding `this`
+    * @return
+    *   the method metadata, together with the class name where it can be found
+    */
+  def tryResolveExtensionMethodInvocation(
+    baseTypeFullName: Option[String],
+    callName: String,
+    argTypes: List[String]
+  ): Option[(CSharpMethod, String)] = {
+    baseTypeFullName.flatMap(extensionsInScopeFor(_, callName, argTypes).headOption).map(x => (x.methods.head, x.name))
+  }
+
+  def tryResolveGetterInvocation(
+    fieldIdentifierName: String,
+    baseTypeFullName: Option[String]
+  ): Option[CSharpMethod] = {
+    val getterMethodName = Utils.composeGetterName(fieldIdentifierName)
+    tryResolveMethodInvocation(getterMethodName, Nil, baseTypeFullName)
+  }
 }

@@ -21,7 +21,7 @@ class DotCfgGeneratorTests extends C2CpgSuite {
       inside(cpg.method.name("main").dotCfg.l) { case List(dotStr) =>
         dotStr should (
           startWith("digraph \"main\" {") and
-            include("(&lt;operator&gt;.assignment,i = 0)") and
+            include("[label = <&lt;operator&gt;.assignment, 3<BR/>i = 0> ]") and
             endWith("}\n")
         )
       }
@@ -80,9 +80,9 @@ class DotCfgGeneratorTests extends C2CpgSuite {
       inside(cpg.method.name("example").dotCfg.l) { case List(dotStr) =>
         dotStr should (
           startWith("digraph \"example\" {") and
-            include("<(IDENTIFIER,a,if(a) { foo(); })<SUB>4</SUB>>") and
-            include("<(IDENTIFIER,b,if(b) { foo_2(); })<SUB>5</SUB>>") and
-            include("<(IDENTIFIER,c,if (c) { foo_3(); })<SUB>6</SUB>>") and
+            include("[label = <IDENTIFIER, 4<BR/>a<BR/>if(a) { foo(); }> ]") and
+            include("[label = <IDENTIFIER, 5<BR/>b<BR/>if(b) { foo_2(); }> ]") and
+            include("[label = <IDENTIFIER, 6<BR/>c<BR/>if (c) { foo_3(); }> ]") and
             endWith("}\n")
         )
       }

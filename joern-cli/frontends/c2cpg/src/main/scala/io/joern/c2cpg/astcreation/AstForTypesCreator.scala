@@ -11,8 +11,6 @@ import org.eclipse.cdt.internal.core.model.ASTStringUtil
 import io.joern.x2cpg.datastructures.Stack.*
 import org.apache.commons.lang3.StringUtils
 
-import scala.util.Try
-
 trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   private def parentIsClassDef(node: IASTNode): Boolean = Option(node.getParent) match {
@@ -73,7 +71,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       case d if isTypeDef(d) && shortName(d.getDeclSpecifier).nonEmpty =>
         val filename = fileName(declaration)
         val typeDefName = if (name.isEmpty) {
-          Try(declarator.getName.resolveBinding()).toOption.map(b => registerType(b.getName))
+          safeGetBinding(declarator.getName).map(b => registerType(b.getName))
         } else {
           Option(registerType(name))
         }
@@ -233,7 +231,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
           case _ if declaration.getDeclarators.isEmpty => Seq(astForNode(declaration))
         }
       case alias: CPPASTAliasDeclaration                   => Seq(astForAliasDeclaration(alias))
-      case functDef: IASTFunctionDefinition                => Seq(astForFunctionDefinition(functDef))
+      case functionDefinition: IASTFunctionDefinition      => Seq(astForFunctionDefinition(functionDefinition))
       case namespaceAlias: ICPPASTNamespaceAlias           => Seq(astForNamespaceAlias(namespaceAlias))
       case namespaceDefinition: ICPPASTNamespaceDefinition => Seq(astForNamespaceDefinition(namespaceDefinition))
       case a: ICPPASTStaticAssertDeclaration               => Seq(astForStaticAssert(a))

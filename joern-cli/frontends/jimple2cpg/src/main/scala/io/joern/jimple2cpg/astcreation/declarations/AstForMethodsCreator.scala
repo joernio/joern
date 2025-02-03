@@ -109,14 +109,38 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
       bodyStatementsInfo.targets.foreach { case (asts, unit) =>
         asts.headOption match {
           case Some(value) =>
-            diffGraph.addEdge(value.root.get, bodyStatementsInfo.unitToAsts(unit).last.root.get, EdgeTypes.CFG)
+            bodyStatementsInfo.unitToAsts.get(unit) match {
+              case Some(targetAsts) if targetAsts.nonEmpty =>
+                diffGraph.addEdge(value.root.get, targetAsts.last.root.get, EdgeTypes.CFG)
+              case _ =>
+                logger.error(
+                  s"AstForMethodsCreator: Missing unit in unitToAsts: $unit (${unit.getClass.getSimpleName})"
+                )
+            }
           case None =>
+            logger.error("AstForMethodsCreator: Empty asts list for target")
         }
       }
+
       bodyStatementsInfo.edges.foreach { case (a, b) =>
-        val aNode = bodyStatementsInfo.unitToAsts(a).last.root.get
-        val bNode = bodyStatementsInfo.unitToAsts(b).last.root.get
-        diffGraph.addEdge(aNode, bNode, EdgeTypes.CFG)
+        (bodyStatementsInfo.unitToAsts.get(a), bodyStatementsInfo.unitToAsts.get(b)) match {
+          case (Some(aAsts), Some(bAsts)) if aAsts.nonEmpty && bAsts.nonEmpty =>
+            val aNode = aAsts.last.root.get
+            val bNode = bAsts.last.root.get
+            diffGraph.addEdge(aNode, bNode, EdgeTypes.CFG)
+          case _ =>
+            logger.error(
+              s"AstForMethodsCreator: Failed to add CFG edge between units: " +
+                s"a=${a.getClass.getSimpleName} (${a.toString.take(50)}) " +
+                s"b=${b.getClass.getSimpleName} (${b.toString.take(50)})"
+            )
+            if (bodyStatementsInfo.unitToAsts.get(a).isEmpty) {
+              logger.debug(s"AstForMethodsCreator: Missing source unit in unitToAsts: $a (${a.getClass.getSimpleName})")
+            }
+            if (bodyStatementsInfo.unitToAsts.get(b).isEmpty) {
+              logger.debug(s"AstForMethodsCreator: Missing target unit in unitToAsts: $b (${b.getClass.getSimpleName})")
+            }
+        }
       }
     }
   }
@@ -230,7 +254,11 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
     val trapStack = new mutable.Stack[soot.Trap];
     body.getUnits.asScala.filterNot(isIgnoredUnit).foreach { statement =>
       // Remove traps that ended on the previous unit
-      (1 to popTraps.getOrElse(statement, 0)).foreach(_ => trapStack.pop)
+      (1 to popTraps.getOrElse(statement, 0)).foreach { _ =>
+        if (trapStack.nonEmpty) {
+          trapStack.pop()
+        }
+      }
 
       // Add traps that apply to this unit
       pushTraps.getOrElse(statement, List.empty).foreach(trapStack.push)
@@ -246,7 +274,11 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
       stack.push(stack.pop().withChildren(asts))
     }
 
-    stack.pop()
+    if (stack.nonEmpty) {
+      stack.pop()
+    } else {
+      Ast(blockNode(body))
+    }
   }
 
 }

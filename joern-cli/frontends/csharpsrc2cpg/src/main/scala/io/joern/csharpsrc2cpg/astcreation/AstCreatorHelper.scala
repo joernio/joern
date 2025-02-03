@@ -6,7 +6,7 @@ import io.joern.csharpsrc2cpg.{CSharpDefines, Constants, astcreation}
 import io.joern.x2cpg.utils.IntervalKeyPool
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
 import ujson.Value
 
 import scala.annotation.tailrec
@@ -28,15 +28,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         logger.warn("Key not found in json. Defaulting to a null node.")
         DotNetNodeInfo(DotNetJsonAst.Unknown, ujson.Null, "", None, None, None, None)
       }
-  }
-
-  def createCallNodeForOperator(
-    node: DotNetNodeInfo,
-    operatorMethod: String,
-    signature: Option[String] = None,
-    typeFullName: Option[String] = None
-  ): NewCall = {
-    callNode(node, node.code, operatorMethod, operatorMethod, DispatchTypes.STATIC_DISPATCH, signature, typeFullName)
   }
 
   protected def notHandledYet(node: DotNetNodeInfo): Seq[Ast] = {
@@ -197,7 +188,7 @@ object AstCreatorHelper {
       case SimpleMemberAccessExpression | MemberBindingExpression | SuppressNullableWarningExpression | Attribute =>
         nameFromIdentifier(createDotNetNodeInfo(node.json(ParserKeys.Name)))
       case ObjectCreationExpression | CastExpression => nameFromNode(createDotNetNodeInfo(node.json(ParserKeys.Type)))
-      case ThisExpression                            => "this"
+      case ThisExpression                            => Constants.This
       case _                                         => "<empty>"
   }
 
@@ -280,6 +271,6 @@ object BuiltinTypes {
     String  -> "System.String",
     Dynamic -> "System.Object",
     Null    -> Null,
-    Void    -> Void
+    Void    -> "System.Void"
   )
 }

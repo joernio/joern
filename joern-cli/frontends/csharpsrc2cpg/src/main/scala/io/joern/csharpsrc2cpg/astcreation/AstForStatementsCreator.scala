@@ -1,20 +1,12 @@
 package io.joern.csharpsrc2cpg.astcreation
 
 import io.joern.csharpsrc2cpg.CSharpOperators
-import io.joern.csharpsrc2cpg.parser.DotNetNodeInfo
-import io.joern.csharpsrc2cpg.parser.ParserKeys
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
-import io.joern.x2cpg.Ast
-import io.joern.x2cpg.ValidationMode
+import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
+import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
+import io.shiftleft.codepropertygraph.generated.nodes.{NewFieldIdentifier, NewIdentifier, NewLiteral, NewLocal}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, ModifierTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  NewControlStructure,
-  NewFieldIdentifier,
-  NewIdentifier,
-  NewLiteral,
-  NewLocal
-}
 
 import scala.::
 import scala.util.Try
@@ -323,11 +315,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case Some(_expr: ujson.Obj) => astForNode(createDotNetNodeInfo(_expr))
       case _                      => Seq.empty[Ast]
     }
-    val throwCall = createCallNodeForOperator(
-      throwStmt,
-      CSharpOperators.throws,
-      typeFullName = Option(getTypeFullNameFromAstNode(argsAst))
-    )
+    val throwCall = operatorCallNode(throwStmt, CSharpOperators.throws, Some(getTypeFullNameFromAstNode(argsAst)))
     Seq(callAst(throwCall, argsAst))
   }
 

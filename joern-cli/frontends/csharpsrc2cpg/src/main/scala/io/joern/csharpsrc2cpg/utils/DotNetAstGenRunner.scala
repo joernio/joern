@@ -16,8 +16,9 @@ class DotNetAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
   private val logger = LoggerFactory.getLogger(getClass)
 
   // The x86 variant seems to run well enough on MacOS M-family chips, whereas the ARM build crashes
-  override val MacArm: String = MacX86
-  override val WinArm: String = WinX86
+  override val MacArm: String   = MacX86
+  override val WinArm: String   = WinX86
+  override val LinuxArm: String = "linux-arm64"
 
   override def fileFilter(file: String, out: File): Boolean = {
     file.stripSuffix(".json").replace(out.pathAsString, config.inputPath) match {

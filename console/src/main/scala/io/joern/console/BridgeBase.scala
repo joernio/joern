@@ -2,10 +2,12 @@ package io.joern.console
 
 import better.files.*
 import io.shiftleft.codepropertygraph.generated.Languages
+import io.shiftleft.semanticcpg.sarif.SarifConfig
 import org.apache.commons.text.StringEscapeUtils
 import replpp.scripting.ScriptRunner
 
 import java.nio.file.{Files, Path}
+import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 import scala.util.Try
 

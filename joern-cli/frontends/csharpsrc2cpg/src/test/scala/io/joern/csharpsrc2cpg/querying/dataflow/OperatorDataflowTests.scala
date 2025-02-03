@@ -17,6 +17,7 @@ class OperatorDataflowTests extends CSharpCode2CpgFixture(withDataFlow = true) {
       val src  = cpg.identifier.nameExact("a").l;
       val sink = cpg.identifier.nameExact("d").l
       sink.reachableBy(src).size shouldBe 2
+      sink.reachableBy(cpg.literal("3")).size shouldBe 1
     }
 
     "be reachable (case 2)" in {

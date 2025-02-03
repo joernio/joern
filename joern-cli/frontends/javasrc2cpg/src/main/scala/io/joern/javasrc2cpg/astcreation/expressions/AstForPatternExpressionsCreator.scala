@@ -152,9 +152,15 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
         )
 
       case _ =>
-        val tmpName       = tempNameProvider.next
-        val tmpType       = patternInitAst.rootType.getOrElse(TypeConstants.Object)
-        val tmpLocal      = localNode(rootNode, tmpName, tmpName, tmpType)
+        val tmpName = tempNameProvider.next
+        val tmpType = patternInitAst.rootType.getOrElse(TypeConstants.Object)
+        val tmpLocal = localNode(
+          rootNode,
+          tmpName,
+          tmpName,
+          tmpType,
+          genericSignature = Option(binarySignatureCalculator.unspecifiedClassType)
+        )
         val tmpIdentifier = identifierNode(rootNode, tmpName, tmpName, tmpType)
 
         val tmpAssignmentNode =
@@ -216,8 +222,15 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
             )
             .getOrElse(defaultTypeFallback())
         }
-        val variableTypeCode  = tryWithSafeStackOverflow(code(typePatternExpr.getType)).getOrElse(variableType)
-        val patternLocal      = localNode(typePatternExpr, variableName, code(typePatternExpr), variableType)
+        val variableTypeCode = tryWithSafeStackOverflow(code(typePatternExpr.getType)).getOrElse(variableType)
+        val genericSignature = binarySignatureCalculator.variableBinarySignature(typePatternExpr.getType)
+        val patternLocal = localNode(
+          typePatternExpr,
+          variableName,
+          code(typePatternExpr),
+          variableType,
+          genericSignature = Option(genericSignature)
+        )
         val patternIdentifier = identifierNode(typePatternExpr, variableName, variableName, variableType)
 
         val initializerAst = castAstIfNecessary(typePatternExpr, variableType, patternNode.getAst)

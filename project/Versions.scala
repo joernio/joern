@@ -35,7 +35,7 @@ object Versions {
   val scalatest              = "3.2.18"
   val scopt                  = "4.1.0"
   val semverParser           = "0.0.6"
-  val soot                   = "4.5.0"
+  val soot                   = "4.6.0"
   val slf4j                  = "2.0.7"
   val log4j                  = "2.20.0"
   val upickle                = "4.0.2"
@@ -48,6 +48,7 @@ object Versions {
   val typeSafeConfig = "1.4.3"
   val versionSort    = "1.0.11"
   val zip4j          = "2.11.5"
+  val asm            = "9.7.1"
 
   private def parseVersion(key: String): String = {
     val versionRegexp = s""".*val $key[ ]+=[ ]?"(.*?)"""".r
