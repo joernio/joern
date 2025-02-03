@@ -257,6 +257,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
             lowerRegexMatch(globalDefaultString, regex, node.span)
         }
         createMemberCall(node)
+      // Regex on the RHS is more idiomatic, so no need to check types here.
       case literal: LiteralExpr if node.isRegexMatch =>
         node.arguments.headOption match {
           case Some(regex) => astForExpression(lowerRegexMatch(literal, regex, node.span))

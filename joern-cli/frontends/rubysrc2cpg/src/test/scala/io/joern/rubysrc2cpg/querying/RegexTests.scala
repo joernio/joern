@@ -3,7 +3,8 @@ package io.joern.rubysrc2cpg.querying
 import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelPrefix
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.Literal
+import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal}
 import io.shiftleft.semanticcpg.language.*
 
 class RegexTests extends RubyCode2CpgFixture(withPostProcessing = true) {
@@ -57,7 +58,52 @@ class RegexTests extends RubyCode2CpgFixture(withPostProcessing = true) {
           |'hello' =~ /h(el)lo/
           |""".stripMargin)
 
-      cpg.method.isModule.dotAst.foreach(println)
+      // We lower =~ to the `match` equivalent
+      val tmpInit = cpg.assignment.code("<tmp-0> =.*").head
+
+      val tmpTarget = tmpInit.target.asInstanceOf[Identifier]
+      tmpTarget.name shouldBe "<tmp-0>"
+      val tmpSource = tmpInit.source.asInstanceOf[Call]
+      tmpSource.code shouldBe "'hello'.match(/h(el)lo/)"
+      tmpSource.name shouldBe "match"
+
+      // Now test for the lowered global variable assignments
+      val ifStmt = cpg.controlStructure.head
+      inside(ifStmt.whenTrue.assignment.l) { case tildeAsgn :: amperAsgn :: Nil =>
+        tildeAsgn.code shouldBe "$~ = <tmp-0>"
+        val taSource = tildeAsgn.source.asInstanceOf[Identifier]
+        taSource.name shouldBe "<tmp-0>"
+        val taTarget = tildeAsgn.target.asInstanceOf[Call]
+        taTarget.methodFullName shouldBe Operators.fieldAccess
+        taTarget.code shouldBe "self.$~"
+
+        amperAsgn.code shouldBe "$& = <tmp-0>[0]"
+        val aaSource = amperAsgn.source.asInstanceOf[Call]
+        aaSource.methodFullName shouldBe Operators.indexAccess
+        aaSource.code shouldBe "<tmp-0>[0]"
+        aaSource.argument(1).asInstanceOf[Identifier].name shouldBe "<tmp-0>"
+        aaSource.argument(2).asInstanceOf[Literal].code shouldBe "0"
+
+        val aaTarget = amperAsgn.target.asInstanceOf[Call]
+        aaTarget.methodFullName shouldBe Operators.fieldAccess
+        aaTarget.code shouldBe "self.$&"
+      }
+      inside(ifStmt.whenFalse.assignment.l) { case tildeAsgn :: amperAsgn :: Nil =>
+        tildeAsgn.code shouldBe "$~ = nil"
+        val taSource = tildeAsgn.source.asInstanceOf[Literal]
+        taSource.code shouldBe "nil"
+        val taTarget = tildeAsgn.target.asInstanceOf[Call]
+        taTarget.methodFullName shouldBe Operators.fieldAccess
+        taTarget.code shouldBe "self.$~"
+
+        amperAsgn.code shouldBe "$& = nil"
+        val aaSource = amperAsgn.source.asInstanceOf[Literal]
+        aaSource.code shouldBe "nil"
+
+        val aaTarget = amperAsgn.target.asInstanceOf[Call]
+        aaTarget.methodFullName shouldBe Operators.fieldAccess
+        aaTarget.code shouldBe "self.$&"
+      }
     }
 
     "be assigned to the match in a case equality" in {
