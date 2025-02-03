@@ -2,6 +2,7 @@ package io.joern.csharpsrc2cpg.astcreation
 
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetJsonAst, DotNetNodeInfo, ParserKeys}
+import io.joern.csharpsrc2cpg.utils.Utils.{withoutSignature}
 import io.joern.csharpsrc2cpg.{CSharpDefines, Constants, astcreation}
 import io.joern.x2cpg.utils.IntervalKeyPool
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
@@ -44,7 +45,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   protected def astFullName(node: DotNetNodeInfo): String = {
     scope.surroundingScopeFullName match
-      case Some(fullName) => s"$fullName.${nameFromNode(node)}"
+      case Some(fullName) => s"${withoutSignature(fullName)}.${nameFromNode(node)}"
       case _              => nameFromNode(node)
   }
 

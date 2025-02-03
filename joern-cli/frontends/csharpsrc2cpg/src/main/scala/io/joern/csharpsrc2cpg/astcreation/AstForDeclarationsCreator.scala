@@ -10,7 +10,8 @@ import io.joern.csharpsrc2cpg.utils.Utils.{
   composeGetterName,
   composeMethodFullName,
   composeMethodLikeSignature,
-  composeSetterName
+  composeSetterName,
+  withoutSignature
 }
 import io.joern.x2cpg.utils.NodeBuilders.{newMethodReturnNode, newModifierNode}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
@@ -669,7 +670,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
   def astForAnonymousObjectCreationExpression(anonObjExpr: DotNetNodeInfo): Seq[Ast] = {
     val typeDeclName     = nextAnonymousTypeName()
-    val typeDeclFullName = s"${scope.surroundingScopeFullName.getOrElse(Defines.Any)}.${typeDeclName}"
+    val typeDeclFullName = s"${withoutSignature(scope.surroundingScopeFullName.getOrElse(Defines.Any))}.${typeDeclName}"
 
     val _typeDeclNode = typeDeclNode(
       anonObjExpr,
