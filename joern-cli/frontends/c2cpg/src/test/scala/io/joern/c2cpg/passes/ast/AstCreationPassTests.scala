@@ -45,14 +45,11 @@ class AstCreationPassTests extends AstC2CpgSuite {
       // tpe<wchar_t> can't be resolved for both methods resulting in problem bindings.
       // We can however manually reconstruct the signature from the params and return type without
       // relying on the resolved function binding signature.
-      val fullNames = cpg.method.nameNot("<global>").map(m => (m.fullName, m.signature)).l.sortBy(_._1)
-      fullNames shouldBe List(
-        ("tpe<wchar_t>.foo:char(char_type,char)", "char(char_type,char)"),
-        (
-          "tpe<wchar_t>.foo:const wchar_t*(char_type*,char_type*,char,char*)",
-          "const wchar_t*(char_type*,char_type*,char,char*)"
-        )
-      )
+      val List(foo1, foo2) = cpg.method.nameExact("foo").l
+      foo1.fullName shouldBe "tpe<wchar_t>.foo:char(char_type,char)"
+      foo1.signature shouldBe "char(char_type,char)"
+      foo2.fullName shouldBe "tpe<wchar_t>.foo:const wchar_t*(char_type*,char_type*,char,char*)"
+      foo2.signature shouldBe "const wchar_t*(char_type*,char_type*,char,char*)"
     }
 
     "be correct for packed args" in {
