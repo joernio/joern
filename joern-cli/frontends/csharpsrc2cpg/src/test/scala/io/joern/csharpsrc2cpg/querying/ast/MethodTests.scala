@@ -2,6 +2,7 @@ package io.joern.csharpsrc2cpg.querying.ast
 
 import io.joern.csharpsrc2cpg.testfixtures.CSharpCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
+import io.shiftleft.codepropertygraph.generated.nodes.Return
 import io.shiftleft.semanticcpg.language.*
 
 class MethodTests extends CSharpCode2CpgFixture {
@@ -105,6 +106,65 @@ class MethodTests extends CSharpCode2CpgFixture {
         ModifierTypes.ABSTRACT,
         ModifierTypes.PROTECTED
       )
+    }
+  }
+
+  "standalone method declaration inside a top-level method" should {
+    val cpg = code("""
+        |int MyMain()
+        |{
+        |   int MySubMethod() {return 1;}
+        |}
+        |""".stripMargin)
+
+    "have correct properties for the nested method" in {
+      inside(cpg.method.nameExact("MySubMethod").l) {
+        case sub :: Nil =>
+          sub.fullName shouldBe "Test0_cs_Program.<Main>$.MyMain.MySubMethod:System.Int32()"
+          sub.signature shouldBe "System.Int32()"
+          sub.modifier.modifierType.sorted.l shouldBe List(ModifierTypes.INTERNAL)
+          sub.methodReturn.typeFullName shouldBe "System.Int32"
+          sub.parentBlock.method.l shouldBe cpg.method.fullNameExact("Test0_cs_Program.<Main>$.MyMain:System.Int32()").l
+        case xs => fail(s"Expected single MySubMethod METHOD, but got $xs")
+      }
+    }
+
+    "have correct body for the nested method" in {
+      inside(cpg.method.nameExact("MySubMethod").block.astChildren.l) {
+        case (ret: Return) :: Nil => ret.code shouldBe "return 1;"
+        case xs                   => fail(s"Expected single RETURN node, but got $xs")
+      }
+    }
+  }
+
+  "standalone method declaration inside a class method" should {
+    val cpg = code("""
+        |class MyClass
+        |{
+        |   int MyMain()
+        |   {
+        |     int MySubMethod() {return 1;}
+        |   }
+        |}
+        |""".stripMargin)
+
+    "have correct properties for the nested method" in {
+      inside(cpg.method.nameExact("MySubMethod").l) {
+        case sub :: Nil =>
+          sub.fullName shouldBe "MyClass.MyMain.MySubMethod:System.Int32()"
+          sub.signature shouldBe "System.Int32()"
+          sub.modifier.modifierType.sorted.l shouldBe List(ModifierTypes.INTERNAL)
+          sub.methodReturn.typeFullName shouldBe "System.Int32"
+          sub.parentBlock.method.l shouldBe cpg.method.fullNameExact("MyClass.MyMain:System.Int32()").l
+        case xs => fail(s"Expected single MySubMethod METHOD, but got $xs")
+      }
+    }
+
+    "have correct body for the nested method" in {
+      inside(cpg.method.nameExact("MySubMethod").block.astChildren.l) {
+        case (ret: Return) :: Nil => ret.code shouldBe "return 1;"
+        case xs                   => fail(s"Expected single RETURN node, but got $xs")
+      }
     }
   }
 }

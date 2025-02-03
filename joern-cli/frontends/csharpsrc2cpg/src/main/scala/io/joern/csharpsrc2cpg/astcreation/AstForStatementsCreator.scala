@@ -60,20 +60,25 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   protected def astForStatement(nodeInfo: DotNetNodeInfo): Seq[Ast] = {
     nodeInfo.node match {
-      case ExpressionStatement => astForExpressionStatement(nodeInfo)
-      case GlobalStatement     => astForGlobalStatement(nodeInfo)
-      case IfStatement         => astForIfStatement(nodeInfo)
-      case ThrowStatement      => astForThrowStatement(nodeInfo)
-      case TryStatement        => astForTryStatement(nodeInfo)
-      case ForEachStatement    => astForForEachStatement(nodeInfo)
-      case ForStatement        => astForForStatement(nodeInfo)
-      case DoStatement         => astForDoStatement(nodeInfo)
-      case WhileStatement      => astForWhileStatement(nodeInfo)
-      case SwitchStatement     => astForSwitchStatement(nodeInfo)
-      case UsingStatement      => astForUsingStatement(nodeInfo)
-      case _: JumpStatement    => astForJumpStatement(nodeInfo)
-      case _                   => notHandledYet(nodeInfo)
+      case ExpressionStatement    => astForExpressionStatement(nodeInfo)
+      case GlobalStatement        => astForGlobalStatement(nodeInfo)
+      case IfStatement            => astForIfStatement(nodeInfo)
+      case ThrowStatement         => astForThrowStatement(nodeInfo)
+      case TryStatement           => astForTryStatement(nodeInfo)
+      case ForEachStatement       => astForForEachStatement(nodeInfo)
+      case ForStatement           => astForForStatement(nodeInfo)
+      case DoStatement            => astForDoStatement(nodeInfo)
+      case WhileStatement         => astForWhileStatement(nodeInfo)
+      case SwitchStatement        => astForSwitchStatement(nodeInfo)
+      case UsingStatement         => astForUsingStatement(nodeInfo)
+      case LocalFunctionStatement => astForLocalFunctionStatement(nodeInfo)
+      case _: JumpStatement       => astForJumpStatement(nodeInfo)
+      case _                      => notHandledYet(nodeInfo)
     }
+  }
+
+  private def astForLocalFunctionStatement(nodeInfo: DotNetNodeInfo): Seq[Ast] = {
+    astForMethodDeclaration(nodeInfo)
   }
 
   private def astForSwitchLabel(labelNode: DotNetNodeInfo): Seq[Ast] = {
