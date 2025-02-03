@@ -31,6 +31,7 @@ class ContextStack {
     val order: AutoIncIndex
     val variables: mutable.Map[String, nodes.NewNode]
     var lambdaCounter: Int
+    val methodCounter: mutable.Map[String, Int]
   }
 
   private class MethodContext(
@@ -43,7 +44,8 @@ class ContextStack {
     val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty,
     val globalVariables: mutable.Set[String] = mutable.Set.empty,
     val nonLocalVariables: mutable.Set[String] = mutable.Set.empty,
-    var lambdaCounter: Int = 0
+    var lambdaCounter: Int = 0,
+    val methodCounter: mutable.Map[String, Int] = mutable.Map.empty
   ) extends Context {}
 
   private class ClassContext(
@@ -51,7 +53,8 @@ class ContextStack {
     val astParent: nodes.NewNode,
     val order: AutoIncIndex,
     val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty,
-    var lambdaCounter: Int = 0
+    var lambdaCounter: Int = 0,
+    val methodCounter: mutable.Map[String, Int] = mutable.Map.empty
   ) extends Context {}
 
   // Used to represent comprehension variable and exception
@@ -68,7 +71,8 @@ class ContextStack {
     val astParent: nodes.NewNode,
     val order: AutoIncIndex,
     val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty,
-    var lambdaCounter: Int = 0
+    var lambdaCounter: Int = 0,
+    val methodCounter: mutable.Map[String, Int] = mutable.Map.empty
   ) extends Context {}
 
   private case class VariableReference(
@@ -431,6 +435,10 @@ class ContextStack {
       case methodContext: MethodContext if methodContext.isClassBodyMethod => true
       case _                                                               => false
     })
+  }
+
+  def methodCounter: mutable.Map[String, Int] = {
+    stack.head.methodCounter
   }
 
 }
