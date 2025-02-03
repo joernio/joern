@@ -605,8 +605,12 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     paramTypeHint: Option[String] = None
   ): Seq[Ast] = {
     // Create method declaration
-    val name     = nextClosureName()
-    val fullName = s"${scope.surroundingScopeFullName.getOrElse(Defines.UnresolvedNamespace)}.$name"
+    val name = nextClosureName()
+    val fullName = {
+      val baseType  = withoutSignature(scope.surroundingScopeFullName.getOrElse(Defines.UnresolvedNamespace))
+      val signature = Defines.UnresolvedSignature
+      composeMethodFullName(baseType, name, signature)
+    }
     // Set parameter type if necessary, which may require the type hint
     val paramType = paramTypeHint.flatMap(AstCreatorHelper.elementTypesFromCollectionType).headOption
     val paramAsts = Try(lambdaExpression.json(ParserKeys.Parameter)).toOption match {
