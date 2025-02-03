@@ -7,12 +7,12 @@ import io.joern.csharpsrc2cpg.utils.Utils.{composeMethodFullName, composeMethodL
 import io.joern.csharpsrc2cpg.{CSharpOperators, Constants}
 import io.joern.x2cpg.utils.NodeBuilders.{newCallNode, newIdentifierNode, newOperatorCallNode}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewFieldIdentifier, NewLiteral, NewTypeRef}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewLiteral, NewTypeRef}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import ujson.Value
 
 import scala.collection.mutable.ArrayBuffer
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   def astForExpressionStatement(expr: DotNetNodeInfo): Seq[Ast] = {
@@ -110,12 +110,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case "!" => Operators.logicalNot
       case "&" => Operators.addressOf
 
-    val args    = createDotNetNodeInfo(unaryExpr.json(ParserKeys.Operand))
-    val argsAst = astForOperand(args)
+    val args     = createDotNetNodeInfo(unaryExpr.json(ParserKeys.Operand))
+    val argsAst  = astForOperand(args)
+    val callNode = operatorCallNode(unaryExpr, operatorName, Some(nodeTypeFullName(args)))
 
-    Seq(
-      callAst(createCallNodeForOperator(unaryExpr, operatorName, typeFullName = Some(nodeTypeFullName(args))), argsAst)
-    )
+    callAst(callNode, argsAst) :: Nil
   }
 
   protected def astForBinaryExpression(binaryExpr: DotNetNodeInfo): Seq[Ast] = {
@@ -156,13 +155,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       createDotNetNodeInfo(binaryExpr.json(ParserKeys.Right))
     )
 
-    val cNode =
-      createCallNodeForOperator(
-        binaryExpr,
-        operatorName,
-        typeFullName = Some(fixedTypeOperators.getOrElse(operatorName, getTypeFullNameFromAstNode(args)))
-      )
-    Seq(callAst(cNode, args))
+    val typeFullName = fixedTypeOperators.get(operatorName).orElse(Some(getTypeFullNameFromAstNode(args)))
+    val callNode     = operatorCallNode(binaryExpr, operatorName, typeFullName)
+
+    callAst(callNode, args) :: Nil
   }
 
   /** Handles the `= ...` part of the equals value clause, thus this only contains an RHS.
