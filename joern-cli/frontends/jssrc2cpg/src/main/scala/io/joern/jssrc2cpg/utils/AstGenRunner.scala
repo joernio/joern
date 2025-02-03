@@ -281,7 +281,13 @@ class AstGenRunner(config: Config) {
           case filePath if isTranspiledFile(filePath)                             => false
           case _                                                                  => true
         }
-      }.getOrElse(false)
+      } match {
+        case Success(result)    => result
+        case Failure(exception) =>
+          // Log the exception for debugging purposes
+          logger.error("An error occurred while processing the file path during filtering file stage : ", exception)
+          false
+      }
     }
   }
 
