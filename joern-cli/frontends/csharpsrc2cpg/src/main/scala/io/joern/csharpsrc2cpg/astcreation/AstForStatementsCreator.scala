@@ -9,7 +9,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{NewFieldIdentifier, NewId
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, ModifierTypes, Operators}
 
 import scala.::
-import scala.util.Try
+import scala.util.{Try, Success, Failure}
 
 trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
