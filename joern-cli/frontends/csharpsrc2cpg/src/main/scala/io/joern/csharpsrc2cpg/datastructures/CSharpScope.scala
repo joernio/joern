@@ -174,4 +174,12 @@ class CSharpScope(summary: CSharpProgramSummary)
     val getterMethodName = Utils.composeGetterName(fieldIdentifierName)
     tryResolveMethodInvocation(getterMethodName, Nil, baseTypeFullName)
   }
+
+  def tryResolveSetterInvocation(
+    fieldIdentifierName: String,
+    baseTypeFullName: Option[String]
+  ): Option[CSharpMethod] = {
+    val setterMethodName = Utils.composeSetterName(fieldIdentifierName)
+    tryResolveMethodInvocation(setterMethodName, Defines.Any :: Nil, baseTypeFullName)
+  }
 }

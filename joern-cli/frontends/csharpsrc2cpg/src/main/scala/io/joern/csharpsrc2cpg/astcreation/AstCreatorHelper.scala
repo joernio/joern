@@ -91,6 +91,36 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     Operators.lessEqualsThan    -> BuiltinTypes.DotNetTypeMap(BuiltinTypes.Bool)
   )
 
+  protected val binaryOperatorsMap: Map[String, String] = Map(
+    "+"   -> Operators.addition,
+    "-"   -> Operators.subtraction,
+    "*"   -> Operators.multiplication,
+    "/"   -> Operators.division,
+    "%"   -> Operators.modulo,
+    "=="  -> Operators.equals,
+    "!="  -> Operators.notEquals,
+    "&&"  -> Operators.logicalAnd,
+    "||"  -> Operators.logicalOr,
+    "="   -> Operators.assignment,
+    "+="  -> Operators.assignmentPlus,
+    "-="  -> Operators.assignmentMinus,
+    "*="  -> Operators.assignmentMultiplication,
+    "/="  -> Operators.assignmentDivision,
+    "%="  -> Operators.assignmentModulo,
+    "&="  -> Operators.assignmentAnd,
+    "|="  -> Operators.assignmentOr,
+    "^="  -> Operators.assignmentXor,
+    ">>=" -> Operators.assignmentLogicalShiftRight,
+    "<<=" -> Operators.assignmentShiftLeft,
+    ">"   -> Operators.greaterThan,
+    "<"   -> Operators.lessThan,
+    ">="  -> Operators.greaterEqualsThan,
+    "<="  -> Operators.lessEqualsThan,
+    "|"   -> Operators.or,
+    "&"   -> Operators.and,
+    "^"   -> Operators.xor
+  )
+
   protected def nodeTypeFullName(node: DotNetNodeInfo): String = {
     node.node match {
       case NumericLiteralExpression if node.code.matches("^\\d+$") => // e.g. 200
@@ -132,6 +162,12 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
           .tryResolveTypeReference(typeString)
           .map(_.name)
           .orElse(BuiltinTypes.DotNetTypeMap.get(typeString))
+          .orElse(scope.findFieldInScope(typeString).map(_.typeFullName))
+          .orElse(scope.lookupVariable(typeString).flatMap {
+            case x: NewLocal             => Some(x.typeFullName)
+            case x: NewMethodParameterIn => Some(x.typeFullName)
+            case _                       => None
+          })
           .getOrElse(typeString)
       case Attribute =>
         val typeString = s"${nameFromNode(node)}Attribute"
