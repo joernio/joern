@@ -88,8 +88,13 @@ class DependencyDownloader(
       case Success(x) => x
     }
 
-    def createUrl(packageType: String, version: String): URL = {
-      URI(s"https://$NUGET_BASE_API_V2/$packageType/${dependencyName}/$version").toURL
+    def createUrl(packageType: String, version: String): Option[URL] = {
+      Try(new URI(s"https://$NUGET_BASE_API_V2/$packageType/${dependencyName}/$version").toURL) match {
+        case Success(url) => Some(url)
+        case Failure(e) =>
+          logger.debug(s"Failed to create URL for packageType: $packageType, version: $version. Error: ${e.getMessage}")
+          None
+      }
     }
 
     // If dependency version is not specified, latest is returned
@@ -115,50 +120,54 @@ class DependencyDownloader(
     * @return
     *   the package version.
     */
-  private def downloadPackage(targetDir: File, dependency: Dependency, url: URL): Unit = {
+  private def downloadPackage(targetDir: File, dependency: Dependency, url: Option[URL]): Unit = {
     var connection: Option[HttpURLConnection] = None
-    try {
-      connection = Option(url.openConnection()).collect { case x: HttpURLConnection => x }
-      // allow both GZip and Deflate (ZLib) encodings
-      connection.foreach(_.setRequestProperty("Accept-Encoding", "gzip, deflate"))
-      connection match {
-        case Some(conn: HttpURLConnection) if conn.getResponseCode == HttpURLConnection.HTTP_OK =>
-          val ext      = if url.toString.contains("/package/") then "nupkg" else "snupkg"
-          val fileName = targetDir / s"${dependency.name}.$ext"
+    url.foreach { validUrl =>
+      {
+        try {
+          connection = Option(validUrl.openConnection()).collect { case x: HttpURLConnection => x }
+          // allow both GZip and Deflate (ZLib) encodings
+          connection.foreach(_.setRequestProperty("Accept-Encoding", "gzip, deflate"))
+          connection match {
+            case Some(conn: HttpURLConnection) if conn.getResponseCode == HttpURLConnection.HTTP_OK =>
+              val ext      = if url.toString.contains("/package/") then "nupkg" else "snupkg"
+              val fileName = targetDir / s"${dependency.name}.$ext"
 
-          val inputStream = Option(conn.getContentEncoding) match {
-            case Some(encoding) if encoding.equalsIgnoreCase("gzip")    => GZIPInputStream(conn.getInputStream)
-            case Some(encoding) if encoding.equalsIgnoreCase("deflate") => InflaterInputStream(conn.getInputStream)
-            case _                                                      => conn.getInputStream
-          }
+              val inputStream = Option(conn.getContentEncoding) match {
+                case Some(encoding) if encoding.equalsIgnoreCase("gzip")    => GZIPInputStream(conn.getInputStream)
+                case Some(encoding) if encoding.equalsIgnoreCase("deflate") => InflaterInputStream(conn.getInputStream)
+                case _                                                      => conn.getInputStream
+              }
 
-          Try {
-            Using.resources(inputStream, new FileOutputStream(fileName.pathAsString)) { (is, fos) =>
-              val buffer = new Array[Byte](4096)
-              Iterator
-                .continually(is.read(buffer))
-                .takeWhile(_ != -1)
-                .foreach(bytesRead => fos.write(buffer, 0, bytesRead))
-            }
-          } match {
-            case Failure(exception) =>
-              logger.error(
-                s"Exception occurred while downloading $fileName (${dependency.name}:${dependency.version})",
-                exception
-              )
-            case Success(_) =>
-              logger.info(s"Successfully downloaded dependency ${dependency.name}:${dependency.version}")
+              Try {
+                Using.resources(inputStream, new FileOutputStream(fileName.pathAsString)) { (is, fos) =>
+                  val buffer = new Array[Byte](4096)
+                  Iterator
+                    .continually(is.read(buffer))
+                    .takeWhile(_ != -1)
+                    .foreach(bytesRead => fos.write(buffer, 0, bytesRead))
+                }
+              } match {
+                case Failure(exception) =>
+                  logger.error(
+                    s"Exception occurred while downloading $fileName (${dependency.name}:${dependency.version})",
+                    exception
+                  )
+                case Success(_) =>
+                  logger.info(s"Successfully downloaded dependency ${dependency.name}:${dependency.version}")
+              }
+            case Some(conn: HttpURLConnection) =>
+              logger.error(s"Connection to $url responded with non-200 code ${conn.getResponseCode}")
+            case _ =>
+              logger.error(s"Unknown URL connection made, aborting")
           }
-        case Some(conn: HttpURLConnection) =>
-          logger.error(s"Connection to $url responded with non-200 code ${conn.getResponseCode}")
-        case _ =>
-          logger.error(s"Unknown URL connection made, aborting")
+        } catch {
+          case exception: Throwable =>
+            logger.error(s"Unable to download dependency ${dependency.name}:${dependency.version}", exception)
+        } finally {
+          connection.foreach(_.disconnect())
+        }
       }
-    } catch {
-      case exception: Throwable =>
-        logger.error(s"Unable to download dependency ${dependency.name}:${dependency.version}", exception)
-    } finally {
-      connection.foreach(_.disconnect())
     }
   }
 
@@ -217,5 +226,4 @@ class DependencyDownloader(
       .map(CSharpProgramSummary(_))
     CSharpProgramSummary(summaries)
   }
-
 }

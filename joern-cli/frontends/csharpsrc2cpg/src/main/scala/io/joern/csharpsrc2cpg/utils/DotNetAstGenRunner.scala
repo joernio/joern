@@ -31,11 +31,14 @@ class DotNetAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
   override def skippedFiles(in: File, astGenOut: List[String]): List[String] = {
     val diagnosticMap = mutable.LinkedHashMap.empty[String, Seq[String]]
 
-    def addReason(reason: String, lastFile: Option[String] = None) = {
-      val key = lastFile.getOrElse(diagnosticMap.last._1)
-      diagnosticMap.updateWith(key) {
-        case Some(x) => Option(x :+ reason)
-        case None    => Option(reason :: Nil)
+    def addReason(reason: String, lastFile: Option[String] = None): Unit = {
+      val key = lastFile.orElse(diagnosticMap.lastOption.map(_._1))
+
+      key.foreach { resolvedKey =>
+        diagnosticMap.updateWith(resolvedKey) {
+          case Some(existingReasons) => Some(existingReasons :+ reason)
+          case None                  => Some(List(reason))
+        }
       }
     }
 
