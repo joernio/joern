@@ -1,5 +1,7 @@
 package io.joern.csharpsrc2cpg.astcreation
 
+import io.joern.csharpsrc2cpg.astcreation.AstParseLevel.FULL_AST
+import io.joern.csharpsrc2cpg.astcreation.BuiltinTypes.DotNetTypeMap
 import io.joern.csharpsrc2cpg.datastructures.{CSharpMethod, FieldDecl}
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
@@ -42,6 +44,83 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case ParenthesizedExpression           => astForParenthesizedExpression(expr)
       case _                                 => notHandledYet(expr)
     }
+  }
+
+  /** Attempts to decide if [[expr]] denotes a setter property reference, in which case returns its corresponding
+    * [[CSharpMethod]] meta-data and class full name it belongs to.
+    */
+  private def tryResolveSetterInvocation(expr: DotNetNodeInfo): Option[(CSharpMethod, String)] = {
+    val baseType = expr.node match {
+      case SimpleMemberAccessExpression =>
+        val base = createDotNetNodeInfo(expr.json(ParserKeys.Expression))
+        Some(nodeTypeFullName(base))
+      case _ =>
+        None
+    }
+
+    val fieldName = nameFromNode(expr)
+    baseType.flatMap(x => scope.tryResolveSetterInvocation(fieldName, Some(x)).map((_, x)))
+  }
+
+  private def astForSetterAssignmentExpression(
+    assignExpr: DotNetNodeInfo,
+    setterInfo: (CSharpMethod, String),
+    lhs: DotNetNodeInfo,
+    opName: String,
+    rhsNode: DotNetNodeInfo
+  ): Seq[Ast] = {
+    val (setterMethod, setterBaseType) = setterInfo
+    val returnType                     = DotNetTypeMap.getOrElse(setterMethod.returnType, setterMethod.returnType)
+    // FIXME: signature should not contain the receiver
+    val signature = composeMethodLikeSignature(returnType, setterMethod.parameterTypes.map(_._2))
+    val fullName  = composeMethodFullName(setterBaseType, setterMethod.name, signature)
+    val dispatch  = if setterMethod.isStatic then DispatchTypes.STATIC_DISPATCH else DispatchTypes.DYNAMIC_DISPATCH
+    val rhsAst = opName match {
+      case Operators.assignment => astForOperand(rhsNode)
+      case _                    =>
+        // TODO: should become `get_Property() <opName> rhsNode`. For now emit rhsNode.
+        logger.warn(s"Unsupported setter operation '$opName' in ${code(assignExpr)}")
+        astForOperand(rhsNode)
+    }
+
+    val setterCallNode = callNode(
+      node = assignExpr,
+      code = code(assignExpr),
+      name = setterMethod.name,
+      methodFullName = fullName,
+      dispatchType = dispatch
+    )
+
+    lhs.node match {
+      case SimpleMemberAccessExpression =>
+        val baseNode = astForNode(createDotNetNodeInfo(lhs.json(ParserKeys.Expression)))
+        val receiver = if setterMethod.isStatic then None else baseNode.headOption
+        callAst(setterCallNode, rhsAst, receiver) :: Nil
+      case _ =>
+        logger.warn(s"Unsupported setter assignment: ${code(assignExpr)}")
+        Nil
+    }
+  }
+
+  private def astForAssignmentExpression(
+    assignExpr: DotNetNodeInfo,
+    lhsNode: DotNetNodeInfo,
+    opName: String,
+    rhsNode: DotNetNodeInfo
+  ): Seq[Ast] = {
+    tryResolveSetterInvocation(lhsNode) match {
+      case Some(setterInfo) => astForSetterAssignmentExpression(assignExpr, setterInfo, lhsNode, opName, rhsNode)
+      case None             => astForRegularAssignmentExpression(assignExpr, lhsNode, opName, rhsNode)
+    }
+  }
+
+  private def astForRegularAssignmentExpression(
+    assignExpr: DotNetNodeInfo,
+    lhs: DotNetNodeInfo,
+    opName: String,
+    rhs: DotNetNodeInfo
+  ): Seq[Ast] = {
+    astForRegularBinaryExpression(assignExpr, lhs, opName, rhs)
   }
 
   private def astForParenthesizedExpression(parenExpr: DotNetNodeInfo): Seq[Ast] = {
@@ -117,47 +196,61 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     callAst(callNode, argsAst) :: Nil
   }
 
-  protected def astForBinaryExpression(binaryExpr: DotNetNodeInfo): Seq[Ast] = {
+  private def translateBinaryOperatorName(operatorToken: String): Option[String] = {
+    Map(
+      "+"   -> Operators.addition,
+      "-"   -> Operators.subtraction,
+      "*"   -> Operators.multiplication,
+      "/"   -> Operators.division,
+      "%"   -> Operators.modulo,
+      "=="  -> Operators.equals,
+      "!="  -> Operators.notEquals,
+      "&&"  -> Operators.logicalAnd,
+      "||"  -> Operators.logicalOr,
+      "="   -> Operators.assignment,
+      "+="  -> Operators.assignmentPlus,
+      "-="  -> Operators.assignmentMinus,
+      "*="  -> Operators.assignmentMultiplication,
+      "/="  -> Operators.assignmentDivision,
+      "%="  -> Operators.assignmentModulo,
+      "&="  -> Operators.assignmentAnd,
+      "|="  -> Operators.assignmentOr,
+      "^="  -> Operators.assignmentXor,
+      ">>=" -> Operators.assignmentLogicalShiftRight,
+      "<<=" -> Operators.assignmentShiftLeft,
+      ">"   -> Operators.greaterThan,
+      "<"   -> Operators.lessThan,
+      ">="  -> Operators.greaterEqualsThan,
+      "<="  -> Operators.lessEqualsThan,
+      "|"   -> Operators.or,
+      "&"   -> Operators.and,
+      "^"   -> Operators.xor
+    ).get(operatorToken)
+  }
+
+  private def astForBinaryExpression(binaryExpr: DotNetNodeInfo): Seq[Ast] = {
+    val lhsNode       = createDotNetNodeInfo(binaryExpr.json(ParserKeys.Left))
+    val rhsNode       = createDotNetNodeInfo(binaryExpr.json(ParserKeys.Right))
     val operatorToken = binaryExpr.json(ParserKeys.OperatorToken)(ParserKeys.Value).str
-    val operatorName = operatorToken match
-      case "+"   => Operators.addition
-      case "-"   => Operators.subtraction
-      case "*"   => Operators.multiplication
-      case "/"   => Operators.division
-      case "%"   => Operators.modulo
-      case "=="  => Operators.equals
-      case "!="  => Operators.notEquals
-      case "&&"  => Operators.logicalAnd
-      case "||"  => Operators.logicalOr
-      case "="   => Operators.assignment
-      case "+="  => Operators.assignmentPlus
-      case "-="  => Operators.assignmentMinus
-      case "*="  => Operators.assignmentMultiplication
-      case "/="  => Operators.assignmentDivision
-      case "%="  => Operators.assignmentModulo
-      case "&="  => Operators.assignmentAnd
-      case "|="  => Operators.assignmentOr
-      case "^="  => Operators.assignmentXor
-      case ">>=" => Operators.assignmentLogicalShiftRight
-      case "<<=" => Operators.assignmentShiftLeft
-      case ">"   => Operators.greaterThan
-      case "<"   => Operators.lessThan
-      case ">="  => Operators.greaterEqualsThan
-      case "<="  => Operators.lessEqualsThan
-      case "|"   => Operators.or
-      case "&"   => Operators.and
-      case "^"   => Operators.xor
-      case x =>
-        logger.warn(s"Unhandled operator '$x' for ${code(binaryExpr)}")
-        CSharpOperators.unknown
+    val operatorName = translateBinaryOperatorName(operatorToken).getOrElse {
+      logger.warn(s"Unhandled operator '$operatorToken' for ${code(binaryExpr)}")
+      CSharpOperators.unknown
+    }
+    binaryExpr.node match {
+      case _: AssignmentExpr => astForAssignmentExpression(binaryExpr, lhsNode, operatorName, rhsNode)
+      case _                 => astForRegularBinaryExpression(binaryExpr, lhsNode, operatorName, rhsNode)
+    }
+  }
 
-    val args = astForOperand(createDotNetNodeInfo(binaryExpr.json(ParserKeys.Left))) ++: astForOperand(
-      createDotNetNodeInfo(binaryExpr.json(ParserKeys.Right))
-    )
-
+  private def astForRegularBinaryExpression(
+    binaryExpr: DotNetNodeInfo,
+    lhsNode: DotNetNodeInfo,
+    operatorName: String,
+    rhsNode: DotNetNodeInfo
+  ): Seq[Ast] = {
+    val args         = astForOperand(lhsNode) ++: astForOperand(rhsNode)
     val typeFullName = fixedTypeOperators.get(operatorName).orElse(Some(getTypeFullNameFromAstNode(args)))
     val callNode     = operatorCallNode(binaryExpr, operatorName, typeFullName)
-
     callAst(callNode, args) :: Nil
   }
 

@@ -132,6 +132,12 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
           .tryResolveTypeReference(typeString)
           .map(_.name)
           .orElse(BuiltinTypes.DotNetTypeMap.get(typeString))
+          .orElse(scope.findFieldInScope(typeString).map(_.typeFullName))
+          .orElse(scope.lookupVariable(typeString).flatMap {
+            case x: NewLocal             => Some(x.typeFullName)
+            case x: NewMethodParameterIn => Some(x.typeFullName)
+            case _                       => None
+          })
           .getOrElse(typeString)
       case Attribute =>
         val typeString = s"${nameFromNode(node)}Attribute"
