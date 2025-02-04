@@ -363,10 +363,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     */
   private def astForUsingStatement(usingStmt: DotNetNodeInfo): Seq[Ast] = {
     val tryNode = controlStructureNode(usingStmt, ControlStructureTypes.TRY, code(usingStmt))
-    val declAst = Try(createDotNetNodeInfo(usingStmt.json(ParserKeys.Declaration))) match {
-      case Success(declNodevalue) => astForNode(declNodevalue)
-      case _                      => Seq.empty[Ast]
-    }
+    val declAst =
+      Try(createDotNetNodeInfo(usingStmt.json(ParserKeys.Declaration))).map(astForNode).getOrElse(scala.Seq.empty[Ast])
     val tryNodeInfo = createDotNetNodeInfo(usingStmt.json(ParserKeys.Statement))
     val tryAst      = astForBlock(tryNodeInfo, Option("try"))
 

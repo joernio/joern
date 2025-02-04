@@ -173,7 +173,7 @@ class ControlStructureTests extends CSharpCode2CpgFixture {
 
   }
 
-  "having using statement" should {
+  "a variable defined within a using statement" should {
     val cpg = code("""
         |namespace other
         |{
@@ -198,7 +198,7 @@ class ControlStructureTests extends CSharpCode2CpgFixture {
         |}
         |""".stripMargin)
 
-    "resolve methodFullName" in {
+    "partially resolve calls on the defined variable" in {
       inside(cpg.call.name("Open").methodFullName.l) {
         case x :: Nil => x shouldBe "SqlConnection.Open:<unresolvedSignature>"
         case _        => fail("Unexpected call node structure")
