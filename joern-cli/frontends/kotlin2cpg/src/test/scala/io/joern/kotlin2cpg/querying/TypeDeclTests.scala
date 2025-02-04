@@ -17,7 +17,7 @@ import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 import io.joern.dataflowengineoss.language._
 
-class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = true) {
+class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "CPG for code with class declaration using unresolved types which are available in imports" should {
     val cpg = code("""
       |package no.such.pkg
