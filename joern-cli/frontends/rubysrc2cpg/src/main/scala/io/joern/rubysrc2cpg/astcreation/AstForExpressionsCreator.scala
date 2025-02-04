@@ -249,14 +249,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
 
     node.target match {
       case regex @ StaticLiteral(s"${GlobalTypes.kernelPrefix}.Regexp") if node.isRegexMatch =>
-        node.arguments.headOption match {
+        val loweredRegex = node.arguments.headOption match {
           case Some(literal) => lowerRegexMatch(literal, regex, node.span)
           case None =>
             val self                = SelfIdentifier()(node.span.spanStart(Defines.Self))
             val globalDefaultString = MemberAccess(self, ".", "$_")(node.span.spanStart("$_"))
             lowerRegexMatch(globalDefaultString, regex, node.span)
         }
-        createMemberCall(node)
+        astForExpression(loweredRegex)
       // Regex on the RHS is more idiomatic, so no need to check types here.
       case literal: LiteralExpr if node.isRegexMatch =>
         node.arguments.headOption match {

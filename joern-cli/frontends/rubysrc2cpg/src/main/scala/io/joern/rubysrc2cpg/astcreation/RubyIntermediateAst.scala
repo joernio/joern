@@ -549,9 +549,7 @@ object RubyIntermediateAst {
   ) extends RubyExpression(span)
       with RubyCall {
 
-    def isRegexMatch: Boolean =
-      methodName == RubyOperators.regexpMatch
-        || methodName == "match" // an educated "guess" from a static analysis perspective
+    def isRegexMatch: Boolean = methodName == RubyOperators.regexpMatch
 
     override def withBlock(block: Block): RubyCallWithBlock[?] =
       MemberCallWithBlock(target, op, methodName, arguments, block)(span)

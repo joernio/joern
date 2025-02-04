@@ -951,10 +951,14 @@ class RubyJsonToNodeCreator(
       case "private" | "public" | "protected"                                   => visitAccessModifier(obj)
       case "private_class_method" | "public_class_method"                       => visitMethodAccessModifier(obj)
       case requireLike if ImportCallNames.contains(requireLike) && !hasReceiver => visitRequireLike(obj)
-      case _ if BinaryOperators.isBinaryOperatorName(callName) =>
+      case x
+          if BinaryOperators.isBinaryOperatorName(callName)
+            || RubyOperators.regexMethods.contains(x) => // assert `match`, `sub`, or `gsub` is always for regex
         val lhs = visit(obj(ParserKeys.Receiver))
         val rhs = obj.visitArray(ParserKeys.Arguments).head
-        BinaryExpression(lhs, callName, rhs)(obj.toTextSpan)
+        // Transform `match` to `=~` so that it is lowered later
+        val op = if RubyOperators.regexMethods.contains(x) then RubyOperators.regexpMatch else callName
+        BinaryExpression(lhs, op, rhs)(obj.toTextSpan)
       case _ if UnaryOperators.isUnaryOperatorName(callName) =>
         UnaryExpression(callName, visit(obj(ParserKeys.Receiver)))(obj.toTextSpan)
       case s"$name=" if hasReceiver => visitFieldAssignmentSend(obj, name)
