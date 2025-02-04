@@ -167,8 +167,11 @@ trait FullNameProvider { this: AstCreator =>
     safeGetBinding(declarator.getName) match {
       case Some(value: ICPPMethod) =>
         cleanType(value.getType.getReturnType.toString)
-      case _ =>
+      case _ if declarator.getParent.isInstanceOf[IASTSimpleDeclaration] =>
         cleanType(typeForDeclSpecifier(declarator.getParent.asInstanceOf[IASTSimpleDeclaration].getDeclSpecifier))
+      case _ if declarator.getParent.isInstanceOf[IASTFunctionDefinition] =>
+        cleanType(typeForDeclSpecifier(declarator.getParent.asInstanceOf[IASTFunctionDefinition].getDeclSpecifier))
+      case _ => Defines.Any
     }
   }
 
@@ -330,10 +333,15 @@ trait FullNameProvider { this: AstCreator =>
           case Some(_: IProblemBinding) =>
             val fullNameNoSig = replaceOperator(ASTStringUtil.getQualifiedName(declarator.getName))
             val fixedFullName = fixQualifiedName(fullNameNoSig)
+            val returnTpe = declarator.getParent match {
+              case definition: ICPPASTFunctionDefinition if !isCppConstructor(definition) => returnType(definition)
+              case _                                                                      => returnType(declarator)
+            }
+            val signature_ = signature(returnTpe, declarator)
             if (fixedFullName.isEmpty) {
-              Option(s"${X2CpgDefines.UnresolvedNamespace}:${X2CpgDefines.UnresolvedSignature}")
+              Option(s"${X2CpgDefines.UnresolvedNamespace}:$signature_")
             } else {
-              Option(s"$fixedFullName:${X2CpgDefines.UnresolvedSignature}")
+              Option(s"$fixedFullName:$signature_")
             }
           case _ => None
         }

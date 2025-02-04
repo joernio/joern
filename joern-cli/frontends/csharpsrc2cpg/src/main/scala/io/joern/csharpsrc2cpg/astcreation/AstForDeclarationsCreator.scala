@@ -10,7 +10,8 @@ import io.joern.csharpsrc2cpg.utils.Utils.{
   composeGetterName,
   composeMethodFullName,
   composeMethodLikeSignature,
-  composeSetterName
+  composeSetterName,
+  withoutSignature
 }
 import io.joern.x2cpg.utils.NodeBuilders.{newMethodReturnNode, newModifierNode}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
@@ -604,8 +605,12 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     paramTypeHint: Option[String] = None
   ): Seq[Ast] = {
     // Create method declaration
-    val name     = nextClosureName()
-    val fullName = s"${scope.surroundingScopeFullName.getOrElse(Defines.UnresolvedNamespace)}.$name"
+    val name = nextClosureName()
+    val fullName = {
+      val baseType  = withoutSignature(scope.surroundingScopeFullName.getOrElse(Defines.UnresolvedNamespace))
+      val signature = Defines.UnresolvedSignature
+      composeMethodFullName(baseType, name, signature)
+    }
     // Set parameter type if necessary, which may require the type hint
     val paramType = paramTypeHint.flatMap(AstCreatorHelper.elementTypesFromCollectionType).headOption
     val paramAsts = Try(lambdaExpression.json(ParserKeys.Parameter)).toOption match {
@@ -669,7 +674,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
   def astForAnonymousObjectCreationExpression(anonObjExpr: DotNetNodeInfo): Seq[Ast] = {
     val typeDeclName     = nextAnonymousTypeName()
-    val typeDeclFullName = s"${scope.surroundingScopeFullName.getOrElse(Defines.Any)}.${typeDeclName}"
+    val typeDeclFullName = s"${withoutSignature(scope.surroundingScopeFullName.getOrElse(Defines.Any))}.${typeDeclName}"
 
     val _typeDeclNode = typeDeclNode(
       anonObjExpr,

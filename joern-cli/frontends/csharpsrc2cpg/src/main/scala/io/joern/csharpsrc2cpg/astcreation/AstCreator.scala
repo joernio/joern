@@ -108,7 +108,7 @@ class AstCreator(
 
     val topLevelStmtAsts = {
       scope.pushNewScope(TypeScope(classFullName))
-      scope.pushNewScope(MethodScope(composeMethodScopeName(mainFullName)))
+      scope.pushNewScope(MethodScope(mainFullName))
       argsParameters.foreach(x => scope.addToScope(x.name, x))
 
       val asts = topLevelStmts.flatMap(astForNode)
