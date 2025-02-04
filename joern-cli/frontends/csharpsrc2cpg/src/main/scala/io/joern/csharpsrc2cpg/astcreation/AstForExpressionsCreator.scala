@@ -196,46 +196,16 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     callAst(callNode, argsAst) :: Nil
   }
 
-  private def translateBinaryOperatorName(operatorToken: String): Option[String] = {
-    Map(
-      "+"   -> Operators.addition,
-      "-"   -> Operators.subtraction,
-      "*"   -> Operators.multiplication,
-      "/"   -> Operators.division,
-      "%"   -> Operators.modulo,
-      "=="  -> Operators.equals,
-      "!="  -> Operators.notEquals,
-      "&&"  -> Operators.logicalAnd,
-      "||"  -> Operators.logicalOr,
-      "="   -> Operators.assignment,
-      "+="  -> Operators.assignmentPlus,
-      "-="  -> Operators.assignmentMinus,
-      "*="  -> Operators.assignmentMultiplication,
-      "/="  -> Operators.assignmentDivision,
-      "%="  -> Operators.assignmentModulo,
-      "&="  -> Operators.assignmentAnd,
-      "|="  -> Operators.assignmentOr,
-      "^="  -> Operators.assignmentXor,
-      ">>=" -> Operators.assignmentLogicalShiftRight,
-      "<<=" -> Operators.assignmentShiftLeft,
-      ">"   -> Operators.greaterThan,
-      "<"   -> Operators.lessThan,
-      ">="  -> Operators.greaterEqualsThan,
-      "<="  -> Operators.lessEqualsThan,
-      "|"   -> Operators.or,
-      "&"   -> Operators.and,
-      "^"   -> Operators.xor
-    ).get(operatorToken)
-  }
-
   private def astForBinaryExpression(binaryExpr: DotNetNodeInfo): Seq[Ast] = {
     val lhsNode       = createDotNetNodeInfo(binaryExpr.json(ParserKeys.Left))
     val rhsNode       = createDotNetNodeInfo(binaryExpr.json(ParserKeys.Right))
     val operatorToken = binaryExpr.json(ParserKeys.OperatorToken)(ParserKeys.Value).str
-    val operatorName = translateBinaryOperatorName(operatorToken).getOrElse {
-      logger.warn(s"Unhandled operator '$operatorToken' for ${code(binaryExpr)}")
-      CSharpOperators.unknown
-    }
+    val operatorName = binaryOperatorsMap.getOrElse(
+      operatorToken, {
+        logger.warn(s"Unhandled operator '$operatorToken' for ${code(binaryExpr)}")
+        CSharpOperators.unknown
+      }
+    )
     binaryExpr.node match {
       case _: AssignmentExpr => astForAssignmentExpression(binaryExpr, lhsNode, operatorName, rhsNode)
       case _                 => astForRegularBinaryExpression(binaryExpr, lhsNode, operatorName, rhsNode)
