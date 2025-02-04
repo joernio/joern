@@ -9,7 +9,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{NewFieldIdentifier, NewId
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, ModifierTypes, Operators}
 
 import scala.::
-import scala.util.Try
+import scala.util.{Try, Success, Failure}
 
 trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -362,11 +362,11 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     * Thus, this is lowered as a try-finally, with finally making a call to `Dispose` on the declared variable.
     */
   private def astForUsingStatement(usingStmt: DotNetNodeInfo): Seq[Ast] = {
-    val tryNode     = controlStructureNode(usingStmt, ControlStructureTypes.TRY, code(usingStmt))
+    val tryNode = controlStructureNode(usingStmt, ControlStructureTypes.TRY, code(usingStmt))
+    val declAst =
+      Try(createDotNetNodeInfo(usingStmt.json(ParserKeys.Declaration))).map(astForNode).getOrElse(scala.Seq.empty[Ast])
     val tryNodeInfo = createDotNetNodeInfo(usingStmt.json(ParserKeys.Statement))
     val tryAst      = astForBlock(tryNodeInfo, Option("try"))
-    val declNode    = createDotNetNodeInfo(usingStmt.json(ParserKeys.Declaration))
-    val declAst     = astForNode(declNode)
 
     val finallyAst = declAst.flatMap(_.nodes).collectFirst { case x: NewIdentifier => x.copy }.map { id =>
       val callCode = s"${id.name}.Dispose()"
