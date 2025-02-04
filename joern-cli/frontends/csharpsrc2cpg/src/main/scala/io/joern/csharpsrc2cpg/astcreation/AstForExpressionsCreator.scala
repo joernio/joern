@@ -287,71 +287,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     }
   }
 
-  private def astForInvocationExpression(invocationExpr: DotNetNodeInfo): Seq[Ast] = {
-    val expression   = createDotNetNodeInfo(invocationExpr.json(ParserKeys.Expression))
-    val callName     = nameFromNode(expression)
-    val argumentList = createDotNetNodeInfo(invocationExpr.json(ParserKeys.ArgumentList))
-
-    val (
-      receiver: Option[Ast],
-      baseTypeFullName: Option[String],
-      methodMetaData: Option[CSharpMethod],
-      arguments: Seq[Ast]
-    ) = expression.node match {
-      case SimpleMemberAccessExpression | SuppressNullableWarningExpression =>
-        val baseNode = createDotNetNodeInfo(
-          createDotNetNodeInfo(invocationExpr.json(ParserKeys.Expression)).json(ParserKeys.Expression)
-        )
-        val receiverAst = astForNode(baseNode).toList
-        val baseTypeFullName = receiverAst match {
-          case head :: _ => Option(getTypeFullNameFromAstNode(head)).filterNot(_ == Defines.Any)
-          case _         => None
-        }
-        val arguments      = astForArgumentList(argumentList, baseTypeFullName)
-        val argTypes       = arguments.map(getTypeFullNameFromAstNode).toList
-        val methodMetaData = scope.tryResolveMethodInvocation(callName, argTypes, baseTypeFullName)
-
-        // If the instance lookup has failed, we try to look for an extension method.
-        val instanceLookupResult = (receiverAst.headOption, baseTypeFullName, methodMetaData, arguments)
-        if (methodMetaData.isEmpty) {
-          scope.tryResolveExtensionMethodInvocation(baseTypeFullName, callName, argTypes) match {
-            case Some((methodMetaData, methodClassFullName)) =>
-              (receiverAst.headOption, Some(methodClassFullName), Some(methodMetaData), arguments)
-            case None => instanceLookupResult
-          }
-        } else {
-          instanceLookupResult
-        }
-      case IdentifierName | MemberBindingExpression =>
-        // This is when a call is made directly, which could also be made from a static import
-        val argTypes = astForArgumentList(argumentList).map(getTypeFullNameFromAstNode).toList
-        scope
-          .tryResolveMethodInvocation(callName, argTypes)
-          .orElse(scope.tryResolveMethodInvocation(callName, argTypes, scope.surroundingTypeDeclFullName)) match {
-          case Some(methodMetaData) if methodMetaData.isStatic =>
-            // If static, create implicit type identifier explicitly
-            val typeMetaData = scope.typeForMethod(methodMetaData)
-            val typeName     = typeMetaData.flatMap(_.name.split("[.]").lastOption).getOrElse(Defines.Any)
-            val typeFullName = typeMetaData.map(_.name)
-            val receiverNode = Ast(
-              identifierNode(invocationExpr, typeName, typeName, typeFullName.getOrElse(Defines.Any))
-            )
-            val arguments = astForArgumentList(argumentList, typeFullName)
-            (Option(receiverNode), typeFullName, Option(methodMetaData), arguments)
-          case Some(methodMetaData) =>
-            // If dynamic, create implicit `this` identifier explicitly
-            val typeMetaData = scope.typeForMethod(methodMetaData)
-            val typeFullName = typeMetaData.map(_.name)
-            val thisAst      = astForThisReceiver(invocationExpr, typeFullName)
-            val arguments    = astForArgumentList(argumentList, typeFullName)
-            (Option(thisAst), typeMetaData.map(_.name), Option(methodMetaData), arguments)
-          case None =>
-            (None, None, None, Seq.empty[Ast])
-        }
-      case x =>
-        logger.warn(s"Unhandled LHS $x for InvocationExpression")
-        (None, None, None, Seq.empty[Ast])
-    }
+  private def createInvocationAst(
+    invocationExpr: DotNetNodeInfo,
+    callName: String,
+    arguments: Seq[Ast],
+    baseAst: Option[Ast],
+    methodMetaData: Option[CSharpMethod],
+    baseTypeFullName: Option[String]
+  ): Ast = {
     val methodSignature = methodMetaData match {
       case Some(m) =>
         composeMethodLikeSignature(m.returnType, m.parameterTypes.filterNot(_._1 == Constants.This).map(_._2))
@@ -359,10 +302,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     }
 
     val methodFullName = baseTypeFullName match {
-      case Some(typeFullName) =>
-        composeMethodFullName(typeFullName, callName, methodSignature)
-      case _ =>
-        composeMethodFullName(Defines.UnresolvedNamespace, callName, methodSignature)
+      case Some(typeFullName) => composeMethodFullName(typeFullName, callName, methodSignature)
+      case _                  => composeMethodFullName(Defines.UnresolvedNamespace, callName, methodSignature)
     }
     val dispatchType = methodMetaData
       .map(_.isStatic)
@@ -383,9 +324,84 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         methodMetaData.map(_.returnType)
       ),
       arguments,
-      receiver
+      baseAst
     )
-    Seq(_callAst)
+
+    _callAst
+  }
+
+  /** Handles expressions like `foo.Bar()`. If `Bar` can't be found inside `foo`'s class, attempts to find a compatible
+    * extension method. If all fails, an AST is still produced.
+    */
+  private def astForMemberAccessInvocation(
+    invocationExpr: DotNetNodeInfo,
+    baseAst: Option[Ast],
+    argumentList: DotNetNodeInfo,
+    callName: String
+  ): Seq[Ast] = {
+
+    val baseTypeFullName = Some(getTypeFullNameFromAstNode(baseAst.toList)).filterNot(_ == Defines.Any)
+    val arguments        = astForArgumentList(argumentList, baseTypeFullName)
+    val argTypes         = arguments.map(getTypeFullNameFromAstNode).toList
+
+    val byMethod         = scope.tryResolveMethodInvocation(callName, argTypes, baseTypeFullName)
+    lazy val byExtMethod = scope.tryResolveExtensionMethodInvocation(baseTypeFullName, callName, argTypes)
+
+    val (method, baseType) = byMethod
+      .map(x => (Some(x), baseTypeFullName))
+      .orElse(byExtMethod.map(x => (Some(x._1), Some(x._2))))
+      .getOrElse((None, baseTypeFullName))
+
+    createInvocationAst(invocationExpr, callName, arguments, baseAst, method, baseType) :: Nil
+  }
+
+  private def astForIdentifierInvocation(
+    invocationExpr: DotNetNodeInfo,
+    argumentList: DotNetNodeInfo,
+    callName: String
+  ): Seq[Ast] = {
+    // This is when a call is made directly, which could also be made from a static import
+    val argTypes = astForArgumentList(argumentList).map(getTypeFullNameFromAstNode).toList
+    val (receiver, baseType, method, args) = scope
+      .tryResolveMethodInvocation(callName, argTypes)
+      .orElse(scope.tryResolveMethodInvocation(callName, argTypes, scope.surroundingTypeDeclFullName)) match {
+      case Some(methodMetaData) if methodMetaData.isStatic =>
+        // If static, create implicit type identifier explicitly
+        val typeMetaData = scope.typeForMethod(methodMetaData)
+        val typeName     = typeMetaData.flatMap(_.name.split("[.]").lastOption).getOrElse(Defines.Any)
+        val typeFullName = typeMetaData.map(_.name)
+        val receiverNode = Ast(identifierNode(invocationExpr, typeName, typeName, typeFullName.getOrElse(Defines.Any)))
+        val arguments    = astForArgumentList(argumentList, typeFullName)
+        (Option(receiverNode), typeFullName, Option(methodMetaData), arguments)
+      case Some(methodMetaData) =>
+        // If dynamic, create implicit `this` identifier explicitly
+        val typeMetaData = scope.typeForMethod(methodMetaData)
+        val typeFullName = typeMetaData.map(_.name)
+        val thisAst      = astForThisReceiver(invocationExpr, typeFullName)
+        val arguments    = astForArgumentList(argumentList, typeFullName)
+        (Option(thisAst), typeMetaData.map(_.name), Option(methodMetaData), arguments)
+      case None =>
+        (None, None, None, Seq.empty[Ast])
+    }
+
+    createInvocationAst(invocationExpr, callName, args, receiver, method, baseType) :: Nil
+  }
+
+  private def astForInvocationExpression(invocationExpr: DotNetNodeInfo): Seq[Ast] = {
+    val expression   = createDotNetNodeInfo(invocationExpr.json(ParserKeys.Expression))
+    val callName     = nameFromNode(expression)
+    val argumentList = createDotNetNodeInfo(invocationExpr.json(ParserKeys.ArgumentList))
+
+    expression.node match {
+      case SimpleMemberAccessExpression | SuppressNullableWarningExpression =>
+        val baseAst = astForNode(createDotNetNodeInfo(expression.json(ParserKeys.Expression)))
+        astForMemberAccessInvocation(invocationExpr, baseAst.headOption, argumentList, callName)
+      case IdentifierName | MemberBindingExpression =>
+        astForIdentifierInvocation(invocationExpr, argumentList, callName)
+      case x =>
+        logger.warn(s"Unhandled LHS $x for InvocationExpression")
+        Nil
+    }
   }
 
   /** Handles expressions like `foo.MyField`, where `MyField` is known to be a getter property. Getters are lowered into
