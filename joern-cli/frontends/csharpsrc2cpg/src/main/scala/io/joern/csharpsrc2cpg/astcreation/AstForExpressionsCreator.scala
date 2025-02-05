@@ -62,6 +62,22 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     baseType.flatMap(x => scope.tryResolveSetterInvocation(fieldName, Some(x)).map((_, x)))
   }
 
+  private def stripAssignmentFromOperator(operatorName: String): Option[String] = operatorName match {
+    case Operators.assignmentPlus                 => Some(Operators.plus)
+    case Operators.assignmentMinus                => Some(Operators.minus)
+    case Operators.assignmentMultiplication       => Some(Operators.multiplication)
+    case Operators.assignmentDivision             => Some(Operators.division)
+    case Operators.assignmentExponentiation       => Some(Operators.exponentiation)
+    case Operators.assignmentModulo               => Some(Operators.modulo)
+    case Operators.assignmentShiftLeft            => Some(Operators.shiftLeft)
+    case Operators.assignmentLogicalShiftRight    => Some(Operators.logicalShiftRight)
+    case Operators.assignmentArithmeticShiftRight => Some(Operators.arithmeticShiftRight)
+    case Operators.assignmentAnd                  => Some(Operators.and)
+    case Operators.assignmentOr                   => Some(Operators.or)
+    case Operators.assignmentXor                  => Some(Operators.xor)
+    case _                                        => None
+  }
+
   private def astForSetterAssignmentExpression(
     assignExpr: DotNetNodeInfo,
     setterInfo: (CSharpMethod, String),
@@ -70,32 +86,56 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     rhsNode: DotNetNodeInfo
   ): Seq[Ast] = {
     val (setterMethod, setterBaseType) = setterInfo
-    val returnType                     = DotNetTypeMap.getOrElse(setterMethod.returnType, setterMethod.returnType)
-    // FIXME: signature should not contain the receiver
-    val signature = composeMethodLikeSignature(returnType, setterMethod.parameterTypes.map(_._2))
-    val fullName  = composeMethodFullName(setterBaseType, setterMethod.name, signature)
-    val dispatch  = if setterMethod.isStatic then DispatchTypes.STATIC_DISPATCH else DispatchTypes.DYNAMIC_DISPATCH
-    val rhsAst = opName match {
-      case Operators.assignment => astForOperand(rhsNode)
-      case _                    =>
-        // TODO: should become `get_Property() <opName> rhsNode`. For now emit rhsNode.
-        logger.warn(s"Unsupported setter operation '$opName' in ${code(assignExpr)}")
-        astForOperand(rhsNode)
-    }
-
-    val setterCallNode = callNode(
-      node = assignExpr,
-      code = code(assignExpr),
-      name = setterMethod.name,
-      methodFullName = fullName,
-      dispatchType = dispatch
-    )
 
     lhs.node match {
       case SimpleMemberAccessExpression =>
-        val baseNode = astForNode(createDotNetNodeInfo(lhs.json(ParserKeys.Expression)))
-        val receiver = if setterMethod.isStatic then None else baseNode.headOption
-        callAst(setterCallNode, rhsAst, receiver) :: Nil
+        val baseNode     = astForNode(createDotNetNodeInfo(lhs.json(ParserKeys.Expression)))
+        val receiver     = if setterMethod.isStatic then None else baseNode.headOption
+        val propertyName = setterMethod.name.stripPrefix("set_")
+        val originalRhs  = astForOperand(rhsNode)
+
+        val rhsAst = opName match {
+          case Operators.assignment => originalRhs
+          case _ =>
+            scope.tryResolveGetterInvocation(propertyName, Some(setterBaseType)) match {
+              // Shouldn't happen, provided it is valid code. At any rate, log and emit the RHS verbatim.
+              case None =>
+                logger.warn(s"Couldn't find matching getter for $propertyName in ${code(assignExpr)}")
+                originalRhs
+              case Some(getterMethod) =>
+                stripAssignmentFromOperator(opName) match {
+                  case None =>
+                    logger.warn(s"Unrecognized assignment in ${code(assignExpr)}")
+                    originalRhs
+                  case Some(opName) =>
+                    val getterInvocation = createInvocationAst(
+                      assignExpr,
+                      getterMethod.name,
+                      Nil,
+                      receiver,
+                      Some(getterMethod),
+                      Some(setterBaseType)
+                    )
+                    val operatorCall = newOperatorCallNode(
+                      opName,
+                      code(assignExpr),
+                      Some(setterMethod.returnType),
+                      line(assignExpr),
+                      column(assignExpr)
+                    )
+                    callAst(operatorCall, getterInvocation +: originalRhs, None, None) :: Nil
+                }
+            }
+        }
+
+        createInvocationAst(
+          assignExpr,
+          setterMethod.name,
+          rhsAst,
+          receiver,
+          Some(setterMethod),
+          Some(setterBaseType)
+        ) :: Nil
       case _ =>
         logger.warn(s"Unsupported setter assignment: ${code(assignExpr)}")
         Nil
@@ -297,7 +337,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   ): Ast = {
     val methodSignature = methodMetaData match {
       case Some(m) =>
-        composeMethodLikeSignature(m.returnType, m.parameterTypes.filterNot(_._1 == Constants.This).map(_._2))
+        val returnType = DotNetTypeMap.getOrElse(m.returnType, m.returnType)
+        composeMethodLikeSignature(returnType, m.parameterTypes.filterNot(_._1 == Constants.This).map(_._2))
       case None => Defines.UnresolvedSignature
     }
 
