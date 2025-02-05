@@ -270,15 +270,23 @@ class AstGenRunner(config: Config) {
 
   private def filterFiles(files: List[String], out: File): List[String] = {
     files.filter { file =>
-      file.stripSuffix(".json").replace(out.pathAsString, config.inputPath) match {
-        // We are not interested in JS / TS type definition files at this stage.
-        // TODO: maybe we can enable that later on and use the type definitions there
-        //  for enhancing the CPG with additional type information for functions
-        case filePath if TypeDefinitionFileExtensions.exists(filePath.endsWith) => false
-        case filePath if isIgnoredByUserConfig(filePath)                        => false
-        case filePath if isIgnoredByDefault(filePath)                           => false
-        case filePath if isTranspiledFile(filePath)                             => false
-        case _                                                                  => true
+      Try {
+        file.stripSuffix(".json").replace(out.pathAsString, config.inputPath) match {
+          // We are not interested in JS / TS type definition files at this stage.
+          // TODO: maybe we can enable that later on and use the type definitions there
+          //  for enhancing the CPG with additional type information for functions
+          case filePath if TypeDefinitionFileExtensions.exists(filePath.endsWith) => false
+          case filePath if isIgnoredByUserConfig(filePath)                        => false
+          case filePath if isIgnoredByDefault(filePath)                           => false
+          case filePath if isTranspiledFile(filePath)                             => false
+          case _                                                                  => true
+        }
+      } match {
+        case Success(result)    => result
+        case Failure(exception) =>
+          // Log the exception for debugging purposes
+          logger.error("An error occurred while processing the file path during filtering file stage : ", exception)
+          false
       }
     }
   }
