@@ -79,6 +79,54 @@ class PropertyGetterTests extends CSharpCode2CpgFixture {
     }
   }
 
+  // FIXME: Fails because without System.IO in scope, System.Console.Out can't be found.
+  "`System.Console.Out.WriteLine` call without importing `System.IO`" ignore {
+    val cpg = code("""
+        |System.Console.Out.WriteLine("X");
+        |""".stripMargin)
+
+    "have correct properties for WriteLine" in {
+      inside(cpg.call.nameExact("WriteLine").l) {
+        case writeLine :: Nil =>
+          writeLine.code shouldBe "System.Console.Out.WriteLine(\"X\")"
+          writeLine.methodFullName shouldBe "System.IO.TextWriter.WriteLine:System.Void(System.String)"
+          writeLine.typeFullName shouldBe "System.Void"
+        case xs => fail(s"Expected single WriteLine call, but got $xs")
+      }
+    }
+
+    "have correct arguments for WriteLine" in {
+      inside(cpg.call.nameExact("WriteLine").argument.sortBy(_.argumentIndex).l) {
+        case (receiver: Call) :: (literal: Literal) :: Nil =>
+          receiver.argumentIndex shouldBe 0
+          receiver.code shouldBe "System.Console.Out"
+          receiver.name shouldBe "get_Out"
+          receiver.typeFullName shouldBe "System.IO.TextWriter"
+
+          literal.argumentIndex shouldBe 1
+          literal.code shouldBe "\"X\""
+          literal.typeFullName shouldBe "System.String"
+        case xs => fail(s"Expected two arguments for WriteLine, but got $xs")
+      }
+    }
+
+    "have correct properties for System.Console.Out" in {
+      inside(cpg.call.code("System.Console.Out").l) {
+        case out :: Nil =>
+          out.name shouldBe "get_Out"
+          out.typeFullName shouldBe "System.IO.TextWriter"
+          out.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+          out.methodFullName shouldBe "System.Console.get_Out:System.IO.TextWriter()"
+        case xs =>
+          fail(s"Expected single call for System.Console.Out, but got $xs")
+      }
+    }
+
+    "have correct arguments for System.Console.Out" in {
+      cpg.call.code("System.Console.out").argument shouldBe empty
+    }
+  }
+
   "`ConsoleKeyInfo.KeyChar` being assigned to a variable" should {
     val cpg = code("""
         |using System;
