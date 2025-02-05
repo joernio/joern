@@ -5,6 +5,7 @@ import io.shiftleft.semanticcpg.language.{NodeExtensionFinder, *}
 import io.shiftleft.semanticcpg.sarif.{SarifSchema, ScanResultToSarifConverter}
 
 import java.net.URI
+import scala.util.Try
 
 /** Convert finding node to a SARIF v2.1.0 model.
   */
@@ -59,12 +60,13 @@ class JoernScanResultToSarifConverter extends ScanResultToSarifConverter {
   }
 
   protected def nodeToUri(node: StoredNode): Option[URI] = {
-    node match {
-      case t: TypeDecl if !t.isExternal => Option(t.filename).filterNot(_ == "<empty>").map(URI(_))
-      case m: Method if !m.isExternal   => Option(m.filename).filterNot(_ == "<empty>").map(URI(_))
-      case expr: Expression             => expr.file.map(x => URI(x.name)).headOption
+    val fileNameOpt = node match {
+      case t: TypeDecl if !t.isExternal => Option(t.filename).filterNot(_ == "<empty>")
+      case m: Method if !m.isExternal   => Option(m.filename).filterNot(_ == "<empty>")
+      case expr: Expression             => expr.file.map(_.name).headOption
       case _                            => None
     }
+    fileNameOpt.flatMap(x => Try(URI(x)).toOption)
   }
 
   protected def nodeToRegion(node: StoredNode): Schema.Region = {
