@@ -207,6 +207,140 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
     }
   }
 
+  "setting a previously declared {get;set;} property via `Property = y`" should {
+    val cpg = code("""
+        |class MyData
+        |{
+        |  public int MyProperty { get; set; }
+        |  public void DoStuff()
+        |  {
+        |    MyProperty = 3; // rendered as MyData.set_MyProperty(this, 3)
+        |  }
+        |}
+        |""".stripMargin)
+
+    "be translated to that property's set_* method" in {
+      inside(cpg.call.nameExact("set_MyProperty").l) {
+        case setter :: Nil =>
+          setter.code shouldBe "MyProperty = 3"
+          setter.methodFullName shouldBe "MyData.set_MyProperty:System.Void(System.Int32)"
+          setter.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        case xs => fail(s"Expected single call to set_MyProperty, but got $xs")
+      }
+    }
+
+    "have correct arguments to the set_* method" in {
+      inside(cpg.call.nameExact("set_MyProperty").argument.sortBy(_.argumentIndex).l) {
+        case (thisId: Identifier) :: (three: Literal) :: Nil =>
+          thisId.typeFullName shouldBe "MyData"
+          thisId.code shouldBe "this"
+          thisId.argumentIndex shouldBe 0
+          three.code shouldBe "3"
+          three.typeFullName shouldBe "System.Int32"
+          three.argumentIndex shouldBe 1
+        case xs => fail(s"Unexpected arguments to set_MyProperty, got $xs")
+      }
+    }
+  }
+
+  "setting a previously declared {get;set;} property via `Property *= y" should {
+    val cpg = code("""
+        |class MyData
+        |{
+        |  public int MyProperty { get; set; }
+        |  public void DoStuff()
+        |  {
+        |    MyProperty *= 3; // rendered as set_MyProperty(get_MyProperty() * 3);
+        |  }
+        |}
+        |""".stripMargin)
+
+    "be translated to that property's set_* method" in {
+      inside(cpg.call.nameExact("set_MyProperty").l) {
+        case setter :: Nil =>
+          setter.code shouldBe "MyProperty *= 3"
+          setter.methodFullName shouldBe "MyData.set_MyProperty:System.Void(System.Int32)"
+          setter.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+        case xs => fail(s"Expected single call to set_MyProperty, but got $xs")
+      }
+    }
+
+    "have correct arguments to the set_* method" in {
+      inside(cpg.call.nameExact("set_MyProperty").argument.sortBy(_.argumentIndex).l) {
+        case (thisId: Identifier) :: (timesCall: Call) :: Nil =>
+          thisId.typeFullName shouldBe "MyData"
+          thisId.code shouldBe "this"
+          thisId.argumentIndex shouldBe 0
+
+          timesCall.argumentIndex shouldBe 1
+          timesCall.code shouldBe "MyProperty *= 3"
+          timesCall.methodFullName shouldBe Operators.multiplication
+          timesCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        case xs => fail(s"Unexpected arguments to set_MyProperty, got $xs")
+      }
+    }
+
+    "have correct arguments to the synthetic `*` call" in {
+      inside(cpg.call.nameExact("set_MyProperty").argument(1).isCall.argument.sortBy(_.argumentIndex).l) {
+        case (getter: Call) :: (three: Literal) :: Nil =>
+          getter.argumentIndex shouldBe 1
+          getter.code shouldBe "MyProperty *= 3"
+          getter.methodFullName shouldBe "MyData.get_MyProperty:System.Int32()"
+          getter.name shouldBe "get_MyProperty"
+          getter.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
+
+          three.argumentIndex shouldBe 2
+          three.code shouldBe "3"
+          three.typeFullName shouldBe "System.Int32"
+        case xs => fail(s"Expected two arguments for +, but got $xs")
+      }
+    }
+
+    "have correct arguments to the synthetic getter call" in {
+      inside(cpg.call.nameExact("get_MyProperty").argument.sortBy(_.argumentIndex).l) {
+        case (receiver: Identifier) :: Nil =>
+          receiver.argumentIndex shouldBe 0
+          receiver.typeFullName shouldBe "MyData"
+          receiver.code shouldBe "this"
+          receiver.name shouldBe "this"
+        case xs => fail(s"Expected single argument to get_MyProperty, but got $xs")
+      }
+    }
+  }
+
+  "setting a previously declared static {get;set;} property via `Property = y`" should {
+    val cpg = code("""
+        |class MyData
+        |{
+        |  public static int MyProperty { get; set; }
+        |  public void DoStuff()
+        |  {
+        |    MyProperty = 3; // rendered as MyData.set_MyProperty(3)
+        |  }
+        |}
+        |""".stripMargin)
+
+    "be translated to that property's set_* method" in {
+      inside(cpg.call.nameExact("set_MyProperty").l) {
+        case setter :: Nil =>
+          setter.code shouldBe "MyProperty = 3"
+          setter.methodFullName shouldBe "MyData.set_MyProperty:System.Void(System.Int32)"
+          setter.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        case xs => fail(s"Expected single call to set_MyProperty, but got $xs")
+      }
+    }
+
+    "have correct arguments to the set_* method" in {
+      inside(cpg.call.nameExact("set_MyProperty").argument.sortBy(_.argumentIndex).l) {
+        case (three: Literal) :: Nil =>
+          three.code shouldBe "3"
+          three.typeFullName shouldBe "System.Int32"
+          three.argumentIndex shouldBe 1
+        case xs => fail(s"Unexpected arguments to set_MyProperty, got $xs")
+      }
+    }
+  }
+
   "setting a previously declared static {set{}} property via `C.Property = y` where `C` is the class name" should {
     val cpg = code("""
         |class MyData
@@ -370,4 +504,5 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
       cpg.call.nameExact("get_MyProperty").argument shouldBe empty
     }
   }
+
 }
