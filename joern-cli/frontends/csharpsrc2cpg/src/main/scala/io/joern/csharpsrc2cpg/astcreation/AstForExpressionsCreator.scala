@@ -62,6 +62,22 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     baseType.flatMap(x => scope.tryResolveSetterInvocation(fieldName, Some(x)).map((_, x)))
   }
 
+  private def stripAssignmentFromOperator(operatorName: String): Option[String] = operatorName match {
+    case Operators.assignmentPlus                 => Some(Operators.plus)
+    case Operators.assignmentMinus                => Some(Operators.minus)
+    case Operators.assignmentMultiplication       => Some(Operators.multiplication)
+    case Operators.assignmentDivision             => Some(Operators.division)
+    case Operators.assignmentExponentiation       => Some(Operators.exponentiation)
+    case Operators.assignmentModulo               => Some(Operators.modulo)
+    case Operators.assignmentShiftLeft            => Some(Operators.shiftLeft)
+    case Operators.assignmentLogicalShiftRight    => Some(Operators.logicalShiftRight)
+    case Operators.assignmentArithmeticShiftRight => Some(Operators.arithmeticShiftRight)
+    case Operators.assignmentAnd                  => Some(Operators.and)
+    case Operators.assignmentOr                   => Some(Operators.or)
+    case Operators.assignmentXor                  => Some(Operators.xor)
+    case _                                        => None
+  }
+
   private def astForSetterAssignmentExpression(
     assignExpr: DotNetNodeInfo,
     setterInfo: (CSharpMethod, String),
@@ -71,18 +87,47 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   ): Seq[Ast] = {
     val (setterMethod, setterBaseType) = setterInfo
 
-    val rhsAst = opName match {
-      case Operators.assignment => astForOperand(rhsNode)
-      case _                    =>
-        // TODO: should become `get_Property() <opName> rhsNode`. For now emit rhsNode.
-        logger.warn(s"Unsupported setter operation '$opName' in ${code(assignExpr)}")
-        astForOperand(rhsNode)
-    }
-
     lhs.node match {
       case SimpleMemberAccessExpression =>
-        val baseNode = astForNode(createDotNetNodeInfo(lhs.json(ParserKeys.Expression)))
-        val receiver = if setterMethod.isStatic then None else baseNode.headOption
+        val baseNode     = astForNode(createDotNetNodeInfo(lhs.json(ParserKeys.Expression)))
+        val receiver     = if setterMethod.isStatic then None else baseNode.headOption
+        val propertyName = setterMethod.name.stripPrefix("set_")
+        val originalRhs  = astForOperand(rhsNode)
+
+        val rhsAst = opName match {
+          case Operators.assignment => originalRhs
+          case _ =>
+            scope.tryResolveGetterInvocation(propertyName, Some(setterBaseType)) match {
+              // Shouldn't happen, provided it is valid code. At any rate, log and emit the RHS verbatim.
+              case None =>
+                logger.warn(s"Couldn't find matching getter for $propertyName in ${code(assignExpr)}")
+                originalRhs
+              case Some(getterMethod) =>
+                stripAssignmentFromOperator(opName) match {
+                  case None =>
+                    logger.warn(s"Unrecognized assignment in ${code(assignExpr)}")
+                    originalRhs
+                  case Some(opName) =>
+                    val getterInvocation = createInvocationAst(
+                      assignExpr,
+                      getterMethod.name,
+                      Nil,
+                      receiver,
+                      Some(getterMethod),
+                      Some(setterBaseType)
+                    )
+                    val operatorCall = newOperatorCallNode(
+                      opName,
+                      code(assignExpr),
+                      Some(setterMethod.returnType),
+                      line(assignExpr),
+                      column(assignExpr)
+                    )
+                    callAst(operatorCall, getterInvocation +: originalRhs, None, None) :: Nil
+                }
+            }
+        }
+
         createInvocationAst(
           assignExpr,
           setterMethod.name,
