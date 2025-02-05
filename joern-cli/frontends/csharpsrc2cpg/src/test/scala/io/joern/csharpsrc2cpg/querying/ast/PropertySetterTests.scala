@@ -112,8 +112,7 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
       inside(cpg.call.nameExact("set_MyProperty").l) {
         case setter :: Nil =>
           setter.code shouldBe "m.MyProperty = 3"
-          // FIXME: signature
-          setter.methodFullName shouldBe "MyData.set_MyProperty:System.Void(MyData,System.Int32)"
+          setter.methodFullName shouldBe "MyData.set_MyProperty:System.Void(System.Int32)"
           setter.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
         case xs => fail(s"Expected single call to set_MyProperty, but got $xs")
       }
@@ -152,8 +151,7 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
       inside(cpg.call.nameExact("set_MyProperty").l) {
         case setter :: Nil =>
           setter.code shouldBe "m.MyProperty = 3"
-          // FIXME: signature
-          setter.methodFullName shouldBe "MyData.set_MyProperty:System.Void(MyData,System.Int32)"
+          setter.methodFullName shouldBe "MyData.set_MyProperty:System.Void(System.Int32)"
           setter.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
         case xs => fail(s"Expected single call to set_MyProperty, but got $xs")
       }
@@ -189,8 +187,7 @@ class PropertySetterTests extends CSharpCode2CpgFixture {
       inside(cpg.call.nameExact("set_MyProperty").l) {
         case setter :: Nil =>
           setter.code shouldBe "this.MyProperty = 3"
-          // FIXME: signature
-          setter.methodFullName shouldBe "MyData.set_MyProperty:System.Void(MyData,System.Int32)"
+          setter.methodFullName shouldBe "MyData.set_MyProperty:System.Void(System.Int32)"
           setter.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
         case xs => fail(s"Expected single call to set_MyProperty, but got $xs")
       }

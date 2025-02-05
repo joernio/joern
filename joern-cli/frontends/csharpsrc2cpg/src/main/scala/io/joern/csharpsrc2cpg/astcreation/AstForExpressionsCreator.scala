@@ -70,11 +70,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     rhsNode: DotNetNodeInfo
   ): Seq[Ast] = {
     val (setterMethod, setterBaseType) = setterInfo
-    val returnType                     = DotNetTypeMap.getOrElse(setterMethod.returnType, setterMethod.returnType)
-    // FIXME: signature should not contain the receiver
-    val signature = composeMethodLikeSignature(returnType, setterMethod.parameterTypes.map(_._2))
-    val fullName  = composeMethodFullName(setterBaseType, setterMethod.name, signature)
-    val dispatch  = if setterMethod.isStatic then DispatchTypes.STATIC_DISPATCH else DispatchTypes.DYNAMIC_DISPATCH
+
     val rhsAst = opName match {
       case Operators.assignment => astForOperand(rhsNode)
       case _                    =>
@@ -83,19 +79,18 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         astForOperand(rhsNode)
     }
 
-    val setterCallNode = callNode(
-      node = assignExpr,
-      code = code(assignExpr),
-      name = setterMethod.name,
-      methodFullName = fullName,
-      dispatchType = dispatch
-    )
-
     lhs.node match {
       case SimpleMemberAccessExpression =>
         val baseNode = astForNode(createDotNetNodeInfo(lhs.json(ParserKeys.Expression)))
         val receiver = if setterMethod.isStatic then None else baseNode.headOption
-        callAst(setterCallNode, rhsAst, receiver) :: Nil
+        createInvocationAst(
+          assignExpr,
+          setterMethod.name,
+          rhsAst,
+          receiver,
+          Some(setterMethod),
+          Some(setterBaseType)
+        ) :: Nil
       case _ =>
         logger.warn(s"Unsupported setter assignment: ${code(assignExpr)}")
         Nil
@@ -297,7 +292,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   ): Ast = {
     val methodSignature = methodMetaData match {
       case Some(m) =>
-        composeMethodLikeSignature(m.returnType, m.parameterTypes.filterNot(_._1 == Constants.This).map(_._2))
+        val returnType = DotNetTypeMap.getOrElse(m.returnType, m.returnType)
+        composeMethodLikeSignature(returnType, m.parameterTypes.filterNot(_._1 == Constants.This).map(_._2))
       case None => Defines.UnresolvedSignature
     }
 
