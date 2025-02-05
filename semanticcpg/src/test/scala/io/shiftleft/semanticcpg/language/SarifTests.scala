@@ -346,6 +346,7 @@ object SarifTests {
       .name("Foo")
       .lineNumber(2)
       .code("public foo()")
+      .filename("not compliant uri")
     val finding = NewFinding()
       .evidence(Iterator.single(method))
       .keyValuePairs(
