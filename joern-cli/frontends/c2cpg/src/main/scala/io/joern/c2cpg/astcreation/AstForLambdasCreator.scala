@@ -37,14 +37,14 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
   private def defineCapturedVariables(
     lambdaExpression: ICPPASTLambdaExpression,
     lambdaMethodName: String,
-    capturedVariables: Seq[ScopeVariable]
+    capturedVariables: Seq[(ScopeVariable, String)]
   ): Seq[(ClosureBindingEntry, NewLocal)] = {
     capturedVariables
-      .groupBy(_.name)
+      .groupBy(_._1.name)
       .map { case (name, variables) =>
-        val closureBindingId   = s"$lambdaMethodName:$name"
-        val closureBindingNode = newClosureBindingNode(closureBindingId, name, EvaluationStrategies.BY_SHARING)
-        val scopeVariable      = variables.head
+        val (scopeVariable, strategy) = variables.head
+        val closureBindingId          = s"$lambdaMethodName:$name"
+        val closureBindingNode        = newClosureBindingNode(closureBindingId, name, strategy)
         val capturedLocal = localNode(
           lambdaExpression,
           scopeVariable.name,
@@ -68,13 +68,28 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
     val bodyAst = astForMethodBody(Option(lambdaExpression.getBody))
 
     val capturedVariables = lambdaExpression.getCaptures.toList match {
-      case Nil => Seq.empty
+      case Nil =>
+        Seq.empty
+      case head :: Nil if head.getRawSignature == "&" =>
+        bodyAst.nodes.collect {
+          case i: NewIdentifier if outerScopeVariableNames.contains(i.name) =>
+            (outerScopeVariableNames(i.name), EvaluationStrategies.BY_REFERENCE)
+        }
+      case head :: Nil if head.getRawSignature == "=" =>
+        bodyAst.nodes.collect {
+          case i: NewIdentifier if outerScopeVariableNames.contains(i.name) =>
+            (outerScopeVariableNames(i.name), EvaluationStrategies.BY_VALUE)
+        }
       case other =>
         bodyAst.nodes.collect {
           case i: NewIdentifier
               if outerScopeVariableNames.contains(i.name) &&
+                other.exists(n => n.getIdentifier.getRawSignature == i.name && n.isByReference) =>
+            (outerScopeVariableNames(i.name), EvaluationStrategies.BY_REFERENCE)
+          case i: NewIdentifier
+              if outerScopeVariableNames.contains(i.name) &&
                 other.exists(n => n.getIdentifier.getRawSignature == i.name) =>
-            outerScopeVariableNames(i.name)
+            (outerScopeVariableNames(i.name), EvaluationStrategies.BY_VALUE)
         }
     }
 
