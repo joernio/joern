@@ -19,6 +19,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTLambdaExpression
+import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTLambdaExpression.CaptureDefault
 
 object AstForLambdasCreator {
 
@@ -67,28 +68,22 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
 
     val bodyAst = astForMethodBody(Option(lambdaExpression.getBody))
 
+    val captureDefault = lambdaExpression.getCaptureDefault
     val capturedVariables = lambdaExpression.getCaptures.toList match {
-      case Nil =>
+      case captures if captures.isEmpty || captureDefault == CaptureDefault.UNSPECIFIED =>
         Seq.empty
-      case head :: Nil if head.getRawSignature == "&" =>
-        bodyAst.nodes.collect {
-          case i: NewIdentifier if outerScopeVariableNames.contains(i.name) =>
-            (outerScopeVariableNames(i.name), EvaluationStrategies.BY_REFERENCE)
-        }
-      case head :: Nil if head.getRawSignature == "=" =>
-        bodyAst.nodes.collect {
-          case i: NewIdentifier if outerScopeVariableNames.contains(i.name) =>
-            (outerScopeVariableNames(i.name), EvaluationStrategies.BY_VALUE)
-        }
       case other =>
+        val validCaptures = other.filter(_.getIdentifier != null)
         bodyAst.nodes.collect {
           case i: NewIdentifier
               if outerScopeVariableNames.contains(i.name) &&
-                other.exists(n => n.getIdentifier.getRawSignature == i.name && n.isByReference) =>
+                validCaptures.exists(n =>
+                  n.getIdentifier.getRawSignature == i.name && (n.isByReference || captureDefault == CaptureDefault.BY_REFERENCE)
+                ) =>
             (outerScopeVariableNames(i.name), EvaluationStrategies.BY_REFERENCE)
           case i: NewIdentifier
               if outerScopeVariableNames.contains(i.name) &&
-                other.exists(n => n.getIdentifier.getRawSignature == i.name) =>
+                validCaptures.exists(n => n.getIdentifier.getRawSignature == i.name) =>
             (outerScopeVariableNames(i.name), EvaluationStrategies.BY_VALUE)
         }
     }
