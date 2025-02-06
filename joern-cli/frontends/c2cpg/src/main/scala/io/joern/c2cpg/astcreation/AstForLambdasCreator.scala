@@ -197,7 +197,8 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
       lambdaMethodNode.filename,
       lambdaMethodNode.fullName,
       astParentType,
-      astParentFullName
+      astParentFullName,
+      Seq(registerType(Defines.Function))
     )
     Ast.storeInDiffGraph(Ast(lambdaTypeDeclNode), diffGraph)
   }
