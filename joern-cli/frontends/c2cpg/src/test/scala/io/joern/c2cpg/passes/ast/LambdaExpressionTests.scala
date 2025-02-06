@@ -1,23 +1,217 @@
 package io.joern.c2cpg.passes.ast
 
+import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.testfixtures.AstC2CpgSuite
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
-class LambdaExpressionTests extends AstC2CpgSuite {
+class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
+
+  "a simple lambda expression as argument" should {
+    val cpg = code("""
+        |class Foo {
+        |  public:
+        |    string getFromSupplier(string input, std::function<string(string)>& mapper) {
+        |      return mapper.apply(input);
+        |    }
+        |
+        |    void foo(string input, string fallback) {
+        |      getFromSupplier(
+        |        input,
+        |        [fallback] (string lambdaInput) -> string { return lambdaInput.length() > 5 ? "Long" : fallback; }
+        |      );
+        |    }
+        |}
+        |""".stripMargin)
+
+    "create the correct typedecl node for the lambda" in {
+      cpg.typeDecl.name(".*lambda.*").name.l shouldBe List("<lambda>0")
+      cpg.typeDecl.name(".*lambda.*").fullName.l shouldBe List("Foo.<lambda>0:string(string)")
+    }
+
+    "create a method node for the lambda" in {
+      cpg.typeDecl.name("Foo").method.name(".*lambda.*").isLambda.l match {
+        case List(lambdaMethod) =>
+          // Lambda body creation tested separately
+          lambdaMethod.name shouldBe "<lambda>0"
+          lambdaMethod.fullName shouldBe "Foo.<lambda>0:string(string)"
+          lambdaMethod.parameter.l match {
+            case List(lambdaInput) =>
+              lambdaInput.name shouldBe "lambdaInput"
+              lambdaInput.typeFullName shouldBe "string"
+            case result => fail(s"Expected single lambda parameter but got $result")
+          }
+          lambdaMethod.methodReturn.typeFullName shouldBe "string"
+        case result => fail(s"Expected single lambda method but got $result")
+      }
+    }
+
+    "not create a binding for the lambda method" in {
+      cpg.all.collectAll[Binding].exists(_.name == "<lambda>0") shouldBe false
+    }
+
+    "create a method body for the lambda method" in {
+      cpg.typeDecl.name("Foo").method.name(".*lambda.*").block.astChildren.l match {
+        case List(fallBack: Local, returnNode: Return) =>
+          returnNode.code shouldBe "return lambdaInput.length() > 5 ? \"Long\" : fallback;"
+          returnNode.astChildren.l match {
+            case List(expr: Call) =>
+              expr.methodFullName shouldBe Operators.conditional
+            case result => fail(s"Expected return conditional, but got $result")
+          }
+          fallBack.name shouldBe "fallback"
+        case result => fail(s"Expected lambda body with single return but got $result")
+      }
+    }
+
+    "create locals for captured identifiers in the lambda method" in {
+      cpg.typeDecl.name("Foo").method.name(".*lambda.*").local.sortBy(_.name) match {
+        case Seq(fallbackLocal: Local) =>
+          fallbackLocal.name shouldBe "fallback"
+          fallbackLocal.code shouldBe "fallback"
+          fallbackLocal.typeFullName shouldBe "string"
+        case result => fail(s"Expected single local for fallback but got $result")
+      }
+    }
+
+    "create closure bindings for captured identifiers" in {
+      cpg.all.collectAll[ClosureBinding].sortBy(_.closureOriginalName) match {
+        case Seq(fallbackClosureBinding) =>
+          val fallbackLocal = cpg.method.name(".*lambda.*").local.name("fallback").head
+          fallbackClosureBinding.closureBindingId shouldBe fallbackLocal.closureBindingId
+
+          fallbackClosureBinding._refOut.l match {
+            case List(capturedParam: MethodParameterIn) =>
+              capturedParam.name shouldBe "fallback"
+              capturedParam.method.fullName shouldBe "Foo.foo:void(string,string)"
+            case result => fail(s"Expected single capturedParam but got $result")
+          }
+
+          fallbackClosureBinding._captureIn.l match {
+            case List(outMethod: MethodRef) =>
+              outMethod.methodFullName shouldBe "Foo.<lambda>0:string(string)"
+            case result => fail(s"Expected single METHOD_REF but got $result")
+          }
+        case result => fail(s"Expected 2 closure bindings for captured variables but got $result")
+      }
+    }
+
+    "create a typeDecl node inheriting from correct interface" in {
+      cpg.typeDecl.name(".*lambda.*").l match {
+        case List(lambdaDecl) =>
+          lambdaDecl.name shouldBe "<lambda>0"
+          lambdaDecl.fullName shouldBe "Foo.<lambda>0:string(string)"
+          lambdaDecl.inheritsFromTypeFullName should contain theSameElementsAs List("std.function")
+        case result => fail(s"Expected a single typeDecl for the lambda but got $result")
+      }
+    }
+  }
+
+  "lambdas capturing instance vars" should {
+    val cpg = code("""
+        |class Foo {
+        |  public:
+        |    string s;
+        |    void sink(string s) {}
+        |    auto test() {
+        |      return [=] (string input) { sink(input + s); };
+        |    }
+        |}
+        |""".stripMargin)
+
+    "create a 0th `this` parameter" in {
+      cpg.method.name(".*lambda.*").parameter.l match {
+        case List(thisParam, inputParam) =>
+          thisParam.name shouldBe "this"
+          thisParam.code shouldBe "this"
+          thisParam.typeFullName shouldBe "Foo"
+          thisParam.index shouldBe 0
+
+          inputParam.name shouldBe "input"
+          inputParam.typeFullName shouldBe "string"
+          inputParam.index shouldBe 1
+        case result => fail(s"Expected two params for lambda method but got $result")
+      }
+    }
+  }
+
+  "lambda capturing local variable by value" should {
+    val cpg = code("""
+        |class Foo {
+        |  public:
+        |    void foo(Object arg) {
+        |      string myValue = "abc";
+        |      std::list<string> userPayload = {};
+        |      auto userNamesList = userPayload.map([myValue] (string item) -> string {
+        |        sink2(myValue);
+        |        return item + myValue;
+        |      });
+        |      sink1(userNamesList);
+        |      return;
+        |    }
+        |}
+        |""".stripMargin)
+
+    "be captured precisely" in {
+      cpg.all.collectAll[ClosureBinding].l match {
+        case myValue :: Nil =>
+          myValue.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
+          myValue.closureOriginalName.head shouldBe "myValue"
+          myValue._localViaRefOut.get.name shouldBe "myValue"
+          myValue._captureIn.collectFirst { case x: MethodRef =>
+            x.methodFullName
+          }.head shouldBe "Foo.<lambda>0:string(string)"
+        case result =>
+          fail(s"Expected single closure binding to collect but got $result")
+      }
+    }
+
+  }
+
+  "lambda capturing local variable by reference" should {
+    val cpg = code("""
+        |class Foo {
+        |  public:
+        |    void foo(Object arg) {
+        |      string myValue = "abc";
+        |      std::list<string> userPayload = {};
+        |      auto userNamesList = userPayload.map([&] (string item) -> string {
+        |        sink2(myValue);
+        |        return item + myValue;
+        |      });
+        |      sink1(userNamesList);
+        |      return;
+        |    }
+        |}
+        |""".stripMargin)
+
+    "be captured precisely" in {
+      cpg.all.collectAll[ClosureBinding].l match {
+        case myValue :: Nil =>
+          myValue.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+          myValue.closureOriginalName.head shouldBe "myValue"
+          myValue._localViaRefOut.get.name shouldBe "myValue"
+          myValue._captureIn.collectFirst { case x: MethodRef =>
+            x.methodFullName
+          }.head shouldBe "Foo.<lambda>0:string(string)"
+        case result =>
+          fail(s"Expected single closure binding to collect but got $result")
+      }
+    }
+
+  }
 
   "be correct for simple lambda expressions" in {
-    val cpg = code(
-      """
+    val cpg = code("""
         |auto x = [] (int a, int b) -> int
         | { return a + b; };
         |auto y = [] (string a, string b) -> string
         | { return a + b; };
-        |""".stripMargin,
-      "test.cpp"
-    )
+        |""".stripMargin)
     val lambda1FullName = "<lambda>0:int(int,int)"
     val lambda2FullName = "<lambda>1:string(string,string)"
 
@@ -48,29 +242,11 @@ class LambdaExpressionTests extends AstC2CpgSuite {
       l2.signature shouldBe "string(string,string)"
       l2.body.code shouldBe "{ return a + b; }"
     }
-
-    inside(cpg.typeDecl(NamespaceTraversal.globalNamespaceName).head.bindsOut.l) {
-      case List(bX: Binding, bY: Binding) =>
-        bX.name shouldBe "<lambda>0"
-        bX.signature shouldBe "int(int,int)"
-        inside(bX.refOut.l) { case List(method: Method) =>
-          method.name shouldBe "<lambda>0"
-          method.fullName shouldBe lambda1FullName
-          method.signature shouldBe "int(int,int)"
-        }
-        bY.name shouldBe "<lambda>1"
-        bY.signature shouldBe "string(string,string)"
-        inside(bY.refOut.l) { case List(method: Method) =>
-          method.name shouldBe "<lambda>1"
-          method.fullName shouldBe lambda2FullName
-          method.signature shouldBe "string(string,string)"
-        }
-    }
+    cpg.typeDecl(NamespaceTraversal.globalNamespaceName).head.bindsOut.size shouldBe 0
   }
 
   "be correct for simple lambda expression in class" in {
-    val cpg = code(
-      """
+    val cpg = code("""
         |class Foo {
         | auto x = [] (int a, int b) -> int
         | {
@@ -78,9 +254,7 @@ class LambdaExpressionTests extends AstC2CpgSuite {
         | };
         |};
         |
-        |""".stripMargin,
-      "test.cpp"
-    )
+        |""".stripMargin)
     val lambdaName     = "<lambda>0"
     val signature      = "int(int,int)"
     val lambdaFullName = s"Foo.$lambdaName:$signature"
@@ -98,21 +272,10 @@ class LambdaExpressionTests extends AstC2CpgSuite {
       l1.code should startWith("[] (int a, int b) -> int")
       l1.signature shouldBe signature
     }
-
-    inside(cpg.typeDecl("Foo").head.bindsOut.l) { case List(binding: Binding) =>
-      binding.name shouldBe lambdaName
-      binding.signature shouldBe signature
-      inside(binding.refOut.l) { case List(method: Method) =>
-        method.name shouldBe lambdaName
-        method.fullName shouldBe lambdaFullName
-        method.signature shouldBe signature
-      }
-    }
   }
 
   "be correct for simple lambda expression in class under namespaces" in {
-    val cpg = code(
-      """
+    val cpg = code("""
         |namespace A { class B {
         |class Foo {
         | auto x = [] (int a, int b) -> int
@@ -121,9 +284,7 @@ class LambdaExpressionTests extends AstC2CpgSuite {
         | };
         |};
         |};}
-        |""".stripMargin,
-      "test.cpp"
-    )
+        |""".stripMargin)
     val lambdaName     = "<lambda>0"
     val signature      = "int(int,int)"
     val lambdaFullName = s"A.B.Foo.$lambdaName:$signature"
@@ -142,20 +303,10 @@ class LambdaExpressionTests extends AstC2CpgSuite {
       l1.signature shouldBe signature
     }
 
-    inside(cpg.typeDecl.fullNameExact("A.B.Foo").head.bindsOut.l) { case List(binding: Binding) =>
-      binding.name shouldBe lambdaName
-      binding.signature shouldBe signature
-      inside(binding.refOut.l) { case List(method: Method) =>
-        method.name shouldBe lambdaName
-        method.fullName shouldBe lambdaFullName
-        method.signature shouldBe signature
-      }
-    }
   }
 
   "be correct when calling a lambda" in {
-    val cpg = code(
-      """
+    val cpg = code("""
         |auto x = [](int n) -> int
         |{
         |  return 32 + n;
@@ -166,9 +317,7 @@ class LambdaExpressionTests extends AstC2CpgSuite {
         |{
         |  return 32 + n;
         |}(10);
-        |""".stripMargin,
-      "test.cpp"
-    )
+        |""".stripMargin)
     val signature       = "int(int)"
     val lambda1Name     = "<lambda>0"
     val lambda1FullName = s"$lambda1Name:$signature"
@@ -194,24 +343,6 @@ class LambdaExpressionTests extends AstC2CpgSuite {
       l1.signature shouldBe signature
     }
 
-    inside(cpg.typeDecl(NamespaceTraversal.globalNamespaceName).head.bindsOut.l) {
-      case List(b1: Binding, b2: Binding) =>
-        b1.name shouldBe lambda1Name
-        b1.signature shouldBe signature
-        inside(b1.refOut.l) { case List(method: Method) =>
-          method.name shouldBe lambda1Name
-          method.fullName shouldBe lambda1FullName
-          method.signature shouldBe signature
-        }
-        b2.name shouldBe lambda2Name
-        b2.signature shouldBe signature
-        inside(b2.refOut.l) { case List(method: Method) =>
-          method.name shouldBe lambda2Name
-          method.fullName shouldBe lambda2FullName
-          method.signature shouldBe signature
-        }
-    }
-
     inside(cpg.call.nameExact("<operator>()").l) { case List(lambda1call, lambda2call) =>
       lambda1call.name shouldBe "<operator>()"
       lambda1call.methodFullName shouldBe "<operator>():int(int)"
@@ -232,7 +363,7 @@ class LambdaExpressionTests extends AstC2CpgSuite {
       lambda2call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       inside(lambda2call.astChildren.l) { case List(ref: MethodRef, lit: Literal) =>
         ref.methodFullName shouldBe lambda2FullName
-        ref.code should startWith("[](int n) -> int")
+        ref.code shouldBe lambda2FullName
         lit.code shouldBe "10"
       }
 
@@ -241,7 +372,7 @@ class LambdaExpressionTests extends AstC2CpgSuite {
       }
       inside(lambda2call.receiver.l) { case List(ref: MethodRef) =>
         ref.methodFullName shouldBe lambda2FullName
-        ref.code should startWith("[](int n) -> int")
+        ref.code shouldBe lambda2FullName
       }
     }
   }

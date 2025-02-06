@@ -39,13 +39,14 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
   private def defineCapturedVariables(
     lambdaExpression: ICPPASTLambdaExpression,
     lambdaMethodName: String,
-    capturedVariables: Seq[(ScopeVariable, String)]
+    capturedVariables: Seq[(ScopeVariable, String)],
+    filename: String
   ): Seq[(ClosureBindingEntry, NewLocal)] = {
     capturedVariables
       .groupBy(_._1.name)
       .map { case (name, variables) =>
         val (scopeVariable, strategy) = variables.head
-        val closureBindingId          = s"$lambdaMethodName:$name"
+        val closureBindingId          = s"$filename:$lambdaMethodName:$name"
         val closureBindingNode        = newClosureBindingNode(closureBindingId, name, strategy)
         val capturedLocal = localNode(
           lambdaExpression,
@@ -63,7 +64,8 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
   private def astForLambdaBody(
     lambdaExpression: ICPPASTLambdaExpression,
     lambdaMethodName: String,
-    variablesInScope: Seq[ScopeVariable]
+    variablesInScope: Seq[ScopeVariable],
+    filename: String
   ): LambdaBody = {
     val outerScopeVariableNames = variablesInScope.map(x => x.name -> x).toMap
 
@@ -95,7 +97,8 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
         }
     }
 
-    val bindingsToLocals      = defineCapturedVariables(lambdaExpression, lambdaMethodName, capturedVariables.toSeq)
+    val bindingsToLocals =
+      defineCapturedVariables(lambdaExpression, lambdaMethodName, capturedVariables.toSeq, filename)
     val capturedLocals        = bindingsToLocals.map(_._2)
     val closureBindingEntries = bindingsToLocals.map(_._1)
 
@@ -131,7 +134,7 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
     setVariadic(parameterNodes, lambdaExpression)
     val parametersWithoutThis = parameterNodes.map(Ast(_))
 
-    val lambdaBody = astForLambdaBody(lambdaExpression, name, variablesInScope)
+    val lambdaBody = astForLambdaBody(lambdaExpression, name, variablesInScope, filename)
 
     val thisParam = lambdaBody.nodes
       .collect { case identifier: NewIdentifier => identifier }
@@ -157,15 +160,11 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
     val parameters = thisParam ++ parametersWithoutThis
 
     val lambdaParameterNamesToNodes =
-      parameters
-        .flatMap(_.root)
-        .collect { case param: NewMethodParameterIn => param }
-        .map { param => param.name -> param }
-        .toMap
+      parameters.flatMap(_.root).collect { case param: NewMethodParameterIn => param.name -> param }.toMap
 
-    val identifiersMatchingParams = lambdaBody.nodes
-      .collect { case identifier: NewIdentifier => identifier }
-      .filter { identifier => lambdaParameterNamesToNodes.contains(identifier.name) }
+    val identifiersMatchingParams = lambdaBody.nodes.collect {
+      case identifier: NewIdentifier if lambdaParameterNamesToNodes.contains(identifier.name) => identifier
+    }
 
     val returnNode      = methodReturnNode(lambdaExpression, registerType(returnType))
     val virtualModifier = Some(newModifierNode(ModifierTypes.VIRTUAL))

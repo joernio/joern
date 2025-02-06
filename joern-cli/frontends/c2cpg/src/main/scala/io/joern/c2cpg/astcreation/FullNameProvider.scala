@@ -11,6 +11,7 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPFunction
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPVariable
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 import io.joern.x2cpg.Defines as X2CpgDefines
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.c.CVariable
 
@@ -110,6 +111,11 @@ trait FullNameProvider { this: AstCreator =>
     StringUtils.normalizeSpace(name)
   }
 
+  private def fullNameForICPPASTLambdaExpression(): String = {
+    val (_, parentTypeDeclFullName) = methodDeclarationParentInfo()
+    parentTypeDeclFullName
+  }
+
   protected def fullName(node: IASTNode): String = {
     fullNameFromBinding(node) match {
       case Some(fullName) =>
@@ -127,6 +133,7 @@ trait FullNameProvider { this: AstCreator =>
           case d: IASTIdExpression                               => ASTStringUtil.getSimpleName(d.getName)
           case u: IASTUnaryExpression                            => code(u.getOperand)
           case x: ICPPASTQualifiedName                           => fixQualifiedName(ASTStringUtil.getQualifiedName(x))
+          case _: ICPPASTLambdaExpression                        => fullNameForICPPASTLambdaExpression()
           case other if other != null && other.getParent != null => fullName(other.getParent)
           case other if other != null                            => notHandledYet(other); ""
           case null                                              => ""
@@ -148,7 +155,9 @@ trait FullNameProvider { this: AstCreator =>
     fullName match {
       case f if methodLike.isInstanceOf[ICPPASTLambdaExpression] && (f.contains("[") || f.contains("{")) =>
         s"${X2CpgDefines.UnresolvedNamespace}.$name:$signature"
-      case f if methodLike.isInstanceOf[ICPPASTLambdaExpression] && f.isEmpty =>
+      case f
+          if methodLike.isInstanceOf[ICPPASTLambdaExpression] &&
+            (f.isEmpty || f.endsWith(NamespaceTraversal.globalNamespaceName)) =>
         s"$name:$signature"
       case f if methodLike.isInstanceOf[ICPPASTLambdaExpression] =>
         s"$f.$name:$signature"

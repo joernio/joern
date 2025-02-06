@@ -137,8 +137,8 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
         "<lambda>2:ANY()",
         "<lambda>3:ANY()",
         "<lambda>4:ANY()",
-        "addOne:int(int)",
-        "addOne:int(int).<lambda>5:ANY()"
+        "<lambda>5:ANY()",
+        "addOne:int(int)"
       )
     }
 
