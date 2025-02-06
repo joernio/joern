@@ -40,7 +40,7 @@ class AstCreator(
 
   protected val logger: Logger = LoggerFactory.getLogger(classOf[AstCreator])
 
-  protected val scope: Scope[String, (NewNode, String), NewNode] = new Scope()
+  protected val scope: C2CpgScope = new C2CpgScope()
 
   protected val usingDeclarationMappings: mutable.Map[String, String] = mutable.HashMap.empty
 

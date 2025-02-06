@@ -30,7 +30,7 @@ import scala.util.Try
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  private def methodDeclarationParentInfo(): (String, String) = {
+  protected def methodDeclarationParentInfo(): (String, String) = {
     methodAstParentStack.collectFirst { case t: NewTypeDecl => (t.label, t.fullName) }.getOrElse {
       (methodAstParentStack.head.label, methodAstParentStack.head.properties("FULL_NAME").toString)
     }
