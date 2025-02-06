@@ -15,12 +15,11 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
     val methodNode_ = methodNode(lambdaExpression, name, codeString, fullName, Some(signature), filename)
 
     scope.pushNewScope(methodNode_)
+
     val parameterNodes = withIndex(parameters(lambdaExpression.getDeclarator)) { (p, i) =>
       parameterNode(p, i)
     }
     setVariadic(parameterNodes, lambdaExpression)
-
-    scope.popScope()
 
     val astForLambda = methodAst(
       methodNode_,
@@ -29,6 +28,9 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
       methodReturnNode(lambdaExpression, registerType(returnType)),
       newModifierNode(ModifierTypes.LAMBDA) :: Nil
     )
+
+    scope.popScope()
+
     val typeDeclAst = createFunctionTypeAndTypeDecl(lambdaExpression, methodNode_, name, fullName, signature)
     Ast.storeInDiffGraph(astForLambda.merge(typeDeclAst), diffGraph)
 
