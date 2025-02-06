@@ -14,10 +14,11 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethodParameterIn
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethodRef
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
-import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
+import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
+import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTCapture
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTLambdaExpression
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTLambdaExpression.CaptureDefault
 
@@ -70,21 +71,27 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
 
     val captureDefault = lambdaExpression.getCaptureDefault
     val capturedVariables = lambdaExpression.getCaptures.toList match {
-      case captures if captures.isEmpty || captureDefault == CaptureDefault.UNSPECIFIED =>
+      case captures if captures.isEmpty && captureDefault == CaptureDefault.UNSPECIFIED =>
         Seq.empty
+      case captures if captures.isEmpty =>
+        val strategy =
+          if captureDefault == CaptureDefault.BY_REFERENCE then EvaluationStrategies.BY_REFERENCE
+          else EvaluationStrategies.BY_VALUE
+        bodyAst.nodes.collect {
+          case i: NewIdentifier if outerScopeVariableNames.contains(i.name) =>
+            (outerScopeVariableNames(i.name), strategy)
+        }
       case other =>
         val validCaptures = other.filter(_.getIdentifier != null)
         bodyAst.nodes.collect {
-          case i: NewIdentifier
-              if outerScopeVariableNames.contains(i.name) &&
-                validCaptures.exists(n =>
-                  n.getIdentifier.getRawSignature == i.name && (n.isByReference || captureDefault == CaptureDefault.BY_REFERENCE)
-                ) =>
-            (outerScopeVariableNames(i.name), EvaluationStrategies.BY_REFERENCE)
-          case i: NewIdentifier
-              if outerScopeVariableNames.contains(i.name) &&
-                validCaptures.exists(n => n.getIdentifier.getRawSignature == i.name) =>
-            (outerScopeVariableNames(i.name), EvaluationStrategies.BY_VALUE)
+          case i: NewIdentifier if outerScopeVariableNames.contains(i.name) =>
+            val maybeInCaptures = validCaptures.find(c => c.getIdentifier.getRawSignature == i.name)
+            val strategy = maybeInCaptures match {
+              case Some(c) if c.isByReference                            => EvaluationStrategies.BY_REFERENCE
+              case None if captureDefault == CaptureDefault.BY_REFERENCE => EvaluationStrategies.BY_REFERENCE
+              case _                                                     => EvaluationStrategies.BY_VALUE
+            }
+            (outerScopeVariableNames(i.name), strategy)
         }
     }
 
@@ -131,12 +138,17 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
       .find { identifier => identifier.name == "this" || identifier.name == "super" }
       .map { _ =>
         val typeFullName = methodAstParentStack.collectFirst { case t: NewTypeDecl => t.fullName }
+        val thisStrategy =
+          if lambdaExpression.getCaptures.exists(c => c.capturesThisPointer() && c.isByReference) then
+            EvaluationStrategies.BY_REFERENCE
+          else EvaluationStrategies.BY_VALUE
         Ast(
           NodeBuilders.newThisParameterNode(
             typeFullName = typeFullName.getOrElse(Defines.Any),
             dynamicTypeHintFullName = typeFullName.toSeq,
             line = line(lambdaExpression),
-            column = column(lambdaExpression)
+            column = column(lambdaExpression),
+            evaluationStrategy = thisStrategy
           )
         )
       }
