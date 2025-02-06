@@ -54,6 +54,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case SimpleMemberAccessExpression =>
         val base = createDotNetNodeInfo(expr.json(ParserKeys.Expression))
         Some(nodeTypeFullName(base))
+      case IdentifierName =>
+        scope.surroundingTypeDeclFullName
       case _ =>
         None
     }
@@ -78,89 +80,167 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case _                                        => None
   }
 
+  /** Mainly to abstract the lowering of +=, *=, etc. assignments when the LHS is a property. Takes care of building the
+    * RHS appropriately, e.g. by expanding `P += RHS` into `set_P(get_P() + RHS)`, etc.
+    * @param expr
+    *   the full assignment expression, for `code`, `line`, etc.
+    * @param assignOp
+    *   the assignment operator, cf. [[Operators]]
+    * @param setterInfo
+    *   the setter meta-data, cf. [[tryResolveSetterInvocation]]
+    */
+  private def lowerSetterAssignmentRhs(
+    expr: DotNetNodeInfo,
+    assignOp: String,
+    setterInfo: (CSharpMethod, String),
+    receiver: Option[Ast],
+    rhs: DotNetNodeInfo
+  ): Seq[Ast] = {
+    val (setterMethod, setterBaseType) = setterInfo
+    val propertyName                   = setterMethod.name.stripPrefix("set_")
+    val originalRhs                    = astForOperand(rhs)
+
+    assignOp match {
+      case Operators.assignment => originalRhs
+      case _ =>
+        scope.tryResolveGetterInvocation(propertyName, Some(setterBaseType)) match {
+          // Shouldn't happen, provided it is valid code. At any rate, log and emit the RHS verbatim.
+          case None =>
+            logger.warn(s"Couldn't find matching getter for $propertyName in ${code(expr)}")
+            originalRhs
+          case Some(getterMethod) =>
+            stripAssignmentFromOperator(assignOp) match {
+              case None =>
+                logger.warn(s"Unrecognized assignment in ${code(expr)}")
+                originalRhs
+              case Some(opName) =>
+                val getterInvocation =
+                  createInvocationAst(expr, getterMethod.name, Nil, receiver, Some(getterMethod), Some(setterBaseType))
+                val operatorCall =
+                  newOperatorCallNode(opName, code(expr), Some(setterMethod.returnType), line(expr), column(expr))
+                callAst(operatorCall, getterInvocation +: originalRhs, None, None) :: Nil
+            }
+        }
+    }
+  }
+
+  /** Lowers assignments such as `x.P = RHS` and `x.P += RHS` with `P` denoting a setter property into calls
+    * `x.set_P(RHS)` and `x.set_P(x.get_P() + RHS)`.
+    * @param assignExpr
+    *   the full assignment expression, for `code`, `line` properties
+    * @param assignOp
+    *   the final assignment operator name, cf. [[Operators]]
+    * @param setterInfo
+    *   the setter meta-data, cf. [[tryResolveSetterInvocation]]
+    */
+  private def astForMemberAccessSetterAssignment(
+    assignExpr: DotNetNodeInfo,
+    lhs: DotNetNodeInfo,
+    assignOp: String,
+    rhs: DotNetNodeInfo,
+    setterInfo: (CSharpMethod, String)
+  ): Seq[Ast] = {
+    val (setterMethod, setterBaseType) = setterInfo
+    val receiver = if (setterMethod.isStatic) {
+      None
+    } else {
+      val baseNode = createDotNetNodeInfo(lhs.json(ParserKeys.Expression))
+      astForNode(baseNode).headOption
+    }
+    val rhsAst = lowerSetterAssignmentRhs(assignExpr, assignOp, setterInfo, receiver, rhs)
+
+    createInvocationAst(
+      assignExpr,
+      setterMethod.name,
+      rhsAst,
+      receiver,
+      Some(setterMethod),
+      Some(setterBaseType)
+    ) :: Nil
+  }
+
+  /** Lowers assignments such as `P = RHS` and `P += RHS` with `P` an identifier denoting a setter property into calls
+    * `set_P(RHS)` and `set_P(get_P() + RHS)`, respectively.
+    * @param assignExpr
+    *   the full assignment expression, for `code`, `line` properties.
+    * @param assignOp
+    *   the final assignment operator name, cf. [[Operators]]
+    * @param setterInfo
+    *   the setter meta-data, cf. [[tryResolveSetterInvocation]]
+    */
+  private def astForIdentifierSetterAssignment(
+    assignExpr: DotNetNodeInfo,
+    lhs: DotNetNodeInfo,
+    assignOp: String,
+    rhs: DotNetNodeInfo,
+    setterInfo: (CSharpMethod, String)
+  ): Seq[Ast] = {
+    val (setterMethod, setterBaseType) = setterInfo
+    val receiver = Option.when(!setterMethod.isStatic)(astForThisReceiver(lhs, scope.surroundingTypeDeclFullName))
+    val rhsAst   = lowerSetterAssignmentRhs(assignExpr, assignOp, setterInfo, receiver, rhs)
+
+    createInvocationAst(
+      assignExpr,
+      setterMethod.name,
+      rhsAst,
+      receiver,
+      Some(setterMethod),
+      Some(setterBaseType)
+    ) :: Nil
+  }
+
+  /** Lowers assignments such as `x.P = RHS` and `P += RHS` where `P` denotes a setter property into a call
+    * `x.set_P(RHS)` and `set_P(get_P() + RHS)`, respectively.
+    *
+    * @param assignExpr
+    *   the full assignment expr, for `code`, `line` properties
+    * @param setterInfo
+    *   the setter meta-data, cf. [[tryResolveSetterInvocation]]
+    * @param assignOp
+    *   the final assignment operator name, cf. [[Operators]]
+    */
   private def astForSetterAssignmentExpression(
     assignExpr: DotNetNodeInfo,
     setterInfo: (CSharpMethod, String),
     lhs: DotNetNodeInfo,
-    opName: String,
-    rhsNode: DotNetNodeInfo
+    assignOp: String,
+    rhs: DotNetNodeInfo
   ): Seq[Ast] = {
-    val (setterMethod, setterBaseType) = setterInfo
-
     lhs.node match {
       case SimpleMemberAccessExpression =>
-        val baseNode     = astForNode(createDotNetNodeInfo(lhs.json(ParserKeys.Expression)))
-        val receiver     = if setterMethod.isStatic then None else baseNode.headOption
-        val propertyName = setterMethod.name.stripPrefix("set_")
-        val originalRhs  = astForOperand(rhsNode)
-
-        val rhsAst = opName match {
-          case Operators.assignment => originalRhs
-          case _ =>
-            scope.tryResolveGetterInvocation(propertyName, Some(setterBaseType)) match {
-              // Shouldn't happen, provided it is valid code. At any rate, log and emit the RHS verbatim.
-              case None =>
-                logger.warn(s"Couldn't find matching getter for $propertyName in ${code(assignExpr)}")
-                originalRhs
-              case Some(getterMethod) =>
-                stripAssignmentFromOperator(opName) match {
-                  case None =>
-                    logger.warn(s"Unrecognized assignment in ${code(assignExpr)}")
-                    originalRhs
-                  case Some(opName) =>
-                    val getterInvocation = createInvocationAst(
-                      assignExpr,
-                      getterMethod.name,
-                      Nil,
-                      receiver,
-                      Some(getterMethod),
-                      Some(setterBaseType)
-                    )
-                    val operatorCall = newOperatorCallNode(
-                      opName,
-                      code(assignExpr),
-                      Some(setterMethod.returnType),
-                      line(assignExpr),
-                      column(assignExpr)
-                    )
-                    callAst(operatorCall, getterInvocation +: originalRhs, None, None) :: Nil
-                }
-            }
-        }
-
-        createInvocationAst(
-          assignExpr,
-          setterMethod.name,
-          rhsAst,
-          receiver,
-          Some(setterMethod),
-          Some(setterBaseType)
-        ) :: Nil
+        astForMemberAccessSetterAssignment(assignExpr, lhs, assignOp, rhs, setterInfo)
+      case IdentifierName => astForIdentifierSetterAssignment(assignExpr, lhs, assignOp, rhs, setterInfo)
       case _ =>
         logger.warn(s"Unsupported setter assignment: ${code(assignExpr)}")
         Nil
     }
   }
 
+  /** Lowers arbitrary assignment `LHS = RHS`, `LHS += RHS`, etc. expressions.
+    * @param assignExpr
+    *   the full assignment, for `code`, `line` properties
+    * @param assignOp
+    *   the final assignment operator name, cf. [[Operators]]
+    */
   private def astForAssignmentExpression(
     assignExpr: DotNetNodeInfo,
-    lhsNode: DotNetNodeInfo,
-    opName: String,
-    rhsNode: DotNetNodeInfo
+    lhs: DotNetNodeInfo,
+    assignOp: String,
+    rhs: DotNetNodeInfo
   ): Seq[Ast] = {
-    tryResolveSetterInvocation(lhsNode) match {
-      case Some(setterInfo) => astForSetterAssignmentExpression(assignExpr, setterInfo, lhsNode, opName, rhsNode)
-      case None             => astForRegularAssignmentExpression(assignExpr, lhsNode, opName, rhsNode)
+    tryResolveSetterInvocation(lhs) match {
+      case Some(setterInfo) => astForSetterAssignmentExpression(assignExpr, setterInfo, lhs, assignOp, rhs)
+      case None             => astForRegularAssignmentExpression(assignExpr, lhs, assignOp, rhs)
     }
   }
 
   private def astForRegularAssignmentExpression(
     assignExpr: DotNetNodeInfo,
     lhs: DotNetNodeInfo,
-    opName: String,
+    assignOp: String,
     rhs: DotNetNodeInfo
   ): Seq[Ast] = {
-    astForRegularBinaryExpression(assignExpr, lhs, opName, rhs)
+    astForRegularBinaryExpression(assignExpr, lhs, assignOp, rhs)
   }
 
   private def astForParenthesizedExpression(parenExpr: DotNetNodeInfo): Seq[Ast] = {
@@ -252,13 +332,18 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     }
   }
 
+  /** @param binaryExpr
+    *   the full binary expression, for `code`, `line`, etc.
+    * @param operatorName
+    *   the final operator name, cf. [[Operators]]
+    */
   private def astForRegularBinaryExpression(
     binaryExpr: DotNetNodeInfo,
-    lhsNode: DotNetNodeInfo,
+    lhs: DotNetNodeInfo,
     operatorName: String,
-    rhsNode: DotNetNodeInfo
+    rhs: DotNetNodeInfo
   ): Seq[Ast] = {
-    val args         = astForOperand(lhsNode) ++: astForOperand(rhsNode)
+    val args         = astForOperand(lhs) ++: astForOperand(rhs)
     val typeFullName = fixedTypeOperators.get(operatorName).orElse(Some(getTypeFullNameFromAstNode(args)))
     val callNode     = operatorCallNode(binaryExpr, operatorName, typeFullName)
     callAst(callNode, args) :: Nil
