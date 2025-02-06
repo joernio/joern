@@ -174,7 +174,7 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
 
         // Don't need to add the local to the block scope since the only identifiers referencing it are created here
         // (so a lookup for the local will never be done)
-        scope.enclosingMethod.foreach(_.addTemporaryLocal(tmpLocal))
+        scope.enclosingMethod.foreach(_.putPatternLocals(tmpLocal, None))
 
         val initAst =
           callAst(tmpAssignmentNode, Ast(tmpIdentifier) :: patternInitAst :: Nil).withRefEdge(tmpIdentifier, tmpLocal)
@@ -204,10 +204,11 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
     }
   }
 
-  private def createAndPushAssignmentForTypePattern(patternNode: PatternInitTreeNode): Unit = {
+  private def createAssignmentForTypePattern(patternNode: PatternInitTreeNode): Option[Ast] = {
     patternNode.patternExpr match {
       case recordPatternExpr: RecordPatternExpr =>
         logger.warn(s"Attempting to create assignment for record pattern expr ${code(recordPatternExpr)}")
+        None
 
       case typePatternExpr: TypePatternExpr =>
         val variableName = typePatternExpr.getNameAsString
@@ -231,6 +232,7 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
           variableType,
           genericSignature = Option(genericSignature)
         )
+        scope.enclosingMethod.get.putPatternLocals(patternLocal, Option(typePatternExpr))
         val patternIdentifier = identifierNode(typePatternExpr, variableName, variableName, variableType)
 
         val initializerAst = castAstIfNecessary(typePatternExpr, variableType, patternNode.getAst)
@@ -246,11 +248,21 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
           callAst(initializerAssignmentCall, Ast(patternIdentifier) :: initializerAst :: Nil)
             .withRefEdge(patternIdentifier, patternLocal)
 
-        scope.enclosingMethod.foreach { methodScope =>
-          methodScope.putPatternVariableInfo(typePatternExpr, patternLocal, initializerAssignmentAst)
-        }
-
+        Option(initializerAssignmentAst)
     }
+  }
+
+  private def createAssignmentBlockAst(patternExpr: PatternExpr, typePatterns: List[PatternInitTreeNode]): Ast = {
+    val assignmentAsts = typePatterns.flatMap(createAssignmentForTypePattern)
+    val trueAst        = Ast(literalNode(patternExpr, "true", TypeConstants.Boolean))
+
+    val blockChildren = assignmentAsts :+ trueAst
+
+    val blockCode = s"{ ${blockChildren.map(_.rootCodeOrEmpty).mkString("; ")}; }"
+
+    val block = blockNode(patternExpr, blockCode, TypeConstants.Boolean)
+
+    blockAst(block, blockChildren)
   }
 
   private[astcreation] def instanceOfAstForPattern(patternExpr: PatternExpr, lhsAst: Ast): Ast = {
@@ -261,8 +273,17 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
     }
     val typeCheckAst = typeCheckAstForPattern(patternExpr, patternTreeNode, typePatternBuffer).get
 
-    typePatternBuffer.foreach(createAndPushAssignmentForTypePattern)
-    typeCheckAst
+    val assignmentBlockAst = createAssignmentBlockAst(patternExpr, typePatternBuffer.toList)
+
+    val andNode = newOperatorCallNode(
+      Operators.logicalAnd,
+      s"(${typeCheckAst.rootCodeOrEmpty}) && ${assignmentBlockAst.rootCodeOrEmpty}",
+      Option(TypeConstants.Boolean),
+      line(patternExpr),
+      column(patternExpr)
+    )
+
+    callAst(andNode, typeCheckAst :: assignmentBlockAst :: Nil)
   }
 
   private def typeCheckAstForPattern(

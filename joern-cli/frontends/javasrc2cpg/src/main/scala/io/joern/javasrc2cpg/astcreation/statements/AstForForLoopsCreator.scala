@@ -46,7 +46,8 @@ trait AstForForLoopsCreator { this: AstCreator =>
   }
 
   def astsForFor(stmt: ForStmt): List[Ast] = {
-    val forContext = new ForStatementContext(stmt, new CombinedTypeSolver())
+    val forContext       = new ForStatementContext(stmt, new CombinedTypeSolver())
+    val patternPartition = partitionPatternAstsByScope(stmt)
 
     val forNode =
       NewControlStructure()
@@ -70,16 +71,16 @@ trait AstForForLoopsCreator { this: AstCreator =>
         scope.addLocalsForPatternsToEnclosingBlock(
           forContext.typePatternExprsExposedToChild(expressions.head).asScala.toList
         )
-        val updateAsts = expressions.flatMap(astsForExpression(_, ExpectedType.empty))
+        val asts = expressions.flatMap(astsForExpression(_, ExpectedType.empty))
         scope.popBlockScope()
-        updateAsts
+        asts
     }
 
-    val patternPartition = partitionPatternAstsByScope(forContext)
+    val patternLocals = scope.enclosingMethod.get.getAndClearUnaddedPatternLocals().map(Ast(_))
 
     scope.pushBlockScope()
     scope.addLocalsForPatternsToEnclosingBlock(patternPartition.patternsIntroducedToBody)
-    val bodyAst = wrapInBlockWithPrefix(patternPartition.astsAddedToBody, stmt.getBody)
+    val bodyAst = wrapInBlockWithPrefix(Nil, stmt.getBody)
     scope.popBlockScope()
 
     scope.addLocalsForPatternsToEnclosingBlock(patternPartition.patternsIntroducedByStatement)
@@ -96,7 +97,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
       case _ => ast
     }
 
-    patternPartition.astsAddedBeforeStatement ++ (astWithConditionEdge :: patternPartition.astsAddedAfterStatement)
+    patternLocals :+ astWithConditionEdge
   }
 
   def astForForEach(stmt: ForEachStmt): Seq[Ast] = {

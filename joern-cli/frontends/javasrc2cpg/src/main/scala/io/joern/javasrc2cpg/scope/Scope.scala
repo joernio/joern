@@ -303,10 +303,7 @@ class Scope(implicit val withSchemaValidation: ValidationMode, val disableTypeFa
   }
 
   def addLocalsForPatternsToEnclosingBlock(patterns: List[TypePatternExpr]): Unit = {
-    patterns.flatMap(enclosingMethod.get.getPatternVariableInfo(_)).foreach {
-      case PatternVariableInfo(typePatternExpr, variableLocal, _, _, _, _) =>
-        enclosingBlock.get.addPatternLocal(variableLocal, typePatternExpr)
-    }
+    patterns.flatMap(enclosingMethod.get.getLocalForPattern(_)).foreach(enclosingBlock.get.addLocal(_))
   }
 
 }
@@ -371,12 +368,6 @@ object Scope {
     val name: String         = node.name
   }
   final case class ScopeMember(override val node: NewMember, isStatic: Boolean) extends ScopeVariable {
-    val typeFullName: String     = node.typeFullName
-    val name: String             = node.name
-    val genericSignature: String = node.genericSignature
-  }
-  final case class ScopePatternVariable(override val node: NewLocal, typePatternExpr: TypePatternExpr)
-      extends ScopeVariable {
     val typeFullName: String     = node.typeFullName
     val name: String             = node.name
     val genericSignature: String = node.genericSignature
