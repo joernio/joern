@@ -31,6 +31,7 @@ class AstCreator(
     with AstForPrimitivesCreator
     with AstForStatementsCreator
     with AstForExpressionsCreator
+    with AstForLambdasCreator
     with AstNodeBuilder
     with AstCreatorHelper
     with FullNameProvider

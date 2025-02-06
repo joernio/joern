@@ -131,14 +131,14 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |}
           |""".stripMargin)
       cpg.method.nameNot("<global>").fullName.sorted shouldBe List(
-        "<lambda>0",
-        // TODO: fix scoping of nested lambdas
-        "<lambda>1",
-        "<lambda>2",
-        "<lambda>3",
-        "<lambda>4",
+        // TODO: fix return types of nested lambdas
+        "<lambda>0:ANY(int)",
+        "<lambda>1:ANY(int,int)",
+        "<lambda>2:ANY()",
+        "<lambda>3:ANY()",
+        "<lambda>4:ANY()",
         "addOne:int(int)",
-        "addOne:int(int).<lambda>5"
+        "addOne:int(int).<lambda>5:ANY()"
       )
     }
 

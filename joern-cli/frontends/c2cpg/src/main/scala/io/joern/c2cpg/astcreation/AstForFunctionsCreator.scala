@@ -36,7 +36,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     }
   }
 
-  private def createFunctionTypeAndTypeDecl(
+  protected def createFunctionTypeAndTypeDecl(
     node: IASTNode,
     method: NewMethod,
     methodName: String,
@@ -82,14 +82,14 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
   @tailrec
   final protected def isVariadic(functionNode: IASTNode): Boolean = functionNode match {
-    case decl: CPPASTFunctionDeclarator            => decl.takesVarArgs()
-    case decl: CASTFunctionDeclarator              => decl.takesVarArgs()
-    case defn: IASTFunctionDefinition              => isVariadic(defn.getDeclarator)
-    case lambdaExpression: ICPPASTLambdaExpression => isVariadic(lambdaExpression.getDeclarator)
-    case _                                         => false
+    case decl: CPPASTFunctionDeclarator             => decl.takesVarArgs()
+    case decl: CASTFunctionDeclarator               => decl.takesVarArgs()
+    case functionDefinition: IASTFunctionDefinition => isVariadic(functionDefinition.getDeclarator)
+    case lambdaExpression: ICPPASTLambdaExpression  => isVariadic(lambdaExpression.getDeclarator)
+    case _                                          => false
   }
 
-  private def setVariadic(parameterNodes: Seq[NewMethodParameterIn], func: IASTNode): Unit = {
+  protected def setVariadic(parameterNodes: Seq[NewMethodParameterIn], func: IASTNode): Unit = {
     parameterNodes.lastOption.foreach {
       case p: NewMethodParameterIn if isVariadic(func) =>
         p.isVariadic = true
@@ -107,37 +107,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     }
   }
 
-  protected def astForMethodRefForLambda(lambdaExpression: ICPPASTLambdaExpression): Ast = {
-    val filename                                                  = fileName(lambdaExpression)
-    val MethodFullNameInfo(name, fullName, signature, returnType) = this.methodFullNameInfo(lambdaExpression)
-    val codeString                                                = code(lambdaExpression)
-    val methodNode_ = methodNode(lambdaExpression, name, codeString, fullName, Some(signature), filename)
-
-    scope.pushNewScope(methodNode_)
-    val parameterNodes = withIndex(parameters(lambdaExpression.getDeclarator)) { (p, i) =>
-      parameterNode(p, i)
-    }
-    setVariadic(parameterNodes, lambdaExpression)
-
-    scope.popScope()
-
-    val astForLambda = methodAst(
-      methodNode_,
-      parameterNodes.map(Ast(_)),
-      astForMethodBody(Option(lambdaExpression.getBody)),
-      methodReturnNode(lambdaExpression, registerType(returnType)),
-      newModifierNode(ModifierTypes.LAMBDA) :: Nil
-    )
-    val typeDeclAst = createFunctionTypeAndTypeDecl(lambdaExpression, methodNode_, name, fullName, signature)
-    Ast.storeInDiffGraph(astForLambda.merge(typeDeclAst), diffGraph)
-
-    Ast(methodRefNode(lambdaExpression, codeString, fullName, registerType(fullName)))
-  }
-
   protected def astForFunctionDeclarator(funcDecl: IASTFunctionDeclarator): Ast = {
     safeGetBinding(funcDecl.getName) match {
       case Some(_: IFunction) =>
-        val MethodFullNameInfo(name, fullName, signature, returnType) = this.methodFullNameInfo(funcDecl)
+        val MethodFullNameInfo(name, fullName, signature, returnType) = methodFullNameInfo(funcDecl)
         val codeString                                                = code(funcDecl.getParent)
         val filename                                                  = fileName(funcDecl)
 
@@ -253,7 +226,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
   protected def astForFunctionDefinition(funcDef: IASTFunctionDefinition): Ast = {
     val filename                                                  = fileName(funcDef)
-    val MethodFullNameInfo(name, fullName, signature, returnType) = this.methodFullNameInfo(funcDef)
+    val MethodFullNameInfo(name, fullName, signature, returnType) = methodFullNameInfo(funcDef)
     registerMethodDefinition(fullName)
 
     val codeString  = code(funcDef)
@@ -330,7 +303,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     )
   }
 
-  private def parameterNode(parameter: IASTNode, paramIndex: Int): NewMethodParameterIn = {
+  protected def parameterNode(parameter: IASTNode, paramIndex: Int): NewMethodParameterIn = {
     val parameterInfo = parameterNodeInfo(parameter, paramIndex)
     val parameterNode =
       parameterInNode(
@@ -346,7 +319,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     parameterNode
   }
 
-  private def astForMethodBody(body: Option[IASTStatement]): Ast = body match {
+  protected def astForMethodBody(body: Option[IASTStatement]): Ast = body match {
     case Some(b: IASTCompoundStatement) => astForBlockStatement(b)
     case Some(b)                        => astForNode(b)
     case None                           => blockAst(NewBlock().typeFullName(Defines.Any))

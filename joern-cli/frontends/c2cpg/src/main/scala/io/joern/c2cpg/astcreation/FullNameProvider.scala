@@ -147,11 +147,11 @@ trait FullNameProvider { this: AstCreator =>
   ): String = {
     fullName match {
       case f if methodLike.isInstanceOf[ICPPASTLambdaExpression] && (f.contains("[") || f.contains("{")) =>
-        s"${X2CpgDefines.UnresolvedNamespace}.$name"
+        s"${X2CpgDefines.UnresolvedNamespace}.$name:$signature"
       case f if methodLike.isInstanceOf[ICPPASTLambdaExpression] && f.isEmpty =>
-        name
+        s"$name:$signature"
       case f if methodLike.isInstanceOf[ICPPASTLambdaExpression] =>
-        s"$f.$name"
+        s"$f.$name:$signature"
       case f if isCPPFunction(methodLike) && (f.isEmpty || f == s"${X2CpgDefines.UnresolvedNamespace}.") =>
         s"${X2CpgDefines.UnresolvedNamespace}.$name:$signature"
       case f if isCPPFunction(methodLike) && f.contains("?") =>
