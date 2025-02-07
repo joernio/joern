@@ -96,7 +96,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
               outMethod.methodFullName shouldBe "Foo.<lambda>0:string(string)"
             case result => fail(s"Expected single METHOD_REF but got $result")
           }
-        case result => fail(s"Expected 2 closure bindings for captured variables but got $result")
+        case result => fail(s"Expected 1 closure binding for captured variables but got $result")
       }
     }
 

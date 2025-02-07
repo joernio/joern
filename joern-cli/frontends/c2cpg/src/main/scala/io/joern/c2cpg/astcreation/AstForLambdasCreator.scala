@@ -132,11 +132,11 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
       parameterNode(p, i)
     }
     setVariadic(parameterNodes, lambdaExpression)
-    val parametersWithoutThis = parameterNodes.map(Ast(_))
+    val parameterAstsWithoutThis = parameterNodes.map(Ast(_))
 
     val lambdaBody = astForLambdaBody(lambdaExpression, name, variablesInScope, filename)
 
-    val thisParam = lambdaBody.nodes
+    val thisParamAst = lambdaBody.nodes
       .collect { case identifier: NewIdentifier => identifier }
       .find { identifier => identifier.name == "this" || identifier.name == "super" }
       .map { _ =>
@@ -157,10 +157,10 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
       }
       .toList
 
-    val parameters = thisParam ++ parametersWithoutThis
+    val parameterAsts = thisParamAst ++ parameterAstsWithoutThis
 
     val lambdaParameterNamesToNodes =
-      parameters.flatMap(_.root).collect { case param: NewMethodParameterIn => param.name -> param }.toMap
+      parameterAsts.flatMap(_.root).collect { case param: NewMethodParameterIn => param.name -> param }.toMap
 
     val identifiersMatchingParams = lambdaBody.nodes.collect {
       case identifier: NewIdentifier if lambdaParameterNamesToNodes.contains(identifier.name) => identifier
@@ -168,14 +168,14 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
 
     val returnNode      = methodReturnNode(lambdaExpression, registerType(returnType))
     val virtualModifier = Some(newModifierNode(ModifierTypes.VIRTUAL))
-    val staticModifier  = Option.when(thisParam.isEmpty)(newModifierNode(ModifierTypes.STATIC))
+    val staticModifier  = Option.when(thisParamAst.isEmpty)(newModifierNode(ModifierTypes.STATIC))
     val privateModifier = Some(newModifierNode(ModifierTypes.PRIVATE))
     val lambdaModifier  = Some(newModifierNode(ModifierTypes.LAMBDA))
     val modifiers       = List(virtualModifier, staticModifier, privateModifier, lambdaModifier).flatten.map(Ast(_))
 
     val lambdaMethodAstWithoutRefs =
       Ast(lambdaMethodNode)
-        .withChildren(parameters)
+        .withChildren(parameterAsts)
         .withChild(lambdaBody.body)
         .withChild(Ast(returnNode))
         .withChildren(modifiers)
