@@ -30,7 +30,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
 
     "create the correct typedecl node for the lambda" in {
       cpg.typeDecl.name(".*lambda.*").name.l shouldBe List("<lambda>0")
-      cpg.typeDecl.name(".*lambda.*").fullName.l shouldBe List("Foo.<lambda>0:string(string)")
+      cpg.typeDecl.name(".*lambda.*").fullName.l shouldBe List("Foo.foo.<lambda>0:string(string)")
     }
 
     "create a method node for the lambda" in {
@@ -38,7 +38,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
         case List(lambdaMethod) =>
           // Lambda body creation tested separately
           lambdaMethod.name shouldBe "<lambda>0"
-          lambdaMethod.fullName shouldBe "Foo.<lambda>0:string(string)"
+          lambdaMethod.fullName shouldBe "Foo.foo.<lambda>0:string(string)"
           lambdaMethod.parameter.l match {
             case List(lambdaInput) =>
               lambdaInput.name shouldBe "lambdaInput"
@@ -93,7 +93,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
 
           fallbackClosureBinding._captureIn.l match {
             case List(outMethod: MethodRef) =>
-              outMethod.methodFullName shouldBe "Foo.<lambda>0:string(string)"
+              outMethod.methodFullName shouldBe "Foo.foo.<lambda>0:string(string)"
             case result => fail(s"Expected single METHOD_REF but got $result")
           }
         case result => fail(s"Expected 1 closure binding for captured variables but got $result")
@@ -104,7 +104,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
       cpg.typeDecl.name(".*lambda.*").l match {
         case List(lambdaDecl) =>
           lambdaDecl.name shouldBe "<lambda>0"
-          lambdaDecl.fullName shouldBe "Foo.<lambda>0:string(string)"
+          lambdaDecl.fullName shouldBe "Foo.foo.<lambda>0:string(string)"
           lambdaDecl.inheritsFromTypeFullName should contain theSameElementsAs List("std.function")
         case result => fail(s"Expected a single typeDecl for the lambda but got $result")
       }
@@ -184,7 +184,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
           myValue._localViaRefOut.get.name shouldBe "myValue"
           myValue._captureIn.collectFirst { case x: MethodRef =>
             x.methodFullName
-          }.head shouldBe "Foo.<lambda>0:string(string)"
+          }.head shouldBe "Foo.foo.<lambda>0:string(string)"
         case result =>
           fail(s"Expected single closure binding to collect but got $result")
       }
@@ -217,7 +217,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
           myValue._localViaRefOut.get.name shouldBe "myValue"
           myValue._captureIn.collectFirst { case x: MethodRef =>
             x.methodFullName
-          }.head shouldBe "Foo.<lambda>0:string(string)"
+          }.head shouldBe "Foo.foo.<lambda>0:string(string)"
         case result =>
           fail(s"Expected single closure binding to collect but got $result")
       }
