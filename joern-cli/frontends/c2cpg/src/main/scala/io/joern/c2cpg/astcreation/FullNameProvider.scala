@@ -11,6 +11,7 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPFunction
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPVariable
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 import io.joern.x2cpg.Defines as X2CpgDefines
+import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.c.CVariable
@@ -112,8 +113,9 @@ trait FullNameProvider { this: AstCreator =>
   }
 
   private def fullNameForICPPASTLambdaExpression(): String = {
-    val (_, parentTypeDeclFullName) = methodDeclarationParentInfo()
-    parentTypeDeclFullName
+    methodAstParentStack
+      .collectFirst { case t: NewTypeDecl if t.name != NamespaceTraversal.globalNamespaceName => t.fullName }
+      .mkString(".")
   }
 
   protected def fullName(node: IASTNode): String = {
@@ -155,9 +157,7 @@ trait FullNameProvider { this: AstCreator =>
     fullName match {
       case f if methodLike.isInstanceOf[ICPPASTLambdaExpression] && (f.contains("[") || f.contains("{")) =>
         s"${X2CpgDefines.UnresolvedNamespace}.$name:$signature"
-      case f
-          if methodLike.isInstanceOf[ICPPASTLambdaExpression] &&
-            (f.isEmpty || f.endsWith(NamespaceTraversal.globalNamespaceName)) =>
+      case f if methodLike.isInstanceOf[ICPPASTLambdaExpression] && f.isEmpty =>
         s"$name:$signature"
       case f if methodLike.isInstanceOf[ICPPASTLambdaExpression] =>
         s"$f.$name:$signature"
