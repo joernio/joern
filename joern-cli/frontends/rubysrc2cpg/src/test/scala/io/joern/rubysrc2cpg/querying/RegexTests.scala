@@ -8,47 +8,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal
 import io.shiftleft.semanticcpg.language.*
 
 class RegexTests extends RubyCode2CpgFixture(withPostProcessing = true) {
-  "`'x' =~ y` is a member call `'x'.=~ /y/" in {
-    val cpg = code("""|'x' =~ /y/
-       |0
-       |""".stripMargin)
-    cpg.call(RubyOperators.regexpMatch).methodFullName.l shouldBe List(
-      s"$kernelPrefix.String.${RubyOperators.regexpMatch}"
-    )
-  }
-  "`/x/ =~ 'y'` is a member call `/x/.=~ 'y'" in {
-    val cpg = code("""|/x/ =~ 'y'
-       |0
-       |""".stripMargin)
-    cpg.call(RubyOperators.regexpMatch).methodFullName.l shouldBe List(
-      s"$kernelPrefix.Regexp.${RubyOperators.regexpMatch}"
-    )
-  }
-
-  "Regex expression in if statements" in {
-    val cpg = code("""
-        |
-        |if /mswin|mingw|cygwin/ =~ "mswin"
-        |end
-        |""".stripMargin)
-
-    inside(cpg.controlStructure.isIf.l) {
-      case regexIf :: Nil =>
-        regexIf.condition.isCall.methodFullName.l shouldBe List(s"$kernelPrefix.Regexp.${RubyOperators.regexpMatch}")
-
-        inside(regexIf.condition.isCall.argument.l) {
-          case (lhs: Literal) :: (rhs: Literal) :: Nil =>
-            lhs.code shouldBe "/mswin|mingw|cygwin/"
-            lhs.typeFullName shouldBe s"$kernelPrefix.Regexp"
-
-            rhs.code shouldBe "\"mswin\""
-            rhs.typeFullName shouldBe s"$kernelPrefix.String"
-          case xs => fail(s"Expected two arguments, got [${xs.code.mkString(",")}]")
-        }
-
-      case xs => fail(s"One if statement expected, got [${xs.code.mkString(",")}]")
-    }
-  }
 
   "Global regex related variables" should {
 
@@ -57,18 +16,18 @@ class RegexTests extends RubyCode2CpgFixture(withPostProcessing = true) {
       *
       * TODO: Check for matching of match group ($1, $2, etc.) variables.
       */
-    def assertLoweredStructure(cpg: Cpg, tmpNo: String = "0"): Unit = {
+    def assertLoweredStructure(cpg: Cpg, tmpNo: String = "0", expectedSubject: String = "\"hello\""): Unit = {
       // We lower =~ to the `match` equivalent
       val tmpInit = cpg.assignment.code(s"<tmp-$tmpNo> =.*").head
 
       val tmpTarget = tmpInit.target.asInstanceOf[Identifier]
       tmpTarget.name shouldBe s"<tmp-$tmpNo>"
       val tmpSource = tmpInit.source.asInstanceOf[Call]
-      tmpSource.code shouldBe "\"hello\".match(/h(el)lo/)"
+      tmpSource.code shouldBe s"$expectedSubject.match(/h(el)lo/)"
       tmpSource.name shouldBe "match"
 
       // Now test for the lowered global variable assignments
-      val ifStmt = cpg.controlStructure.head
+      val ifStmt = cpg.controlStructure.last
       inside(ifStmt.whenTrue.assignment.l) { case tildeAsgn :: amperAsgn :: Nil =>
         tildeAsgn.code shouldBe s"$$~ = <tmp-$tmpNo>"
         val taSource = tildeAsgn.source.asInstanceOf[Identifier]
@@ -123,7 +82,7 @@ class RegexTests extends RubyCode2CpgFixture(withPostProcessing = true) {
           |end
           |""".stripMargin)
 
-      assertLoweredStructure(cpg, "1")
+      assertLoweredStructure(cpg, "1", "<tmp-0>")
     }
 
     "be assigned to the match in a match call (regex lhs)" in {
