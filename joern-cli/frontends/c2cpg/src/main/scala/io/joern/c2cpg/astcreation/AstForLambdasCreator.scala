@@ -139,16 +139,15 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
     val thisParamAst = lambdaBody.nodes
       .collect { case identifier: NewIdentifier => identifier }
       .find { identifier => identifier.name == "this" || identifier.name == "super" }
-      .map { _ =>
-        val typeFullName = methodAstParentStack.collectFirst { case t: NewTypeDecl => t.fullName }
+      .map { ident =>
         val thisStrategy =
           if lambdaExpression.getCaptures.exists(c => c.capturesThisPointer() && c.isByReference) then
             EvaluationStrategies.BY_REFERENCE
           else EvaluationStrategies.BY_VALUE
         Ast(
           NodeBuilders.newThisParameterNode(
-            typeFullName = typeFullName.getOrElse(Defines.Any),
-            dynamicTypeHintFullName = typeFullName.toSeq,
+            typeFullName = ident.typeFullName,
+            dynamicTypeHintFullName = ident.dynamicTypeHintFullName,
             line = line(lambdaExpression),
             column = column(lambdaExpression),
             evaluationStrategy = thisStrategy

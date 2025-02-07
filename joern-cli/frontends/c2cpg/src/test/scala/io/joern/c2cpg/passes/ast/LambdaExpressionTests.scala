@@ -128,13 +128,33 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
         case List(thisParam, inputParam) =>
           thisParam.name shouldBe "this"
           thisParam.code shouldBe "this"
-          thisParam.typeFullName shouldBe "Foo"
+          thisParam.typeFullName shouldBe "Foo*"
           thisParam.index shouldBe 0
 
           inputParam.name shouldBe "input"
           inputParam.typeFullName shouldBe "string"
           inputParam.index shouldBe 1
         case result => fail(s"Expected two params for lambda method but got $result")
+      }
+    }
+  }
+
+  "lambdas capturing this in global method" should {
+    val cpg = code("""
+        |class Foo {}
+        |void Foo::foo() {
+        |  bar(l, [this] { return this->firstDirty == nullptr; });
+        |}
+        |""".stripMargin)
+
+    "create a 0th `this` parameter" in {
+      cpg.method.name(".*lambda.*").parameter.l match {
+        case List(thisParam) =>
+          thisParam.name shouldBe "this"
+          thisParam.code shouldBe "this"
+          thisParam.typeFullName shouldBe "Foo*"
+          thisParam.index shouldBe 0
+        case result => fail(s"Expected one param this for lambda method but got $result")
       }
     }
   }
