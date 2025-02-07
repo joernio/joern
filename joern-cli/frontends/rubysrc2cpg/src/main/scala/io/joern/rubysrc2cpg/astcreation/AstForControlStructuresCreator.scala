@@ -36,7 +36,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
 }
 import io.joern.rubysrc2cpg.datastructures.BlockScope
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
+import io.joern.rubysrc2cpg.passes.Defines.{RubyOperators, getBuiltInType}
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewFieldIdentifier, NewLiteral, NewLocal}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
@@ -262,8 +262,11 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
             // `case when *x then c end`
             // which is translated to `x.include? y` and `x.any?` conditions respectively
 
-            val conditions = whenClause.matchExpressions.map { mExpr =>
-              expr.map(e => BinaryExpression(mExpr, "===", e)(mExpr.span)).getOrElse(mExpr)
+            val conditions = whenClause.matchExpressions.map {
+              case regex: StaticLiteral if regex.typeFullName == getBuiltInType(Defines.Regexp) =>
+                expr.map(e => BinaryExpression(regex, RubyOperators.regexpMatch, e)(regex.span)).getOrElse(regex)
+              case mExpr =>
+                expr.map(e => BinaryExpression(mExpr, "===", e)(mExpr.span)).getOrElse(mExpr)
             } ++ whenClause.matchSplatExpression.iterator.flatMap {
               case splat @ SplattingRubyNode(exprList) =>
                 expr

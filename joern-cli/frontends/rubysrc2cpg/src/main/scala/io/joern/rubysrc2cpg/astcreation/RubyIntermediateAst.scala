@@ -1,5 +1,6 @@
 package io.joern.rubysrc2cpg.astcreation
 
+import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.rubysrc2cpg.passes.{Defines, GlobalTypes}
 import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
@@ -296,8 +297,8 @@ object RubyIntermediateAst {
   final case class IfExpression(
     condition: RubyExpression,
     thenClause: RubyExpression,
-    elsifClauses: List[RubyExpression],
-    elseClause: Option[RubyExpression]
+    elsifClauses: List[RubyExpression] = Nil,
+    elseClause: Option[RubyExpression] = None
   )(span: TextSpan)
       extends RubyExpression(span)
       with ControlFlowStatement
@@ -547,6 +548,9 @@ object RubyIntermediateAst {
     span: TextSpan
   ) extends RubyExpression(span)
       with RubyCall {
+
+    def isRegexMatch: Boolean = methodName == RubyOperators.regexpMatch
+
     override def withBlock(block: Block): RubyCallWithBlock[?] =
       MemberCallWithBlock(target, op, methodName, arguments, block)(span)
   }
