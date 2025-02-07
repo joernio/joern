@@ -317,8 +317,8 @@ class MacroHandlingTests extends C2CpgSuite {
           |}
           |""".stripMargin)
       cpg.local.count(l => l._astIn.isEmpty) shouldBe 0
-      cpg.local.count(l => l._astIn.size == 1) shouldBe 4
       cpg.local.count(l => l._astIn.size > 1) shouldBe 0
+      cpg.local.count(l => l._astIn.size == 1) shouldBe 3
     }
 
     "only have locals with exactly one ast parent" in {
