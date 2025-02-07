@@ -41,8 +41,8 @@ object Defines {
     val splat             = "<operator>.splat"
     val regexpMatch       = "=~"
     val regexpNotMatch    = "!~"
-    
-    val regexMethods =  Set("match", "sub", "gsub")
+
+    val regexMethods = Set("match", "sub", "gsub")
   }
 }
 

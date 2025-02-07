@@ -52,53 +52,58 @@ class RegexTests extends RubyCode2CpgFixture(withPostProcessing = true) {
 
   "Global regex related variables" should {
 
-     def assertLoweredStructure(cpg: Cpg): Unit ={
-       // We lower =~ to the `match` equivalent
-       val tmpInit = cpg.assignment.code("<tmp-0> =.*").head
+    /** Checks for the presence of the lowered regex match which assigns the match results to the respective global
+      * variables.
+      *
+      * TODO: Check for matching of match group ($1, $2, etc.) variables.
+      */
+    def assertLoweredStructure(cpg: Cpg, tmpNo: String = "0"): Unit = {
+      // We lower =~ to the `match` equivalent
+      val tmpInit = cpg.assignment.code(s"<tmp-$tmpNo> =.*").head
 
-       val tmpTarget = tmpInit.target.asInstanceOf[Identifier]
-       tmpTarget.name shouldBe "<tmp-0>"
-       val tmpSource = tmpInit.source.asInstanceOf[Call]
-       tmpSource.code shouldBe "\"hello\".match(/h(el)lo/)"
-       tmpSource.name shouldBe "match"
+      val tmpTarget = tmpInit.target.asInstanceOf[Identifier]
+      tmpTarget.name shouldBe s"<tmp-$tmpNo>"
+      val tmpSource = tmpInit.source.asInstanceOf[Call]
+      tmpSource.code shouldBe "\"hello\".match(/h(el)lo/)"
+      tmpSource.name shouldBe "match"
 
-       // Now test for the lowered global variable assignments
-       val ifStmt = cpg.controlStructure.head
-       inside(ifStmt.whenTrue.assignment.l) { case tildeAsgn :: amperAsgn :: Nil =>
-         tildeAsgn.code shouldBe "$~ = <tmp-0>"
-         val taSource = tildeAsgn.source.asInstanceOf[Identifier]
-         taSource.name shouldBe "<tmp-0>"
-         val taTarget = tildeAsgn.target.asInstanceOf[Call]
-         taTarget.methodFullName shouldBe Operators.fieldAccess
-         taTarget.code shouldBe "self.$~"
+      // Now test for the lowered global variable assignments
+      val ifStmt = cpg.controlStructure.head
+      inside(ifStmt.whenTrue.assignment.l) { case tildeAsgn :: amperAsgn :: Nil =>
+        tildeAsgn.code shouldBe s"$$~ = <tmp-$tmpNo>"
+        val taSource = tildeAsgn.source.asInstanceOf[Identifier]
+        taSource.name shouldBe s"<tmp-$tmpNo>"
+        val taTarget = tildeAsgn.target.asInstanceOf[Call]
+        taTarget.methodFullName shouldBe Operators.fieldAccess
+        taTarget.code shouldBe "self.$~"
 
-         amperAsgn.code shouldBe "$& = <tmp-0>[0]"
-         val aaSource = amperAsgn.source.asInstanceOf[Call]
-         aaSource.methodFullName shouldBe Operators.indexAccess
-         aaSource.code shouldBe "<tmp-0>[0]"
-         aaSource.argument(1).asInstanceOf[Identifier].name shouldBe "<tmp-0>"
-         aaSource.argument(2).asInstanceOf[Literal].code shouldBe "0"
+        amperAsgn.code shouldBe s"$$& = <tmp-$tmpNo>[0]"
+        val aaSource = amperAsgn.source.asInstanceOf[Call]
+        aaSource.methodFullName shouldBe Operators.indexAccess
+        aaSource.code shouldBe s"<tmp-$tmpNo>[0]"
+        aaSource.argument(1).asInstanceOf[Identifier].name shouldBe s"<tmp-$tmpNo>"
+        aaSource.argument(2).asInstanceOf[Literal].code shouldBe "0"
 
-         val aaTarget = amperAsgn.target.asInstanceOf[Call]
-         aaTarget.methodFullName shouldBe Operators.fieldAccess
-         aaTarget.code shouldBe "self.$&"
-       }
-       inside(ifStmt.whenFalse.assignment.l) { case tildeAsgn :: amperAsgn :: Nil =>
-         tildeAsgn.code shouldBe "$~ = nil"
-         val taSource = tildeAsgn.source.asInstanceOf[Literal]
-         taSource.code shouldBe "nil"
-         val taTarget = tildeAsgn.target.asInstanceOf[Call]
-         taTarget.methodFullName shouldBe Operators.fieldAccess
-         taTarget.code shouldBe "self.$~"
+        val aaTarget = amperAsgn.target.asInstanceOf[Call]
+        aaTarget.methodFullName shouldBe Operators.fieldAccess
+        aaTarget.code shouldBe "self.$&"
+      }
+      inside(ifStmt.whenFalse.assignment.l) { case tildeAsgn :: amperAsgn :: Nil =>
+        tildeAsgn.code shouldBe "$~ = nil"
+        val taSource = tildeAsgn.source.asInstanceOf[Literal]
+        taSource.code shouldBe "nil"
+        val taTarget = tildeAsgn.target.asInstanceOf[Call]
+        taTarget.methodFullName shouldBe Operators.fieldAccess
+        taTarget.code shouldBe "self.$~"
 
-         amperAsgn.code shouldBe "$& = nil"
-         val aaSource = amperAsgn.source.asInstanceOf[Literal]
-         aaSource.code shouldBe "nil"
+        amperAsgn.code shouldBe "$& = nil"
+        val aaSource = amperAsgn.source.asInstanceOf[Literal]
+        aaSource.code shouldBe "nil"
 
-         val aaTarget = amperAsgn.target.asInstanceOf[Call]
-         aaTarget.methodFullName shouldBe Operators.fieldAccess
-         aaTarget.code shouldBe "self.$&"
-       }
+        val aaTarget = amperAsgn.target.asInstanceOf[Call]
+        aaTarget.methodFullName shouldBe Operators.fieldAccess
+        aaTarget.code shouldBe "self.$&"
+      }
     }
 
     "be assigned to the match by the `~=` operator" in {
@@ -118,7 +123,7 @@ class RegexTests extends RubyCode2CpgFixture(withPostProcessing = true) {
           |end
           |""".stripMargin)
 
-      cpg.method.dotAst.foreach(println)
+      assertLoweredStructure(cpg, "1")
     }
 
     "be assigned to the match in a match call (regex lhs)" in {
@@ -137,24 +142,15 @@ class RegexTests extends RubyCode2CpgFixture(withPostProcessing = true) {
       assertLoweredStructure(cpg)
     }
 
-    "be assigned to the match of the default global string in a match call (no rhs)" in {
+    "be assigned to the match using string indexing" in {
       val cpg = code("""
-          |$_ = "hello"
-          |/h(el)lo/ =~ # Match, updates $~, $1 = "el"
+          |"hello"[/h(el)lo/]
           |""".stripMargin)
 
       assertLoweredStructure(cpg)
     }
 
-    // We can only approximate this if the regex is directly in the index, otherwise it becomes expensive to
-    // perform constant propagation in order to determine all such cases
-    "be assigned to the match using string indexing" in {
-      val cpg = code("""
-          |"hello"[/h(el)lo]
-          |""".stripMargin)
-    }
-
-    "be assigned to the match using `sub` or `gsub` calls" in {
+    "be assigned to the match using `sub` (or `gsub`) calls" in {
       val cpg = code("""
           |"hello".sub(/h(el)lo/)
           |""".stripMargin)
