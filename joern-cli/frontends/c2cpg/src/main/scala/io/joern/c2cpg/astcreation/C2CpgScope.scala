@@ -14,12 +14,12 @@ object C2CpgScope {
     def name: String
   }
 
-  final case class ScopeLocal(override val node: NewLocal) extends ScopeVariable {
+  private final case class ScopeLocal(override val node: NewLocal) extends ScopeVariable {
     val typeFullName: String = node.typeFullName
     val name: String         = node.name
   }
 
-  final case class ScopeParameter(override val node: NewMethodParameterIn) extends ScopeVariable {
+  private final case class ScopeParameter(override val node: NewMethodParameterIn) extends ScopeVariable {
     val typeFullName: String = node.typeFullName
     val name: String         = node.name
   }
@@ -32,8 +32,8 @@ class C2CpgScope extends Scope[String, (NewNode, String), NewNode] {
 
   def variablesInScope: List[ScopeVariable] = {
     stack.flatMap(_.variables.values.map(_._1)).collect {
-      case local: NewLocal                                             => ScopeLocal(local)
-      case parameter: NewMethodParameterIn if parameter.name != "this" => ScopeParameter(parameter)
+      case local: NewLocal                 => ScopeLocal(local)
+      case parameter: NewMethodParameterIn => ScopeParameter(parameter)
     }
   }
 

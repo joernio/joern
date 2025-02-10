@@ -69,10 +69,9 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
     filename: String
   ): LambdaBody = {
     val outerScopeVariableNames = variablesInScope.map(x => x.name -> x).toMap
+    val captureDefault          = lambdaExpression.getCaptureDefault
+    var bodyAst                 = astForMethodBody(Option(lambdaExpression.getBody))
 
-    val bodyAst = astForMethodBody(Option(lambdaExpression.getBody))
-
-    val captureDefault = lambdaExpression.getCaptureDefault
     val capturedVariables = lambdaExpression.getCaptures.toList match {
       case captures if captures.isEmpty && captureDefault == CaptureDefault.UNSPECIFIED =>
         Seq.empty
@@ -102,6 +101,14 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
       defineCapturedVariables(lambdaExpression, lambdaMethodName, capturedVariables.toSeq, filename)
     val capturedLocals        = bindingsToLocals.map(_._2)
     val closureBindingEntries = bindingsToLocals.map(_._1)
+
+    bodyAst.nodes.collect {
+      case i: NewIdentifier if i.name == "this" =>
+        // during the traversal of the lambda body we ref this identifier to the outer
+        // this param if any. This would cross method boundaries, which is invalid but at that time
+        // we do not know this. Hence, we fix that up here afterward.
+        capturedLocals.find(_.name == "this").foreach(l => bodyAst = bodyAst.withRefEdge(i, l))
+    }
 
     val blockAst = bodyAst.root match {
       case Some(b: NewBlock) =>

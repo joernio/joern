@@ -132,13 +132,30 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
         |""".stripMargin)
 
     "ref this correctly" in {
-      val List(thisId) = cpg.identifier.nameExact("this").l
-      val List(refsTo) = thisId.refsTo.collectAll[MethodParameterIn].l
-      refsTo.typeFullName shouldBe "Foo*"
-      refsTo.name shouldBe "this"
-      refsTo.index shouldBe 0
-      refsTo.order shouldBe 0
-      refsTo.method.fullName shouldBe "Foo.foo:void()"
+      val List(lambda) = cpg.method.name(".*lambda.*").l
+      cpg.all.collectAll[ClosureBinding].l match {
+        case List(thisClosureBinding) =>
+          val thisLocal = cpg.method.name(".*lambda.*").local.nameExact("this").head
+          thisClosureBinding.closureBindingId shouldBe thisLocal.closureBindingId
+
+          cpg.identifier.nameExact("this").refsTo.collectAll[Local].l shouldBe List(thisLocal)
+
+          thisClosureBinding._refOut.l match {
+            case List(capturedThisParam: MethodParameterIn) =>
+              capturedThisParam.name shouldBe "this"
+              capturedThisParam.typeFullName shouldBe "Foo*"
+              capturedThisParam.method.fullName shouldBe "Foo.foo:void()"
+            case result => fail(s"Expected single capturedParam but got $result")
+          }
+
+          thisClosureBinding._captureIn.l match {
+            case List(outMethod: MethodRef) =>
+              outMethod.typeFullName shouldBe lambda.fullName
+              outMethod.methodFullName shouldBe lambda.fullName
+            case result => fail(s"Expected single METHOD_REF but got $result")
+          }
+        case result => fail(s"Expected 1 closure binding for captured variables but got $result")
+      }
     }
   }
 
@@ -151,13 +168,30 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
         |""".stripMargin)
 
     "ref this correctly" in {
-      val List(thisId) = cpg.identifier.nameExact("this").l
-      val List(refsTo) = thisId.refsTo.collectAll[MethodParameterIn].l
-      refsTo.typeFullName shouldBe "Foo*"
-      refsTo.name shouldBe "this"
-      refsTo.index shouldBe 0
-      refsTo.order shouldBe 0
-      refsTo.method.fullName shouldBe "Foo.foo:void()"
+      val List(lambda) = cpg.method.name(".*lambda.*").l
+      cpg.all.collectAll[ClosureBinding].l match {
+        case List(thisClosureBinding) =>
+          val thisLocal = cpg.method.name(".*lambda.*").local.nameExact("this").head
+          thisClosureBinding.closureBindingId shouldBe thisLocal.closureBindingId
+
+          cpg.identifier.nameExact("this").refsTo.collectAll[Local].l shouldBe List(thisLocal)
+
+          thisClosureBinding._refOut.l match {
+            case List(capturedThisParam: MethodParameterIn) =>
+              capturedThisParam.name shouldBe "this"
+              capturedThisParam.typeFullName shouldBe "Foo*"
+              capturedThisParam.method.fullName shouldBe "Foo.foo:void()"
+            case result => fail(s"Expected single capturedParam but got $result")
+          }
+
+          thisClosureBinding._captureIn.l match {
+            case List(outMethod: MethodRef) =>
+              outMethod.typeFullName shouldBe lambda.fullName
+              outMethod.methodFullName shouldBe lambda.fullName
+            case result => fail(s"Expected single METHOD_REF but got $result")
+          }
+        case result => fail(s"Expected 1 closure binding for captured variables but got $result")
+      }
     }
   }
 
