@@ -18,6 +18,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
+import io.shiftleft.codepropertygraph.generated.nodes.NewBinding
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTCapture
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTLambdaExpression
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTLambdaExpression.CaptureDefault
@@ -217,7 +218,18 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
       astParentFullName,
       Seq(registerType(Defines.Function))
     )
+
+    val functionBinding = NewBinding()
+      .name(lambdaMethodNode.name)
+      .methodFullName(lambdaMethodNode.fullName)
+      .signature(lambdaMethodNode.signature)
+
+    val functionBindAst = Ast(functionBinding)
+      .withBindsEdge(lambdaTypeDeclNode, functionBinding)
+      .withRefEdge(functionBinding, lambdaMethodNode)
+
     Ast.storeInDiffGraph(Ast(lambdaTypeDeclNode), diffGraph)
+    Ast.storeInDiffGraph(functionBindAst, diffGraph)
   }
 
   protected def astForLambdaExpression(lambdaExpression: ICPPASTLambdaExpression): Ast = {

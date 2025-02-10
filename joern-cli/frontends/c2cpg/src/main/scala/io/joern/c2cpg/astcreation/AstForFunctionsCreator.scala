@@ -36,7 +36,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     }
   }
 
-  protected def createFunctionTypeAndTypeDecl(
+  private def createFunctionTypeAndTypeDecl(
     node: IASTNode,
     method: NewMethod,
     methodName: String,

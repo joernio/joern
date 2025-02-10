@@ -30,15 +30,14 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
 
     "create the correct typedecl node for the lambda" in {
       cpg.typeDecl.name(".*lambda.*").name.l shouldBe List("<lambda>0")
-      cpg.typeDecl.name(".*lambda.*").fullName.l shouldBe List("Foo.foo.<lambda>0:string(string)")
+      cpg.typeDecl.name(".*lambda.*").fullName.l shouldBe List("Test0.cpp:<global>.Foo.foo.<lambda>0:string(string)")
     }
 
     "create a method node for the lambda" in {
       cpg.typeDecl.name("Foo").method.name(".*lambda.*").isLambda.l match {
         case List(lambdaMethod) =>
-          // Lambda body creation tested separately
           lambdaMethod.name shouldBe "<lambda>0"
-          lambdaMethod.fullName shouldBe "Foo.foo.<lambda>0:string(string)"
+          lambdaMethod.fullName shouldBe "Test0.cpp:<global>.Foo.foo.<lambda>0:string(string)"
           lambdaMethod.parameter.l match {
             case List(lambdaInput) =>
               lambdaInput.name shouldBe "lambdaInput"
@@ -50,8 +49,16 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
       }
     }
 
-    "not create a binding for the lambda method" in {
-      cpg.all.collectAll[Binding].exists(_.name == "<lambda>0") shouldBe false
+    "create a binding for the lambda method" in {
+      val List(typeDecl) = cpg.typeDecl.fullNameExact("Test0.cpp:<global>.Foo.foo.<lambda>0:string(string)").l
+      val List(binding)  = typeDecl.bindsOut.l
+      binding.name shouldBe "<lambda>0"
+      binding.methodFullName shouldBe "Test0.cpp:<global>.Foo.foo.<lambda>0:string(string)"
+      binding.signature shouldBe "string(string)"
+      val List(methodReffed) = binding.refOut.l
+      methodReffed.name shouldBe "<lambda>0"
+      methodReffed.fullName shouldBe "Test0.cpp:<global>.Foo.foo.<lambda>0:string(string)"
+      methodReffed.signature shouldBe "string(string)"
     }
 
     "create a method body for the lambda method" in {
@@ -93,7 +100,8 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
 
           fallbackClosureBinding._captureIn.l match {
             case List(outMethod: MethodRef) =>
-              outMethod.methodFullName shouldBe "Foo.foo.<lambda>0:string(string)"
+              outMethod.typeFullName shouldBe "Test0.cpp:<global>.Foo.foo.<lambda>0:string(string)"
+              outMethod.methodFullName shouldBe "Test0.cpp:<global>.Foo.foo.<lambda>0:string(string)"
             case result => fail(s"Expected single METHOD_REF but got $result")
           }
         case result => fail(s"Expected 1 closure binding for captured variables but got $result")
@@ -104,7 +112,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
       cpg.typeDecl.name(".*lambda.*").l match {
         case List(lambdaDecl) =>
           lambdaDecl.name shouldBe "<lambda>0"
-          lambdaDecl.fullName shouldBe "Foo.foo.<lambda>0:string(string)"
+          lambdaDecl.fullName shouldBe "Test0.cpp:<global>.Foo.foo.<lambda>0:string(string)"
           lambdaDecl.inheritsFromTypeFullName should contain theSameElementsAs List("std.function")
         case result => fail(s"Expected a single typeDecl for the lambda but got $result")
       }
@@ -184,7 +192,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
           myValue._localViaRefOut.get.name shouldBe "myValue"
           myValue._captureIn.collectFirst { case x: MethodRef =>
             x.methodFullName
-          }.head shouldBe "Foo.foo.<lambda>0:string(string)"
+          }.head shouldBe "Test0.cpp:<global>.Foo.foo.<lambda>0:string(string)"
         case result =>
           fail(s"Expected single closure binding to collect but got $result")
       }
@@ -217,7 +225,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
           myValue._localViaRefOut.get.name shouldBe "myValue"
           myValue._captureIn.collectFirst { case x: MethodRef =>
             x.methodFullName
-          }.head shouldBe "Foo.foo.<lambda>0:string(string)"
+          }.head shouldBe "Test0.cpp:<global>.Foo.foo.<lambda>0:string(string)"
         case result =>
           fail(s"Expected single closure binding to collect but got $result")
       }
@@ -232,8 +240,8 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
         |auto y = [] (string a, string b) -> string
         | { return a + b; };
         |""".stripMargin)
-    val lambda1FullName = "<lambda>0:int(int,int)"
-    val lambda2FullName = "<lambda>1:string(string,string)"
+    val lambda1FullName = "Test0.cpp:<global>.<lambda>0:int(int,int)"
+    val lambda2FullName = "Test0.cpp:<global>.<lambda>1:string(string,string)"
 
     cpg.local.nameExact("x").order.l shouldBe List(1)
     cpg.local.nameExact("y").order.l shouldBe List(3)
@@ -277,7 +285,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
         |""".stripMargin)
     val lambdaName     = "<lambda>0"
     val signature      = "int(int,int)"
-    val lambdaFullName = s"Foo.$lambdaName:$signature"
+    val lambdaFullName = s"Test0.cpp:<global>.Foo.$lambdaName:$signature"
 
     cpg.member.nameExact("x").order.l shouldBe List(1)
 
@@ -307,7 +315,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
         |""".stripMargin)
     val lambdaName     = "<lambda>0"
     val signature      = "int(int,int)"
-    val lambdaFullName = s"A.B.Foo.$lambdaName:$signature"
+    val lambdaFullName = s"Test0.cpp:<global>.A.B.Foo.$lambdaName:$signature"
 
     cpg.member.nameExact("x").order.l shouldBe List(1)
 
@@ -340,9 +348,9 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
         |""".stripMargin)
     val signature       = "int(int)"
     val lambda1Name     = "<lambda>0"
-    val lambda1FullName = s"$lambda1Name:$signature"
+    val lambda1FullName = s"Test0.cpp:<global>.$lambda1Name:$signature"
     val lambda2Name     = "<lambda>1"
-    val lambda2FullName = s"$lambda2Name:$signature"
+    val lambda2FullName = s"Test0.cpp:<global>.$lambda2Name:$signature"
 
     cpg.local.nameExact("x").order.l shouldBe List(1)
     cpg.local.nameExact("foo1").order.l shouldBe List(3)

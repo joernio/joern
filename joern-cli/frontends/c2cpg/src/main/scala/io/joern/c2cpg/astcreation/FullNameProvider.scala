@@ -11,6 +11,7 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPFunction
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPVariable
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 import io.joern.x2cpg.Defines as X2CpgDefines
+import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
@@ -116,12 +117,23 @@ trait FullNameProvider { this: AstCreator =>
   private def fullNameForICPPASTLambdaExpression(): String = {
     methodAstParentStack
       .collectFirst {
-        case t: NewTypeDecl if t.name != NamespaceTraversal.globalNamespaceName =>
-          t.fullName
-        case t: NewMethod if t.name != NamespaceTraversal.globalNamespaceName =>
-          t.fullName.stripSuffix(s":${t.signature}")
+        case t: NewTypeDecl =>
+          if (t.name != NamespaceTraversal.globalNamespaceName) {
+            val globalFullName = MetaDataPass.getGlobalNamespaceBlockFullName(Some(filename))
+            s"$globalFullName.${t.fullName}"
+          } else {
+            t.fullName
+          }
+        case m: NewMethod =>
+          val fullNameWithoutSignature = m.fullName.stripSuffix(s":${m.signature}")
+          if (m.name != NamespaceTraversal.globalNamespaceName) {
+            val globalFullName = MetaDataPass.getGlobalNamespaceBlockFullName(Some(filename))
+            s"$globalFullName.$fullNameWithoutSignature"
+          } else {
+            m.fullName
+          }
       }
-      .mkString(".")
+      .mkString("")
   }
 
   protected def fullName(node: IASTNode): String = {
