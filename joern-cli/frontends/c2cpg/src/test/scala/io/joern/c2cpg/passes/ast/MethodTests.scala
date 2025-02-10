@@ -407,7 +407,7 @@ class MethodTests extends C2CpgSuite {
       )
       val List(implicitThisParam) = cpg.method.name("meth").parameter.l
       implicitThisParam.name shouldBe "this"
-      implicitThisParam.typeFullName shouldBe "A"
+      implicitThisParam.typeFullName shouldBe "A*"
       val List(trueVarAccess) = cpg.call.name(Operators.equals).argument.argumentIndex(1).isCall.l
       trueVarAccess.code shouldBe "this->var"
       trueVarAccess.name shouldBe Operators.indirectFieldAccess

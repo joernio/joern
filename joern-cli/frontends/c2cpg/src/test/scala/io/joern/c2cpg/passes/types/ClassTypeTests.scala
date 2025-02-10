@@ -64,18 +64,18 @@ class ClassTypeTests extends C2CpgSuite(FileDefaults.CppExt) {
 
   "handling C++ classes (code example 2)" should {
     val cpg = code("""
-      |class foo : bar {
+      |class Foo : Bar {
       |  char x;
       |  int y;
-      |  int method () {}
+      |  int method() {}
       |};
       |typedef int mytype;""".stripMargin)
 
-    "should contain a type decl for `foo` with correct fields" in {
-      val List(x) = cpg.typeDecl("foo").l
-      x.fullName shouldBe "foo"
+    "should contain a type decl for `Foo` with correct fields" in {
+      val List(x) = cpg.typeDecl("Foo").l
+      x.fullName shouldBe "Foo"
       x.isExternal shouldBe false
-      x.inheritsFromTypeFullName shouldBe List("bar")
+      x.inheritsFromTypeFullName shouldBe List("Bar")
       x.aliasTypeFullName shouldBe None
       x.order shouldBe 1
       x.filename shouldBe "Test0.cpp"
@@ -105,15 +105,15 @@ class ClassTypeTests extends C2CpgSuite(FileDefaults.CppExt) {
     }
 
     "should find exactly 1 internal type" in {
-      cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).internal.name.toSetMutable shouldBe Set("foo")
+      cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).internal.name.toSetMutable shouldBe Set("Foo")
     }
 
-    "should find five external types (`bar`, `char`, `int`, `void`, `ANY`)" in {
-      cpg.typeDecl.external.name.toSetMutable shouldBe Set("bar", "char", "int", "void", "ANY")
+    "should find external type decls" in {
+      cpg.typeDecl.external.name.sorted.toSetMutable shouldBe Set("ANY", "Bar", "Foo*", "char", "int", "void")
     }
 
-    "should find two members for `foo`: `x` and `y`" in {
-      cpg.typeDecl.name("foo").member.name.toSetMutable shouldBe Set("x", "y")
+    "should find two members for `Foo`: `x` and `y`" in {
+      cpg.typeDecl.name("Foo").member.name.toSetMutable shouldBe Set("x", "y")
     }
 
     "should allow traversing from `int` to its alias `mytype`" in {
@@ -122,7 +122,7 @@ class ClassTypeTests extends C2CpgSuite(FileDefaults.CppExt) {
     }
 
     "should find one method in type `foo`" in {
-      cpg.typeDecl.name("foo").method.name.toSetMutable shouldBe Set("method")
+      cpg.typeDecl.name("Foo").method.name.toSetMutable shouldBe Set("method")
     }
 
     "should allow traversing from type to enclosing file" in {
@@ -175,7 +175,7 @@ class ClassTypeTests extends C2CpgSuite(FileDefaults.CppExt) {
       constructor.signature shouldBe "Bar.Foo(std.string&,Bar.SomeClass&)"
       val List(thisP, p1, p2) = constructor.parameter.l
       thisP.name shouldBe "this"
-      thisP.typeFullName shouldBe "FooT"
+      thisP.typeFullName shouldBe "FooT*"
       thisP.index shouldBe 0
       p1.typ.fullName shouldBe "std.string&"
       p1.index shouldBe 1

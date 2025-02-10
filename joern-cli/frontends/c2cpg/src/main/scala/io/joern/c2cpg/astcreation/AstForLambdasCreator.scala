@@ -133,28 +133,11 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
       parameterNode(p, i)
     }
     setVariadic(parameterNodes, lambdaExpression)
-    val parameterAstsWithoutThis = parameterNodes.map(Ast(_))
+    val parameterAsts = parameterNodes.map(Ast(_))
+
+    val isStatic = !lambdaExpression.getCaptures.exists(c => c.capturesThisPointer())
 
     val lambdaBody = astForLambdaBody(lambdaExpression, name, variablesInScope, filename)
-
-    val thisParamAst = lambdaBody.nodes.collect {
-      case identifier: NewIdentifier if identifier.name == "this" || identifier.name == "super" =>
-        val thisStrategy =
-          if lambdaExpression.getCaptures.exists(c => c.capturesThisPointer() && c.isByReference) then
-            EvaluationStrategies.BY_REFERENCE
-          else EvaluationStrategies.BY_VALUE
-        Ast(
-          NodeBuilders.newThisParameterNode(
-            typeFullName = identifier.typeFullName,
-            dynamicTypeHintFullName = identifier.dynamicTypeHintFullName,
-            line = line(lambdaExpression),
-            column = column(lambdaExpression),
-            evaluationStrategy = thisStrategy
-          )
-        )
-    }
-
-    val parameterAsts = thisParamAst ++ parameterAstsWithoutThis
 
     val lambdaParameterNamesToNodes =
       parameterAsts.flatMap(_.root).collect { case param: NewMethodParameterIn => param.name -> param }.toMap
@@ -165,7 +148,7 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
 
     val returnNode      = methodReturnNode(lambdaExpression, registerType(returnType))
     val virtualModifier = Some(newModifierNode(ModifierTypes.VIRTUAL))
-    val staticModifier  = Option.when(thisParamAst.isEmpty)(newModifierNode(ModifierTypes.STATIC))
+    val staticModifier  = Option.when(isStatic)(newModifierNode(ModifierTypes.STATIC))
     val privateModifier = Some(newModifierNode(ModifierTypes.PRIVATE))
     val lambdaModifier  = Some(newModifierNode(ModifierTypes.LAMBDA))
     val modifiers       = List(virtualModifier, staticModifier, privateModifier, lambdaModifier).flatten.map(Ast(_))
