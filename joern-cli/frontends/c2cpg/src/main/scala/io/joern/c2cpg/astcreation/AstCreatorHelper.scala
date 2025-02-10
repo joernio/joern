@@ -323,13 +323,13 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   private def typeForCPPAstNamedTypeSpecifier(s: ICPPASTNamedTypeSpecifier): String = {
-    val tpe = safeGetBinding(s)
-      .map {
-        case spec: ICPPSpecialization => spec.toString
-        case n: ICPPBinding           => n.getQualifiedName.mkString(".")
-        case other                    => other.toString
-      }
-      .getOrElse(s.getRawSignature)
+    val tpe = safeGetBinding(s) match {
+      case Some(spec: ICPPSpecialization) => spec.toString
+      case Some(n: ICPPBinding)           => n.getQualifiedName.mkString(".")
+      case Some(other: IBinding)          => other.toString
+      case _ if s.getName != null         => ASTStringUtil.getQualifiedName(s.getName)
+      case _                              => s.getRawSignature
+    }
     cleanType(tpe)
   }
 
