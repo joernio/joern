@@ -109,7 +109,7 @@ trait AstForPatternExpressionsCreator { this: AstCreator =>
           fieldTypeFullName.orElse(Option(defaultTypeFallback()))
         )
 
-        val fieldAccessorAst = callAst(fieldAccessorCall, lhsAst :: Nil)
+        val fieldAccessorAst = callAst(fieldAccessorCall, Nil, Option(lhsAst))
 
         val patternInitWithRef = if (requiresTemporaryVariable) {
           val patternInitWithRef = initAndRefAstsForPatternInitializer(patternExpr, fieldAccessorAst)

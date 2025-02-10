@@ -1337,7 +1337,7 @@ class PatternExprTests extends JavaSrcCode2CpgFixture {
               valueCall.code shouldBe "((Box) o).value()"
               valueCall.typeFullName shouldBe "java.lang.String"
 
-              inside(valueCall.argument.l) { case List(boxCast: Call) =>
+              inside(valueCall.receiver.l) { case List(boxCast: Call) =>
                 boxCast.name shouldBe Operators.cast
                 boxCast.code shouldBe "(Box) o"
                 boxCast.typeFullName shouldBe "box.Box"
