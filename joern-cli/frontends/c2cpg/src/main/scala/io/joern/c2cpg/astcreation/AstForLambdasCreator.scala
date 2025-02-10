@@ -220,7 +220,7 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
     )
 
     val functionBinding = NewBinding()
-      .name(lambdaMethodNode.name)
+      .name(Defines.OperatorCall)
       .methodFullName(lambdaMethodNode.fullName)
       .signature(lambdaMethodNode.signature)
 

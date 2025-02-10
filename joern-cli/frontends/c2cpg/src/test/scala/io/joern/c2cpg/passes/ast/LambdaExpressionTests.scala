@@ -1,5 +1,6 @@
 package io.joern.c2cpg.passes.ast
 
+import io.joern.c2cpg.astcreation.Defines
 import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.testfixtures.AstC2CpgSuite
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
@@ -52,7 +53,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
     "create a binding for the lambda method" in {
       val List(typeDecl) = cpg.typeDecl.fullNameExact("Test0.cpp:<global>.Foo.foo.<lambda>0:string(string)").l
       val List(binding)  = typeDecl.bindsOut.l
-      binding.name shouldBe "<lambda>0"
+      binding.name shouldBe Defines.OperatorCall
       binding.methodFullName shouldBe "Test0.cpp:<global>.Foo.foo.<lambda>0:string(string)"
       binding.signature shouldBe "string(string)"
       val List(methodReffed) = binding.refOut.l
