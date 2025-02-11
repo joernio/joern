@@ -7,11 +7,7 @@ import io.shiftleft.semanticcpg.language.*
 
 class MemberAccessTests extends CSharpCode2CpgFixture {
 
-  // TODO: This test-case relies on the usage of getters, that are currently being
-  // reworked to be METHODs instead of MEMBERs. In particular, `bar?.Qux` should
-  // resemble `bar.get_Qux()`. We need to adapt astForMemberBindingExpression
-  // to accommodate this.
-  "conditional property access expressions" ignore {
+  "conditional property access expressions" should {
     val cpg = code("""
         |namespace Foo {
         | public class Baz {
@@ -119,6 +115,7 @@ class MemberAccessTests extends CSharpCode2CpgFixture {
     }
 
   }
+
   "conditional method access expressions" should {
     val cpg = code("""
         |namespace Foo {
