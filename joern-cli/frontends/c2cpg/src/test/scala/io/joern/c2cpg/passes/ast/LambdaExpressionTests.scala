@@ -177,6 +177,51 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
     }
   }
 
+  "lambdas capturing with shadowing in nested context" should {
+    val cpg = code("""
+        |static void foo(int *x) {
+        |  auto f = [=] {
+        |    x = nullptr; // x is captured
+        |    auto nested = [=] {
+        |      float *x = nullptr; // this x here is shadowed
+        |    };
+        |  };
+        |}""".stripMargin)
+
+    "ref the shadowed variable correctly" in {
+      val List(lambdaF, lambdaNested) = cpg.method.name(".*lambda.*").sortBy(_.lineNumber.get).l
+      cpg.all.collectAll[ClosureBinding].l match {
+        case List(xClosureBinding) =>
+          val List(xLocalCaptured) = lambdaF.block.local.nameExact("x").l
+          xClosureBinding.closureBindingId shouldBe xLocalCaptured.closureBindingId
+
+          cpg.identifier.nameExact("x").lineNumber(4).refsTo.collectAll[Local].l shouldBe List(xLocalCaptured)
+
+          xClosureBinding._refOut.l match {
+            case List(capturedThisParam: MethodParameterIn) =>
+              capturedThisParam.name shouldBe "x"
+              capturedThisParam.typeFullName shouldBe "int*"
+              capturedThisParam.method.fullName shouldBe "foo:void(int*)"
+            case result => fail(s"Expected single capturedParam but got $result")
+          }
+
+          xClosureBinding._captureIn.l match {
+            case List(outMethod: MethodRef) =>
+              outMethod.typeFullName shouldBe lambdaF.fullName
+              outMethod.methodFullName shouldBe lambdaF.fullName
+            case result => fail(s"Expected single METHOD_REF but got $result")
+          }
+        case result => fail(s"Expected 1 closure binding for captured variables but got $result")
+      }
+
+      val List(xLocalNested) = lambdaNested.block.local.nameExact("x").l
+      xLocalNested.typeFullName shouldBe "float*"
+      xLocalNested.closureBindingId shouldBe None
+      xLocalNested.closureBinding shouldBe empty
+      cpg.identifier.nameExact("x").lineNumber(6).refsTo.collectAll[Local].l shouldBe List(xLocalNested)
+    }
+  }
+
   "lambdas capturing this in global method" should {
     val cpg = code("""
         |class Foo {}
