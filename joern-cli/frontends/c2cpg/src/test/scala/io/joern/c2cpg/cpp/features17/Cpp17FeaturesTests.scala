@@ -133,10 +133,10 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
       cpg.method.nameNot("<global>").fullName.sorted shouldBe List(
         // TODO: fix return types of nested lambdas
         "Test0.cpp:<global>.<lambda>0:ANY(int)",
+        "Test0.cpp:<global>.<lambda>1.<lambda>2:ANY()",
+        "Test0.cpp:<global>.<lambda>1.<lambda>3:ANY()",
+        "Test0.cpp:<global>.<lambda>1.<lambda>4:ANY()",
         "Test0.cpp:<global>.<lambda>1:ANY(int,int)",
-        "Test0.cpp:<global>.<lambda>2:ANY()",
-        "Test0.cpp:<global>.<lambda>3:ANY()",
-        "Test0.cpp:<global>.<lambda>4:ANY()",
         "Test0.cpp:<global>.addOne.<lambda>5:ANY()",
         "addOne:int(int)"
       )

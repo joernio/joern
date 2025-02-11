@@ -82,6 +82,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
           fallbackLocal.name shouldBe "fallback"
           fallbackLocal.code shouldBe "fallback"
           fallbackLocal.typeFullName shouldBe "string"
+          cpg.identifier.nameExact("fallback").refsTo.l shouldBe List(fallbackLocal)
         case result => fail(s"Expected single local for fallback but got $result")
       }
     }

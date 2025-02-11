@@ -2,6 +2,7 @@ package io.joern.c2cpg.astcreation
 
 import io.joern.c2cpg.astcreation.C2CpgScope.ScopeVariable
 import io.joern.x2cpg.Ast
+import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.utils.NodeBuilders.newClosureBindingNode
@@ -102,12 +103,11 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
     val capturedLocals        = bindingsToLocals.map(_._2)
     val closureBindingEntries = bindingsToLocals.map(_._1)
 
-    bodyAst.nodes.collect {
-      case i: NewIdentifier if i.name == "this" =>
-        // during the traversal of the lambda body we ref this identifier to the outer
-        // this param if any. This would cross method boundaries, which is invalid but at that time
-        // we do not know this. Hence, we fix that up here afterward.
-        capturedLocals.find(_.name == "this").foreach(l => bodyAst = bodyAst.withRefEdge(i, l))
+    bodyAst.nodes.collect { case i: NewIdentifier =>
+      // during the traversal of the lambda body we may ref identifier to some outer
+      // param if any. This would cross method boundaries, which is invalid but at that time
+      // we do not know this. Hence, we fix that up here afterwards.
+      capturedLocals.find(_.name == i.name).foreach(l => bodyAst = bodyAst.withRefEdge(i, l))
     }
 
     val blockAst = bodyAst.root match {
@@ -134,6 +134,7 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
 
     val lambdaMethodNode = methodNode(lambdaExpression, name, codeString, fullName, Some(signature), filename)
 
+    methodAstParentStack.push(lambdaMethodNode)
     scope.pushNewScope(lambdaMethodNode)
 
     val parameterNodes = withIndex(this.parameters(lambdaExpression.getDeclarator)) { (p, i) =>
@@ -172,6 +173,7 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
     )
 
     scope.popScope()
+    methodAstParentStack.pop()
 
     val parentNode = methodAstParentStack.collectFirst { case t: NewTypeDecl => t }
     Ast.storeInDiffGraph(lambdaMethodAst, diffGraph)

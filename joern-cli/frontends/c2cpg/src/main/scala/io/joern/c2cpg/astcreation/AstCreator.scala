@@ -2,7 +2,6 @@ package io.joern.c2cpg.astcreation
 
 import io.joern.c2cpg.Config
 import io.joern.c2cpg.parser.HeaderFileFinder
-import io.joern.x2cpg.datastructures.Scope
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode, AstNodeBuilder as X2CpgAstNodeBuilder}
 import io.shiftleft.codepropertygraph.generated.NodeTypes

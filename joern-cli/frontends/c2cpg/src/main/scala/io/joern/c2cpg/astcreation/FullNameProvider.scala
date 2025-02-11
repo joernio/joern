@@ -126,11 +126,11 @@ trait FullNameProvider { this: AstCreator =>
           }
         case m: NewMethod =>
           val fullNameWithoutSignature = m.fullName.stripSuffix(s":${m.signature}")
-          if (m.name != NamespaceTraversal.globalNamespaceName) {
+          if (!m.name.startsWith("<lambda>") && m.name != NamespaceTraversal.globalNamespaceName) {
             val globalFullName = MetaDataPass.getGlobalNamespaceBlockFullName(Some(filename))
             s"$globalFullName.$fullNameWithoutSignature"
           } else {
-            m.fullName
+            fullNameWithoutSignature
           }
       }
       .mkString("")
