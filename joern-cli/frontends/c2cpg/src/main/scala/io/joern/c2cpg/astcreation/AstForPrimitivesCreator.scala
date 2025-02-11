@@ -125,15 +125,20 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
         val ownerType    = registerType(s"$ownerTypeRaw$deref")
         if (isInCurrentScope(ident, ownerTypeRaw)) {
           scope.lookupVariable("this") match {
-            case Some((variable, _)) if !isInLambdaScope() =>
+            case Some((variable, _)) =>
               val op             = Operators.indirectFieldAccess
               val code           = s"this->$identifierName"
               val thisIdentifier = identifierNode(ident, "this", "this", ownerType)
               val member         = fieldIdentifierNode(ident, identifierName, identifierName)
               val ma =
                 callNode(ident, code, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(cleanType(tpe))))
-              callAst(ma, Seq(Ast(thisIdentifier).withRefEdge(thisIdentifier, variable), Ast(member)))
-            case _ => tpe
+              val argumentAst = if (!isInLambdaScope()) {
+                Ast(thisIdentifier).withRefEdge(thisIdentifier, variable)
+              } else {
+                Ast(thisIdentifier)
+              }
+              callAst(ma, Seq(argumentAst, Ast(member)))
+            case None => tpe
           }
         } else tpe
       case _ => tpe
