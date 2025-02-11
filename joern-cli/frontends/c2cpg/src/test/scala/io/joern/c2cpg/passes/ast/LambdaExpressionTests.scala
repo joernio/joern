@@ -177,7 +177,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
     }
   }
 
-  "lambdas capturing with shadowing in nested context" should {
+  "lambdas capturing with shadowing in nested lambdas" should {
     val cpg = code("""
         |static void foo(int *x) {
         |  auto f = [=] {
@@ -219,6 +219,38 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
       xLocalNested.closureBindingId shouldBe None
       xLocalNested.closureBinding shouldBe empty
       cpg.identifier.nameExact("x").lineNumber(6).refsTo.collectAll[Local].l shouldBe List(xLocalNested)
+    }
+  }
+
+  "lambdas capturing with shadowing in nested blocks" should {
+    val cpg = code("""
+        |static void foo(int *x) {
+        |  auto f = [&] {
+        |    *x = 0; // capture
+        |    {
+        |      float *x = nullptr; // first shadowing
+        |      {
+        |        double *x = nullptr; // second shadowing
+        |      }
+        |    }
+        |  };
+        |}
+        |""".stripMargin)
+
+    "ref the shadowed variable correctly" in {
+      val List(x1, x2, x3) = cpg.method.name(".*lambda.*").ast.isLocal.sortBy(_.lineNumber.get).nameExact("x").l
+
+      x1.typeFullName shouldBe "int*"
+      x1.closureBindingId shouldBe Some("Test0.cpp:<lambda>0:x")
+      cpg.identifier.nameExact("x").lineNumber(4).refsTo.collectAll[Local].l shouldBe List(x1)
+
+      x2.typeFullName shouldBe "float*"
+      x2.closureBindingId shouldBe None
+      cpg.identifier.nameExact("x").lineNumber(6).refsTo.collectAll[Local].l shouldBe List(x2)
+
+      x3.typeFullName shouldBe "double*"
+      x3.closureBindingId shouldBe None
+      cpg.identifier.nameExact("x").lineNumber(8).refsTo.collectAll[Local].l shouldBe List(x3)
     }
   }
 

@@ -69,9 +69,15 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
     outerScopeVariableNames: Map[String, ScopeVariable],
     bodyAst: Ast
   ): Boolean = {
-    outerScopeVariableNames.contains(name) && bodyAst.nodes.collect {
-      case node: NewLocal if node.name == name => node
-    }.isEmpty
+    outerScopeVariableNames.contains(name) && !bodyAst.nodes.exists {
+      case node: NewLocal if node.name == name =>
+        val srcBlock = bodyAst.nodes.head
+        bodyAst.edges.exists {
+          case AstEdge(src, dst) if src == srcBlock && dst == node => true
+          case _                                                   => false
+        }
+      case _ => false
+    }
   }
 
   private def calculateCapturedVariables(
@@ -109,12 +115,17 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
   }
 
   private def fixupRefEdgesForCapturedLocals(bodyAst: Ast, capturedLocals: Seq[NewLocal]): Ast = {
-    var bodyAst_ = bodyAst
     // During the traversal of the lambda body we may ref identifier to some outer param if any.
     // This would cross method boundaries, which is invalid but at that time
     // we do not know this. Hence, we fix that up here:
+    var bodyAst_ = bodyAst
     val capturedLocalFixCandidates = capturedLocals.flatMap { local =>
-      bodyAst.nodes.collect { case i: NewIdentifier if i.name == local.name => (i, local) }
+      bodyAst.nodes.collect {
+        case i: NewIdentifier
+            if i.name == local.name &&
+              bodyAst_.refEdges.exists(e => e.src == i && e.dst.isInstanceOf[NewMethodParameterIn]) =>
+          (i, local)
+      }
     }
     capturedLocalFixCandidates.foreach { case (i, local) =>
       val oldEdge = bodyAst_.refEdges.find(_.src == i)
