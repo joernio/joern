@@ -160,6 +160,23 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
     }
   }
 
+  "lambdas capturing with shadowing" should {
+    val cpg = code("""
+     |static void foo(int *x) {
+     |  auto f = [=] { float *x = nullptr; };
+     |}""".stripMargin)
+
+    "ref the shadowed variable correctly" in {
+      cpg.all.collectAll[ClosureBinding] shouldBe empty
+      val List(lambda) = cpg.method.name(".*lambda.*").l
+      val List(xLocal) = lambda.block.local.nameExact("x").l
+      xLocal.typeFullName shouldBe "float*"
+      xLocal.closureBindingId shouldBe None
+      xLocal.closureBinding shouldBe empty
+      cpg.identifier.nameExact("x").refsTo.collectAll[Local].l shouldBe List(xLocal)
+    }
+  }
+
   "lambdas capturing this in global method" should {
     val cpg = code("""
         |class Foo {}

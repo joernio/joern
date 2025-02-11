@@ -7,6 +7,7 @@ import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.utils.NodeBuilders.newClosureBindingNode
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
+import io.joern.x2cpg.AstEdge
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewClosureBinding
 import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
@@ -63,16 +64,23 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
       .toSeq
   }
 
-  private def astForLambdaBody(
-    lambdaExpression: ICPPASTLambdaExpression,
-    lambdaMethodName: String,
-    variablesInScope: Seq[ScopeVariable],
-    filename: String
-  ): LambdaBody = {
-    val outerScopeVariableNames = variablesInScope.map(x => x.name -> x).toMap
-    val captureDefault          = lambdaExpression.getCaptureDefault
-    var bodyAst                 = astForMethodBody(Option(lambdaExpression.getBody))
+  private def shouldBeCaptured(
+    name: String,
+    outerScopeVariableNames: Map[String, ScopeVariable],
+    bodyAst: Ast
+  ): Boolean = {
+    outerScopeVariableNames.contains(name) && bodyAst.nodes.collect {
+      case node: NewLocal if node.name == name => node
+    }.isEmpty
+  }
 
+  private def calculateCapturedVariables(
+    lambdaExpression: ICPPASTLambdaExpression,
+    bodyAst: Ast,
+    variablesInScope: Seq[ScopeVariable]
+  ): Seq[(ScopeVariable, String)] = {
+    val captureDefault          = lambdaExpression.getCaptureDefault
+    val outerScopeVariableNames = variablesInScope.map(x => x.name -> x).toMap
     val capturedVariables = lambdaExpression.getCaptures.toList match {
       case captures if captures.isEmpty && captureDefault == CaptureDefault.UNSPECIFIED =>
         Seq.empty
@@ -81,13 +89,13 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
           if captureDefault == CaptureDefault.BY_REFERENCE then EvaluationStrategies.BY_REFERENCE
           else EvaluationStrategies.BY_VALUE
         bodyAst.nodes.collect {
-          case i: NewIdentifier if outerScopeVariableNames.contains(i.name) =>
+          case i: NewIdentifier if shouldBeCaptured(i.name, outerScopeVariableNames, bodyAst) =>
             (outerScopeVariableNames(i.name), strategy)
         }
       case other =>
         val validCaptures = other.filter(_.getIdentifier != null)
         bodyAst.nodes.collect {
-          case i: NewIdentifier if outerScopeVariableNames.contains(i.name) =>
+          case i: NewIdentifier if shouldBeCaptured(i.name, outerScopeVariableNames, bodyAst) =>
             val maybeInCaptures = validCaptures.find(c => c.getIdentifier.getRawSignature == i.name)
             val strategy = maybeInCaptures match {
               case Some(c) if c.isByReference                            => EvaluationStrategies.BY_REFERENCE
@@ -97,18 +105,41 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
             (outerScopeVariableNames(i.name), strategy)
         }
     }
+    capturedVariables.toSeq
+  }
 
-    val bindingsToLocals =
-      defineCapturedVariables(lambdaExpression, lambdaMethodName, capturedVariables.toSeq, filename)
+  private def fixupRefEdgesForCapturedLocals(bodyAst: Ast, capturedLocals: Seq[NewLocal]): Ast = {
+    var bodyAst_ = bodyAst
+    // During the traversal of the lambda body we may ref identifier to some outer param if any.
+    // This would cross method boundaries, which is invalid but at that time
+    // we do not know this. Hence, we fix that up here:
+    val capturedLocalFixCandidates = capturedLocals.flatMap { local =>
+      bodyAst.nodes.collect { case i: NewIdentifier if i.name == local.name => (i, local) }
+    }
+    capturedLocalFixCandidates.foreach { case (i, local) =>
+      val oldEdge = bodyAst_.refEdges.find(_.src == i)
+      if (oldEdge.nonEmpty) {
+        val fixedRefEdges = bodyAst_.refEdges.toList.diff(oldEdge.toList)
+        val newRefEdges   = fixedRefEdges ++ List(AstEdge(i, local))
+        bodyAst_ = bodyAst_.copy(refEdges = newRefEdges)
+      }
+    }
+    bodyAst_
+  }
+
+  private def astForLambdaBody(
+    lambdaExpression: ICPPASTLambdaExpression,
+    lambdaMethodName: String,
+    variablesInScope: Seq[ScopeVariable],
+    filename: String
+  ): LambdaBody = {
+    var bodyAst               = astForMethodBody(Option(lambdaExpression.getBody))
+    val capturedVariables     = calculateCapturedVariables(lambdaExpression, bodyAst, variablesInScope)
+    val bindingsToLocals      = defineCapturedVariables(lambdaExpression, lambdaMethodName, capturedVariables, filename)
     val capturedLocals        = bindingsToLocals.map(_._2)
     val closureBindingEntries = bindingsToLocals.map(_._1)
 
-    bodyAst.nodes.collect { case i: NewIdentifier =>
-      // during the traversal of the lambda body we may ref identifier to some outer
-      // param if any. This would cross method boundaries, which is invalid but at that time
-      // we do not know this. Hence, we fix that up here afterwards.
-      capturedLocals.find(_.name == i.name).foreach(l => bodyAst = bodyAst.withRefEdge(i, l))
-    }
+    bodyAst = fixupRefEdgesForCapturedLocals(bodyAst, capturedLocals)
 
     val blockAst = bodyAst.root match {
       case Some(b: NewBlock) =>

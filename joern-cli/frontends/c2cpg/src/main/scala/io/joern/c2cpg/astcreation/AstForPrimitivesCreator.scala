@@ -32,8 +32,8 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     if (codeString == "this") {
       val thisIdentifier = identifierNode(lit, "this", "this", tpe)
       scope.lookupVariable("this") match {
-        case Some((variable, _)) if !isInLambdaScope() => Ast(thisIdentifier).withRefEdge(thisIdentifier, variable)
-        case _                                         => Ast(identifierNode(lit, codeString, codeString, tpe))
+        case Some((variable, _)) => Ast(thisIdentifier).withRefEdge(thisIdentifier, variable)
+        case _                   => Ast(identifierNode(lit, codeString, codeString, tpe))
       }
     } else {
       Ast(literalNode(lit, codeString, tpe))
@@ -107,12 +107,6 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     }
   }
 
-  private def isInLambdaScope(): Boolean = {
-    methodAstParentStack.headOption.collect {
-      case m: NewMethod if m.name.startsWith("<lambda>") => m
-    }.nonEmpty
-  }
-
   private def syntheticThisAccess(ident: CPPASTIdExpression, identifierName: String): String | Ast = {
     val tpe = ident.getName.getBinding match {
       case f: CPPField => safeGetType(f.getType)
@@ -132,12 +126,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
               val member         = fieldIdentifierNode(ident, identifierName, identifierName)
               val ma =
                 callNode(ident, code, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(cleanType(tpe))))
-              val argumentAst = if (!isInLambdaScope()) {
-                Ast(thisIdentifier).withRefEdge(thisIdentifier, variable)
-              } else {
-                Ast(thisIdentifier)
-              }
-              callAst(ma, Seq(argumentAst, Ast(member)))
+              callAst(ma, Seq(Ast(thisIdentifier).withRefEdge(thisIdentifier, variable), Ast(member)))
             case None => tpe
           }
         } else tpe
@@ -176,9 +165,8 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
           case identifierTypeName: String =>
             val node = identifierNode(ident, identifierName, code(ident), registerType(cleanType(identifierTypeName)))
             scope.lookupVariable(identifierName) match {
-              case Some((variable, _)) if !isInLambdaScope() =>
-                Ast(node).withRefEdge(node, variable)
-              case _ => Ast(node)
+              case Some((variable, _)) => Ast(node).withRefEdge(node, variable)
+              case _                   => Ast(node)
             }
           case ast: Ast => ast
         }
