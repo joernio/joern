@@ -32,6 +32,19 @@ class TypeNodePassTests extends C2CpgSuite {
       bar.aliasTypeFullName shouldBe Option("char(&)[2]")
     }
 
+    "be correct for unknown type behind macro" in {
+      val cpg = code(
+        """
+          |#define DECLARE() unknown *val = NULL
+          |static void foo() {
+          |  DECLARE();
+          |}
+          |""".stripMargin,
+        "unknown.cpp"
+      )
+      cpg.local.typeFullName.l shouldBe List("unknown*")
+    }
+
     "be correct for static decl assignment" in {
       val cpg = code("""
           |void method() {
