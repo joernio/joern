@@ -91,9 +91,10 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
       case captures if captures.isEmpty && captureDefault == CaptureDefault.UNSPECIFIED =>
         Seq.empty
       case captures if captures.isEmpty =>
-        val strategy =
-          if captureDefault == CaptureDefault.BY_REFERENCE then EvaluationStrategies.BY_REFERENCE
-          else EvaluationStrategies.BY_VALUE
+        val strategy = captureDefault match {
+          case CaptureDefault.BY_REFERENCE => EvaluationStrategies.BY_REFERENCE
+          case _                           => EvaluationStrategies.BY_VALUE
+        }
         bodyAst.nodes.collect {
           case i: NewIdentifier if shouldBeCaptured(i.name, outerScopeVariableNames, bodyAst) =>
             (outerScopeVariableNames(i.name), strategy)
@@ -115,17 +116,18 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
   }
 
   private def fixupRefEdgesForCapturedLocals(bodyAst: Ast, capturedLocals: Seq[NewLocal]): Ast = {
+
+    def needsFixedRefEdge(i: NewIdentifier): Boolean = {
+      // We only need to fix the ref edge if we would cross method boundaries
+      bodyAst.refEdges.exists(edge => edge.src == i && !bodyAst.nodes.contains(edge.dst))
+    }
+
     // During the traversal of the lambda body we may ref identifier to some outer param if any.
     // This would cross method boundaries, which is invalid but at that time
     // we do not know this. Hence, we fix that up here:
     var bodyAst_ = bodyAst
     val capturedLocalFixCandidates = capturedLocals.flatMap { local =>
-      bodyAst.nodes.collect {
-        case i: NewIdentifier
-            if i.name == local.name &&
-              bodyAst_.refEdges.exists(e => e.src == i && e.dst.isInstanceOf[NewMethodParameterIn]) =>
-          (i, local)
-      }
+      bodyAst.nodes.collect { case i: NewIdentifier if i.name == local.name && needsFixedRefEdge(i) => (i, local) }
     }
     capturedLocalFixCandidates.foreach { case (i, local) =>
       val oldEdge = bodyAst_.refEdges.find(_.src == i)
