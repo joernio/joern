@@ -34,6 +34,13 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
       cpg.typeDecl.name(".*lambda.*").fullName.l shouldBe List("Test0.cpp:<global>.Foo.foo.<lambda>0:string(string)")
     }
 
+    "ref the lambda param correctly" in {
+      val List(lambdaMethod) = cpg.typeDecl.name("Foo").method.name(".*lambda.*").isLambda.l
+      val List(param)        = lambdaMethod.parameter.l
+      val List(reffedParam)  = cpg.identifier.nameExact("lambdaInput").refsTo.collectAll[MethodParameterIn].l
+      reffedParam shouldBe param
+    }
+
     "create a method node for the lambda" in {
       cpg.typeDecl.name("Foo").method.name(".*lambda.*").isLambda.l match {
         case List(lambdaMethod) =>

@@ -9,14 +9,13 @@ import io.joern.x2cpg.utils.NodeBuilders.newClosureBindingNode
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.joern.x2cpg.AstEdge
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
+import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
 import io.shiftleft.codepropertygraph.generated.nodes.NewClosureBinding
 import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
 import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethodParameterIn
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethodRef
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
-import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
@@ -26,13 +25,8 @@ import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTLambdaExpression
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTLambdaExpression.CaptureDefault
 
 object AstForLambdasCreator {
-
   private case class ClosureBindingEntry(node: ScopeVariable, binding: NewClosureBinding)
-
-  private case class LambdaBody(body: Ast, capturedVariables: Seq[ClosureBindingEntry]) {
-    def nodes: Seq[NewNode] = body.nodes.toSeq
-  }
-
+  private case class LambdaBody(body: Ast, capturedVariables: Seq[ClosureBindingEntry])
 }
 
 trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -58,26 +52,18 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
           scopeVariable.typeFullName,
           Option(closureBindingId)
         )
-        scope.addToScope(scopeVariable.name, (capturedLocal, scopeVariable.typeFullName))
         ClosureBindingEntry(scopeVariable, closureBindingNode) -> capturedLocal
       }
       .toSeq
   }
 
   private def shouldBeCaptured(
-    name: String,
+    identifier: NewIdentifier,
     outerScopeVariableNames: Map[String, ScopeVariable],
     bodyAst: Ast
   ): Boolean = {
-    outerScopeVariableNames.contains(name) && !bodyAst.nodes.exists {
-      case node: NewLocal if node.name == name =>
-        val srcBlock = bodyAst.nodes.head
-        bodyAst.edges.exists {
-          case AstEdge(src, dst) if src == srcBlock && dst == node => true
-          case _                                                   => false
-        }
-      case _ => false
-    }
+    outerScopeVariableNames.contains(identifier.name) &&
+    bodyAst.refEdges.exists(edge => edge.src == identifier && !bodyAst.nodes.contains(edge.dst))
   }
 
   private def calculateCapturedVariables(
@@ -96,13 +82,13 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
           case _                           => EvaluationStrategies.BY_VALUE
         }
         bodyAst.nodes.collect {
-          case i: NewIdentifier if shouldBeCaptured(i.name, outerScopeVariableNames, bodyAst) =>
+          case i: NewIdentifier if shouldBeCaptured(i, outerScopeVariableNames, bodyAst) =>
             (outerScopeVariableNames(i.name), strategy)
         }
       case other =>
         val validCaptures = other.filter(_.getIdentifier != null)
         bodyAst.nodes.collect {
-          case i: NewIdentifier if shouldBeCaptured(i.name, outerScopeVariableNames, bodyAst) =>
+          case i: NewIdentifier if shouldBeCaptured(i, outerScopeVariableNames, bodyAst) =>
             val maybeInCaptures = validCaptures.find(c => c.getIdentifier.getRawSignature == i.name)
             val strategy = maybeInCaptures match {
               case Some(c) if c.isByReference                            => EvaluationStrategies.BY_REFERENCE
@@ -171,8 +157,8 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
   }
 
   private def createAndPushLambdaMethod(lambdaExpression: ICPPASTLambdaExpression): (NewMethod, LambdaBody) = {
-    val filename                                                  = fileName(lambdaExpression)
     val MethodFullNameInfo(name, fullName, signature, returnType) = methodFullNameInfo(lambdaExpression)
+    val filename                                                  = fileName(lambdaExpression)
     val codeString                                                = code(lambdaExpression)
     val variablesInScope                                          = scope.variablesInScope
 
@@ -181,23 +167,15 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
     methodAstParentStack.push(lambdaMethodNode)
     scope.pushNewScope(lambdaMethodNode)
 
-    val parameterNodes = withIndex(this.parameters(lambdaExpression.getDeclarator)) { (p, i) =>
-      parameterNode(p, i)
-    }
+    val parameterNodes = withIndex(parameters(lambdaExpression.getDeclarator)) { (p, i) => parameterNode(p, i) }
     setVariadic(parameterNodes, lambdaExpression)
     val parameterAsts = parameterNodes.map(Ast(_))
+    val lambdaBody    = astForLambdaBody(lambdaExpression, name, variablesInScope, filename)
 
-    val isStatic = !lambdaExpression.getCaptures.exists(c => c.capturesThisPointer())
+    scope.popScope()
+    methodAstParentStack.pop()
 
-    val lambdaBody = astForLambdaBody(lambdaExpression, name, variablesInScope, filename)
-
-    val lambdaParameterNamesToNodes =
-      parameterAsts.flatMap(_.root).collect { case param: NewMethodParameterIn => param.name -> param }.toMap
-
-    val identifiersMatchingParams = lambdaBody.nodes.collect {
-      case identifier: NewIdentifier if lambdaParameterNamesToNodes.contains(identifier.name) => identifier
-    }
-
+    val isStatic        = !lambdaExpression.getCaptures.exists(c => c.capturesThisPointer())
     val returnNode      = methodReturnNode(lambdaExpression, registerType(returnType))
     val virtualModifier = Some(newModifierNode(ModifierTypes.VIRTUAL))
     val staticModifier  = Option.when(isStatic)(newModifierNode(ModifierTypes.STATIC))
@@ -205,19 +183,11 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
     val lambdaModifier  = Some(newModifierNode(ModifierTypes.LAMBDA))
     val modifiers       = List(virtualModifier, staticModifier, privateModifier, lambdaModifier).flatten.map(Ast(_))
 
-    val lambdaMethodAstWithoutRefs =
-      Ast(lambdaMethodNode)
-        .withChildren(parameterAsts)
-        .withChild(lambdaBody.body)
-        .withChild(Ast(returnNode))
-        .withChildren(modifiers)
-
-    val lambdaMethodAst = identifiersMatchingParams.foldLeft(lambdaMethodAstWithoutRefs)((ast, identifier) =>
-      ast.withRefEdge(identifier, lambdaParameterNamesToNodes(identifier.name))
-    )
-
-    scope.popScope()
-    methodAstParentStack.pop()
+    val lambdaMethodAst = Ast(lambdaMethodNode)
+      .withChildren(parameterAsts)
+      .withChild(lambdaBody.body)
+      .withChild(Ast(returnNode))
+      .withChildren(modifiers)
 
     val parentNode = methodAstParentStack.collectFirst { case t: NewTypeDecl => t }
     Ast.storeInDiffGraph(lambdaMethodAst, diffGraph)
@@ -270,8 +240,10 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
 
   protected def astForLambdaExpression(lambdaExpression: ICPPASTLambdaExpression): Ast = {
     val (lambdaMethodNode, lambdaBody) = createAndPushLambdaMethod(lambdaExpression)
-    val methodRef =
-      methodRefNode(lambdaExpression, lambdaMethodNode.fullName, lambdaMethodNode.fullName, lambdaMethodNode.fullName)
+    val refCode                        = lambdaMethodNode.fullName
+    val refFullName                    = lambdaMethodNode.fullName
+    val refTypeFullName                = lambdaMethodNode.fullName
+    val methodRef                      = methodRefNode(lambdaExpression, refCode, refFullName, refTypeFullName)
     addClosureBindingsToDiffGraph(lambdaBody.capturedVariables, methodRef)
     createAndPushLambdaTypeDecl(lambdaExpression, lambdaMethodNode)
     Ast(methodRef)
