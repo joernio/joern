@@ -766,10 +766,14 @@ class RubyJsonToNodeCreator(
   private def visitNil(obj: Obj): RubyExpression = StaticLiteral(getBuiltInType(Defines.NilClass))(obj.toTextSpan)
 
   private def visitNthRef(obj: Obj): RubyExpression = {
-    val span     = obj.toTextSpan
-    val name     = obj(ParserKeys.Value).num.toInt
-    val selfBase = SelfIdentifier()(span.spanStart("self"))
-    MemberAccess(selfBase, ".", s"$$$name")(span)
+    // We represent $1 as $[1] in order to track these arbitrary numeric accesses in a way the data-flow engine
+    // understands
+    val span              = obj.toTextSpan
+    val name              = obj(ParserKeys.Value).num.toInt
+    val selfBase          = SelfIdentifier()(span.spanStart("self"))
+    val amperMemberAccess = MemberAccess(selfBase, ".", "$")(span)
+    val indexPos          = StaticLiteral(getBuiltInType(Defines.Integer))(obj.toTextSpan.spanStart(name.toString))
+    IndexAccess(amperMemberAccess, indexPos :: Nil)(obj.toTextSpan.spanStart(s"$$[$name]"))
   }
 
   private def visitObjectInstantiation(obj: Obj): RubyExpression = {

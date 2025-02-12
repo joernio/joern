@@ -199,8 +199,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     def tmp = SimpleIdentifier()(originSpan.spanStart(tmpName))
 
     val matchCall = {
-      val code = s"${target.text}.match(${regex.text})"
-      MemberCall(target, ".", "match", regex :: Nil)(originSpan.spanStart(code))
+      val code = s"${regex.text}.match(${target.text})"
+      MemberCall(regex, ".", "match", target :: Nil)(originSpan.spanStart(code))
     }
     val tmpAssignment = {
       val code = s"$tmpName = ${matchCall.text}"
@@ -217,14 +217,24 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         val tildeCode   = s"$$~ = $tmpName"
         val tildeAssign = SingleAssignment(globalTilde, "=", tmp)(originSpan.spanStart(tildeCode))
 
-        def zero      = StaticLiteral(getBuiltInType(Defines.Integer))(originSpan.spanStart("0"))
-        val tmpIndex0 = IndexAccess(tmp, zero :: Nil)(originSpan.spanStart(s"$tmpName[0]"))
+        def intLiteral(n: Int) = StaticLiteral(getBuiltInType(Defines.Integer))(originSpan.spanStart(s"$n"))
+        val tmpIndex0          = IndexAccess(tmp, intLiteral(0) :: Nil)(originSpan.spanStart(s"$tmpName[0]"))
 
         val ampersandCode   = s"$$& = $tmpName[0]"
         val ampersandAssign = SingleAssignment(globalAmpersand, "=", tmpIndex0)(originSpan.spanStart(ampersandCode))
+
+        // use a simple heuristic to determine the N matched groups
+        val matchGroups = (1 to regex.text.count(_ == '(')).map { idx =>
+          val matchGroupAsgnCode = s"$$$idx = $tmpName[$idx]"
+          val matchGroup         = MemberAccess(self, ".", "$")(originSpan.spanStart("$"))
+          val matchGroupIndexN   = IndexAccess(matchGroup, intLiteral(idx) :: Nil)(originSpan.spanStart(s"$$[$idx]"))
+          val tmpIndexN          = IndexAccess(tmp, intLiteral(idx) :: Nil)(originSpan.spanStart(s"$tmpName[$idx]"))
+          SingleAssignment(matchGroupIndexN, "=", tmpIndexN)(originSpan.spanStart(matchGroupAsgnCode))
+        }.toList
+
         // tmp.begin(0) is the lowered return value of `~=`
-        val beginCall = MemberCall(tmp, ".", "begin", zero :: Nil)(originSpan.spanStart(s"$tmpName.begin(0)"))
-        StatementList(tildeAssign :: ampersandAssign :: beginCall :: Nil)(
+        val beginCall = MemberCall(tmp, ".", "begin", intLiteral(0) :: Nil)(originSpan.spanStart(s"$tmpName.begin(0)"))
+        StatementList(tildeAssign :: ampersandAssign :: Nil ++ matchGroups :+ beginCall)(
           originSpan.spanStart(s"$tildeCode; $ampersandCode")
         )
       },
