@@ -311,8 +311,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         Ast() // The proc parameter is retrieved later under method AST creation
       case node: CollectionParameter =>
         val typeFullName = node match {
-          case ArrayParameter(_) => prefixAsBundledType("Array")
-          case HashParameter(_)  => prefixAsBundledType("Hash")
+          case ArrayParameter(_) => prefixAsCoreType("Array")
+          case HashParameter(_)  => prefixAsCoreType("Hash")
         }
         val name = node.name.stripPrefix("*")
         val parameterIn = parameterInNode(

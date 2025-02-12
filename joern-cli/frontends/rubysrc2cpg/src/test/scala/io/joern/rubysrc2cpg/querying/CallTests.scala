@@ -71,7 +71,7 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
     val List(atan2) = cpg.call.name("atan2").l
     atan2.lineNumber shouldBe Some(3)
     atan2.code shouldBe "Math.atan2(1, 1)"
-    atan2.methodFullName shouldBe s"${GlobalTypes.corePrefix}.Math.atan2"
+    atan2.methodFullName shouldBe s"${RubyDefines.prefixAsCoreType("Math")}.atan2"
     atan2.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
 
     val List(mathRec: Call) = atan2.receiver.l: @unchecked
@@ -79,7 +79,7 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
     mathRec.typeFullName shouldBe Defines.Any
     mathRec.code shouldBe s"Math.atan2"
 
-    mathRec.argument(1).asInstanceOf[TypeRef].typeFullName shouldBe s"${GlobalTypes.corePrefix}.Math"
+    mathRec.argument(1).asInstanceOf[TypeRef].typeFullName shouldBe RubyDefines.prefixAsCoreType("Math")
     mathRec.argument(2).asInstanceOf[FieldIdentifier].canonicalName shouldBe "atan2"
   }
 
@@ -357,7 +357,7 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
   "a call with a quoted regex literal should have a literal receiver" in {
     val cpg          = code("%r{^/}.freeze()")
     val regexLiteral = cpg.call.nameExact("freeze").receiver.fieldAccess.argument(1).head.asInstanceOf[Literal]
-    regexLiteral.typeFullName shouldBe RubyDefines.getCoreType(RubyDefines.Regexp)
+    regexLiteral.typeFullName shouldBe RubyDefines.prefixAsCoreType(RubyDefines.Regexp)
     regexLiteral.code shouldBe "%r{^/}"
   }
 
@@ -516,10 +516,10 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
         sentryAssoc.code shouldBe "[:sentry_issue_identifier]"
 
         strLiteral.code shouldBe "\"1234\""
-        strLiteral.typeFullName shouldBe RubyDefines.getCoreType(RubyDefines.String)
+        strLiteral.typeFullName shouldBe RubyDefines.prefixAsCoreType(RubyDefines.String)
 
         numericLiteral.code shouldBe "10"
-        numericLiteral.typeFullName shouldBe RubyDefines.getCoreType(RubyDefines.Integer)
+        numericLiteral.typeFullName shouldBe RubyDefines.prefixAsCoreType(RubyDefines.Integer)
       case xs => fail(s"Expected 6 parameters for call, got [${xs.code.mkString(", ")}]")
     }
   }

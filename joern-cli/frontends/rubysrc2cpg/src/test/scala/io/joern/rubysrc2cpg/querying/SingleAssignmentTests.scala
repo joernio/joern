@@ -292,13 +292,13 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
 
                 inside(lhs.argument.l) {
                   case base :: (index: Literal) :: Nil =>
-                    index.typeFullName shouldBe RubyDefines.getCoreType(RubyDefines.Symbol)
+                    index.typeFullName shouldBe RubyDefines.prefixAsCoreType(RubyDefines.Symbol)
                   case xs => fail(s"Expected base and index, got [${xs.code.mkString(",")}]")
                 }
 
                 inside(rhs.argument.l) {
                   case base :: (index: Literal) :: Nil =>
-                    index.typeFullName shouldBe RubyDefines.getCoreType(RubyDefines.Symbol)
+                    index.typeFullName shouldBe RubyDefines.prefixAsCoreType(RubyDefines.Symbol)
                   case xs => fail(s"Expected base and index, got [${xs.code.mkString(",")}]")
                 }
 

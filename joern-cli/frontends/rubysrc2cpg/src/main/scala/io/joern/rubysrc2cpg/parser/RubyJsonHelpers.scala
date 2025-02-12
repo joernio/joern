@@ -25,7 +25,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   UnaryExpression
 }
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.rubysrc2cpg.passes.Defines.getCoreType
+import io.joern.rubysrc2cpg.passes.Defines.prefixAsCoreType
 import org.slf4j.LoggerFactory
 import upickle.core.*
 import upickle.default.*
@@ -68,7 +68,7 @@ object RubyJsonHelpers {
   }
 
   protected def nilLiteral(span: TextSpan): StaticLiteral =
-    StaticLiteral(getCoreType(Defines.NilClass))(span.spanStart("nil"))
+    StaticLiteral(prefixAsCoreType(Defines.NilClass))(span.spanStart("nil"))
 
   def createClassBodyAndFields(
     obj: ujson.Obj
@@ -321,7 +321,7 @@ object RubyJsonHelpers {
 
   def infinityUpperBound(obj: ujson.Obj): MemberAccess =
     MemberAccess(
-      SimpleIdentifier(Option(getCoreType(Defines.Float)))(obj.toTextSpan.spanStart("Float")),
+      SimpleIdentifier(Option(prefixAsCoreType(Defines.Float)))(obj.toTextSpan.spanStart("Float")),
       "::",
       "INFINITY"
     )(obj.toTextSpan.spanStart("Float::INFINITY"))
@@ -330,7 +330,7 @@ object RubyJsonHelpers {
     UnaryExpression(
       "-",
       MemberAccess(
-        SimpleIdentifier(Option(getCoreType(Defines.Float)))(obj.toTextSpan.spanStart("Float")),
+        SimpleIdentifier(Option(prefixAsCoreType(Defines.Float)))(obj.toTextSpan.spanStart("Float")),
         "::",
         "INFINITY"
       )(obj.toTextSpan.spanStart("Float::INFINITY"))

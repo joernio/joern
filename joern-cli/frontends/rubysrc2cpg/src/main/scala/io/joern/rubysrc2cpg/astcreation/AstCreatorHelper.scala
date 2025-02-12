@@ -70,8 +70,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   override def code(node: RubyExpression): String = shortenCode(node.text)
 
   protected def isBuiltin(x: String): Boolean            = kernelFunctions.contains(x)
-  protected def prefixAsKernelDefined(x: String): String = Defines.getBuiltInType(x)
-  protected def prefixAsBundledType(x: String): String   = Defines.getCoreType(x)
+  protected def prefixAsKernelDefined(x: String): String = Defines.prefixAsKernelDefined(x)
+  protected def prefixAsCoreType(x: String): String      = Defines.prefixAsCoreType(x)
   protected def isBundledClass(x: String): Boolean       = GlobalTypes.bundledClasses.contains(x)
   protected def pathSep                                  = "."
 
@@ -215,7 +215,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         val tildeCode   = s"$$~ = $tmpName"
         val tildeAssign = SingleAssignment(globalTilde, "=", tmp)(originSpan.spanStart(tildeCode))
 
-        def intLiteral(n: Int) = StaticLiteral(Defines.getCoreType(Defines.Integer))(originSpan.spanStart(s"$n"))
+        def intLiteral(n: Int) = StaticLiteral(Defines.prefixAsCoreType(Defines.Integer))(originSpan.spanStart(s"$n"))
         val tmpIndex0          = IndexAccess(tmp, intLiteral(0) :: Nil)(originSpan.spanStart(s"$tmpName[0]"))
 
         val ampersandCode   = s"$$& = $tmpName[0]"
@@ -237,7 +237,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         )
       },
       elseClause = Option {
-        def nil         = StaticLiteral(Defines.getCoreType(Defines.NilClass))(originSpan.spanStart("nil"))
+        def nil         = StaticLiteral(Defines.prefixAsCoreType(Defines.NilClass))(originSpan.spanStart("nil"))
         val tildeCode   = s"$$~ = nil"
         val tildeAssign = SingleAssignment(globalTilde, "=", nil)(originSpan.spanStart(tildeCode))
 

@@ -36,13 +36,13 @@ object Defines {
 
   val Resolver: String = "<dependency-resolver>"
 
-  def getBuiltInType(typeInString: String): String = {
+  def prefixAsKernelDefined(typeInString: String): String = {
     if (GlobalTypes.bundledClasses.contains(typeInString))
       logger.warn(s"Type '$typeInString' is considered a 'core' type, not a 'Kernel-contained' type")
     s"${GlobalTypes.kernelPrefix}.$typeInString"
   }
 
-  def getCoreType(typeInString: String): String = {
+  def prefixAsCoreType(typeInString: String): String = {
     if (!GlobalTypes.bundledClasses.contains(typeInString))
       logger.warn(s"Type '$typeInString' not considered a 'core' type")
     s"${GlobalTypes.corePrefix}.$typeInString"
@@ -61,9 +61,9 @@ object Defines {
 }
 
 object GlobalTypes {
-  val Kernel        = "Kernel"
-  val corePrefix = "__core"
-  val kernelPrefix  = s"$corePrefix.$Kernel"
+  val Kernel       = "Kernel"
+  val corePrefix   = "__core"
+  val kernelPrefix = s"$corePrefix.$Kernel"
 
   /** Source: https://ruby-doc.org/docs/ruby-doc-bundle/Manual/man-1.4/function.html
     */

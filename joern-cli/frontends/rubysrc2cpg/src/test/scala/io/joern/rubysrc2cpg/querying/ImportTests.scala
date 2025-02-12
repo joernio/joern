@@ -2,7 +2,6 @@ package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.{Initialize, Main}
-import io.joern.rubysrc2cpg.passes.GlobalTypes.{corePrefix, kernelPrefix}
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.frontendspecific.rubysrc2cpg.{ImplicitRequirePass, ImportsPass, TypeImportInfo}
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
@@ -380,10 +379,10 @@ class ImportTests extends RubyCode2CpgFixture(withPostProcessing = true) with In
     "create a `require` call following the simplified format" in {
       val require = cpg.call("require").head
       require.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      require.methodFullName shouldBe s"$kernelPrefix.require"
+      require.methodFullName shouldBe Defines.prefixAsKernelDefined("require")
 
       val strLit = require.argument(1).asInstanceOf[Literal]
-      strLit.typeFullName shouldBe s"$kernelPrefix.String"
+      strLit.typeFullName shouldBe Defines.prefixAsCoreType("String")
     }
 
   }

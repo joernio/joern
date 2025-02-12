@@ -158,18 +158,18 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     scope.addToScope(node.forVariable.span.text, iterVarLocal)
 
     val idxName  = "_idx_"
-    val idxLocal = NewLocal().name(idxName).code(idxName).typeFullName(Defines.getCoreType(Defines.Integer))
+    val idxLocal = NewLocal().name(idxName).code(idxName).typeFullName(Defines.prefixAsCoreType(Defines.Integer))
     val idxIdenAtAssign = identifierNode(
       node = collectionNode,
       name = idxName,
       code = idxName,
-      typeFullName = Defines.getCoreType(Defines.Integer)
+      typeFullName = Defines.prefixAsCoreType(Defines.Integer)
     )
 
     val idxAssignment =
       callNode(node, s"$idxName = 0", Operators.assignment, Operators.assignment, DispatchTypes.STATIC_DISPATCH)
     val idxAssignmentArgs =
-      List(Ast(idxIdenAtAssign), Ast(NewLiteral().code("0").typeFullName(Defines.getCoreType(Defines.Integer))))
+      List(Ast(idxIdenAtAssign), Ast(NewLiteral().code("0").typeFullName(Defines.prefixAsCoreType(Defines.Integer))))
     val idxAssignmentAst = callAst(idxAssignment, idxAssignmentArgs)
 
     val idxIdAtCond = idxIdenAtAssign.copy
@@ -260,7 +260,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
             // which is translated to `x.include? y` and `x.any?` conditions respectively
 
             val conditions = whenClause.matchExpressions.map {
-              case regex: StaticLiteral if regex.typeFullName == prefixAsBundledType(Defines.Regexp) =>
+              case regex: StaticLiteral if regex.typeFullName == prefixAsCoreType(Defines.Regexp) =>
                 expr.map(e => BinaryExpression(regex, RubyOperators.regexpMatch, e)(regex.span)).getOrElse(regex)
               case mExpr =>
                 expr.map(e => BinaryExpression(mExpr, "===", e)(mExpr.span)).getOrElse(mExpr)
@@ -303,7 +303,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
                     val arrAccess = {
                       val code = s"${expr.get.text}[$idx]"
                       val base = expr.get.copy()(expr.get.span.spanStart(expr.get.text))
-                      val indices = StaticLiteral(Defines.getCoreType(Defines.Integer))(
+                      val indices = StaticLiteral(Defines.prefixAsCoreType(Defines.Integer))(
                         expr.get.span.spanStart(idx.toString)
                       ) :: Nil
                       IndexAccess(base, indices)(lhs.span.spanStart(code))
