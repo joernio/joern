@@ -2,7 +2,7 @@ package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
-import io.joern.rubysrc2cpg.passes.GlobalTypes.{builtinPrefix, kernelPrefix}
+import io.joern.rubysrc2cpg.passes.GlobalTypes.{corePrefix, kernelPrefix}
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines as XDefines
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal, Local}
@@ -99,7 +99,7 @@ class ArrayTests extends RubyCode2CpgFixture {
 
     inside(asgns.map(_.source)) { case (foo: Literal) :: Nil =>
       foo.code shouldBe "foo"
-      foo.typeFullName shouldBe s"$builtinPrefix.String"
+      foo.typeFullName shouldBe s"$corePrefix.String"
     }
   }
 
@@ -116,10 +116,10 @@ class ArrayTests extends RubyCode2CpgFixture {
 
     inside(asgns.map(_.source)) { case (x: Literal) :: (y: Literal) :: Nil =>
       x.code shouldBe ":x"
-      x.typeFullName shouldBe s"$builtinPrefix.Symbol"
+      x.typeFullName shouldBe s"$corePrefix.Symbol"
 
       y.code shouldBe ":y"
-      y.typeFullName shouldBe s"$builtinPrefix.Symbol"
+      y.typeFullName shouldBe s"$corePrefix.Symbol"
     }
   }
 
@@ -159,7 +159,7 @@ class ArrayTests extends RubyCode2CpgFixture {
       yFmtStrLit.code shouldBe "23"
 
       zLit.code shouldBe "z"
-      zLit.typeFullName shouldBe s"$builtinPrefix.String"
+      zLit.typeFullName shouldBe s"$corePrefix.String"
     }
   }
 
@@ -171,8 +171,8 @@ class ArrayTests extends RubyCode2CpgFixture {
     inside(cpg.call.nameExact("[]").l) {
       case bracketCall :: Nil =>
         bracketCall.name shouldBe "[]"
-        bracketCall.methodFullName shouldBe s"$builtinPrefix.Array.[]"
-        bracketCall.typeFullName shouldBe s"$builtinPrefix.Array"
+        bracketCall.methodFullName shouldBe s"$corePrefix.Array.[]"
+        bracketCall.typeFullName shouldBe s"$corePrefix.Array"
 
         inside(bracketCall.argument.l) {
           case _ :: one :: two :: three :: Nil =>

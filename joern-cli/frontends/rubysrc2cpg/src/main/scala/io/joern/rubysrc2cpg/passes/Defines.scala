@@ -45,7 +45,7 @@ object Defines {
   def getCoreType(typeInString: String): String = {
     if (!GlobalTypes.bundledClasses.contains(typeInString))
       logger.warn(s"Type '$typeInString' not considered a 'core' type")
-    s"${GlobalTypes.builtinPrefix}.$typeInString"
+    s"${GlobalTypes.corePrefix}.$typeInString"
   }
 
   object RubyOperators {
@@ -62,8 +62,8 @@ object Defines {
 
 object GlobalTypes {
   val Kernel        = "Kernel"
-  val builtinPrefix = "__core"
-  val kernelPrefix  = s"$builtinPrefix.$Kernel"
+  val corePrefix = "__core"
+  val kernelPrefix  = s"$corePrefix.$Kernel"
 
   /** Source: https://ruby-doc.org/docs/ruby-doc-bundle/Manual/man-1.4/function.html
     */

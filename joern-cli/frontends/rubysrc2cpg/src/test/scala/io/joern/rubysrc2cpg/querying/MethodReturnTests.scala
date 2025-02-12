@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.passes.Defines.{Main, RubyOperators}
-import io.joern.rubysrc2cpg.passes.GlobalTypes.{builtinPrefix, kernelPrefix}
+import io.joern.rubysrc2cpg.passes.GlobalTypes.{corePrefix, kernelPrefix}
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
@@ -156,7 +156,7 @@ class MethodReturnTests extends RubyCode2CpgFixture {
 
     val List(s: Literal) = r.astChildren.isLiteral.l
     s.code shouldBe ":g"
-    s.typeFullName shouldBe s"$builtinPrefix.Symbol"
+    s.typeFullName shouldBe s"$corePrefix.Symbol"
   }
 
   "explicit RETURN node for `\"\"` exists" in {
@@ -192,14 +192,14 @@ class MethodReturnTests extends RubyCode2CpgFixture {
             val List(twenty: Literal) = return20.astChildren.l: @unchecked
             twenty.code shouldBe "20"
             twenty.lineNumber shouldBe Some(4)
-            twenty.typeFullName shouldBe s"$builtinPrefix.Integer"
+            twenty.typeFullName shouldBe s"$corePrefix.Integer"
 
             returnNil.code shouldBe "return nil"
             returnNil.lineNumber shouldBe Some(3)
             val List(nil: Literal) = returnNil.astChildren.l: @unchecked
             nil.code shouldBe "nil"
             nil.lineNumber shouldBe Some(3)
-            nil.typeFullName shouldBe s"$builtinPrefix.NilClass"
+            nil.typeFullName shouldBe s"$corePrefix.NilClass"
           case xs => fail(s"Expected exactly two return nodes, instead got [${xs.code.mkString(",")}]")
         }
       case xs => fail(s"Expected exactly one method with the name `f`, instead got [${xs.code.mkString(",")}]")
@@ -227,14 +227,14 @@ class MethodReturnTests extends RubyCode2CpgFixture {
             val List(twenty: Literal) = return20.astChildren.l: @unchecked
             twenty.code shouldBe "20"
             twenty.lineNumber shouldBe Some(4)
-            twenty.typeFullName shouldBe s"$builtinPrefix.Integer"
+            twenty.typeFullName shouldBe s"$corePrefix.Integer"
 
             return40.code shouldBe "40"
             return40.lineNumber shouldBe Some(6)
             val List(forty: Literal) = return40.astChildren.l: @unchecked
             forty.code shouldBe "40"
             forty.lineNumber shouldBe Some(6)
-            forty.typeFullName shouldBe s"$builtinPrefix.Integer"
+            forty.typeFullName shouldBe s"$corePrefix.Integer"
           case xs => fail(s"Expected exactly two return nodes, instead got [${xs.code.mkString(",")}]")
         }
       case xs => fail(s"Expected exactly one method with the name `f`, instead got [${xs.code.mkString(",")}]")
@@ -297,14 +297,14 @@ class MethodReturnTests extends RubyCode2CpgFixture {
             val List(twenty: Literal) = return20.astChildren.l: @unchecked
             twenty.code shouldBe "20"
             twenty.lineNumber shouldBe Some(2)
-            twenty.typeFullName shouldBe s"$builtinPrefix.Integer"
+            twenty.typeFullName shouldBe s"$corePrefix.Integer"
 
             return40.code shouldBe "40"
             return40.lineNumber shouldBe Some(2)
             val List(forty: Literal) = return40.astChildren.l: @unchecked
             forty.code shouldBe "40"
             forty.lineNumber shouldBe Some(2)
-            forty.typeFullName shouldBe s"$builtinPrefix.Integer"
+            forty.typeFullName shouldBe s"$corePrefix.Integer"
           case xs => fail(s"Expected exactly two return nodes, instead got [${xs.code.mkString(",")}]")
         }
       case xs => fail(s"Expected exactly one method with the name `f`, instead got [${xs.code.mkString(",")}]")
@@ -430,7 +430,7 @@ class MethodReturnTests extends RubyCode2CpgFixture {
 
     inside(cpg.method.nameExact("foo").methodReturn.toReturn.astChildren.l) {
       case (heredoc: Literal) :: Nil =>
-        heredoc.typeFullName shouldBe s"$builtinPrefix.String"
+        heredoc.typeFullName shouldBe s"$corePrefix.String"
         heredoc.code should startWith("   puts \"hello\"")
       case xs => fail(s"Expected a single literal node, instead got [${xs.code.mkString(", ")}]")
     }

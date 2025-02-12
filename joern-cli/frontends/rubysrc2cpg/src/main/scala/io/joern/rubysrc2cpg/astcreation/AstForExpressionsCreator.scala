@@ -252,7 +252,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     }
 
     node.target match {
-      case regex @ StaticLiteral(s"${GlobalTypes.builtinPrefix}.${Defines.Regexp}") if node.isRegexMatch =>
+      case regex @ StaticLiteral(s"${GlobalTypes.`corePrefix`}.${Defines.Regexp}") if node.isRegexMatch =>
         val loweredRegex = node.arguments.headOption match {
           case Some(literal) => lowerRegexMatch(literal, regex, node.span)
           case None =>
@@ -841,13 +841,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     (node.lowerBound, node.upperBound) match {
       case (lb: StaticLiteral, ub: StaticLiteral) =>
         (lb.typeFullName, ub.typeFullName) match {
-          case (s"${GlobalTypes.builtinPrefix}.Integer", s"${GlobalTypes.builtinPrefix}.Integer") =>
+          case (s"${GlobalTypes.`corePrefix`}.Integer", s"${GlobalTypes.`corePrefix`}.Integer") =>
             generateRange(lb.span.text.toInt, ub.span.text.toInt, node.rangeOperator.exclusive)
               .map(x =>
                 StaticLiteral(lb.typeFullName)(TextSpan(lb.line, lb.column, lb.lineEnd, lb.columnEnd, None, x.toString))
               )
               .toList
-          case (s"${GlobalTypes.builtinPrefix}.String", s"${GlobalTypes.builtinPrefix}.String") =>
+          case (s"${GlobalTypes.`corePrefix`}.String", s"${GlobalTypes.`corePrefix`}.String") =>
             val lbVal = lb.span.text.replaceAll("['\"]", "")
             val ubVal = ub.span.text.replaceAll("['\"]", "")
 
@@ -999,7 +999,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val argumentAst = node.arguments.map(astForMethodCallArgument)
     val (dispatchType, methodFullName) =
-      if receiverType.startsWith(GlobalTypes.builtinPrefix) then (DispatchTypes.STATIC_DISPATCH, methodFullNameHint)
+      if receiverType.startsWith(GlobalTypes.corePrefix) then (DispatchTypes.STATIC_DISPATCH, methodFullNameHint)
       else (DispatchTypes.DYNAMIC_DISPATCH, XDefines.DynamicCallUnknownFullName)
 
     val call = callNode(node, code(node), methodName, methodFullName, dispatchType)

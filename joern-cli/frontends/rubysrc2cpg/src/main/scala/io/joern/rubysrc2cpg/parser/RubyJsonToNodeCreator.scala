@@ -1,11 +1,11 @@
 package io.joern.rubysrc2cpg.parser
 
-import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{RubyExpression, *}
+import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.parser.AstType.Send
 import io.joern.rubysrc2cpg.parser.RubyJsonHelpers.*
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.{NilClass, RubyOperators}
-import io.joern.rubysrc2cpg.passes.GlobalTypes.builtinPrefix
+import io.joern.rubysrc2cpg.passes.GlobalTypes.corePrefix
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
 import io.joern.x2cpg.frontendspecific.rubysrc2cpg.ImportsPass
 import io.joern.x2cpg.frontendspecific.rubysrc2cpg.ImportsPass.ImportCallNames
@@ -851,7 +851,7 @@ class RubyJsonToNodeCreator(
       case Nil => RaiseCall(target, List.empty)(obj.toTextSpan)
       case (argument: StaticLiteral) :: Nil =>
         val simpleErrorId =
-          SimpleIdentifier(Option(s"$builtinPrefix.StandardError"))(argument.span.spanStart("StandardError"))
+          SimpleIdentifier(Option(s"$corePrefix.StandardError"))(argument.span.spanStart("StandardError"))
         val implicitSimpleErrInst = SimpleObjectInstantiation(simpleErrorId, argument :: Nil)(
           argument.span.spanStart(s"StandardError.new(${argument.text})")
         )

@@ -375,7 +375,7 @@ object RubyIntermediateAst {
   final case class TypeIdentifier(typeFullName: String)(span: TextSpan)
       extends RubyExpression(span)
       with RubyIdentifier {
-    def isBuiltin: Boolean        = typeFullName.startsWith(GlobalTypes.builtinPrefix)
+    def isBuiltin: Boolean        = typeFullName.startsWith(GlobalTypes.corePrefix)
     override def toString: String = s"TypeIdentifier(${span.text}, $typeFullName)"
   }
 

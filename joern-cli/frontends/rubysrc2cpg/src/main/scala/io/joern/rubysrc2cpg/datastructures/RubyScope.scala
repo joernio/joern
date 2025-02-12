@@ -2,9 +2,9 @@ package io.joern.rubysrc2cpg.datastructures
 
 import better.files.File
 import io.joern.rubysrc2cpg.passes.GlobalTypes
-import io.joern.rubysrc2cpg.passes.GlobalTypes.builtinPrefix
+import io.joern.rubysrc2cpg.passes.GlobalTypes.corePrefix
 import io.joern.x2cpg.Defines
-import io.joern.x2cpg.datastructures.{TypedScopeElement, *}
+import io.joern.x2cpg.datastructures.*
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{DeclarationNew, NewLocal, NewMethodParameterIn}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
@@ -30,13 +30,13 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
   typesInScope.addAll(
     Seq(
       RubyType(
-        s"$builtinPrefix.Array",
-        List(RubyMethod("[]", List.empty, s"$builtinPrefix.Array", Option(s"$builtinPrefix.Array"))),
+        s"$corePrefix.Array",
+        List(RubyMethod("[]", List.empty, s"$corePrefix.Array", Option(s"$corePrefix.Array"))),
         List.empty
       ),
       RubyType(
-        s"$builtinPrefix.Hash",
-        List(RubyMethod("[]", List.empty, s"$builtinPrefix.Hash", Option(s"$builtinPrefix.Hash"))),
+        s"$corePrefix.Hash",
+        List(RubyMethod("[]", List.empty, s"$corePrefix.Hash", Option(s"$corePrefix.Hash"))),
         List.empty
       )
     )
@@ -363,7 +363,7 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
           case None if GlobalTypes.kernelFunctions.contains(normalizedTypeName) =>
             Option(RubyType(s"${GlobalTypes.kernelPrefix}.$normalizedTypeName", List.empty, List.empty))
           case None if GlobalTypes.bundledClasses.contains(normalizedTypeName) =>
-            Option(RubyType(s"${GlobalTypes.builtinPrefix}.$normalizedTypeName", List.empty, List.empty))
+            Option(RubyType(s"${GlobalTypes.corePrefix}.$normalizedTypeName", List.empty, List.empty))
           case None =>
             None
           case x => x

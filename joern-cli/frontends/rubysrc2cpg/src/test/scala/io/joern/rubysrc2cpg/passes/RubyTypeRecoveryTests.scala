@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.passes
 
 import io.joern.rubysrc2cpg.passes.Defines.Main
-import io.joern.rubysrc2cpg.passes.GlobalTypes.{builtinPrefix, kernelPrefix}
+import io.joern.rubysrc2cpg.passes.GlobalTypes.{corePrefix, kernelPrefix}
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.semanticcpg.language.*
@@ -88,8 +88,8 @@ class RubyInternalTypeRecoveryTests extends RubyCode2CpgFixture(withPostProcessi
     "propagate function return types" in {
       inside(cpg.method.name("func2?").l) {
         case func :: func2 :: Nil =>
-          func.methodReturn.typeFullName shouldBe s"$builtinPrefix.String"
-          func2.methodReturn.typeFullName shouldBe s"$builtinPrefix.String"
+          func.methodReturn.typeFullName shouldBe s"$corePrefix.String"
+          func2.methodReturn.typeFullName shouldBe s"$corePrefix.String"
         case xs => fail(s"Expected 2 functions, got [${xs.name.mkString(",")}]")
       }
     }
@@ -97,7 +97,7 @@ class RubyInternalTypeRecoveryTests extends RubyCode2CpgFixture(withPostProcessi
     "propagate return type to identifier c" in {
       inside(cpg.identifier.name("c").l) {
         case cIdent :: Nil =>
-          cIdent.typeFullName shouldBe s"$builtinPrefix.String"
+          cIdent.typeFullName shouldBe s"$corePrefix.String"
         case xs => fail(s"Expected one identifier for c, got [${xs.name.mkString(",")}]")
       }
     }
@@ -135,7 +135,7 @@ class RubyInternalTypeRecoveryTests extends RubyCode2CpgFixture(withPostProcessi
         case funcAssignment :: constructAssignment :: tmpAssignment :: Nil =>
           inside(funcAssignment.argument.l) {
             case (lhs: Identifier) :: rhs :: Nil =>
-              lhs.typeFullName shouldBe s"$builtinPrefix.String"
+              lhs.typeFullName shouldBe s"$corePrefix.String"
             case xs => fail(s"Expected lhs and rhs, got [${xs.code.mkString(",")}] ")
           }
 
@@ -256,9 +256,9 @@ class RubyExternalTypeRecoveryTests
 
     "resolve 'x' and 'y' locally under foo.rb" in {
       val Some(x) = cpg.identifier("x").where(_.file.name(".*foo.*")).headOption: @unchecked
-      x.typeFullName shouldBe s"$builtinPrefix.Integer"
+      x.typeFullName shouldBe s"$corePrefix.Integer"
       val Some(y) = cpg.identifier("y").where(_.file.name(".*foo.*")).headOption: @unchecked
-      y.typeFullName shouldBe s"$builtinPrefix.String"
+      y.typeFullName shouldBe s"$corePrefix.String"
     }
 
     "resolve 'FooModule.x' and 'FooModule.y' field access primitive types correctly" in {
@@ -269,9 +269,9 @@ class RubyExternalTypeRecoveryTests
         .name("z")
         .l
       z1.typeFullName shouldBe "ANY"
-      z1.dynamicTypeHintFullName shouldBe Seq(s"$builtinPrefix.Integer", s"$builtinPrefix.String")
+      z1.dynamicTypeHintFullName shouldBe Seq(s"$corePrefix.Integer", s"$corePrefix.String")
       z2.typeFullName shouldBe "ANY"
-      z2.dynamicTypeHintFullName shouldBe Seq(s"$builtinPrefix.Integer", s"$builtinPrefix.String")
+      z2.dynamicTypeHintFullName shouldBe Seq(s"$corePrefix.Integer", s"$corePrefix.String")
     }
 
     "resolve 'FooModule.d' field access object types correctly" ignore {
