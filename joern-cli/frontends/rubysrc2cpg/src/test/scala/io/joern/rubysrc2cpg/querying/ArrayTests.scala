@@ -99,7 +99,7 @@ class ArrayTests extends RubyCode2CpgFixture {
 
     inside(asgns.map(_.source)) { case (foo: Literal) :: Nil =>
       foo.code shouldBe "foo"
-      foo.typeFullName shouldBe s"$kernelPrefix.String"
+      foo.typeFullName shouldBe s"$builtinPrefix.String"
     }
   }
 
@@ -116,10 +116,10 @@ class ArrayTests extends RubyCode2CpgFixture {
 
     inside(asgns.map(_.source)) { case (x: Literal) :: (y: Literal) :: Nil =>
       x.code shouldBe ":x"
-      x.typeFullName shouldBe s"$kernelPrefix.Symbol"
+      x.typeFullName shouldBe s"$builtinPrefix.Symbol"
 
       y.code shouldBe ":y"
-      y.typeFullName shouldBe s"$kernelPrefix.Symbol"
+      y.typeFullName shouldBe s"$builtinPrefix.Symbol"
     }
   }
 
@@ -135,10 +135,10 @@ class ArrayTests extends RubyCode2CpgFixture {
 
     inside(asgns.map(_.source)) { case (xFmt: Call) :: (yFmt: Call) :: (zLit: Literal) :: Nil =>
       xFmt.name shouldBe Operators.formatString
-      xFmt.typeFullName shouldBe Defines.getBuiltInType(Defines.String)
+      xFmt.typeFullName shouldBe Defines.getCoreType(Defines.String)
 
       yFmt.name shouldBe Operators.formatString
-      yFmt.typeFullName shouldBe Defines.getBuiltInType(Defines.String)
+      yFmt.typeFullName shouldBe Defines.getCoreType(Defines.String)
 
       val List(xFmtStr, xAddFmtStr) = xFmt.astChildren.isCall.l
       xFmtStr.name shouldBe Operators.formattedValue
@@ -159,7 +159,7 @@ class ArrayTests extends RubyCode2CpgFixture {
       yFmtStrLit.code shouldBe "23"
 
       zLit.code shouldBe "z"
-      zLit.typeFullName shouldBe s"$kernelPrefix.String"
+      zLit.typeFullName shouldBe s"$builtinPrefix.String"
     }
   }
 
@@ -197,12 +197,12 @@ class ArrayTests extends RubyCode2CpgFixture {
 
     inside(asgns.map(_.source)) { case (test1Fmt: Call) :: (test2: Literal) :: Nil =>
       test1Fmt.name shouldBe Operators.formatString
-      test1Fmt.typeFullName shouldBe Defines.getBuiltInType(Defines.Symbol)
+      test1Fmt.typeFullName shouldBe Defines.getCoreType(Defines.Symbol)
       test1Fmt.code shouldBe "test_#{1}"
 
       val List(test1FmtLit, test1FmtSymbol) = test1Fmt.astChildren.isCall.l
       test1FmtSymbol.name shouldBe Operators.formattedValue
-      test1FmtSymbol.typeFullName shouldBe Defines.getBuiltInType(Defines.Symbol)
+      test1FmtSymbol.typeFullName shouldBe Defines.getCoreType(Defines.Symbol)
       test1FmtSymbol.code shouldBe "#{1}"
 
       test1FmtLit.name shouldBe Operators.formattedValue
@@ -211,7 +211,7 @@ class ArrayTests extends RubyCode2CpgFixture {
       test1FmtFinal.code shouldBe "test_"
 
       test2.code shouldBe ":test_2"
-      test2.typeFullName shouldBe Defines.getBuiltInType(Defines.Symbol)
+      test2.typeFullName shouldBe Defines.getCoreType(Defines.Symbol)
     }
   }
 
@@ -288,7 +288,7 @@ class ArrayTests extends RubyCode2CpgFixture {
         splatArgOne.code shouldBe "*::ApplicationSettingsHelper.visible_attributes"
 
         symbolArg.code shouldBe ":can_create_organization"
-        symbolArg.typeFullName shouldBe Defines.getBuiltInType(Defines.Symbol)
+        symbolArg.typeFullName shouldBe Defines.getCoreType(Defines.Symbol)
 
         splatArgTwo.methodFullName shouldBe RubyOperators.splat
         splatArgTwo.code shouldBe "*::ApplicationSettingsHelper.some_other_attributes"

@@ -1,6 +1,7 @@
 package io.joern.rubysrc2cpg.querying
 
-import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelPrefix
+import io.joern.rubysrc2cpg.passes.Defines as RubyDefines
+import io.joern.rubysrc2cpg.passes.GlobalTypes.builtinPrefix
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.Literal
@@ -16,7 +17,7 @@ class LiteralTests extends RubyCode2CpgFixture {
     val List(literal) = cpg.literal.l
     literal.code shouldBe "123"
     literal.lineNumber shouldBe Some(2)
-    literal.typeFullName shouldBe s"$kernelPrefix.Integer"
+    literal.typeFullName shouldBe s"$builtinPrefix.Integer"
   }
 
   "`3.14` is represented by a LITERAL node" in {
@@ -27,7 +28,7 @@ class LiteralTests extends RubyCode2CpgFixture {
     val List(literal) = cpg.literal.l
     literal.code shouldBe "3.14"
     literal.lineNumber shouldBe Some(2)
-    literal.typeFullName shouldBe s"$kernelPrefix.Float"
+    literal.typeFullName shouldBe s"$builtinPrefix.Float"
   }
 
   "`3e10` is represented by a LITERAL node" in {
@@ -38,7 +39,7 @@ class LiteralTests extends RubyCode2CpgFixture {
     val List(literal) = cpg.literal.l
     literal.code shouldBe "3e10"
     literal.lineNumber shouldBe Some(2)
-    literal.typeFullName shouldBe s"$kernelPrefix.Float"
+    literal.typeFullName shouldBe s"$builtinPrefix.Float"
   }
 
   "`12e-10` is represented by a LITERAL node" in {
@@ -49,7 +50,7 @@ class LiteralTests extends RubyCode2CpgFixture {
     val List(literal) = cpg.literal.l
     literal.code shouldBe "12e-10"
     literal.lineNumber shouldBe Some(2)
-    literal.typeFullName shouldBe s"$kernelPrefix.Float"
+    literal.typeFullName shouldBe s"$builtinPrefix.Float"
   }
 
   "`0b01` is represented by a LITERAL node" in {
@@ -60,7 +61,7 @@ class LiteralTests extends RubyCode2CpgFixture {
     val List(literal) = cpg.literal.l
     literal.code shouldBe "0b01"
     literal.lineNumber shouldBe Some(2)
-    literal.typeFullName shouldBe s"$kernelPrefix.Integer"
+    literal.typeFullName shouldBe s"$builtinPrefix.Integer"
   }
 
   "`0xabc` is represented by a LITERAL node" in {
@@ -71,7 +72,7 @@ class LiteralTests extends RubyCode2CpgFixture {
     val List(literal) = cpg.literal.l
     literal.code shouldBe "0xabc"
     literal.lineNumber shouldBe Some(2)
-    literal.typeFullName shouldBe s"$kernelPrefix.Integer"
+    literal.typeFullName shouldBe s"$builtinPrefix.Integer"
   }
 
   "`true` is represented by a LITERAL node" in {
@@ -82,7 +83,7 @@ class LiteralTests extends RubyCode2CpgFixture {
     val List(literal) = cpg.literal.l
     literal.code shouldBe "true"
     literal.lineNumber shouldBe Some(2)
-    literal.typeFullName shouldBe s"$kernelPrefix.TrueClass"
+    literal.typeFullName shouldBe s"$builtinPrefix.TrueClass"
   }
 
   "`false` is represented by a LITERAL node" in {
@@ -93,7 +94,7 @@ class LiteralTests extends RubyCode2CpgFixture {
     val List(literal) = cpg.literal.l
     literal.code shouldBe "false"
     literal.lineNumber shouldBe Some(2)
-    literal.typeFullName shouldBe s"$kernelPrefix.FalseClass"
+    literal.typeFullName shouldBe s"$builtinPrefix.FalseClass"
   }
 
   "`nil` is represented by a LITERAL node" in {
@@ -104,7 +105,7 @@ class LiteralTests extends RubyCode2CpgFixture {
     val List(literal) = cpg.literal.l
     literal.code shouldBe "nil"
     literal.lineNumber shouldBe Some(2)
-    literal.typeFullName shouldBe s"$kernelPrefix.NilClass"
+    literal.typeFullName shouldBe s"$builtinPrefix.NilClass"
   }
 
   "`'hello'` is represented by a LITERAL node" in {
@@ -115,7 +116,7 @@ class LiteralTests extends RubyCode2CpgFixture {
     val List(literal) = cpg.literal.l
     literal.code shouldBe "'hello'"
     literal.lineNumber shouldBe Some(2)
-    literal.typeFullName shouldBe s"$kernelPrefix.String"
+    literal.typeFullName shouldBe s"$builtinPrefix.String"
   }
 
   "`'x' 'y' 'z'` is represented by a dynamic literal node call" in {
@@ -129,11 +130,11 @@ class LiteralTests extends RubyCode2CpgFixture {
 
     inside(dynamicLitCall.argument.astChildren.l) { case (x: Literal) :: (y: Literal) :: (z: Literal) :: Nil =>
       x.code shouldBe "'x'"
-      x.typeFullName shouldBe s"$kernelPrefix.String"
+      x.typeFullName shouldBe s"$builtinPrefix.String"
       y.code shouldBe "'y'"
-      y.typeFullName shouldBe s"$kernelPrefix.String"
+      y.typeFullName shouldBe s"$builtinPrefix.String"
       z.code shouldBe "'z'"
-      z.typeFullName shouldBe s"$kernelPrefix.String"
+      z.typeFullName shouldBe s"$builtinPrefix.String"
     }
   }
 
@@ -145,7 +146,7 @@ class LiteralTests extends RubyCode2CpgFixture {
     val List(literal) = cpg.literal.l
     literal.code shouldBe "\"hello\""
     literal.lineNumber shouldBe Some(2)
-    literal.typeFullName shouldBe s"$kernelPrefix.String"
+    literal.typeFullName shouldBe s"$builtinPrefix.String"
   }
 
   "`%q(hello)` is represented by a LITERAL node" in {
@@ -156,7 +157,7 @@ class LiteralTests extends RubyCode2CpgFixture {
     val List(literal) = cpg.literal.l
     literal.code shouldBe "%q(hello)"
     literal.lineNumber shouldBe Some(2)
-    literal.typeFullName shouldBe s"$kernelPrefix.String"
+    literal.typeFullName shouldBe s"$builtinPrefix.String"
   }
 
   "`%Q(hello world)` is represented by a LITERAL node" in {
@@ -167,7 +168,7 @@ class LiteralTests extends RubyCode2CpgFixture {
     val List(literal) = cpg.literal.l
     literal.code shouldBe "%Q(hello world)"
     literal.lineNumber shouldBe Some(2)
-    literal.typeFullName shouldBe s"$kernelPrefix.String"
+    literal.typeFullName shouldBe s"$builtinPrefix.String"
   }
 
   "`%(foo \"bar\" baz)` is represented by a LITERAL node" in {
@@ -178,7 +179,7 @@ class LiteralTests extends RubyCode2CpgFixture {
     val List(literal) = cpg.literal.l
     literal.code shouldBe "%(foo \"bar\" baz)"
     literal.lineNumber shouldBe Some(2)
-    literal.typeFullName shouldBe s"$kernelPrefix.String"
+    literal.typeFullName shouldBe s"$builtinPrefix.String"
   }
 
   """`%q<\n...\n>` is represented by a LITERAL node""" in {
@@ -194,10 +195,10 @@ class LiteralTests extends RubyCode2CpgFixture {
     firstLine.lineNumber shouldBe Some(2)
     xyz.code.trim shouldBe "xyz"
     xyz.lineNumber shouldBe Some(3)
-    xyz.typeFullName shouldBe s"$kernelPrefix.String"
+    xyz.typeFullName shouldBe s"$builtinPrefix.String"
     one23.code.trim shouldBe "123"
     one23.lineNumber shouldBe Some(4)
-    one23.typeFullName shouldBe s"$kernelPrefix.String"
+    one23.typeFullName shouldBe s"$builtinPrefix.String"
   }
 
   "`:symbol` is represented by a LITERAL node" in {
@@ -208,7 +209,7 @@ class LiteralTests extends RubyCode2CpgFixture {
     val List(literal) = cpg.literal.l
     literal.code shouldBe ":symbol"
     literal.lineNumber shouldBe Some(2)
-    literal.typeFullName shouldBe s"$kernelPrefix.Symbol"
+    literal.typeFullName shouldBe s"$builtinPrefix.Symbol"
   }
 
   "`:'symbol'` is represented by a LITERAL node" in {
@@ -219,7 +220,7 @@ class LiteralTests extends RubyCode2CpgFixture {
     val List(literal) = cpg.literal.l
     literal.code shouldBe ":'symbol'"
     literal.lineNumber shouldBe Some(2)
-    literal.typeFullName shouldBe s"$kernelPrefix.Symbol"
+    literal.typeFullName shouldBe s"$builtinPrefix.Symbol"
   }
 
   "`/(eu|us)/` is represented by a LITERAL node" in {
@@ -230,7 +231,7 @@ class LiteralTests extends RubyCode2CpgFixture {
     val List(literal) = cpg.literal.l
     literal.code shouldBe "/(eu|us)/"
     literal.lineNumber shouldBe Some(2)
-    literal.typeFullName shouldBe s"$kernelPrefix.Regexp"
+    literal.typeFullName shouldBe s"$builtinPrefix.Regexp"
   }
 
   "`/fedora|el-|centos/` is represented by a LITERAL node" in {
@@ -241,7 +242,7 @@ class LiteralTests extends RubyCode2CpgFixture {
     val List(literal) = cpg.literal.l
     literal.code shouldBe "/fedora|el-|centos/"
     literal.lineNumber shouldBe Some(2)
-    literal.typeFullName shouldBe s"$kernelPrefix.Regexp"
+    literal.typeFullName shouldBe s"$builtinPrefix.Regexp"
   }
 
   "`/#{os_version_regex}/` is represented by a CALL node with a string format method full name" in {
@@ -253,7 +254,7 @@ class LiteralTests extends RubyCode2CpgFixture {
     val List(formatValueCall) = cpg.call.code("/#.*").l
     formatValueCall.code shouldBe "/#{os_version_regex}/"
     formatValueCall.lineNumber shouldBe Some(3)
-    formatValueCall.typeFullName shouldBe s"$kernelPrefix.Regexp"
+    formatValueCall.typeFullName shouldBe s"$builtinPrefix.Regexp"
     formatValueCall.methodFullName shouldBe Operators.formatString
   }
 

@@ -2,7 +2,7 @@ package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.passes.Defines as RDefines
 import io.joern.rubysrc2cpg.passes.Defines.{Main, RubyOperators}
-import io.joern.rubysrc2cpg.passes.GlobalTypes.kernelPrefix
+import io.joern.rubysrc2cpg.passes.GlobalTypes.{kernelPrefix, builtinPrefix}
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, NodeTypes, Operators}
@@ -273,7 +273,7 @@ class MethodTests extends RubyCode2CpgFixture {
           xs.name shouldBe "xs"
           xs.code shouldBe "*xs"
           xs.isVariadic shouldBe true
-          xs.typeFullName shouldBe s"$kernelPrefix.Array"
+          xs.typeFullName shouldBe s"$builtinPrefix.Array"
         case xs => fail(s"Expected `foo` to have one parameter, got [${xs.code.mkString(", ")}]")
       }
     }
@@ -284,7 +284,7 @@ class MethodTests extends RubyCode2CpgFixture {
           ys.name shouldBe "ys"
           ys.code shouldBe "**ys"
           ys.isVariadic shouldBe true
-          ys.typeFullName shouldBe s"$kernelPrefix.Hash"
+          ys.typeFullName shouldBe s"$builtinPrefix.Hash"
         case xs => fail(s"Expected `foo` to have one parameter, got [${xs.code.mkString(", ")}]")
       }
     }
@@ -973,10 +973,10 @@ class MethodTests extends RubyCode2CpgFixture {
         inside(barCall.argument.l) {
           case _ :: (arg1: Literal) :: (arg2: Literal) :: Nil =>
             arg1.code shouldBe "1"
-            arg1.typeFullName shouldBe RDefines.getBuiltInType(RDefines.Integer)
+            arg1.typeFullName shouldBe RDefines.getCoreType(RDefines.Integer)
 
             arg2.code shouldBe "2"
-            arg2.typeFullName shouldBe RDefines.getBuiltInType(RDefines.Integer)
+            arg2.typeFullName shouldBe RDefines.getCoreType(RDefines.Integer)
           case xs => fail(s"Expected three args, got [${xs.code.mkString(",")}]")
         }
 

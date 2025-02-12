@@ -357,7 +357,7 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
   "a call with a quoted regex literal should have a literal receiver" in {
     val cpg          = code("%r{^/}.freeze()")
     val regexLiteral = cpg.call.nameExact("freeze").receiver.fieldAccess.argument(1).head.asInstanceOf[Literal]
-    regexLiteral.typeFullName shouldBe s"$kernelPrefix.Regexp"
+    regexLiteral.typeFullName shouldBe RubyDefines.getCoreType(RubyDefines.Regexp)
     regexLiteral.code shouldBe "%r{^/}"
   }
 
@@ -516,10 +516,10 @@ class CallTests extends RubyCode2CpgFixture(withPostProcessing = true) {
         sentryAssoc.code shouldBe "[:sentry_issue_identifier]"
 
         strLiteral.code shouldBe "\"1234\""
-        strLiteral.typeFullName shouldBe RubyDefines.getBuiltInType(RubyDefines.String)
+        strLiteral.typeFullName shouldBe RubyDefines.getCoreType(RubyDefines.String)
 
         numericLiteral.code shouldBe "10"
-        numericLiteral.typeFullName shouldBe RubyDefines.getBuiltInType(RubyDefines.Integer)
+        numericLiteral.typeFullName shouldBe RubyDefines.getCoreType(RubyDefines.Integer)
       case xs => fail(s"Expected 6 parameters for call, got [${xs.code.mkString(", ")}]")
     }
   }

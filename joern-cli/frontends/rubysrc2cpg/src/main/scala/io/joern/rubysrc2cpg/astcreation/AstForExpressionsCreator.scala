@@ -223,7 +223,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         code(n)
       }
       val call = if (n.isRegexMatch || RubyOperators.regexMethods(n.methodName)) {
-        callNode(n, callCode, n.methodName, s"${getBuiltInType(Defines.Regexp)}.match", dispatchType)
+        callNode(n, callCode, n.methodName, s"${prefixAsBundledType(Defines.Regexp)}.match", dispatchType)
       } else {
         callNode(n, callCode, n.methodName, XDefines.DynamicCallUnknownFullName, dispatchType)
       }
@@ -252,7 +252,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     }
 
     node.target match {
-      case regex @ StaticLiteral(s"${GlobalTypes.kernelPrefix}.Regexp") if node.isRegexMatch =>
+      case regex @ StaticLiteral(s"${GlobalTypes.builtinPrefix}.${Defines.Regexp}") if node.isRegexMatch =>
         val loweredRegex = node.arguments.headOption match {
           case Some(literal) => lowerRegexMatch(literal, regex, node.span)
           case None =>
@@ -496,7 +496,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
                       SingleAssignment(
                         node.lhs,
                         node.op,
-                        StaticLiteral(getBuiltInType(Defines.NilClass))(span.spanStart("nil"))
+                        StaticLiteral(Defines.getCoreType(Defines.NilClass))(span.spanStart("nil"))
                       )(span.spanStart(s"${node.lhs.span.text} ${node.op} nil")) :: Nil
                     )(span.spanStart(s"${node.lhs.span.text} ${node.op} nil"))
                   )(span.spanStart(s"else\n\t${node.lhs.span.text} ${node.op} nil\nend"))
@@ -747,8 +747,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
 
       val arguments = if (node.text.startsWith("%")) {
         val argumentsType =
-          if (node.isStringArray) getBuiltInType(Defines.String)
-          else getBuiltInType(Defines.Symbol)
+          if (node.isStringArray) prefixAsBundledType(Defines.String)
+          else prefixAsBundledType(Defines.Symbol)
         node.elements.map {
           case element @ StaticLiteral(_)               => StaticLiteral(argumentsType)(element.span)
           case element @ DynamicLiteral(_, expressions) => DynamicLiteral(argumentsType, expressions)(element.span)
@@ -758,7 +758,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         node.elements
       }
       val argumentAsts = arguments.zipWithIndex.map { case (arg, idx) =>
-        val indices     = StaticLiteral(getBuiltInType(Defines.Integer))(arg.span.spanStart(idx.toString)) :: Nil
+        val indices     = StaticLiteral(Defines.getCoreType(Defines.Integer))(arg.span.spanStart(idx.toString)) :: Nil
         val base        = tmpRubyNode(Option(arg))
         val indexAccess = IndexAccess(base, indices)(arg.span.spanStart(s"${base.text}[$idx]"))
         val assignment =
@@ -821,7 +821,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         astForAssociationHash(node.copy(key = mod.toSimpleIdentifier)(node.span), tmp)
       case iden: SimpleIdentifier =>
         // An identifier here will always be interpreted as a symbol
-        val sym = StaticLiteral(getBuiltInType(Defines.Symbol))(iden.span.spanStart(s":${iden.text}"))
+        val sym = StaticLiteral(Defines.getCoreType(Defines.Symbol))(iden.span.spanStart(s":${iden.text}"))
         astForAssociationHash(node.copy(key = sym)(node.span), tmp)
       case rangeExpr: RangeExpression =>
         val expandedList = generateStaticLiteralsForRange(rangeExpr).map { x =>
@@ -841,13 +841,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     (node.lowerBound, node.upperBound) match {
       case (lb: StaticLiteral, ub: StaticLiteral) =>
         (lb.typeFullName, ub.typeFullName) match {
-          case (s"${GlobalTypes.`kernelPrefix`}.Integer", s"${GlobalTypes.`kernelPrefix`}.Integer") =>
+          case (s"${GlobalTypes.builtinPrefix}.Integer", s"${GlobalTypes.builtinPrefix}.Integer") =>
             generateRange(lb.span.text.toInt, ub.span.text.toInt, node.rangeOperator.exclusive)
               .map(x =>
                 StaticLiteral(lb.typeFullName)(TextSpan(lb.line, lb.column, lb.lineEnd, lb.columnEnd, None, x.toString))
               )
               .toList
-          case (s"${GlobalTypes.`kernelPrefix`}.String", s"${GlobalTypes.`kernelPrefix`}.String") =>
+          case (s"${GlobalTypes.builtinPrefix}.String", s"${GlobalTypes.builtinPrefix}.String") =>
             val lbVal = lb.span.text.replaceAll("['\"]", "")
             val ubVal = ub.span.text.replaceAll("['\"]", "")
 
@@ -1076,7 +1076,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val value = astForExpression(assoc.value)
     assoc.key match {
       case keyIdentifier: SimpleIdentifier => setArgumentName(value, keyIdentifier.text)
-      case symbol @ StaticLiteral(typ) if typ == getBuiltInType(Defines.Symbol) =>
+      case symbol @ StaticLiteral(typ) if typ == Defines.getCoreType(Defines.Symbol) =>
         setArgumentName(value, symbol.text.stripPrefix(":"))
       case _: (LiteralExpr | RubyCall | ProcOrLambdaExpr | MemberAccess | IndexAccess) => astForExpression(assoc)
       case x =>

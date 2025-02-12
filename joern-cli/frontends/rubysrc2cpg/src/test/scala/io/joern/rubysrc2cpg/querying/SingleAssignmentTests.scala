@@ -2,7 +2,7 @@ package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.passes.Defines as RubyDefines
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
@@ -292,13 +292,13 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
 
                 inside(lhs.argument.l) {
                   case base :: (index: Literal) :: Nil =>
-                    index.typeFullName shouldBe RubyDefines.getBuiltInType(RubyDefines.Symbol)
+                    index.typeFullName shouldBe RubyDefines.getCoreType(RubyDefines.Symbol)
                   case xs => fail(s"Expected base and index, got [${xs.code.mkString(",")}]")
                 }
 
                 inside(rhs.argument.l) {
                   case base :: (index: Literal) :: Nil =>
-                    index.typeFullName shouldBe RubyDefines.getBuiltInType(RubyDefines.Symbol)
+                    index.typeFullName shouldBe RubyDefines.getCoreType(RubyDefines.Symbol)
                   case xs => fail(s"Expected base and index, got [${xs.code.mkString(",")}]")
                 }
 

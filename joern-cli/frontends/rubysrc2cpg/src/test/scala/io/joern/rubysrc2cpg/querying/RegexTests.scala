@@ -25,7 +25,7 @@ class RegexTests extends RubyCode2CpgFixture(withPostProcessing = false) {
       val tmpSource = tmpInit.source.asInstanceOf[Call]
       tmpSource.code shouldBe s"/h(el)lo/.match($expectedSubject)"
       tmpSource.name shouldBe "match"
-      tmpSource.methodFullName shouldBe "__core.Kernel.Regexp.match"
+      tmpSource.methodFullName shouldBe "__core.Regexp.match"
 
       // Now test for the lowered global variable assignments
       val ifStmt = cpg.controlStructure.last

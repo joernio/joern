@@ -434,12 +434,12 @@ object RubyIntermediateAst {
 
     def isStatic: Boolean = !isDynamic
 
-    def typeFullName: String = Defines.getBuiltInType(Defines.Array)
+    def typeFullName: String = Defines.getCoreType(Defines.Array)
   }
 
   sealed trait HashLike extends RubyExpression with LiteralExpr {
     def elements: List[RubyExpression]
-    def typeFullName: String = Defines.getBuiltInType(Defines.Hash)
+    def typeFullName: String = Defines.getCoreType(Defines.Hash)
   }
 
   final case class HashLiteral(elements: List[RubyExpression])(span: TextSpan)
