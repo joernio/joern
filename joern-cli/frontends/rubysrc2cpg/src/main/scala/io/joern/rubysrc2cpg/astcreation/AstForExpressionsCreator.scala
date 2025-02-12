@@ -222,7 +222,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       } else {
         code(n)
       }
-      val call = callNode(n, callCode, n.methodName, XDefines.DynamicCallUnknownFullName, dispatchType)
+      val call = if (n.isRegexMatch || RubyOperators.regexMethods(n.methodName)) {
+        callNode(n, callCode, n.methodName, s"${getBuiltInType(Defines.Regexp)}.match", dispatchType)
+      } else {
+        callNode(n, callCode, n.methodName, XDefines.DynamicCallUnknownFullName, dispatchType)
+      }
       if methodFullName != XDefines.DynamicCallUnknownFullName then call.possibleTypes(Seq(methodFullName))
       if (isStatic) {
         callAst(call, argumentAsts, base = Option(baseAst)).copy(receiverEdges = Nil)
