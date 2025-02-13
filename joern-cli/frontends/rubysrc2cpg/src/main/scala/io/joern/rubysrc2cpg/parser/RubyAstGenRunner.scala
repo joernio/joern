@@ -13,6 +13,7 @@ import java.io.File.separator
 import java.io.{ByteArrayOutputStream, InputStream, PrintStream}
 import java.nio.file.{Files, Path, Paths, StandardCopyOption}
 import java.util
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.jar.JarFile
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
@@ -134,13 +135,13 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
 
 object RubyAstGenRunner {
 
-  private var isReady: Boolean = false
-  lazy val container: ScriptingContainer = {
-    val env = RubyAstGenRunner.env
-    val cwd = env.path.toAbsolutePath.toString
-    val gemPath = Seq(cwd, "vendor", "bundle", "jruby", "3.1.0").mkString(separator)
-    val container = new ScriptingContainer(LocalContextScope.THREADSAFE, LocalVariableBehavior.TRANSIENT)
-    val config = container.getProvider.getRubyInstanceConfig
+  private val isReady: AtomicBoolean = AtomicBoolean(false)
+  private lazy val container: ScriptingContainer = {
+    val env       = RubyAstGenRunner.env
+    val cwd       = env.path.toAbsolutePath.toString
+    val gemPath   = Seq(cwd, "vendor", "bundle", "jruby", "3.1.0").mkString(separator)
+    val container = new ScriptingContainer(LocalContextScope.CONCURRENT, LocalVariableBehavior.TRANSIENT)
+    val config    = container.getProvider.getRubyInstanceConfig
     container.setCompileMode(RubyInstanceConfig.CompileMode.OFF)
     container.setNativeEnabled(false)
     container.setObjectSpaceEnabled(true)
@@ -158,31 +159,29 @@ object RubyAstGenRunner {
     env.close()
   }
 
-  private def executeWithJRuby(mainScript: String): Try[Seq[String]] = {
+  private def executeWithJRuby(script: String): Try[Seq[String]] = {
     val container = RubyAstGenRunner.container
-    val env = RubyAstGenRunner.env
-    val cwd = env.path.toAbsolutePath.toString
-    if (!isReady) {
-      // initialize program in script container
-      val script =
-        s"""
-           |libs = File.expand_path("$cwd/vendor/bundle/ruby/**/gems/**/lib", __FILE__)
-           |$$LOAD_PATH.unshift *Dir.glob(libs)
-           |require "$cwd/lib/ruby_ast_gen.rb"
-           |""".stripMargin
-      isReady = true
-      container.runScriptlet(script)
-    }
+    val env       = RubyAstGenRunner.env
+    val cwd       = env.path.toAbsolutePath.toString
     Using.resources(new ByteArrayOutputStream(), new ByteArrayOutputStream()) { (outStream, errStream) =>
       container.setOutput(new PrintStream(outStream))
       container.setError(new PrintStream(errStream))
+      if (!isReady.get()) {
+        // initialize function definitions and library paths in script container
+        container.runScriptlet(s"""
+             |libs = File.expand_path("$cwd/vendor/bundle/ruby/**/gems/**/lib", __FILE__)
+             |$$LOAD_PATH.unshift *Dir.glob(libs)
+             |require "$cwd/lib/ruby_ast_gen.rb"
+             |""".stripMargin)
+        isReady.set(true) // will not set if the previous line threw exception
+      }
+
       Try {
-        container.runScriptlet(mainScript)
+        container.runScriptlet(script)
         outStream.toString.split("\n").toIndexedSeq ++ errStream.toString.split("\n")
       }
     }
   }
-
 
   sealed trait ExecutionEnvironment extends AutoCloseable {
     def path: Path
@@ -207,7 +206,6 @@ object RubyAstGenRunner {
 
   private case class LocalDir(path: Path) extends ExecutionEnvironment
 
-
   private def prepareExecutionEnvironment(resourceDir: String): ExecutionEnvironment = {
     val resourceUrl = getClass.getClassLoader.getResource(resourceDir)
     if (resourceUrl == null) {
@@ -217,8 +215,8 @@ object RubyAstGenRunner {
     resourceUrl.getProtocol match {
       case "jar" =>
         val tempPath = Files.createTempDirectory("ruby_ast_gen-")
-        val jarPath = resourceUrl.getPath.split("!")(0).stripPrefix("file:")
-        val jarFile = new JarFile(jarPath)
+        val jarPath  = resourceUrl.getPath.split("!")(0).stripPrefix("file:")
+        val jarFile  = new JarFile(jarPath)
 
         val entries = jarFile.entries().asScala.filter(_.getName.startsWith(resourceDir + "/"))
         entries.foreach { entry =>
@@ -239,7 +237,7 @@ object RubyAstGenRunner {
         TempDir(tempPath)
       case "file" =>
         val resourcePath = Paths.get(resourceUrl.toURI)
-        val mainScript = resourcePath.resolve("exe").resolve("ruby_ast_gen")
+        val mainScript   = resourcePath.resolve("exe").resolve("ruby_ast_gen")
         mainScript.toFile.setExecutable(true, false)
         LocalDir(resourcePath)
       case x =>
