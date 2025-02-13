@@ -128,6 +128,27 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
     }
   }
 
+  "lambdas with different return type annotations" should {
+    val cpg = code("""
+        |void foo() {
+        |  auto l1 = [] () -> int { return 1; };  // explicit type
+        |  auto l2 = [] () { return 1; }; // inferred
+        |  auto l3 = [] () -> unknown { return bar(); }; // broken or unknown
+        |  auto l4 = [] () mutable -> int { return 1; };
+        |  auto l5 = [] () mutable { return 1; };
+        |}
+        |""".stripMargin)
+
+    "have the correct fullname" in {
+      val List(l0, l1, l2, l3, l4) = cpg.method.name(".*lambda.*").sortBy(_.name).l
+      l0.fullName shouldBe "Test0.cpp:<global>.foo.<lambda>0:int()"
+      l1.fullName shouldBe "Test0.cpp:<global>.foo.<lambda>1:ANY()" // CDT is unable to infer the type here; needs to be fixed
+      l2.fullName shouldBe "Test0.cpp:<global>.foo.<lambda>2:unknown()"
+      l3.fullName shouldBe "Test0.cpp:<global>.foo.<lambda>3:int()"
+      l4.fullName shouldBe "Test0.cpp:<global>.foo.<lambda>4:ANY()"
+    }
+  }
+
   "lambdas capturing this in method" should {
     val cpg = code("""
         |class Foo {
@@ -141,6 +162,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
 
     "ref this correctly" in {
       val List(lambda) = cpg.method.name(".*lambda.*").l
+      lambda.fullName shouldBe "Test0.cpp:<global>.Foo.foo.<lambda>0:ANY()"
       cpg.all.collectAll[ClosureBinding].l match {
         case List(thisClosureBinding) =>
           val thisLocal = cpg.method.name(".*lambda.*").local.nameExact("this").head

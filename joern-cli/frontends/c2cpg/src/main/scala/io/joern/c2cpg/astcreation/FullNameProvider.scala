@@ -223,8 +223,8 @@ trait FullNameProvider { this: AstCreator =>
           .getOrElse(Defines.Any)
       case null =>
         safeGetEvaluation(lambda) match {
-          case Some(value) => cleanType(value.getType.toString)
-          case None        => Defines.Any
+          case Some(value) if !value.toString.endsWith(": <unknown>") => cleanType(value.getType.toString)
+          case _                                                      => Defines.Any
         }
     }
   }
