@@ -13,7 +13,7 @@ if [ ! -f "$SCRIPT" ]; then
     exit 1
 fi
 
-for jar in lib/*.jar; do
+for jar in "$SCRIPT_ABS_DIR"/lib/*.jar; do
   # remove module-info.class from dependency jars - a hacky workaround for a scala3 compiler bug
   # see https://github.com/scala/scala3/issues/20421
   zip --quiet --delete "$jar" module-info.class >/dev/null
