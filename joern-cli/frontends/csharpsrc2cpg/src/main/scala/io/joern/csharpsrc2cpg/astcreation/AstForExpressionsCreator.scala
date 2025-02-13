@@ -589,6 +589,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .map(x => (x.typeName, false))
       .orElse(byPropertyName.map(x => (x.returnType, true)))
       .orElse(byQualifiedName.map(x => (x.name, false)))
+      .map((typeName, isGetter) => (scope.tryResolveTypeReference(typeName).map(_.name).getOrElse(typeName), isGetter))
       .getOrElse((Defines.Any, false))
 
     if (isGetter) {

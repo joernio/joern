@@ -69,6 +69,56 @@ class MemberAccessTests extends CSharpCode2CpgFixture {
     }
   }
 
+  "chained field access expression referencing members of a sibling class" should {
+    val cpg = code("""
+        |namespace Foo;
+        |class Bar
+        |{
+        | Bar Field1;
+        | Bar Field2;
+        |}
+        |class Baz
+        |{
+        | static void DoStuff()
+        | {
+        |   var x = new Bar();
+        |   var y = x.Field1.Field2;
+        | }
+        |}
+        |
+        |""".stripMargin)
+
+    "have correct typeDecls" in {
+      cpg.typeDecl.nameExact("Bar").size shouldBe 1
+    }
+
+    "have correct properties for the innermost member" in {
+      cpg.typeDecl.nameExact("Bar").member.nameExact("Field1").typeFullName.l shouldBe List("Foo.Bar")
+    }
+
+    "have correct properties for the outermost member" in {
+      cpg.typeDecl.nameExact("Bar").member.nameExact("Field2").typeFullName.l shouldBe List("Foo.Bar")
+    }
+
+    "have correct properties for the outermost field access" in {
+      inside(cpg.fieldAccess.where(_.fieldIdentifier.canonicalNameExact("Field2")).l) {
+        case field2 :: Nil =>
+          field2.typeFullName shouldBe "Foo.Bar"
+          field2.referencedMember.l shouldBe cpg.typeDecl.nameExact("Bar").member.nameExact("Field2").l
+        case _ => fail("Expected single field access to `Field2`")
+      }
+    }
+
+    "have correct properties for the innermost field access" in {
+      inside(cpg.fieldAccess.where(_.fieldIdentifier.canonicalNameExact("Field1")).l) {
+        case field1 :: Nil =>
+          field1.typeFullName shouldBe "Foo.Bar"
+          field1.referencedMember.l shouldBe cpg.typeDecl.nameExact("Bar").member.nameExact("Field1").l
+        case _ => fail("Expected single field access to `Field1`")
+      }
+    }
+
+  }
   "conditional method access expressions" should {
     val cpg = code("""
         |namespace Foo {

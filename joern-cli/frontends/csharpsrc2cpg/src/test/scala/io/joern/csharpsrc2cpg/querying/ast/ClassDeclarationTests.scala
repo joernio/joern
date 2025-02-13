@@ -19,4 +19,26 @@ class ClassDeclarationTests extends CSharpCode2CpgFixture {
     }
   }
 
+  "class with member of the same type involved in a fieldAccess" should {
+    val cpg = code("""
+        |namespace Foo;
+        |class Bar
+        |{
+        | Bar Field;
+        | void DoStuff()
+        | {
+        |   var x = this.Field;
+        | }
+        |}
+        |""".stripMargin)
+
+    "have correct typeDecl properties" in {
+      cpg.typeDecl.nameExact("Bar").fullName.l shouldBe List("Foo.Bar")
+    }
+
+    "have correct member properties" in {
+      cpg.typeDecl.nameExact("Bar").member.nameExact("Field").typeFullName.l shouldBe List("Foo.Bar")
+    }
+  }
+
 }
