@@ -9,7 +9,6 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   ControlFlowStatement,
   DoWhileExpression,
   DummyAst,
-  DynamicLiteral,
   ElseClause,
   ForExpression,
   IfExpression,
@@ -22,7 +21,6 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   RescueExpression,
   RubyExpression,
   SimpleIdentifier,
-  SimpleObjectInstantiation,
   SingleAssignment,
   SplattingRubyNode,
   StatementList,
@@ -34,9 +32,8 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   WhenClause,
   WhileExpression
 }
-import io.joern.rubysrc2cpg.datastructures.BlockScope
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.rubysrc2cpg.passes.Defines.{RubyOperators, getBuiltInType}
+import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewFieldIdentifier, NewLiteral, NewLocal}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
@@ -161,18 +158,18 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     scope.addToScope(node.forVariable.span.text, iterVarLocal)
 
     val idxName  = "_idx_"
-    val idxLocal = NewLocal().name(idxName).code(idxName).typeFullName(Defines.getBuiltInType(Defines.Integer))
+    val idxLocal = NewLocal().name(idxName).code(idxName).typeFullName(Defines.prefixAsCoreType(Defines.Integer))
     val idxIdenAtAssign = identifierNode(
       node = collectionNode,
       name = idxName,
       code = idxName,
-      typeFullName = Defines.getBuiltInType(Defines.Integer)
+      typeFullName = Defines.prefixAsCoreType(Defines.Integer)
     )
 
     val idxAssignment =
       callNode(node, s"$idxName = 0", Operators.assignment, Operators.assignment, DispatchTypes.STATIC_DISPATCH)
     val idxAssignmentArgs =
-      List(Ast(idxIdenAtAssign), Ast(NewLiteral().code("0").typeFullName(Defines.getBuiltInType(Defines.Integer))))
+      List(Ast(idxIdenAtAssign), Ast(NewLiteral().code("0").typeFullName(Defines.prefixAsCoreType(Defines.Integer))))
     val idxAssignmentAst = callAst(idxAssignment, idxAssignmentArgs)
 
     val idxIdAtCond = idxIdenAtAssign.copy
@@ -263,7 +260,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
             // which is translated to `x.include? y` and `x.any?` conditions respectively
 
             val conditions = whenClause.matchExpressions.map {
-              case regex: StaticLiteral if regex.typeFullName == getBuiltInType(Defines.Regexp) =>
+              case regex: StaticLiteral if regex.typeFullName == prefixAsCoreType(Defines.Regexp) =>
                 expr.map(e => BinaryExpression(regex, RubyOperators.regexpMatch, e)(regex.span)).getOrElse(regex)
               case mExpr =>
                 expr.map(e => BinaryExpression(mExpr, "===", e)(mExpr.span)).getOrElse(mExpr)
@@ -304,9 +301,11 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
                 val stmts = x.children.zipWithIndex.flatMap {
                   case (lhs: MatchVariable, idx) if expr.isDefined =>
                     val arrAccess = {
-                      val code    = s"${expr.get.text}[$idx]"
-                      val base    = expr.get.copy()(expr.get.span.spanStart(expr.get.text))
-                      val indices = StaticLiteral(idx.toString)(expr.get.span.spanStart(idx.toString)) :: Nil
+                      val code = s"${expr.get.text}[$idx]"
+                      val base = expr.get.copy()(expr.get.span.spanStart(expr.get.text))
+                      val indices = StaticLiteral(Defines.prefixAsCoreType(Defines.Integer))(
+                        expr.get.span.spanStart(idx.toString)
+                      ) :: Nil
                       IndexAccess(base, indices)(lhs.span.spanStart(code))
                     }
                     val asgn = SingleAssignment(lhs, "=", arrAccess)(

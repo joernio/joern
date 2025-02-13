@@ -1,10 +1,10 @@
 package io.joern.rubysrc2cpg.querying
 
-import io.joern.rubysrc2cpg.passes.{Defines, GlobalTypes}
 import io.joern.rubysrc2cpg.passes.Defines.Main
+import io.joern.rubysrc2cpg.passes.{Defines, GlobalTypes}
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{File, Literal, NamespaceBlock}
+import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes}
 import io.shiftleft.semanticcpg.language.*
 
 class ModuleTests extends RubyCode2CpgFixture {
