@@ -168,7 +168,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
           val thisLocal = cpg.method.name(".*lambda.*").local.nameExact("this").head
           thisClosureBinding.closureBindingId shouldBe thisLocal.closureBindingId
 
-          cpg.identifier.nameExact("this").refsTo.collectAll[Local].l shouldBe List(thisLocal)
+          cpg.identifier.nameExact("this").refsTo.l shouldBe List(thisLocal)
 
           thisClosureBinding._refOut.l match {
             case List(capturedThisParam: MethodParameterIn) =>
@@ -202,7 +202,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
       xLocal.typeFullName shouldBe "float*"
       xLocal.closureBindingId shouldBe None
       xLocal.closureBinding shouldBe empty
-      cpg.identifier.nameExact("x").refsTo.collectAll[Local].l shouldBe List(xLocal)
+      cpg.identifier.nameExact("x").refsTo.l shouldBe List(xLocal)
     }
   }
 
@@ -224,7 +224,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
           val List(xLocalCaptured) = lambdaF.block.local.nameExact("x").l
           xClosureBinding.closureBindingId shouldBe xLocalCaptured.closureBindingId
 
-          cpg.identifier.nameExact("x").lineNumber(4).refsTo.collectAll[Local].l shouldBe List(xLocalCaptured)
+          cpg.identifier.nameExact("x").lineNumber(4).refsTo.l shouldBe List(xLocalCaptured)
 
           xClosureBinding._refOut.l match {
             case List(capturedThisParam: MethodParameterIn) =>
@@ -247,7 +247,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
       xLocalNested.typeFullName shouldBe "float*"
       xLocalNested.closureBindingId shouldBe None
       xLocalNested.closureBinding shouldBe empty
-      cpg.identifier.nameExact("x").lineNumber(6).refsTo.collectAll[Local].l shouldBe List(xLocalNested)
+      cpg.identifier.nameExact("x").lineNumber(6).refsTo.l shouldBe List(xLocalNested)
     }
   }
 
@@ -271,15 +271,15 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
 
       x1.typeFullName shouldBe "int*"
       x1.closureBindingId shouldBe Some("Test0.cpp:<lambda>0:x")
-      cpg.identifier.nameExact("x").lineNumber(4).refsTo.collectAll[Local].l shouldBe List(x1)
+      cpg.identifier.nameExact("x").lineNumber(4).refsTo.l shouldBe List(x1)
 
       x2.typeFullName shouldBe "float*"
       x2.closureBindingId shouldBe None
-      cpg.identifier.nameExact("x").lineNumber(6).refsTo.collectAll[Local].l shouldBe List(x2)
+      cpg.identifier.nameExact("x").lineNumber(6).refsTo.l shouldBe List(x2)
 
       x3.typeFullName shouldBe "double*"
       x3.closureBindingId shouldBe None
-      cpg.identifier.nameExact("x").lineNumber(8).refsTo.collectAll[Local].l shouldBe List(x3)
+      cpg.identifier.nameExact("x").lineNumber(8).refsTo.l shouldBe List(x3)
     }
   }
 
@@ -303,13 +303,13 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
 
       x1.typeFullName shouldBe "int*"
       x1.closureBindingId shouldBe Some("Test0.cpp:<lambda>0:x")
-      cpg.identifier.nameExact("x").lineNumber(4).refsTo.collectAll[Local].l shouldBe List(x1)
+      cpg.identifier.nameExact("x").lineNumber(4).refsTo.l shouldBe List(x1)
 
       x2.typeFullName shouldBe "float*"
       x2.closureBindingId shouldBe None
-      cpg.identifier.nameExact("x").lineNumber(6).refsTo.collectAll[Local].l shouldBe List(x2)
+      cpg.identifier.nameExact("x").lineNumber(6).refsTo.l shouldBe List(x2)
 
-      cpg.identifier.nameExact("x").lineNumber(8).refsTo.collectAll[Local].l shouldBe List(x2)
+      cpg.identifier.nameExact("x").lineNumber(8).refsTo.l shouldBe List(x2)
     }
   }
 
@@ -334,15 +334,15 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
 
       x1.typeFullName shouldBe "int*"
       x1.closureBindingId shouldBe Some("Test0.cpp:<lambda>0:x")
-      cpg.identifier.nameExact("x").lineNumber(5).refsTo.collectAll[Local].l shouldBe List(x1)
+      cpg.identifier.nameExact("x").lineNumber(5).refsTo.l shouldBe List(x1)
 
       x2.typeFullName shouldBe "float*"
       x2.closureBindingId shouldBe None
-      cpg.identifier.nameExact("x").lineNumber(7).refsTo.collectAll[Local].l shouldBe List(x2)
+      cpg.identifier.nameExact("x").lineNumber(7).refsTo.l shouldBe List(x2)
 
       x3.typeFullName shouldBe "double*"
       x3.closureBindingId shouldBe None
-      cpg.identifier.nameExact("x").lineNumber(9).refsTo.collectAll[Local].l shouldBe List(x3)
+      cpg.identifier.nameExact("x").lineNumber(9).refsTo.l shouldBe List(x3)
     }
   }
 
@@ -366,15 +366,15 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
 
       x1.typeFullName shouldBe "float*"
       x1.closureBindingId shouldBe None
-      cpg.identifier.nameExact("x").lineNumber(4).refsTo.collectAll[Local].l shouldBe List(x1)
+      cpg.identifier.nameExact("x").lineNumber(4).refsTo.l shouldBe List(x1)
 
       x2.typeFullName shouldBe "double*"
       x2.closureBindingId shouldBe None
-      cpg.identifier.nameExact("x").lineNumber(6).refsTo.collectAll[Local].l shouldBe List(x2)
+      cpg.identifier.nameExact("x").lineNumber(6).refsTo.l shouldBe List(x2)
 
       x3.typeFullName shouldBe "double*"
       x3.closureBindingId shouldBe Some("Test0.cpp:<lambda>0:x")
-      cpg.identifier.nameExact("x").lineNumber(8).refsTo.collectAll[Local].l shouldBe List(x3)
+      cpg.identifier.nameExact("x").lineNumber(8).refsTo.l shouldBe List(x3)
     }
   }
 
@@ -393,7 +393,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
           val thisLocal = cpg.method.name(".*lambda.*").local.nameExact("this").head
           thisClosureBinding.closureBindingId shouldBe thisLocal.closureBindingId
 
-          cpg.identifier.nameExact("this").refsTo.collectAll[Local].l shouldBe List(thisLocal)
+          cpg.identifier.nameExact("this").refsTo.l shouldBe List(thisLocal)
 
           thisClosureBinding._refOut.l match {
             case List(capturedThisParam: MethodParameterIn) =>
