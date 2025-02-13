@@ -5,9 +5,8 @@ import io.joern.rubysrc2cpg.Config
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, AstGenRunnerResult, DefaultAstGenRunnerResult}
 import io.joern.x2cpg.astgen.AstGenRunnerBase
-import io.joern.x2cpg.utils.{Environment, ExternalCommand}
 import org.jruby.RubyInstanceConfig
-import org.jruby.embed.{LocalContextScope, LocalVariableBehavior, PathType, ScriptingContainer}
+import org.jruby.embed.{LocalContextScope, LocalVariableBehavior, ScriptingContainer}
 import org.slf4j.LoggerFactory
 
 import java.io.File.separator
@@ -76,83 +75,24 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
     metaData: AstGenProgramMetaData
   ): Try[Seq[String]] = {
     try {
-      Using.resource(prepareExecutionEnvironment("ruby_ast_gen")) { env =>
-        val cwd            = env.path.toAbsolutePath.toString
-        val excludeCommand = if (exclude.isEmpty) Array.empty[String] else Array("-e", s"$exclude")
-        val gemPath        = Seq(cwd, "vendor", "bundle", "jruby", "3.1.0").mkString(separator)
-        val rubyArgs       = Array("-o", out.toString(), "-i", in).appendedAll(excludeCommand).filterNot(_.isBlank)
-        val mainScript     = Seq(cwd, "exe", "ruby_ast_gen").mkString(separator)
-        executeWithJRuby(mainScript, cwd, rubyArgs, gemPath)
-      }
+      val mainScript =
+        s"""
+          |options = {
+          |  input: nil,
+          |  output: '.ast',
+          |  exclude: '^(tests?|vendor|spec)',
+          |  debug: false
+          |}
+          |
+          |options[:input] = "$in"
+          |options[:output] = "$out"
+          |${if exclude.isEmpty then "" else s"options[:exclude] = /$exclude/"}
+          |
+          |RubyAstGen::parse(options)
+          |""".stripMargin
+      RubyAstGenRunner.executeWithJRuby(mainScript)
     } catch {
       case tempPathException: Exception => Failure(tempPathException)
-    }
-  }
-
-  private def executeWithJRuby(
-    mainScript: String,
-    cwd: String,
-    rubyArgs: Array[String],
-    gemPath: String
-  ): Try[Seq[String]] = {
-    val outStream = new ByteArrayOutputStream()
-    val errStream = new ByteArrayOutputStream()
-    val container = new ScriptingContainer(LocalContextScope.SINGLETHREAD, LocalVariableBehavior.TRANSIENT)
-    val config    = container.getProvider.getRubyInstanceConfig
-    container.setCompileMode(RubyInstanceConfig.CompileMode.OFF)
-    container.setNativeEnabled(false)
-    container.setObjectSpaceEnabled(true)
-    container.setCurrentDirectory(cwd)
-    container.setOutput(new PrintStream(outStream))
-    container.setError(new PrintStream(errStream))
-    config.setLoadGemfile(true)
-    container.setArgv(rubyArgs)
-    container.setEnvironment(Map("GEM_PATH" -> gemPath, "GEM_FILE" -> gemPath).asJava)
-    config.setHasShebangLine(true)
-    config.setHardExit(false)
-
-    Try {
-      container.runScriptlet(PathType.ABSOLUTE, mainScript)
-      outStream.toString.split("\n").toIndexedSeq ++ errStream.toString.split("\n")
-    }
-  }
-
-  private def prepareExecutionEnvironment(resourceDir: String): ExecutionEnvironment = {
-    val resourceUrl = getClass.getClassLoader.getResource(resourceDir)
-    if (resourceUrl == null) {
-      throw new IllegalArgumentException(s"Resource sub-directory '$resourceDir' not found.")
-    }
-
-    resourceUrl.getProtocol match {
-      case "jar" =>
-        val tempPath = Files.createTempDirectory("ruby_ast_gen-")
-        val jarPath  = resourceUrl.getPath.split("!")(0).stripPrefix("file:")
-        val jarFile  = new JarFile(jarPath)
-
-        val entries = jarFile.entries().asScala.filter(_.getName.startsWith(resourceDir + "/"))
-        entries.foreach { entry =>
-          val entryPath = tempPath.resolve(entry.getName.stripPrefix(resourceDir + "/"))
-          if (entry.isDirectory) {
-            Files.createDirectories(entryPath)
-          } else {
-            Files.createDirectories(entryPath.getParent)
-            val inputStream: InputStream = jarFile.getInputStream(entry)
-            try {
-              Files.copy(inputStream, entryPath, StandardCopyOption.REPLACE_EXISTING)
-              if entryPath.endsWith("ruby_ast_gen") then entryPath.toFile.setExecutable(true, true)
-            } finally {
-              inputStream.close()
-            }
-          }
-        }
-        TempDir(tempPath)
-      case "file" =>
-        val resourcePath = Paths.get(resourceUrl.toURI)
-        val mainScript   = resourcePath.resolve("exe").resolve("ruby_ast_gen")
-        mainScript.toFile.setExecutable(true, false)
-        LocalDir(resourcePath)
-      case x =>
-        throw new IllegalArgumentException(s"Resources is within an unsupported environment '$x'.")
     }
   }
 
@@ -190,7 +130,61 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
     }
   }
 
-  private sealed trait ExecutionEnvironment extends AutoCloseable {
+}
+
+object RubyAstGenRunner {
+
+  private var isReady: Boolean = false
+  lazy val container: ScriptingContainer = {
+    val env = RubyAstGenRunner.env
+    val cwd = env.path.toAbsolutePath.toString
+    val gemPath = Seq(cwd, "vendor", "bundle", "jruby", "3.1.0").mkString(separator)
+    val container = new ScriptingContainer(LocalContextScope.THREADSAFE, LocalVariableBehavior.TRANSIENT)
+    val config = container.getProvider.getRubyInstanceConfig
+    container.setCompileMode(RubyInstanceConfig.CompileMode.OFF)
+    container.setNativeEnabled(false)
+    container.setObjectSpaceEnabled(true)
+    container.setCurrentDirectory(cwd)
+    config.setLoadGemfile(true)
+    container.setEnvironment(Map("GEM_PATH" -> gemPath, "GEM_FILE" -> gemPath).asJava)
+    config.setHasShebangLine(true)
+    config.setHardExit(false)
+
+    container
+  }
+  lazy val env: ExecutionEnvironment = prepareExecutionEnvironment("ruby_ast_gen")
+  sys.addShutdownHook {
+    container.terminate()
+    env.close()
+  }
+
+  private def executeWithJRuby(mainScript: String): Try[Seq[String]] = {
+    val container = RubyAstGenRunner.container
+    val env = RubyAstGenRunner.env
+    val cwd = env.path.toAbsolutePath.toString
+    if (!isReady) {
+      // initialize program in script container
+      val script =
+        s"""
+           |libs = File.expand_path("$cwd/vendor/bundle/ruby/**/gems/**/lib", __FILE__)
+           |$$LOAD_PATH.unshift *Dir.glob(libs)
+           |require "$cwd/lib/ruby_ast_gen.rb"
+           |""".stripMargin
+      isReady = true
+      container.runScriptlet(script)
+    }
+    Using.resources(new ByteArrayOutputStream(), new ByteArrayOutputStream()) { (outStream, errStream) =>
+      container.setOutput(new PrintStream(outStream))
+      container.setError(new PrintStream(errStream))
+      Try {
+        container.runScriptlet(mainScript)
+        outStream.toString.split("\n").toIndexedSeq ++ errStream.toString.split("\n")
+      }
+    }
+  }
+
+
+  sealed trait ExecutionEnvironment extends AutoCloseable {
     def path: Path
 
     def close(): Unit = {}
@@ -212,5 +206,45 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
   }
 
   private case class LocalDir(path: Path) extends ExecutionEnvironment
+
+
+  private def prepareExecutionEnvironment(resourceDir: String): ExecutionEnvironment = {
+    val resourceUrl = getClass.getClassLoader.getResource(resourceDir)
+    if (resourceUrl == null) {
+      throw new IllegalArgumentException(s"Resource sub-directory '$resourceDir' not found.")
+    }
+
+    resourceUrl.getProtocol match {
+      case "jar" =>
+        val tempPath = Files.createTempDirectory("ruby_ast_gen-")
+        val jarPath = resourceUrl.getPath.split("!")(0).stripPrefix("file:")
+        val jarFile = new JarFile(jarPath)
+
+        val entries = jarFile.entries().asScala.filter(_.getName.startsWith(resourceDir + "/"))
+        entries.foreach { entry =>
+          val entryPath = tempPath.resolve(entry.getName.stripPrefix(resourceDir + "/"))
+          if (entry.isDirectory) {
+            Files.createDirectories(entryPath)
+          } else {
+            Files.createDirectories(entryPath.getParent)
+            val inputStream: InputStream = jarFile.getInputStream(entry)
+            try {
+              Files.copy(inputStream, entryPath, StandardCopyOption.REPLACE_EXISTING)
+              if entryPath.endsWith("ruby_ast_gen") then entryPath.toFile.setExecutable(true, true)
+            } finally {
+              inputStream.close()
+            }
+          }
+        }
+        TempDir(tempPath)
+      case "file" =>
+        val resourcePath = Paths.get(resourceUrl.toURI)
+        val mainScript = resourcePath.resolve("exe").resolve("ruby_ast_gen")
+        mainScript.toFile.setExecutable(true, false)
+        LocalDir(resourcePath)
+      case x =>
+        throw new IllegalArgumentException(s"Resources is within an unsupported environment '$x'.")
+    }
+  }
 
 }
