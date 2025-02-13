@@ -13,5 +13,11 @@ if [ ! -f "$SCRIPT" ]; then
     exit 1
 fi
 
+for jar in lib/*.jar; do
+  # remove module-info.class from dependency jars - a hacky workaround for a scala3 compiler bug
+  # see https://github.com/scala/scala3/issues/20421
+  zip --quiet --delete "$jar" module-info.class >/dev/null
+done
+
 $SCRIPT -J-XX:+UseG1GC -J-XX:CompressedClassSpaceSize=128m -Dlog4j.configurationFile="$SCRIPT_ABS_DIR"/conf/log4j2.xml -J-XX:+UseStringDeduplication "$@"
 
