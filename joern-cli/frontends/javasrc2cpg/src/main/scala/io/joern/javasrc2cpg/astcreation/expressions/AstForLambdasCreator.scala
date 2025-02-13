@@ -280,13 +280,13 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
         val scopeVariable = variables.head
         val capturedLocal = localNode(
           lambdaNode,
-          scopeVariable.name,
-          scopeVariable.name,
+          scopeVariable.mangledName,
+          scopeVariable.mangledName,
           scopeVariable.typeFullName,
           Option(closureBindingId),
           Option(scopeVariable.genericSignature)
         )
-        scope.enclosingBlock.foreach(_.addLocal(capturedLocal))
+        scope.enclosingBlock.foreach(_.addLocal(capturedLocal, scopeVariable.name))
 
         ClosureBindingEntry(scopeVariable, closureBindingNode) -> capturedLocal
       }

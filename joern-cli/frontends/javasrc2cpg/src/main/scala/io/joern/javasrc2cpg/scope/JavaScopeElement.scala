@@ -116,10 +116,20 @@ object JavaScopeElement {
   }
 
   class BlockScope(implicit disableTypeFallback: Boolean) extends JavaScopeElement(disableTypeFallback) {
+    private val hoistedPatternLocals: mutable.Set[NewLocal] = mutable.Set()
+
     val isStatic = false
 
-    def addLocal(local: NewLocal): Unit = {
-      addVariableToScope(ScopeLocal(local))
+    def addLocal(local: NewLocal, originalName: String): Unit = {
+      addVariableToScope(ScopeLocal(local, originalName))
+    }
+
+    def addHoistedPatternLocal(local: NewLocal): Unit = {
+      hoistedPatternLocals.addOne(local)
+    }
+
+    def getHoistedPatternLocals: Set[NewLocal] = {
+      hoistedPatternLocals.toSet
     }
   }
 
@@ -130,16 +140,19 @@ object JavaScopeElement {
       with AnonymousClassCounter {
 
     private val patternLocalsToAddToCpg: mutable.ListBuffer[NewLocal] = mutable.ListBuffer()
-    private val patternLocalMap = new util.IdentityHashMap[TypePatternExpr, NewLocal]().asScala
+    private val patternLocalMap       = new util.IdentityHashMap[TypePatternExpr, NewLocal]().asScala
+    private val mangledNameIdxKeyPool = IntervalKeyPool(0, Long.MaxValue)
 
     def addParameter(parameter: NewMethodParameterIn, genericSignature: String): Unit = {
       addVariableToScope(ScopeParameter(parameter, genericSignature))
     }
 
-    def putPatternLocals(local: NewLocal, typePatternExpr: Option[TypePatternExpr]): Unit = {
-      patternLocalsToAddToCpg.addOne(local)
+    def registerPatternLocal(typePatternExpr: TypePatternExpr, local: NewLocal): Unit = {
+      patternLocalMap.put(typePatternExpr, local)
+    }
 
-      typePatternExpr.foreach(patternLocalMap.put(_, local))
+    def registerLocalToAddToCpg(local: NewLocal): Unit = {
+      patternLocalsToAddToCpg.addOne(local)
     }
 
     def getAndClearUnaddedPatternLocals(): List[NewLocal] = {
@@ -150,6 +163,10 @@ object JavaScopeElement {
 
     def getLocalForPattern(typePatternExpr: TypePatternExpr): Option[NewLocal] = {
       patternLocalMap.get(typePatternExpr)
+    }
+
+    def mangleLocalName(originalName: String): String = {
+      s"$originalName$$${mangledNameIdxKeyPool.next}"
     }
   }
 
@@ -207,7 +224,7 @@ object JavaScopeElement {
       val outerScope = outerClassType.map(typ =>
         val localNode = NewLocal().name(NameConstants.OuterClass).typeFullName(typ).code(NameConstants.OuterClass)
         outerClassGenericSignature.foreach(localNode.genericSignature(_))
-        ScopeLocal(localNode)
+        ScopeLocal(localNode, NameConstants.OuterClass)
       )
 
       val sortedUsedCaptures = usedCaptureParams.toList.sortBy(_.name)

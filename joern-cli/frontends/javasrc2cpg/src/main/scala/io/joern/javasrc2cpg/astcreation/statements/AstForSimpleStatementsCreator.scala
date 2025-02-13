@@ -143,7 +143,7 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
     scope.pushBlockScope()
     scope.addLocalsForPatternsToEnclosingBlock(patternPartition.patternsIntroducedToBody)
     val bodyAst = wrapInBlockWithPrefix(Nil, stmt.getBody)
-    scope.popBlockScope()
+    scope.popBlockAndHoistPatternVariables()
 
     scope.addLocalsForPatternsToEnclosingBlock(patternPartition.patternsIntroducedByStatement)
 
@@ -163,7 +163,7 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
     scope.pushBlockScope()
     scope.addLocalsForPatternsToEnclosingBlock(patternPartition.patternsIntroducedToBody)
     val bodyAst = wrapInBlockWithPrefix(Nil, stmt.getBody)
-    scope.popBlockScope()
+    scope.popBlockAndHoistPatternVariables()
 
     scope.addLocalsForPatternsToEnclosingBlock(patternPartition.patternsIntroducedByStatement)
 
@@ -192,7 +192,7 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
         val thenStmts = astsForStatement(stmt)
         blockAst(blockNode(stmt), thenStmts.toList)
     }
-    scope.popBlockScope()
+    scope.popBlockAndHoistPatternVariables()
 
     scope.pushBlockScope()
     scope.addLocalsForPatternsToEnclosingBlock(patternPartition.patternsIntroducedToElse)
@@ -207,7 +207,7 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
       val elseNode     = controlStructureNode(elseStmt, ControlStructureTypes.ELSE, "else")
       controlStructureAst(elseNode, None, elseBlock :: Nil)
     }
-    scope.popBlockScope()
+    scope.popBlockAndHoistPatternVariables()
 
     val ifNode =
       NewControlStructure()
@@ -337,17 +337,17 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
 
     val entryContext = new SwitchEntryContext(entry, new CombinedTypeSolver())
 
-    val instanceOfAst = labels.lastOption.collect { case patternExpr: PatternExpr =>
-      selectorReferenceAst.map { selectorAst =>
-        instanceOfAstForPattern(patternExpr, selectorAst)
-      }
-    }.flatten
-
-    // TODO: Add variable local and assignment to entry body even if there are no statements
     if (entry.getStatements.isEmpty) {
       labelAsts
     } else {
       scope.pushBlockScope()
+
+      val instanceOfAst = labels.lastOption.collect { case patternExpr: PatternExpr =>
+        selectorReferenceAst.map { selectorAst =>
+          instanceOfAstForPattern(patternExpr, selectorAst)
+        }
+      }.flatten
+
       val patternsExposedToBody = entryContext.typePatternExprsExposedToChild(entry.getStatements.get(0)).asScala.toList
       scope.addLocalsForPatternsToEnclosingBlock(patternsExposedToBody)
       val patternAstsToAdd = scope.enclosingMethod.get.getAndClearUnaddedPatternLocals().map(Ast(_))
