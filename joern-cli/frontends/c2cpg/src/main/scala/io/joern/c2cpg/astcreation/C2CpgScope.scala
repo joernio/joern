@@ -31,7 +31,7 @@ class C2CpgScope extends Scope[String, (NewNode, String), NewNode] {
   import C2CpgScope.*
 
   def variablesInScope: List[ScopeVariable] = {
-    stack.flatMap(_.variables.values.map(_._1)).collect {
+    stack.reverse.flatMap(_.variables.values.map(_._1)).collect {
       case local: NewLocal                 => ScopeLocal(local)
       case parameter: NewMethodParameterIn => ScopeParameter(parameter)
     }

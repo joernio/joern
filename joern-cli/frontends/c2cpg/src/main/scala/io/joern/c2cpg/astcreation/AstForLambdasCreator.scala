@@ -132,7 +132,9 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
     variablesInScope: Seq[ScopeVariable],
     filename: String
   ): LambdaBody = {
-    var bodyAst               = astForMethodBody(Option(lambdaExpression.getBody))
+    var bodyAst = astForMethodBody(Option(lambdaExpression.getBody))
+    if (bodyAst.nodes.isEmpty) return LambdaBody(Ast(), Seq.empty)
+
     val capturedVariables     = calculateCapturedVariables(lambdaExpression, bodyAst, variablesInScope)
     val bindingsToLocals      = defineCapturedVariables(lambdaExpression, lambdaMethodName, capturedVariables, filename)
     val capturedLocals        = bindingsToLocals.map(_._2)
@@ -140,17 +142,12 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
 
     bodyAst = fixupRefEdgesForCapturedLocals(bodyAst, capturedLocals)
 
+    val capturedLocalsAsts = capturedLocals.map(Ast(_))
     val blockAst = bodyAst.root match {
       case Some(b: NewBlock) =>
-        capturedLocals.foreach { local =>
-          diffGraph.addNode(local)
-          diffGraph.addEdge(b, local, EdgeTypes.AST)
-        }
-        bodyAst
+        Ast(b).withChildren(capturedLocalsAsts).merge(bodyAst)
       case Some(_) =>
-        Ast(blockNode(lambdaExpression.getBody))
-          .withChildren(capturedLocals.map(Ast(_)))
-          .withChild(bodyAst)
+        Ast(blockNode(lambdaExpression.getBody)).withChildren(capturedLocalsAsts).withChild(bodyAst)
       case None => Ast()
     }
     LambdaBody(blockAst, closureBindingEntries)
