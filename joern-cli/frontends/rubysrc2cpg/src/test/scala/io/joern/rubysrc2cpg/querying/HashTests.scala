@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
-import io.joern.rubysrc2cpg.passes.GlobalTypes.{builtinPrefix, kernelPrefix}
+import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, TypeRef}
@@ -101,7 +101,7 @@ class HashTests extends RubyCode2CpgFixture {
                 lhs.name shouldBe Operators.indexAccess
 
                 rhs.code shouldBe "\"abc\""
-                rhs.typeFullName shouldBe s"$kernelPrefix.String"
+                rhs.typeFullName shouldBe Defines.prefixAsCoreType("String")
               case _ => fail("Expected LHS and RHS after lowering")
             }
 
@@ -110,7 +110,7 @@ class HashTests extends RubyCode2CpgFixture {
               lhs.name shouldBe Operators.indexAccess
 
               rhs.code shouldBe "\"ade\""
-              rhs.typeFullName shouldBe s"$kernelPrefix.String"
+              rhs.typeFullName shouldBe Defines.prefixAsCoreType("String")
             }
           case _ => fail("Expected 5 calls (one per item in range)")
         }
@@ -127,7 +127,7 @@ class HashTests extends RubyCode2CpgFixture {
                 lhs.name shouldBe Operators.indexAccess
 
                 rhs.code shouldBe "\"abc\""
-                rhs.typeFullName shouldBe s"$kernelPrefix.String"
+                rhs.typeFullName shouldBe Defines.prefixAsCoreType("String")
               case _ => fail("Expected LHS and RHS after lowering")
             }
           case _ => fail("Expected 3 calls (one per item in range)")
@@ -175,7 +175,7 @@ class HashTests extends RubyCode2CpgFixture {
                   case _ => fail("Expected range operator for non-primitive range key")
                 }
 
-                rhs.typeFullName shouldBe s"$kernelPrefix.String"
+                rhs.typeFullName shouldBe Defines.prefixAsCoreType("String")
                 rhs.code shouldBe "\"a\""
               case _ => fail("Expected LHS and RHS for association")
             }
@@ -195,8 +195,8 @@ class HashTests extends RubyCode2CpgFixture {
       case hashCall :: Nil =>
         hashCall.code shouldBe "Hash [1 => \"a\", 2 => \"b\", 3 => \"c\"]"
         hashCall.lineNumber shouldBe Some(2)
-        hashCall.methodFullName shouldBe s"$builtinPrefix.Hash.[]"
-        hashCall.typeFullName shouldBe s"$builtinPrefix.Hash"
+        hashCall.methodFullName shouldBe s"${Defines.prefixAsCoreType("Hash")}.[]"
+        hashCall.typeFullName shouldBe Defines.prefixAsCoreType("Hash")
 
         inside(hashCall.astChildren.l) {
           case (_: Call) :: (_: TypeRef) :: (one: Call) :: (two: Call) :: (three: Call) :: Nil =>

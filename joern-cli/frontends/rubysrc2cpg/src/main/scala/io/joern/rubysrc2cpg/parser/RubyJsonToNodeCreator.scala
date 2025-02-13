@@ -1,11 +1,11 @@
 package io.joern.rubysrc2cpg.parser
 
-import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{RubyExpression, *}
+import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.parser.AstType.Send
 import io.joern.rubysrc2cpg.parser.RubyJsonHelpers.*
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.rubysrc2cpg.passes.Defines.{NilClass, RubyOperators, getBuiltInType}
-import io.joern.rubysrc2cpg.passes.GlobalTypes.builtinPrefix
+import io.joern.rubysrc2cpg.passes.Defines.{NilClass, RubyOperators}
+import io.joern.rubysrc2cpg.passes.GlobalTypes.corePrefix
 import io.joern.rubysrc2cpg.utils.FreshNameGenerator
 import io.joern.x2cpg.frontendspecific.rubysrc2cpg.ImportsPass
 import io.joern.x2cpg.frontendspecific.rubysrc2cpg.ImportsPass.ImportCallNames
@@ -36,7 +36,7 @@ class RubyJsonToNodeCreator(
     v match {
       case obj: ujson.Obj => visit(obj)
       case ujson.Null     => StatementList(Nil)(defaultTextSpan())
-      case ujson.Str(x)   => StaticLiteral(getBuiltInType(Defines.String))(defaultTextSpan(x))
+      case ujson.Str(x)   => StaticLiteral(Defines.prefixAsCoreType(Defines.String))(defaultTextSpan(x))
       case x =>
         logger.warn(s"Unhandled ujson type ${x.getClass}")
         defaultResult()
@@ -303,7 +303,7 @@ class RubyJsonToNodeCreator(
       case objNew: ObjectInstantiation                         => objNew.withBlock(block)
       case lambda: SimpleIdentifier if lambda.text == "lambda" => ProcOrLambdaExpr(block)(obj.toTextSpan)
       case ident: SimpleIdentifier if ident.span.text == "loop" =>
-        val trueLiteral = StaticLiteral(Defines.getBuiltInType(Defines.TrueClass))(ident.span.spanStart("true"))
+        val trueLiteral = StaticLiteral(Defines.prefixAsCoreType(Defines.TrueClass))(ident.span.spanStart("true"))
         DoWhileExpression(trueLiteral, body)(ident.span)
       case simpleIdentifier: SimpleIdentifier =>
         SimpleCall(simpleIdentifier, Nil)(obj.toTextSpan).withBlock(block)
@@ -423,19 +423,22 @@ class RubyJsonToNodeCreator(
   }
 
   private def visitDefined(obj: Obj): RubyExpression = {
-    val name      = SimpleIdentifier(Option(getBuiltInType(Defines.Defined)))(obj.toTextSpan.spanStart(Defines.Defined))
+    val name =
+      SimpleIdentifier(Option(Defines.prefixAsKernelDefined(Defines.Defined)))(
+        obj.toTextSpan.spanStart(Defines.Defined)
+      )
     val arguments = obj.visitArray(ParserKeys.Arguments)
     SimpleCall(name, arguments)(obj.toTextSpan)
   }
 
   private def visitDynamicString(obj: Obj): RubyExpression = {
-    val typeFullName = getBuiltInType(Defines.String)
+    val typeFullName = Defines.prefixAsCoreType(Defines.String)
     val expressions  = obj.visitArray(ParserKeys.Children)
     DynamicLiteral(typeFullName, expressions)(obj.toTextSpan)
   }
 
   private def visitDynamicSymbol(obj: Obj): RubyExpression = {
-    val typeFullName = getBuiltInType(Defines.Symbol)
+    val typeFullName = Defines.prefixAsCoreType(Defines.Symbol)
     val expressions  = obj.visitArray(ParserKeys.Children)
     DynamicLiteral(typeFullName, expressions)(obj.toTextSpan)
   }
@@ -466,12 +469,14 @@ class RubyJsonToNodeCreator(
 
   private def visitExecutableString(obj: Obj): RubyExpression = {
     val operatorName = RubyOperators.backticks
-    val callName     = SimpleIdentifier(Option(getBuiltInType(operatorName)))(obj.toTextSpan.spanStart(operatorName))
-    val arguments    = obj.visitArray(ParserKeys.Arguments)
+    val callName =
+      SimpleIdentifier(Option(Defines.prefixAsKernelDefined(operatorName)))(obj.toTextSpan.spanStart(operatorName))
+    val arguments = obj.visitArray(ParserKeys.Arguments)
     SimpleCall(callName, arguments)(obj.toTextSpan)
   }
 
-  private def visitFalse(obj: Obj): RubyExpression = StaticLiteral(getBuiltInType(Defines.FalseClass))(obj.toTextSpan)
+  private def visitFalse(obj: Obj): RubyExpression =
+    StaticLiteral(Defines.prefixAsCoreType(Defines.FalseClass))(obj.toTextSpan)
 
   private def visitFieldDeclaration(obj: Obj): RubyExpression = {
     val arguments  = obj.visitArray(ParserKeys.Arguments)
@@ -488,11 +493,12 @@ class RubyJsonToNodeCreator(
     val argument = obj
       .visitArray(ParserKeys.Arguments)
       .headOption
-      .getOrElse(StaticLiteral(getBuiltInType(Defines.NilClass))(span.spanStart("nil")))
+      .getOrElse(StaticLiteral(Defines.prefixAsCoreType(Defines.NilClass))(span.spanStart("nil")))
     SingleAssignment(memberAccess, "=", argument)(span)
   }
 
-  private def visitFloat(obj: Obj): RubyExpression = StaticLiteral(getBuiltInType(Defines.Float))(obj.toTextSpan)
+  private def visitFloat(obj: Obj): RubyExpression =
+    StaticLiteral(Defines.prefixAsCoreType(Defines.Float))(obj.toTextSpan)
 
   private def visitForStatement(obj: Obj): RubyExpression = {
     val forVariable      = visit(obj(ParserKeys.Variable))
@@ -568,7 +574,7 @@ class RubyJsonToNodeCreator(
         IfExpression(condition, thenBranch, elsifClauses = List.empty, elseClause)(obj.toTextSpan)
       case None =>
         val nilBlock = ReturnExpression(
-          List(StaticLiteral(Defines.getBuiltInType(Defines.NilClass))(obj.toTextSpan.spanStart("nil")))
+          List(StaticLiteral(Defines.prefixAsCoreType(Defines.NilClass))(obj.toTextSpan.spanStart("nil")))
         )(obj.toTextSpan.spanStart("return nil"))
         IfExpression(condition, nilBlock, elsifClauses = List.empty, elseClause)(obj.toTextSpan)
     }
@@ -601,7 +607,7 @@ class RubyJsonToNodeCreator(
     val target  = visit(obj(ParserKeys.Receiver))
     val indices = obj.visitArray(ParserKeys.Arguments)
     val isRegexMatch = indices.headOption.exists {
-      case x: StaticLiteral => x.typeFullName == getBuiltInType(Defines.Regexp)
+      case x: StaticLiteral => x.typeFullName == Defines.prefixAsCoreType(Defines.Regexp)
       case _                => false
     }
     if (isRegexMatch) {
@@ -622,7 +628,7 @@ class RubyJsonToNodeCreator(
   }
 
   private def visitInt(obj: Obj): RubyExpression = {
-    val typeFullName = getBuiltInType(Defines.Integer)
+    val typeFullName = Defines.prefixAsCoreType(Defines.Integer)
     StaticLiteral(typeFullName)(obj.toTextSpan)
   }
 
@@ -632,7 +638,7 @@ class RubyJsonToNodeCreator(
     val name = obj(ParserKeys.Key).str
     val default = obj
       .visitOption(ParserKeys.Value)
-      .getOrElse(StaticLiteral(getBuiltInType(Defines.NilClass))(obj.toTextSpan.spanStart("nil")))
+      .getOrElse(StaticLiteral(Defines.prefixAsCoreType(Defines.NilClass))(obj.toTextSpan.spanStart("nil")))
     OptionalParameter(name, default)(obj.toTextSpan)
   }
 
@@ -749,7 +755,7 @@ class RubyJsonToNodeCreator(
       lhs,
       rhs,
       () => defaultResult(),
-      () => StaticLiteral(getBuiltInType(Defines.NilClass))(obj.toTextSpan)
+      () => StaticLiteral(Defines.prefixAsCoreType(Defines.NilClass))(obj.toTextSpan)
     )
   }
 
@@ -763,7 +769,8 @@ class RubyJsonToNodeCreator(
 
   private def visitNext(obj: Obj): RubyExpression = NextExpression()(obj.toTextSpan)
 
-  private def visitNil(obj: Obj): RubyExpression = StaticLiteral(getBuiltInType(Defines.NilClass))(obj.toTextSpan)
+  private def visitNil(obj: Obj): RubyExpression =
+    StaticLiteral(Defines.prefixAsCoreType(Defines.NilClass))(obj.toTextSpan)
 
   private def visitNthRef(obj: Obj): RubyExpression = {
     // We represent $1 as $[1] in order to track these arbitrary numeric accesses in a way the data-flow engine
@@ -772,7 +779,7 @@ class RubyJsonToNodeCreator(
     val name              = obj(ParserKeys.Value).num.toInt
     val selfBase          = SelfIdentifier()(span.spanStart("self"))
     val amperMemberAccess = MemberAccess(selfBase, ".", "$")(span)
-    val indexPos          = StaticLiteral(getBuiltInType(Defines.Integer))(obj.toTextSpan.spanStart(name.toString))
+    val indexPos = StaticLiteral(Defines.prefixAsCoreType(Defines.Integer))(obj.toTextSpan.spanStart(name.toString))
     IndexAccess(amperMemberAccess, indexPos :: Nil)(obj.toTextSpan.spanStart(s"$$[$name]"))
   }
 
@@ -848,7 +855,7 @@ class RubyJsonToNodeCreator(
       case Nil => RaiseCall(target, List.empty)(obj.toTextSpan)
       case (argument: StaticLiteral) :: Nil =>
         val simpleErrorId =
-          SimpleIdentifier(Option(s"$builtinPrefix.StandardError"))(argument.span.spanStart("StandardError"))
+          SimpleIdentifier(Option(Defines.prefixAsCoreType("StandardError")))(argument.span.spanStart("StandardError"))
         val implicitSimpleErrInst = SimpleObjectInstantiation(simpleErrorId, argument :: Nil)(
           argument.span.spanStart(s"StandardError.new(${argument.text})")
         )
@@ -861,7 +868,8 @@ class RubyJsonToNodeCreator(
 
   }
 
-  private def visitRational(obj: Obj): RubyExpression = StaticLiteral(getBuiltInType(Defines.Rational))(obj.toTextSpan)
+  private def visitRational(obj: Obj): RubyExpression =
+    StaticLiteral(Defines.prefixAsCoreType(Defines.Rational))(obj.toTextSpan)
 
   private def visitRedo(obj: Obj): RubyExpression = {
     val callTarget = SimpleIdentifier()(obj.toTextSpan.spanStart("redo"))
@@ -887,8 +895,8 @@ class RubyJsonToNodeCreator(
   private def visitRegexExpression(obj: Obj): RubyExpression = {
     obj.visitOption(ParserKeys.Value) match {
       case Some(_ @StatementList(stmts)) =>
-        DynamicLiteral(Defines.getBuiltInType(Defines.Regexp), stmts)(obj.toTextSpan)
-      case _ => StaticLiteral(Defines.getBuiltInType(Defines.Regexp))(obj.toTextSpan)
+        DynamicLiteral(Defines.prefixAsCoreType(Defines.Regexp), stmts)(obj.toTextSpan)
+      case _ => StaticLiteral(Defines.prefixAsCoreType(Defines.Regexp))(obj.toTextSpan)
     }
   }
 
@@ -932,7 +940,7 @@ class RubyJsonToNodeCreator(
     val argument = obj
       .visitArray(ParserKeys.Arguments)
       .headOption
-      .getOrElse(StaticLiteral(getBuiltInType(Defines.NilClass))(obj.toTextSpan.spanStart("nil")))
+      .getOrElse(StaticLiteral(Defines.prefixAsCoreType(Defines.NilClass))(obj.toTextSpan.spanStart("nil")))
     val isRelative = callName == "require_relative" || callName == "require_all"
     val isWildcard = callName == "require_all"
     RequireCall(target, argument, isRelative, isWildcard)(obj.toTextSpan)
@@ -1102,7 +1110,7 @@ class RubyJsonToNodeCreator(
   }
 
   private def visitStaticString(obj: Obj): RubyExpression = {
-    val typeFullName = getBuiltInType(Defines.String)
+    val typeFullName = Defines.prefixAsCoreType(Defines.String)
     val originalSpan = obj.toTextSpan
     val value        = obj(ParserKeys.Value).str
     // In general, we want the quotations, unless it is a HEREDOC string, then we'd prefer the value
@@ -1111,7 +1119,7 @@ class RubyJsonToNodeCreator(
   }
 
   private def visitStaticSymbol(obj: Obj): RubyExpression = {
-    val typeFullName = getBuiltInType(Defines.Symbol)
+    val typeFullName = Defines.prefixAsCoreType(Defines.Symbol)
     val objTextSpan  = obj.toTextSpan
 
     if objTextSpan.text.startsWith(":") then StaticLiteral(typeFullName)(obj.toTextSpan)
@@ -1119,13 +1127,15 @@ class RubyJsonToNodeCreator(
   }
 
   private def visitSuper(obj: Obj): RubyExpression = {
-    val name      = SimpleIdentifier(Option(getBuiltInType(Defines.Super)))(obj.toTextSpan.spanStart(Defines.Super))
+    val name =
+      SimpleIdentifier(Option(Defines.prefixAsKernelDefined(Defines.Super)))(obj.toTextSpan.spanStart(Defines.Super))
     val arguments = obj.visitArray(ParserKeys.Arguments)
     SimpleCall(name, arguments)(obj.toTextSpan)
   }
 
   private def visitSuperNoArgs(obj: Obj): RubyExpression = {
-    val name = SimpleIdentifier(Option(getBuiltInType(Defines.Super)))(obj.toTextSpan.spanStart(Defines.Super))
+    val name =
+      SimpleIdentifier(Option(Defines.prefixAsKernelDefined(Defines.Super)))(obj.toTextSpan.spanStart(Defines.Super))
     SimpleCall(name, Nil)(obj.toTextSpan)
   }
 
@@ -1138,7 +1148,8 @@ class RubyJsonToNodeCreator(
     }
   }
 
-  private def visitTrue(obj: Obj): RubyExpression = StaticLiteral(getBuiltInType(Defines.TrueClass))(obj.toTextSpan)
+  private def visitTrue(obj: Obj): RubyExpression =
+    StaticLiteral(Defines.prefixAsCoreType(Defines.TrueClass))(obj.toTextSpan)
 
   private def visitUnDefine(obj: Obj): RubyExpression = {
     defaultResult(Option(obj.toTextSpan))

@@ -1,6 +1,10 @@
 package io.joern.rubysrc2cpg.passes
 
+import org.slf4j.LoggerFactory
+
 object Defines {
+
+  private val logger = LoggerFactory.getLogger(getClass)
 
   val Any: String          = "ANY"
   val Defined: String      = "defined"
@@ -32,7 +36,17 @@ object Defines {
 
   val Resolver: String = "<dependency-resolver>"
 
-  def getBuiltInType(typeInString: String) = s"${GlobalTypes.kernelPrefix}.$typeInString"
+  def prefixAsKernelDefined(typeInString: String): String = {
+    if (GlobalTypes.bundledClasses.contains(typeInString))
+      logger.warn(s"Type '$typeInString' is considered a 'core' type, not a 'Kernel-contained' type")
+    s"${GlobalTypes.kernelPrefix}.$typeInString"
+  }
+
+  def prefixAsCoreType(typeInString: String): String = {
+    if (!GlobalTypes.bundledClasses.contains(typeInString))
+      logger.warn(s"Type '$typeInString' not considered a 'core' type")
+    s"${GlobalTypes.corePrefix}.$typeInString"
+  }
 
   object RubyOperators {
     val backticks: String = "<operator>.backticks"
@@ -47,9 +61,9 @@ object Defines {
 }
 
 object GlobalTypes {
-  val Kernel        = "Kernel"
-  val builtinPrefix = "__core"
-  val kernelPrefix  = s"$builtinPrefix.$Kernel"
+  val Kernel       = "Kernel"
+  val corePrefix   = "__core"
+  val kernelPrefix = s"$corePrefix.$Kernel"
 
   /** Source: https://ruby-doc.org/docs/ruby-doc-bundle/Manual/man-1.4/function.html
     */

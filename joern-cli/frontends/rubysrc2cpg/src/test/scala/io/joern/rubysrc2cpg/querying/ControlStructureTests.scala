@@ -398,7 +398,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
           inside(forEachNode.astChildren.l) {
             case (idxLocal: Local) :: (iVarLocal: Local) :: (initAssign: Call) :: (cond: Call) :: (update: Call) :: (forBlock: Block) :: Nil =>
               idxLocal.name shouldBe "_idx_"
-              idxLocal.typeFullName shouldBe Defines.getBuiltInType(Defines.Integer)
+              idxLocal.typeFullName shouldBe Defines.prefixAsCoreType(Defines.Integer)
 
               iVarLocal.name shouldBe "i"
 
@@ -436,7 +436,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
           inside(forEachNode.astChildren.l) {
             case (idxLocal: Local) :: (iVarLocal: Local) :: (initAssign: Call) :: (cond: Call) :: (update: Call) :: (forBlock: Block) :: Nil =>
               idxLocal.name shouldBe "_idx_"
-              idxLocal.typeFullName shouldBe Defines.getBuiltInType(Defines.Integer)
+              idxLocal.typeFullName shouldBe Defines.prefixAsCoreType(Defines.Integer)
 
               iVarLocal.name shouldBe "i"
 
@@ -674,7 +674,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
         inside(forEachNode.astChildren.l) {
           case (idxLocal: Local) :: (numLocal: Local) :: (initAssign: Call) :: (cond: Call) :: (update: Call) :: (forBlock: Block) :: Nil =>
             idxLocal.name shouldBe "_idx_"
-            idxLocal.typeFullName shouldBe Defines.getBuiltInType(Defines.Integer)
+            idxLocal.typeFullName shouldBe Defines.prefixAsCoreType(Defines.Integer)
 
             numLocal.name shouldBe "num"
 

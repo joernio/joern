@@ -11,7 +11,6 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
   MemberCall,
   RubyExpression,
   RubyFieldIdentifier,
-  RubyIdentifier,
   SelfIdentifier,
   SimpleIdentifier,
   SingleAssignment,
@@ -22,7 +21,6 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
 }
 import io.joern.rubysrc2cpg.datastructures.{BlockScope, FieldDecl}
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import io.joern.rubysrc2cpg.passes.GlobalTypes
 import io.joern.rubysrc2cpg.passes.GlobalTypes.{kernelFunctions, kernelPrefix}
 import io.joern.x2cpg.{Ast, ValidationMode}
@@ -72,8 +70,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   override def code(node: RubyExpression): String = shortenCode(node.text)
 
   protected def isBuiltin(x: String): Boolean            = kernelFunctions.contains(x)
-  protected def prefixAsKernelDefined(x: String): String = s"$kernelPrefix$pathSep$x"
-  protected def prefixAsBundledType(x: String): String   = s"${GlobalTypes.builtinPrefix}.$x"
+  protected def prefixAsKernelDefined(x: String): String = Defines.prefixAsKernelDefined(x)
+  protected def prefixAsCoreType(x: String): String      = Defines.prefixAsCoreType(x)
   protected def isBundledClass(x: String): Boolean       = GlobalTypes.bundledClasses.contains(x)
   protected def pathSep                                  = "."
 
@@ -217,7 +215,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         val tildeCode   = s"$$~ = $tmpName"
         val tildeAssign = SingleAssignment(globalTilde, "=", tmp)(originSpan.spanStart(tildeCode))
 
-        def intLiteral(n: Int) = StaticLiteral(getBuiltInType(Defines.Integer))(originSpan.spanStart(s"$n"))
+        def intLiteral(n: Int) = StaticLiteral(Defines.prefixAsCoreType(Defines.Integer))(originSpan.spanStart(s"$n"))
         val tmpIndex0          = IndexAccess(tmp, intLiteral(0) :: Nil)(originSpan.spanStart(s"$tmpName[0]"))
 
         val ampersandCode   = s"$$& = $tmpName[0]"
@@ -239,7 +237,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         )
       },
       elseClause = Option {
-        def nil         = StaticLiteral(getBuiltInType(Defines.NilClass))(originSpan.spanStart("nil"))
+        def nil         = StaticLiteral(Defines.prefixAsCoreType(Defines.NilClass))(originSpan.spanStart("nil"))
         val tildeCode   = s"$$~ = nil"
         val tildeAssign = SingleAssignment(globalTilde, "=", nil)(originSpan.spanStart(tildeCode))
 

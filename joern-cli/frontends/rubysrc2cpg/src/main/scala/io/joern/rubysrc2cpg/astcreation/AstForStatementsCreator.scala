@@ -1,10 +1,10 @@
 package io.joern.rubysrc2cpg.astcreation
 
-import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{RubyStatement, *}
+import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.BlockScope
 import io.joern.rubysrc2cpg.parser.RubyJsonHelpers
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
+import io.joern.rubysrc2cpg.passes.Defines.prefixAsKernelDefined
 import io.joern.x2cpg.datastructures.MethodLike
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewControlStructure}
@@ -186,7 +186,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     def elseReturnNil(span: TextSpan) = Option {
       ElseClause(
         StatementList(
-          ReturnExpression(StaticLiteral(getBuiltInType(Defines.NilClass))(span.spanStart("nil")) :: Nil)(
+          ReturnExpression(StaticLiteral(Defines.prefixAsCoreType(Defines.NilClass))(span.spanStart("nil")) :: Nil)(
             span.spanStart("return nil")
           ) :: Nil
         )(span.spanStart("return nil"))
@@ -217,7 +217,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case node: GroupedParameterDesugaring =>
         // If the desugaring is the last expression, then we should return nil
         val nilReturnSpan    = node.span.spanStart("return nil")
-        val nilReturnLiteral = StaticLiteral(Defines.NilClass)(nilReturnSpan)
+        val nilReturnLiteral = StaticLiteral(Defines.prefixAsCoreType(Defines.NilClass))(nilReturnSpan)
         astsForStatement(node) ++ astsForImplicitReturnStatement(nilReturnLiteral)
       case node: AttributeAssignment =>
         List(
@@ -232,7 +232,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         stmtList.statements.map(astForExpression)
       case StatementList(stmts) =>
         val nilReturnSpan    = node.span.spanStart("return nil")
-        val nilReturnLiteral = StaticLiteral(Defines.NilClass)(nilReturnSpan)
+        val nilReturnLiteral = StaticLiteral(Defines.prefixAsCoreType(Defines.NilClass))(nilReturnSpan)
         stmts.map(astForExpression) ++ astsForImplicitReturnStatement(nilReturnLiteral)
       case x: RangeExpression =>
         astForReturnRangeExpression(x) :: Nil
@@ -259,12 +259,12 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         astForReturnExpression(ReturnExpression(List(simpleCall))(node.span)) :: Nil
       case node: FieldsDeclaration =>
         val nilReturnSpan    = node.span.spanStart("return nil")
-        val nilReturnLiteral = StaticLiteral(Defines.NilClass)(nilReturnSpan)
+        val nilReturnLiteral = StaticLiteral(Defines.prefixAsCoreType(Defines.NilClass))(nilReturnSpan)
         astsForFieldDeclarations(node) ++ astsForImplicitReturnStatement(nilReturnLiteral)
       case node: SingletonClassDeclaration =>
         astForAnonymousTypeDeclaration(node)
         val nilReturnSpan    = node.span.spanStart("return nil")
-        val nilReturnLiteral = StaticLiteral(Defines.NilClass)(nilReturnSpan)
+        val nilReturnLiteral = StaticLiteral(Defines.prefixAsCoreType(Defines.NilClass))(nilReturnSpan)
         astsForImplicitReturnStatement(nilReturnLiteral)
       case node =>
         logger.warn(
@@ -285,7 +285,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   // The evaluation of a MethodDeclaration returns its name in symbol form.
   // E.g. `def f = 0` ===> `:f`
   private def astForReturnMethodDeclarationSymbolName(node: RubyExpression & ProcedureDeclaration): Ast = {
-    val literalNode_ = literalNode(node, s":${node.methodName}", getBuiltInType(Defines.Symbol))
+    val literalNode_ = literalNode(node, s":${node.methodName}", prefixAsCoreType(Defines.Symbol))
     val returnNode_  = returnNode(node, literalNode_.code)
     returnAst(returnNode_, Seq(Ast(literalNode_)))
   }

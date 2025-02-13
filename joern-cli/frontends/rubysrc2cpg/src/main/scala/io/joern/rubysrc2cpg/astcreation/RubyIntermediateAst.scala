@@ -4,6 +4,7 @@ import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.rubysrc2cpg.passes.{Defines, GlobalTypes}
 import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
+import org.slf4j.LoggerFactory
 
 import java.util.Objects
 
@@ -375,7 +376,7 @@ object RubyIntermediateAst {
   final case class TypeIdentifier(typeFullName: String)(span: TextSpan)
       extends RubyExpression(span)
       with RubyIdentifier {
-    def isBuiltin: Boolean        = typeFullName.startsWith(GlobalTypes.builtinPrefix)
+    def isBuiltin: Boolean        = typeFullName.startsWith(GlobalTypes.corePrefix)
     override def toString: String = s"TypeIdentifier(${span.text}, $typeFullName)"
   }
 
@@ -408,6 +409,25 @@ object RubyIntermediateAst {
         case s                                    => s
       }
     }
+
+  }
+
+  object StaticLiteral {
+
+    private val logger = LoggerFactory.getLogger(getClass)
+
+    def unapply(literal: StaticLiteral): Option[String] = {
+      val typeName = literal.typeFullName.stripPrefix(s"${GlobalTypes.corePrefix}.")
+      Some(typeName).filter(GlobalTypes.bundledClasses.contains) match {
+        case None =>
+          logger.warn(
+            s"Unapply called on static literal with type not contained within known bundled classes: ${literal.typeFullName}"
+          )
+          Some(literal.typeFullName)
+        case x => x
+      }
+
+    }
   }
 
   final case class DynamicLiteral(typeFullName: String, expressions: List[RubyExpression])(span: TextSpan)
@@ -434,12 +454,12 @@ object RubyIntermediateAst {
 
     def isStatic: Boolean = !isDynamic
 
-    def typeFullName: String = Defines.getBuiltInType(Defines.Array)
+    def typeFullName: String = Defines.prefixAsCoreType(Defines.Array)
   }
 
   sealed trait HashLike extends RubyExpression with LiteralExpr {
     def elements: List[RubyExpression]
-    def typeFullName: String = Defines.getBuiltInType(Defines.Hash)
+    def typeFullName: String = Defines.prefixAsCoreType(Defines.Hash)
   }
 
   final case class HashLiteral(elements: List[RubyExpression])(span: TextSpan)
