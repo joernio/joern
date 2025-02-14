@@ -1,5 +1,5 @@
 import java.io.File
-import java.nio.file.Files
+import java.nio.file.{Files, FileSystems}
 import scala.collection.JavaConverters._
 
 object FileUtils {
@@ -18,5 +18,31 @@ object FileUtils {
       }
     }
   }
+
+  /** checks if the given jar contains the given entry */
+  def jarContainsEntry(jar: File, entry: String, onlyAtRootLevel: Boolean = false): Boolean = {
+    val zipFs = FileSystems.newFileSystem(jar.toPath)
+    val result = zipFs.getRootDirectories.asScala.exists { zipRootDir =>
+      val iterable =
+        if (onlyAtRootLevel) Files.list(zipRootDir)
+        else Files.walk(zipRootDir)
+      iterable.iterator.asScala.exists(_.toString == "/module-info.class")
+    }
+    zipFs.close()
+    result
+  }
+
+  /** removes the given entry from the given jar */
+  def removeJarEntry(jar: File, entry: String, onlyAtRootLevel: Boolean = false): Unit = {
+    val zipFs = FileSystems.newFileSystem(jar.toPath)
+    zipFs.getRootDirectories.forEach { zipRootDir =>
+      val iterable =
+        if (onlyAtRootLevel) Files.list(zipRootDir)
+        else Files.walk(zipRootDir)
+      iterable.filter(_.toString == entry).forEach(Files.delete(_))
+    }
+    zipFs.close()
+  }
+
 
 }
