@@ -1,6 +1,5 @@
 package io.joern.csharpsrc2cpg.astcreation
 
-import io.joern.csharpsrc2cpg.astcreation.AstParseLevel.FULL_AST
 import io.joern.csharpsrc2cpg.astcreation.BuiltinTypes.DotNetTypeMap
 import io.joern.csharpsrc2cpg.datastructures.{CSharpMethod, FieldDecl}
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
@@ -768,54 +767,80 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     )
   }
 
-  private def astForConditionalAccessExpression(
-    condAccExpr: DotNetNodeInfo,
-    baseType: Option[String] = None
-  ): Seq[Ast] = {
-    val baseNode = createDotNetNodeInfo(condAccExpr.json(ParserKeys.Expression))
-    val baseTypeFullName =
-      baseType.orElse(Some(getTypeFullNameFromAstNode(astForNode(baseNode)))).filterNot(_.equals(Defines.Any))
+  private def makeMemberAccess(expression: DotNetNodeInfo, name: DotNetNodeInfo): DotNetNodeInfo = {
+    val json = ujson.Obj()
+    json(ParserKeys.Expression) = expression.json.transform(ujson.Value)
+    json(ParserKeys.Name) = name.json.transform(ujson.Value)
+    json(ParserKeys.MetaData) = expression.json(ParserKeys.MetaData).transform(ujson.Value)
+    json(ParserKeys.MetaData)(ParserKeys.Kind) = "ast.SimpleMemberAccessExpression"
 
-    Try(createDotNetNodeInfo(condAccExpr.json(ParserKeys.WhenNotNull))).toOption match {
-      case Some(node) =>
-        node.node match {
-          case ConditionalAccessExpression => astForConditionalAccessExpression(node, baseTypeFullName)
-          case MemberBindingExpression     => astForMemberBindingExpression(node, baseTypeFullName)
-          case _                           => astForNode(node)
-        }
-      case None => Seq.empty[Ast]
+    expression.copy(node = SimpleMemberAccessExpression, json = json)
+  }
+
+  private def makeInvocation(expression: DotNetNodeInfo, args: DotNetNodeInfo): DotNetNodeInfo = {
+    val json = ujson.Obj()
+    json(ParserKeys.Expression) = expression.json.transform(ujson.Value)
+    json(ParserKeys.ArgumentList) = args.json.transform(ujson.Value)
+    json(ParserKeys.MetaData) = expression.json(ParserKeys.MetaData).transform(ujson.Value)
+    json(ParserKeys.MetaData)(ParserKeys.Kind) = "ast.InvocationExpression"
+
+    expression.copy(node = InvocationExpression, json = json)
+  }
+
+  /** Traverses the "spine" of a chained `?.`/`.` expression. For instance, `x?.y.z?.w` becomes [x, y, z, w]. Notice
+    * that, whereas `.` is left-associative, `?.` is right-associative.
+    */
+  private def traverseConditionalAccessSpine(expr: DotNetNodeInfo): Seq[DotNetNodeInfo] = {
+    expr.node match {
+      case ConditionalAccessExpression =>
+        val lhs = createDotNetNodeInfo(expr.json(ParserKeys.Expression))
+        val rhs = createDotNetNodeInfo(expr.json(ParserKeys.WhenNotNull))
+        lhs +: traverseConditionalAccessSpine(rhs)
+      case SimpleMemberAccessExpression =>
+        val lhs = createDotNetNodeInfo(expr.json(ParserKeys.Expression))
+        val rhs = createDotNetNodeInfo(expr.json(ParserKeys.Name))
+        traverseConditionalAccessSpine(lhs) :+ rhs
+      case _ =>
+        expr :: Nil
     }
   }
+
+  /** Given a sequence of nodes [x, y, z, w], creates the corresponding [[DotNetNodeInfo]] for `x.y.z.w`.
+    */
+  private def rebuildSpineAsMemberAccesses(spine: Seq[DotNetNodeInfo]): Option[DotNetNodeInfo] = {
+    def combine(lhs: DotNetNodeInfo, rhs: DotNetNodeInfo): DotNetNodeInfo = rhs.node match {
+      case MemberBindingExpression =>
+        val name = createDotNetNodeInfo(rhs.json(ParserKeys.Name))
+        makeMemberAccess(lhs, name)
+      case InvocationExpression =>
+        val name = createDotNetNodeInfo(rhs.json(ParserKeys.Expression)(ParserKeys.Name))
+        val args = createDotNetNodeInfo(rhs.json(ParserKeys.ArgumentList))
+        makeInvocation(makeMemberAccess(lhs, name), args)
+      case SimpleMemberAccessExpression =>
+        val expr = createDotNetNodeInfo(rhs.json(ParserKeys.Expression))
+        val name = createDotNetNodeInfo(rhs.json(ParserKeys.Name))
+        makeMemberAccess(makeMemberAccess(lhs, expr), name)
+      case _ =>
+        makeMemberAccess(lhs, rhs)
+    }
+
+    spine.foldLeft(None: Option[DotNetNodeInfo]) { case (lhsOpt, rhs) => lhsOpt.map(combine(_, rhs)).orElse(Some(rhs)) }
+  }
+
+  /** Handles `x?.y` expressions, by rewriting ConditionalAccessExpressions into SimpleMemberAccessExpresions, i.e.
+    * handling them as if they were `x.y`.
+    */
+  private def astForConditionalAccessExpression(condAccExpr: DotNetNodeInfo): Seq[Ast] =
+    rebuildSpineAsMemberAccesses(traverseConditionalAccessSpine(condAccExpr)) match {
+      case None =>
+        logger.warn(s"Failed to rewrite ${code(condAccExpr)}. Skipping")
+        Nil
+      case Some(rewritten) => astForNode(rewritten)
+    }
 
   private def astForSuppressNullableWarningExpression(suppressNullableExpr: DotNetNodeInfo): Seq[Ast] = {
     val _identifierNode = createDotNetNodeInfo(suppressNullableExpr.json(ParserKeys.Operand))
     Seq(astForIdentifier(_identifierNode))
-  }
-
-  private def astForMemberBindingExpression(
-    memberBindingExpr: DotNetNodeInfo,
-    baseTypeFullName: Option[String] = None
-  ): Seq[Ast] = {
-    val typ = scope
-      .tryResolveFieldAccess(nameFromNode(memberBindingExpr), baseTypeFullName)
-      .map(_.typeName)
-      .map(f => scope.tryResolveTypeReference(f).map(_.name).orElse(Option(f)))
-      .getOrElse(Option(Defines.Any))
-
-    val fieldIdentifier = fieldIdentifierNode(memberBindingExpr, memberBindingExpr.code, memberBindingExpr.code)
-
-    val identifier = newIdentifierNode(memberBindingExpr.code, baseTypeFullName.getOrElse(Defines.Any))
-    val fieldAccess =
-      newOperatorCallNode(
-        Operators.fieldAccess,
-        memberBindingExpr.code,
-        typ,
-        memberBindingExpr.lineNumber,
-        memberBindingExpr.columnNumber
-      )
-    val fieldIdentifierAst = Ast(fieldIdentifier)
-
-    Seq(callAst(fieldAccess, Seq(Ast(identifier)) ++ Seq(fieldIdentifierAst)))
   }
 
   protected def astForAttributeLists(attributeList: DotNetNodeInfo): Seq[Ast] = {
