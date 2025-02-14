@@ -33,7 +33,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
       val thisIdentifier = identifierNode(lit, "this", "this", tpe)
       scope.lookupVariable("this") match {
         case Some((variable, _)) => Ast(thisIdentifier).withRefEdge(thisIdentifier, variable)
-        case None                => Ast(identifierNode(lit, codeString, codeString, tpe))
+        case _                   => Ast(identifierNode(lit, codeString, codeString, tpe))
       }
     } else {
       Ast(literalNode(lit, codeString, tpe))
@@ -165,9 +165,8 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
           case identifierTypeName: String =>
             val node = identifierNode(ident, identifierName, code(ident), registerType(cleanType(identifierTypeName)))
             scope.lookupVariable(identifierName) match {
-              case Some((variable, _)) =>
-                Ast(node).withRefEdge(node, variable)
-              case None => Ast(node)
+              case Some((variable, _)) => Ast(node).withRefEdge(node, variable)
+              case _                   => Ast(node)
             }
           case ast: Ast => ast
         }

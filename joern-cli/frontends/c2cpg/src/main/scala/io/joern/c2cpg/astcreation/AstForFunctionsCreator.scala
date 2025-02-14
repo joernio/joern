@@ -11,6 +11,7 @@ import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTFunctionDefinition
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTLambdaExpression
+import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTQualifiedName
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPBinding
 import org.eclipse.cdt.core.dom.ast.gnu.c.ICASTKnRFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTFunctionDeclarator
@@ -19,6 +20,7 @@ import org.eclipse.cdt.internal.core.dom.parser.c.CVariable
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFunctionDefinition
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTParameterDeclaration
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTQualifiedName
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPClassType
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPEnumeration
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPStructuredBindingComposite
@@ -30,7 +32,7 @@ import scala.util.Try
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  private def methodDeclarationParentInfo(): (String, String) = {
+  protected def methodDeclarationParentInfo(): (String, String) = {
     methodAstParentStack.collectFirst { case t: NewTypeDecl => (t.label, t.fullName) }.getOrElse {
       (methodAstParentStack.head.label, methodAstParentStack.head.properties("FULL_NAME").toString)
     }
@@ -82,14 +84,14 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
   @tailrec
   final protected def isVariadic(functionNode: IASTNode): Boolean = functionNode match {
-    case decl: CPPASTFunctionDeclarator            => decl.takesVarArgs()
-    case decl: CASTFunctionDeclarator              => decl.takesVarArgs()
-    case defn: IASTFunctionDefinition              => isVariadic(defn.getDeclarator)
-    case lambdaExpression: ICPPASTLambdaExpression => isVariadic(lambdaExpression.getDeclarator)
-    case _                                         => false
+    case decl: CPPASTFunctionDeclarator             => decl.takesVarArgs()
+    case decl: CASTFunctionDeclarator               => decl.takesVarArgs()
+    case functionDefinition: IASTFunctionDefinition => isVariadic(functionDefinition.getDeclarator)
+    case lambdaExpression: ICPPASTLambdaExpression  => isVariadic(lambdaExpression.getDeclarator)
+    case _                                          => false
   }
 
-  private def setVariadic(parameterNodes: Seq[NewMethodParameterIn], func: IASTNode): Unit = {
+  protected def setVariadic(parameterNodes: Seq[NewMethodParameterIn], func: IASTNode): Unit = {
     parameterNodes.lastOption.foreach {
       case p: NewMethodParameterIn if isVariadic(func) =>
         p.isVariadic = true
@@ -107,37 +109,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     }
   }
 
-  protected def astForMethodRefForLambda(lambdaExpression: ICPPASTLambdaExpression): Ast = {
-    val filename                                                  = fileName(lambdaExpression)
-    val MethodFullNameInfo(name, fullName, signature, returnType) = this.methodFullNameInfo(lambdaExpression)
-    val codeString                                                = code(lambdaExpression)
-    val methodNode_ = methodNode(lambdaExpression, name, codeString, fullName, Some(signature), filename)
-
-    scope.pushNewScope(methodNode_)
-    val parameterNodes = withIndex(parameters(lambdaExpression.getDeclarator)) { (p, i) =>
-      parameterNode(p, i)
-    }
-    setVariadic(parameterNodes, lambdaExpression)
-
-    scope.popScope()
-
-    val astForLambda = methodAst(
-      methodNode_,
-      parameterNodes.map(Ast(_)),
-      astForMethodBody(Option(lambdaExpression.getBody)),
-      methodReturnNode(lambdaExpression, registerType(returnType)),
-      newModifierNode(ModifierTypes.LAMBDA) :: Nil
-    )
-    val typeDeclAst = createFunctionTypeAndTypeDecl(lambdaExpression, methodNode_, name, fullName, signature)
-    Ast.storeInDiffGraph(astForLambda.merge(typeDeclAst), diffGraph)
-
-    Ast(methodRefNode(lambdaExpression, codeString, fullName, registerType(fullName)))
-  }
-
   protected def astForFunctionDeclarator(funcDecl: IASTFunctionDeclarator): Ast = {
     safeGetBinding(funcDecl.getName) match {
       case Some(_: IFunction) =>
-        val MethodFullNameInfo(name, fullName, signature, returnType) = this.methodFullNameInfo(funcDecl)
+        val MethodFullNameInfo(name, fullName, signature, returnType) = methodFullNameInfo(funcDecl)
         val codeString                                                = code(funcDecl.getParent)
         val filename                                                  = fileName(funcDecl)
 
@@ -225,14 +200,16 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
   private def thisForCPPFunctions(func: IASTNode): Seq[CGlobal.ParameterInfo] = {
     func match {
-      case cppFunc: ICPPASTFunctionDefinition =>
-        val maybeOwner = Try(cppFunc.getDeclarator.getName.getBinding).toOption match {
+      case cppFunc: ICPPASTFunctionDefinition if !modifierFor(cppFunc).exists(_.modifierType == ModifierTypes.STATIC) =>
+        val maybeOwner = safeGetBinding(cppFunc.getDeclarator.getName) match {
           case Some(o: ICPPBinding) if o.getOwner.isInstanceOf[CPPClassType] =>
             Some(o.getOwner.asInstanceOf[CPPClassType].getQualifiedName.mkString("."))
           case Some(o: ICPPBinding) if o.getOwner.isInstanceOf[CPPEnumeration] =>
             Some(o.getOwner.asInstanceOf[CPPEnumeration].getQualifiedName.mkString("."))
           case Some(o: ICPPBinding) if o.getOwner.isInstanceOf[CPPStructuredBindingComposite] =>
             Some(o.getOwner.asInstanceOf[CPPStructuredBindingComposite].getQualifiedName.mkString("."))
+          case _ if cppFunc.getDeclarator.getName.isInstanceOf[ICPPASTQualifiedName] =>
+            Some(cppFunc.getDeclarator.getName.asInstanceOf[CPPASTQualifiedName].getQualifier.mkString("."))
           case _ => None
         }
         maybeOwner.toSeq.map { owner =>
@@ -244,7 +221,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
             EvaluationStrategies.BY_VALUE,
             line(cppFunc),
             column(cppFunc),
-            registerType(owner)
+            registerType(s"$owner*")
           )
         }
       case _ => Seq.empty
@@ -253,7 +230,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
   protected def astForFunctionDefinition(funcDef: IASTFunctionDefinition): Ast = {
     val filename                                                  = fileName(funcDef)
-    val MethodFullNameInfo(name, fullName, signature, returnType) = this.methodFullNameInfo(funcDef)
+    val MethodFullNameInfo(name, fullName, signature, returnType) = methodFullNameInfo(funcDef)
     registerMethodDefinition(fullName)
 
     val codeString  = code(funcDef)
@@ -330,7 +307,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     )
   }
 
-  private def parameterNode(parameter: IASTNode, paramIndex: Int): NewMethodParameterIn = {
+  protected def parameterNode(parameter: IASTNode, paramIndex: Int): NewMethodParameterIn = {
     val parameterInfo = parameterNodeInfo(parameter, paramIndex)
     val parameterNode =
       parameterInNode(
@@ -346,7 +323,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     parameterNode
   }
 
-  private def astForMethodBody(body: Option[IASTStatement]): Ast = body match {
+  protected def astForMethodBody(body: Option[IASTStatement]): Ast = body match {
     case Some(b: IASTCompoundStatement) => astForBlockStatement(b)
     case Some(b)                        => astForNode(b)
     case None                           => blockAst(NewBlock().typeFullName(Defines.Any))
