@@ -133,15 +133,15 @@ Universal/mappings ++= sbt.Path.directory(new File("joern-cli/src/main/resources
 
 // remove module-info.class from dependency jars - a hacky workaround for a scala3 compiler bug
 // see https://github.com/scala/scala3/issues/20421
-val moduleInfoLocation = "/module-info.class"
+val moduleInfoLocation = "module-info.class"
 Universal/mappings := (Universal/mappings).value.collect {
   case (jar, location)
       if location.startsWith("lib")
       && location.endsWith(".jar")
-      && FileUtils.jarContainsEntry(jar, moduleInfoLocation, onlyAtRootLevel = true) =>
+      && FileUtils.jarContainsEntryInRoot(jar, moduleInfoLocation) =>
     val newJar = target.value / "without-module-info" / jar.getName()
     IO.copyFile(jar, newJar)
-    FileUtils.removeJarEntry(newJar, moduleInfoLocation, onlyAtRootLevel = true)
+    FileUtils.removeJarEntryFromRoot(newJar, moduleInfoLocation)
     streams.value.log.info(s"workaround for scala completion bug: including a modified version of $jar without the $moduleInfoLocation entry: $newJar")
     newJar -> location
   case other =>

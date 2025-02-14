@@ -19,27 +19,22 @@ object FileUtils {
     }
   }
 
-  /** checks if the given jar contains the given entry */
-  def jarContainsEntry(jar: File, entry: String, onlyAtRootLevel: Boolean = false): Boolean = {
+  /** checks if the given jar contains the given entry in the root directory
+    */
+  def jarContainsEntryInRoot(jar: File, entry: String): Boolean = {
     val zipFs = FileSystems.newFileSystem(jar.toPath)
     val result = zipFs.getRootDirectories.asScala.exists { zipRootDir =>
-      val iterable =
-        if (onlyAtRootLevel) Files.list(zipRootDir)
-        else Files.walk(zipRootDir)
-      iterable.iterator.asScala.exists(_.toString == entry)
+      Files.list(zipRootDir).iterator.asScala.exists(_.getFileName.toString == entry)
     }
     zipFs.close()
     result
   }
 
-  /** removes the given entry from the given jar */
-  def removeJarEntry(jar: File, entry: String, onlyAtRootLevel: Boolean = false): Unit = {
+  /** removes the given entry from the given jar, only at root level */
+  def removeJarEntryFromRoot(jar: File, entry: String): Unit = {
     val zipFs = FileSystems.newFileSystem(jar.toPath)
     zipFs.getRootDirectories.forEach { zipRootDir =>
-      val iterable =
-        if (onlyAtRootLevel) Files.list(zipRootDir)
-        else Files.walk(zipRootDir)
-      iterable.filter(_.toString == entry).forEach(Files.delete(_))
+      Files.list(zipRootDir).filter(_.getFileName.toString == entry).forEach(Files.delete(_))
     }
     zipFs.close()
   }
