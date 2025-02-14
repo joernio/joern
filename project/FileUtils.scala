@@ -26,7 +26,7 @@ object FileUtils {
       val iterable =
         if (onlyAtRootLevel) Files.list(zipRootDir)
         else Files.walk(zipRootDir)
-      iterable.iterator.asScala.exists(_.toString == "/module-info.class")
+      iterable.iterator.asScala.exists(_.toString == entry)
     }
     zipFs.close()
     result
