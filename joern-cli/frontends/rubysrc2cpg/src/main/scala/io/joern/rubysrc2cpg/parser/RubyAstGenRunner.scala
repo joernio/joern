@@ -108,7 +108,7 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) with Aut
     metaData: AstGenProgramMetaData
   ): Try[Seq[String]] = {
     try {
-      val cwd = env.path.toAbsolutePath.toString
+      val cwd = env.path.toAbsolutePath.toString.replace("\\", "/")
       val mainScript =
         s"""
           |options = {
