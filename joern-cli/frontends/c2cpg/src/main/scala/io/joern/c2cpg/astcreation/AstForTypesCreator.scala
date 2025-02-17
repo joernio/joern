@@ -37,9 +37,9 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   private def astForNamespaceDefinition(namespaceDefinition: ICPPASTNamespaceDefinition): Ast = {
     val TypeFullNameInfo(name, fullName) = typeFullNameInfo(namespaceDefinition)
     val codeString                       = code(namespaceDefinition)
-    val cpgNamespace =
-      newNamespaceBlockNode(namespaceDefinition, name, fullName, codeString, fileName(namespaceDefinition))
-    scope.pushNewScope(cpgNamespace)
+    val filename                         = fileName(namespaceDefinition)
+    val cpgNamespace = newNamespaceBlockNode(namespaceDefinition, name, fullName, codeString, filename)
+    scope.pushNewBlockScope(cpgNamespace)
 
     val childrenAsts = namespaceDefinition.getDeclarations.flatMap { decl =>
       val declAsts = astsForDeclaration(decl)
@@ -101,7 +101,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         }
         val code = codeForDeclarator(declaration, declarator)
         val node = localNode(declarator, name, code, tpe)
-        scope.addToScope(name, (node, tpe))
+        scope.addVariable(name, node, tpe, C2CpgScope.BlockScope)
         Ast(node)
     }
   }
@@ -191,10 +191,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
   private def astForStructuredBindingDeclaration(decl: ICPPASTStructuredBindingDeclaration): Ast = {
     val node = blockNode(decl, Defines.Empty, Defines.Void)
-    scope.pushNewScope(node)
-    val childAsts = decl.getNames.toList.map { name =>
-      astForNode(name)
-    }
+    scope.pushNewBlockScope(node)
+    val childAsts = decl.getNames.toList.map(astForNode)
     scope.popScope()
     setArgumentIndices(childAsts)
     blockAst(node, childAsts)
@@ -301,7 +299,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     }
 
     methodAstParentStack.push(typeDecl)
-    scope.pushNewScope(typeDecl)
+    scope.pushNewMethodScope(typeDecl.fullName, typeDecl.name, typeDecl, None)
 
     val memberAsts = typeSpecifier.getDeclarations(true).toList.flatMap(astsForDeclaration)
 
@@ -401,7 +399,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         alias = newAlias
       )
     methodAstParentStack.push(typeDecl)
-    scope.pushNewScope(typeDecl)
+    scope.pushNewMethodScope(typeDecl.fullName, typeDecl.name, typeDecl, None)
 
     val memberAsts = typeSpecifier.getEnumerators.toList.flatMap { e =>
       astsForEnumerator(e)

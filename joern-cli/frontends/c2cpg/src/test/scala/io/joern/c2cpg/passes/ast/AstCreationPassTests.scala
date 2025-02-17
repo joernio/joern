@@ -1533,8 +1533,7 @@ class AstCreationPassTests extends AstC2CpgSuite {
       val cpg = code("""
         |bool x[2] = { TRUE, FALSE };
         |""".stripMargin)
-      inside(cpg.local.l) { case List(x) =>
-        x.name shouldBe "x"
+      inside(cpg.local.nameExact("x").l) { case List(x) =>
         x.typeFullName shouldBe "bool[2]"
       }
     }

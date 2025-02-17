@@ -4,6 +4,7 @@ import io.joern.x2cpg.Ast
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.Defines as X2CpgDefines
+import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.utils.NodeBuilders.newDependencyNode
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
@@ -11,6 +12,10 @@ import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
 import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
+import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
+import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
+import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.utils.IOUtils
 import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast.*
@@ -433,7 +438,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   private def astForCASTDesignatedInitializer(d: ICASTDesignatedInitializer): Ast = {
     val node = blockNode(d, Defines.Empty, Defines.Void)
-    scope.pushNewScope(node)
+    scope.pushNewBlockScope(node)
     val op = Operators.assignment
     val calls = withIndex(d.getDesignators) { (des, o) =>
       val callNode_ =
@@ -449,7 +454,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   private def astForCPPASTDesignatedInitializer(d: ICPPASTDesignatedInitializer): Ast = {
     val node = blockNode(d, Defines.Empty, Defines.Void)
-    scope.pushNewScope(node)
+    scope.pushNewBlockScope(node)
     val op = Operators.assignment
     val calls = withIndex(d.getDesignators) { (des, o) =>
       val callNode_ =
@@ -593,4 +598,86 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
     ast
   }
+
+  protected def createVariableReferenceLinks(): Unit = {
+    val resolvedReferenceIt = scope.resolve(createMethodLocalForUnresolvedReference)
+    val capturedLocals      = mutable.HashMap.empty[String, NewNode]
+
+    resolvedReferenceIt.foreach { case C2CpgScope.ResolvedReference(variableNodeId, origin) =>
+      var currentScope           = origin.stack
+      var currentReference       = origin.referenceNode
+      var nextReference: NewNode = null
+
+      var done = false
+      while (!done) {
+        val localOrCapturedLocalNodeOption =
+          if (currentScope.get.nameToVariableNode.contains(origin.variableName)) {
+            done = true
+            Option(variableNodeId)
+          } else {
+            currentScope.flatMap {
+              case methodScope: C2CpgScope.MethodScopeElement
+                  if methodScope.scopeNode.isInstanceOf[NewTypeDecl] || methodScope.scopeNode
+                    .isInstanceOf[NewNamespaceBlock] =>
+                currentScope = Option(C2CpgScope.getEnclosingMethodScopeElement(currentScope))
+                None
+              case methodScope: C2CpgScope.MethodScopeElement =>
+                val methodScopeNode = methodScope.scopeNode
+                val closureBindingIdFullName = methodScopeNode match {
+                  case m: NewMethod => methodScope.methodFullName.stripSuffix(s":${m.signature}")
+                  case _            => methodScope.methodFullName
+                }
+                val closureBindingIdProperty = s"$closureBindingIdFullName:${origin.variableName}"
+                capturedLocals.updateWith(closureBindingIdProperty) {
+                  case None =>
+                    val localNode =
+                      createMethodLocalForUnresolvedReference(methodScopeNode, origin.variableName, origin.tpe)._1
+                        .closureBindingId(closureBindingIdProperty)
+                    val closureBindingNode =
+                      NodeBuilders.newClosureBindingNode(
+                        closureBindingIdProperty,
+                        origin.variableName,
+                        origin.evaluationStrategy
+                      )
+                    methodScope.capturingRefId.foreach(ref =>
+                      diffGraph.addEdge(ref, closureBindingNode, EdgeTypes.CAPTURE)
+                    )
+                    nextReference = closureBindingNode
+                    Option(localNode)
+                  case someLocalNode =>
+                    // When there is already a LOCAL representing the capturing, we do not
+                    // need to process the surrounding scope element as this has already
+                    // been processed.
+                    done = true
+                    someLocalNode
+                }
+              case _: C2CpgScope.BlockScopeElement => None
+            }
+          }
+
+        localOrCapturedLocalNodeOption.foreach { localOrCapturedLocalNode =>
+          diffGraph.addEdge(currentReference, localOrCapturedLocalNode, EdgeTypes.REF)
+          currentReference = nextReference
+        }
+        currentScope = currentScope.get.surroundingScope
+      }
+    }
+  }
+
+  private def createMethodLocalForUnresolvedReference(
+    methodScopeNodeId: NewNode,
+    variableName: String,
+    tpe: String
+  ): (NewLocal, C2CpgScope.ScopeType) = {
+    val local = NodeBuilders.newLocalNode(variableName, tpe).order(0)
+    methodScopeNodeId match {
+      case m: NewMethod         => local.lineNumber(m.lineNumber).columnNumber(m.columnNumber)
+      case t: NewTypeDecl       => local.lineNumber(t.lineNumber).columnNumber(t.columnNumber)
+      case n: NewNamespaceBlock => local.lineNumber(n.lineNumber).columnNumber(n.columnNumber)
+      case _                    => // do nothing
+    }
+    diffGraph.addEdge(methodScopeNodeId, local, EdgeTypes.AST)
+    (local, C2CpgScope.MethodScope)
+  }
+
 }

@@ -54,6 +54,7 @@ class AstCreator(
     fileContent.foreach(fileNode.content(_))
     val ast = Ast(fileNode).withChild(astForTranslationUnit(cdtAst))
     Ast.storeInDiffGraph(ast, diffGraph)
+    createVariableReferenceLinks()
     diffGraph
   }
 
@@ -82,12 +83,12 @@ class AstCreator(
     val fakeGlobalMethod =
       methodNode(iASTTranslationUnit, name, name, fullName, None, path, Option(NodeTypes.TYPE_DECL), Option(fullName))
     methodAstParentStack.push(fakeGlobalMethod)
-    scope.pushNewScope(fakeGlobalMethod)
 
     val blockNode_ = blockNode(iASTTranslationUnit)
-
+    scope.pushNewMethodScope(fakeGlobalMethod.fullName, fakeGlobalMethod.name, fakeGlobalMethod, None)
     val declsAsts = allDecls.flatMap(astsForDeclaration)
     setArgumentIndices(declsAsts)
+    scope.popScope()
 
     val methodReturn = methodReturnNode(iASTTranslationUnit, Defines.Any)
     Ast(fakeGlobalTypeDecl).withChild(

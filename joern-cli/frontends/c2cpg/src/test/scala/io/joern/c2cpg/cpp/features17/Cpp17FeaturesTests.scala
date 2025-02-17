@@ -50,12 +50,14 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |// Type is deduced to be `int`.
           |auto seq2 = my_integer_sequence<0, 1, 2>();
           |""".stripMargin)
-      val List(seq, seq2) = cpg.local.l
+      val List(seq, seq2, ints) = cpg.local.l
       seq.name shouldBe "seq"
       // CDT is unable to deduce the type of the template argument
       seq.typeFullName shouldBe "integer_sequence<int,int0,int1,int2>"
       seq2.name shouldBe "seq2"
       seq2.typeFullName shouldBe "my_integer_sequence<int0,int1,int2>"
+      ints.name shouldBe "Ints"
+      ints.typeFullName shouldBe "ANY"
     }
 
     "handle folding expressions (binary)" in {
@@ -178,13 +180,13 @@ class Cpp17FeaturesTests extends AstC2CpgSuite(fileSuffix = FileDefaults.CppExt)
           |                      // .L_ZZ4mainE2x2: .long 123
           |
           |struct S2 {
+          |  static inline int count{0}; // declare and initialize count to 0 within the class
           |  S2() : id{count++} {}
           |  ~S2() { count--; }
           |  int id;
-          |  static inline int count{0}; // declare and initialize count to 0 within the class
           |};
           |""".stripMargin)
-      cpg.local.map(l => (l.name, l.typeFullName)).toMap shouldBe Map("x1" -> "S1", "x2" -> "S1")
+      cpg.local.map(l => (l.name, l.typeFullName)).toMap shouldBe Map("x1" -> "S1", "x2" -> "S1", "count" -> "int")
       cpg.typeDecl.member.nameExact("count").typeFullName.l shouldBe List("int")
     }
 

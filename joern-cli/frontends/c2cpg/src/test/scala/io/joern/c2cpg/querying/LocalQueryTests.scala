@@ -80,7 +80,7 @@ class LocalQueryTests extends C2CpgSuite {
         | """.stripMargin)
 
     "should allow to query for all locals" in {
-      cpg.local.name.toSetMutable shouldBe Set("a", "b", "c", "e", "d", "z", "x", "q", "p", "foo")
+      cpg.local.name.sorted.l shouldBe List("NULL", "a", "a", "b", "b", "c", "c", "d", "e", "foo", "p", "q", "x", "z")
     }
 
     "should prove correct (name, type) pairs for locals" in {

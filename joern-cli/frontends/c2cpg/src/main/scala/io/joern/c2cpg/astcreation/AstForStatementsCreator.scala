@@ -30,7 +30,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val node = blockNode(blockStmt, blockCode, registerType(Defines.Void))
       .order(order)
       .argumentIndex(order)
-    scope.pushNewScope(node)
+    scope.pushNewBlockScope(node)
     var currOrder = 1
     val childAsts = blockStmt.getStatements.flatMap { stmt =>
       val r = astsForStatement(stmt, currOrder)
@@ -53,7 +53,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       val assignmentCode     = s"$localName = $codeString"
       val assignmentCallNode = callNode(astName, assignmentCode, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
       val localNameNode      = localNode(astName, localName, localName, tpe)
-      scope.addToScope(localName, (localNameNode, tpe))
+      scope.addVariable(localName, localNameNode, tpe, C2CpgScope.BlockScope)
       val localId = identifierNode(astName, code(astName), code(astName), tpe)
       val leftAst = Ast(localId).withRefEdge(localId, localNameNode)
       (assignmentCallNode, localNameNode, leftAst)
@@ -63,7 +63,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val tmpName      = uniqueName("tmp", "", "")._1
     val tpe          = registerType(typeFor(initializer))
     val localTmpNode = localNode(struct, tmpName, tmpName, tpe)
-    scope.addToScope(tmpName, (localTmpNode, tpe))
+    scope.addVariable(tmpName, localTmpNode, tpe, C2CpgScope.BlockScope)
 
     val idNode             = identifierNode(struct, tmpName, tmpName, tpe)
     val rhsAst             = astForNode(initializer)
@@ -310,11 +310,11 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val ast = expression match {
       case exprList: IASTExpressionList =>
         val compareAstBlock = blockNode(expression, Defines.Empty, registerType(Defines.Void))
-        scope.pushNewScope(compareAstBlock)
+        scope.pushNewBlockScope(compareAstBlock)
         val compareBlockAstChildren = exprList.getExpressions.toList.map(nullSafeAst)
         setArgumentIndices(compareBlockAstChildren)
-        val compareBlockAst = blockAst(compareAstBlock, compareBlockAstChildren)
         scope.popScope()
+        val compareBlockAst = blockAst(compareAstBlock, compareBlockAstChildren)
         compareBlockAst
       case other =>
         nullSafeAst(other)
@@ -387,7 +387,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         astForConditionExpression(s.getConditionExpression)
       case s: CPPASTIfStatement if s.getConditionExpression == null =>
         val exprBlock = blockNode(s.getConditionDeclaration, Defines.Empty, Defines.Void)
-        scope.pushNewScope(exprBlock)
+        scope.pushNewBlockScope(exprBlock)
         val a = astsForDeclaration(s.getConditionDeclaration)
         setArgumentIndices(a)
         scope.popScope()
@@ -400,7 +400,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case block: IASTCompoundStatement => astForBlockStatement(block)
       case other if other != null =>
         val thenBlock = blockNode(other, Defines.Empty, Defines.Void)
-        scope.pushNewScope(thenBlock)
+        scope.pushNewBlockScope(thenBlock)
         val a = astsForStatement(other)
         setArgumentIndices(a)
         scope.popScope()
@@ -416,7 +416,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case other if other != null =>
         val elseNode  = controlStructureNode(ifStmt.getElseClause, ControlStructureTypes.ELSE, "else")
         val elseBlock = blockNode(other, Defines.Empty, Defines.Void)
-        scope.pushNewScope(elseBlock)
+        scope.pushNewBlockScope(elseBlock)
         val a = astsForStatement(other)
         setArgumentIndices(a)
         scope.popScope()

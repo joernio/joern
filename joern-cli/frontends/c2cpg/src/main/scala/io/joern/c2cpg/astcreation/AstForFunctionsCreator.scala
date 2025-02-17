@@ -39,31 +39,14 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   private def createFunctionTypeAndTypeDecl(
-    node: IASTNode,
     method: NewMethod,
     methodName: String,
     methodFullName: String,
     signature: String
   ): Ast = {
-    val normalizedName     = StringUtils.normalizeSpace(methodName)
-    val normalizedFullName = StringUtils.normalizeSpace(methodFullName)
-
-    val parentNode: NewTypeDecl = methodAstParentStack.collectFirst { case t: NewTypeDecl => t }.getOrElse {
-      val astParentType     = methodAstParentStack.head.label
-      val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
-      val typeDeclNode_ = typeDeclNode(
-        node,
-        normalizedName,
-        normalizedFullName,
-        method.filename,
-        normalizedName,
-        astParentType,
-        astParentFullName
-      )
-      Ast.storeInDiffGraph(Ast(typeDeclNode_), diffGraph)
-      typeDeclNode_
-    }
-
+    val normalizedName          = StringUtils.normalizeSpace(methodName)
+    val normalizedFullName      = StringUtils.normalizeSpace(methodFullName)
+    val parentNode: NewTypeDecl = methodAstParentStack.collectFirst { case t: NewTypeDecl => t }.get
     method.astParentFullName = parentNode.fullName
     method.astParentType = parentNode.label
     val functionBinding = NewBinding().name(normalizedName).methodFullName(normalizedFullName).signature(signature)
@@ -146,14 +129,14 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         val tpe        = cleanType(safeGetType(cVariable.getType))
         val codeString = code(funcDecl.getParent)
         val node       = localNode(funcDecl, name, codeString, registerType(tpe))
-        scope.addToScope(name, (node, tpe))
+        scope.addVariable(name, node, tpe, C2CpgScope.BlockScope)
         Ast(node)
       case Some(cppVariable: CPPVariable) =>
         val name       = shortName(funcDecl)
         val tpe        = cleanType(safeGetType(cppVariable.getType))
         val codeString = code(funcDecl.getParent)
         val node       = localNode(funcDecl, name, codeString, registerType(tpe))
-        scope.addToScope(name, (node, tpe))
+        scope.addVariable(name, node, tpe, C2CpgScope.BlockScope)
         Ast(node)
       case Some(field: IField) =>
         // TODO create a member for the field
@@ -237,7 +220,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val methodNode_ = methodNode(funcDef, name, codeString, fullName, Some(signature), filename)
 
     methodAstParentStack.push(methodNode_)
-    scope.pushNewScope(methodNode_)
+    scope.pushNewMethodScope(fullName, name, methodNode_, None)
 
     val implicitThisParam = thisForCPPFunctions(funcDef).map { thisParam =>
       val parameterNode = parameterInNode(
@@ -249,7 +232,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         thisParam.evaluationStrategy,
         thisParam.typeFullName
       )
-      scope.addToScope(thisParam.name, (parameterNode, thisParam.typeFullName))
+      scope.addVariable(thisParam.name, parameterNode, thisParam.typeFullName, C2CpgScope.MethodScope)
       parameterNode
     }
     val parameterNodes = implicitThisParam ++ withIndex(parameters(funcDef)) { (p, i) =>
@@ -268,7 +251,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     scope.popScope()
     methodAstParentStack.pop()
 
-    val typeDeclAst = createFunctionTypeAndTypeDecl(funcDef, methodNode_, name, fullName, signature)
+    val typeDeclAst = createFunctionTypeAndTypeDecl(methodNode_, name, fullName, signature)
     astForMethod.merge(typeDeclAst)
   }
 
@@ -319,7 +302,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         parameterInfo.evaluationStrategy,
         parameterInfo.typeFullName
       )
-    scope.addToScope(parameterInfo.name, (parameterNode, parameterInfo.typeFullName))
+    scope.addVariable(parameterInfo.name, parameterNode, parameterInfo.typeFullName, C2CpgScope.MethodScope)
     parameterNode
   }
 

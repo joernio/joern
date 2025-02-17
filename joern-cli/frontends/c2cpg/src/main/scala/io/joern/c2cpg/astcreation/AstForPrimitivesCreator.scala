@@ -8,6 +8,7 @@ import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethodRef
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
+import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.internal.core.dom.parser.c.ICInternalBinding
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTQualifiedName
@@ -30,11 +31,9 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     val codeString = code(lit)
     val tpe        = registerType(cleanType(safeGetType(lit.getExpressionType)))
     if (codeString == "this") {
-      val thisIdentifier = identifierNode(lit, "this", "this", tpe)
-      scope.lookupVariable("this") match {
-        case Some((variable, _)) => Ast(thisIdentifier).withRefEdge(thisIdentifier, variable)
-        case _                   => Ast(identifierNode(lit, codeString, codeString, tpe))
-      }
+      val thisIdentifier = identifierNode(lit, codeString, codeString, tpe)
+      scope.addVariableReference(codeString, thisIdentifier, tpe, EvaluationStrategies.BY_VALUE)
+      Ast(thisIdentifier)
     } else {
       Ast(literalNode(lit, codeString, tpe))
     }
@@ -98,7 +97,9 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
 
   private def nameForIdentifier(ident: IASTNode): String = {
     ident match {
-      case id: IASTIdExpression => ASTStringUtil.getSimpleName(id.getName)
+      case id: IASTElaboratedTypeSpecifier => ASTStringUtil.getSimpleName(id.getName)
+      case id: IASTNamedTypeSpecifier      => ASTStringUtil.getSimpleName(id.getName)
+      case id: IASTIdExpression            => ASTStringUtil.getSimpleName(id.getName)
       case id: IASTName =>
         val name = ASTStringUtil.getSimpleName(id)
         if (name.isEmpty) safeGetBinding(id).map(_.getName).getOrElse(uniqueName("name", "", "")._1)
@@ -119,14 +120,15 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
         val ownerType    = registerType(s"$ownerTypeRaw$deref")
         if (isInCurrentScope(ident, ownerTypeRaw)) {
           scope.lookupVariable("this") match {
-            case Some((variable, _)) =>
+            case Some(_) =>
               val op             = Operators.indirectFieldAccess
               val code           = s"this->$identifierName"
               val thisIdentifier = identifierNode(ident, "this", "this", ownerType)
-              val member         = fieldIdentifierNode(ident, identifierName, identifierName)
-              val ma =
-                callNode(ident, code, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(registerType(cleanType(tpe))))
-              callAst(ma, Seq(Ast(thisIdentifier).withRefEdge(thisIdentifier, variable), Ast(member)))
+              scope.addVariableReference("this", thisIdentifier, ownerType, EvaluationStrategies.BY_VALUE)
+              val member  = fieldIdentifierNode(ident, identifierName, identifierName)
+              val callTpe = Some(registerType(cleanType(tpe)))
+              val ma      = callNode(ident, code, op, op, DispatchTypes.STATIC_DISPATCH, None, callTpe)
+              callAst(ma, Seq(Ast(thisIdentifier), Ast(member)))
             case None => tpe
           }
         } else tpe
@@ -163,11 +165,10 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
         val identifierName = nameForIdentifier(ident)
         typeNameForIdentifier(ident, identifierName) match {
           case identifierTypeName: String =>
-            val node = identifierNode(ident, identifierName, code(ident), registerType(cleanType(identifierTypeName)))
-            scope.lookupVariable(identifierName) match {
-              case Some((variable, _)) => Ast(node).withRefEdge(node, variable)
-              case _                   => Ast(node)
-            }
+            val tpe  = registerType(cleanType(identifierTypeName))
+            val node = identifierNode(ident, identifierName, code(ident), tpe)
+            scope.addVariableReference(identifierName, node, tpe, EvaluationStrategies.BY_VALUE)
+            Ast(node)
           case ast: Ast => ast
         }
     }
