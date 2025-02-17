@@ -30,7 +30,7 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) with Aut
   private val container: ScriptingContainer = {
     val cwd       = env.path.toAbsolutePath.toString
     val gemPath   = Seq(cwd, "vendor", "bundle", "jruby", "3.1.0").mkString(separator)
-    val container = new ScriptingContainer(LocalContextScope.CONCURRENT, LocalVariableBehavior.TRANSIENT)
+    val container = new ScriptingContainer(LocalContextScope.THREADSAFE, LocalVariableBehavior.PERSISTENT)
     val config    = container.getProvider.getRubyInstanceConfig
     container.setCompileMode(RubyInstanceConfig.CompileMode.OFF)
     container.setNativeEnabled(false)
@@ -42,25 +42,6 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) with Aut
     config.setHardExit(false)
 
     container
-  }
-
-  private def initContainer(): Unit = {
-    // Initialize program
-    val cwd = env.path.toAbsolutePath.toString
-    val output = Using.resources(new ByteArrayOutputStream(), new ByteArrayOutputStream()) { (outStream, errStream) =>
-      container.setOutput(new PrintStream(outStream))
-      container.setError(new PrintStream(errStream))
-
-      container.runScriptlet(s"""
-           |if defined?(RubyAstGen) != 'constant' then
-           |  libs = File.expand_path("$cwd/vendor/bundle/ruby/**/gems/**/lib", __FILE__)
-           |  $$LOAD_PATH.unshift *Dir.glob(libs)
-           |  require "$cwd/lib/ruby_ast_gen.rb"
-           |end
-           |""".stripMargin)
-      outStream.toString.split("\n").toIndexedSeq ++ errStream.toString.split("\n")
-    }
-    logger.debug(s"Container initialized with output $output")
   }
 
   override def close(): Unit = {
@@ -127,18 +108,9 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) with Aut
     metaData: AstGenProgramMetaData
   ): Try[Seq[String]] = {
     try {
-//      initContainer()
       val cwd = env.path.toAbsolutePath.toString
       val mainScript =
         s"""
-          |if defined?(RubyAstGen) then
-          |  puts 'aleady defined'
-          |else
-          |  libs = File.expand_path("$cwd/vendor/bundle/ruby/**/gems/**/lib", __FILE__)
-          |  $$LOAD_PATH.unshift *Dir.glob(libs)
-          |  require "$cwd/lib/ruby_ast_gen.rb"
-          |end
-          |
           |options = {
           |  input: nil,
           |  output: '.ast',
@@ -150,6 +122,11 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) with Aut
           |options[:output] = "$out"
           |${if exclude.isEmpty then "" else s"options[:exclude] = /$exclude/"}
           |
+          |if defined?(RubyAstGen) != 'constant' || defined?(RubyAstGen::parse) != 'method' then
+          |  libs = File.expand_path("$cwd/vendor/bundle/ruby/**/gems/**/lib", __FILE__)
+          |  $$LOAD_PATH.unshift *Dir.glob(libs)
+          |  require "$cwd/lib/ruby_ast_gen.rb"
+          |end
           |RubyAstGen::parse(options)
           |""".stripMargin
       executeWithJRuby(mainScript)
