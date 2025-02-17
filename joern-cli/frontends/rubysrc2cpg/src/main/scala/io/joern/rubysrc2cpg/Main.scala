@@ -62,6 +62,7 @@ object Main extends X2CpgMain(cmdLineParser, new RubySrc2Cpg()) with FrontendHTT
 
   def run(config: Config, rubySrc2Cpg: RubySrc2Cpg): Unit = {
     if (config.serverMode) {
+      // This will help us carry the config to `startup`, as `startup` is inherited we'll keep the API as is for now
       specifiedConfig = Option(config)
       startup()
     } else {

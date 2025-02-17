@@ -163,6 +163,7 @@ abstract class X2CpgMain[T <: X2CpgConfig[T], X <: X2CpgFrontend[T]](
         } finally {
           frontend match {
             case x2cpg: AutoCloseable => x2cpg.close()
+            case _                    => // do nothing
           }
         }
       case None =>

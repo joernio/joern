@@ -47,7 +47,7 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] with AutoCloseable {
     File.usingTemporaryDirectory("rubysrc2cpgOut") { tmpDir =>
       val astGenResult = persistedRubyAstGenRunner match {
         case Some(astGenRunner) =>
-          astGenRunner.execute(tmpDir, Option(config))
+          astGenRunner.execute(tmpDir, config)
         case None =>
           Using.resource(RubyAstGenRunner(config))(_.execute(tmpDir))
       }

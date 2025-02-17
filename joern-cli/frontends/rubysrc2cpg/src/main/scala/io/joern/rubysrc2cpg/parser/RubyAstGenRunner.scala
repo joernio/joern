@@ -136,11 +136,13 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) with Aut
   }
 
   override def execute(out: File): AstGenRunnerResult = {
-    execute(out, None)
+    execute(out, config)
   }
 
-  def execute(out: File, configOverride: Option[Config] = None): AstGenRunnerResult = {
-    val specifiedConfig                          = configOverride.getOrElse(config)
+  /** Extends the interfaces' `execute` function to account for possibly varying configurations when running this runner
+    * for multiple executions.
+    */
+  def execute(out: File, specifiedConfig: Config): AstGenRunnerResult = {
     implicit val metaData: AstGenProgramMetaData = specifiedConfig.astGenMetaData
     val in                                       = File(config.inputPath)
     logger.info(s"Running ${metaData.name} on '${specifiedConfig.inputPath}'")
@@ -184,7 +186,7 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) with Aut
     }
   }
 
-  private def executeWithJRuby(script: String): Try[Seq[String]] = synchronized {
+  private def executeWithJRuby(script: String): Try[Seq[String]] = {
     Using.resources(new ByteArrayOutputStream(), new ByteArrayOutputStream()) { (outStream, errStream) =>
       container.setOutput(new PrintStream(outStream))
       container.setError(new PrintStream(errStream))
