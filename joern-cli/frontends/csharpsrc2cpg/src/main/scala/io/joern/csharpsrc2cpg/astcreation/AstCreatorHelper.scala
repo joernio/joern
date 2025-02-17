@@ -2,7 +2,7 @@ package io.joern.csharpsrc2cpg.astcreation
 
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetJsonAst, DotNetNodeInfo, ParserKeys}
-import io.joern.csharpsrc2cpg.utils.Utils.{withoutSignature}
+import io.joern.csharpsrc2cpg.utils.Utils.withoutSignature
 import io.joern.csharpsrc2cpg.{CSharpDefines, Constants, astcreation}
 import io.joern.x2cpg.utils.IntervalKeyPool
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
@@ -211,6 +211,12 @@ object AstCreatorHelper {
     val c = node.toString match
       case "Attribute" =>
         metaData(ParserKeys.Code).strOpt.map(x => x.takeWhile(x => x != '\n')).getOrElse("<empty>").strip()
+      // Comments may end up in the `.code` for invocations. To workaround this, we parse '\n' and take the last line.
+      // TODO: Investigate the possibility of filtering trivia(comments) with DotNetAstGen from the start. Or, if we wish
+      //  to keep comments for potential analyses, output the JSON trivia AST as well and explicitly handle it with
+      //  a dedicated DotNetNodeInfo.
+      case "InvocationExpression" =>
+        metaData(ParserKeys.Code).strOpt.map(x => x.split('\n').last).getOrElse("<empty>").strip()
       case _ =>
         metaData(ParserKeys.Code).strOpt.map(x => x.takeWhile(x => x != '\n' && x != '{')).getOrElse("<empty>").strip()
     DotNetNodeInfo(node, json, c, ln, cn, lnEnd, cnEnd)
