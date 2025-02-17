@@ -160,6 +160,10 @@ abstract class X2CpgMain[T <: X2CpgConfig[T], X <: X2CpgFrontend[T]](
           case ex: Throwable =>
             ex.printStackTrace()
             System.exit(1)
+        } finally {
+          frontend match {
+            case x2cpg: AutoCloseable => x2cpg.close()
+          }
         }
       case None =>
         println("Error parsing the command line")
@@ -242,6 +246,11 @@ trait X2CpgFrontend[T <: X2CpgConfig[T]] {
   /** Create a CPG in memory for file at `inputName` with default configuration.
     */
   def createCpg(inputName: String)(implicit defaultConfig: T): Try[Cpg] = createCpg(inputName, None)(defaultConfig)
+
+  /** For frontends that have a high overhead to initialize a parser between executions, this method provides a means
+    * for the frontend to cache the execution state.
+    */
+  def initializeReusableState(config: T): Unit = {}
 
 }
 

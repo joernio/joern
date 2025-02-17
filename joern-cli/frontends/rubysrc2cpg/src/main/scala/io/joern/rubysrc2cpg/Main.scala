@@ -58,8 +58,27 @@ object Main extends X2CpgMain(cmdLineParser, new RubySrc2Cpg()) with FrontendHTT
 
   override protected def newDefaultConfig(): Config = Config()
 
+  private var specifiedConfig: Option[Config] = None
+
   def run(config: Config, rubySrc2Cpg: RubySrc2Cpg): Unit = {
-    if (config.serverMode) { startup() }
-    else { rubySrc2Cpg.run(config) }
+    if (config.serverMode) {
+      specifiedConfig = Option(config)
+      startup()
+    } else {
+      // HTTPServer impl uses non-server runs here once the server is up
+      frontend.run(config)
+    }
   }
+
+  override def startup(): Int = {
+    val config = specifiedConfig.getOrElse(newDefaultConfig())
+    frontend.initializeReusableState(config)
+    super.startup()
+  }
+
+  override def stop(): Unit = {
+    super.stop()
+    frontend.close()
+  }
+
 }

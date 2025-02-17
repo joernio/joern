@@ -29,9 +29,10 @@ import java.nio.file.{Files, Paths}
 import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try, Using}
 
-class RubySrc2Cpg extends X2CpgFrontend[Config] {
+class RubySrc2Cpg extends X2CpgFrontend[Config] with AutoCloseable {
 
-  private val logger = LoggerFactory.getLogger(this.getClass)
+  private val logger                                              = LoggerFactory.getLogger(this.getClass)
+  private var persistedRubyAstGenRunner: Option[RubyAstGenRunner] = None
 
   override def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
@@ -44,7 +45,12 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
 
   private def createCpgAction(cpg: Cpg, config: Config): Unit = {
     File.usingTemporaryDirectory("rubysrc2cpgOut") { tmpDir =>
-      val astGenResult = RubyAstGenRunner(config).execute(tmpDir)
+      val astGenResult = persistedRubyAstGenRunner match {
+        case Some(astGenRunner) =>
+          astGenRunner.execute(tmpDir, Option(config))
+        case None =>
+          Using.resource(RubyAstGenRunner(config))(_.execute(tmpDir))
+      }
 
       val astCreators = ConcurrentTaskUtil
         .runUsingThreadPool(
@@ -54,10 +60,10 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
           case Failure(exception)  => logger.warn(s"Unable to parse Ruby file, skipping -", exception); None
           case Success(astCreator) => Option(astCreator)
         }
-        .filter(x => {
+        .filter { x =>
           if x.fileContent.isBlank then logger.info(s"File content empty, skipping - ${x.fileName}")
           !x.fileContent.isBlank
-        })
+        }
 
       val internalProgramSummary = ConcurrentTaskUtil
         .runUsingThreadPool(astCreators.map(x => () => x.summarize()).iterator)
@@ -80,6 +86,18 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
         DependencySummarySolverPass(cpg, dependencySummary).createAndApply()
       }
       TypeNodePass.withTypesFromCpg(cpg).createAndApply()
+    }
+
+  }
+
+  override def initializeReusableState(config: Config): Unit = {
+    persistedRubyAstGenRunner = Option(RubyAstGenRunner(config))
+  }
+
+  override def close(): Unit = {
+    val closeTask = Try(persistedRubyAstGenRunner.foreach(_.close))
+    if (closeTask.isFailure) {
+      logger.error("Error occurred while cleaning up RubyAstGenRunner!", closeTask.failed.get)
     }
   }
 
