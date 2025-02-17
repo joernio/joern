@@ -129,28 +129,23 @@ generateScaladocs := {
   out
 }
 
-Universal / packageBin / mappings ++= sbt.Path.directory(new File("joern-cli/src/main/resources/scripts"))
+Universal/mappings ++= sbt.Path.directory(new File("joern-cli/src/main/resources/scripts"))
 
-lazy val removeModuleInfoFromJars = taskKey[Unit]("remove module-info.class from dependency jars - a hacky workaround for a scala3 compiler bug https://github.com/scala/scala3/issues/20421")
-removeModuleInfoFromJars := {
-  import java.nio.file.{Files, FileSystems}
-  val logger = streams.value.log
-  val libDir = (Universal/stagingDirectory).value / "lib"
-
-  // remove all `/module-info.class` from all jars
-  Files.walk(libDir.toPath)
-    .filter(_.toString.endsWith(".jar"))
-    .forEach { jar =>
-      val zipFs = FileSystems.newFileSystem(jar)
-      zipFs.getRootDirectories.forEach { zipRootDir =>
-        Files.list(zipRootDir).filter(_.toString == "/module-info.class").forEach { moduleInfoClass =>
-          logger.info(s"workaround for scala completion bug: deleting $moduleInfoClass from $jar")
-          Files.delete(moduleInfoClass)
-        }
-      }
-      zipFs.close()
-    }
+// remove module-info.class from dependency jars - a hacky workaround for a scala3 compiler bug
+// see https://github.com/scala/scala3/issues/20421
+val moduleInfoLocation = "module-info.class"
+Universal/mappings := (Universal/mappings).value.collect {
+  case (jar, location)
+      if location.startsWith("lib")
+      && location.endsWith(".jar")
+      && FileUtils.jarContainsEntryInRoot(jar, moduleInfoLocation) =>
+    val newJar = target.value / "without-module-info" / jar.getName()
+    IO.copyFile(jar, newJar)
+    FileUtils.removeJarEntryFromRoot(newJar, moduleInfoLocation)
+    streams.value.log.info(s"workaround for scala completion bug: including a modified version of $jar without the $moduleInfoLocation entry: $newJar")
+    newJar -> location
+  case other =>
+    other // no need to change anything
 }
-removeModuleInfoFromJars := removeModuleInfoFromJars.triggeredBy(Universal/stage).value
 
 maintainer := "fabs@shiftleft.io"
