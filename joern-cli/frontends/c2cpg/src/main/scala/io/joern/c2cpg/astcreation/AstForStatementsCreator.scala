@@ -53,7 +53,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       val assignmentCode     = s"$localName = $codeString"
       val assignmentCallNode = callNode(astName, assignmentCode, op, op, DispatchTypes.STATIC_DISPATCH, None, Some(tpe))
       val localNameNode      = localNode(astName, localName, localName, tpe)
-      scope.addVariable(localName, localNameNode, tpe, C2CpgScope.BlockScope)
+      scope.addVariable(localName, localNameNode, tpe, C2CpgScope.ScopeType.BlockScope)
       val localId = identifierNode(astName, code(astName), code(astName), tpe)
       val leftAst = Ast(localId).withRefEdge(localId, localNameNode)
       (assignmentCallNode, localNameNode, leftAst)
@@ -63,7 +63,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val tmpName      = uniqueName("tmp", "", "")._1
     val tpe          = registerType(typeFor(initializer))
     val localTmpNode = localNode(struct, tmpName, tmpName, tpe)
-    scope.addVariable(tmpName, localTmpNode, tpe, C2CpgScope.BlockScope)
+    scope.addVariable(tmpName, localTmpNode, tpe, C2CpgScope.ScopeType.BlockScope)
 
     val idNode             = identifierNode(struct, tmpName, tmpName, tpe)
     val rhsAst             = astForNode(initializer)

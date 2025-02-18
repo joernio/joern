@@ -101,7 +101,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         }
         val code = codeForDeclarator(declaration, declarator)
         val node = localNode(declarator, name, code, tpe)
-        scope.addVariable(name, node, tpe, C2CpgScope.BlockScope)
+        scope.addVariable(name, node, tpe, C2CpgScope.ScopeType.BlockScope)
         Ast(node)
     }
   }

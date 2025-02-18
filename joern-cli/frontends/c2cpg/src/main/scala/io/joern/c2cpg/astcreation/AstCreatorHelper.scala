@@ -631,14 +631,13 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
                 capturedLocals.updateWith(closureBindingIdProperty) {
                   case None =>
                     val localNode =
-                      createMethodLocalForUnresolvedReference(methodScopeNode, origin.variableName, origin.tpe)._1
+                      createMethodLocalForUnresolvedReference(methodScopeNode, origin.variableName, origin.tpe)
                         .closureBindingId(closureBindingIdProperty)
-                    val closureBindingNode =
-                      NodeBuilders.newClosureBindingNode(
-                        closureBindingIdProperty,
-                        origin.variableName,
-                        origin.evaluationStrategy
-                      )
+                    val closureBindingNode = NodeBuilders.newClosureBindingNode(
+                      closureBindingIdProperty,
+                      origin.variableName,
+                      origin.evaluationStrategy
+                    )
                     methodScope.capturingRefId.foreach(ref =>
                       diffGraph.addEdge(ref, closureBindingNode, EdgeTypes.CAPTURE)
                     )
@@ -668,7 +667,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     methodScopeNodeId: NewNode,
     variableName: String,
     tpe: String
-  ): (NewLocal, C2CpgScope.ScopeType) = {
+  ): NewLocal = {
     val local = NodeBuilders.newLocalNode(variableName, tpe).order(0)
     methodScopeNodeId match {
       case m: NewMethod         => local.lineNumber(m.lineNumber).columnNumber(m.columnNumber)
@@ -677,7 +676,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case _                    => // do nothing
     }
     diffGraph.addEdge(methodScopeNodeId, local, EdgeTypes.AST)
-    (local, C2CpgScope.MethodScope)
+    local
   }
 
 }

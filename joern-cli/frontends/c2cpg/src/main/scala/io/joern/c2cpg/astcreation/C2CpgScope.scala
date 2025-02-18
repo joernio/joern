@@ -2,7 +2,6 @@ package io.joern.c2cpg.astcreation
 
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethodRef
 
 import scala.collection.mutable
@@ -39,7 +38,6 @@ object C2CpgScope {
     var evaluationStrategy: String,
     stack: Option[ScopeElement]
   ) {
-
     def tryResolve(): Option[ResolvedReference] = {
       var foundVariableOption = Option.empty[(NewNode, String, String)]
       val stackIterator       = new ScopeElementIterator(stack)
@@ -53,14 +51,11 @@ object C2CpgScope {
         ResolvedReference(variableNodeId, this)
       }
     }
-
   }
 
-  sealed trait ScopeType
-
-  object MethodScope extends ScopeType
-
-  object BlockScope extends ScopeType
+  enum ScopeType {
+    case MethodScope, BlockScope
+  }
 
   abstract class ScopeElement(val name: String, val scopeNode: NewNode, val surroundingScope: Option[ScopeElement]) {
     var subScopeCounter: Int                                               = 0
@@ -108,28 +103,23 @@ class C2CpgScope {
     }
   }
 
-  def isEmpty: Boolean = stack.isEmpty
-
   def pushNewMethodScope(
     methodFullName: String,
     name: String,
     scopeNode: NewNode,
     capturingRefId: Option[NewMethodRef]
-  ): Unit =
+  ): Unit = {
     stack = Option(new MethodScopeElement(methodFullName, capturingRefId, name, scopeNode, surroundingScope = stack))
+  }
 
   def pushNewBlockScope(scopeNode: NewNode): Unit = {
-    peek match {
+    stack match {
       case Some(stackTop) =>
         stack = Option(new BlockScopeElement(stackTop.subScopeCounter.toString, scopeNode, surroundingScope = stack))
         stackTop.subScopeCounter += 1
       case None =>
         stack = Option(new BlockScopeElement("0", scopeNode, surroundingScope = stack))
     }
-  }
-
-  private def peek: Option[ScopeElement] = {
-    stack
   }
 
   def popScope(): Unit = {
@@ -153,27 +143,23 @@ class C2CpgScope {
     pendingReferences.find(_.referenceNode == referenceNode).foreach(r => r.evaluationStrategy = evaluationStrategy)
   }
 
-  def resolve(unresolvedHandler: (NewNode, String, String) => (NewNode, ScopeType)): Iterator[ResolvedReference] = {
+  def resolve(unresolvedHandler: (NewNode, String, String) => NewNode): Iterator[ResolvedReference] = {
     pendingReferences.iterator.map { pendingReference =>
       val resolvedReferenceOption = pendingReference.tryResolve()
-
       resolvedReferenceOption.getOrElse {
-        val methodScope =
-          C2CpgScope.getEnclosingMethodScopeElement(pendingReference.stack).scopeNode
-        val (newVariableNode, scopeType) =
-          unresolvedHandler(methodScope, pendingReference.variableName, pendingReference.tpe)
+        val methodScope     = C2CpgScope.getEnclosingMethodScopeElement(pendingReference.stack).scopeNode
+        val newVariableNode = unresolvedHandler(methodScope, pendingReference.variableName, pendingReference.tpe)
         addVariable(
           pendingReference.stack,
           pendingReference.variableName,
           newVariableNode,
           pendingReference.tpe,
           pendingReference.evaluationStrategy,
-          scopeType
+          C2CpgScope.ScopeType.MethodScope
         )
         pendingReference.tryResolve().get
       }
     }
-
   }
 
   private def addVariable(
@@ -185,8 +171,8 @@ class C2CpgScope {
     scopeType: ScopeType
   ): Unit = {
     val scopeToAddTo = scopeType match {
-      case MethodScope => C2CpgScope.getEnclosingMethodScopeElement(stack)
-      case _           => stack.get
+      case C2CpgScope.ScopeType.MethodScope => C2CpgScope.getEnclosingMethodScopeElement(stack)
+      case _                                => stack.get
     }
     scopeToAddTo.addVariable(variableName, variableNode, tpe, evaluationStrategy)
   }

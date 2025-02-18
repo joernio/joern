@@ -129,14 +129,14 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         val tpe        = cleanType(safeGetType(cVariable.getType))
         val codeString = code(funcDecl.getParent)
         val node       = localNode(funcDecl, name, codeString, registerType(tpe))
-        scope.addVariable(name, node, tpe, C2CpgScope.BlockScope)
+        scope.addVariable(name, node, tpe, C2CpgScope.ScopeType.BlockScope)
         Ast(node)
       case Some(cppVariable: CPPVariable) =>
         val name       = shortName(funcDecl)
         val tpe        = cleanType(safeGetType(cppVariable.getType))
         val codeString = code(funcDecl.getParent)
         val node       = localNode(funcDecl, name, codeString, registerType(tpe))
-        scope.addVariable(name, node, tpe, C2CpgScope.BlockScope)
+        scope.addVariable(name, node, tpe, C2CpgScope.ScopeType.BlockScope)
         Ast(node)
       case Some(field: IField) =>
         // TODO create a member for the field
@@ -232,7 +232,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         thisParam.evaluationStrategy,
         thisParam.typeFullName
       )
-      scope.addVariable(thisParam.name, parameterNode, thisParam.typeFullName, C2CpgScope.MethodScope)
+      scope.addVariable(thisParam.name, parameterNode, thisParam.typeFullName, C2CpgScope.ScopeType.MethodScope)
       parameterNode
     }
     val parameterNodes = implicitThisParam ++ withIndex(parameters(funcDef)) { (p, i) =>
@@ -302,7 +302,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         parameterInfo.evaluationStrategy,
         parameterInfo.typeFullName
       )
-    scope.addVariable(parameterInfo.name, parameterNode, parameterInfo.typeFullName, C2CpgScope.MethodScope)
+    scope.addVariable(parameterInfo.name, parameterNode, parameterInfo.typeFullName, C2CpgScope.ScopeType.MethodScope)
     parameterNode
   }
 
