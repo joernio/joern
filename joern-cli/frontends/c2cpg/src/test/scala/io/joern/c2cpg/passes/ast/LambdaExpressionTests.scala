@@ -70,24 +70,23 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
     }
 
     "create a method body for the lambda method" in {
-      val List(fallBack) = cpg.typeDecl.name("Foo").method.name(".*lambda.*").astChildren.isLocal.l
-      fallBack.name shouldBe "fallback"
-      fallBack.typeFullName shouldBe "string"
-      fallBack.closureBindingId shouldBe Some("Test0.cpp:<global>.Foo.foo.<lambda>0:fallback")
       cpg.typeDecl.name("Foo").method.name(".*lambda.*").block.astChildren.l match {
-        case List(returnNode: Return) =>
+        case List(fallBack: Local, returnNode: Return) =>
           returnNode.code shouldBe "return lambdaInput.length() > 5 ? \"Long\" : fallback;"
           returnNode.astChildren.l match {
             case List(expr: Call) =>
               expr.methodFullName shouldBe Operators.conditional
             case result => fail(s"Expected return conditional, but got $result")
           }
+          fallBack.name shouldBe "fallback"
+          fallBack.typeFullName shouldBe "string"
+          fallBack.closureBindingId shouldBe Some("Test0.cpp:<lambda>0:fallback")
         case result => fail(s"Expected lambda body with single return but got $result")
       }
     }
 
     "create locals for captured identifiers in the lambda method" in {
-      cpg.typeDecl.name("Foo").method.name(".*lambda.*").astChildren.isLocal.sortBy(_.name) match {
+      cpg.typeDecl.name("Foo").method.name(".*lambda.*").local.sortBy(_.name) match {
         case Seq(fallbackLocal: Local) =>
           fallbackLocal.name shouldBe "fallback"
           fallbackLocal.code shouldBe "fallback"
@@ -100,7 +99,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
     "create closure bindings for captured identifiers" in {
       cpg.all.collectAll[ClosureBinding].sortBy(_.closureOriginalName) match {
         case Seq(fallbackClosureBinding) =>
-          val fallbackLocal = cpg.method.name(".*lambda.*").astChildren.isLocal.name("fallback").head
+          val fallbackLocal = cpg.method.name(".*lambda.*").local.name("fallback").head
           fallbackClosureBinding.closureBindingId shouldBe fallbackLocal.closureBindingId
 
           fallbackClosureBinding._refOut.l match {
@@ -168,7 +167,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
       lambda.fullName shouldBe "Test0.cpp:<global>.Foo.foo.<lambda>0:ANY()"
       cpg.all.collectAll[ClosureBinding].l match {
         case List(thisClosureBinding) =>
-          val thisLocal = cpg.method.name(".*lambda.*").astChildren.isLocal.nameExact("this").head
+          val thisLocal = cpg.method.name(".*lambda.*").local.nameExact("this").head
           thisClosureBinding.closureBindingId shouldBe thisLocal.closureBindingId
 
           cpg.identifier.nameExact("this").refsTo.l shouldBe List(thisLocal)
@@ -224,7 +223,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
       val List(lambdaF, lambdaNested) = cpg.method.name(".*lambda.*").sortBy(_.lineNumber.get).l
       cpg.all.collectAll[ClosureBinding].l match {
         case List(xClosureBinding) =>
-          val List(xLocalCaptured) = lambdaF.astChildren.isLocal.nameExact("x").l
+          val List(xLocalCaptured) = lambdaF.block.local.nameExact("x").l
           xClosureBinding.closureBindingId shouldBe xLocalCaptured.closureBindingId
 
           cpg.identifier.nameExact("x").lineNumber(4).refsTo.l shouldBe List(xLocalCaptured)
@@ -273,7 +272,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
       val List(x1, x2, x3) = cpg.method.name(".*lambda.*").ast.isLocal.sortBy(_.lineNumber.get).nameExact("x").l
 
       x1.typeFullName shouldBe "int*"
-      x1.closureBindingId shouldBe Some("Test0.cpp:<global>.foo.<lambda>0:x")
+      x1.closureBindingId shouldBe Some("Test0.cpp:<lambda>0:x")
       cpg.identifier.nameExact("x").lineNumber(4).refsTo.l shouldBe List(x1)
 
       x2.typeFullName shouldBe "float*"
@@ -305,7 +304,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
       val List(x1, x2) = cpg.method.name(".*lambda.*").ast.isLocal.sortBy(_.lineNumber.get).nameExact("x").l
 
       x1.typeFullName shouldBe "int*"
-      x1.closureBindingId shouldBe Some("Test0.cpp:<global>.foo.<lambda>0:x")
+      x1.closureBindingId shouldBe Some("Test0.cpp:<lambda>0:x")
       cpg.identifier.nameExact("x").lineNumber(4).refsTo.l shouldBe List(x1)
 
       x2.typeFullName shouldBe "float*"
@@ -336,7 +335,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
       val List(x1, x2, x3) = cpg.method.name(".*lambda.*").ast.isLocal.sortBy(_.lineNumber.get).nameExact("x").l
 
       x1.typeFullName shouldBe "int*"
-      x1.closureBindingId shouldBe Some("Test0.cpp:<global>.foo.<lambda>0:x")
+      x1.closureBindingId shouldBe Some("Test0.cpp:<lambda>0:x")
       cpg.identifier.nameExact("x").lineNumber(5).refsTo.l shouldBe List(x1)
 
       x2.typeFullName shouldBe "float*"
@@ -376,7 +375,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
       cpg.identifier.nameExact("x").lineNumber(6).refsTo.l shouldBe List(x2)
 
       x3.typeFullName shouldBe "double*"
-      x3.closureBindingId shouldBe Some("Test0.cpp:<global>.foo.<lambda>0:x")
+      x3.closureBindingId shouldBe Some("Test0.cpp:<lambda>0:x")
       cpg.identifier.nameExact("x").lineNumber(8).refsTo.l shouldBe List(x3)
     }
   }
@@ -393,7 +392,7 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
       val List(lambda) = cpg.method.name(".*lambda.*").l
       cpg.all.collectAll[ClosureBinding].l match {
         case List(thisClosureBinding) =>
-          val thisLocal = cpg.method.name(".*lambda.*").astChildren.isLocal.nameExact("this").head
+          val thisLocal = cpg.method.name(".*lambda.*").local.nameExact("this").head
           thisClosureBinding.closureBindingId shouldBe thisLocal.closureBindingId
 
           cpg.identifier.nameExact("this").refsTo.l shouldBe List(thisLocal)

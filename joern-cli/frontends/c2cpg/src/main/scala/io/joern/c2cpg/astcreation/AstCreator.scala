@@ -85,7 +85,7 @@ class AstCreator(
     methodAstParentStack.push(fakeGlobalMethod)
 
     val blockNode_ = blockNode(iASTTranslationUnit)
-    scope.pushNewMethodScope(fakeGlobalMethod.fullName, fakeGlobalMethod.name, fakeGlobalMethod, None)
+    scope.pushNewMethodScope(fakeGlobalMethod.fullName, fakeGlobalMethod.name, blockNode_, None)
     val declsAsts = allDecls.flatMap(astsForDeclaration)
     setArgumentIndices(declsAsts)
     scope.popScope()

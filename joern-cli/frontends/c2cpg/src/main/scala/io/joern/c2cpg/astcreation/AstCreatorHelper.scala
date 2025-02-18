@@ -12,6 +12,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
 import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
 import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
 import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
@@ -622,12 +623,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
                 currentScope = Option(C2CpgScope.getEnclosingMethodScopeElement(currentScope))
                 None
               case methodScope: C2CpgScope.MethodScopeElement =>
-                val methodScopeNode = methodScope.scopeNode
-                val closureBindingIdFullName = methodScopeNode match {
-                  case m: NewMethod => methodScope.methodFullName.stripSuffix(s":${m.signature}")
-                  case _            => methodScope.methodFullName
-                }
-                val closureBindingIdProperty = s"$closureBindingIdFullName:${origin.variableName}"
+                val methodScopeNode          = methodScope.scopeNode
+                val closureBindingIdProperty = s"$filename:${methodScope.name}:${origin.variableName}"
                 capturedLocals.updateWith(closureBindingIdProperty) {
                   case None =>
                     val localNode =
@@ -673,6 +670,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case m: NewMethod         => local.lineNumber(m.lineNumber).columnNumber(m.columnNumber)
       case t: NewTypeDecl       => local.lineNumber(t.lineNumber).columnNumber(t.columnNumber)
       case n: NewNamespaceBlock => local.lineNumber(n.lineNumber).columnNumber(n.columnNumber)
+      case b: NewBlock          => local.lineNumber(b.lineNumber).columnNumber(b.columnNumber)
       case _                    => // do nothing
     }
     diffGraph.addEdge(methodScopeNodeId, local, EdgeTypes.AST)

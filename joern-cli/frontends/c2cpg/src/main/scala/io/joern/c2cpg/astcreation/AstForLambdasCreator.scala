@@ -4,12 +4,8 @@ import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.utils.NodeBuilders
-import io.joern.x2cpg.utils.NodeBuilders.newClosureBindingNode
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
-import io.joern.x2cpg.AstEdge
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
-import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
-import io.shiftleft.codepropertygraph.generated.nodes.NewClosureBinding
 import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
 import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
@@ -57,16 +53,6 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
     }
   }
 
-  private def astForLambdaBody(lambdaExpression: ICPPASTLambdaExpression): Ast = {
-    val bodyAst = astForMethodBody(Option(lambdaExpression.getBody))
-    val blockAst = bodyAst.root match {
-      case Some(_: NewBlock) => bodyAst
-      case Some(_)           => Ast(blockNode(lambdaExpression.getBody)).withChild(bodyAst)
-      case None              => Ast()
-    }
-    blockAst
-  }
-
   private def createAndPushLambdaMethod(lambdaExpression: ICPPASTLambdaExpression): (NewMethod, NewMethodRef) = {
     val MethodFullNameInfo(name, fullName, signature, returnType) = methodFullNameInfo(lambdaExpression)
     val filename                                                  = fileName(lambdaExpression)
@@ -75,13 +61,14 @@ trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this
     val methodRef        = methodRefNode(lambdaExpression, fullName, fullName, fullName)
     val lambdaMethodNode = methodNode(lambdaExpression, name, codeString, fullName, Some(signature), filename)
 
+    val lambdaMethodBlockNode = blockNode(lambdaExpression)
     methodAstParentStack.push(lambdaMethodNode)
-    scope.pushNewMethodScope(fullName, name, lambdaMethodNode, Some(methodRef))
+    scope.pushNewMethodScope(fullName, name, lambdaMethodBlockNode, Some(methodRef))
 
     val parameterNodes = withIndex(parameters(lambdaExpression.getDeclarator)) { (p, i) => parameterNode(p, i) }
     setVariadic(parameterNodes, lambdaExpression)
     val parameterAsts = parameterNodes.map(Ast(_))
-    val lambdaBodyAst = astForLambdaBody(lambdaExpression)
+    val lambdaBodyAst = astForMethodBody(Option(lambdaExpression.getBody), lambdaMethodBlockNode)
     calculateCapturedVariables(lambdaExpression, lambdaBodyAst)
 
     scope.popScope()

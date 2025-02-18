@@ -8,6 +8,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.AstNodeNew
 import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
 import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
 import org.eclipse.cdt.core.dom.ast.*
@@ -24,12 +25,18 @@ import scala.collection.mutable
 
 trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  protected def astForBlockStatement(blockStmt: IASTCompoundStatement, order: Int = -1): Ast = {
-    val codeString = code(blockStmt)
-    val blockCode  = if (codeString == "{}" || codeString.isEmpty) Defines.Empty else codeString
-    val node = blockNode(blockStmt, blockCode, registerType(Defines.Void))
+  protected def astForBlockStatement(blockStmt: IASTCompoundStatement, blockNode: NewBlock, order: Int = -1): Ast = {
+    val codeString  = code(blockStmt)
+    val blockCode   = if (codeString == "{}" || codeString.isEmpty) Defines.Empty else codeString
+    val blockLine   = line(blockStmt)
+    val blockColumn = column(blockStmt)
+    val node = blockNode
       .order(order)
       .argumentIndex(order)
+      .code(blockCode)
+      .lineNumber(blockLine)
+      .columnNumber(blockColumn)
+      .typeFullName(registerType(Defines.Void))
     scope.pushNewBlockScope(node)
     var currOrder = 1
     val childAsts = blockStmt.getStatements.flatMap { stmt =>
@@ -259,7 +266,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   protected def astsForStatement(statement: IASTStatement, argIndex: Int = -1): Seq[Ast] = {
     val r = statement match {
       case expr: IASTExpressionStatement          => Seq(astForExpression(expr.getExpression))
-      case block: IASTCompoundStatement           => Seq(astForBlockStatement(block, argIndex))
+      case block: IASTCompoundStatement           => Seq(astForBlockStatement(block, blockNode(block), argIndex))
       case ifStmt: IASTIfStatement                => astForIf(ifStmt)
       case whileStmt: IASTWhileStatement          => Seq(astForWhile(whileStmt))
       case forStmt: IASTForStatement              => Seq(astForFor(forStmt))
@@ -397,9 +404,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val ifNode = controlStructureNode(ifStmt, ControlStructureTypes.IF, code(ifStmt))
 
     val thenAst = ifStmt.getThenClause match {
-      case block: IASTCompoundStatement => astForBlockStatement(block)
+      case block: IASTCompoundStatement => astForBlockStatement(block, blockNode(block))
       case other if other != null =>
-        val thenBlock = blockNode(other, Defines.Empty, Defines.Void)
+        val thenBlock = blockNode(other)
         scope.pushNewBlockScope(thenBlock)
         val a = astsForStatement(other)
         setArgumentIndices(a)
@@ -411,7 +418,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val elseAst = ifStmt.getElseClause match {
       case block: IASTCompoundStatement =>
         val elseNode = controlStructureNode(ifStmt.getElseClause, ControlStructureTypes.ELSE, "else")
-        val elseAst  = astForBlockStatement(block)
+        val elseAst  = astForBlockStatement(block, blockNode(block))
         Ast(elseNode).withChild(elseAst)
       case other if other != null =>
         val elseNode  = controlStructureNode(ifStmt.getElseClause, ControlStructureTypes.ELSE, "else")

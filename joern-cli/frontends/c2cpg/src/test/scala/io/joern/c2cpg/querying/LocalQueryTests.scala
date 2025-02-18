@@ -84,13 +84,16 @@ class LocalQueryTests extends C2CpgSuite {
     }
 
     "should prove correct (name, type) pairs for locals" in {
-      inside(cpg.method.name("free_list").local.l) { case List(q, p) =>
+      inside(cpg.method.name("free_list").local.l) { case List(q, p, nullLocal) =>
         q.name shouldBe "q"
         q.typeFullName shouldBe "node*"
         q.code shouldBe "struct node *q"
         p.name shouldBe "p"
         p.typeFullName shouldBe "node*"
         p.code shouldBe "struct node *p"
+        nullLocal.name shouldBe "NULL"
+        nullLocal.typeFullName shouldBe "ANY"
+        nullLocal.code shouldBe "NULL"
       }
     }
 

@@ -216,11 +216,12 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val MethodFullNameInfo(name, fullName, signature, returnType) = methodFullNameInfo(funcDef)
     registerMethodDefinition(fullName)
 
-    val codeString  = code(funcDef)
-    val methodNode_ = methodNode(funcDef, name, codeString, fullName, Some(signature), filename)
+    val codeString      = code(funcDef)
+    val methodBlockNode = blockNode(funcDef)
+    val methodNode_     = methodNode(funcDef, name, codeString, fullName, Some(signature), filename)
 
     methodAstParentStack.push(methodNode_)
-    scope.pushNewMethodScope(fullName, name, methodNode_, None)
+    scope.pushNewMethodScope(fullName, name, methodBlockNode, None)
 
     val implicitThisParam = thisForCPPFunctions(funcDef).map { thisParam =>
       val parameterNode = parameterInNode(
@@ -243,7 +244,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val astForMethod = methodAst(
       methodNode_,
       parameterNodes.map(Ast(_)),
-      astForMethodBody(Option(funcDef.getBody)),
+      astForMethodBody(Option(funcDef.getBody), methodBlockNode),
       methodReturnNode(funcDef, registerType(returnType)),
       modifiers = modifierFor(funcDef)
     )
@@ -306,10 +307,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     parameterNode
   }
 
-  protected def astForMethodBody(body: Option[IASTStatement]): Ast = body match {
-    case Some(b: IASTCompoundStatement) => astForBlockStatement(b)
-    case Some(b)                        => astForNode(b)
-    case None                           => blockAst(NewBlock().typeFullName(Defines.Any))
+  protected def astForMethodBody(body: Option[IASTStatement], blockNode: NewBlock): Ast = body match {
+    case Some(b: IASTCompoundStatement) => astForBlockStatement(b, blockNode)
+    case Some(b)                        => blockAst(blockNode).withChild(astForNode(b))
+    case None                           => blockAst(blockNode)
   }
 
 }
