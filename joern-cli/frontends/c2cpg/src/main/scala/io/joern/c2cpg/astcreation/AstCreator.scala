@@ -48,7 +48,8 @@ class AstCreator(
   // To achieve this we need this extra stack.
   protected val methodAstParentStack: Stack[NewNode] = new Stack()
 
-  protected val typeRefIdStack = new Stack[NewTypeRef]
+  protected var rootMethodRef: Option[NewMethodRef] = None
+  protected val typeRefIdStack                      = new Stack[NewTypeRef]
 
   def createAst(): DiffGraphBuilder = {
     val fileContent = if (!config.disableFileContent) Option(cdtAst.getRawSignature) else None
@@ -84,18 +85,20 @@ class AstCreator(
 
     val fakeGlobalMethod =
       methodNode(iASTTranslationUnit, name, name, fullName, None, path, Option(NodeTypes.TYPE_DECL), Option(fullName))
+    val methodRef = methodRefNode(iASTTranslationUnit, fullName, fullName, fullName)
+    rootMethodRef = Some(methodRef)
     methodAstParentStack.push(fakeGlobalMethod)
 
     val blockNode_ = blockNode(iASTTranslationUnit)
-    scope.pushNewMethodScope(fakeGlobalMethod.fullName, fakeGlobalMethod.name, blockNode_, None)
+    scope.pushNewMethodScope(fakeGlobalMethod.fullName, fakeGlobalMethod.name, blockNode_, rootMethodRef)
     val declsAsts = allDecls.flatMap(astsForDeclaration)
     setArgumentIndices(declsAsts)
     scope.popScope()
 
     val methodReturn = methodReturnNode(iASTTranslationUnit, Defines.Any)
-    Ast(fakeGlobalTypeDecl).withChild(
-      methodAst(fakeGlobalMethod, Seq.empty, blockAst(blockNode_, declsAsts), methodReturn)
-    )
+    Ast(fakeGlobalTypeDecl)
+      .withChild(Ast(methodRef))
+      .withChild(methodAst(fakeGlobalMethod, Seq.empty, blockAst(blockNode_, declsAsts), methodReturn))
   }
 
   override protected def code(node: IASTNode): String = shortenCode(nodeSignature(node))

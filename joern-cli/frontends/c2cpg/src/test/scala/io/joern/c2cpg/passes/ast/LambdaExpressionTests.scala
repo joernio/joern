@@ -653,5 +653,4 @@ class LambdaExpressionTests extends AstC2CpgSuite(FileDefaults.CppExt) {
       }
     }
   }
-
 }

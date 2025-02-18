@@ -126,4 +126,37 @@ class LocalQueryTests extends C2CpgSuite {
       filename.head.endsWith(".c") shouldBe true
     }
   }
+  "local query example 4" should {
+    "be correct for global variable bindings" in {
+      val cpg = code(
+        """
+        |int x = 1;
+        |void foo() {
+        |  x = 2;
+        |}""".stripMargin,
+        "Test0.cpp"
+      )
+      val List(x1, x2) = cpg.local.sortBy(_.lineNumber.get).l
+      x1.name shouldBe "x"
+      x1.closureBindingId shouldBe None
+      val List(methodRef) = cpg.methodRef.methodFullNameExact("Test0.cpp:<global>").l
+      methodRef.containsIn.l shouldBe cpg.typeDecl.fullNameExact("Test0.cpp:<global>").l
+      val List(binding) = x1.closureBinding.l
+      binding.closureBindingId shouldBe Some("Test0.cpp:foo:x")
+      binding.closureOriginalName shouldBe Some("x")
+      binding._captureIn.l shouldBe List(methodRef)
+      val List(id1) = x1.referencingIdentifiers.l
+      id1.name shouldBe "x"
+      id1.typeFullName shouldBe "int"
+      id1.lineNumber shouldBe Some(2)
+
+      x2.name shouldBe "x"
+      x2.closureBindingId shouldBe Some("Test0.cpp:foo:x")
+      x2.closureBinding shouldBe empty
+      val List(id2) = x2.referencingIdentifiers.l
+      id2.name shouldBe "x"
+      id2.typeFullName shouldBe "int"
+      id2.lineNumber shouldBe Some(4)
+    }
+  }
 }
