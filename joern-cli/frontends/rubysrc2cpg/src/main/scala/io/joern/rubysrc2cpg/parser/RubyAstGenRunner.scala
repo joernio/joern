@@ -108,7 +108,8 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) with Aut
     metaData: AstGenProgramMetaData
   ): Try[Seq[String]] = {
     try {
-      val cwd = env.path.toAbsolutePath.toString.replace(java.io.File.separator, "/")
+      val cwd            = env.path
+      val rubyAstGenPath = cwd.resolve("lib").resolve("ruby_ast_gen.rb").toUri.toString
       val mainScript =
         s"""
           |options = {
@@ -123,7 +124,7 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) with Aut
           |${if exclude.isEmpty then "" else s"options[:exclude] = /$exclude/"}
           |
           |if defined?(RubyAstGen) != 'constant' || defined?(RubyAstGen::parse) != 'method' then
-          |  require "$cwd/lib/ruby_ast_gen.rb"
+          |  require "$rubyAstGenPath"
           |end
           |RubyAstGen::parse(options)
           |""".stripMargin
