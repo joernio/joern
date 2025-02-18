@@ -34,12 +34,12 @@ class NamespaceTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
         |  { return 0 ; }
         |}
         |""".stripMargin)
-      inside(cpg.method.isNotStub.fullName.l) { case List(f, m) =>
+      inside(cpg.method.nameNot("<global>").isNotStub.fullName.l) { case List(f, m) =>
         f shouldBe "Q.V.f:int()"
         m shouldBe "Q.V.C.m:int()"
       }
 
-      inside(cpg.namespaceBlock.nameNot("<global>").l) { case List(q, v) =>
+      inside(cpg.namespaceBlock.nameNot("<global>").sortBy(_.fullName).l) { case List(q, v) =>
         q.fullName shouldBe "Q"
         v.fullName shouldBe "Q.V"
 
@@ -83,7 +83,7 @@ class NamespaceTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
         h shouldBe "h:void()"
       }
 
-      inside(cpg.namespaceBlock.nameNot("<global>").l) { case List(q, v) =>
+      inside(cpg.namespaceBlock.nameNot("<global>").sortBy(_.fullName).l) { case List(q, v) =>
         q.fullName shouldBe "Q"
         v.fullName shouldBe "Q.V"
 

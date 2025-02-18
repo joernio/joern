@@ -38,15 +38,16 @@ class TemplateTypeTests extends C2CpgSuite(fileSuffix = FileDefaults.CppExt) {
         |template<typename T> class X;
         |template<typename A, typename B> class Y : public X<A> {};
         |""".stripMargin)
-      inside(cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).filter(x => !x.isExternal).l) {
-        case List(x, y) =>
-          x.name shouldBe "X"
-          x.fullName shouldBe "X"
-          x.aliasTypeFullName shouldBe Option("X<T>")
-          y.name shouldBe "Y"
-          y.fullName shouldBe "Y"
-          y.aliasTypeFullName shouldBe Option("Y<A,B>")
-          y.inheritsFromTypeFullName shouldBe Seq("X<A>")
+      inside(
+        cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).filter(x => !x.isExternal).sortBy(_.fullName).l
+      ) { case List(x, y) =>
+        x.name shouldBe "X"
+        x.fullName shouldBe "X"
+        x.aliasTypeFullName shouldBe Option("X<T>")
+        y.name shouldBe "Y"
+        y.fullName shouldBe "Y"
+        y.aliasTypeFullName shouldBe Option("Y<A,B>")
+        y.inheritsFromTypeFullName shouldBe Seq("X<A>")
       }
     }
 

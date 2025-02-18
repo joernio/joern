@@ -90,26 +90,26 @@ class NodeTypeStarterQueryTests extends C2CpgSuite {
 
   "should allow retrieving all nodes" in {
     val allNodesLabels = cpg.all.label.toSetMutable
-
-    allNodesLabels shouldBe Set(
-      NodeTypes.NAMESPACE_BLOCK,
+    allNodesLabels.sorted shouldBe Seq(
+      NodeTypes.BINDING,
+      NodeTypes.BLOCK,
+      NodeTypes.CALL,
+      NodeTypes.COMMENT,
+      NodeTypes.FILE,
+      NodeTypes.IDENTIFIER,
+      NodeTypes.LITERAL,
+      NodeTypes.LOCAL,
       NodeTypes.MEMBER,
-      NodeTypes.TYPE_DECL,
-      NodeTypes.METHOD_PARAMETER_IN,
-      NodeTypes.METHOD_PARAMETER_OUT,
-      NodeTypes.NAMESPACE,
       NodeTypes.META_DATA,
       NodeTypes.METHOD,
-      NodeTypes.FILE,
+      NodeTypes.METHOD_PARAMETER_IN,
+      NodeTypes.METHOD_PARAMETER_OUT,
       NodeTypes.METHOD_RETURN,
+      NodeTypes.NAMESPACE,
+      NodeTypes.NAMESPACE_BLOCK,
       NodeTypes.TYPE,
-      NodeTypes.BLOCK,
-      NodeTypes.COMMENT,
-      NodeTypes.LOCAL,
-      NodeTypes.CALL,
-      NodeTypes.LITERAL,
-      NodeTypes.BINDING,
-      NodeTypes.IDENTIFIER
+      NodeTypes.TYPE_DECL,
+      NodeTypes.TYPE_REF
     )
   }
 

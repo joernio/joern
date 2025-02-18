@@ -48,6 +48,8 @@ class AstCreator(
   // To achieve this we need this extra stack.
   protected val methodAstParentStack: Stack[NewNode] = new Stack()
 
+  protected val typeRefIdStack = new Stack[NewTypeRef]
+
   def createAst(): DiffGraphBuilder = {
     val fileContent = if (!config.disableFileContent) Option(cdtAst.getRawSignature) else None
     val fileNode    = NewFile().name(fileName(cdtAst)).order(0)

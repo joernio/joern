@@ -216,12 +216,13 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val MethodFullNameInfo(name, fullName, signature, returnType) = methodFullNameInfo(funcDef)
     registerMethodDefinition(fullName)
 
-    val codeString      = code(funcDef)
-    val methodBlockNode = blockNode(funcDef)
-    val methodNode_     = methodNode(funcDef, name, codeString, fullName, Some(signature), filename)
+    val codeString       = code(funcDef)
+    val methodBlockNode  = blockNode(funcDef)
+    val methodNode_      = methodNode(funcDef, name, codeString, fullName, Some(signature), filename)
+    val capturingRefNode = typeRefIdStack.headOption
 
     methodAstParentStack.push(methodNode_)
-    scope.pushNewMethodScope(fullName, name, methodBlockNode, None)
+    scope.pushNewMethodScope(fullName, name, methodBlockNode, capturingRefNode)
 
     val implicitThisParam = thisForCPPFunctions(funcDef).map { thisParam =>
       val parameterNode = parameterInNode(

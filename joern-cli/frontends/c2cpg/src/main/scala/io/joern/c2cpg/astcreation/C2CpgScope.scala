@@ -67,7 +67,7 @@ object C2CpgScope {
 
   class MethodScopeElement(
     val methodFullName: String,
-    val capturingRefId: Option[NewMethodRef],
+    val capturingRefId: Option[NewNode],
     override val name: String,
     override val scopeNode: NewNode,
     override val surroundingScope: Option[ScopeElement]
@@ -107,7 +107,7 @@ class C2CpgScope {
     methodFullName: String,
     name: String,
     scopeNode: NewNode,
-    capturingRefId: Option[NewMethodRef]
+    capturingRefId: Option[NewNode]
   ): Unit = {
     stack = Option(new MethodScopeElement(methodFullName, capturingRefId, name, scopeNode, surroundingScope = stack))
   }

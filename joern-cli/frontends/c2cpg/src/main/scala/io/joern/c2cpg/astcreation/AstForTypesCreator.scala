@@ -9,6 +9,7 @@ import org.eclipse.cdt.core.dom.ast.cpp.*
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTAliasDeclaration
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 import io.joern.x2cpg.datastructures.Stack.*
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import org.apache.commons.lang3.StringUtils
 
 trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -39,16 +40,16 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val codeString                       = code(namespaceDefinition)
     val filename                         = fileName(namespaceDefinition)
     val cpgNamespace = newNamespaceBlockNode(namespaceDefinition, name, fullName, codeString, filename)
+    methodAstParentStack.push(cpgNamespace)
     scope.pushNewBlockScope(cpgNamespace)
-
     val childrenAsts = namespaceDefinition.getDeclarations.flatMap { decl =>
       val declAsts = astsForDeclaration(decl)
       declAsts
     }.toIndexedSeq
-
-    val namespaceAst = Ast(cpgNamespace).withChildren(childrenAsts)
+    methodAstParentStack.pop()
     scope.popScope()
-    namespaceAst
+    setArgumentIndices(childrenAsts)
+    Ast(cpgNamespace).withChildren(childrenAsts)
   }
 
   protected def astForNamespaceAlias(namespaceAlias: ICPPASTNamespaceAlias): Ast = {
@@ -297,17 +298,20 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       case _ =>
         typeDeclNode(typeSpecifier, name, fullName, filename, codeString, alias = alias)
     }
+    val typeRefNode_ = typeRefNode(typeSpecifier, codeString, fullName)
 
     methodAstParentStack.push(typeDecl)
+    typeRefIdStack.push(typeRefNode_)
     scope.pushNewMethodScope(typeDecl.fullName, typeDecl.name, typeDecl, None)
 
     val memberAsts = typeSpecifier.getDeclarations(true).toList.flatMap(astsForDeclaration)
 
     methodAstParentStack.pop()
+    typeRefIdStack.pop()
     scope.popScope()
 
     val (calls, member) = memberAsts.partition(_.nodes.headOption.exists(_.isInstanceOf[NewCall]))
-    if (calls.isEmpty) {
+    val asts = if (calls.isEmpty) {
       Ast(typeDecl).withChildren(member) +: declAsts
     } else {
       val init = staticInitMethodAst(
@@ -321,6 +325,11 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       )
       Ast(typeDecl).withChildren(member).withChild(init) +: declAsts
     }
+    asts.foreach { ast =>
+      Ast.storeInDiffGraph(ast, diffGraph)
+      ast.root.foreach(r => diffGraph.addEdge(methodAstParentStack.head, r, EdgeTypes.AST))
+    }
+    Seq(Ast(typeRefNode_))
   }
 
   private def astsForElaboratedType(
@@ -384,6 +393,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val TypeFullNameInfo(name, fullName) = typeFullNameInfo(typeSpecifier)
     val nameAlias                        = decls.headOption.map(d => registerType(shortName(d))).filter(_.nonEmpty)
     val alias                            = filterNameAlias(nameAlias, None, fullName)
+    val codeString                       = code(typeSpecifier)
 
     val (deAliasedName, deAliasedFullName, newAlias) = if (name.contains("anonymous_enum") && alias.isDefined) {
       (alias.get, fullName.substring(0, fullName.indexOf("anonymous_enum")) + alias.get, None)
@@ -395,20 +405,23 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         deAliasedName,
         registerType(deAliasedFullName),
         filename,
-        code(typeSpecifier),
+        codeString,
         alias = newAlias
       )
-    methodAstParentStack.push(typeDecl)
-    scope.pushNewMethodScope(typeDecl.fullName, typeDecl.name, typeDecl, None)
+    val typeRefNode_ = typeRefNode(typeSpecifier, codeString, fullName)
 
+    methodAstParentStack.push(typeDecl)
+    typeRefIdStack.push(typeRefNode_)
+    scope.pushNewMethodScope(typeDecl.fullName, typeDecl.name, typeDecl, None)
     val memberAsts = typeSpecifier.getEnumerators.toList.flatMap { e =>
       astsForEnumerator(e)
     }
+    typeRefIdStack.pop()
     methodAstParentStack.pop()
     scope.popScope()
 
     val (calls, member) = memberAsts.partition(_.nodes.headOption.exists(_.isInstanceOf[NewCall]))
-    if (calls.isEmpty) {
+    val asts = if (calls.isEmpty) {
       Ast(typeDecl).withChildren(member) +: declAsts
     } else {
       val init = staticInitMethodAst(
@@ -422,6 +435,11 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       )
       Ast(typeDecl).withChildren(member).withChild(init) +: declAsts
     }
+    asts.foreach { ast =>
+      Ast.storeInDiffGraph(ast, diffGraph)
+      ast.root.foreach(r => diffGraph.addEdge(methodAstParentStack.head, r, EdgeTypes.AST))
+    }
+    Seq(Ast(typeRefNode_))
   }
 
 }
