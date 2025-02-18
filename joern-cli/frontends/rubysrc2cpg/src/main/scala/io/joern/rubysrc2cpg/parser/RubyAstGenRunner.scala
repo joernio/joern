@@ -30,7 +30,7 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) with Aut
   private val container: ScriptingContainer = {
     val cwd       = env.path.toAbsolutePath.toString
     val gemPath   = Seq(cwd, "vendor", "bundle", "jruby", "3.1.0").mkString(separator)
-    val container = new ScriptingContainer(LocalContextScope.THREADSAFE, LocalVariableBehavior.PERSISTENT)
+    val container = new ScriptingContainer(LocalContextScope.SINGLETON, LocalVariableBehavior.TRANSIENT)
     val config    = container.getProvider.getRubyInstanceConfig
     container.setCompileMode(RubyInstanceConfig.CompileMode.OFF)
     container.setNativeEnabled(false)
@@ -108,7 +108,7 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) with Aut
     metaData: AstGenProgramMetaData
   ): Try[Seq[String]] = {
     try {
-      val cwd = env.path.toAbsolutePath.toString.replace("\\", "/")
+      val cwd = env.path.toAbsolutePath.toString.replace(java.io.File.separator, "/")
       val mainScript =
         s"""
           |options = {
@@ -123,8 +123,6 @@ class RubyAstGenRunner(config: Config) extends AstGenRunnerBase(config) with Aut
           |${if exclude.isEmpty then "" else s"options[:exclude] = /$exclude/"}
           |
           |if defined?(RubyAstGen) != 'constant' || defined?(RubyAstGen::parse) != 'method' then
-          |  libs = File.expand_path("$cwd/vendor/bundle/ruby/**/gems/**/lib", __FILE__)
-          |  $$LOAD_PATH.unshift *Dir.glob(libs)
           |  require "$cwd/lib/ruby_ast_gen.rb"
           |end
           |RubyAstGen::parse(options)
