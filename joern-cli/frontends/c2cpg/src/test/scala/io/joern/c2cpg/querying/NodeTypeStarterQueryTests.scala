@@ -61,7 +61,7 @@ class NodeTypeStarterQueryTests extends C2CpgSuite {
   }
 
   "should allow retrieving type declarations" in {
-    cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).internal.name.toSetMutable shouldBe Set("foo")
+    cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).internal.name.toSetMutable shouldBe Set("main", "foo")
   }
 
   "should allow retrieving members" in {
@@ -69,7 +69,7 @@ class NodeTypeStarterQueryTests extends C2CpgSuite {
   }
 
   "should allow retrieving (used) types" in {
-    cpg.typ.name.toSetMutable shouldBe Set("int", "void", "char**", "ANY", "foo")
+    cpg.typ.name.toSetMutable shouldBe Set("ANY", "char**", "foo", "int", "main", "void")
   }
 
   "should allow retrieving namespaces" in {

@@ -918,7 +918,11 @@ class AstCreationPassTests extends AstC2CpgSuite {
       val List(localMyFs) = cpg.local.nameExact("my_fs").l
       localMyFs.order shouldBe 4
       localMyFs.referencingIdentifiers.name.l shouldBe List("my_fs")
-      cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).fullName.l.distinct shouldBe List("filesystem")
+      cpg.typeDecl.nameNot(NamespaceTraversal.globalNamespaceName).fullName.l.distinct shouldBe List(
+        "filesystem",
+        "my_open",
+        "main"
+      )
     }
 
     "be correct for typedef enum" in {

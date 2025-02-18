@@ -119,7 +119,7 @@ class TypeNodePassTests extends C2CpgSuite {
         |int main() {
         |  int x;
         |}""".stripMargin)
-      cpg.typ.name.toSetMutable shouldBe Set("int", "void", "ANY")
+      cpg.typ.name.toSetMutable shouldBe Set("ANY", "int", "main", "void")
     }
 
     "create correct types for locals" in {

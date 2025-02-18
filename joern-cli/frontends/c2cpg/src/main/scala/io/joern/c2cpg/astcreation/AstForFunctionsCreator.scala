@@ -7,6 +7,7 @@ import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTFunctionDefinition
@@ -38,19 +39,41 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     }
   }
 
-  private def createFunctionTypeAndTypeDecl(
-    method: NewMethod,
-    methodName: String,
-    methodFullName: String,
-    signature: String
-  ): Ast = {
-    val normalizedName          = StringUtils.normalizeSpace(methodName)
-    val normalizedFullName      = StringUtils.normalizeSpace(methodFullName)
+  private def createFunctionTypeAndTypeDecl(method: NewMethod): Ast = {
     val parentNode: NewTypeDecl = methodAstParentStack.collectFirst { case t: NewTypeDecl => t }.get
     method.astParentFullName = parentNode.fullName
     method.astParentType = parentNode.label
-    val functionBinding = NewBinding().name(normalizedName).methodFullName(normalizedFullName).signature(signature)
+    val functionBinding = NewBinding().name(method.name).methodFullName(method.fullName).signature(method.signature)
     Ast(functionBinding).withBindsEdge(parentNode, functionBinding).withRefEdge(functionBinding, method)
+  }
+
+  private def createFunctionTypeAndTypeDecl(funcDef: IASTFunctionDefinition, methodNode: NewMethod): Unit = {
+    registerType(methodNode.fullName)
+    val (astParentType, astParentFullName) = methodDeclarationParentInfo()
+    val methodTypeDeclNode = typeDeclNode(
+      funcDef,
+      methodNode.name,
+      methodNode.fullName,
+      methodNode.filename,
+      methodNode.fullName,
+      astParentType,
+      astParentFullName
+    )
+
+    methodNode.astParentFullName = astParentFullName
+    methodNode.astParentType = astParentType
+
+    val functionBinding = NewBinding()
+      .name(Defines.OperatorCall)
+      .methodFullName(methodNode.fullName)
+      .signature(methodNode.signature)
+
+    val functionBindAst = Ast(functionBinding)
+      .withBindsEdge(methodTypeDeclNode, functionBinding)
+      .withRefEdge(functionBinding, methodNode)
+
+    Ast.storeInDiffGraph(Ast(methodTypeDeclNode), diffGraph)
+    Ast.storeInDiffGraph(functionBindAst, diffGraph)
   }
 
   final protected def parameters(functionNode: IASTNode): Seq[IASTNode] = functionNode match {
@@ -216,10 +239,15 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val MethodFullNameInfo(name, fullName, signature, returnType) = methodFullNameInfo(funcDef)
     registerMethodDefinition(fullName)
 
-    val codeString       = code(funcDef)
-    val methodBlockNode  = blockNode(funcDef)
-    val methodNode_      = methodNode(funcDef, name, codeString, fullName, Some(signature), filename)
-    val capturingRefNode = typeRefIdStack.headOption.orElse(rootMethodRef)
+    val shouldCreateFunctionReference = typeRefIdStack.headOption.isEmpty
+    val methodRefNode_ = if (!shouldCreateFunctionReference) { None }
+    else { Option(methodRefNode(funcDef, name, fullName, fullName)) }
+
+    val codeString      = code(funcDef)
+    val methodBlockNode = blockNode(funcDef)
+    val methodNode_     = methodNode(funcDef, name, codeString, fullName, Some(signature), filename)
+    val capturingRefNode = if (shouldCreateFunctionReference) { methodRefNode_ }
+    else { typeRefIdStack.headOption }
 
     methodAstParentStack.push(methodNode_)
     scope.pushNewMethodScope(fullName, name, methodBlockNode, capturingRefNode)
@@ -253,8 +281,16 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     scope.popScope()
     methodAstParentStack.pop()
 
-    val typeDeclAst = createFunctionTypeAndTypeDecl(methodNode_, name, fullName, signature)
-    astForMethod.merge(typeDeclAst)
+    methodRefNode_ match {
+      case Some(ref) =>
+        createFunctionTypeAndTypeDecl(funcDef, methodNode_)
+        Ast.storeInDiffGraph(astForMethod, diffGraph)
+        diffGraph.addEdge(methodAstParentStack.head, methodNode_, EdgeTypes.AST)
+        Ast(ref)
+      case None =>
+        val typeDeclAst = createFunctionTypeAndTypeDecl(methodNode_)
+        astForMethod.merge(typeDeclAst)
+    }
   }
 
   private def parameterNodeInfo(parameter: IASTNode, paramIndex: Int): CGlobal.ParameterInfo = {

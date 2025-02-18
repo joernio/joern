@@ -139,8 +139,8 @@ class LocalQueryTests extends C2CpgSuite {
       val List(x1, x2) = cpg.local.sortBy(_.lineNumber.get).l
       x1.name shouldBe "x"
       x1.closureBindingId shouldBe None
-      val List(methodRef) = cpg.methodRef.methodFullNameExact("Test0.cpp:<global>").l
-      methodRef.containsIn.l shouldBe cpg.typeDecl.fullNameExact("Test0.cpp:<global>").l
+      val List(methodRef) = cpg.methodRef.methodFullNameExact("foo:void()").l
+      methodRef.containsIn.l shouldBe cpg.method.fullNameExact("Test0.cpp:<global>").l
       val List(binding) = x1.closureBinding.l
       binding.closureBindingId shouldBe Some("Test0.cpp:foo:x")
       binding.closureOriginalName shouldBe Some("x")
