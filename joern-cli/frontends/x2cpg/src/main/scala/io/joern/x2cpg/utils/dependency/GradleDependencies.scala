@@ -90,44 +90,42 @@ object GradleDependencies {
     val dependsOnAndroidTask = Option.when(projectInfo.hasAndroidSubproject)("dependsOn androidDepsCopyTaskName")
 
     s"""
-       |allprojects {
-       |  afterEvaluate { project ->
-       |    def taskName = "$taskName"
-       |    def destinationDir = "${destination.replaceAll("\\\\", "/")}"
-       |    def gradleProjectConfigurations = [$projectConfigurationString]
+       |allprojects { project ->
+       |  def taskName = "$taskName"
+       |  def destinationDir = "${destination.replaceAll("\\\\", "/")}"
+       |  def gradleProjectConfigurations = [$projectConfigurationString]
        |
-       |    if (gradleProjectConfigurations.containsKey(project.name)) {
-       |      def gradleConfigurationNames = gradleProjectConfigurations.get(project.name)
-       |      
-       |      def compileDepsCopyTaskName = taskName + "_compileDeps"
-       |      $taskCreationFunction(compileDepsCopyTaskName, Copy) {
+       |  if (gradleProjectConfigurations.containsKey(project.name)) {
+       |    def gradleConfigurationNames = gradleProjectConfigurations.get(project.name)
        |
-       |        def selectedConfigs = project.configurations.findAll {
-       |          configuration -> gradleConfigurationNames.contains(configuration.getName())
-       |        }
+       |    def compileDepsCopyTaskName = taskName + "_compileDeps"
+       |    $taskCreationFunction(compileDepsCopyTaskName, Copy) {
        |
-       |        def componentIds = []
-       |        if (!selectedConfigs.isEmpty()) {
-       |          for (selectedConfig in selectedConfigs) {
-       |            componentIds = selectedConfig.incoming.resolutionResult.allDependencies.findAll {
-       |              dep -> dep instanceof org.gradle.api.internal.artifacts.result.DefaultResolvedDependencyResult
-       |            } .collect { it.selected.id }
-       |          }
-       |        }
-       |
-       |        def result = dependencies.createArtifactResolutionQuery()
-       |                                 .forComponents(componentIds)
-       |                                 .withArtifacts(JvmLibrary, SourcesArtifact)
-       |                                 .execute()
-       |        duplicatesStrategy = 'include'
-       |        into destinationDir
-       |        from result.resolvedComponents.collect { it.getArtifacts(SourcesArtifact).collect { it.file } }
+       |      def selectedConfigs = project.configurations.findAll {
+       |        configuration -> gradleConfigurationNames.contains(configuration.getName())
        |      }
-       |      ${androidTaskDefinition.getOrElse("")}
-       |      $taskCreationFunction(taskName, Copy) {
-       |        ${dependsOnAndroidTask.getOrElse("")} 
-       |        dependsOn compileDepsCopyTaskName
+       |
+       |      def componentIds = []
+       |      if (!selectedConfigs.isEmpty()) {
+       |        for (selectedConfig in selectedConfigs) {
+       |          componentIds = selectedConfig.incoming.resolutionResult.allDependencies.findAll {
+       |            dep -> dep instanceof org.gradle.api.internal.artifacts.result.DefaultResolvedDependencyResult
+       |          } .collect { it.selected.id }
+       |        }
        |      }
+       |
+       |      def result = dependencies.createArtifactResolutionQuery()
+       |                               .forComponents(componentIds)
+       |                               .withArtifacts(JvmLibrary, SourcesArtifact)
+       |                               .execute()
+       |      duplicatesStrategy = 'include'
+       |      into destinationDir
+       |      from result.resolvedComponents.collect { it.getArtifacts(SourcesArtifact).collect { it.file } }
+       |    }
+       |    ${androidTaskDefinition.getOrElse("")}
+       |    $taskCreationFunction(taskName, Copy) {
+       |      ${dependsOnAndroidTask.getOrElse("")}
+       |      dependsOn compileDepsCopyTaskName
        |    }
        |  }
        |}
