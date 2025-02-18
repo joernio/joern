@@ -216,10 +216,17 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val MethodFullNameInfo(name, fullName, signature, returnType) = methodFullNameInfo(funcDef)
     registerMethodDefinition(fullName)
 
-    val codeString       = code(funcDef)
-    val methodBlockNode  = blockNode(funcDef)
-    val methodNode_      = methodNode(funcDef, name, codeString, fullName, Some(signature), filename)
-    val capturingRefNode = typeRefIdStack.headOption
+    val shouldCreateFunctionReference =
+      funcDef.getParent.isInstanceOf[IASTTranslationUnit] || funcDef.getParent.isInstanceOf[IASTCompoundStatement]
+
+    val methodRefNodeOption = if (!shouldCreateFunctionReference) { None }
+    else { Option(methodRefNode(funcDef, name, fullName, fullName)) }
+
+    val codeString      = code(funcDef)
+    val methodBlockNode = blockNode(funcDef)
+    val methodNode_     = methodNode(funcDef, name, codeString, fullName, Some(signature), filename)
+    val capturingRefNode = if (shouldCreateFunctionReference) { methodRefNodeOption }
+    else { typeRefIdStack.headOption }
 
     methodAstParentStack.push(methodNode_)
     scope.pushNewMethodScope(fullName, name, methodBlockNode, capturingRefNode)
@@ -254,7 +261,13 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     methodAstParentStack.pop()
 
     val typeDeclAst = createFunctionTypeAndTypeDecl(methodNode_, name, fullName, signature)
-    astForMethod.merge(typeDeclAst)
+
+    methodRefNodeOption match {
+      case Some(ref) =>
+        astForMethod.merge(typeDeclAst).merge(Ast(ref))
+      case None =>
+        astForMethod.merge(typeDeclAst)
+    }
   }
 
   private def parameterNodeInfo(parameter: IASTNode, paramIndex: Int): CGlobal.ParameterInfo = {

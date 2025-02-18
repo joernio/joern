@@ -104,6 +104,7 @@ class NodeTypeStarterQueryTests extends C2CpgSuite {
       NodeTypes.METHOD,
       NodeTypes.METHOD_PARAMETER_IN,
       NodeTypes.METHOD_PARAMETER_OUT,
+      NodeTypes.METHOD_REF,
       NodeTypes.METHOD_RETURN,
       NodeTypes.NAMESPACE,
       NodeTypes.NAMESPACE_BLOCK,
