@@ -308,7 +308,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         (
           s.getDeclarators.headOption
             .map(n => ASTStringUtil.getSimpleName(n.getName))
-            .getOrElse(uniqueName("parameter", "", "")._1),
+            .getOrElse(uniqueName("", "", "param")._1),
           code(s),
           cleanType(typeForDeclSpecifier(s)),
           false

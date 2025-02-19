@@ -69,12 +69,12 @@ trait FullNameProvider { this: AstCreator =>
       case e: IASTEnumerationSpecifier =>
         val name_                              = shortName(e)
         val fullName_                          = fullName(e)
-        val (uniqueName_, uniqueNameFullName_) = uniqueName("enum", name_, fullName_)
+        val (uniqueName_, uniqueNameFullName_) = uniqueName(name_, fullName_, "enum")
         TypeFullNameInfo(uniqueName_, uniqueNameFullName_)
       case n: ICPPASTNamespaceDefinition =>
         val name_                              = shortName(n)
         val fullName_                          = fullName(n)
-        val (uniqueName_, uniqueNameFullName_) = uniqueName("namespace", name_, fullName_)
+        val (uniqueName_, uniqueNameFullName_) = uniqueName(name_, fullName_, "namespace")
         TypeFullNameInfo(uniqueName_, uniqueNameFullName_)
       case a: ICPPASTNamespaceAlias =>
         val name_     = shortName(a)
@@ -416,8 +416,8 @@ trait FullNameProvider { this: AstCreator =>
         case decl: IASTSimpleDeclaration =>
           decl.getDeclarators.headOption
             .map(n => ASTStringUtil.getSimpleName(n.getName))
-            .getOrElse(uniqueName("composite_type", "", "")._1)
-        case _ => uniqueName("composite_type", "", "")._1
+            .getOrElse(uniqueName("", "", "type")._1)
+        case _ => uniqueName("", "", "type")._1
       }
       s"${fullName(compType.getParent)}.$name"
     }

@@ -191,7 +191,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   protected def astForASMDeclaration(asm: IASTASMDeclaration): Ast = Ast(unknownNode(asm, code(asm)))
 
   private def astForStructuredBindingDeclaration(decl: ICPPASTStructuredBindingDeclaration): Ast = {
-    val node = blockNode(decl, Defines.Empty, Defines.Void)
+    val node = blockNode(decl)
     scope.pushNewBlockScope(node)
     val childAsts = decl.getNames.toList.map(astForNode)
     scope.popScope()
@@ -395,8 +395,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val alias                            = filterNameAlias(nameAlias, None, fullName)
     val codeString                       = code(typeSpecifier)
 
-    val (deAliasedName, deAliasedFullName, newAlias) = if (name.contains("anonymous_enum") && alias.isDefined) {
-      (alias.get, fullName.substring(0, fullName.indexOf("anonymous_enum")) + alias.get, None)
+    val (deAliasedName, deAliasedFullName, newAlias) = if (name.contains("<enum>") && alias.isDefined) {
+      (alias.get, fullName.substring(0, fullName.indexOf("<enum>")) + alias.get, None)
     } else { (name, fullName, alias) }
 
     val typeDecl =

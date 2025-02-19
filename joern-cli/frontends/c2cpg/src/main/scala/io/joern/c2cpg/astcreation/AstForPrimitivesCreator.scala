@@ -102,7 +102,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
       case id: IASTIdExpression            => ASTStringUtil.getSimpleName(id.getName)
       case id: IASTName =>
         val name = ASTStringUtil.getSimpleName(id)
-        if (name.isEmpty) safeGetBinding(id).map(_.getName).getOrElse(uniqueName("name", "", "")._1)
+        if (name.isEmpty) safeGetBinding(id).map(_.getName).getOrElse(uniqueName("", "")._1)
         else name
       case _ => code(ident)
     }

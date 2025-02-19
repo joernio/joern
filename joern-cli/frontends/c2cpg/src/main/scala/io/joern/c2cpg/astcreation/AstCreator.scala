@@ -97,7 +97,9 @@ class AstCreator(
     )
   }
 
-  override protected def code(node: IASTNode): String = shortenCode(nodeSignature(node))
+  override protected def code(node: IASTNode): String = {
+    shortenCode(nodeSignature(node))
+  }
 
   override protected def line(node: IASTNode): Option[Int] = {
     nullSafeFileLocation(node).map(_.getStartingLineNumber)
@@ -127,11 +129,7 @@ class AstCreator(
   }
 
   override protected def offset(node: IASTNode): Option[(Int, Int)] = {
-    Option
-      .when(!config.disableFileContent) {
-        nodeOffsets(node)
-      }
-      .flatten
+    Option.when(!config.disableFileContent) { nodeOffsets(node) }.flatten
   }
 
 }

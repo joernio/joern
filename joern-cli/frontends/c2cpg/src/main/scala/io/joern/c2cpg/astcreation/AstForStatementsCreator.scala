@@ -67,7 +67,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     }
 
     val initializer  = init.getOrElse(struct.getInitializer)
-    val tmpName      = uniqueName("tmp", "", "")._1
+    val tmpName      = uniqueName("", "", "tmp")._1
     val tpe          = registerType(typeFor(initializer))
     val localTmpNode = localNode(struct, tmpName, tmpName, tpe)
     scope.addVariable(tmpName, localTmpNode, tpe, C2CpgScope.ScopeType.BlockScope)
@@ -316,7 +316,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   private def astForConditionExpression(expression: IASTExpression, explicitArgumentIndex: Option[Int] = None): Ast = {
     val ast = expression match {
       case exprList: IASTExpressionList =>
-        val compareAstBlock = blockNode(expression, Defines.Empty, registerType(Defines.Void))
+        val compareAstBlock = blockNode(expression)
         scope.pushNewBlockScope(compareAstBlock)
         val compareBlockAstChildren = exprList.getExpressions.toList.map(nullSafeAst)
         setArgumentIndices(compareBlockAstChildren)
@@ -393,7 +393,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case s @ (_: CASTIfStatement | _: CPPASTIfStatement) if s.getConditionExpression != null =>
         astForConditionExpression(s.getConditionExpression)
       case s: CPPASTIfStatement if s.getConditionExpression == null =>
-        val exprBlock = blockNode(s.getConditionDeclaration, Defines.Empty, Defines.Void)
+        val exprBlock = blockNode(s.getConditionDeclaration)
         scope.pushNewBlockScope(exprBlock)
         val a = astsForDeclaration(s.getConditionDeclaration)
         setArgumentIndices(a)
@@ -422,7 +422,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         Ast(elseNode).withChild(elseAst)
       case other if other != null =>
         val elseNode  = controlStructureNode(ifStmt.getElseClause, ControlStructureTypes.ELSE, "else")
-        val elseBlock = blockNode(other, Defines.Empty, Defines.Void)
+        val elseBlock = blockNode(other)
         scope.pushNewBlockScope(elseBlock)
         val a = astsForStatement(other)
         setArgumentIndices(a)

@@ -478,7 +478,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val name = c.getDeclSpecifier.toString
     c.getInitializer match {
       case l: ICPPASTInitializerList if l.getClauses.forall(_.isInstanceOf[ICPPASTDesignatedInitializer]) =>
-        val node = blockNode(c, Defines.Empty, Defines.Void)
+        val node = blockNode(c)
         scope.pushNewBlockScope(node)
 
         val inits = l.getClauses.collect { case i: ICPPASTDesignatedInitializer => i }.toSeq
