@@ -613,8 +613,8 @@ class RubyJsonToNodeCreator(
     if (isRegexMatch) {
       // For regex match that looks like "hello"[/h(el)lo/]
       val newProps = obj.value
-      newProps.put(ParserKeys.Name, RubyOperators.regexpMatch)
-      visitBinaryExpression(obj.copy(value = newProps))
+      newProps.put(ParserKeys.Name, s"match${Defines.NeedsRegexLowering}")
+      visitSend(obj.copy(value = newProps))
     } else {
       IndexAccess(target, indices)(obj.toTextSpan)
     }
@@ -960,12 +960,12 @@ class RubyJsonToNodeCreator(
   private def visitSelf(obj: Obj): RubyExpression = SelfIdentifier()(obj.toTextSpan)
 
   private def visitBinaryExpression(obj: Obj): RubyExpression = {
-    val callName = obj(ParserKeys.Name).str
-    val lhs      = visit(obj(ParserKeys.Receiver))
-    val rhs      = obj.visitArray(ParserKeys.Arguments).head
-    // Transform `match` to `=~` so that it is lowered later
-    val op = if RubyOperators.regexMethods.contains(callName) then RubyOperators.regexpMatch else callName
-    BinaryExpression(lhs, op, rhs)(obj.toTextSpan)
+    val op  = obj(ParserKeys.Name).str
+    val lhs = visit(obj(ParserKeys.Receiver))
+    obj.visitArray(ParserKeys.Arguments).headOption match {
+      case Some(rhs) => BinaryExpression(lhs, op, rhs)(obj.toTextSpan)
+      case None      => MemberCall(lhs, ".", op, Nil)(obj.toTextSpan)
+    }
   }
 
   private def visitSend(obj: Obj, isConditional: Boolean = false): RubyExpression = {
@@ -983,12 +983,13 @@ class RubyJsonToNodeCreator(
       case "private" | "public" | "protected"                                   => visitAccessModifier(obj)
       case "private_class_method" | "public_class_method"                       => visitMethodAccessModifier(obj)
       case requireLike if ImportCallNames.contains(requireLike) && !hasReceiver => visitRequireLike(obj)
-      case x
-          if BinaryOperators.isBinaryOperatorName(callName)
-            || RubyOperators.regexMethods.contains(x) => // assert `match`, `sub`, or `gsub` is always for regex
-        visitBinaryExpression(obj)
+      case _ if BinaryOperators.isBinaryOperatorName(callName)                  => visitBinaryExpression(obj)
       case _ if UnaryOperators.isUnaryOperatorName(callName) =>
         UnaryExpression(callName, visit(obj(ParserKeys.Receiver)))(obj.toTextSpan)
+      case _ if RubyOperators.regexMethods.contains(callName) =>
+        val newProps = obj.value
+        newProps.put(ParserKeys.Name, s"$callName$NeedsRegexLowering")
+        visitSend(obj.copy(value = newProps))
       case s"$name=" if hasReceiver => visitFieldAssignmentSend(obj, name)
       case _ =>
         val target      = SimpleIdentifier()(obj.toTextSpan.spanStart(callName))
