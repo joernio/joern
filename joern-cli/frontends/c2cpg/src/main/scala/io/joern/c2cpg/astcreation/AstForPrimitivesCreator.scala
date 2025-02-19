@@ -32,7 +32,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     val tpe        = registerType(cleanType(safeGetType(lit.getExpressionType)))
     if (codeString == "this") {
       val thisIdentifier = identifierNode(lit, codeString, codeString, tpe)
-      scope.addVariableReference(codeString, thisIdentifier, tpe, EvaluationStrategies.BY_VALUE)
+      scope.addVariableReference(codeString, thisIdentifier, tpe, EvaluationStrategies.BY_REFERENCE)
       Ast(thisIdentifier)
     } else {
       Ast(literalNode(lit, codeString, tpe))
@@ -124,7 +124,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
               val op             = Operators.indirectFieldAccess
               val code           = s"this->$identifierName"
               val thisIdentifier = identifierNode(ident, "this", "this", ownerType)
-              scope.addVariableReference("this", thisIdentifier, ownerType, EvaluationStrategies.BY_VALUE)
+              scope.addVariableReference("this", thisIdentifier, ownerType, EvaluationStrategies.BY_REFERENCE)
               val member  = fieldIdentifierNode(ident, identifierName, identifierName)
               val callTpe = Some(registerType(cleanType(tpe)))
               val ma      = callNode(ident, code, op, op, DispatchTypes.STATIC_DISPATCH, None, callTpe)
@@ -167,7 +167,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
           case identifierTypeName: String =>
             val tpe  = registerType(cleanType(identifierTypeName))
             val node = identifierNode(ident, identifierName, code(ident), tpe)
-            scope.addVariableReference(identifierName, node, tpe, EvaluationStrategies.BY_VALUE)
+            scope.addVariableReference(identifierName, node, tpe, EvaluationStrategies.BY_REFERENCE)
             Ast(node)
           case ast: Ast => ast
         }

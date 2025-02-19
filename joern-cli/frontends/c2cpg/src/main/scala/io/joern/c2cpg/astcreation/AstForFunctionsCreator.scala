@@ -64,7 +64,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     methodNode.astParentType = astParentType
 
     val functionBinding = NewBinding()
-      .name(Defines.OperatorCall)
+      .name(methodNode.name)
       .methodFullName(methodNode.fullName)
       .signature(methodNode.signature)
 
@@ -128,7 +128,6 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         setVariadicParameterInfo(parameterNodeInfos, funcDecl)
 
         val (astParentType, astParentFullName) = methodDeclarationParentInfo()
-
         val methodInfo = CGlobal.MethodInfo(
           name,
           code = codeString,
