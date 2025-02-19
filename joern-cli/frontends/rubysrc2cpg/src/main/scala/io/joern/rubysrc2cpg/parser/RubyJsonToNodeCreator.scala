@@ -988,7 +988,7 @@ class RubyJsonToNodeCreator(
         UnaryExpression(callName, visit(obj(ParserKeys.Receiver)))(obj.toTextSpan)
       case _ if RubyOperators.regexMethods.contains(callName) =>
         val newProps = obj.value
-        newProps.put(ParserKeys.Name, s"$callName$NeedsRegexLowering")
+        newProps.put(ParserKeys.Name, s"$callName${Defines.NeedsRegexLowering}")
         visitSend(obj.copy(value = newProps))
       case s"$name=" if hasReceiver => visitFieldAssignmentSend(obj, name)
       case _ =>
