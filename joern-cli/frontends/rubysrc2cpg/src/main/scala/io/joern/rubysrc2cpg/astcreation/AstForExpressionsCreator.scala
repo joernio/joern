@@ -74,13 +74,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   protected def astForHereDoc(node: HereDocNode): Ast = {
-    Ast(literalNode(node, code(node), prefixAsKernelDefined("String")))
+    Ast(literalNode(node, code(node), prefixAsCoreType(Defines.String)))
   }
 
   // Helper for nil literals to put in empty clauses
-  protected def astForNilLiteral: Ast = Ast(
-    NewLiteral().code("nil").typeFullName(prefixAsKernelDefined(Defines.NilClass))
-  )
+  protected def astForNilLiteral: Ast = Ast(NewLiteral().code("nil").typeFullName(prefixAsCoreType(Defines.NilClass)))
 
   protected def astForNilBlock: Ast = blockAst(NewBlock(), List(astForNilLiteral))
 
@@ -225,6 +223,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         code(n)
       }
       val call = if (n.isRegexMatch || RubyOperators.regexMethods(n.methodName)) {
+        // TODO: We need to do the lowering
         callNode(n, callCode, n.methodName, s"${prefixAsCoreType(Defines.Regexp)}.match", dispatchType)
       } else {
         callNode(n, callCode, n.methodName, XDefines.DynamicCallUnknownFullName, dispatchType)

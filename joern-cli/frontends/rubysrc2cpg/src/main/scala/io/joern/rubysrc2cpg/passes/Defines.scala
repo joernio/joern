@@ -32,6 +32,10 @@ object Defines {
   val Initialize: String   = "initialize"
   val TypeDeclBody: String = "<body>"
 
+  // A tag attached to the suffix of 'match' calls that have not
+  // yet been lowered. Prevents infinite recursion.
+  val NeedsRegexLowering: String = "<needsRegexLowering>"
+
   val Main: String = "<main>"
 
   val Resolver: String = "<dependency-resolver>"
@@ -56,7 +60,7 @@ object Defines {
     val regexpMatch       = "=~"
     val regexpNotMatch    = "!~"
 
-    val regexMethods = Set("match", "sub", "gsub")
+    val regexMethods = Set("match") // TODO: Figure out how to model these, "sub", "gsub")
   }
 }
 
