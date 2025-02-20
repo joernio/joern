@@ -5,6 +5,7 @@ import io.shiftleft.utils.IOUtils
 import java.io.File
 import java.nio.file.{Path, Paths}
 import scala.jdk.CollectionConverters.*
+import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
 import scala.util.control.NonFatal
 
@@ -26,16 +27,24 @@ object ExternalCommand {
     }
   }
 
-  def run(
+  def runWithDir(
     command: Seq[String],
-    cwd: String,
-    mergeStdErrInStdOut: Boolean = false,
-    extraEnv: Map[String, String] = Map.empty
+    cwd: Option[String],
+    mergeStdErrInStdOut: Boolean,
+    extraEnv: Map[String, String]
   ): ExternalCommandResult = {
-    val builder = new ProcessBuilder()
-      .command(command.toArray*)
-      .directory(new File(cwd))
-      .redirectErrorStream(mergeStdErrInStdOut)
+    val builder = cwd match {
+      case Some(dir) =>
+        new ProcessBuilder()
+          .command(command.toArray*)
+          .directory(new File(dir))
+          .redirectErrorStream(mergeStdErrInStdOut)
+      case _ =>
+        new ProcessBuilder()
+          .command(command.toArray*)
+          .redirectErrorStream(mergeStdErrInStdOut)
+    }
+
     builder.environment().putAll(extraEnv.asJava)
 
     val stdOutFile = File.createTempFile("x2cpg", "stdout")
@@ -59,6 +68,13 @@ object ExternalCommand {
       stdErrFile.foreach(_.delete())
     }
   }
+
+  def run(
+    command: Seq[String],
+    cwd: String,
+    mergeStdErrInStdOut: Boolean = false,
+    extraEnv: Map[String, String] = Map.empty
+  ): ExternalCommandResult = runWithDir(command, Some(cwd), mergeStdErrInStdOut, extraEnv)
 
   /** Finds the absolute path to the executable directory (e.g. `/path/to/javasrc2cpg/bin`). Based on the package path
     * of a loaded classfile based on some (potentially flakey?) filename heuristics. Context: we want to be able to

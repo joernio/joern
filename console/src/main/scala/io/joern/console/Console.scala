@@ -14,6 +14,7 @@ import io.shiftleft.semanticcpg.language.dotextension.ImageViewer
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
 import io.shiftleft.codepropertygraph.generated.help.Doc
 import flatgraph.help.Table.AvailableWidthProvider
+import io.joern.x2cpg.utils.ExternalCommand
 
 import scala.sys.process.Process
 import scala.util.control.NoStackTrace
@@ -44,7 +45,11 @@ class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.cur
       Try {
         val command = if (scala.util.Properties.isWin) { Seq("cmd.exe", "/C", config.tools.imageViewer) }
         else { Seq(config.tools.imageViewer) }
-        Process(command :+ tmpFile.path.toAbsolutePath.toString).run()
+//        ExternalCommand.run(command, None, false,)
+
+        ExternalCommand
+          .runWithDir(command :+ tmpFile.path.toAbsolutePath.toString, Option.empty[String], false, Map.empty)
+          .toTry
       } match {
         case Success(_) =>
           // We never handle the actual result anywhere.

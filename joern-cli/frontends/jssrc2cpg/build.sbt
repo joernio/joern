@@ -1,5 +1,3 @@
-import scala.sys.process.stringToProcess
-import scala.util.Try
 import versionsort.VersionHelper
 import com.typesafe.config.{Config, ConfigFactory}
 
@@ -39,7 +37,7 @@ lazy val astGenDlUrl = settingKey[String]("astgen download url")
 astGenDlUrl := s"https://github.com/joernio/astgen/releases/download/v${astGenVersion.value}/"
 
 def hasCompatibleAstGenVersion(astGenVersion: String): Boolean = {
-  Try("astgen --version".!!).toOption.map(_.strip()) match {
+  ExternalCommandUtil.run("astgen --version").toTry.toOption.map(x => x.stdOut.mkString("\n").strip()) match {
     case Some(installedVersion) if installedVersion != "unknown" =>
       VersionHelper.compare(installedVersion, astGenVersion) >= 0
     case _ => false

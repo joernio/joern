@@ -37,9 +37,9 @@ lazy val astGenDlUrl = settingKey[String]("astgen download url")
 astGenDlUrl := s"https://github.com/joernio/swiftastgen/releases/download/v${astGenVersion.value}/"
 
 def hasCompatibleAstGenVersion(astGenVersion: String): Boolean = {
-  Try("SwiftAstGen -h".!).toOption match {
-    case Some(0) => true
-    case _       => false
+  ExternalCommandUtil.run("SwiftAstGen -h").toTry.toOption match {
+    case Some(x) if x.exitCode == 0 => true
+    case _ => false
   }
 }
 
