@@ -28,6 +28,7 @@ class AstCreator(
     with AstForTypesCreator
     with AstForFunctionsCreator
     with AstForPrimitivesCreator
+    with AstForInitializersCreator
     with AstForStatementsCreator
     with AstForExpressionsCreator
     with AstForLambdasCreator

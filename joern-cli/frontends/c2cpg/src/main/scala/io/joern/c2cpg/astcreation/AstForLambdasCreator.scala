@@ -7,7 +7,6 @@ import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
-import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethodRef
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
@@ -21,34 +20,31 @@ import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTLambdaExpression.CaptureDefault
 
 trait AstForLambdasCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  private def shouldBeCaptured(bodyAst: Ast, i: NewIdentifier): Boolean = {
-    !bodyAst.refEdges.exists { refEdge => refEdge.src == i && refEdge.dst.isInstanceOf[NewLocal] }
-  }
-
   private def calculateCapturedVariables(lambdaExpression: ICPPASTLambdaExpression, bodyAst: Ast): Unit = {
     val captureDefault = lambdaExpression.getCaptureDefault
-    lambdaExpression.getCaptures.toList match {
+    val strategyMapping = captureDefault match {
+      case CaptureDefault.BY_REFERENCE => EvaluationStrategies.BY_REFERENCE
+      case _                           => EvaluationStrategies.BY_VALUE
+    }
+    lambdaExpression.getCaptures match {
       case captures if captures.isEmpty && captureDefault == CaptureDefault.UNSPECIFIED => // do nothing
       case captures if captures.isEmpty =>
-        val strategy = captureDefault match {
-          case CaptureDefault.BY_REFERENCE => EvaluationStrategies.BY_REFERENCE
-          case _                           => EvaluationStrategies.BY_VALUE
-        }
-        bodyAst.nodes.collect {
-          case i: NewIdentifier if shouldBeCaptured(bodyAst, i) =>
-            scope.updateVariableReference(i, strategy)
+        bodyAst.nodes.foreach {
+          case i: NewIdentifier if !scope.variableIsInMethodScope(i.name) =>
+            scope.updateVariableReference(i, strategyMapping)
+          case _ => // do nothing
         }
       case other =>
         val validCaptures = other.filter(_.getIdentifier != null)
-        bodyAst.nodes.collect {
-          case i: NewIdentifier if shouldBeCaptured(bodyAst, i) =>
-            val maybeInCaptures = validCaptures.find(c => c.getIdentifier.getRawSignature == i.name)
+        bodyAst.nodes.foreach {
+          case i: NewIdentifier if !scope.variableIsInMethodScope(i.name) =>
+            val maybeInCaptures = validCaptures.find(c => code(c.getIdentifier) == i.name)
             val strategy = maybeInCaptures match {
-              case Some(c) if c.isByReference                            => EvaluationStrategies.BY_REFERENCE
-              case None if captureDefault == CaptureDefault.BY_REFERENCE => EvaluationStrategies.BY_REFERENCE
-              case _                                                     => EvaluationStrategies.BY_VALUE
+              case Some(c) if c.isByReference => EvaluationStrategies.BY_REFERENCE
+              case _                          => strategyMapping
             }
             scope.updateVariableReference(i, strategy)
+          case _ => // do nothing
         }
     }
   }

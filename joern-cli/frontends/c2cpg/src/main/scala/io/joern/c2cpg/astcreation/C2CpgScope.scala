@@ -98,6 +98,14 @@ class C2CpgScope {
     variableFromStack(stack, identifier).map { case (variableNodeId, tpe, _) => (variableNodeId, tpe) }
   }
 
+  def variableIsInMethodScope(identifier: String): Boolean = {
+    val scope = stack match {
+      case Some(_: MethodScopeElement) => stack.get
+      case _                           => getEnclosingMethodScopeElement(stack)
+    }
+    scope.nameToVariableNode.contains(identifier)
+  }
+
   def pushNewMethodScope(
     methodFullName: String,
     name: String,

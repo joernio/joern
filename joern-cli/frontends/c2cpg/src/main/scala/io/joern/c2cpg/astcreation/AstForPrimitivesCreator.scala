@@ -2,7 +2,6 @@ package io.joern.c2cpg.astcreation
 
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
-import io.joern.x2cpg.Defines as X2CpgDefines
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
@@ -176,7 +175,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
 
   protected def astForFieldReference(fieldRef: IASTFieldReference): Ast = {
     val op     = if (fieldRef.isPointerDereference) Operators.indirectFieldAccess else Operators.fieldAccess
-    val ma     = callNode(fieldRef, code(fieldRef), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(X2CpgDefines.Any))
+    val ma     = callNode(fieldRef, code(fieldRef), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
     val owner  = astForExpression(fieldRef.getFieldOwner)
     val member = fieldIdentifierNode(fieldRef, fieldRef.getFieldName.toString, fieldRef.getFieldName.toString)
     callAst(ma, List(owner, Ast(member)))
@@ -185,28 +184,9 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
   protected def astForArrayModifier(arrMod: IASTArrayModifier): Ast =
     astForNode(arrMod.getConstantExpression)
 
-  protected def astForInitializerList(l: IASTInitializerList): Ast = {
-    val op           = Operators.arrayInitializer
-    val initCallNode = callNode(l, code(l), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(X2CpgDefines.Any))
-
-    val MAX_INITIALIZERS = 1000
-    val clauses          = l.getClauses.slice(0, MAX_INITIALIZERS)
-
-    val args = clauses.toList.map(x => astForNode(x))
-
-    val ast = callAst(initCallNode, args)
-    if (l.getClauses.length > MAX_INITIALIZERS) {
-      val placeholder =
-        literalNode(l, "<too-many-initializers>", Defines.Any).argumentIndex(MAX_INITIALIZERS)
-      ast.withChild(Ast(placeholder)).withArgEdge(initCallNode, placeholder)
-    } else {
-      ast
-    }
-  }
-
   protected def astForQualifiedName(qualId: CPPASTQualifiedName): Ast = {
     val op = Operators.fieldAccess
-    val ma = callNode(qualId, code(qualId), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(X2CpgDefines.Any))
+    val ma = callNode(qualId, code(qualId), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
 
     def fieldAccesses(names: List[IASTNode], argIndex: Int = -1): Ast = names match {
       case Nil => Ast()
@@ -215,7 +195,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
       case head :: tail =>
         val codeString = s"${code(head)}::${tail.map(code).mkString("::")}"
         val callNode_ =
-          callNode(head, code(head), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(X2CpgDefines.Any))
+          callNode(head, code(head), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
             .argumentIndex(argIndex)
         callNode_.code = codeString
         val arg1 = astForNode(head)

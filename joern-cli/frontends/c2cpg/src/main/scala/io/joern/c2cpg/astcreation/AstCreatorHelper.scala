@@ -6,8 +6,6 @@ import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.utils.IntervalKeyPool
 import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.utils.NodeBuilders.newDependencyNode
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
 import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
@@ -427,68 +425,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     } else {
       Seq.empty
     }
-  }
-
-  private def astForDecltypeSpecifier(decl: ICPPASTDecltypeSpecifier): Ast = {
-    val op       = Defines.OperatorTypeOf
-    val cpgUnary = callNode(decl, code(decl), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
-    val operand  = nullSafeAst(decl.getDecltypeExpression)
-    callAst(cpgUnary, List(operand))
-  }
-
-  private def astForCASTDesignatedInitializer(d: ICASTDesignatedInitializer): Ast = {
-    val node = blockNode(d)
-    scope.pushNewBlockScope(node)
-    val op = Operators.assignment
-    val calls = withIndex(d.getDesignators) { (des, o) =>
-      val callNode_ =
-        callNode(d, code(d), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
-          .argumentIndex(o)
-      val left  = astForNode(des)
-      val right = astForNode(d.getOperand)
-      callAst(callNode_, List(left, right))
-    }
-    scope.popScope()
-    blockAst(node, calls.toList)
-  }
-
-  private def astForCPPASTDesignatedInitializer(d: ICPPASTDesignatedInitializer): Ast = {
-    val node = blockNode(d)
-    scope.pushNewBlockScope(node)
-    val op = Operators.assignment
-    val calls = withIndex(d.getDesignators) { (des, o) =>
-      val callNode_ =
-        callNode(d, code(d), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
-          .argumentIndex(o)
-      val left  = astForNode(des)
-      val right = astForNode(d.getOperand)
-      callAst(callNode_, List(left, right))
-    }
-    scope.popScope()
-    blockAst(node, calls.toList)
-  }
-
-  private def astForCPPASTConstructorInitializer(c: ICPPASTConstructorInitializer): Ast = {
-    val name      = Defines.OperatorConstructorInitializer
-    val callNode_ = callNode(c, code(c), name, name, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
-    val args      = c.getArguments.toList.map(a => astForNode(a))
-    callAst(callNode_, args)
-  }
-
-  private def astForCASTArrayRangeDesignator(des: CASTArrayRangeDesignator): Ast = {
-    val op         = Operators.arrayInitializer
-    val callNode_  = callNode(des, code(des), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
-    val floorAst   = nullSafeAst(des.getRangeFloor)
-    val ceilingAst = nullSafeAst(des.getRangeCeiling)
-    callAst(callNode_, List(floorAst, ceilingAst))
-  }
-
-  private def astForCPPASTArrayRangeDesignator(des: CPPASTArrayRangeDesignator): Ast = {
-    val op         = Operators.arrayInitializer
-    val callNode_  = callNode(des, code(des), op, op, DispatchTypes.STATIC_DISPATCH, None, Some(Defines.Any))
-    val floorAst   = nullSafeAst(des.getRangeFloor)
-    val ceilingAst = nullSafeAst(des.getRangeCeiling)
-    callAst(callNode_, List(floorAst, ceilingAst))
   }
 
   protected def astForNode(node: IASTNode): Ast = {

@@ -344,9 +344,15 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   protected def astForMethodBody(body: Option[IASTStatement], blockNode: NewBlock): Ast = body match {
-    case Some(b: IASTCompoundStatement) => astForBlockStatement(b, blockNode)
-    case Some(b)                        => blockAst(blockNode).withChild(astForNode(b))
-    case None                           => blockAst(blockNode)
+    case Some(b: IASTCompoundStatement) =>
+      astForBlockStatement(b, blockNode)
+    case Some(b) =>
+      scope.pushNewBlockScope(blockNode)
+      val childAst = astForNode(b)
+      scope.popScope()
+      blockAst(blockNode).withChild(childAst)
+    case None =>
+      blockAst(blockNode)
   }
 
 }
