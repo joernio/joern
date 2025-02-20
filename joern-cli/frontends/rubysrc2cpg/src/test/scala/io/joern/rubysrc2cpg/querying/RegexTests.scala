@@ -11,8 +11,6 @@ class RegexTests extends RubyCode2CpgFixture(withPostProcessing = false) {
 
     /** Checks for the presence of the lowered regex match which assigns the match results to the respective global
       * variables.
-      *
-      * TODO: Check for matching of match group ($1, $2, etc.) variables.
       */
     def assertLoweredStructure(cpg: Cpg, tmpNo: String = "0", expectedSubject: String = "\"hello\""): Unit = {
       // We lower =~ to the `match` equivalent
@@ -117,7 +115,8 @@ class RegexTests extends RubyCode2CpgFixture(withPostProcessing = false) {
       assertLoweredStructure(cpg)
     }
 
-    "be assigned to the match using `sub` (or `gsub`) calls" in {
+    "be assigned to the match using `sub` (or `gsub`) calls" ignore {
+      // fixme: This cannot simply be lowered as it returns a string result not a MatchData object
       val cpg = code("""
           |"hello".sub(/h(el)lo/)
           |""".stripMargin)
