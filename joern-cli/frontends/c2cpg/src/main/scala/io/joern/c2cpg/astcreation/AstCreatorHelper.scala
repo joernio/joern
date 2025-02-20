@@ -503,20 +503,16 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     base: Option[Ast] = None,
     receiver: Option[Ast] = None
   ): Ast = {
-
     setArgumentIndices(arguments)
 
     val baseRoot = base.flatMap(_.root).toList
-    val bse      = base.getOrElse(Ast())
     baseRoot match {
-      case List(x: ExpressionNew) =>
-        x.argumentIndex = 0
-      case _ =>
+      case List(x: ExpressionNew) => x.argumentIndex = 0
+      case _                      => // do nothing
     }
 
-    var ast =
-      Ast(callNode)
-        .withChild(bse)
+    val bse = base.getOrElse(Ast())
+    var ast = Ast(callNode).withChild(bse)
 
     if (receiver.isDefined && receiver != base) {
       receiver.get.root.get.asInstanceOf[ExpressionNew].argumentIndex = -1
@@ -531,7 +527,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     if (receiver.isDefined) {
       ast = ast.withReceiverEdge(callNode, receiver.get.root.get)
     }
-
     ast
   }
 
@@ -543,8 +538,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       var currentScope           = origin.stack
       var currentReference       = origin.referenceNode
       var nextReference: NewNode = null
-
-      var done = false
+      var done                   = false
       while (!done) {
         val localOrCapturedLocalNodeOption =
           if (currentScope.get.nameToVariableNode.contains(origin.variableName)) {
@@ -581,11 +575,25 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
           }
 
         localOrCapturedLocalNodeOption.foreach { localOrCapturedLocalNode =>
+          (currentReference, localOrCapturedLocalNode) match {
+            case (node: AstNodeNew, local: NewLocal) => transferLineAndColumnInfo(node, local)
+            case _                                   => // do nothing
+          }
           diffGraph.addEdge(currentReference, localOrCapturedLocalNode, EdgeTypes.REF)
           currentReference = nextReference
         }
         currentScope = currentScope.get.surroundingScope
       }
+    }
+  }
+
+  private def transferLineAndColumnInfo(src: AstNodeNew, tgt: NewLocal): Unit = {
+    src.lineNumber match {
+      // If there are multiple occurrences and the local is already set, ignore later updates
+      case Some(srcLineNo) if tgt.lineNumber.isEmpty || !tgt.lineNumber.exists(_ < srcLineNo) =>
+        tgt.lineNumber(src.lineNumber)
+        tgt.columnNumber(src.columnNumber)
+      case _ =>
     }
   }
 
@@ -595,10 +603,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     tpe: String
   ): NewLocal = {
     val local = NodeBuilders.newLocalNode(variableName, tpe).order(0)
-    methodScopeNodeId match {
-      case node: AstNodeNew => local.lineNumber(node.lineNumber).columnNumber(node.columnNumber)
-      case _                => // do nothing
-    }
     diffGraph.addEdge(methodScopeNodeId, local, EdgeTypes.AST)
     local
   }
